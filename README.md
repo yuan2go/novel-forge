@@ -39,6 +39,10 @@ NovelForge 是一个面向长期内容生产的小说工业化系统。
 - [16_risk_control.md](docs/16_risk_control.md)：风险控制
 - [17_mvp_roadmap.md](docs/17_mvp_roadmap.md)：MVP 路线图
 - [18_templates.md](docs/18_templates.md)：核心模板
+- [docs/skills/README.md](docs/skills/README.md)：Skills 能力体系
+- [docs/skills/agent-skill-map.md](docs/skills/agent-skill-map.md)：Agent 与 Skill 映射
+- [docs/architecture/skills-system.md](docs/architecture/skills-system.md)：Skills 架构说明
+- [docs/ai-workflow/skill-usage.md](docs/ai-workflow/skill-usage.md)：Skill 使用流程
 
 ## 最高原则
 

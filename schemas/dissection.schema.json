@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://novel-forge.local/schemas/dissection.schema.json",
+  "title": "Dissection",
+  "description": "Abstract structural analysis of source material. It must not preserve copyable expression.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "source_material_id",
+    "source_type",
+    "genre",
+    "analysis_date",
+    "core_positioning",
+    "structure",
+    "character_mechanism",
+    "cool_points",
+    "poison_points",
+    "abstract_patterns",
+    "commercial_logic",
+    "originality_boundary"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^dissection_[A-Za-z0-9_-]+$"
+    },
+    "source_material_id": {
+      "type": "string"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "hot_novel",
+        "professional_book",
+        "reader_comment",
+        "article"
+      ]
+    },
+    "genre": {
+      "type": "string"
+    },
+    "analysis_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "core_positioning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "main_hook",
+        "reader_expectation",
+        "commercial_label"
+      ],
+      "properties": {
+        "main_hook": {
+          "type": "string"
+        },
+        "reader_expectation": {
+          "type": "string"
+        },
+        "commercial_label": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "structure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opening",
+        "first_30_chapters",
+        "middle",
+        "later"
+      ],
+      "properties": {
+        "opening": {
+          "type": "object"
+        },
+        "first_30_chapters": {
+          "type": "object"
+        },
+        "middle": {
+          "type": "object"
+        },
+        "later": {
+          "type": "object"
+        }
+      }
+    },
+    "character_mechanism": {
+      "type": "object"
+    },
+    "cool_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "chapter_range",
+          "emotional_effect"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "chapter_range": {
+            "type": "string"
+          },
+          "emotional_effect": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "poison_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "issue",
+          "reader_reaction",
+          "avoid_rule"
+        ],
+        "properties": {
+          "issue": {
+            "type": "string"
+          },
+          "reader_reaction": {
+            "type": "string"
+          },
+          "avoid_rule": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "abstract_patterns": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reusable",
+        "forbidden"
+      ],
+      "properties": {
+        "reusable": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forbidden": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "commercial_logic": {
+      "type": "string"
+    },
+    "originality_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "abstraction_level",
+        "forbidden_usage",
+        "copy_risk"
+      ],
+      "properties": {
+        "abstraction_level": {
+          "type": "string",
+          "enum": [
+            "L1_hard_rule",
+            "L2_soft_pattern",
+            "L3_case_reference",
+            "unsafe_specific_expression"
+          ]
+        },
+        "forbidden_usage": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "copy_risk": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "blocked"
+          ]
+        }
+      }
+    }
+  }
+}
