@@ -138,6 +138,11 @@ class TaskStatus(BaseAsset):
     type: str = "task_status"
 
 
+@dataclass
+class ProjectWorkspaceState(BaseAsset):
+    type: str = "project_workspace_state"
+
+
 SCHEMA_CLASSES = {
     cls().type: cls
     for cls in [
@@ -166,6 +171,7 @@ SCHEMA_CLASSES = {
         ImagePrompt,
         WorkflowRun,
         TaskStatus,
+        ProjectWorkspaceState,
     ]
 }
 

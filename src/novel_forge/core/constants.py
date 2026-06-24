@@ -16,6 +16,7 @@ DATA_DIRS = [
     "feedback",
     "training",
     "image_prompts",
+    "workspaces",
     "runs",
 ]
 
@@ -27,13 +28,47 @@ DOC_FILES = [
     "docs/01-architecture/system-architecture.md",
     "docs/01-architecture/module-map.md",
     "docs/01-architecture/data-flow.md",
+    "docs/01-architecture/skills-system.md",
     "docs/02-workflows/main-pipeline.md",
     "docs/02-workflows/model-collaboration.md",
+    "docs/02-workflows/skill-usage.md",
     "docs/03-schemas/schema-index.md",
     "docs/04-modules/module-index.md",
     "docs/05-testing/testing-strategy.md",
     "docs/06-operations/cli-usage.md",
+    "docs/09-skills/README.md",
+    "docs/09-skills/agent-skill-map.md",
+    "docs/09-skills/runtime-sync.md",
+    "docs/09-skills/external-resource-intake.md",
     "docs/08-roadmap/v5-roadmap.md",
+    "docs/08-roadmap/v5-optimization-plan.md",
+]
+
+SKILL_NAMES = [
+    "hot-novel-deconstruction",
+    "anti-copy-abstraction",
+    "character-design",
+    "worldbuilding",
+    "long-outline",
+    "chapter-outline",
+    "prose-generation",
+    "quality-review",
+    "reader-feedback",
+    "project-planning",
+    "multidisciplinary-knowledge",
+    "topic-development",
+    "material-curation",
+    "training-exercise",
+]
+
+SKILL_REQUIRED_SECTIONS = [
+    "## 适用场景",
+    "## 输入要求",
+    "## 操作流程",
+    "## 输出格式",
+    "## 质量标准",
+    "## 禁止事项",
+    "## 与其他模块的关系",
 ]
 
 ASSET_DIR_BY_TYPE = {
@@ -60,6 +95,7 @@ ASSET_DIR_BY_TYPE = {
     "feedback_insight": "feedback",
     "training_exercise": "training",
     "image_prompt": "image_prompts",
+    "project_workspace_state": "workspaces",
     "workflow_run": "runs",
     "task_status": "runs",
 }

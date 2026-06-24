@@ -16,6 +16,27 @@ Agents working on Novel Forge V5 must preserve the writing-system boundary: refe
 | Material Agent | knowledge/decomposition assets | reusable material cards | build reusable asset library | copy story-specific characters/settings |
 | Quality Agent | all outputs | validation and risk reports | run checks, record failures | suppress warnings |
 
+## Agent-Skill Map
+
+Agent is a role and permission boundary. Skill is a reusable capability. Use `docs/09-skills/agent-skill-map.md` for details.
+
+| Agent | Recommended Skills |
+|---|---|
+| Chief Editor Agent | `quality-review`, `long-outline` |
+| Knowledge Agent | `hot-novel-deconstruction`, `anti-copy-abstraction` |
+| Material Agent | `hot-novel-deconstruction`, `anti-copy-abstraction`, `multidisciplinary-knowledge`, `long-outline` |
+| Worldbuilding Agent | `worldbuilding` |
+| Character Agent | `character-design` |
+| Outline Agent | `long-outline`, `character-design`, `worldbuilding` |
+| Chapter Plan Agent | `chapter-outline`, `quality-review` |
+| Draft Agent | `prose-generation`, `chapter-outline` |
+| Review Agent | `quality-review`, `anti-copy-abstraction` |
+| Feedback Agent | `reader-feedback`, `quality-review` |
+
 ## Execution Rule
 
 Every agent output must be traceable to input files, schema type, output path, and validation status.
+
+Skills do not permit Agents to bypass schema validation, storage boundaries, copyright boundaries, or review gates.
+
+Runtime copies under `.claude/skills/` must be generated from root `skills/` using `make sync-skills`; do not edit runtime copies as the source of truth.

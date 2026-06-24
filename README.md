@@ -48,6 +48,28 @@ make demo
 ./novel-forge validate
 ```
 
+## Skills
+
+V5 includes repository-level Skills under `skills/`. Skills capture reusable creative capabilities and quality gates; they do not store source text or copyrighted content.
+
+- [Skills System](docs/09-skills/README.md)
+- [Agent Skill Map](docs/09-skills/agent-skill-map.md)
+- [Claude Code Runtime Skill Sync](docs/09-skills/runtime-sync.md)
+- [Skills Architecture](docs/01-architecture/skills-system.md)
+- [Skill Usage Workflow](docs/02-workflows/skill-usage.md)
+
+Preview runtime mapping:
+
+```bash
+make sync-skills-dry-run
+```
+
+Sync repository Skills to `.claude/skills/` when Claude Code runtime integration is needed:
+
+```bash
+make sync-skills
+```
+
 ## Current Implementation Scope
 
 V5 Phase 1 uses Python standard library, dataclass schemas, local JSON storage, a deterministic mock model adapter, and `unittest` tests. This keeps the project runnable without installing external dependencies. Pytest/Pydantic can be introduced later by ADR once dependency installation is allowed.

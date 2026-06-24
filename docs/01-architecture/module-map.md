@@ -18,3 +18,9 @@
 | Feedback | `modules/feedback` | `data/feedback` | mock executable |
 | Training | `modules/training` | `data/training` | schema ready |
 | Image Prompts | `modules/image_prompts` | `data/image_prompts` | schema ready |
+| Skills | `skills/` | docs-backed capability layer | 14 validated Skills |
+
+## Service Boundary
+
+P0 workflow step logic lives in `src/novel_forge/modules/<module>/service.py`.
+`src/novel_forge/workflows/pipeline.py` is kept as the orchestration and compatibility layer: it initializes storage, preserves the public workflow function names used by the CLI/tests, runs the sample pipeline, and performs project validation.

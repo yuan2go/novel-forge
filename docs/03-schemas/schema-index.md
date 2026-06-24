@@ -29,9 +29,20 @@ Implemented schema classes:
 - ImagePrompt
 - WorkflowRun
 - TaskStatus
+- ProjectWorkspaceState
 
 Validation entry:
 
 ```bash
 ./novel-forge validate
 ```
+
+## Status Assets
+
+`WorkflowRun` content must include `status` and `outputs`. Completed runs require output paths. Failed runs require `error_message`, `run_log`, and `recovery_instruction`.
+
+`TaskStatus` content must include `step`, `status`, `input_paths`, `output_paths`, and `error_message`. Completed task statuses require output paths. Failed task statuses require an error message.
+
+## Workspace Assets
+
+`ProjectWorkspaceState` content must include `project_id`, `memory`, `chapter_states`, `continuity_threads`, and `open_issues`. It is stored under `data/workspaces/` and is used for long-project memory, multi-chapter continuity, unresolved hooks, and open quality issues.

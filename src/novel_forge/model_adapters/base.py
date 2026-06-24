@@ -1,9 +1,25 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 
+@dataclass(frozen=True)
+class ModelAdapterConfig:
+    provider: str
+    role: str
+    default_model: str = ""
+    required_env_vars: list[str] = field(default_factory=list)
+    external_api: bool = True
+
+
+class AdapterNotConfiguredError(RuntimeError):
+    """Raised when a provider adapter skeleton is called without implementation/configuration."""
+
+
 class ModelAdapter(Protocol):
+    name: str
+
     def generate(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]: ...
 
     def analyze(self, text: str, context: dict[str, Any] | None = None) -> dict[str, Any]: ...
