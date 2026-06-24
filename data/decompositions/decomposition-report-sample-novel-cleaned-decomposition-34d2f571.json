@@ -1,0 +1,48 @@
+{
+  "id": "decomposition-report-sample-novel-cleaned-decomposition-34d2f571",
+  "type": "decomposition_report",
+  "title": "sample_novel cleaned decomposition",
+  "name": "sample_novel cleaned decomposition",
+  "source": "cleaned-text-sample-novel-cleaned-decd20d4",
+  "tags": [
+    "decomposition",
+    "abstracted",
+    "commercial-patterns"
+  ],
+  "created_at": "2026-06-24T13:44:53+00:00",
+  "updated_at": "2026-06-24T13:44:53+00:00",
+  "version": "0.1.0",
+  "content": {
+    "summary": "第一章 雨夜的回声\n城市边缘的旧钟楼在午夜响起，年轻调查员发现每一次钟声都对应一条被掩盖的线索。\n她不能复制任何旧案，只能从结构中识别节奏：疑问、阻碍、选择、代价、钩子。\n当档案室的灯自己亮起时，下一声钟从已经拆除的塔楼传来。",
+    "commercial_patterns": [
+      "reader question raised before explanation",
+      "visible consequence per scene"
+    ],
+    "narrative_patterns": [
+      "problem -> investigation -> obstacle -> cost -> hook"
+    ],
+    "character_mechanisms": [
+      "protagonist pressure increases through external deadline"
+    ],
+    "conflict_patterns": [
+      "truth-seeking vs institutional silence"
+    ],
+    "emotion_curve": [
+      "curiosity",
+      "tension",
+      "uncertainty",
+      "anticipation"
+    ],
+    "hook_patterns": [
+      "unanswered clue at chapter end"
+    ],
+    "word_count": 5
+  },
+  "metadata": {
+    "model": "mock-model",
+    "copyright_boundary": "abstract structure and mechanism only; no protected expression copied"
+  },
+  "references": [
+    "cleaned-text-sample-novel-cleaned-decd20d4"
+  ]
+}

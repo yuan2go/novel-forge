@@ -1,0 +1,31 @@
+{
+  "id": "draft-chapter-chapter-1-draft-v0-609291a3",
+  "type": "draft_chapter",
+  "title": "Chapter 1 draft v0",
+  "name": "Chapter 1 draft v0",
+  "source": "chapter-plan-chapter-1-plan-4df69089",
+  "tags": [
+    "draft",
+    "v0",
+    "mock"
+  ],
+  "created_at": "2026-06-24T13:44:53+00:00",
+  "updated_at": "2026-06-24T13:44:53+00:00",
+  "version": "0.1.0",
+  "content": {
+    "chapter": 1,
+    "text": "雨水把广场的钟声压得很低。林乔抬头时，停用三年的钟楼忽然响了一下。档案表显示维护员早已离职，但新登记的巡检号正贴在门缝里。她把纸条塞进口袋，听见第二声钟从城市另一端传来。",
+    "model_output": {
+      "model": "mock-model",
+      "text": "Mock generation for: draft chapter from plan",
+      "context_keys": [
+        "plan"
+      ]
+    },
+    "copyright_boundary": "mock original draft; no reference expression copied"
+  },
+  "metadata": {},
+  "references": [
+    "chapter-plan-chapter-1-plan-4df69089"
+  ]
+}

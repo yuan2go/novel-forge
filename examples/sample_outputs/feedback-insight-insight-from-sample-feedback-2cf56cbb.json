@@ -1,0 +1,30 @@
+{
+  "id": "feedback-insight-insight-from-sample-feedback-2cf56cbb",
+  "type": "feedback_insight",
+  "title": "Insight from sample_feedback",
+  "name": "Insight from sample_feedback",
+  "source": "reader-feedback-sample-feedback-6b05dca7",
+  "tags": [
+    "feedback",
+    "insight"
+  ],
+  "created_at": "2026-06-24T13:44:53+00:00",
+  "updated_at": "2026-06-24T13:44:53+00:00",
+  "version": "0.1.0",
+  "content": {
+    "signals": [
+      "reader noticed hook",
+      "motivation pressure should increase"
+    ],
+    "average_rating": 4.5,
+    "next_generation_constraints": [
+      "make motivation pressure explicit by beat 2",
+      "preserve high hook clarity"
+    ],
+    "raw_comment_summary": "hook is clear but character motive needs more pressure strong suspense rhythm"
+  },
+  "metadata": {},
+  "references": [
+    "reader-feedback-sample-feedback-6b05dca7"
+  ]
+}

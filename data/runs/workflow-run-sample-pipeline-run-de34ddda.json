@@ -1,0 +1,55 @@
+{
+  "id": "workflow-run-sample-pipeline-run-de34ddda",
+  "type": "workflow_run",
+  "title": "sample pipeline run",
+  "name": "sample pipeline run",
+  "source": "/Users/yuan/projects/novel-forge-v5/examples/sample_inputs/sample_novel.txt",
+  "tags": [
+    "pipeline",
+    "sample"
+  ],
+  "created_at": "2026-06-24T13:44:53+00:00",
+  "updated_at": "2026-06-24T13:44:53+00:00",
+  "version": "0.1.0",
+  "content": {
+    "outputs": [
+      "data/raw/source-document-sample-novel-ff669d56.json",
+      "data/cleaned/cleaned-text-sample-novel-cleaned-decd20d4.json",
+      "data/decompositions/decomposition-report-sample-novel-cleaned-decomposition-34d2f571.json",
+      "data/knowledge/knowledge-card-knowledge-from-sample-novel-cleaned-decomposition-a0fb3b9e.json",
+      "data/materials/material-card-suspense-production-material-card-3e240893.json",
+      "data/topics/topic-seed-topic_seed-7b4d83dd.json",
+      "data/worlds/world-bible-echo-clock-city-world-bible-3fabccd7.json",
+      "data/characters/character-card-lin-qiao-character-card-dd74d4ae.json",
+      "data/outlines/outline-echo-clock-three-act-outline-e56b1777.json",
+      "data/chapter_plans/chapter-plan-chapter-1-plan-4df69089.json",
+      "data/drafts/draft-chapter-chapter-1-draft-v0-609291a3.json",
+      "data/reviews/review-report-review-for-chapter-1-draft-v0-e27549b9.json",
+      "data/reviews/revision-plan-revision-plan-for-review-for-chapter-1-draft-v0-2b0c585d.json",
+      "data/feedback/reader-feedback-sample-feedback-6b05dca7.json",
+      "data/feedback/feedback-insight-insight-from-sample-feedback-2cf56cbb.json"
+    ],
+    "status": "completed"
+  },
+  "metadata": {
+    "completed_at": "2026-06-24T13:44:53+00:00",
+    "sample": true
+  },
+  "references": [
+    "source-document-sample-novel-ff669d56.json",
+    "cleaned-text-sample-novel-cleaned-decd20d4.json",
+    "decomposition-report-sample-novel-cleaned-decomposition-34d2f571.json",
+    "knowledge-card-knowledge-from-sample-novel-cleaned-decomposition-a0fb3b9e.json",
+    "material-card-suspense-production-material-card-3e240893.json",
+    "topic-seed-topic_seed-7b4d83dd.json",
+    "world-bible-echo-clock-city-world-bible-3fabccd7.json",
+    "character-card-lin-qiao-character-card-dd74d4ae.json",
+    "outline-echo-clock-three-act-outline-e56b1777.json",
+    "chapter-plan-chapter-1-plan-4df69089.json",
+    "draft-chapter-chapter-1-draft-v0-609291a3.json",
+    "review-report-review-for-chapter-1-draft-v0-e27549b9.json",
+    "revision-plan-revision-plan-for-review-for-chapter-1-draft-v0-2b0c585d.json",
+    "reader-feedback-sample-feedback-6b05dca7.json",
+    "feedback-insight-insight-from-sample-feedback-2cf56cbb.json"
+  ]
+}

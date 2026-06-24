@@ -1,62 +1,53 @@
-# NovelForge 小说宇宙工厂
+# Novel Forge V5
 
-NovelForge 是一个面向长期内容生产的小说工业化系统。
+Novel Forge V5 is a file-based, testable AI novel production system rebuilt from the V4 documentation and audit assets. It focuses on industrialized long-form fiction production instead of one-off chapter generation.
 
-它不是一个“让 AI 随机写一章小说”的工具，而是一套以读者吸引力为入口、以通用知识中台为底座、以知识编译器为转换层、以项目宪法为约束、以 Claude Code 为单本小说项目总编的多小说并行生产系统。
-
-## 核心公式
+Core pipeline:
 
 ```text
-读者吸引力 Gate
-+ 项目差异化 Gate
-+ 通用知识编译器
-+ 项目宪法
-+ Claude Code 单项目执行
-+ DeepSeek 产能
-+ ChatGPT/Codex 审稿
-+ 反馈分级控制
-= 更合理、更稳定、更有吸引力、更不容易同质化的小说宇宙工厂
+source material -> cleaned text -> decomposition -> knowledge/material assets -> topic -> world -> characters -> outline -> chapter plan -> draft -> review -> revision -> feedback insight
 ```
 
-## 文档入口
+## Principles
 
-- [00_overview.md](docs/00_overview.md)：项目总览
-- [01_architecture.md](docs/01_architecture.md)：总体架构
-- [02_global_assets.md](docs/02_global_assets.md)：全局资产层
-- [03_world_lab.md](docs/03_world_lab.md)：世界实验室
-- [04_project_incubation.md](docs/04_project_incubation.md)：项目孵化流程
-- [05_reader_attraction_gate.md](docs/05_reader_attraction_gate.md)：读者吸引力 Gate
-- [06_project_differentiation_gate.md](docs/06_project_differentiation_gate.md)：项目差异化 Gate
-- [07_knowledge_compiler.md](docs/07_knowledge_compiler.md)：知识编译器
-- [08_project_constitution.md](docs/08_project_constitution.md)：项目宪法
-- [09_novel_workspace.md](docs/09_novel_workspace.md)：单本小说项目结构
-- [10_claude_code_execution.md](docs/10_claude_code_execution.md)：Claude Code 执行系统
-- [11_writing_pipeline.md](docs/11_writing_pipeline.md)：章节生产线
-- [12_review_system.md](docs/12_review_system.md)：审稿系统
-- [13_feedback_control.md](docs/13_feedback_control.md)：评论反馈控制
-- [14_multi_project_scheduler.md](docs/14_multi_project_scheduler.md)：多项目调度
-- [15_model_routing.md](docs/15_model_routing.md)：模型路由策略
-- [16_risk_control.md](docs/16_risk_control.md)：风险控制
-- [17_mvp_roadmap.md](docs/17_mvp_roadmap.md)：MVP 路线图
-- [18_templates.md](docs/18_templates.md)：核心模板
-- [docs/skills/README.md](docs/skills/README.md)：Skills 能力体系
-- [docs/skills/agent-skill-map.md](docs/skills/agent-skill-map.md)：Agent 与 Skill 映射
-- [docs/architecture/skills-system.md](docs/architecture/skills-system.md)：Skills 架构说明
-- [docs/ai-workflow/skill-usage.md](docs/ai-workflow/skill-usage.md)：Skill 使用流程
+- Extract structure, rhythm, hooks, conflict mechanics, emotional curves, and commercial logic from reference works.
+- Do not copy original expression, character combinations, settings, or plot sequences from copyrighted works.
+- Keep raw sources, decomposition reports, generated assets, and final drafts in separate directories.
+- Use deterministic mock adapters for tests; real model adapters are pluggable and deferred.
 
-## 最高原则
+## Quick Start
 
-1. 先判断读者为什么想看，再做世界观。
-2. 多学科知识只解决可信度，不替代爽点。
-3. 哲学只做方向轴，不写成说教。
-4. 通用知识不能直接进入正文，必须先编译成项目知识包。
-5. 每本小说必须有独立的项目宪法。
-6. 评论可以影响局部节奏，但不能突破项目宪法。
-
-## 当前阶段
-
-当前仓库处于 V1 文档与文件项目制阶段，目标是先跑通：
-
-```text
-创意输入 → 读者吸引力 Gate → 项目差异化 Gate → 知识编译器 → 项目宪法 → Claude Code 接管 → 前 10 章细纲 → 前 3 章正文 → 审稿 → 反馈模拟
+```bash
+make test
+make validate
+make demo
+./novel-forge --help
 ```
+
+## Core Commands
+
+```bash
+./novel-forge init
+./novel-forge ingest examples/sample_inputs/sample_novel.txt
+./novel-forge clean --input data/raw/<file>.json
+./novel-forge decompose --input data/cleaned/<file>.json
+./novel-forge extract-knowledge --input data/decompositions/<file>.json
+./novel-forge build-materials
+./novel-forge generate-topic
+./novel-forge generate-world
+./novel-forge generate-characters
+./novel-forge generate-outline
+./novel-forge generate-chapter-plan
+./novel-forge draft
+./novel-forge review --input data/drafts/<file>.json
+./novel-forge revise --input data/reviews/<file>.json
+./novel-forge import-feedback examples/sample_inputs/sample_feedback.csv
+./novel-forge analyze-feedback
+./novel-forge run-pipeline --sample
+./novel-forge status
+./novel-forge validate
+```
+
+## Current Implementation Scope
+
+V5 Phase 1 uses Python standard library, dataclass schemas, local JSON storage, a deterministic mock model adapter, and `unittest` tests. This keeps the project runnable without installing external dependencies. Pytest/Pydantic can be introduced later by ADR once dependency installation is allowed.

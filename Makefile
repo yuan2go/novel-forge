@@ -1,18 +1,22 @@
-.PHONY: help check test init-sample
-
 PYTHON ?= python3
+PYTHONPATH := src
+
+.PHONY: test lint validate demo help
 
 help:
-	@echo "NovelForge commands:"
-	@echo "  make check       Check docs/templates/project skeleton"
-	@echo "  make test        Run unit tests"
-	@echo "  make init-sample Create a sample novel project in dry-run compatible mode"
-
-check:
-	$(PYTHON) scripts/check_docs_structure.py
+	@echo "make test      - run stdlib unittest suite"
+	@echo "make lint      - compile Python sources"
+	@echo "make validate  - validate V5 structure and JSON assets"
+	@echo "make demo      - run sample end-to-end pipeline"
 
 test:
-	$(PYTHON) -m unittest discover -s tests -p 'test_*.py'
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m unittest discover -s tests -p 'test_*.py'
 
-init-sample:
-	$(PYTHON) scripts/init_novel_project.py --project-id project_sample --title "示例项目" --genre "都市悬疑" --force
+lint:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m compileall -q src tests
+
+validate:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli validate --root .
+
+demo:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli run-pipeline --sample --root .

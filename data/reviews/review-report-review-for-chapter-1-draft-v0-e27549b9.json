@@ -1,0 +1,60 @@
+{
+  "id": "review-report-review-for-chapter-1-draft-v0-e27549b9",
+  "type": "review_report",
+  "title": "Review for Chapter 1 draft v0",
+  "name": "Review for Chapter 1 draft v0",
+  "source": "draft-chapter-chapter-1-draft-v0-609291a3",
+  "tags": [
+    "review",
+    "quality"
+  ],
+  "created_at": "2026-06-24T13:44:53+00:00",
+  "updated_at": "2026-06-24T13:44:53+00:00",
+  "version": "0.1.0",
+  "content": {
+    "rubric": [
+      "structure_integrity",
+      "causal_chain",
+      "character_motivation_chain",
+      "conflict_strength",
+      "rhythm_density",
+      "payoff_density",
+      "emotion_curve",
+      "chapter_hook",
+      "foreshadowing_setup",
+      "foreshadowing_recovery",
+      "world_consistency",
+      "character_consistency",
+      "style_consistency",
+      "commercial_readability",
+      "originality_and_copyright_boundary",
+      "reader_feedback_fit"
+    ],
+    "summary": "mock review completed"
+  },
+  "metadata": {},
+  "references": [
+    "draft-chapter-chapter-1-draft-v0-609291a3"
+  ],
+  "score": 72.0,
+  "strengths": [
+    "clear forward motion",
+    "visible chapter hook"
+  ],
+  "weaknesses": [
+    "mock draft needs richer sensory detail"
+  ],
+  "issues": [
+    {
+      "dimension": "originality_boundary",
+      "severity": "medium",
+      "message": "Confirm that all reference-derived patterns stay abstract."
+    }
+  ],
+  "risk_level": "medium",
+  "revision_suggestions": [
+    "increase causal links between decision and consequence",
+    "add one concrete sensory beat before the hook"
+  ],
+  "next_action": "revise"
+}

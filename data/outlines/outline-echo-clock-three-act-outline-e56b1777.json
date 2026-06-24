@@ -1,0 +1,37 @@
+{
+  "id": "outline-echo-clock-three-act-outline-e56b1777",
+  "type": "outline",
+  "title": "Echo Clock three-act outline",
+  "name": "Echo Clock three-act outline",
+  "source": "character-card-lin-qiao-character-card-dd74d4ae",
+  "tags": [
+    "outline",
+    "three-act"
+  ],
+  "created_at": "2026-06-24T13:44:53+00:00",
+  "updated_at": "2026-06-24T13:44:53+00:00",
+  "version": "0.1.0",
+  "content": {
+    "acts": [
+      {
+        "act": 1,
+        "goal": "discover the clock signal pattern",
+        "turn": "first clue implicates the archive"
+      },
+      {
+        "act": 2,
+        "goal": "trace the maintainer network",
+        "turn": "ally is exposed as compromised"
+      },
+      {
+        "act": 3,
+        "goal": "force a public reveal",
+        "turn": "protagonist must sacrifice neutrality"
+      }
+    ]
+  },
+  "metadata": {},
+  "references": [
+    "character-card-lin-qiao-character-card-dd74d4ae"
+  ]
+}

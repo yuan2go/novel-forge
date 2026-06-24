@@ -1,48 +1,11 @@
-# Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
 .pytest_cache/
-.ruff_cache/
 .mypy_cache/
-.coverage
-htmlcov/
-
-# Virtual environments
+.ruff_cache/
 .venv/
-venv/
-env/
-ENV/
-
-# Local config and secrets
-.env
-.env.*
-!.env.example
-*.key
-*.pem
-secrets/
-
-# OS / editor
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# NovelForge generated runtime data
-04_novel_projects/*/exports/
-04_novel_projects/*/.runtime/
-04_novel_projects/*/.cache/
-04_novel_projects/*/.snapshots/
-04_novel_projects/*/.locks/
-
-# Logs
-*.log
-logs/
-
-# Build artifacts
-build/
 dist/
+build/
 *.egg-info/
+.env
+.DS_Store
