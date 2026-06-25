@@ -420,6 +420,16 @@ type HandoffOutputValidation = {
   valid: boolean;
   errors: string[];
   warnings: string[];
+  semantic_review?: {
+    enabled?: boolean;
+    ok?: boolean;
+    score?: number;
+    minimum_score?: number;
+    provider?: string;
+    model?: string;
+    summary?: string;
+    error?: string;
+  };
   handoff_path: string;
   handoff_id: string;
   expected_output_type: string;
@@ -427,6 +437,29 @@ type HandoffOutputValidation = {
   output_path: string;
   output_id: string;
   actual_output_type: string;
+};
+
+type QdrantSearchResult = {
+  backend: string;
+  query: string;
+  count: number;
+  results: Array<{
+    rank: number;
+    path: string;
+    type?: string;
+    title?: string;
+    score?: number;
+    preview?: string;
+    explanation?: { reason?: string; score?: number; backend?: string };
+  }>;
+};
+
+type MinioStatus = {
+  configured: boolean;
+  available?: boolean;
+  bucket: string;
+  error?: string;
+  objects: Array<{ category: string; path: string; object_name: string; exists: boolean; size: number; etag: string; error: string }>;
 };
 
 type HandoffRow = {
@@ -678,8 +711,13 @@ export default function AdminPage() {
   const [taskStatusFilter, setTaskStatusFilter] = useState("");
   const [taskTypeFilter, setTaskTypeFilter] = useState("");
   const [taskStepFilter, setTaskStepFilter] = useState("");
+  const [taskDateFrom, setTaskDateFrom] = useState("");
+  const [taskDateTo, setTaskDateTo] = useState("");
   const [taskOffset, setTaskOffset] = useState(0);
   const [restorePath, setRestorePath] = useState("");
+  const [qdrantQuery, setQdrantQuery] = useState("");
+  const [qdrantResult, setQdrantResult] = useState<QdrantSearchResult | null>(null);
+  const [minioStatus, setMinioStatus] = useState<MinioStatus | null>(null);
   const [handoffInput, setHandoffInput] = useState("");
   const [handoffGenre, setHandoffGenre] = useState("");
   const [handoffReader, setHandoffReader] = useState("");
@@ -710,7 +748,7 @@ export default function AdminPage() {
 
   async function loadAll(
     projectOverride?: string,
-    taskOverride?: { offset?: number; status?: string; taskType?: string; step?: string }
+    taskOverride?: { offset?: number; status?: string; taskType?: string; step?: string; dateFrom?: string; dateTo?: string }
   ) {
     setError("");
     try {
@@ -730,11 +768,15 @@ export default function AdminPage() {
       const effectiveTaskStatus = taskOverride?.status ?? taskStatusFilter;
       const effectiveTaskType = taskOverride?.taskType ?? taskTypeFilter;
       const effectiveTaskStep = taskOverride?.step ?? taskStepFilter;
+      const effectiveDateFrom = taskOverride?.dateFrom ?? taskDateFrom;
+      const effectiveDateTo = taskOverride?.dateTo ?? taskDateTo;
       const taskParams = new URLSearchParams({ limit: "80", offset: String(effectiveTaskOffset) });
       if (nextProjectId) taskParams.set("project_id", nextProjectId);
       if (effectiveTaskStatus) taskParams.set("status", effectiveTaskStatus);
       if (effectiveTaskType) taskParams.set("task_type", effectiveTaskType);
       if (effectiveTaskStep) taskParams.set("step", effectiveTaskStep);
+      if (effectiveDateFrom) taskParams.set("date_from", effectiveDateFrom);
+      if (effectiveDateTo) taskParams.set("date_to", effectiveDateTo);
       const taskPath = `/product/tasks?${taskParams.toString()}`;
       const assetPath = nextProjectId
         ? `/product/projects/${encodeURIComponent(nextProjectId)}/assets?limit=80`
@@ -902,6 +944,8 @@ export default function AdminPage() {
     if (taskStatusFilter) params.set("status", taskStatusFilter);
     if (taskTypeFilter) params.set("task_type", taskTypeFilter);
     if (taskStepFilter) params.set("step", taskStepFilter);
+    if (taskDateFrom) params.set("date_from", taskDateFrom);
+    if (taskDateTo) params.set("date_to", taskDateTo);
     const events = new EventSource(`${API_BASE}/product/tasks/events?${params.toString()}`);
     events.onmessage = (event) => {
       try {
@@ -912,7 +956,7 @@ export default function AdminPage() {
     };
     events.onerror = () => events.close();
     return () => events.close();
-  }, [selectedProjectId, taskOffset, taskStatusFilter, taskTypeFilter, taskStepFilter]);
+  }, [selectedProjectId, taskOffset, taskStatusFilter, taskTypeFilter, taskStepFilter, taskDateFrom, taskDateTo]);
 
   return (
     <main className="shell">
@@ -1080,6 +1124,10 @@ export default function AdminPage() {
           backups={backups}
           restorePath={restorePath}
           setRestorePath={setRestorePath}
+          qdrantQuery={qdrantQuery}
+          setQdrantQuery={setQdrantQuery}
+          qdrantResult={qdrantResult}
+          minioStatus={minioStatus}
           onCreateBackup={() =>
             runAction(
               () => postJson("/product/system/backups", {}),
@@ -1091,6 +1139,42 @@ export default function AdminPage() {
               () => postJson("/product/system/restore", { backup_path: restorePath, confirm: true }),
               "local backup restored"
             )
+          }
+          onArchiveEvents={() =>
+            runAction(
+              () => postJson("/product/system/events/archive", { keep_latest: 500, confirm: true }),
+              "task events archived"
+            )
+          }
+          onQdrantIndex={() =>
+            runAction(
+              () => postJson("/product/qdrant/index", { batch_size: 32 }),
+              "qdrant index rebuilt"
+            )
+          }
+          onQdrantSearch={() =>
+            runAction(async () => {
+              const result = await postJson("/product/qdrant/search", {
+                query: qdrantQuery,
+                project_id: selectedProjectId || null,
+                limit: 12
+              }) as QdrantSearchResult;
+              setQdrantResult(result);
+              return result;
+            }, "qdrant search")
+          }
+          onMinioSync={() =>
+            runAction(
+              () => postJson("/product/minio/sync", {}),
+              "minio synced"
+            )
+          }
+          onRefreshMinio={() =>
+            runAction(async () => {
+              const status = await fetchJson<MinioStatus>("/product/minio/objects?limit=40");
+              setMinioStatus(status);
+              return status;
+            }, "minio status")
           }
           onOpenAsset={selectAsset}
           busy={busy}
@@ -1110,6 +1194,10 @@ export default function AdminPage() {
           setTypeFilter={setTaskTypeFilter}
           stepFilter={taskStepFilter}
           setStepFilter={setTaskStepFilter}
+          dateFrom={taskDateFrom}
+          setDateFrom={setTaskDateFrom}
+          dateTo={taskDateTo}
+          setDateTo={setTaskDateTo}
           offset={taskOffset}
           setOffset={setTaskOffset}
           onApplyFilters={(override) => loadAll(undefined, override)}
@@ -1212,6 +1300,17 @@ export default function AdminPage() {
               setAssetDetail(updated);
               return updated;
             }, "asset content saved")
+          }
+          onSaveTyped={(path, fields) =>
+            runAction(async () => {
+              const updated = await fetchJson<AssetDetail>("/product/assets/typed", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path, fields })
+              });
+              setAssetDetail(updated);
+              return updated;
+            }, "typed asset saved")
           }
           onSaveCollection={() =>
             runAction(async () => {
@@ -1561,8 +1660,17 @@ function HealthPanel(props: {
   backups: BackupRow[];
   restorePath: string;
   setRestorePath: (value: string) => void;
+  qdrantQuery: string;
+  setQdrantQuery: (value: string) => void;
+  qdrantResult: QdrantSearchResult | null;
+  minioStatus: MinioStatus | null;
   onCreateBackup: () => void;
   onRestoreBackup: () => void;
+  onArchiveEvents: () => void;
+  onQdrantIndex: () => void;
+  onQdrantSearch: () => void;
+  onMinioSync: () => void;
+  onRefreshMinio: () => void;
   onOpenAsset: (path: string) => void;
   busy: boolean;
 }) {
@@ -1595,12 +1703,42 @@ function HealthPanel(props: {
             <span className={props.report?.embedding.ok ? "badge ok" : "badge warn"}>
               {props.report?.embedding.ok ? (props.report?.embedding.model ?? "ready") : (props.report?.embedding.missing_env_vars?.join(", ") || props.report?.embedding.error || "not ready")}
             </span>
+            <button className="secondaryButton tableButton" disabled={props.busy} onClick={props.onQdrantIndex}>
+              {zh ? "重建索引" : "Reindex"}
+            </button>
           </article>
           <article className="serviceCard">
-            <div className="serviceTitle"><ListChecks size={17} /><span>{zh ? "并发" : "Concurrency"}</span></div>
-            <span className="badge muted">{props.report?.task_control.max_concurrent_steps ?? 1}</span>
+            <div className="serviceTitle"><UploadCloud size={17} /><span>MinIO</span></div>
+            <span className={props.minioStatus?.available ? "badge ok" : props.minioStatus?.configured ? "badge warn" : "badge muted"}>
+              {props.minioStatus?.available ? props.minioStatus.bucket : props.minioStatus?.configured ? "offline" : "not checked"}
+            </span>
+            <button className="secondaryButton tableButton" disabled={props.busy} onClick={props.onMinioSync}>
+              {zh ? "同步" : "Sync"}
+            </button>
           </article>
         </div>
+        <div className="formGrid wide">
+          <input value={props.qdrantQuery} onChange={(event) => props.setQdrantQuery(event.target.value)} aria-label="Qdrant query" placeholder={zh ? "向量检索查询" : "Vector search query"} />
+          <button className="secondaryButton" disabled={props.busy || !props.qdrantQuery.trim()} onClick={props.onQdrantSearch}>
+            <Search size={18} />
+            {zh ? "检索" : "Search"}
+          </button>
+          <button className="secondaryButton" disabled={props.busy} onClick={props.onRefreshMinio}>
+            <RefreshCw size={18} />
+            {zh ? "刷新对象" : "Refresh Objects"}
+          </button>
+        </div>
+        <DataTable
+          emptyText={zh ? "暂无检索结果" : "No vector hits"}
+          columns={zh ? ["排名", "分数", "标题", "解释", "资产"] : ["Rank", "Score", "Title", "Explanation", "Asset"]}
+          rows={(props.qdrantResult?.results ?? []).map((hit) => [
+            String(hit.rank),
+            String(hit.score ?? ""),
+            hit.title || hit.path,
+            hit.explanation?.reason || "",
+            <button className="linkButton" onClick={() => props.onOpenAsset(hit.path)} key={hit.path}>{hit.path}</button>
+          ])}
+        />
         <h3>{zh ? "最近失败" : "Recent Failures"}</h3>
         <DataTable
           emptyText={zh ? "无失败" : "No failures"}
@@ -1625,6 +1763,10 @@ function HealthPanel(props: {
             <RotateCcw size={18} />
             {zh ? "恢复" : "Restore"}
           </button>
+          <button className="secondaryButton" disabled={props.busy} onClick={props.onArchiveEvents}>
+            <Archive size={18} />
+            {zh ? "归档旧事件" : "Archive Events"}
+          </button>
         </div>
         <DataTable
           emptyText={zh ? "暂无备份" : "No backups"}
@@ -1644,6 +1786,18 @@ function HealthPanel(props: {
             String(point.queue_total),
             String(point.active_count),
             String(point.reserved_count)
+          ])}
+        />
+        <h3>{zh ? "MinIO 对象" : "MinIO Objects"}</h3>
+        <DataTable
+          emptyText={zh ? "暂无对象状态" : "No object status"}
+          columns={zh ? ["分类", "状态", "大小", "对象", "资产"] : ["Category", "Status", "Size", "Object", "Asset"]}
+          rows={(props.minioStatus?.objects ?? []).map((object) => [
+            object.category,
+            <span className={object.exists ? "badge ok" : "badge muted"} key={`exists-${object.path}`}>{object.exists ? "synced" : "local"}</span>,
+            String(object.size || ""),
+            <span className="pathText" key={`object-${object.path}`}>{object.object_name}</span>,
+            <button className="linkButton" onClick={() => props.onOpenAsset(object.path)} key={object.path}>{object.path}</button>
           ])}
         />
       </div>
@@ -1891,6 +2045,10 @@ function TasksPanel({
   setTypeFilter,
   stepFilter,
   setStepFilter,
+  dateFrom,
+  setDateFrom,
+  dateTo,
+  setDateTo,
   offset,
   setOffset,
   onApplyFilters,
@@ -1914,9 +2072,13 @@ function TasksPanel({
   setTypeFilter: (value: string) => void;
   stepFilter: string;
   setStepFilter: (value: string) => void;
+  dateFrom: string;
+  setDateFrom: (value: string) => void;
+  dateTo: string;
+  setDateTo: (value: string) => void;
   offset: number;
   setOffset: (value: number) => void;
-  onApplyFilters: (override?: { offset?: number; status?: string; taskType?: string; step?: string }) => void;
+  onApplyFilters: (override?: { offset?: number; status?: string; taskType?: string; step?: string; dateFrom?: string; dateTo?: string }) => void;
   onOpenAsset: (path: string) => void;
   onSaveControl: (patch: Record<string, number>) => void;
   onCancelTask: (taskId: string) => void;
@@ -1991,15 +2153,30 @@ function TasksPanel({
             <option key={step} value={step}>{step}</option>
           ))}
         </select>
+        <input value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} aria-label={zh ? "开始时间" : "Date from"} placeholder={zh ? "开始时间 ISO" : "Date from ISO"} />
+        <input value={dateTo} onChange={(event) => setDateTo(event.target.value)} aria-label={zh ? "结束时间" : "Date to"} placeholder={zh ? "结束时间 ISO" : "Date to ISO"} />
         <button className="secondaryButton" disabled={busy} onClick={() => { setOffset(0); onApplyFilters({ offset: 0 }); }}>
           <Search size={18} />
           {zh ? "筛选" : "Filter"}
         </button>
-        <button className="secondaryButton" disabled={busy} onClick={() => { setStatusFilter(""); setTypeFilter(""); setStepFilter(""); setOffset(0); onApplyFilters({ offset: 0, status: "", taskType: "", step: "" }); }}>
+        <button className="secondaryButton" disabled={busy} onClick={() => { setStatusFilter(""); setTypeFilter(""); setStepFilter(""); setDateFrom(""); setDateTo(""); setOffset(0); onApplyFilters({ offset: 0, status: "", taskType: "", step: "", dateFrom: "", dateTo: "" }); }}>
           <RotateCcw size={18} />
           {zh ? "清空" : "Reset"}
         </button>
       </div>
+      <h3>{zh ? "队列压力趋势" : "Queue Pressure Trend"}</h3>
+      <DataTable
+        emptyText={zh ? "暂无趋势" : "No trend"}
+        columns={zh ? ["时间", "健康", "排队", "活跃", "保留", "计划"] : ["Time", "Healthy", "Queued", "Active", "Reserved", "Scheduled"]}
+        rows={(taskControl?.queue_trend ?? []).slice(-10).reverse().map((point) => [
+          point.recorded_at,
+          <span className={point.healthy ? "badge ok" : "badge warn"} key={point.recorded_at}>{point.healthy ? "yes" : "no"}</span>,
+          String(point.queue_total),
+          String(point.active_count),
+          String(point.reserved_count),
+          String(point.scheduled_count)
+        ])}
+      />
       <h3>{zh ? "运行进度" : "Run Progress"}</h3>
       <DataTable
         emptyText={zh ? "空" : "Empty"}
@@ -2183,6 +2360,7 @@ function AssetsPanel(props: {
   onSelect: (path: string) => void;
   onSave: (path: string, patch: Record<string, unknown>) => void;
   onSaveContent: (path: string, content: Record<string, unknown>) => void;
+  onSaveTyped: (path: string, fields: Record<string, unknown>) => void;
   onSaveCollection: () => void;
 }) {
   const zh = props.language === "zh";
@@ -2234,6 +2412,7 @@ function AssetsPanel(props: {
         onSelect={props.onSelect}
         onSave={props.onSave}
         onSaveContent={props.onSaveContent}
+        onSaveTyped={props.onSaveTyped}
       />
     </section>
   );
@@ -2246,7 +2425,8 @@ function AssetDetailPanel({
   graph,
   onSelect,
   onSave,
-  onSaveContent
+  onSaveContent,
+  onSaveTyped
 }: {
   language: Language;
   detail: AssetDetail | null;
@@ -2255,6 +2435,7 @@ function AssetDetailPanel({
   onSelect: (path: string) => void;
   onSave: (path: string, patch: Record<string, unknown>) => void;
   onSaveContent: (path: string, content: Record<string, unknown>) => void;
+  onSaveTyped: (path: string, fields: Record<string, unknown>) => void;
 }) {
   const zh = language === "zh";
   const [title, setTitle] = useState("");
@@ -2349,7 +2530,7 @@ function AssetDetailPanel({
           {detail.summary.type === "claude_code_handoff" ? (
             <HandoffAssetWorkbench language={language} detail={detail} onSelect={onSelect} />
           ) : (
-            <TypedAssetWorkbench language={language} detail={detail} onSelect={onSelect} />
+            <TypedAssetWorkbench language={language} detail={detail} onSelect={onSelect} onSaveTyped={onSaveTyped} />
           )}
           <div className="contentEditor">
             <div className="sectionHeaderLine">
@@ -2405,17 +2586,24 @@ function AssetDetailPanel({
 function TypedAssetWorkbench({
   language,
   detail,
-  onSelect
+  onSelect,
+  onSaveTyped
 }: {
   language: Language;
   detail: AssetDetail;
   onSelect: (path: string) => void;
+  onSaveTyped: (path: string, fields: Record<string, unknown>) => void;
 }) {
   const zh = language === "zh";
   const asset = detail.asset;
   const content = asset.content && typeof asset.content === "object" ? (asset.content as Record<string, unknown>) : {};
   const metadata = asset.metadata && typeof asset.metadata === "object" ? (asset.metadata as Record<string, unknown>) : {};
   const type = String(asset.type ?? "");
+  const editFields = typedEditableFields(type, content, metadata, asset, zh);
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
+  useEffect(() => {
+    setEditValues(Object.fromEntries(editFields.map((field) => [field.key, field.value])));
+  }, [detail.path]);
   if (!["decomposition_report", "knowledge_card", "material_card", "draft_chapter", "review_report", "revision_plan", "batch_task_item"].includes(type)) {
     return null;
   }
@@ -2425,6 +2613,42 @@ function TypedAssetWorkbench({
         <h3>{zh ? "资产工作台" : "Asset Workbench"}</h3>
         <span className="statPill">{type}</span>
       </div>
+      {editFields.length ? (
+        <div className="typedEditPanel">
+          <div className="sectionHeaderLine">
+            <h3>{zh ? "类型化编辑" : "Typed Editing"}</h3>
+            <button className="secondaryButton tableButton" onClick={() => onSaveTyped(detail.path, typedEditPayload(editFields, editValues))}>
+              <Save size={16} />
+              {zh ? "保存字段" : "Save Fields"}
+            </button>
+          </div>
+          <div className="typedEditGrid">
+            {editFields.map((field) => (
+              <label key={field.key} className="typedEditField">
+                <span>{field.label}</span>
+                {field.input === "checkbox" ? (
+                  <input
+                    type="checkbox"
+                    checked={editValues[field.key] === "true"}
+                    onChange={(event) => setEditValues({ ...editValues, [field.key]: event.target.checked ? "true" : "false" })}
+                  />
+                ) : field.input === "number" ? (
+                  <input
+                    type="number"
+                    value={editValues[field.key] ?? ""}
+                    onChange={(event) => setEditValues({ ...editValues, [field.key]: event.target.value })}
+                  />
+                ) : (
+                  <textarea
+                    value={editValues[field.key] ?? ""}
+                    onChange={(event) => setEditValues({ ...editValues, [field.key]: event.target.value })}
+                  />
+                )}
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : null}
       {type === "decomposition_report" ? (
         <div className="typedGrid">
           <TypedBlock title={zh ? "摘要" : "Summary"} value={String(content.summary ?? "")} />
@@ -2519,6 +2743,106 @@ function TypedList({ title, values }: { title: string; values: unknown }) {
   );
 }
 
+type TypedEditField = {
+  key: string;
+  label: string;
+  value: string;
+  input: "textarea" | "number" | "checkbox";
+};
+
+function typedEditableFields(
+  type: string,
+  content: Record<string, unknown>,
+  metadata: Record<string, unknown>,
+  asset: Record<string, unknown>,
+  zh: boolean
+): TypedEditField[] {
+  const label = (cn: string, en: string) => (zh ? cn : en);
+  const field = (key: string, title: string, value: unknown, input: TypedEditField["input"] = "textarea"): TypedEditField => ({
+    key,
+    label: title,
+    value: typedFieldDisplayValue(value),
+    input
+  });
+  if (type === "decomposition_report") {
+    return [
+      field("summary", label("摘要", "Summary"), content.summary),
+      field("commercial_patterns", label("商业模式", "Commercial Patterns"), content.commercial_patterns),
+      field("narrative_patterns", label("叙事模式", "Narrative Patterns"), content.narrative_patterns),
+      field("character_mechanisms", label("人物机制", "Character Mechanisms"), content.character_mechanisms),
+      field("conflict_patterns", label("冲突模式", "Conflict Patterns"), content.conflict_patterns),
+      field("emotion_curve", label("情绪曲线", "Emotion Curve"), content.emotion_curve),
+      field("hook_patterns", label("钩子模式", "Hook Patterns"), content.hook_patterns)
+    ];
+  }
+  if (type === "knowledge_card") {
+    return [
+      field("principles", label("原则", "Principles"), content.principles),
+      field("constraints", label("约束", "Constraints"), content.constraints),
+      field("review_checks", label("审稿检查", "Review Checks"), content.review_checks),
+      field("license_review_status", label("许可审核", "License Review"), metadata.license_review_status),
+      field("raw_text_used", label("使用原文", "Raw Text Used"), metadata.raw_text_used ? "true" : "false", "checkbox")
+    ];
+  }
+  if (type === "material_card") {
+    return [
+      field("usable_patterns", label("可用模式", "Usable Patterns"), content.usable_patterns),
+      field("do_not_copy", label("禁止复制", "Do Not Copy"), content.do_not_copy),
+      field("use_cases", label("适用场景", "Use Cases"), content.use_cases)
+    ];
+  }
+  if (type === "draft_chapter") {
+    return [
+      field("chapter", label("章节", "Chapter"), content.chapter, "number"),
+      field("text", label("正文", "Text"), content.text),
+      field("draft_status", label("草稿状态", "Draft Status"), metadata.draft_status)
+    ];
+  }
+  if (type === "review_report") {
+    return [
+      field("summary", label("摘要", "Summary"), content.summary),
+      field("score", label("评分", "Score"), asset.score, "number"),
+      field("risk_level", label("风险", "Risk"), asset.risk_level),
+      field("strengths", label("优点", "Strengths"), asset.strengths),
+      field("weaknesses", label("问题", "Weaknesses"), asset.weaknesses),
+      field("revision_suggestions", label("修订建议", "Revision Suggestions"), asset.revision_suggestions),
+      field("next_action", label("下一步", "Next Action"), asset.next_action)
+    ];
+  }
+  if (type === "revision_plan") {
+    return [
+      field("steps", label("步骤", "Steps"), content.steps),
+      field("target_score", label("目标评分", "Target Score"), content.target_score, "number"),
+      field("must_preserve", label("必须保留", "Must Preserve"), content.must_preserve)
+    ];
+  }
+  return [];
+}
+
+function typedFieldDisplayValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.map(String).join("\n");
+  }
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+  return value === undefined || value === null ? "" : String(value);
+}
+
+function typedEditPayload(fields: TypedEditField[], values: Record<string, string>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  for (const field of fields) {
+    if (field.input === "checkbox") {
+      payload[field.key] = values[field.key] === "true";
+    } else if (field.input === "number") {
+      payload[field.key] = values[field.key] === "" ? 0 : Number(values[field.key]);
+    } else {
+      payload[field.key] = values[field.key] ?? "";
+    }
+  }
+  return payload;
+}
+
 function HandoffAssetWorkbench({
   language,
   detail,
@@ -2578,7 +2902,8 @@ function HandoffAssetWorkbench({
       const result = await postJson(path, {
         handoff_path: detail.path,
         output_path: outputPath,
-        mark_completed: true
+        mark_completed: true,
+        semantic_review: true
       });
       const nextValidation = (bind ? (result as { validation: HandoffOutputValidation }).validation : result) as HandoffOutputValidation;
       setValidation(nextValidation);
@@ -2738,8 +3063,10 @@ function HandoffAssetWorkbench({
           {validation ? (
             <span>
               {validation.expected_output_type} / {validation.actual_output_type || "-"}
+              {validation.semantic_review?.enabled === false ? "" : ` | review ${validation.semantic_review?.score ?? "-"} / ${validation.semantic_review?.minimum_score ?? "-"}`}
               {validation.errors.length ? `: ${validation.errors.join("; ")}` : ""}
               {validation.warnings.length ? ` (${validation.warnings.join("; ")})` : ""}
+              {validation.semantic_review?.error ? ` provider: ${validation.semantic_review.error}` : ""}
             </span>
           ) : null}
         </div>

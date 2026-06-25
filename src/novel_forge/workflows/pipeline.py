@@ -341,6 +341,8 @@ def qdrant_search(
     category: str | None = None,
     asset_type: str | None = None,
     tags: list[str] | None = None,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
     limit: int = 50,
 ) -> list[dict]:
     return qdrant_search_service(
@@ -349,6 +351,8 @@ def qdrant_search(
         category=category,
         asset_type=asset_type,
         tags=tags,
+        project_id=project_id,
+        workspace_path=workspace_path,
         limit=limit,
     )
 

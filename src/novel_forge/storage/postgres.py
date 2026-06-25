@@ -10,7 +10,15 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.storage.local import LocalStorage
 
+POSTGRES_SCHEMA_VERSION = "20260625_0001_initial_industrial_schema"
+
 POSTGRES_SCHEMA_STATEMENTS = [
+    """
+    CREATE TABLE IF NOT EXISTS nf_schema_migrations (
+        migration_id TEXT PRIMARY KEY,
+        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+    """,
     """
     CREATE TABLE IF NOT EXISTS nf_assets (
         path TEXT PRIMARY KEY,
@@ -86,6 +94,7 @@ POSTGRES_SCHEMA_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS idx_nf_task_statuses_status ON nf_task_statuses(status)",
     "CREATE INDEX IF NOT EXISTS idx_nf_projects_status ON nf_projects(status)",
     "CREATE INDEX IF NOT EXISTS idx_nf_projects_series ON nf_projects(series_title, book_number)",
+    f"INSERT INTO nf_schema_migrations (migration_id) VALUES ('{POSTGRES_SCHEMA_VERSION}') ON CONFLICT (migration_id) DO NOTHING",
 ]
 
 
@@ -120,6 +129,21 @@ class PostgresAssetStore:
             with connection.cursor() as cursor:
                 for statement in POSTGRES_SCHEMA_STATEMENTS:
                     cursor.execute(statement)
+
+    def migration_status(self) -> dict[str, Any]:
+        self.initialize()
+        with _connect(self.database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT migration_id, applied_at FROM nf_schema_migrations ORDER BY applied_at ASC")
+                rows = cursor.fetchall()
+        applied = [{"migration_id": row[0], "applied_at": str(row[1])} for row in rows]
+        applied_ids = {row["migration_id"] for row in applied}
+        return {
+            "current": POSTGRES_SCHEMA_VERSION,
+            "applied": applied,
+            "ok": POSTGRES_SCHEMA_VERSION in applied_ids,
+            "missing": [] if POSTGRES_SCHEMA_VERSION in applied_ids else [POSTGRES_SCHEMA_VERSION],
+        }
 
     def sync_from_local(self, storage: LocalStorage) -> PostgresSyncResult:
         self.initialize()

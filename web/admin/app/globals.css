@@ -146,7 +146,7 @@ h3 {
 }
 
 .filterGrid {
-  grid-template-columns: repeat(3, minmax(130px, 1fr)) auto auto;
+  grid-template-columns: repeat(5, minmax(120px, 1fr)) auto auto;
   align-items: end;
 }
 
@@ -619,6 +619,33 @@ pre {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.typedEditPanel {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.typedEditGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.typedEditField {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.typedEditField textarea {
+  min-height: 108px;
+  resize: vertical;
 }
 
 .typedBlock {

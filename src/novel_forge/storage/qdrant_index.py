@@ -110,6 +110,8 @@ def qdrant_search_assets(
     category: str | None = None,
     asset_type: str | None = None,
     tags: list[str] | None = None,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
     limit: int = 50,
     adapter: EmbeddingAdapter | None = None,
 ) -> list[dict[str, Any]]:
@@ -121,7 +123,7 @@ def qdrant_search_assets(
     _require_semantic_embedding(adapter)
     client, models = _qdrant_client(settings)
     query_vector = adapter.embed_text(query)
-    query_filter = _build_filter(models, category, asset_type, tags or [])
+    query_filter = _build_filter(models, category, asset_type, tags or [], project_id=project_id, workspace_path=workspace_path)
     hits = _search(client, settings.qdrant_collection, query_vector, query_filter, limit)
     results: list[dict[str, Any]] = []
     for hit in hits:
@@ -135,6 +137,8 @@ def qdrant_search_assets(
                 "title": payload.get("title", ""),
                 "tags": payload.get("tags", []),
                 "source": payload.get("source", ""),
+                "project_id": payload.get("project_id", ""),
+                "workspace_path": payload.get("workspace_path", ""),
                 "score": round(float(getattr(hit, "score", 0.0)), 6),
                 "ranker": "qdrant-vector",
             }
@@ -337,12 +341,23 @@ def _search(client: Any, collection: str, query_vector: list[float], query_filte
     return list(getattr(response, "points", []))
 
 
-def _build_filter(models: Any, category: str | None, asset_type: str | None, tags: list[str]) -> Any:
+def _build_filter(
+    models: Any,
+    category: str | None,
+    asset_type: str | None,
+    tags: list[str],
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+) -> Any:
     conditions = []
     if category:
         conditions.append(models.FieldCondition(key="category", match=models.MatchValue(value=category)))
     if asset_type:
         conditions.append(models.FieldCondition(key="type", match=models.MatchValue(value=asset_type)))
+    if project_id:
+        conditions.append(models.FieldCondition(key="project_id", match=models.MatchValue(value=project_id)))
+    if workspace_path:
+        conditions.append(models.FieldCondition(key="workspace_path", match=models.MatchValue(value=workspace_path)))
     for tag in tags:
         conditions.append(models.FieldCondition(key="tags", match=models.MatchValue(value=tag)))
     if not conditions:
@@ -358,6 +373,8 @@ def _payload(
     search_text: str,
     embedding: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
     return {
         "path": str(path.relative_to(storage.root)),
         "category": category,
@@ -367,6 +384,8 @@ def _payload(
         "tags": [str(tag) for tag in data.get("tags", [])],
         "source": data.get("source", ""),
         "version": data.get("version", ""),
+        "project_id": str(metadata.get("project_id") or content.get("project_id") or ""),
+        "workspace_path": str(metadata.get("workspace_path") or ""),
         "text_preview": search_text[:500],
         "embedding": embedding or {},
     }

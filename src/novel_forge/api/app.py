@@ -159,6 +159,10 @@ def create_app(settings: IndustrialSettings | None = None):
         path: str
         content: dict[str, Any]
 
+    class AssetTypedEditRequest(BaseModel):
+        path: str
+        fields: dict[str, Any]
+
     class DraftSaveRequest(BaseModel):
         draft_path: str
         text: str
@@ -213,6 +217,35 @@ def create_app(settings: IndustrialSettings | None = None):
         mark_completed: bool = True
         workspace_path: str | None = None
         auto_continue_batch: bool = True
+        semantic_review: bool = True
+
+    class QdrantIndexRequest(BaseModel):
+        recreate: bool = False
+        batch_size: int = 32
+        no_resume: bool = False
+        force_reembed: bool = False
+
+    class QdrantSearchRequest(BaseModel):
+        query: str
+        category: str | None = None
+        asset_type: str | None = None
+        project_id: str | None = None
+        workspace_path: str | None = None
+        tags: list[str] = []
+        limit: int = 20
+
+    class MinioSyncRequest(BaseModel):
+        categories: list[str] = []
+
+    class EventArchiveRequest(BaseModel):
+        before: str | None = None
+        keep_latest: int = 500
+        confirm: bool = False
+
+    class PublishExportRequest(BaseModel):
+        export_path: str
+        channel: str = "local"
+        note: str = ""
 
     class HandoffAcceptanceRequest(BaseModel):
         handoff_path: str
@@ -260,6 +293,7 @@ def create_app(settings: IndustrialSettings | None = None):
             "AssetCollectionRequest": AssetCollectionRequest,
             "AssetEditRequest": AssetEditRequest,
             "AssetContentEditRequest": AssetContentEditRequest,
+            "AssetTypedEditRequest": AssetTypedEditRequest,
             "DraftSaveRequest": DraftSaveRequest,
             "DraftExportRequest": DraftExportRequest,
             "ReviewIssueStatusRequest": ReviewIssueStatusRequest,
@@ -271,6 +305,11 @@ def create_app(settings: IndustrialSettings | None = None):
             "HandoffAcceptanceRequest": HandoffAcceptanceRequest,
             "HandoffRetryRequest": HandoffRetryRequest,
             "HandoffFailRequest": HandoffFailRequest,
+            "QdrantIndexRequest": QdrantIndexRequest,
+            "QdrantSearchRequest": QdrantSearchRequest,
+            "MinioSyncRequest": MinioSyncRequest,
+            "EventArchiveRequest": EventArchiveRequest,
+            "PublishExportRequest": PublishExportRequest,
             "ProjectScopeAuditRequest": ProjectScopeAuditRequest,
             "LocalRestoreRequest": LocalRestoreRequest,
         },

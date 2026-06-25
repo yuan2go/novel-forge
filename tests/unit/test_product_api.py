@@ -2,17 +2,20 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.api.product import (
     attach_assets_to_project,
+    archive_task_events,
     asset_detail,
     asset_reference_graph,
     asset_versions_and_diff,
     bind_handoff_output,
     continue_batch_handoff,
     create_local_backup,
+    create_publish_record,
     create_product_deconstruction_handoff,
     create_product_knowledge_handoff,
     create_batch_deconstruct_items,
@@ -32,6 +35,7 @@ from novel_forge.api.product import (
     project_assets,
     project_health_report,
     project_scope_audit,
+    qdrant_search_operation,
     list_batch_items,
     receive_uploads,
     regenerate_batch_handoff,
@@ -55,6 +59,7 @@ from novel_forge.api.product import (
     update_task_control,
     update_asset_content,
     update_asset_metadata,
+    update_typed_asset_fields,
     update_project_config,
     validate_handoff_output,
     void_batch_handoff,
@@ -471,7 +476,10 @@ class ProductApiTests(unittest.TestCase):
 
             self.assertTrue(validation["valid"])
             self.assertEqual(validation["expected_output_type"], "knowledge_card")
+            self.assertIn("semantic_review", validation)
+            self.assertGreaterEqual(validation["semantic_review"]["score"], 70)
             self.assertEqual(bound["handoff"]["asset"]["content"]["status"], "completed")
+            self.assertIn("semantic_review", bound["handoff"]["asset"]["content"]["output_validation"])
             self.assertEqual(bound["handoff"]["asset"]["content"]["bound_outputs"][0]["path"], str(output_path.relative_to(root.resolve())))
             self.assertEqual(bound["handoff"]["asset"]["metadata"]["project_id"], project["project_id"])
             self.assertEqual(bound["handoff"]["asset"]["metadata"]["workspace_path"], project["path"])
@@ -940,6 +948,47 @@ class ProductApiTests(unittest.TestCase):
             self.assertEqual(health["summary"]["failed_task_count"], 1)
             self.assertEqual({task["status"] for task in health["recent_failures"]}, {"failed"})
 
+    def test_task_event_archive_previews_and_confirms(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            raw = storage.write_asset("raw", SourceDocument(title="Archive source", source="a.txt", content={"text": "archive"}))
+            write_task_status(storage, "archive-run-1", "clean", "completed", input_paths=[raw], output_paths=[raw])
+            write_task_status(storage, "archive-run-2", "decompose", "failed", input_paths=[raw], error_message="old failure")
+
+            preview = archive_task_events(tmp, keep_latest=1, confirm=False)
+            archived = archive_task_events(tmp, keep_latest=1, confirm=True)
+
+            self.assertEqual(preview["candidate_count"], 1)
+            self.assertEqual(archived["archived_count"], 1)
+            self.assertTrue((Path(tmp) / archived["archive_path"]).exists())
+            self.assertEqual(len([path for path in storage.list_json("runs") if storage.read_json(path).get("type") == "task_status"]), 1)
+
+    def test_qdrant_search_operation_adds_hit_explanations(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            asset_path = storage.write_asset(
+                "knowledge",
+                KnowledgeCard(
+                    title="Vector knowledge",
+                    source="manual",
+                    tags=["knowledge"],
+                    content={"principles": ["vector hit should explain source asset"]},
+                    metadata={"copyright_boundary": "abstract structure transformed knowledge"},
+                ),
+            )
+            relative = str(asset_path.relative_to(Path(tmp).resolve()))
+            with patch("novel_forge.api.product.pipeline.qdrant_search") as mocked:
+                mocked.return_value = [{"path": relative, "type": "knowledge_card", "score": 0.91}]
+                result = qdrant_search_operation(tmp, "story constraint", project_id="project-a", limit=3)
+
+            self.assertEqual(result["backend"], "qdrant")
+            self.assertEqual(result["count"], 1)
+            self.assertEqual(result["filters"]["project_id"], "project-a")
+            self.assertEqual(mocked.call_args.kwargs["project_id"], "project-a")
+            self.assertEqual(result["results"][0]["explanation"]["backend"], "qdrant")
+            self.assertIn("vector hit", result["results"][0]["preview"])
+
     def test_local_backup_list_and_confirmed_restore(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -1006,6 +1055,37 @@ class ProductApiTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 update_asset_content(storage, str(raw_path), {})
 
+    def test_typed_asset_edit_updates_declared_fields(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            path = storage.write_asset(
+                "knowledge",
+                KnowledgeCard(
+                    title="Editable knowledge",
+                    source="manual",
+                    tags=["knowledge"],
+                    content={"principles": ["old rule"]},
+                    metadata={"copyright_boundary": "abstract structure transformed knowledge"},
+                ),
+            )
+
+            edited = update_typed_asset_fields(
+                storage,
+                str(path),
+                {
+                    "principles": "new rule\nsecond rule",
+                    "license_review_status": "fixture license accepted",
+                    "raw_text_used": False,
+                },
+            )
+
+            self.assertEqual(edited["asset"]["content"]["principles"], ["new rule", "second rule"])
+            self.assertEqual(edited["asset"]["metadata"]["license_review_status"], "fixture license accepted")
+            self.assertFalse(edited["asset"]["metadata"]["raw_text_used"])
+            self.assertTrue((Path(tmp) / "data" / "runs" / "audit-log.jsonl").exists())
+            with self.assertRaises(ValueError):
+                update_typed_asset_fields(storage, str(path), {"unknown": "blocked"})
+
     def test_asset_versions_graph_and_collection(self):
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp) / "source.txt"
@@ -1067,10 +1147,14 @@ class ProductApiTests(unittest.TestCase):
                 },
             )
             exported = export_draft(tmp, saved["draft_path"], "markdown")
+            published = create_publish_record(tmp, exported["path"], channel="local", note="fixture release")
 
             self.assertTrue(saved["draft_path"].startswith("data/drafts/"))
             self.assertEqual(saved["editor"]["version_index"], 1)
             self.assertTrue((root / exported["path"]).exists())
+            self.assertTrue(published["record_path"].startswith("data/runs/"))
+            self.assertEqual(published["record"]["content"]["channel"], "local")
+            self.assertEqual(len(published["record"]["content"]["sha256"]), 64)
 
     def test_review_issue_status_and_revision_apply_gate(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import difflib
+import gzip
 import hashlib
 import html
 import json
@@ -14,6 +15,8 @@ from typing import Any
 
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.evaluation.quality import QUALITY_DIMENSIONS
+from novel_forge.model_adapters import model_from_env, validate_model_output
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.ingestion.service import discover_source_files
 from novel_forge.modules.source_intake import (
@@ -24,7 +27,7 @@ from novel_forge.modules.source_intake import (
 from novel_forge.agents import enforce_agent_action
 from novel_forge.api.health import assemble_project_health_report
 from novel_forge.schemas import AssetCollection, BatchTaskItem, DraftChapter, ProjectWorkspaceState, validate_common_fields
-from novel_forge.storage.object_store import MinioObjectStore
+from novel_forge.storage.object_store import MinioObjectStore, object_name_for_path
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.postgres import PostgresAssetStore
 from novel_forge.workflows import pipeline
@@ -65,8 +68,10 @@ BATCH_ANALYSIS_MODES = {"auto", "claude_code"}
 HANDOFF_ACCEPTANCE_STATUSES = {"pending", "accepted", "needs_fix", "rejected"}
 TASK_CONTROL_RELATIVE_PATH = Path("data/indexes/task-control.json")
 QUEUE_PRESSURE_RELATIVE_PATH = Path("data/indexes/queue-pressure.json")
+AUDIT_LOG_RELATIVE_PATH = Path("data/runs/audit-log.jsonl")
 DEFAULT_TASK_CONTROL = {"max_concurrent_batches": 1, "max_concurrent_steps": 1}
 EXPORT_FORMATS = {"markdown", "docx", "epub"}
+HANDOFF_REVIEW_MIN_SCORE = 70
 BATCH_PIPELINE_STEPS = ["ingest", "clean", "decompose", "extract-knowledge", "build-materials"]
 BATCH_CLAUDE_STEPS = ["ingest", "clean", "claude-handoff"]
 
@@ -101,6 +106,7 @@ def register_product_routes(app: Any, app_settings: Any, models: dict[str, Any])
     AssetCollectionRequest = models["AssetCollectionRequest"]
     AssetEditRequest = models["AssetEditRequest"]
     AssetContentEditRequest = models["AssetContentEditRequest"]
+    AssetTypedEditRequest = models["AssetTypedEditRequest"]
     DraftSaveRequest = models["DraftSaveRequest"]
     DraftExportRequest = models["DraftExportRequest"]
     ReviewIssueStatusRequest = models["ReviewIssueStatusRequest"]
@@ -112,6 +118,11 @@ def register_product_routes(app: Any, app_settings: Any, models: dict[str, Any])
     HandoffAcceptanceRequest = models["HandoffAcceptanceRequest"]
     HandoffRetryRequest = models["HandoffRetryRequest"]
     HandoffFailRequest = models["HandoffFailRequest"]
+    QdrantIndexRequest = models["QdrantIndexRequest"]
+    QdrantSearchRequest = models["QdrantSearchRequest"]
+    MinioSyncRequest = models["MinioSyncRequest"]
+    EventArchiveRequest = models["EventArchiveRequest"]
+    PublishExportRequest = models["PublishExportRequest"]
     ProjectScopeAuditRequest = models["ProjectScopeAuditRequest"]
     LocalRestoreRequest = models["LocalRestoreRequest"]
 
@@ -435,6 +446,16 @@ def register_product_routes(app: Any, app_settings: Any, models: dict[str, Any])
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.patch("/product/assets/typed")
+    def edit_product_typed_asset(request: AssetTypedEditRequest) -> dict[str, Any]:
+        storage = LocalStorage(app_settings.root)
+        try:
+            return update_typed_asset_fields(storage, request.path, request.fields)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.get("/product/assets/versions")
     def asset_versions(path: str = Query(...)) -> dict[str, Any]:
         try:
@@ -594,6 +615,13 @@ def register_product_routes(app: Any, app_settings: Any, models: dict[str, Any])
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.post("/product/system/events/archive")
+    def archive_events_endpoint(request: EventArchiveRequest) -> dict[str, Any]:
+        try:
+            return archive_task_events(app_settings.root, before=request.before, keep_latest=request.keep_latest, confirm=request.confirm)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.get("/product/system/backups")
     def list_backups_endpoint(limit: int = 20) -> list[dict[str, Any]]:
         try:
@@ -605,6 +633,49 @@ def register_product_routes(app: Any, app_settings: Any, models: dict[str, Any])
     def restore_backup_endpoint(request: LocalRestoreRequest) -> dict[str, Any]:
         try:
             return restore_local_backup(app_settings.root, request.backup_path, confirm=request.confirm)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/product/qdrant/index")
+    def qdrant_index_endpoint(request: QdrantIndexRequest) -> dict[str, Any]:
+        try:
+            return qdrant_index_operation(
+                app_settings.root,
+                recreate=bool(request.recreate),
+                batch_size=int(request.batch_size),
+                resume=not bool(request.no_resume),
+                force_reembed=bool(request.force_reembed),
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/product/qdrant/search")
+    def qdrant_search_endpoint(request: QdrantSearchRequest) -> dict[str, Any]:
+        try:
+            return qdrant_search_operation(
+                app_settings.root,
+                query=request.query,
+                category=request.category,
+                asset_type=request.asset_type,
+                project_id=request.project_id,
+                workspace_path=request.workspace_path,
+                tags=request.tags,
+                limit=request.limit,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/product/minio/sync")
+    def minio_sync_endpoint(request: MinioSyncRequest) -> dict[str, Any]:
+        try:
+            return minio_sync_operation(app_settings.root, categories=request.categories or None)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/product/minio/objects")
+    def minio_objects_endpoint(category: str | None = None, limit: int = 100) -> dict[str, Any]:
+        try:
+            return minio_object_status(app_settings, category=category, limit=limit)
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -778,6 +849,15 @@ def register_product_routes(app: Any, app_settings: Any, models: dict[str, Any])
     def export_draft_endpoint(request: DraftExportRequest) -> dict[str, Any]:
         try:
             return export_draft(app_settings.root, request.draft_path, request.format)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/product/drafts/publish-record")
+    def publish_export_endpoint(request: PublishExportRequest) -> dict[str, Any]:
+        try:
+            return create_publish_record(app_settings.root, request.export_path, channel=request.channel, note=request.note)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
@@ -2063,6 +2143,7 @@ def update_asset_metadata(storage: LocalStorage, asset_path: str, patch: dict[st
     if errors:
         raise ValueError("; ".join(errors))
     storage.write_json(path, data)
+    _write_audit_log(storage, "asset.metadata.update", _display_path(storage.root, path), {"patch_keys": sorted(patch)})
     return asset_detail(storage, str(path))
 
 
@@ -2082,7 +2163,145 @@ def update_asset_content(storage: LocalStorage, asset_path: str, content: dict[s
     if errors:
         raise ValueError("; ".join(errors))
     storage.write_json(path, data)
+    _write_audit_log(
+        storage,
+        "asset.content.update",
+        _display_path(storage.root, path),
+        {"content_keys": sorted(content)},
+    )
     return asset_detail(storage, str(path))
+
+
+def update_typed_asset_fields(storage: LocalStorage, asset_path: str, fields: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(fields, dict):
+        raise ValueError("fields must be an object")
+    path = _resolve_asset_file(storage, asset_path)
+    data = storage.read_json(path)
+    if not isinstance(data, dict):
+        raise ValueError(f"asset JSON must be an object: {asset_path}")
+    asset_type = str(data.get("type", ""))
+    allowed = _typed_edit_allowed_fields(asset_type)
+    if not allowed:
+        raise ValueError(f"typed editing is not available for asset type: {asset_type}")
+    unknown = sorted(set(fields) - set(allowed))
+    if unknown:
+        raise ValueError(f"unsupported fields for {asset_type}: {', '.join(unknown)}")
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    for key, value in fields.items():
+        target = allowed[key]
+        if target == "content":
+            content[key] = _typed_field_value(key, value)
+        elif target == "metadata":
+            metadata[key] = _typed_field_value(key, value)
+        elif target == "root":
+            data[key] = _typed_field_value(key, value)
+    data["content"] = content
+    data["metadata"] = {**metadata, "typed_edited_at": utc_now()}
+    data["updated_at"] = utc_now()
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    storage.write_json(path, data)
+    _write_audit_log(storage, "asset.typed.update", _display_path(storage.root, path), {"fields": sorted(fields)})
+    return asset_detail(storage, str(path))
+
+
+def _typed_edit_allowed_fields(asset_type: str) -> dict[str, str]:
+    mapping = {
+        "decomposition_report": {
+            "summary": "content",
+            "commercial_patterns": "content",
+            "narrative_patterns": "content",
+            "character_mechanisms": "content",
+            "conflict_patterns": "content",
+            "emotion_curve": "content",
+            "hook_patterns": "content",
+        },
+        "knowledge_card": {
+            "principles": "content",
+            "constraints": "content",
+            "review_checks": "content",
+            "license_review_status": "metadata",
+            "raw_text_used": "metadata",
+        },
+        "material_card": {
+            "usable_patterns": "content",
+            "do_not_copy": "content",
+            "use_cases": "content",
+        },
+        "draft_chapter": {
+            "chapter": "content",
+            "text": "content",
+            "draft_status": "metadata",
+        },
+        "review_report": {
+            "summary": "content",
+            "score": "root",
+            "risk_level": "root",
+            "strengths": "root",
+            "weaknesses": "root",
+            "revision_suggestions": "root",
+            "next_action": "root",
+        },
+        "revision_plan": {
+            "steps": "content",
+            "target_score": "content",
+            "must_preserve": "content",
+        },
+    }
+    return mapping.get(asset_type, {})
+
+
+def _typed_field_value(key: str, value: Any) -> Any:
+    list_fields = {
+        "commercial_patterns",
+        "narrative_patterns",
+        "character_mechanisms",
+        "conflict_patterns",
+        "emotion_curve",
+        "hook_patterns",
+        "principles",
+        "constraints",
+        "review_checks",
+        "usable_patterns",
+        "do_not_copy",
+        "use_cases",
+        "strengths",
+        "weaknesses",
+        "revision_suggestions",
+        "steps",
+        "must_preserve",
+    }
+    numeric_fields = {"score", "target_score", "chapter"}
+    bool_fields = {"raw_text_used"}
+    if key in list_fields:
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        return [item.strip() for item in str(value).splitlines() if item.strip()]
+    if key in numeric_fields:
+        if value in {"", None}:
+            return 0
+        return float(value) if key in {"score", "target_score"} else int(value)
+    if key in bool_fields:
+        return bool(value)
+    return str(value)
+
+
+def _write_audit_log(storage: LocalStorage, action: str, target_path: str, details: dict[str, Any] | None = None) -> None:
+    path = storage.root / AUDIT_LOG_RELATIVE_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "id": make_id("audit"),
+        "type": "audit_event",
+        "action": action,
+        "target_path": target_path,
+        "details": details or {},
+        "recorded_at": utc_now(),
+        "actor": "local-operator",
+    }
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
 
 
 def asset_versions_and_diff(storage: LocalStorage, asset_path: str) -> dict[str, Any]:
@@ -2332,7 +2551,7 @@ def validate_handoff_output(root: str | Path, request: dict[str, Any]) -> dict[s
     storage.ensure_layout()
     handoff_path = _resolve_handoff_file(storage, str(request.get("handoff_path", "")))
     output_path = _resolve_asset_file(storage, str(request.get("output_path", "")))
-    return _validate_handoff_output_assets(storage, handoff_path, output_path)
+    return _validate_handoff_output_assets(storage, handoff_path, output_path, semantic_review=bool(request.get("semantic_review", True)))
 
 
 def bind_handoff_output(root: str | Path, request: dict[str, Any]) -> dict[str, Any]:
@@ -2340,7 +2559,7 @@ def bind_handoff_output(root: str | Path, request: dict[str, Any]) -> dict[str, 
     storage.ensure_layout()
     handoff_path = _resolve_handoff_file(storage, str(request.get("handoff_path", "")))
     output_path = _resolve_asset_file(storage, str(request.get("output_path", "")))
-    validation = _validate_handoff_output_assets(storage, handoff_path, output_path)
+    validation = _validate_handoff_output_assets(storage, handoff_path, output_path, semantic_review=bool(request.get("semantic_review", True)))
     if not validation["valid"]:
         raise ValueError("; ".join(validation["errors"]))
 
@@ -2391,6 +2610,12 @@ def bind_handoff_output(root: str | Path, request: dict[str, Any]) -> dict[str, 
     handoff["references"] = _dedupe_list([*[str(ref) for ref in handoff.get("references", [])], output_display, str(output.get("id", ""))])
     handoff["updated_at"] = now
     _write_validated_json(storage, handoff_path, handoff)
+    _write_audit_log(
+        storage,
+        "handoff.output.bind",
+        _display_path(storage.root, handoff_path),
+        {"output_path": output_display, "validation_valid": validation["valid"]},
+    )
     continued = None
     if request.get("auto_continue_batch", True):
         continued = _auto_continue_bound_batch_handoff(root, storage, handoff_path, output_path, output)
@@ -2476,6 +2701,7 @@ def fail_handoff(root: str | Path, request: dict[str, Any]) -> dict[str, Any]:
     data["metadata"] = metadata
     data["updated_at"] = utc_now()
     _write_validated_json(storage, handoff_path, data)
+    _write_audit_log(storage, "handoff.fail", _display_path(storage.root, handoff_path), {"reason": reason})
     return asset_detail(storage, str(handoff_path))
 
 
@@ -2533,6 +2759,12 @@ def retry_handoff(root: str | Path, request: dict[str, Any]) -> dict[str, Any]:
         new_data["metadata"] = new_metadata
         new_data["updated_at"] = utc_now()
         _write_validated_json(storage, new_path, new_data)
+    _write_audit_log(
+        storage,
+        "handoff.retry",
+        _display_path(storage.root, old_path),
+        {"new_handoff_path": _display_path(storage.root, new_path), "reason": str(request.get("reason") or "")},
+    )
     return {
         "previous": asset_detail(storage, str(old_path)),
         "handoff": asset_detail(storage, str(new_path)),
@@ -2615,7 +2847,12 @@ def _auto_continue_bound_batch_handoff(
         return {"status": "failed", "error": str(exc), "item_path": item_path}
 
 
-def _validate_handoff_output_assets(storage: LocalStorage, handoff_path: Path, output_path: Path) -> dict[str, Any]:
+def _validate_handoff_output_assets(
+    storage: LocalStorage,
+    handoff_path: Path,
+    output_path: Path,
+    semantic_review: bool = True,
+) -> dict[str, Any]:
     handoff = storage.read_json(handoff_path)
     output = storage.read_json(output_path)
     if not isinstance(handoff, dict) or handoff.get("type") != "claude_code_handoff":
@@ -2647,11 +2884,18 @@ def _validate_handoff_output_assets(storage: LocalStorage, handoff_path: Path, o
     semantic = _semantic_handoff_output_quality(storage, handoff, handoff_path, output)
     errors.extend(semantic["errors"])
     warnings.extend(semantic["warnings"])
+    semantic_review_result = _review_handoff_output_quality(handoff, output) if semantic_review else {"enabled": False, "ok": True}
+    if semantic_review and not semantic_review_result["ok"]:
+        warnings.append(
+            f"semantic review score {semantic_review_result.get('score', 0)} below {HANDOFF_REVIEW_MIN_SCORE}: "
+            f"{semantic_review_result.get('summary', semantic_review_result.get('error', 'review failed'))}"
+        )
     return {
         "valid": not errors,
         "errors": errors,
         "warnings": warnings,
         "semantic_quality": semantic,
+        "semantic_review": semantic_review_result,
         "handoff_path": _display_path(storage.root, handoff_path),
         "handoff_id": handoff.get("id", ""),
         "expected_output_type": expected_type,
@@ -2729,6 +2973,68 @@ def _semantic_handoff_output_quality(storage: LocalStorage, handoff: dict[str, A
     if not overlap["ok"]:
         errors.append(str(overlap["message"]))
     return {"ok": not errors, "errors": errors, "warnings": warnings, "checks": checks}
+
+
+def _review_handoff_output_quality(handoff: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+    handoff_content = handoff.get("content", {}) if isinstance(handoff.get("content", {}), dict) else {}
+    output_content = output.get("content", {}) if isinstance(output.get("content", {}), dict) else {}
+    output_metadata = output.get("metadata", {}) if isinstance(output.get("metadata", {}), dict) else {}
+    rubric = [
+        "output satisfies every handoff acceptance item",
+        "output is abstracted enough for the copyright boundary",
+        "output is directly usable by the next Novel Forge pipeline step",
+        "output preserves traceable source references and project boundaries",
+        *[str(dimension) for dimension in QUALITY_DIMENSIONS],
+    ]
+    payload = {
+        "handoff": {
+            "operation": handoff_content.get("operation", ""),
+            "expected_output_type": handoff_content.get("expected_output_type", ""),
+            "acceptance_checks": handoff_content.get("acceptance_checks", []),
+            "instructions": handoff_content.get("instructions", ""),
+        },
+        "output": {
+            "id": output.get("id", ""),
+            "type": output.get("type", ""),
+            "title": output.get("title") or output.get("name", ""),
+            "content": output_content,
+            "metadata": output_metadata,
+            "references": output.get("references", []),
+        },
+        "rubric": rubric,
+        "minimum_score": HANDOFF_REVIEW_MIN_SCORE,
+    }
+    try:
+        adapter = model_from_env("review")
+        review = validate_model_output("review", adapter.review(json.dumps(payload, ensure_ascii=False, sort_keys=True), payload))
+        score = float(review.get("score", 0))
+        issues = review.get("issues", []) if isinstance(review.get("issues", []), list) else []
+        return {
+            "ok": score >= HANDOFF_REVIEW_MIN_SCORE,
+            "score": score,
+            "minimum_score": HANDOFF_REVIEW_MIN_SCORE,
+            "provider": review.get("provider", getattr(adapter, "name", "")),
+            "model": review.get("model", getattr(adapter, "name", "")),
+            "summary": str(review.get("summary", "")),
+            "issues": issues,
+            "suggestions": review.get("revision_suggestions", []),
+            "rubric": rubric,
+            "checked_at": utc_now(),
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "score": 0,
+            "minimum_score": HANDOFF_REVIEW_MIN_SCORE,
+            "provider": "",
+            "model": "",
+            "summary": "semantic review provider failed",
+            "issues": [],
+            "suggestions": [],
+            "rubric": rubric,
+            "error": str(exc),
+            "checked_at": utc_now(),
+        }
 
 
 def _source_overlap_check(storage: LocalStorage, handoff: dict[str, Any], handoff_path: Path, output: dict[str, Any]) -> dict[str, Any]:
@@ -4896,6 +5202,273 @@ def _sync_postgres_best_effort(settings: Any, paths: list[str | Path] | None = N
         return {"enabled": True, "synced": 0, "error": str(exc)}
 
 
+def qdrant_index_operation(
+    root: str | Path,
+    recreate: bool = False,
+    batch_size: int = 32,
+    resume: bool = True,
+    force_reembed: bool = False,
+) -> dict[str, Any]:
+    result = pipeline.qdrant_index(
+        root,
+        recreate_collection=recreate,
+        batch_size=max(1, int(batch_size)),
+        resume=resume,
+        force_reembed=force_reembed,
+    )
+    storage = LocalStorage(root)
+    _write_audit_log(
+        storage,
+        "qdrant.index",
+        "qdrant",
+        {"recreate": recreate, "batch_size": batch_size, "resume": resume, "force_reembed": force_reembed, "result": result},
+    )
+    return {"ok": True, **result}
+
+
+def qdrant_search_operation(
+    root: str | Path,
+    query: str,
+    category: str | None = None,
+    asset_type: str | None = None,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+    tags: list[str] | None = None,
+    limit: int = 20,
+) -> dict[str, Any]:
+    if not str(query).strip():
+        raise ValueError("query must not be empty")
+    storage = LocalStorage(root)
+    rows = pipeline.qdrant_search(
+        root,
+        query=str(query).strip(),
+        category=category,
+        asset_type=asset_type,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        tags=tags or None,
+        limit=max(1, int(limit)),
+    )
+    results = []
+    for index, row in enumerate(rows, start=1):
+        path_value = str(row.get("path", ""))
+        preview = ""
+        title = str(row.get("title", ""))
+        try:
+            detail = asset_detail(storage, path_value)
+            title = title or str(detail["summary"].get("title", ""))
+            preview = _asset_preview_text(detail["asset"])[:260]
+        except Exception:
+            preview = ""
+        results.append(
+            {
+                **row,
+                "rank": index,
+                "title": title,
+                "preview": preview,
+                "explanation": {
+                    "backend": "qdrant",
+                    "score": row.get("score"),
+                    "query": str(query).strip(),
+                    "filters": {
+                        "category": category or "",
+                        "asset_type": asset_type or "",
+                        "project_id": project_id or "",
+                        "workspace_path": workspace_path or "",
+                        "tags": tags or [],
+                    },
+                    "reason": "semantic vector similarity with optional metadata filters",
+                },
+            }
+        )
+    _write_audit_log(
+        storage,
+        "qdrant.search",
+        "qdrant",
+        {"query": str(query).strip(), "count": len(results), "project_id": project_id or "", "workspace_path": workspace_path or ""},
+    )
+    return {
+        "backend": "qdrant",
+        "query": str(query).strip(),
+        "filters": {
+            "category": category or "",
+            "asset_type": asset_type or "",
+            "project_id": project_id or "",
+            "workspace_path": workspace_path or "",
+            "tags": tags or [],
+        },
+        "count": len(results),
+        "results": results,
+    }
+
+
+def _asset_preview_text(asset: dict[str, Any]) -> str:
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    for key in ["text", "summary", "body", "instructions"]:
+        value = content.get(key)
+        if isinstance(value, str) and value.strip():
+            return " ".join(value.split())
+    for key in ["principles", "usable_patterns", "commercial_patterns", "narrative_patterns", "review_checks"]:
+        value = content.get(key)
+        if isinstance(value, list) and value:
+            return " ".join(str(item).strip() for item in value if str(item).strip())
+    return " ".join(json.dumps(asset, ensure_ascii=False, sort_keys=True).split())
+
+
+def minio_sync_operation(root: str | Path, categories: list[str] | None = None) -> dict[str, Any]:
+    selected = [str(category) for category in categories or [] if str(category).strip()] or None
+    result = pipeline.minio_sync(root, categories=selected)
+    storage = LocalStorage(root)
+    _write_audit_log(storage, "minio.sync", "minio", {"categories": selected or list(DATA_DIRS), "result": result})
+    return {"ok": True, **result}
+
+
+def minio_object_status(settings: Any, category: str | None = None, limit: int = 100) -> dict[str, Any]:
+    storage = LocalStorage(settings.root)
+    storage.ensure_layout()
+    categories = [category] if category else list(DATA_DIRS)
+    for item in categories:
+        if item not in DATA_DIRS:
+            raise ValueError(f"unknown data category: {item}")
+    max_rows = max(1, int(limit))
+    rows: list[dict[str, Any]] = []
+    for item in categories:
+        for path in storage.list_json(item):
+            if len(rows) >= max_rows:
+                break
+            rows.append(
+                {
+                    "category": item,
+                    "path": _display_path(storage.root, path),
+                    "object_name": object_name_for_path(storage, path),
+                    "exists": False,
+                    "size": 0,
+                    "etag": "",
+                    "error": "",
+                }
+            )
+        if len(rows) >= max_rows:
+            break
+    configured = bool(getattr(settings, "minio_endpoint", "") and getattr(settings, "minio_access_key", "") and getattr(settings, "minio_secret_key", ""))
+    if not configured:
+        return {"configured": False, "bucket": getattr(settings, "minio_artifact_bucket", ""), "objects": rows}
+    try:
+        store = MinioObjectStore(settings)
+        store.ensure_buckets()
+        for row in rows:
+            try:
+                stat = store.client.stat_object(settings.minio_artifact_bucket, row["object_name"])
+                row.update(
+                    {
+                        "exists": True,
+                        "size": int(getattr(stat, "size", 0) or 0),
+                        "etag": str(getattr(stat, "etag", "") or ""),
+                    }
+                )
+            except Exception as exc:
+                row["error"] = str(exc)
+    except Exception as exc:
+        return {"configured": configured, "available": False, "bucket": settings.minio_artifact_bucket, "objects": rows, "error": str(exc)}
+    return {"configured": configured, "available": True, "bucket": settings.minio_artifact_bucket, "objects": rows}
+
+
+def archive_task_events(root: str | Path, before: str | None = None, keep_latest: int = 500, confirm: bool = False) -> dict[str, Any]:
+    storage = LocalStorage(root)
+    storage.ensure_layout()
+    rows: list[dict[str, Any]] = []
+    for path in storage.list_json("runs"):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "task_status":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        recorded_at = str(metadata.get("recorded_at") or data.get("updated_at") or data.get("created_at") or "")
+        rows.append(
+            {
+                "path": path,
+                "display_path": _display_path(storage.root, path),
+                "recorded_at": recorded_at,
+                "run_id": str(content.get("run_id", data.get("source", ""))),
+                "step": str(content.get("step", "")),
+                "status": str(content.get("status", "")),
+                "payload": data,
+            }
+        )
+    rows.sort(key=lambda item: item["recorded_at"], reverse=True)
+    keep = max(0, int(keep_latest))
+    candidates = rows[keep:]
+    if before:
+        candidates = [row for row in candidates if str(row["recorded_at"]) < str(before)]
+    summary = {
+        "total_task_events": len(rows),
+        "keep_latest": keep,
+        "before": before or "",
+        "candidate_count": len(candidates),
+        "candidates": [
+            {"path": row["display_path"], "recorded_at": row["recorded_at"], "run_id": row["run_id"], "step": row["step"], "status": row["status"]}
+            for row in candidates[:50]
+        ],
+        "confirmed": confirm,
+    }
+    if not confirm or not candidates:
+        return summary
+    archive_dir = storage.root / "data" / "runs" / "archive"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    stamp = utc_now().replace(":", "").replace("-", "")
+    archive_path = archive_dir / f"task-events-{stamp}.jsonl.gz"
+    with gzip.open(archive_path, "wt", encoding="utf-8") as handle:
+        for row in candidates:
+            handle.write(json.dumps({"path": row["display_path"], "asset": row["payload"]}, ensure_ascii=False, sort_keys=True) + "\n")
+    for row in candidates:
+        Path(row["path"]).unlink(missing_ok=True)
+    _write_audit_log(
+        storage,
+        "task.events.archive",
+        _display_path(storage.root, archive_path),
+        {"archived_count": len(candidates), "keep_latest": keep, "before": before or ""},
+    )
+    return {**summary, "archive_path": _display_path(storage.root, archive_path), "archived_count": len(candidates)}
+
+
+def create_publish_record(root: str | Path, export_path: str, channel: str = "local", note: str = "") -> dict[str, Any]:
+    storage = LocalStorage(root)
+    resolved = resolve_path(storage.root, export_path).resolve()
+    try:
+        resolved.relative_to(storage.root)
+    except ValueError as exc:
+        raise ValueError(f"export path escapes project root: {export_path}") from exc
+    if not resolved.exists() or not resolved.is_file():
+        raise FileNotFoundError(f"export file not found: {export_path}")
+    payload = resolved.read_bytes()
+    now = utc_now()
+    record = {
+        "id": make_id("publish"),
+        "type": "publish_record",
+        "title": f"Publish record: {resolved.name}",
+        "name": f"Publish record: {resolved.name}",
+        "source": _display_path(storage.root, resolved),
+        "tags": ["publish-record", str(channel or "local")],
+        "content": {
+            "export_path": _display_path(storage.root, resolved),
+            "channel": str(channel or "local"),
+            "note": str(note or ""),
+            "sha256": hashlib.sha256(payload).hexdigest(),
+            "size_bytes": len(payload),
+            "published_at": now,
+        },
+        "metadata": {"recorded_at": now},
+        "references": [_display_path(storage.root, resolved)],
+        "created_at": now,
+        "updated_at": now,
+    }
+    path = storage.write_json(storage.root / "data" / "runs" / f"{record['id']}.json", record)
+    _write_audit_log(storage, "draft.export.publish_record", _display_path(storage.root, path), {"export_path": record["content"]["export_path"]})
+    return {"record_path": _display_path(storage.root, path), "record": record}
+
+
 def postgres_strict_local_prod_check(settings: Any, sync: bool = False, raise_on_failure: bool = True) -> dict[str, Any]:
     strict = bool(getattr(settings, "postgres_write_strict", False))
     write_through = bool(getattr(settings, "postgres_write_through", False))
@@ -4946,6 +5519,18 @@ def postgres_strict_local_prod_check(settings: Any, sync: bool = False, raise_on
         store = PostgresAssetStore(database_url)
         store.initialize()
         checks.append({"name": "schema", "ok": True, "message": "PostgreSQL schema initialized"})
+        migration = store.migration_status()
+        checks.append(
+            {
+                "name": "migrations",
+                "ok": bool(migration["ok"]),
+                "message": "PostgreSQL schema migrations current" if migration["ok"] else f"missing migrations: {', '.join(migration['missing'])}",
+                "status": migration,
+            }
+        )
+        if not migration["ok"]:
+            errors.append(f"PostgreSQL migrations missing: {', '.join(migration['missing'])}")
+            result["ready"] = False
         if sync:
             local_storage = LocalStorage(settings.root)
             sync_result = store.sync_from_local(local_storage).to_dict()
