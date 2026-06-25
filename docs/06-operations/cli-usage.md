@@ -20,10 +20,18 @@ make local-down
 
 The web console runs at `http://localhost:3000`; FastAPI runs at `http://localhost:8000`.
 
+Local production runtime data lives under the ignored `.local/workspace/` directory. Docker mounts that directory into API and worker containers as `/runtime`; repository-root `data/` is not a fixture source and should not be committed.
+
 ## Initialize
 
 ```bash
 ./novel-forge init
+```
+
+CLI commands default to `NOVEL_FORGE_ROOT` when it is set, otherwise the current directory. For local production-style work, use:
+
+```bash
+export NOVEL_FORGE_ROOT=.local/workspace
 ```
 
 ## Single-Step Commands
@@ -160,6 +168,7 @@ Product console areas:
 ## End To End
 
 ```bash
+export NOVEL_FORGE_ROOT=.local/demo-workspace
 ./novel-forge run-pipeline --sample
 ./novel-forge status
 ./novel-forge validate
@@ -167,7 +176,7 @@ Product console areas:
 
 ## Sample Run Cleanup
 
-`run-pipeline --sample` reads `examples/sample_outputs/pipeline-summary.json` before running. If the summary exists, it removes only the previous sample output paths listed in that summary, then generates a new sample run. This prevents repeated demo runs from accumulating duplicate sample assets.
+`make demo` runs the sample pipeline in `.local/demo-workspace/`. `run-pipeline --sample` reads `<workspace>/examples/sample_outputs/pipeline-summary.json` before running. If the summary exists, it removes only the previous sample output paths listed in that summary, then generates a new sample run. This prevents repeated demo runs from accumulating duplicate sample assets.
 
 ## Failure Recovery
 

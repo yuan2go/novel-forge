@@ -53,7 +53,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      NOVEL_FORGE_ROOT: /workspace
+      NOVEL_FORGE_ROOT: /runtime
       NOVEL_FORGE_DATABASE_URL: postgresql://novel_forge:novel_forge@postgres:5432/novel_forge
       NOVEL_FORGE_REDIS_URL: redis://redis:6379/0
       NOVEL_FORGE_CELERY_BROKER_URL: redis://redis:6379/0
@@ -63,12 +63,11 @@ services:
       NOVEL_FORGE_API_HOST: 0.0.0.0
       NOVEL_FORGE_API_PORT: 8000
       NOVEL_FORGE_API_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
-    command: ["python", "-m", "novel_forge.cli", "serve-api", "--root", "/workspace", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["python", "-m", "novel_forge.cli", "serve-api", "--root", "/runtime", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/workspace/data
-      - ./examples:/workspace/examples
+      - ./.local/workspace:/runtime
     depends_on:
       postgres:
         condition: service_healthy
@@ -89,17 +88,16 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      NOVEL_FORGE_ROOT: /workspace
+      NOVEL_FORGE_ROOT: /runtime
       NOVEL_FORGE_DATABASE_URL: postgresql://novel_forge:novel_forge@postgres:5432/novel_forge
       NOVEL_FORGE_REDIS_URL: redis://redis:6379/0
       NOVEL_FORGE_CELERY_BROKER_URL: redis://redis:6379/0
       NOVEL_FORGE_CELERY_RESULT_BACKEND: redis://redis:6379/1
       NOVEL_FORGE_QDRANT_URL: http://qdrant:6333
       NOVEL_FORGE_MINIO_ENDPOINT: minio:9000
-    command: ["python", "-m", "novel_forge.cli", "worker", "--root", "/workspace", "--loglevel", "INFO", "--concurrency", "2"]
+    command: ["python", "-m", "novel_forge.cli", "worker", "--root", "/runtime", "--loglevel", "INFO", "--concurrency", "2"]
     volumes:
-      - ./data:/workspace/data
-      - ./examples:/workspace/examples
+      - ./.local/workspace:/runtime
     depends_on:
       postgres:
         condition: service_healthy

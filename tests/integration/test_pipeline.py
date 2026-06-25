@@ -16,13 +16,7 @@ class PipelineTests(unittest.TestCase):
             run_path = pipeline.run_pipeline(root, sample=True)
             self.assertTrue(run_path.exists())
             ok, errors = pipeline.validate_project(root)
-            # Temp pipeline roots intentionally do not contain full docs, so asset validation is checked directly.
-            asset_errors = [
-                error
-                for error in errors
-                if not error.startswith("missing documentation file") and not error.startswith("missing skills directory")
-            ]
-            self.assertEqual(asset_errors, [])
+            self.assertTrue(ok, errors)
             self.assertTrue((root / "examples" / "sample_outputs" / "pipeline-summary.json").exists())
             storage = LocalStorage(root)
             run_assets = [storage.read_asset(path) for path in storage.list_json("runs")]

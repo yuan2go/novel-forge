@@ -15,6 +15,8 @@ make sync-skills-dry-run
 make check-skills
 ```
 
+`make demo` writes generated runtime assets to `.local/demo-workspace/`, which is ignored by Git. Deterministic fixtures are limited to `examples/sample_inputs/` and `tests/fixtures/`; generated `data/` assets and `examples/sample_outputs/` are runtime state.
+
 ## Coverage Areas
 
 - Schema common fields and review report shape.

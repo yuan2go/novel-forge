@@ -579,12 +579,13 @@ def _is_safe_sample_cleanup_path(storage: LocalStorage, path: Path) -> bool:
 
 def validate_project(root: str | Path = ".") -> tuple[bool, list[str]]:
     storage = LocalStorage(root)
+    contract_root = _contract_root(storage.root)
     errors: list[str] = []
     for category in DATA_DIRS:
         if not (storage.data_root / category).exists():
             errors.append(f"missing data directory: data/{category}")
     for doc in DOC_FILES:
-        if not (storage.root / doc).exists():
+        if not (contract_root / doc).exists():
             errors.append(f"missing documentation file: {doc}")
     for category in DATA_DIRS:
         for path in storage.list_json(category):
@@ -597,10 +598,16 @@ def validate_project(root: str | Path = ".") -> tuple[bool, list[str]]:
                 errors.extend(f"{path.relative_to(storage.root)}: {error}" for error in validate_common_fields(data))
             else:
                 errors.append(f"asset JSON must be object: {path.relative_to(storage.root)}")
-    errors.extend(validate_skills(storage.root))
+    errors.extend(validate_skills(contract_root))
     if os.environ.get("NOVEL_FORGE_SKIP_PROJECT_SCOPE_VALIDATE", "").strip().lower() not in {"1", "true", "yes"}:
         errors.extend(_validate_project_scope(storage))
     return not errors, errors
+
+
+def _contract_root(runtime_root: Path) -> Path:
+    if (runtime_root / "skills").is_dir() and all((runtime_root / doc).exists() for doc in DOC_FILES):
+        return runtime_root
+    return Path(__file__).resolve().parents[3]
 
 
 def _validate_project_scope(storage: LocalStorage) -> list[str]:

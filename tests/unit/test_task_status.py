@@ -28,13 +28,7 @@ class TaskStatusTests(unittest.TestCase):
             self.assertEqual(failed[0].content["step"], "failing-step")
             self.assertIn("RuntimeError: planned failure", failed[0].content["error_message"])
             ok, errors = pipeline.validate_project(root)
-            asset_errors = [
-                error
-                for error in errors
-                if not error.startswith("missing documentation file") and not error.startswith("missing skills directory")
-            ]
-            self.assertTrue(ok or not asset_errors)
-            self.assertEqual(asset_errors, [])
+            self.assertTrue(ok, errors)
 
     def test_pipeline_failure_records_failed_workflow_run(self):
         with tempfile.TemporaryDirectory() as tmp:

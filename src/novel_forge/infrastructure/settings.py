@@ -57,11 +57,17 @@ class IndustrialSettings:
         root: str | Path | None = None,
     ) -> "IndustrialSettings":
         values = env or os.environ
-        initial_root = Path(root or values.get("NOVEL_FORGE_ROOT", ".")).resolve()
-        file_values = _read_dotenv(initial_root / ".env")
+        cwd = Path.cwd().resolve()
+        initial_cwd_file_values = _read_dotenv(cwd / ".env") if root is None else {}
+        initial_root = Path(root or _get(values, initial_cwd_file_values, "NOVEL_FORGE_ROOT", ".")).resolve()
+        cwd_file_values = _read_dotenv(cwd / ".env") if root is None or _path_is_within(initial_root, cwd) else {}
+        root_file_values = _read_dotenv(initial_root / ".env")
+        file_values = {**cwd_file_values, **root_file_values}
         resolved_root = Path(root or _get(values, file_values, "NOVEL_FORGE_ROOT", ".")).resolve()
         if resolved_root != initial_root:
-            file_values = _read_dotenv(resolved_root / ".env")
+            cwd_file_values = _read_dotenv(cwd / ".env") if root is None or _path_is_within(resolved_root, cwd) else {}
+            root_file_values = _read_dotenv(resolved_root / ".env")
+            file_values = {**cwd_file_values, **root_file_values}
         redis_url = _get(values, file_values, "NOVEL_FORGE_REDIS_URL", _get(values, file_values, "REDIS_URL", "redis://localhost:6379/0"))
         return cls(
             root=resolved_root,
@@ -132,6 +138,14 @@ def optional_dependency_status() -> dict[str, bool]:
 
 def _get(env: Mapping[str, str], file_values: Mapping[str, str], key: str, default: str) -> str:
     return env.get(key, file_values.get(key, default))
+
+
+def _path_is_within(path: Path, parent: Path) -> bool:
+    try:
+        path.relative_to(parent)
+    except ValueError:
+        return False
+    return True
 
 
 def _read_dotenv(path: Path) -> dict[str, str]:

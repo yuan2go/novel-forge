@@ -24,6 +24,17 @@ make demo
 ./novel-forge --help
 ```
 
+## Runtime Workspace Boundary
+
+Runtime assets are intentionally kept out of Git. Daily local runs should write to the ignored `.local/workspace/` tree; `make demo`, `make api`, `make worker`, and `make local-up` use that boundary by default.
+
+The repository keeps only deterministic fixtures:
+
+- `examples/sample_inputs/` for small CLI/demo inputs.
+- `tests/fixtures/` for stable test-only fixtures.
+
+Generated assets under `data/` and generated sample outputs under `examples/sample_outputs/` are ignored runtime state. If you run CLI commands manually, either pass `--root .local/workspace` or export `NOVEL_FORGE_ROOT=.local/workspace`.
+
 ## Local Production Stack
 
 For the local Mac production-style environment, use Docker for PostgreSQL, Redis, Qdrant, MinIO, FastAPI, Celery worker, and the Next.js console:
@@ -33,6 +44,7 @@ make local-up
 ```
 
 The command creates `.env` from `.env.example` when needed, starts the full Docker Compose stack, initializes and syncs PostgreSQL, then runs a smoke test.
+Docker mounts `.local/workspace/` into the containers as `/runtime`, so generated JSON assets, uploads, indexes, exports, and sample outputs remain local runtime state.
 
 Open:
 
@@ -91,6 +103,8 @@ Model calls use strict JSON prompts and output validation. Invalid model output 
 ./novel-forge status
 ./novel-forge validate
 ```
+
+These commands default to the current directory unless `NOVEL_FORGE_ROOT` is set. For production-style local use, prefer `NOVEL_FORGE_ROOT=.local/workspace` or explicit `--root .local/workspace`.
 
 ## Industrial Stack
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -8,8 +9,8 @@ import urllib.request
 from typing import Any
 
 
-API_BASE = "http://127.0.0.1:8000"
-WEB_BASE = "http://127.0.0.1:3000"
+API_BASE = os.environ.get("NOVEL_FORGE_API_BASE", "http://127.0.0.1:8000")
+WEB_BASE = os.environ.get("NOVEL_FORGE_WEB_BASE", "http://127.0.0.1:3000")
 LOCAL_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 

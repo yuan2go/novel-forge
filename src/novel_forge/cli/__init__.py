@@ -11,7 +11,11 @@ from novel_forge.workflows import pipeline
 
 
 def add_root(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--root", default=".", help="project root; default: current directory")
+    parser.add_argument(
+        "--root",
+        default=os.environ.get("NOVEL_FORGE_ROOT", "."),
+        help="project root; default: NOVEL_FORGE_ROOT or current directory",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:

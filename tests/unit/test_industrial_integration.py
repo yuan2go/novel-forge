@@ -55,6 +55,49 @@ class IndustrialIntegrationTests(unittest.TestCase):
             self.assertEqual(settings.database_url, "postgresql://from-file")
             self.assertEqual(settings.api_port, 8123)
 
+    def test_settings_loads_cwd_dotenv_with_separate_runtime_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            runtime = repo / ".local" / "workspace"
+            runtime.mkdir(parents=True)
+            (repo / ".env").write_text(
+                "NOVEL_FORGE_ROOT=.local/workspace\n"
+                "NOVEL_FORGE_DATABASE_URL=postgresql://from-cwd-file\n"
+                "NOVEL_FORGE_API_PORT=8123\n",
+                encoding="utf-8",
+            )
+            (runtime / ".env").write_text("NOVEL_FORGE_API_PORT=8124\n", encoding="utf-8")
+            cwd = os.getcwd()
+            try:
+                os.chdir(repo)
+                settings = IndustrialSettings.from_env({}, root=runtime)
+            finally:
+                os.chdir(cwd)
+
+            self.assertEqual(settings.root, runtime.resolve())
+            self.assertEqual(settings.database_url, "postgresql://from-cwd-file")
+            self.assertEqual(settings.api_port, 8124)
+
+    def test_settings_does_not_inherit_cwd_dotenv_for_external_runtime_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            runtime = Path(tmp) / "external-runtime"
+            repo.mkdir()
+            runtime.mkdir()
+            (repo / ".env").write_text(
+                "NOVEL_FORGE_DATABASE_URL=postgresql://from-cwd-file\n",
+                encoding="utf-8",
+            )
+            cwd = os.getcwd()
+            try:
+                os.chdir(repo)
+                settings = IndustrialSettings.from_env({}, root=runtime)
+            finally:
+                os.chdir(cwd)
+
+            self.assertEqual(settings.root, runtime.resolve())
+            self.assertEqual(settings.database_url, "")
+
     def test_industrial_status_is_available_without_optional_dependencies(self):
         with tempfile.TemporaryDirectory() as tmp:
             status = industrial_status(tmp)

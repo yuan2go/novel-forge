@@ -12,3 +12,9 @@ node_modules/
 .env
 .DS_Store
 .claude/skills/
+
+# Runtime workspaces and generated state
+data/
+.local/
+local-workspace/
+examples/sample_outputs/
