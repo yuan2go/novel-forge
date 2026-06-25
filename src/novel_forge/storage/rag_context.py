@@ -6,12 +6,16 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.constants import DATA_DIRS
+from novel_forge.infrastructure.settings import IndustrialSettings
+from novel_forge.model_adapters import embedding_provider_health
 from novel_forge.schemas import BaseAsset
 from novel_forge.storage.local import LocalStorage
+from novel_forge.storage.qdrant_index import qdrant_search_assets
 from novel_forge.storage.vector_index import vector_search_assets
 
 RAG_CONTEXT_VERSION = "0.1.0"
 DEFAULT_RAG_TOP_K = 8
+RAG_BACKENDS = {"auto", "local", "qdrant"}
 
 RAG_BUCKETS = {
     "characters": "人物",
@@ -47,6 +51,8 @@ FORESHADOWING_TERMS = ("伏笔", "foreshadow", "hook", "continuity_thread", "con
 class RagContextBuilder:
     storage: LocalStorage
     default_top_k: int = DEFAULT_RAG_TOP_K
+    backend: str = "auto"
+    settings: IndustrialSettings | None = None
 
     def build(
         self,
@@ -54,14 +60,20 @@ class RagContextBuilder:
         input_path: str | Path | None = None,
         query: str | None = None,
         top_k: int | None = None,
+        backend: str | None = None,
     ) -> dict[str, Any]:
         requested_top_k = int(top_k or self.default_top_k)
         if requested_top_k < 1:
             raise ValueError("top_k must be greater than zero")
+        requested_backend = _normalize_backend(backend or self.backend)
         source_path = _relative_path(self.storage, input_path) if input_path else ""
         query_text = _compact_text(query or _default_query(input_asset), limit=1200) or input_asset.title or input_asset.id
         scope = _project_scope_for_asset(self.storage, input_asset.to_dict(), source_path)
-        ranked = self._ranked_candidates(query_text, limit=max(requested_top_k * 8, 40))
+        ranked, actual_backend, backend_attempts = self._ranked_candidates(
+            query_text,
+            limit=max(requested_top_k * 8, 40),
+            backend=requested_backend,
+        )
         items = self._select_items(ranked, input_asset, source_path, scope, requested_top_k)
         if len(items) < requested_top_k:
             items = self._fill_from_project_scan(items, input_asset, source_path, scope, requested_top_k)
@@ -75,6 +87,9 @@ class RagContextBuilder:
             "query": query_text,
             "top_k": requested_top_k,
             "ranker": _ranker_name(items),
+            "requested_backend": requested_backend,
+            "retrieval_backend": actual_backend,
+            "backend_attempts": backend_attempts,
             "project_id": scope.get("project_id", ""),
             "workspace_path": scope.get("workspace_path", ""),
             "source_asset_id": input_asset.id,
@@ -86,11 +101,31 @@ class RagContextBuilder:
             "buckets": buckets,
         }
 
-    def _ranked_candidates(self, query: str, limit: int) -> list[dict[str, Any]]:
+    def _ranked_candidates(self, query: str, limit: int, backend: str) -> tuple[list[dict[str, Any]], str, list[dict[str, Any]]]:
+        attempts: list[dict[str, Any]] = []
+        if backend in {"auto", "qdrant"}:
+            health = embedding_provider_health(require_semantic=True)
+            if health.get("ok"):
+                try:
+                    settings = self.settings or IndustrialSettings.from_env(root=self.storage.root)
+                    results = qdrant_search_assets(self.storage, settings, query=query, limit=limit)
+                    attempts.append({"backend": "qdrant", "ok": True, "result_count": len(results)})
+                    return results, "qdrant", attempts
+                except Exception as exc:
+                    attempts.append({"backend": "qdrant", "ok": False, "error": str(exc)})
+                    if backend == "qdrant":
+                        raise
+            else:
+                attempts.append({"backend": "qdrant", "ok": False, "error": health.get("error") or health.get("message") or "embedding provider unavailable"})
+                if backend == "qdrant":
+                    raise RuntimeError(str(attempts[-1]["error"]))
         try:
-            return vector_search_assets(self.storage, query=query, limit=limit)
-        except Exception:
-            return []
+            results = vector_search_assets(self.storage, query=query, limit=limit)
+            attempts.append({"backend": "local", "ok": True, "result_count": len(results)})
+            return results, "local", attempts
+        except Exception as exc:
+            attempts.append({"backend": "local", "ok": False, "error": str(exc)})
+            return [], "scan", attempts
 
     def _select_items(
         self,
@@ -183,8 +218,10 @@ def build_rag_context(
     input_path: str | Path | None = None,
     query: str | None = None,
     top_k: int = DEFAULT_RAG_TOP_K,
+    backend: str = "auto",
+    settings: IndustrialSettings | None = None,
 ) -> dict[str, Any]:
-    return RagContextBuilder(storage).build(input_asset, input_path=input_path, query=query, top_k=top_k)
+    return RagContextBuilder(storage, backend=backend, settings=settings).build(input_asset, input_path=input_path, query=query, top_k=top_k)
 
 
 def retrieval_metadata(context: dict[str, Any]) -> dict[str, Any]:
@@ -193,6 +230,9 @@ def retrieval_metadata(context: dict[str, Any]) -> dict[str, Any]:
         "retrieval_query": context.get("query", ""),
         "retrieval_top_k": context.get("top_k", 0),
         "retrieval_ranker": context.get("ranker", ""),
+        "retrieval_backend": context.get("retrieval_backend", ""),
+        "retrieval_requested_backend": context.get("requested_backend", ""),
+        "retrieval_backend_attempts": context.get("backend_attempts", []),
         "retrieval_source_asset_ids": context.get("source_asset_ids", []),
     }
 
@@ -321,6 +361,13 @@ def _read_reference(storage: LocalStorage, reference: str) -> tuple[str, dict[st
 def _ranker_name(items: list[dict[str, Any]]) -> str:
     rankers = _dedupe([str(item.get("ranker", "")) for item in items if str(item.get("ranker", "")).strip()])
     return "+".join(rankers) if rankers else "project-scoped-asset-priority"
+
+
+def _normalize_backend(value: str) -> str:
+    backend = str(value or "auto").strip().lower()
+    if backend not in RAG_BACKENDS:
+        raise ValueError(f"RAG backend must be one of: {', '.join(sorted(RAG_BACKENDS))}")
+    return backend
 
 
 def _relative_path(storage: LocalStorage, path: str | Path | None) -> str:

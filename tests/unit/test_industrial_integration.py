@@ -1,7 +1,9 @@
 from pathlib import Path
+import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -9,8 +11,10 @@ from novel_forge.infrastructure.settings import IndustrialSettings, optional_dep
 from novel_forge.storage.graph import neo4j_status
 from novel_forge.storage.object_store import object_name_for_path
 from novel_forge.storage.postgres import POSTGRES_SCHEMA_STATEMENTS, PostgresAssetStore
+from novel_forge.storage.qdrant_index import build_qdrant_index
 from novel_forge.storage.local import LocalStorage
-from novel_forge.workers.runtime import list_dead_letters, write_dead_letter
+from novel_forge.schemas import SourceDocument
+from novel_forge.workers.runtime import list_dead_letters, sync_postgres_after_task, write_dead_letter
 from novel_forge.workflows.industrial import industrial_status
 
 
@@ -98,6 +102,60 @@ class IndustrialIntegrationTests(unittest.TestCase):
             self.assertEqual(rows[0]["task_name"], "novel_forge.fixture")
             self.assertIn("fixture failure", rows[0]["error_message"])
 
+    def test_worker_postgres_sync_failure_dead_letters_or_raises_in_strict_mode(self):
+        class FailingStore:
+            def sync_asset(self, *_args, **_kwargs):
+                raise RuntimeError("postgres sync down")
+
+            def sync_from_local(self, *_args, **_kwargs):
+                raise RuntimeError("postgres sync down")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {"NOVEL_FORGE_DATABASE_URL": "postgresql://example", "NOVEL_FORGE_POSTGRES_WRITE_STRICT": ""}
+            with patch.dict(os.environ, env, clear=False), patch(
+                "novel_forge.workers.runtime.PostgresAssetStore.from_settings",
+                return_value=FailingStore(),
+            ):
+                sync_postgres_after_task(tmp, {"path": "data/raw/missing.json"})
+            rows = list_dead_letters(tmp)
+            self.assertEqual(rows[0]["task_name"], "novel_forge.postgres_sync_after_task")
+            self.assertIn("postgres sync down", rows[0]["error_message"])
+
+            with patch.dict(os.environ, {**env, "NOVEL_FORGE_POSTGRES_WRITE_STRICT": "true"}, clear=False), patch(
+                "novel_forge.workers.runtime.PostgresAssetStore.from_settings",
+                return_value=FailingStore(),
+            ):
+                with self.assertRaises(RuntimeError):
+                    sync_postgres_after_task(tmp, {"path": "data/raw/missing.json"})
+
+    def test_qdrant_index_batches_embeddings_and_rejects_dimension_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            storage.write_asset("raw", SourceDocument(title="Qdrant A", source="a.txt", content={"text": "alpha"}))
+            storage.write_asset("raw", SourceDocument(title="Qdrant B", source="b.txt", content={"text": "beta"}))
+            settings = IndustrialSettings(root=Path(tmp).resolve(), qdrant_collection="fixture")
+            adapter = FakeEmbeddingAdapter(dimensions=3)
+            client = FakeQdrantClient(existing=False, existing_size=3)
+
+            with patch("novel_forge.storage.qdrant_index._qdrant_client", return_value=(client, FakeQdrantModels)):
+                result = build_qdrant_index(storage, settings, adapter=adapter, batch_size=2)
+                cached = build_qdrant_index(storage, settings, adapter=adapter, batch_size=2)
+
+            self.assertEqual(result["indexed"], 2)
+            self.assertEqual(result["embedded"], 2)
+            self.assertEqual(cached["cache_hits"], 2)
+            self.assertEqual(adapter.embed_batch_calls, 1)
+            self.assertTrue((Path(tmp) / "data/indexes/qdrant-index-manifest.json").exists())
+
+            mismatched = FakeQdrantClient(existing=True, existing_size=64)
+            with patch("novel_forge.storage.qdrant_index._qdrant_client", return_value=(mismatched, FakeQdrantModels)):
+                with self.assertRaises(RuntimeError):
+                    build_qdrant_index(storage, settings, adapter=adapter)
+                migrated = build_qdrant_index(storage, settings, adapter=adapter, recreate_collection=True)
+
+            self.assertTrue(migrated["collection_status"]["recreated"])
+
     def test_object_name_for_path_preserves_project_relative_location(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -117,3 +175,74 @@ class IndustrialIntegrationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FakeEmbeddingAdapter:
+    name = "fake-embedding"
+
+    def __init__(self, dimensions: int) -> None:
+        self.dimensions = dimensions
+        self.embed_batch_calls = 0
+
+    def embed_text(self, text: str) -> list[float]:
+        return self.embed_batch([text])[0]
+
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        self.embed_batch_calls += 1
+        return [[1.0, 0.0, 0.0] for _ in texts]
+
+    def health_check(self) -> dict:
+        return {
+            "ok": True,
+            "model": self.name,
+            "provider": "fake",
+            "dimensions": self.dimensions,
+            "semantic_model": True,
+            "external_api": False,
+        }
+
+
+class FakeQdrantClient:
+    def __init__(self, existing: bool, existing_size: int) -> None:
+        self.existing = existing
+        self.existing_size = existing_size
+        self.points = []
+        self.deleted = False
+
+    def collection_exists(self, collection: str) -> bool:
+        return self.existing and not self.deleted
+
+    def get_collection(self, collection_name: str):
+        return FakeQdrantInfo(self.existing_size)
+
+    def create_collection(self, collection_name: str, vectors_config):
+        self.existing = True
+        self.existing_size = vectors_config.size
+
+    def delete_collection(self, collection_name: str):
+        self.deleted = True
+        self.existing = False
+
+    def upsert(self, collection_name: str, points: list):
+        self.points.extend(points)
+
+
+class FakeQdrantInfo:
+    def __init__(self, size: int) -> None:
+        self.config = type("Config", (), {"params": type("Params", (), {"vectors": type("Vectors", (), {"size": size})()})()})()
+
+
+class FakeQdrantModels:
+    class Distance:
+        COSINE = "Cosine"
+
+    class VectorParams:
+        def __init__(self, size: int, distance: str) -> None:
+            self.size = size
+            self.distance = distance
+
+    class PointStruct:
+        def __init__(self, id: int, vector: list[float], payload: dict) -> None:
+            self.id = id
+            self.vector = vector
+            self.payload = payload

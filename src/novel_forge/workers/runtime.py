@@ -47,6 +47,7 @@ def write_dead_letter(
     exc: BaseException,
     traceback: str = "",
     request_headers: dict[str, Any] | None = None,
+    sync_postgres: bool = True,
 ) -> Path:
     storage = LocalStorage(root)
     storage.ensure_layout()
@@ -73,7 +74,8 @@ def write_dead_letter(
         references=[],
     )
     path = storage.write_asset_auto(dead_letter)
-    sync_postgres_after_task(root, {"path": str(path)})
+    if sync_postgres:
+        sync_postgres_after_task(root, {"path": str(path)})
     return path
 
 
@@ -121,8 +123,20 @@ def sync_postgres_after_task(root: str | Path, retval: Any) -> None:
                 store.sync_asset(storage, path)
         else:
             store.sync_from_local(storage)
-    except Exception:
-        return
+    except Exception as exc:
+        if settings.postgres_write_strict:
+            raise
+        write_dead_letter(
+            root=root,
+            task_name="novel_forge.postgres_sync_after_task",
+            task_id="postgres-sync-after-task",
+            args=(str(root),),
+            kwargs={"retval": _json_safe(retval)},
+            exc=exc,
+            traceback="PostgreSQL post-task sync failed outside strict mode",
+            request_headers={},
+            sync_postgres=False,
+        )
 
 
 def _extract_paths(value: Any) -> list[str]:

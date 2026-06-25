@@ -21,7 +21,8 @@ from novel_forge.modules.source_intake import (
     list_github_knowledge_sources,
     list_source_policies,
 )
-from novel_forge.model_adapters import embedding_provider_health
+from novel_forge.agents import enforce_agent_action
+from novel_forge.api.health import assemble_project_health_report
 from novel_forge.schemas import AssetCollection, BatchTaskItem, DraftChapter, ProjectWorkspaceState, validate_common_fields
 from novel_forge.storage.object_store import MinioObjectStore
 from novel_forge.storage.local import LocalStorage
@@ -1742,31 +1743,20 @@ def project_health_report(settings: Any, project_id: str | None = None) -> dict[
     handoffs = list_handoffs(storage, project_id=project_id, limit=500)
     assets = indexed_project_assets(settings, storage, project_id, limit=10000) if project_id else []
     local_counts = storage.counts()
-    asset_count = len(assets) if project_id else sum(local_counts.values())
     strict = postgres_strict_local_prod_check(settings, sync=False, raise_on_failure=False)
     control = task_control_status(settings)
-    return {
-        "project_id": project_id or "",
-        "heartbeat": utc_now(),
-        "summary": {
-            "asset_count": asset_count,
-            "task_count": task_status["summary"]["task_count"],
-            "failed_task_count": failed_status["page"]["total"],
-            "pending_handoff_count": sum(1 for item in handoffs if item.get("status") in {"pending", "in_progress", "failed"}),
-            "scope_issue_count": audit["summary"]["issue_count"],
-            "dead_letter_count": control["dead_letters"]["count"],
-        },
-        "local_asset_counts": local_counts,
-        "scope_audit": audit,
-        "postgres": strict,
-        "embedding": embedding_provider_health(require_semantic=True),
-        "celery": control["celery"],
-        "task_control": control["config"],
-        "queue_trend": control["queue_trend"],
-        "recent_failures": failed_status["tasks"],
-        "handoffs": handoffs[:20],
-        "backups": list_local_backups(settings.root, limit=5),
-    }
+    return assemble_project_health_report(
+        project_id=project_id or "",
+        task_status=task_status,
+        failed_status=failed_status,
+        audit=audit,
+        handoffs=handoffs,
+        assets=assets,
+        local_counts=local_counts,
+        postgres=strict,
+        control=control,
+        backups=list_local_backups(settings.root, limit=5),
+    )
 
 
 def update_task_control(root: str | Path, patch: dict[str, Any]) -> dict[str, Any]:
@@ -2641,6 +2631,12 @@ def _validate_handoff_output_assets(storage: LocalStorage, handoff_path: Path, o
         errors.append("handoff expected_output_type is empty")
     if expected_type and actual_type != expected_type:
         errors.append(f"output type mismatch: expected {expected_type}, got {actual_type or 'empty'}")
+    agent_runtime = content.get("agent_runtime", {}) if isinstance(content.get("agent_runtime", {}), dict) else {}
+    if agent_runtime and actual_type:
+        try:
+            _enforce_handoff_output_policy(agent_runtime, actual_type)
+        except PermissionError as exc:
+            errors.append(f"agent runtime: {exc}")
     schema_errors = validate_common_fields(output)
     if schema_errors:
         errors.extend(f"output schema: {error}" for error in schema_errors)
@@ -2664,6 +2660,18 @@ def _validate_handoff_output_assets(storage: LocalStorage, handoff_path: Path, o
         "output_id": output.get("id", ""),
         "actual_output_type": actual_type,
     }
+
+
+def _enforce_handoff_output_policy(agent_runtime: dict[str, Any], actual_type: str) -> None:
+    tool_by_type = {
+        "knowledge_card": "write_knowledge_card",
+        "decomposition_report": "write_decomposition_report",
+        "material_card": "write_material_card",
+        "draft_chapter": "write_draft_chapter",
+        "review_report": "write_review_report",
+        "revision_plan": "write_revision_plan",
+    }
+    enforce_agent_action(agent_runtime, tool_by_type.get(actual_type, f"write_{actual_type}"), actual_type)
 
 
 def _semantic_handoff_output_quality(storage: LocalStorage, handoff: dict[str, Any], handoff_path: Path, output: dict[str, Any]) -> dict[str, Any]:

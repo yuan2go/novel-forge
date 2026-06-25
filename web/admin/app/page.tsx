@@ -285,6 +285,19 @@ type PostgresStrictCheck = {
   errors: string[];
 };
 
+type EmbeddingHealth = {
+  ok: boolean;
+  configured?: boolean;
+  semantic_model?: boolean;
+  external_api?: boolean;
+  model?: string;
+  provider?: string;
+  dimensions?: number;
+  message?: string;
+  error?: string;
+  missing_env_vars?: string[];
+};
+
 type HandoffAcceptance = {
   handoff_path: string;
   handoff_id: string;
@@ -308,6 +321,7 @@ type ProjectHealthReport = {
   };
   scope_audit: ProjectScopeAudit;
   postgres: PostgresStrictCheck;
+  embedding: EmbeddingHealth;
   celery: TaskControl["celery"];
   task_control: TaskControl["config"];
   queue_trend: TaskControl["queue_trend"];
@@ -1575,6 +1589,12 @@ function HealthPanel(props: {
           <article className="serviceCard">
             <div className="serviceTitle"><Workflow size={17} /><span>Celery</span></div>
             <span className={props.report?.celery.healthy ? "badge ok" : "badge muted"}>{props.report?.celery.healthy ? "healthy" : "offline"}</span>
+          </article>
+          <article className="serviceCard">
+            <div className="serviceTitle"><Search size={17} /><span>Embedding / Qdrant</span></div>
+            <span className={props.report?.embedding.ok ? "badge ok" : "badge warn"}>
+              {props.report?.embedding.ok ? (props.report?.embedding.model ?? "ready") : (props.report?.embedding.missing_env_vars?.join(", ") || props.report?.embedding.error || "not ready")}
+            </span>
           </article>
           <article className="serviceCard">
             <div className="serviceTitle"><ListChecks size={17} /><span>{zh ? "并发" : "Concurrency"}</span></div>

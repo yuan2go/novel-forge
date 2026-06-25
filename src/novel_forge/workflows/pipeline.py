@@ -319,8 +319,20 @@ def postgres_sync(root: str | Path) -> dict:
     return postgres_sync_service(root)
 
 
-def qdrant_index(root: str | Path) -> dict:
-    return qdrant_index_service(root)
+def qdrant_index(
+    root: str | Path,
+    recreate_collection: bool = False,
+    batch_size: int = 32,
+    resume: bool = True,
+    force_reembed: bool = False,
+) -> dict:
+    return qdrant_index_service(
+        root,
+        recreate_collection=recreate_collection,
+        batch_size=batch_size,
+        resume=resume,
+        force_reembed=force_reembed,
+    )
 
 
 def qdrant_search(

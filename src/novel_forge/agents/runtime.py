@@ -106,5 +106,20 @@ def validate_tool_allowed(profile: dict[str, Any], tool_name: str) -> None:
         )
 
 
+def validate_write_type_allowed(profile: dict[str, Any], asset_type: str) -> None:
+    allowed = {str(item) for item in profile.get("allowed_write_types", [])}
+    if asset_type not in allowed:
+        raise PermissionError(
+            f"{profile.get('agent', 'agent')} cannot write asset type {asset_type!r}; "
+            f"allowed write types: {', '.join(sorted(allowed))}"
+        )
+
+
+def enforce_agent_action(profile: dict[str, Any], tool_name: str, output_type: str | None = None) -> None:
+    validate_tool_allowed(profile, tool_name)
+    if output_type:
+        validate_write_type_allowed(profile, output_type)
+
+
 def _normalize(value: str) -> str:
     return value.strip().lower().replace(" agent", "").replace(" ", "_").replace("-", "_")

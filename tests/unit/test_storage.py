@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -302,6 +303,50 @@ class StorageTests(unittest.TestCase):
             self.assertTrue(context["buckets"]["characters"])
             self.assertTrue(context["buckets"]["worldbuilding"])
             self.assertEqual(context["project_id"], "project-one")
+            self.assertEqual(context["requested_backend"], "auto")
+            self.assertIn(context["retrieval_backend"], {"local", "scan"})
+
+    def test_rag_context_builder_uses_qdrant_when_auto_backend_is_available(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            char_path = storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="Qdrant lead",
+                    content={
+                        "role": "protagonist",
+                        "external_goal": "追查向量线索",
+                        "internal_need": "建立信任",
+                        "motivation_chain": ["线索"],
+                    },
+                ),
+            )
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="向量计划",
+                    content={"chapter": 1, "objective": "use qdrant", "beats": ["query"], "hook": "vector hook"},
+                ),
+            )
+            plan = storage.read_asset(plan_path)
+            qdrant_rows = [
+                {
+                    "path": str(char_path.relative_to(storage.root)),
+                    "score": 0.91,
+                    "ranker": "qdrant-vector",
+                }
+            ]
+
+            with patch("novel_forge.storage.rag_context.embedding_provider_health", return_value={"ok": True}), patch(
+                "novel_forge.storage.rag_context.qdrant_search_assets",
+                return_value=qdrant_rows,
+            ):
+                context = build_rag_context(storage, plan, input_path=plan_path, query="vector", top_k=1, backend="auto")
+
+            self.assertEqual(context["retrieval_backend"], "qdrant")
+            self.assertEqual(context["items"][0]["title"], "Qdrant lead")
+            self.assertEqual(context["items"][0]["ranker"], "qdrant-vector")
 
 
 if __name__ == "__main__":

@@ -129,6 +129,10 @@ def build_parser() -> argparse.ArgumentParser:
     add_root(postgres_sync_p)
 
     qdrant_index_p = sub.add_parser("qdrant-index", help="build real Qdrant vector index from local assets")
+    qdrant_index_p.add_argument("--recreate", action="store_true", help="delete and recreate incompatible collection")
+    qdrant_index_p.add_argument("--batch-size", type=int, default=32, help="embedding/upsert batch size")
+    qdrant_index_p.add_argument("--no-resume", action="store_true", help="ignore local vector cache")
+    qdrant_index_p.add_argument("--force-reembed", action="store_true", help="rebuild embeddings even when cache is current")
     add_root(qdrant_index_p)
 
     qdrant_search_p = sub.add_parser("qdrant-search", help="query assets through Qdrant vector retrieval")
@@ -334,7 +338,19 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(pipeline.postgres_sync(args.root), ensure_ascii=False, indent=2))
             return 0
         if args.command == "qdrant-index":
-            print(json.dumps(pipeline.qdrant_index(args.root), ensure_ascii=False, indent=2))
+            print(
+                json.dumps(
+                    pipeline.qdrant_index(
+                        args.root,
+                        recreate_collection=args.recreate,
+                        batch_size=args.batch_size,
+                        resume=not args.no_resume,
+                        force_reembed=args.force_reembed,
+                    ),
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
             return 0
         if args.command == "qdrant-search":
             results = pipeline.qdrant_search(

@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from novel_forge.agents import agent_runtime_profile, enforce_agent_action
 from novel_forge.evaluation.quality import QUALITY_DIMENSIONS
 from novel_forge.evaluation.creative_gate import evaluate_draft_quality, gate_issues
 from novel_forge.model_adapters import ModelAdapter, model_from_env, validate_model_output
@@ -15,6 +16,7 @@ from novel_forge.storage.rag_context import build_rag_context, retrieval_metadat
 
 
 def review(storage: LocalStorage, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+    agent_profile = agent_runtime_profile("review")
     model = model or model_from_env("review")
     draft_asset = read_previous(storage, "drafts", input_path)
     retrieved_context = build_rag_context(
@@ -25,7 +27,9 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
     )
     result = validate_model_output(
         "review",
-        model.review(
+        _checked_model_review(
+            agent_profile,
+            model,
             draft_asset.content.get("text", ""),
             {
                 "rubric": QUALITY_DIMENSIONS,
@@ -35,6 +39,7 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
             },
         ),
     )
+    enforce_agent_action(agent_profile, "write_review_report", "review_report")
     quality_gate = evaluate_draft_quality(draft_asset.content.get("text", ""))
     issues = [*result["issues"], *gate_issues(quality_gate)]
     asset = ReviewReport(
@@ -51,6 +56,7 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
         metadata={
             "model": model.name,
             "provider": result.get("provider", model.name),
+            "agent_runtime": agent_profile,
             **retrieval_metadata(retrieved_context),
             "run_metadata": run_metadata(
                 "review",
@@ -78,6 +84,11 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
         references=retrieval_reference_ids(draft_asset.id, retrieved_context),
     )
     return storage.write_asset("reviews", asset)
+
+
+def _checked_model_review(agent_profile: dict, model: ModelAdapter, content: str, context: dict[str, Any]) -> dict[str, Any]:
+    enforce_agent_action(agent_profile, "call_model_adapter")
+    return model.review(content, context)
 
 
 @dataclass(frozen=True)

@@ -49,10 +49,23 @@ def postgres_sync(root: str | Path = ".") -> dict[str, int]:
     return sync_postgres_from_local(storage, settings_for(storage.root))
 
 
-def qdrant_index(root: str | Path = ".") -> dict[str, Any]:
+def qdrant_index(
+    root: str | Path = ".",
+    recreate_collection: bool = False,
+    batch_size: int = 32,
+    resume: bool = True,
+    force_reembed: bool = False,
+) -> dict[str, Any]:
     storage = LocalStorage(root)
     storage.ensure_layout()
-    return build_qdrant_index(storage, settings_for(storage.root))
+    return build_qdrant_index(
+        storage,
+        settings_for(storage.root),
+        recreate_collection=recreate_collection,
+        batch_size=batch_size,
+        resume=resume,
+        force_reembed=force_reembed,
+    )
 
 
 def qdrant_search(

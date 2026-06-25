@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from novel_forge.agents import agent_runtime_profile, enforce_agent_action
 from novel_forge.model_adapters import ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.common import read_previous, run_metadata
 from novel_forge.schemas import DraftChapter
@@ -10,6 +11,7 @@ from novel_forge.storage.rag_context import build_rag_context, retrieval_metadat
 
 
 def draft(storage: LocalStorage, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+    agent_profile = agent_runtime_profile("draft")
     model = model or model_from_env("draft")
     plan = read_previous(storage, "chapter_plans", input_path)
     retrieved_context = build_rag_context(
@@ -20,15 +22,13 @@ def draft(storage: LocalStorage, input_path: str | None = None, model: ModelAdap
     )
     generated = validate_model_output(
         "generate",
-        model.generate(
-            "Draft an original Chinese web-novel chapter from the chapter plan.",
-            {
-                "plan": plan.content,
-                "source_asset_id": plan.id,
-                "retrieved_context": retrieved_context,
-            },
-        ),
+        _checked_model_generate(agent_profile, model, "Draft an original Chinese web-novel chapter from the chapter plan.", {
+            "plan": plan.content,
+            "source_asset_id": plan.id,
+            "retrieved_context": retrieved_context,
+        }),
     )
+    enforce_agent_action(agent_profile, "write_draft_chapter", "draft_chapter")
     draft_text = (
         generated["text"]
         if model.name != "mock-model"
@@ -53,6 +53,7 @@ def draft(storage: LocalStorage, input_path: str | None = None, model: ModelAdap
         metadata={
             "model": model.name,
             "provider": generated.get("provider", model.name),
+            "agent_runtime": agent_profile,
             **retrieval_metadata(retrieved_context),
             "run_metadata": run_metadata(
                 "draft",
@@ -64,3 +65,8 @@ def draft(storage: LocalStorage, input_path: str | None = None, model: ModelAdap
         references=retrieval_reference_ids(plan.id, retrieved_context),
     )
     return storage.write_asset("drafts", asset)
+
+
+def _checked_model_generate(agent_profile: dict, model: ModelAdapter, prompt: str, context: dict) -> dict:
+    enforce_agent_action(agent_profile, "call_model_adapter")
+    return model.generate(prompt, context)
