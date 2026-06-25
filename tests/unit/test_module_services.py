@@ -25,6 +25,8 @@ from novel_forge.modules.worldbuilding import service as worldbuilding_service
 from novel_forge.schemas import DraftChapter
 from novel_forge.workflows import pipeline
 
+ROOT = Path(__file__).resolve().parents[2]
+
 
 class ModuleServiceTests(unittest.TestCase):
     def test_services_run_main_asset_chain_without_pipeline_step_bodies(self):
@@ -47,6 +49,9 @@ class ModuleServiceTests(unittest.TestCase):
             cleaned = cleaning_service.clean(storage, str(raw))
             decomposition = decomposition_service.decompose(storage, str(cleaned))
             knowledge = knowledge_service.extract_knowledge(storage, str(decomposition))
+            knowledge_asset = storage.read_asset(knowledge)
+            self.assertIn("retrieved_context", knowledge_asset.metadata)
+            self.assertIn("retrieval_source_asset_ids", knowledge_asset.metadata)
             material = materials_service.build_materials(storage, str(knowledge))
             material_asset = storage.read_asset(material)
             self.assertIn("hook", material_asset.tags)
@@ -59,7 +64,13 @@ class ModuleServiceTests(unittest.TestCase):
             outline = outline_service.generate_outline(storage, str(character))
             chapter_plan = chapter_plan_service.generate_chapter_plan(storage, str(outline))
             draft = drafting_service.draft(storage, str(chapter_plan))
+            draft_asset = storage.read_asset(draft)
+            self.assertIn("retrieved_context", draft_asset.metadata)
+            self.assertIn("retrieval_query", draft_asset.metadata)
             review = review_service.review(storage, str(draft))
+            review_asset = storage.read_asset(review)
+            self.assertIn("retrieved_context", review_asset.metadata)
+            self.assertIn("retrieval_ranker", review_asset.metadata)
             comparison = review_service.compare_reviews(storage, str(draft))
             revision = revision_service.revise(storage, str(review))
             feedback = feedback_service.import_feedback(storage, str(feedback_path))
@@ -97,6 +108,8 @@ class ModuleServiceTests(unittest.TestCase):
             self.assertEqual(insight_asset.type, "feedback_insight")
             self.assertEqual(insight_asset.content["retention_risk"]["level"], "medium")
             self.assertEqual(insight_asset.content["plot_adjustment_plan"]["trend_direction"], "declining")
+            self.assertLess(insight_asset.content["trend_metrics"]["rating_slope"], 0)
+            self.assertEqual(insight_asset.content["trend_metrics"]["confidence"], "low")
             self.assertIn("chapter_trends", insight_asset.content)
             workspace_asset = storage.read_asset(workspace)
             self.assertEqual(workspace_asset.type, "project_workspace_state")
@@ -126,8 +139,73 @@ class ModuleServiceTests(unittest.TestCase):
             formats = {asset.metadata["source_format"] for asset in assets}
             self.assertEqual(formats, {"txt", "md", "epub", "mobi", "azw3"})
             self.assertTrue(all(asset.type == "source_document" for asset in assets))
+            self.assertTrue(all("rights" in asset.metadata for asset in assets))
             self.assertTrue(any("EPUB clue" in asset.content["text"] for asset in assets))
             self.assertTrue(all(asset.content["text"].strip() for asset in assets))
+
+    def test_epub_ingestion_uses_opf_spine_order_and_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            storage = pipeline.ensure_project(root)
+            epub = root / "ordered.epub"
+            with zipfile.ZipFile(epub, "w") as archive:
+                archive.writestr(
+                    "META-INF/container.xml",
+                    """<?xml version="1.0"?>
+                    <container>
+                      <rootfiles>
+                        <rootfile full-path="OEBPS/content.opf" />
+                      </rootfiles>
+                    </container>""",
+                )
+                archive.writestr(
+                    "OEBPS/content.opf",
+                    """<package>
+                      <metadata><title>Ordered Test</title><language>zh</language></metadata>
+                      <manifest>
+                        <item id="second" href="ch2.xhtml" />
+                        <item id="first" href="ch1.xhtml" />
+                      </manifest>
+                      <spine>
+                        <itemref idref="first" />
+                        <itemref idref="second" />
+                      </spine>
+                    </package>""",
+                )
+                archive.writestr("OEBPS/ch2.xhtml", "<html><body>第二章 后出现</body></html>")
+                archive.writestr("OEBPS/ch1.xhtml", "<html><body>第一章 先出现</body></html>")
+
+            raw = ingestion_service.ingest(storage, str(epub))
+            asset = storage.read_asset(raw)
+
+            self.assertLess(asset.content["text"].index("第一章"), asset.content["text"].index("第二章"))
+            self.assertEqual(asset.metadata["extraction_method"], "epub-opf-spine")
+            self.assertEqual(asset.metadata["epub_spine_items"], ["OEBPS/ch1.xhtml", "OEBPS/ch2.xhtml"])
+            self.assertEqual(asset.metadata["epub_metadata"]["title"], "Ordered Test")
+
+    def test_review_outputs_creative_quality_gates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = pipeline.ensure_project(Path(tmp))
+            draft = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Weak draft",
+                    source="plan",
+                    tags=["draft"],
+                    content={
+                        "chapter": 1,
+                        "text": "他走进房间。天气很好。然后结束。",
+                        "copyright_boundary": "test fixture",
+                    },
+                ),
+            )
+
+            review = review_service.review(storage, str(draft))
+            asset = storage.read_asset(review)
+
+            self.assertIn("quality_gates", asset.content)
+            self.assertIn("character_motivation_chain", asset.content["quality_gates"]["blocked_dimensions"])
+            self.assertTrue(any(issue.get("reviewer") == "local-creative-gate" for issue in asset.issues))
 
     def test_ingest_many_rejects_directory_without_supported_sources(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -177,6 +255,82 @@ class ModuleServiceTests(unittest.TestCase):
             self.assertEqual(asset.metadata["removed_line_count"], 1)
             self.assertEqual(asset.metadata["chapter_count"], 1)
             self.assertEqual(asset.content["chapters"][0]["title"], "第一章开端")
+
+    def test_workspace_supports_multi_book_series_memory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = pipeline.ensure_project(Path(tmp))
+            book_one = workspace_service.init_workspace(storage, "Clockverse Book One", "Clockverse", 1)
+            book_two = workspace_service.init_workspace(storage, "Clockverse Book Two", "Clockverse", 2)
+            draft_one = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Book one chapter",
+                    source="book-one-plan",
+                    tags=["draft"],
+                    content={"chapter": 1, "text": "第一部第一章留下钟楼钩子。"},
+                ),
+            )
+            draft_two = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Book two chapter",
+                    source="book-two-plan",
+                    tags=["draft"],
+                    content={"chapter": 1, "text": "第二部第一章回收旧钥匙并打开新钩子。"},
+                ),
+            )
+
+            updated_one = workspace_service.update_workspace(storage, str(draft_one), str(book_one), chapter=1)
+            updated_two = workspace_service.update_workspace(storage, str(draft_two), str(book_two), chapter=1)
+            status_one = workspace_service.workspace_status(storage, str(updated_one))
+            status_two = workspace_service.workspace_status(storage, str(updated_two))
+
+            self.assertEqual(status_one["series_title"], "Clockverse")
+            self.assertEqual(status_two["series_title"], "Clockverse")
+            self.assertEqual(status_one["book_number"], 1)
+            self.assertEqual(status_two["book_number"], 2)
+            self.assertNotEqual(
+                storage.read_asset(updated_one).content["project_id"],
+                storage.read_asset(updated_two).content["project_id"],
+            )
+
+    def test_long_project_fixture_tracks_six_chapters(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = pipeline.ensure_project(Path(tmp))
+            fixture = ROOT / "tests" / "fixtures" / "long_project" / "clockverse_long_fixture.txt"
+            raw = ingestion_service.ingest(
+                storage,
+                str(fixture),
+                rights_authorization="test_fixture",
+                copyright_note="self-authored long project fixture",
+                allow_downstream_generation=True,
+            )
+            cleaned = cleaning_service.clean(storage, str(raw))
+            cleaned_asset = storage.read_asset(cleaned)
+            workspace = workspace_service.init_workspace(storage, "Clockverse Fixture", "Clockverse", 1)
+
+            for number, chapter in enumerate(cleaned_asset.content["chapters"], start=1):
+                draft = storage.write_asset(
+                    "drafts",
+                    DraftChapter(
+                        title=f"Fixture chapter {number}",
+                        source=cleaned_asset.id,
+                        tags=["draft", "fixture"],
+                        content={
+                            "chapter": number,
+                            "text": f"{chapter['title']}。为了推进线索，角色必须选择并留下新的章节钩子。",
+                            "copyright_boundary": "self-authored fixture",
+                        },
+                    ),
+                )
+                workspace = workspace_service.update_workspace(storage, str(draft), str(workspace), chapter=number)
+
+            summary = workspace_service.workspace_status(storage, str(workspace))
+
+            self.assertEqual(cleaned_asset.metadata["chapter_count"], 6)
+            self.assertEqual(summary["chapter_count"], 6)
+            self.assertEqual(summary["series_title"], "Clockverse")
+            self.assertGreaterEqual(summary["open_hook_count"], 6)
 
 
 if __name__ == "__main__":

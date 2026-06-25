@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import shutil
+import os
 from pathlib import Path
 
 from novel_forge.core.constants import DATA_DIRS, DOC_FILES, SKILL_NAMES, SKILL_REQUIRED_SECTIONS
 from novel_forge.core.ids import make_id, utc_now
-from novel_forge.model_adapters.mock import MockModelAdapter
+from novel_forge.model_adapters import ModelAdapter
 from novel_forge.modules.chapter_plan.service import generate_chapter_plan as generate_chapter_plan_service
 from novel_forge.modules.characters.service import generate_characters as generate_characters_service
 from novel_forge.modules.cleaning.service import clean as clean_service
@@ -14,6 +15,8 @@ from novel_forge.modules.decomposition.service import decompose as decompose_ser
 from novel_forge.modules.drafting.service import draft as draft_service
 from novel_forge.modules.feedback.service import analyze_feedback as analyze_feedback_service
 from novel_forge.modules.feedback.service import import_feedback as import_feedback_service
+from novel_forge.modules.handoff.service import create_deconstruction_handoff as create_deconstruction_handoff_service
+from novel_forge.modules.handoff.service import create_knowledge_handoff as create_knowledge_handoff_service
 from novel_forge.modules.ingestion.service import ingest as ingest_service
 from novel_forge.modules.ingestion.service import ingest_many as ingest_many_service
 from novel_forge.modules.knowledge.service import extract_knowledge as extract_knowledge_service
@@ -31,6 +34,15 @@ from novel_forge.modules.workspace.service import workspace_status as workspace_
 from novel_forge.modules.worldbuilding.service import generate_world as generate_world_service
 from novel_forge.schemas import WorkflowRun, validate_common_fields
 from novel_forge.storage.local import LocalStorage
+from novel_forge.workflows.industrial import industrial_status as industrial_status_service
+from novel_forge.workflows.industrial import minio_sync as minio_sync_service
+from novel_forge.workflows.industrial import neo4j_status as neo4j_status_service
+from novel_forge.workflows.industrial import postgres_init as postgres_init_service
+from novel_forge.workflows.industrial import postgres_sync as postgres_sync_service
+from novel_forge.workflows.industrial import qdrant_index as qdrant_index_service
+from novel_forge.workflows.industrial import qdrant_search as qdrant_search_service
+from novel_forge.storage.asset_manifest import rebuild_asset_manifest as rebuild_asset_manifest_service
+from novel_forge.storage.asset_manifest import manifest_counts as manifest_counts_service
 from novel_forge.storage.retrieval_index import build_retrieval_index as build_retrieval_index_service
 from novel_forge.storage.search import search_assets as search_assets_service
 from novel_forge.storage.vector_index import build_vector_index as build_vector_index_service
@@ -75,14 +87,50 @@ def ensure_sample_inputs(root: Path) -> None:
         )
 
 
-def ingest(root: str | Path, input_path: str, title: str | None = None) -> Path:
+def ingest(
+    root: str | Path,
+    input_path: str,
+    title: str | None = None,
+    rights_authorization: str = "unknown",
+    license_name: str = "",
+    copyright_note: str = "",
+    source_url: str = "",
+    allow_downstream_generation: bool = False,
+) -> Path:
     storage = ensure_project(root)
-    return ingest_service(storage, input_path, title)
+    return ingest_service(
+        storage,
+        input_path,
+        title,
+        rights_authorization,
+        license_name,
+        copyright_note,
+        source_url,
+        allow_downstream_generation,
+    )
 
 
-def ingest_many(root: str | Path, input_path: str, title: str | None = None) -> list[Path]:
+def ingest_many(
+    root: str | Path,
+    input_path: str,
+    title: str | None = None,
+    rights_authorization: str = "unknown",
+    license_name: str = "",
+    copyright_note: str = "",
+    source_url: str = "",
+    allow_downstream_generation: bool = False,
+) -> list[Path]:
     storage = ensure_project(root)
-    return ingest_many_service(storage, input_path, title)
+    return ingest_many_service(
+        storage,
+        input_path,
+        title,
+        rights_authorization,
+        license_name,
+        copyright_note,
+        source_url,
+        allow_downstream_generation,
+    )
 
 
 def clean(root: str | Path, input_path: str | None = None) -> Path:
@@ -90,7 +138,7 @@ def clean(root: str | Path, input_path: str | None = None) -> Path:
     return clean_service(storage, input_path)
 
 
-def decompose(root: str | Path, input_path: str | None = None, model: MockModelAdapter | None = None) -> Path:
+def decompose(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
     storage = ensure_project(root)
     return decompose_service(storage, input_path, model)
 
@@ -105,12 +153,12 @@ def build_materials(root: str | Path, input_path: str | None = None) -> Path:
     return build_materials_service(storage, input_path)
 
 
-def generate_topic(root: str | Path, input_path: str | None = None, model: MockModelAdapter | None = None) -> Path:
+def generate_topic(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
     storage = ensure_project(root)
     return generate_topic_service(storage, input_path, model)
 
 
-def develop_topic(root: str | Path, input_path: str | None = None, model: MockModelAdapter | None = None) -> Path:
+def develop_topic(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
     storage = ensure_project(root)
     return develop_topic_service(storage, input_path, model)
 
@@ -140,12 +188,12 @@ def generate_chapter_plan(root: str | Path, input_path: str | None = None) -> Pa
     return generate_chapter_plan_service(storage, input_path)
 
 
-def draft(root: str | Path, input_path: str | None = None, model: MockModelAdapter | None = None) -> Path:
+def draft(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
     storage = ensure_project(root)
     return draft_service(storage, input_path, model)
 
 
-def review(root: str | Path, input_path: str | None = None, model: MockModelAdapter | None = None) -> Path:
+def review(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
     storage = ensure_project(root)
     return review_service(storage, input_path, model)
 
@@ -155,7 +203,7 @@ def compare_reviews(root: str | Path, input_path: str | None = None) -> Path:
     return compare_reviews_service(storage, input_path)
 
 
-def revise(root: str | Path, input_path: str | None = None, model: MockModelAdapter | None = None) -> Path:
+def revise(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
     storage = ensure_project(root)
     return revise_service(storage, input_path, model)
 
@@ -168,6 +216,29 @@ def import_feedback(root: str | Path, input_path: str) -> Path:
 def analyze_feedback(root: str | Path, input_path: str | None = None) -> Path:
     storage = ensure_project(root)
     return analyze_feedback_service(storage, input_path)
+
+
+def claude_deconstruct(
+    root: str | Path,
+    input_path: str | None = None,
+    genre: str = "",
+    target_reader: str = "",
+    purpose: str = "",
+) -> Path:
+    storage = ensure_project(root)
+    return create_deconstruction_handoff_service(storage, input_path, genre, target_reader, purpose)
+
+
+def claude_knowledge(
+    root: str | Path,
+    input_path: str | None = None,
+    discipline: str = "",
+    credibility: str = "",
+    scope: str = "",
+    project_context: str = "",
+) -> Path:
+    storage = ensure_project(root)
+    return create_knowledge_handoff_service(storage, input_path, discipline, credibility, scope, project_context)
 
 
 def search_assets(
@@ -200,6 +271,16 @@ def build_retrieval_index(root: str | Path) -> Path:
     return build_retrieval_index_service(storage)
 
 
+def build_asset_manifest(root: str | Path) -> Path:
+    storage = ensure_project(root)
+    return rebuild_asset_manifest_service(storage)
+
+
+def asset_manifest_status(root: str | Path) -> dict[str, int]:
+    storage = ensure_project(root)
+    return manifest_counts_service(storage)
+
+
 def build_vector_index(root: str | Path) -> Path:
     storage = ensure_project(root)
     return build_vector_index_service(storage)
@@ -226,9 +307,56 @@ def vector_search_assets(
     )
 
 
-def init_workspace(root: str | Path, title: str = "Sample Novel Workspace") -> Path:
+def industrial_status(root: str | Path) -> dict:
+    return industrial_status_service(root)
+
+
+def postgres_init(root: str | Path) -> dict:
+    return postgres_init_service(root)
+
+
+def postgres_sync(root: str | Path) -> dict:
+    return postgres_sync_service(root)
+
+
+def qdrant_index(root: str | Path) -> dict:
+    return qdrant_index_service(root)
+
+
+def qdrant_search(
+    root: str | Path,
+    query: str,
+    category: str | None = None,
+    asset_type: str | None = None,
+    tags: list[str] | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    return qdrant_search_service(
+        root,
+        query=query,
+        category=category,
+        asset_type=asset_type,
+        tags=tags,
+        limit=limit,
+    )
+
+
+def minio_sync(root: str | Path, categories: list[str] | None = None) -> dict:
+    return minio_sync_service(root, categories=categories)
+
+
+def neo4j_status(root: str | Path) -> dict:
+    return neo4j_status_service(root)
+
+
+def init_workspace(
+    root: str | Path,
+    title: str = "Sample Novel Workspace",
+    series_title: str | None = None,
+    book_number: int | None = None,
+) -> Path:
     storage = ensure_project(root)
-    return init_workspace_service(storage, title)
+    return init_workspace_service(storage, title, series_title, book_number)
 
 
 def update_workspace(
@@ -262,7 +390,20 @@ def run_pipeline(root: str | Path, sample: bool = False) -> Path:
         return output
 
     try:
-        outputs.append(run_step("ingest", [sample_path], lambda: ingest(storage.root, str(sample_path))))
+        outputs.append(
+            run_step(
+                "ingest",
+                [sample_path],
+                lambda: ingest(
+                    storage.root,
+                    str(sample_path),
+                    rights_authorization="test_fixture",
+                    license_name="project-sample",
+                    copyright_note="self-authored fixture for workflow testing",
+                    allow_downstream_generation=True,
+                ),
+            )
+        )
         outputs.append(run_step("clean", [outputs[-1]], lambda: clean(storage.root, str(outputs[-1]))))
         outputs.append(run_step("decompose", [outputs[-1]], lambda: decompose(storage.root, str(outputs[-1]))))
         outputs.append(
@@ -306,6 +447,7 @@ def run_pipeline(root: str | Path, sample: bool = False) -> Path:
         outputs.append(run_step("revise", [review_path], lambda: revise(storage.root, str(review_path))))
         outputs.append(run_step("import-feedback", [feedback_path], lambda: import_feedback(storage.root, str(feedback_path))))
         outputs.append(run_step("analyze-feedback", [outputs[-1]], lambda: analyze_feedback(storage.root, str(outputs[-1]))))
+        _attach_run_assets_to_workspace(storage, workspace_path, [*outputs, *status_paths])
     except Exception as exc:
         error_message = f"{type(exc).__name__}: {exc}"
         run_log = build_run_log(storage, status_paths)
@@ -352,6 +494,7 @@ def run_pipeline(root: str | Path, sample: bool = False) -> Path:
         references=[path.name for path in outputs + status_paths],
     )
     run_path = storage.write_asset("runs", run)
+    _attach_run_assets_to_workspace(storage, workspace_path, [run_path])
     final_asset = outputs[-1]
     summary = {
         "run_id": run.id,
@@ -443,7 +586,67 @@ def validate_project(root: str | Path = ".") -> tuple[bool, list[str]]:
             else:
                 errors.append(f"asset JSON must be object: {path.relative_to(storage.root)}")
     errors.extend(validate_skills(storage.root))
+    if os.environ.get("NOVEL_FORGE_SKIP_PROJECT_SCOPE_VALIDATE", "").strip().lower() not in {"1", "true", "yes"}:
+        errors.extend(_validate_project_scope(storage))
     return not errors, errors
+
+
+def _validate_project_scope(storage: LocalStorage) -> list[str]:
+    if not storage.list_json("workspaces"):
+        return []
+    try:
+        from novel_forge.api.product import project_scope_audit
+
+        audit = project_scope_audit(storage, repair=False)
+    except Exception as exc:
+        return [f"project-scope audit failed: {exc}"]
+    errors = []
+    for issue in audit.get("issues", []):
+        if not isinstance(issue, dict):
+            continue
+        severity = issue.get("severity", "error")
+        if severity in {"error", "warning"}:
+            errors.append(
+                "project-scope "
+                f"{issue.get('kind', 'issue')}: {issue.get('path', '')}: {issue.get('message', '')}"
+            )
+    return errors
+
+
+def _attach_run_assets_to_workspace(storage: LocalStorage, workspace_path: Path, asset_paths: list[Path]) -> None:
+    try:
+        workspace = storage.read_json(workspace_path)
+    except Exception:
+        return
+    if not isinstance(workspace, dict):
+        return
+    content = workspace.get("content", {}) if isinstance(workspace.get("content", {}), dict) else {}
+    project_id = str(content.get("project_id") or workspace.get("id") or "")
+    workspace_id = str(workspace.get("id") or "")
+    workspace_ref = str(workspace_path.relative_to(storage.root))
+    for path in asset_paths:
+        try:
+            resolved = Path(path).resolve()
+            resolved.relative_to(storage.root)
+            data = storage.read_json(resolved)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") == "project_workspace_state":
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        metadata.setdefault("project_id", project_id)
+        metadata.setdefault("workspace_id", workspace_id)
+        metadata.setdefault("workspace_path", workspace_ref)
+        metadata.setdefault("project_asset_role", str(data.get("type", "")))
+        metadata.setdefault("project_attached_at", utc_now())
+        data["metadata"] = metadata
+        references = [str(item) for item in data.get("references", []) if str(item).strip()]
+        for ref in [project_id, workspace_id]:
+            if ref and ref not in references:
+                references.append(ref)
+        data["references"] = references
+        data["updated_at"] = utc_now()
+        storage.write_json(resolved, data)
 
 
 def validate_skills(root: Path) -> list[str]:

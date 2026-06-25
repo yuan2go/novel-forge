@@ -33,6 +33,7 @@
 | V5-OPT-P2-004 | optimization | Add feedback trend analysis | done | FeedbackInsight includes chapter trends, retention risk, sentiment signals, and plot adjustment plan |
 | V5-RISK-001 | risk-reduction | Reduce remaining deterministic/local workflow risks | done | Semantic validators, Skill drift check, and sample workspace auto-update pass tests |
 | V5-RISK-002 | risk-reduction | Add external Claude Code resource intake gate | done | Local evaluation command and intake policy exist; tests and validation pass |
+| V5-RISK-003 | risk-reduction | Add industrialization safeguards for storage, rights, creative gates, and long fixtures | done | Atomic writes, backups, SQLite manifest, rights metadata, creative gates, and long-project fixture tests pass |
 
 ## Auto Optimization Analysis
 
@@ -71,6 +72,7 @@
 | V5-OPT-P2-004 | Add feedback trend analysis. | `src/novel_forge/modules/feedback/service.py`, tests, docs | code + tests + docs | medium | P2-003 complete | `FeedbackInsight` includes per-chapter trends, retention risk, sentiment signals, and next-generation plot constraints | Revert feedback trend helper functions, tests, and docs |
 | V5-RISK-001 | Reduce remaining deterministic/local workflow risks. | schema validation, `scripts/sync_claude_skills.py`, `Makefile`, sample pipeline, tests, docs | code + tests + docs | medium | P2 complete | High-risk asset semantic validators pass; Skill runtime drift can be detected; sample pipeline auto-updates workspace | Revert semantic validators, skill check mode, pipeline workspace run steps, tests, and docs |
 | V5-RISK-002 | Add external Claude Code resource intake gate. | `.claude/commands/evaluate-claude-resource.md`, `docs/09-skills/external-resource-intake.md`, constants, tests, roadmap docs | docs + tests | low | Skill runtime sync and risk reduction complete | External resource review command is read-only and validated; docs classify adopt/adapt/defer/reject decisions | Revert command template, intake doc, constants entry, and test |
+| V5-RISK-003 | Add industrialization safeguards for storage, rights, creative gates, and long fixtures. | storage, ingestion, review, schemas, CLI, tests, docs | code + tests + docs | medium | V5-RISK-002 complete | `make test`, `make validate`, `build-manifest`, and long fixture tests pass | Revert storage lock/manifest, rights metadata, creative gate, long fixture, and docs if contracts need redesign |
 
 ## Latest Auto Execution Report
 
@@ -240,3 +242,16 @@
 | Remaining Strategic Risks | Future hook/plugin/MCP adoption still requires ADR, explicit opt-in, and executable tests. |
 | Key Risk | This pass adds governance and command templates only; it does not verify arbitrary third-party repositories automatically. |
 | Rollback Advice | Revert `.claude/commands/evaluate-claude-resource.md`, `docs/09-skills/external-resource-intake.md`, constants, and test additions if the intake policy needs redesign. |
+
+## Risk Reduction Report 3
+
+| Item | Result |
+|---|---|
+| Batch | industrialization safeguards |
+| Completed | `V5-RISK-003` |
+| Modified Reason | JSON-only storage, unrecorded source rights, weak creative gates, and small fixture tests were the next blockers before larger functional testing. |
+| Tests | `make lint`, `make test`, `make validate`, `make demo`, `build-manifest`, `manifest-status` |
+| Result | `make lint` pass; `make test` pass with 50 tests; `make validate` pass; sample demo and manifest build pass |
+| Remaining Strategic Risks | Real database/vector services, real LLM providers, full proprietary ebook parsing, and large real-world corpus tests still require ADR and deployment policy. |
+| Key Risk | SQLite manifest, local locks, and backups reduce single-user/local risks but are not yet a distributed production storage backend. |
+| Rollback Advice | Revert storage lock/manifest, rights metadata validation, creative gate, long fixture, CLI/docs/tests if the industrialization contracts need redesign. |

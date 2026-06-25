@@ -9,6 +9,40 @@ description = "File-based industrial AI novel production system"
 requires-python = ">=3.11"
 dependencies = []
 
+[project.optional-dependencies]
+api = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
+postgres = [
+    "psycopg[binary]>=3.2",
+]
+worker = [
+    "celery[redis]>=5.4",
+    "redis>=5.0",
+]
+vector = [
+    "qdrant-client>=1.10",
+]
+object = [
+    "minio>=7.2",
+]
+graph = [
+    "neo4j>=5.20",
+]
+industrial = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "psycopg[binary]>=3.2",
+    "celery[redis]>=5.4",
+    "redis>=5.0",
+    "qdrant-client>=1.10",
+    "minio>=7.2",
+]
+industrial-graph = [
+    "neo4j>=5.20",
+]
+
 [project.scripts]
 novel-forge = "novel_forge.cli:main"
 

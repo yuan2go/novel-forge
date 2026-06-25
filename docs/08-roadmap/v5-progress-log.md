@@ -30,3 +30,4 @@
 | 2026-06-25 | optimization | Added feedback trend analysis with chapter trends, retention risk, sentiment signals, and plot adjustment plan. |
 | 2026-06-25 | risk-reduction | Added stricter semantic validators, Skill runtime drift check, and automatic sample pipeline workspace updates. |
 | 2026-06-25 | risk-reduction | Added external Claude Code resource intake policy and a read-only evaluation command for third-party Skills, commands, hooks, agents, plugins, and scripts. |
+| 2026-06-25 | risk-reduction | Added storage locks, atomic writes, overwrite backups, SQLite asset manifest, source rights metadata, creative quality gates, and long-project fixture pressure tests. |

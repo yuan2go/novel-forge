@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from novel_forge.modules.common import read_previous
+from novel_forge.modules.common import read_previous, run_metadata
 from novel_forge.schemas import MaterialCard
 from novel_forge.storage.local import LocalStorage
 
@@ -36,6 +36,7 @@ def build_materials(storage: LocalStorage, input_path: str | None = None) -> Pat
                 "function": ["hook", "conflict", "reader-retention", "chapter-ending"],
                 "source_type": ["knowledge_card"],
             },
+            "run_metadata": run_metadata("build-materials", knowledge, provider="local-rules", model="material-transform-v1"),
         },
         references=[knowledge.id],
     )

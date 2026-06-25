@@ -39,6 +39,7 @@ source material -> cleaned text -> decomposition -> knowledge -> materials -> to
 - Feedback trend analysis in `FeedbackInsight`, including chapter trends, retention risk, sentiment signals, plot adjustment plan, and next-generation constraints.
 - Risk reduction pass: stricter semantic validation for high-risk assets, runtime Skill drift detection, and automatic sample pipeline workspace updates.
 - External Claude Code resource intake gate with a read-only local evaluation command and documented adopt/adapt/defer/reject policy.
+- Industrialization safeguards: storage locks, atomic writes, overwrite backups, SQLite asset manifest, source rights metadata, creative quality gates, and long-project fixture pressure tests.
 
 ## Current Commands
 
@@ -53,6 +54,8 @@ make check-skills
 ./novel-forge topic-development --root .
 ./novel-forge training-exercise --root .
 ./novel-forge build-index --root .
+./novel-forge build-manifest --root .
+./novel-forge manifest-status --root .
 ./novel-forge build-vector-index --root .
 ./novel-forge vector-search --query "chapter hook obligation" --root .
 ./novel-forge compare-reviews --root .
@@ -64,7 +67,7 @@ make check-skills
 
 ## Test Coverage
 
-- 41 unittest tests pass.
+- 50 unittest tests pass.
 - Tests cover schema, storage, model adapter, CLI, workflow steps, module services, pipeline status records, failure status records, Skills structure, and end-to-end pipeline.
 - Topic/training tests cover both direct service calls and CLI commands that write valid `TopicSeed` and `TrainingExercise` JSON assets.
 - Retrieval tests cover index build, default indexed search, stale-index auto-refresh, CLI build-index, and direct JSON scan fallback.
@@ -74,6 +77,7 @@ make check-skills
 - Feedback trend tests cover cross-chapter rating decline, retention risk level, sentiment signals, and next-generation constraints.
 - Risk-reduction tests cover semantic validation, Skill runtime drift detection, and automatic workspace output from sample pipeline.
 - External resource intake tests cover read-only command boundaries, execution-surface review sections, import decisions, and Novel Forge runtime boundaries.
+- Industrial safeguard tests cover overwrite backup, SQLite manifest, rights metadata, creative quality gates, and a six-chapter long-project fixture.
 - Sample pipeline tests generate a full run in a temporary project root.
 - Repeated sample pipeline runs clean the previous summary-referenced sample outputs before generating the next sample run.
 
@@ -101,18 +105,18 @@ make check-skills
 
 ## Remaining Risks
 
-- Real LLM adapters are not implemented yet.
+- Real LLM adapters are not implemented yet; Claude Code currently supports manual handoff packets rather than automated provider calls.
 - Provider adapter contracts exist, but external API calls remain intentionally unimplemented.
 - Review comparison uses local mock reviewer profiles, not real external reviewers.
-- MOBI/AZW3 ingestion is fixture-level text extraction without full proprietary ebook parsing.
+- MOBI/AZW3 ingestion remains limited binary text extraction without full proprietary ebook parsing.
 - Cleaning is deterministic and conservative; it does not replace full OCR correction or semantic boilerplate detection.
-- Local vector retrieval uses deterministic hash embeddings, not a real semantic embedding model or vector database.
+- Local vector retrieval is hybrid hash-vector plus BM25-style lexical ranking, not a real semantic embedding model or vector database.
 - Schema validation now includes deterministic semantic checks for selected high-risk assets, but full Pydantic-style validation remains deferred.
 - Module service files now hold P0 workflow step logic, but deeper domain-specific production logic remains mock/simple.
-- Retrieval/vector/database layers are intentionally deferred.
+- SQLite manifest improves local indexing/audit, but a real database, queue, and distributed lock strategy remain deferred.
 - Training has a minimal schema-backed CLI workflow, but adaptive reader/writer training remains deferred.
 - Image prompt modules have schemas/directories but not full workflows.
-- Workspace state is auto-updated by the sample pipeline for draft/review, but custom long-form flows still need explicit workspace update calls.
-- Feedback trend analysis uses deterministic rating and keyword rules, not statistical modeling or external LLM interpretation.
+- Workspace state has six-chapter fixture coverage and series/book identifiers, but cross-book canon reconciliation remains basic.
+- Feedback trend analysis includes deterministic statistics and keyword rules, not large-cohort modeling or external LLM interpretation.
 - `.claude/skills` runtime output can still drift if edited manually, but `make check-skills` now detects drift.
 - External Claude Code resource intake is documented and bounded, but future hooks/plugins/MCP adoption still requires ADR, opt-in, and executable tests.

@@ -13,7 +13,7 @@ source material -> cleaned text -> decomposition -> knowledge/material assets ->
 - Extract structure, rhythm, hooks, conflict mechanics, emotional curves, and commercial logic from reference works.
 - Do not copy original expression, character combinations, settings, or plot sequences from copyrighted works.
 - Keep raw sources, decomposition reports, generated assets, and final drafts in separate directories.
-- Use deterministic mock adapters for tests; real model adapters are pluggable and deferred.
+- Use deterministic mock adapters for tests; real OpenAI-compatible providers are opt-in through environment variables.
 
 ## Quick Start
 
@@ -23,6 +23,49 @@ make validate
 make demo
 ./novel-forge --help
 ```
+
+## Local Production Stack
+
+For the local Mac production-style environment, use Docker for PostgreSQL, Redis, Qdrant, MinIO, FastAPI, Celery worker, and the Next.js console:
+
+```bash
+make local-up
+```
+
+The command creates `.env` from `.env.example` when needed, starts the full Docker Compose stack, initializes and syncs PostgreSQL, then runs a smoke test.
+
+Open:
+
+- Web console: `http://localhost:3000`
+- FastAPI: `http://localhost:8000`
+- MinIO console: `http://localhost:9001`
+
+Useful controls:
+
+```bash
+make local-smoke
+make local-logs
+make local-down
+```
+
+## Real Model Providers
+
+The default local path uses `MockModelAdapter`. To call a real OpenAI-compatible provider, set a provider and API key before running API, worker, or CLI commands:
+
+```bash
+export NOVEL_FORGE_MODEL_PROVIDER=chatgpt
+export OPENAI_API_KEY=...
+```
+
+Or use DeepSeek for draft/revision work:
+
+```bash
+export NOVEL_FORGE_DRAFT_PROVIDER=deepseek
+export NOVEL_FORGE_REVISION_PROVIDER=deepseek
+export DEEPSEEK_API_KEY=...
+```
+
+Model calls use strict JSON prompts and output validation. Invalid model output fails the step instead of writing malformed assets.
 
 ## Core Commands
 
@@ -44,9 +87,28 @@ make demo
 ./novel-forge import-feedback examples/sample_inputs/sample_feedback.csv
 ./novel-forge analyze-feedback
 ./novel-forge run-pipeline --sample
+./novel-forge industrial-status
 ./novel-forge status
 ./novel-forge validate
 ```
+
+## Industrial Stack
+
+The default testable core still runs without third-party dependencies. Production-style infrastructure is available through optional adapters:
+
+- PostgreSQL for asset indexes, task statuses, and content-hash version records.
+- FastAPI for backend API access.
+- Redis + Celery for async batch and long-running workflow execution.
+- Qdrant for real vector retrieval.
+- MinIO for object copies of raw material, artifacts, and exports.
+- Next.js for the product console under `web/admin/`: project space, project configuration, project-scoped task/assets, batch deconstruction, draft workbench, and review/revision flow.
+- Neo4j remains opt-in for relationship-heavy graph queries.
+
+```bash
+make local-up
+```
+
+See [Industrial Stack](docs/01-architecture/industrial-stack.md) for service boundaries.
 
 ## Skills
 
@@ -72,4 +134,4 @@ make sync-skills
 
 ## Current Implementation Scope
 
-V5 Phase 1 uses Python standard library, dataclass schemas, local JSON storage, a deterministic mock model adapter, and `unittest` tests. This keeps the project runnable without installing external dependencies. Pytest/Pydantic can be introduced later by ADR once dependency installation is allowed.
+V5 keeps the Python standard-library core, dataclass schemas, local JSON storage, deterministic mock adapters, and `unittest` tests. Industrial services and real model providers are opt-in so local validation remains fast and dependency-light.

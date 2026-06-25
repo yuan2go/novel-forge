@@ -36,9 +36,10 @@ def analyze_feedback(storage: LocalStorage, input_path: str | None = None) -> Pa
         rows = _merge_rows(feedback.content.get("rows", []), rows)
     comments = " ".join(row.get("comment", "") for row in rows)
     chapter_trends = build_chapter_trends(rows)
+    trend_metrics = build_trend_metrics(chapter_trends, rows)
     retention_risk = assess_retention_risk(chapter_trends, rows)
     sentiment_signals = mine_sentiment_signals(rows)
-    adjustment_plan = build_plot_adjustment_plan(chapter_trends, retention_risk, sentiment_signals)
+    adjustment_plan = build_plot_adjustment_plan(chapter_trends, retention_risk, sentiment_signals, trend_metrics)
     asset = FeedbackInsight(
         title=f"Insight from {feedback.title}",
         source=feedback.id,
@@ -48,6 +49,7 @@ def analyze_feedback(storage: LocalStorage, input_path: str | None = None) -> Pa
             "average_rating": average_rating(rows),
             "next_generation_constraints": adjustment_plan["next_generation_constraints"],
             "chapter_trends": chapter_trends,
+            "trend_metrics": trend_metrics,
             "retention_risk": retention_risk,
             "sentiment_signals": sentiment_signals,
             "plot_adjustment_plan": adjustment_plan,
@@ -105,9 +107,10 @@ def build_chapter_trends(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
 
 def assess_retention_risk(chapter_trends: list[dict[str, Any]], rows: list[dict[str, str]]) -> dict[str, Any]:
     if not chapter_trends:
-        return {"level": "unknown", "reasons": ["no chapter feedback"], "at_risk_chapters": []}
+        return {"level": "unknown", "score": 0.0, "reasons": ["no chapter feedback"], "at_risk_chapters": []}
     at_risk_chapters: list[int] = []
     reasons: list[str] = []
+    risk_score = 0.0
     for trend in chapter_trends:
         chapter = int(trend["chapter"])
         rating = float(trend["average_rating"])
@@ -116,11 +119,42 @@ def assess_retention_risk(chapter_trends: list[dict[str, Any]], rows: list[dict[
         if rating < 3.5 or delta <= -0.75 or negative_count >= 2:
             at_risk_chapters.append(chapter)
             reasons.append(f"chapter {chapter} shows rating/drop/negative signal risk")
+        if rating < 3.5:
+            risk_score += 1.0
+        if delta <= -0.75:
+            risk_score += 1.0
+        if negative_count >= 2:
+            risk_score += 0.75
     low_rating_rows = [row for row in rows if _rating(row) is not None and float(_rating(row) or 0) <= 2.0]
     if low_rating_rows:
         reasons.append("one or more readers rated a chapter at 2 or below")
+        risk_score += min(2.0, len(low_rating_rows) * 0.5)
     level = "high" if len(at_risk_chapters) >= 2 or len(low_rating_rows) >= 2 else "medium" if at_risk_chapters else "low"
-    return {"level": level, "reasons": reasons or ["ratings and comments are stable"], "at_risk_chapters": at_risk_chapters}
+    return {
+        "level": level,
+        "score": round(risk_score, 2),
+        "reasons": reasons or ["ratings and comments are stable"],
+        "at_risk_chapters": at_risk_chapters,
+    }
+
+
+def build_trend_metrics(chapter_trends: list[dict[str, Any]], rows: list[dict[str, str]]) -> dict[str, Any]:
+    ratings = [float(trend["average_rating"]) for trend in chapter_trends]
+    chapters = [float(trend["chapter"]) for trend in chapter_trends]
+    row_ratings = [value for value in (_rating(row) for row in rows) if value is not None]
+    return {
+        "rating_slope": _linear_slope(chapters, ratings),
+        "rating_volatility": _standard_deviation(ratings),
+        "low_rating_ratio": round(
+            len([rating for rating in row_ratings if rating <= 2.0]) / len(row_ratings),
+            4,
+        )
+        if row_ratings
+        else 0.0,
+        "chapter_count": len(chapter_trends),
+        "row_count": len(rows),
+        "confidence": _feedback_confidence(len(rows), len(chapter_trends)),
+    }
 
 
 def mine_sentiment_signals(rows: list[dict[str, str]]) -> dict[str, Any]:
@@ -145,12 +179,19 @@ def build_plot_adjustment_plan(
     chapter_trends: list[dict[str, Any]],
     retention_risk: dict[str, Any],
     sentiment_signals: dict[str, Any],
+    trend_metrics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    trend_metrics = trend_metrics or {}
     constraints: list[str] = []
     actions: list[str] = []
     if retention_risk.get("level") in {"medium", "high"}:
         constraints.append("open the next chapter with a concrete unresolved obligation")
         actions.append("repair at-risk chapter handoff before expanding side plots")
+    if float(trend_metrics.get("rating_slope", 0.0)) <= -0.5:
+        constraints.append("treat the next chapter as a retention-repair chapter, not a lore-expansion chapter")
+        actions.append("front-load conflict, choice cost, and visible payoff in the next chapter")
+    if float(trend_metrics.get("rating_volatility", 0.0)) >= 1.0:
+        constraints.append("stabilize chapter promise delivery before adding new plot branches")
     if sentiment_signals["negative_keywords"].get("motive", 0):
         constraints.append("make protagonist motivation pressure explicit by beat 2")
         actions.append("add one choice-cost beat tied to the protagonist motive")
@@ -241,6 +282,36 @@ def _trend_direction(chapter_trends: list[dict[str, Any]]) -> str:
     if delta <= -0.5:
         return "declining"
     return "stable"
+
+
+def _linear_slope(xs: list[float], ys: list[float]) -> float:
+    if len(xs) < 2 or len(xs) != len(ys):
+        return 0.0
+    x_mean = sum(xs) / len(xs)
+    y_mean = sum(ys) / len(ys)
+    denominator = sum((x - x_mean) ** 2 for x in xs)
+    if denominator == 0:
+        return 0.0
+    numerator = sum((x - x_mean) * (y - y_mean) for x, y in zip(xs, ys))
+    return round(numerator / denominator, 4)
+
+
+def _standard_deviation(values: list[float]) -> float:
+    if len(values) < 2:
+        return 0.0
+    mean = sum(values) / len(values)
+    variance = sum((value - mean) ** 2 for value in values) / len(values)
+    return round(variance**0.5, 4)
+
+
+def _feedback_confidence(row_count: int, chapter_count: int) -> str:
+    if row_count >= 20 and chapter_count >= 5:
+        return "high"
+    if row_count >= 6 and chapter_count >= 3:
+        return "medium"
+    if row_count > 0 and chapter_count > 0:
+        return "low"
+    return "none"
 
 
 def _dedupe(values: list[str]) -> list[str]:

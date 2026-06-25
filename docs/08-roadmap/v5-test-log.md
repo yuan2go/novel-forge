@@ -64,3 +64,8 @@
 | 2026-06-25 | `make lint` after external resource intake | pass | Python sources and tests compile after adding Claude Code resource intake docs and command template. |
 | 2026-06-25 | `make test` after external resource intake | pass | 41 unittest tests passed, including read-only external resource command boundary coverage. |
 | 2026-06-25 | `make validate` after external resource intake | pass | Current repository docs, JSON assets, workspaces directory, and 14 Skills validate with external intake doc required. |
+| 2026-06-25 | `make lint` after industrial safeguards | pass | Python sources and tests compile after storage, rights, creative gate, and long fixture changes. |
+| 2026-06-25 | `make test` after industrial safeguards | pass | 50 unittest tests passed, including manifest, rights metadata, creative gates, and six-chapter fixture pressure coverage. |
+| 2026-06-25 | `make demo` after industrial safeguards | pass | Sample pipeline regenerated assets with rights metadata and workspace updates. |
+| 2026-06-25 | `make validate` after industrial safeguards | pass | Current docs and generated sample JSON assets validate with source rights metadata required. |
+| 2026-06-25 | `build-manifest` / `manifest-status` | pass | SQLite asset manifest built at `data/indexes/asset-manifest.sqlite` and reports current asset counts. |

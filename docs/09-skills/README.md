@@ -44,7 +44,8 @@ docs/09-skills/
 ├── README.md
 ├── agent-skill-map.md
 ├── runtime-sync.md
-└── external-resource-intake.md
+├── external-resource-intake.md
+└── github-knowledge-sources.md
 ```
 
 Root `skills/` is the repository source of truth. `.claude/skills/` is not used as source of truth; if Claude Code runtime mapping is needed later, map it from root `skills/`.
@@ -91,6 +92,7 @@ Rules:
 - `novel-forge validate` checks core Skills.
 - `make sync-skills-dry-run` previews runtime mapping to `.claude/skills/`.
 - `.claude/commands/evaluate-claude-resource.md` provides a read-only static review template before importing external Claude Code resources.
+- `docs/09-skills/github-knowledge-sources.md` defines GitHub source intake rules for multidisciplinary knowledge handoffs.
 - No Skill stores concrete copyrighted text or plot-reconstruction instructions.
 
 ## Risks And Boundaries

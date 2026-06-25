@@ -56,6 +56,31 @@ class CliTests(unittest.TestCase):
             self.assertEqual(status.returncode, 0, status.stderr)
             self.assertIn("raw: 5", status.stdout)
 
+    def test_ingest_records_rights_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source.txt"
+            source.write_text("Owned fixture", encoding="utf-8")
+
+            result = self.run_cli(
+                "ingest",
+                str(source),
+                "--root",
+                tmp,
+                "--rights",
+                "owned",
+                "--license",
+                "internal-test",
+                "--copyright-note",
+                "self-authored fixture",
+                "--allow-downstream-generation",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(Path(result.stdout.strip()).read_text(encoding="utf-8"))
+            self.assertEqual(data["metadata"]["rights"]["authorization"], "owned")
+            self.assertTrue(data["metadata"]["rights"]["allow_downstream_generation"])
+
     def test_search_lists_and_filters_assets(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -74,6 +99,12 @@ class CliTests(unittest.TestCase):
             index = self.run_cli("build-index", "--root", tmp)
             self.assertEqual(index.returncode, 0, index.stderr)
             self.assertTrue(Path(index.stdout.strip()).exists())
+            manifest = self.run_cli("build-manifest", "--root", tmp)
+            self.assertEqual(manifest.returncode, 0, manifest.stderr)
+            self.assertTrue(Path(manifest.stdout.strip()).exists())
+            manifest_status = self.run_cli("manifest-status", "--root", tmp)
+            self.assertEqual(manifest_status.returncode, 0, manifest_status.stderr)
+            self.assertGreaterEqual(json.loads(manifest_status.stdout)["raw"], 1)
 
             result = self.run_cli(
                 "search",
@@ -140,7 +171,7 @@ class CliTests(unittest.TestCase):
             self.assertEqual(vector.returncode, 0, vector.stderr)
             vector_rows = json.loads(vector.stdout)
             self.assertEqual(len(vector_rows), 1)
-            self.assertEqual(vector_rows[0]["ranker"], "hash-vector")
+            self.assertEqual(vector_rows[0]["ranker"], "hybrid-hash-vector-bm25")
 
     def test_topic_development_and_training_exercise_commands_write_schema_assets(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -236,7 +267,17 @@ class CliTests(unittest.TestCase):
                     draft_path = result.stdout.strip()
             self.assertIsNotNone(draft_path)
 
-            workspace = self.run_cli("init-workspace", "--root", tmp, "--title", "Echo Clock Project")
+            workspace = self.run_cli(
+                "init-workspace",
+                "--root",
+                tmp,
+                "--title",
+                "Echo Clock Project",
+                "--series",
+                "Clockverse",
+                "--book",
+                "1",
+            )
             self.assertEqual(workspace.returncode, 0, workspace.stderr)
             workspace_path = workspace.stdout.strip()
             self.assertTrue(Path(workspace_path).exists())
@@ -273,6 +314,8 @@ class CliTests(unittest.TestCase):
             summary = json.loads(status.stdout)
             self.assertEqual(summary["chapter_count"], 2)
             self.assertEqual(summary["latest_chapter"], 2)
+            self.assertEqual(summary["series_title"], "Clockverse")
+            self.assertEqual(summary["book_number"], 1)
             self.assertGreaterEqual(summary["open_hook_count"], 1)
 
     def test_analyze_feedback_outputs_trends_and_retention_risk(self):
@@ -298,6 +341,8 @@ class CliTests(unittest.TestCase):
             self.assertEqual(data["content"]["plot_adjustment_plan"]["trend_direction"], "declining")
             self.assertEqual(data["content"]["retention_risk"]["level"], "high")
             self.assertEqual(len(data["content"]["chapter_trends"]), 2)
+            self.assertLess(data["content"]["trend_metrics"]["rating_slope"], 0)
+            self.assertEqual(data["content"]["trend_metrics"]["low_rating_ratio"], 0.5)
             self.assertIn("make protagonist motivation pressure explicit by beat 2", data["content"]["next_generation_constraints"])
 
 

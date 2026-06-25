@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
 from pathlib import Path
 from typing import Any
 
 from novel_forge.core.constants import ASSET_DIR_BY_TYPE, DATA_DIRS
+from novel_forge.core.ids import utc_now
 from novel_forge.schemas import BaseAsset, asset_from_dict
+from novel_forge.storage.locks import StorageLock
 
 
 class LocalStorage:
@@ -16,6 +20,8 @@ class LocalStorage:
     def ensure_layout(self) -> None:
         for rel in DATA_DIRS:
             (self.data_root / rel).mkdir(parents=True, exist_ok=True)
+        for rel in ["indexes", "backups", ".locks"]:
+            (self.data_root / rel).mkdir(parents=True, exist_ok=True)
         for rel in ["examples/sample_inputs", "examples/sample_outputs", "examples/sample_project"]:
             (self.root / rel).mkdir(parents=True, exist_ok=True)
 
@@ -24,8 +30,10 @@ class LocalStorage:
 
     def write_json(self, path: str | Path, data: Any) -> Path:
         resolved = self.root / path if not Path(path).is_absolute() else Path(path)
-        resolved.parent.mkdir(parents=True, exist_ok=True)
-        resolved.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        self._enforce_project_scope_write(resolved, data)
+        with StorageLock(self.root, str(resolved.relative_to(self.root)) if resolved.is_relative_to(self.root) else resolved.name):
+            self._write_json_atomic(resolved, data, backup_existing=True)
+        self._sync_postgres_write_through(resolved)
         return resolved
 
     def read_json(self, path: str | Path) -> Any:
@@ -35,7 +43,11 @@ class LocalStorage:
     def write_asset(self, category: str, asset: BaseAsset) -> Path:
         self.ensure_layout()
         path = self.data_dir(category) / f"{asset.id}.json"
-        path.write_text(json.dumps(asset.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        data = asset.to_dict()
+        self._enforce_project_scope_write(path, data)
+        with StorageLock(self.root, f"{category}-{asset.id}"):
+            self._write_json_atomic(path, data, backup_existing=True)
+        self._sync_postgres_write_through(path)
         return path
 
     def write_asset_auto(self, asset: BaseAsset) -> Path:
@@ -64,3 +76,122 @@ class LocalStorage:
 
     def counts(self) -> dict[str, int]:
         return {category: len(self.list_json(category)) for category in DATA_DIRS}
+
+    def _write_json_atomic(self, path: Path, data: Any, backup_existing: bool) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if backup_existing and path.exists() and _is_data_asset_path(self, path):
+            self._backup_existing(path)
+        tmp_path = path.with_name(f".{path.name}.tmp")
+        tmp_path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        tmp_path.replace(path)
+
+    def _backup_existing(self, path: Path) -> Path:
+        relative = path.relative_to(self.root)
+        stamp = utc_now().replace(":", "").replace("-", "")
+        backup_path = self.data_root / "backups" / relative.with_suffix(f".{stamp}.json")
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, backup_path)
+        return backup_path
+
+    def _sync_postgres_write_through(self, path: Path) -> None:
+        if not _is_data_asset_path(self, path):
+            return
+        try:
+            from novel_forge.infrastructure.settings import IndustrialSettings
+            from novel_forge.storage.postgres import PostgresAssetStore
+
+            settings = IndustrialSettings.from_env(root=self.root)
+            if not settings.database_url or not settings.postgres_write_through:
+                return
+            PostgresAssetStore.from_settings(settings).sync_asset(self, path)
+        except Exception:
+            try:
+                from novel_forge.infrastructure.settings import IndustrialSettings
+
+                strict = IndustrialSettings.from_env(root=self.root).postgres_write_strict
+            except Exception:
+                strict = False
+            if strict:
+                raise
+
+    def _enforce_project_scope_write(self, path: Path, data: Any) -> None:
+        if os.environ.get("NOVEL_FORGE_DISABLE_PROJECT_SCOPE_WRITE_GUARD", "").strip().lower() in {"1", "true", "yes"}:
+            return
+        if not _is_data_asset_path(self, path) or not isinstance(data, dict):
+            return
+        if data.get("type") == "project_workspace_state":
+            return
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        project_id = str(metadata.get("project_id") or content.get("project_id") or "")
+        if not project_id:
+            return
+        for ref in _asset_reference_values(data):
+            linked_project_id = _project_id_for_reference(self, ref)
+            if linked_project_id and linked_project_id != project_id:
+                relative = str(path.relative_to(self.root)) if path.is_relative_to(self.root) else str(path)
+                raise ValueError(
+                    f"cross-project write rejected for {relative}: reference {ref} belongs to {linked_project_id}, not {project_id}"
+                )
+
+
+def _is_data_asset_path(storage: LocalStorage, path: Path) -> bool:
+    try:
+        relative = path.relative_to(storage.data_root)
+    except ValueError:
+        return False
+    return len(relative.parts) >= 2 and relative.parts[0] in DATA_DIRS
+
+
+def _asset_reference_values(data: dict[str, Any]) -> set[str]:
+    values: set[str] = set()
+    source = str(data.get("source", "") or "")
+    if source:
+        values.add(source)
+    if isinstance(data.get("references", []), list):
+        values.update(str(item) for item in data.get("references", []) if str(item).strip())
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    for payload in [content, metadata]:
+        for key in ["source_asset_id", "source_asset_path", "handoff_id", "handoff_path", "batch_item_id", "batch_item_path"]:
+            value = payload.get(key)
+            if value:
+                values.add(str(value))
+    return values
+
+
+def _project_id_for_reference(storage: LocalStorage, reference: str) -> str:
+    if not reference:
+        return ""
+    candidate = storage.root / reference
+    if candidate.exists() and candidate.is_file():
+        try:
+            data = storage.read_json(candidate)
+        except Exception:
+            return ""
+        return _project_id_from_data(data)
+    for category in DATA_DIRS:
+        for path in storage.list_json(category):
+            try:
+                data = storage.read_json(path)
+            except Exception:
+                continue
+            if not isinstance(data, dict):
+                continue
+            try:
+                relative = str(path.relative_to(storage.root))
+            except ValueError:
+                relative = str(path)
+            if reference in {str(data.get("id", "")), relative}:
+                return _project_id_from_data(data)
+    return ""
+
+
+def _project_id_from_data(data: Any) -> str:
+    if not isinstance(data, dict):
+        return ""
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    if data.get("type") == "project_workspace_state":
+        return str(content.get("project_id") or data.get("id") or "")
+    return str(metadata.get("project_id") or content.get("project_id") or "")

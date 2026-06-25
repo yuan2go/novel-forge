@@ -5,29 +5,77 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.evaluation.quality import QUALITY_DIMENSIONS
+from novel_forge.evaluation.creative_gate import evaluate_draft_quality, gate_issues
+from novel_forge.model_adapters import ModelAdapter, model_from_env, validate_model_output
 from novel_forge.model_adapters.mock import MockModelAdapter
-from novel_forge.modules.common import read_previous
+from novel_forge.modules.common import read_previous, run_metadata
 from novel_forge.schemas import ReviewReport
 from novel_forge.storage.local import LocalStorage
+from novel_forge.storage.rag_context import build_rag_context, retrieval_metadata, retrieval_reference_ids
 
 
-def review(storage: LocalStorage, input_path: str | None = None, model: MockModelAdapter | None = None) -> Path:
-    model = model or MockModelAdapter()
+def review(storage: LocalStorage, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+    model = model or model_from_env("review")
     draft_asset = read_previous(storage, "drafts", input_path)
-    result = model.review(draft_asset.content.get("text", ""), {"rubric": QUALITY_DIMENSIONS})
+    retrieved_context = build_rag_context(
+        storage,
+        draft_asset,
+        input_path=input_path,
+        query=f"review draft {draft_asset.title} {draft_asset.content.get('chapter', '')}",
+    )
+    result = validate_model_output(
+        "review",
+        model.review(
+            draft_asset.content.get("text", ""),
+            {
+                "rubric": QUALITY_DIMENSIONS,
+                "draft_asset_id": draft_asset.id,
+                "copyright_boundary": draft_asset.content.get("copyright_boundary", ""),
+                "retrieved_context": retrieved_context,
+            },
+        ),
+    )
+    quality_gate = evaluate_draft_quality(draft_asset.content.get("text", ""))
+    issues = [*result["issues"], *gate_issues(quality_gate)]
     asset = ReviewReport(
         title=f"Review for {draft_asset.title}",
         source=draft_asset.id,
         tags=["review", "quality"],
-        content={"rubric": QUALITY_DIMENSIONS, "summary": "mock review completed"},
+        content={
+            "rubric": QUALITY_DIMENSIONS,
+            "summary": f"{model.name} review completed",
+            "quality_gates": quality_gate,
+            "retrieved_context": retrieved_context,
+            "model_output": result,
+        },
+        metadata={
+            "model": model.name,
+            "provider": result.get("provider", model.name),
+            **retrieval_metadata(retrieved_context),
+            "run_metadata": run_metadata(
+                "review",
+                draft_asset,
+                provider=result.get("provider", model.name),
+                model=result.get("model", model.name),
+            ),
+        },
         score=float(result["score"]),
         strengths=result["strengths"],
         weaknesses=result["weaknesses"],
-        issues=result["issues"],
-        risk_level=result["risk_level"],
-        revision_suggestions=result["revision_suggestions"],
+        issues=issues,
+        risk_level="high" if any(issue.get("severity") == "high" for issue in gate_issues(quality_gate)) else result["risk_level"],
+        revision_suggestions=_dedupe(
+            [
+                *result["revision_suggestions"],
+                *[
+                    str(issue.get("recommendation", ""))
+                    for issue in gate_issues(quality_gate)
+                    if issue.get("recommendation")
+                ],
+            ]
+        ),
         next_action=result["next_action"],
-        references=[draft_asset.id],
+        references=retrieval_reference_ids(draft_asset.id, retrieved_context),
     )
     return storage.write_asset("reviews", asset)
 

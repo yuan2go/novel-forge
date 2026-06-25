@@ -9,8 +9,14 @@ from novel_forge.schemas import ProjectWorkspaceState
 from novel_forge.storage.local import LocalStorage
 
 
-def init_workspace(storage: LocalStorage, title: str = "Sample Novel Workspace") -> Path:
-    project_id = make_id("project", title)
+def init_workspace(
+    storage: LocalStorage,
+    title: str = "Sample Novel Workspace",
+    series_title: str | None = None,
+    book_number: int | None = None,
+) -> Path:
+    project_key = f"{series_title or title}:book-{book_number}" if book_number is not None else title
+    project_id = make_id("project", project_key)
     asset = ProjectWorkspaceState(
         title=title,
         source="local-workspace",
@@ -19,10 +25,22 @@ def init_workspace(storage: LocalStorage, title: str = "Sample Novel Workspace")
             "project_id": project_id,
             "memory": {
                 "project_title": title,
+                "series_title": series_title or "",
+                "book_number": book_number,
                 "premise": "",
                 "canon_facts": [],
                 "style_notes": [],
+                "cross_book_threads": [],
                 "last_updated_from": "",
+            },
+            "project_config": {
+                "genre": "",
+                "target_platform": "",
+                "target_word_count": 0,
+                "update_cadence": "",
+                "quality_threshold": 80,
+                "audience": "",
+                "status": "active",
             },
             "chapter_states": [],
             "continuity_threads": {
@@ -37,6 +55,8 @@ def init_workspace(storage: LocalStorage, title: str = "Sample Novel Workspace")
             "workflow": "long-project-workspace",
             "chapter_count": 0,
             "status": "initialized",
+            "series_title": series_title or "",
+            "book_number": book_number,
             "external_api": False,
         },
         references=[],
@@ -89,6 +109,8 @@ def workspace_status(storage: LocalStorage, workspace_path: str | None = None) -
         "path": str(_workspace_path(storage, workspace).relative_to(storage.root)),
         "chapter_count": len(chapter_states) if isinstance(chapter_states, list) else 0,
         "latest_chapter": workspace.metadata.get("latest_chapter", 0),
+        "series_title": workspace.metadata.get("series_title", ""),
+        "book_number": workspace.metadata.get("book_number"),
         "open_hook_count": len(threads.get("open_hooks", [])) if isinstance(threads, dict) else 0,
         "open_issue_count": len(open_issues) if isinstance(open_issues, list) else 0,
         "references": workspace.references,

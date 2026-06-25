@@ -29,6 +29,7 @@ DOC_FILES = [
     "docs/01-architecture/module-map.md",
     "docs/01-architecture/data-flow.md",
     "docs/01-architecture/skills-system.md",
+    "docs/01-architecture/industrial-stack.md",
     "docs/02-workflows/main-pipeline.md",
     "docs/02-workflows/model-collaboration.md",
     "docs/02-workflows/skill-usage.md",
@@ -42,6 +43,7 @@ DOC_FILES = [
     "docs/09-skills/external-resource-intake.md",
     "docs/08-roadmap/v5-roadmap.md",
     "docs/08-roadmap/v5-optimization-plan.md",
+    "docs/08-roadmap/v5-strategic-risk-plan.md",
 ]
 
 SKILL_NAMES = [
@@ -83,6 +85,7 @@ ASSET_DIR_BY_TYPE = {
     "hook_pattern": "decompositions",
     "knowledge_card": "knowledge",
     "material_card": "materials",
+    "asset_collection": "materials",
     "topic_seed": "topics",
     "world_bible": "worlds",
     "character_card": "characters",
@@ -96,6 +99,9 @@ ASSET_DIR_BY_TYPE = {
     "training_exercise": "training",
     "image_prompt": "image_prompts",
     "project_workspace_state": "workspaces",
+    "claude_code_handoff": "runs",
     "workflow_run": "runs",
     "task_status": "runs",
+    "task_dead_letter": "runs",
+    "batch_task_item": "runs",
 }

@@ -36,6 +36,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     ],
     "knowledge_card": ["principles"],
     "material_card": ["usable_patterns", "do_not_copy"],
+    "asset_collection": ["purpose", "asset_paths"],
     "topic_seed": ["logline", "reader_attraction", "differentiation"],
     "world_bible": ["setting", "rules", "conflict_system"],
     "character_card": ["role", "external_goal", "internal_need", "motivation_chain"],
@@ -48,8 +49,22 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "feedback_insight": ["signals", "average_rating", "next_generation_constraints"],
     "training_exercise": ["objective", "prompt", "rubric"],
     "image_prompt": ["prompt"],
+    "claude_code_handoff": [
+        "operation",
+        "runtime",
+        "runtime_model",
+        "skill",
+        "status",
+        "input_files",
+        "expected_output_type",
+        "expected_output_dir",
+        "instructions",
+        "acceptance_checks",
+    ],
     "workflow_run": ["status"],
     "task_status": ["status", "step"],
+    "task_dead_letter": ["task_name", "task_id", "error_message", "payload"],
+    "batch_task_item": ["batch_id", "item_index", "source_path", "status"],
     "project_workspace_state": [
         "project_id",
         "memory",
@@ -132,6 +147,8 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
 
     if data.get("type") == "source_document" and not data.get("source"):
         errors.append("source_document must keep original source path")
+    if data.get("type") == "source_document":
+        errors.extend(_validate_source_rights(data.get("metadata", {})))
     if data.get("type") in {"decomposition_report", "knowledge_card", "material_card"}:
         boundary = data.get("metadata", {}).get("copyright_boundary", "")
         if "abstract" not in boundary.lower() and "structure" not in boundary.lower():
@@ -149,8 +166,14 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
             errors.append(f"{asset_type} missing required field: {key}")
     if asset_type == "workflow_run" and isinstance(content, dict):
         errors.extend(_validate_workflow_run_content(content))
+    if asset_type == "claude_code_handoff" and isinstance(content, dict):
+        errors.extend(_validate_claude_code_handoff_content(content))
     if asset_type == "task_status" and isinstance(content, dict):
         errors.extend(_validate_task_status_content(content))
+    if asset_type == "task_dead_letter" and isinstance(content, dict):
+        errors.extend(_validate_task_dead_letter_content(content))
+    if asset_type == "batch_task_item" and isinstance(content, dict):
+        errors.extend(_validate_batch_task_item_content(content))
     if asset_type == "feedback_insight" and isinstance(content, dict):
         errors.extend(_validate_feedback_insight_content(content))
     if asset_type == "project_workspace_state" and isinstance(content, dict):
@@ -195,6 +218,35 @@ def _validate_workflow_run_content(content: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _validate_claude_code_handoff_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    status = content.get("status", "")
+    if status not in {"pending", "in_progress", "completed", "failed", "superseded"}:
+        errors.append("claude_code_handoff status must be pending, in_progress, completed, failed, or superseded")
+    if content.get("runtime") != "claude-code":
+        errors.append("claude_code_handoff runtime must be claude-code")
+    if _is_missing(content.get("runtime_model")):
+        errors.append("claude_code_handoff runtime_model must not be empty")
+    if not isinstance(content.get("input_files"), list):
+        errors.append("claude_code_handoff input_files must be a list")
+    else:
+        for index, item in enumerate(content.get("input_files", [])):
+            if not isinstance(item, dict):
+                errors.append(f"claude_code_handoff input_files[{index}] must be an object")
+                continue
+            if _is_missing(item.get("path")):
+                errors.append(f"claude_code_handoff input_files[{index}].path must not be empty")
+            if _is_missing(item.get("role")):
+                errors.append(f"claude_code_handoff input_files[{index}].role must not be empty")
+    for key in ["instructions", "acceptance_checks"]:
+        value = content.get(key)
+        if not isinstance(value, list):
+            errors.append(f"claude_code_handoff {key} must be a list")
+        elif not value:
+            errors.append(f"claude_code_handoff {key} must not be empty")
+    return errors
+
+
 def _validate_task_status_content(content: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     status = content.get("status", "")
@@ -211,6 +263,56 @@ def _validate_task_status_content(content: dict[str, Any]) -> list[str]:
         errors.append("completed task_status must include output_paths")
     if status == "failed" and _is_missing(content.get("error_message")):
         errors.append("failed task_status must include error_message")
+    return errors
+
+
+def _validate_task_dead_letter_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if _is_missing(content.get("task_name")):
+        errors.append("task_dead_letter task_name must not be empty")
+    if _is_missing(content.get("task_id")):
+        errors.append("task_dead_letter task_id must not be empty")
+    if _is_missing(content.get("error_message")):
+        errors.append("task_dead_letter error_message must not be empty")
+    if not isinstance(content.get("payload"), dict):
+        errors.append("task_dead_letter payload must be an object")
+    return errors
+
+
+def _validate_batch_task_item_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    status = content.get("status", "")
+    if status not in {"pending", "running", "waiting_handoff", "completed", "failed"}:
+        errors.append("batch_task_item status must be pending, running, waiting_handoff, completed, or failed")
+    if not isinstance(content.get("item_index"), int):
+        errors.append("batch_task_item item_index must be an integer")
+    for key in ["steps", "output_paths"]:
+        if key not in content:
+            errors.append(f"batch_task_item content missing required field: {key}")
+        elif not isinstance(content.get(key), list):
+            errors.append(f"batch_task_item {key} must be a list")
+    if "error_message" not in content:
+        errors.append("batch_task_item content missing required field: error_message")
+    if status == "completed" and not content.get("output_paths"):
+        errors.append("completed batch_task_item must include output_paths")
+    if status == "failed" and _is_missing(content.get("error_message")):
+        errors.append("failed batch_task_item must include error_message")
+    return errors
+
+
+def _validate_source_rights(metadata: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    rights = metadata.get("rights")
+    if not isinstance(rights, dict):
+        return ["source_document metadata.rights must be recorded"]
+    authorization = rights.get("authorization")
+    allowed = {"owned", "licensed", "public_domain", "permission_granted", "test_fixture", "unknown"}
+    if authorization not in allowed:
+        errors.append("source_document metadata.rights.authorization is invalid or missing")
+    if _is_missing(rights.get("copyright_boundary")):
+        errors.append("source_document metadata.rights.copyright_boundary must not be empty")
+    if not isinstance(rights.get("allow_downstream_generation"), bool):
+        errors.append("source_document metadata.rights.allow_downstream_generation must be boolean")
     return errors
 
 
@@ -238,6 +340,17 @@ def _validate_feedback_insight_content(content: dict[str, Any]) -> list[str]:
     sentiment_signals = content.get("sentiment_signals")
     if sentiment_signals is not None and not isinstance(sentiment_signals, dict):
         errors.append("feedback_insight sentiment_signals must be an object")
+    trend_metrics = content.get("trend_metrics")
+    if trend_metrics is not None:
+        if not isinstance(trend_metrics, dict):
+            errors.append("feedback_insight trend_metrics must be an object")
+        else:
+            for key in ["rating_slope", "rating_volatility", "low_rating_ratio"]:
+                if key in trend_metrics and not isinstance(trend_metrics.get(key), (int, float)):
+                    errors.append(f"feedback_insight trend_metrics.{key} must be numeric")
+            confidence = trend_metrics.get("confidence")
+            if confidence is not None and confidence not in {"none", "low", "medium", "high"}:
+                errors.append("feedback_insight trend_metrics.confidence must be none, low, medium, or high")
     plot_adjustment_plan = content.get("plot_adjustment_plan")
     if plot_adjustment_plan is not None:
         if not isinstance(plot_adjustment_plan, dict):

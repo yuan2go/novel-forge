@@ -16,6 +16,7 @@ description: Use when transforming professional or multidisciplinary knowledge i
 - 来源、学科、可信度等级、适用范围和禁用范围。
 - 当前题材、世界观、人物、大纲或章节目标。
 - 安全边界：不得输出现实高风险操作建议，不得让知识直接进入正文说教。
+- 外部资料源策略：GitHub 仓库、论文数据集、论坛语料、古籍数据和官方数据包必须先记录许可、获取方式、可用管线和禁用管线。
 
 ## 操作流程
 
@@ -24,8 +25,9 @@ description: Use when transforming professional or multidisciplinary knowledge i
 3. 转译为故事功能：可信度规则、冲突生成器、人物行为约束或审稿检查。
 4. 删除不相关细节、现实操作步骤和高风险建议。
 5. 标记哪些内容只能做审稿检查，不能进入正文。
-6. 输出 KnowledgeCard 候选或项目约束。
-7. 交给 `quality-review` 检查是否压过读者吸引力。
+6. 对 GitHub / 数据集来源，先确认 license_review_status；许可不明、非商业、论坛或爬虫工具来源只能提炼聚合规律、风险规则和审稿检查。
+7. 输出 KnowledgeCard 候选或项目约束。
+8. 交给 `quality-review` 检查是否压过读者吸引力。
 
 ## 输出格式
 
@@ -56,6 +58,8 @@ description: Use when transforming professional or multidisciplinary knowledge i
 - 禁止输出可执行的现实伤害、违法或高风险操作。
 - 禁止未经转译直接塞入正文。
 - 禁止让专业合理性破坏追读和情绪奖励。
+- 禁止把许可不明、非商业、论坛用户内容、网文正文或爬虫输出作为商业正文生成语料。
+- 禁止为了资料获取绕过网站 robots、平台限制、验证码或明确的自动下载禁令。
 
 ## 与其他模块的关系
 

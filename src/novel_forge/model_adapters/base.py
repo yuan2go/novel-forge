@@ -14,7 +14,7 @@ class ModelAdapterConfig:
 
 
 class AdapterNotConfiguredError(RuntimeError):
-    """Raised when a provider adapter skeleton is called without implementation/configuration."""
+    """Raised when a provider adapter is missing implementation or required configuration."""
 
 
 class ModelAdapter(Protocol):

@@ -62,6 +62,11 @@ class MaterialCard(BaseAsset):
 
 
 @dataclass
+class AssetCollection(BaseAsset):
+    type: str = "asset_collection"
+
+
+@dataclass
 class TopicSeed(BaseAsset):
     type: str = "topic_seed"
 
@@ -129,6 +134,11 @@ class ImagePrompt(BaseAsset):
 
 
 @dataclass
+class ClaudeCodeHandoff(BaseAsset):
+    type: str = "claude_code_handoff"
+
+
+@dataclass
 class WorkflowRun(BaseAsset):
     type: str = "workflow_run"
 
@@ -136,6 +146,16 @@ class WorkflowRun(BaseAsset):
 @dataclass
 class TaskStatus(BaseAsset):
     type: str = "task_status"
+
+
+@dataclass
+class TaskDeadLetter(BaseAsset):
+    type: str = "task_dead_letter"
+
+
+@dataclass
+class BatchTaskItem(BaseAsset):
+    type: str = "batch_task_item"
 
 
 @dataclass
@@ -157,6 +177,7 @@ SCHEMA_CLASSES = {
         HookPattern,
         KnowledgeCard,
         MaterialCard,
+        AssetCollection,
         TopicSeed,
         WorldBible,
         CharacterCard,
@@ -169,8 +190,11 @@ SCHEMA_CLASSES = {
         FeedbackInsight,
         TrainingExercise,
         ImagePrompt,
+        ClaudeCodeHandoff,
         WorkflowRun,
         TaskStatus,
+        TaskDeadLetter,
+        BatchTaskItem,
         ProjectWorkspaceState,
     ]
 }

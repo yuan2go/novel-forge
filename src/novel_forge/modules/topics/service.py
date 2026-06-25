@@ -3,16 +3,19 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from novel_forge.model_adapters.mock import MockModelAdapter
+from novel_forge.model_adapters import ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.common import read_previous
 from novel_forge.schemas import TopicSeed
 from novel_forge.storage.local import LocalStorage
 
 
-def develop_topic(storage: LocalStorage, input_path: str | None = None, model: MockModelAdapter | None = None) -> Path:
-    model = model or MockModelAdapter()
+def develop_topic(storage: LocalStorage, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+    model = model or model_from_env("topic")
     material = read_previous(storage, "materials", input_path)
-    generated = model.generate("develop a differentiated suspense topic", {"material": material.content})
+    generated = validate_model_output(
+        "generate",
+        model.generate("Develop a differentiated suspense topic seed.", {"material": material.content}),
+    )
     material_tags = _string_list(material.tags)
     asset = TopicSeed(
         title="钟楼回声调查",
@@ -37,6 +40,8 @@ def develop_topic(storage: LocalStorage, input_path: str | None = None, model: M
         metadata={
             "workflow": "topic-development",
             "skill": "topic-development",
+            "model": model.name,
+            "provider": generated.get("provider", model.name),
             "originality_boundary": "new premise generated from abstract materials; do not copy source expression",
         },
         references=[material.id],
@@ -44,7 +49,7 @@ def develop_topic(storage: LocalStorage, input_path: str | None = None, model: M
     return storage.write_asset("topics", asset)
 
 
-def generate_topic(storage: LocalStorage, input_path: str | None = None, model: MockModelAdapter | None = None) -> Path:
+def generate_topic(storage: LocalStorage, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
     return develop_topic(storage, input_path, model)
 
 
