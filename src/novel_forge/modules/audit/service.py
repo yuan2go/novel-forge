@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.constants import DATA_DIRS
-from novel_forge.core.ids import utc_now
+from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
@@ -27,7 +27,9 @@ def create_originality_report(
     context = build_production_context(storage, target, input_path=path, workspace_path=workspace_path)
     project = context["project"]
     target_text = _asset_text(target)
-    source_assets = _candidate_source_assets(storage, target.to_dict(), context)
+    direct_sources = _candidate_source_assets(storage, target.to_dict(), context)
+    library_scan = _reference_library_scan(storage, target.to_dict(), context)
+    source_assets = _dedupe_assets([*direct_sources, *library_scan["included_assets"]])
     checks = [_similarity_check(target_text, source) for source in source_assets]
     checks = [item for item in checks if item["source_asset_id"] != target.id]
     skeleton_checks = [_plot_skeleton_check(target.to_dict(), source) for source in source_assets if source.get("id") != target.id]
@@ -58,6 +60,14 @@ def create_originality_report(
             "plot_skeleton_checks": skeleton_checks,
             "role_configuration_checks": role_checks,
             "forbidden_element_hits": forbidden_hits,
+            "reference_library_scan": {
+                "scanned_count": library_scan["scanned_count"],
+                "included_count": len(library_scan["included_assets"]),
+                "excluded_count": len(library_scan["excluded"]),
+                "excluded": library_scan["excluded"][:30],
+                "scope": library_scan["scope"],
+            },
+            "model_assisted_review": _model_assisted_originality_review(checks, skeleton_checks, role_checks, forbidden_hits, library_scan),
             "plot_skeleton_risk": risk_scores["plot_skeleton_risk"],
             "character_setup_risk": risk_scores["character_setup_risk"],
             "style_expression_risk": risk_scores["style_expression_risk"],
@@ -268,11 +278,14 @@ def create_release_package(
     decision = gate.get("content", {}).get("decision", "blocked") if isinstance(gate.get("content", {}), dict) else "blocked"
     status = "ready" if decision == "ready" else "blocked"
     text = _asset_text(target)
+    release_version = make_id("release_version", f"{target.id}:{channel}:{utc_now()}")
     asset = ReleasePackage(
         title=f"Release package for {target.title}",
         source=target.id,
         tags=["release-package", str(channel or "local")],
         content={
+            "release_version": release_version,
+            "version_key": f"{target.id}:{release_version}",
             "target_asset_id": target.id,
             "publish_gate_report_id": _asset_id(gate),
             "title_candidates": _title_candidates(target.title, context),
@@ -282,6 +295,8 @@ def create_release_package(
             "status": status,
             "draft_path": _display_path(storage.root, path),
             "publish_gate_report_path": _display_path(storage.root, Path(gate_path)),
+            "platform_rules": _release_platform_rules(context, channel or "local"),
+            "created_at": utc_now(),
         },
         metadata={
             "workflow": "release-package",
@@ -308,6 +323,21 @@ def create_release_package(
         return output
 
 
+def _release_platform_rules(context: dict[str, Any], channel: str) -> dict[str, Any]:
+    project = context.get("project", {}) if isinstance(context.get("project", {}), dict) else {}
+    config = project.get("project_config", {}) if isinstance(project.get("project_config", {}), dict) else {}
+    return {
+        "channel": channel,
+        "target_platform": config.get("target_platform", channel),
+        "require_chapter_audit": True,
+        "require_originality_pass": True,
+        "require_publish_gate_ready": True,
+        "title_candidate_count": 3,
+        "min_hook_score": config.get("publish_min_hook_score", 0.7),
+        "max_risk_level": config.get("publish_max_risk_level", "medium"),
+    }
+
+
 def _candidate_source_assets(storage: LocalStorage, target: dict[str, Any], context: dict[str, Any]) -> list[dict[str, Any]]:
     values: list[str] = [str(target.get("source", ""))]
     if isinstance(target.get("references", []), list):
@@ -321,6 +351,106 @@ def _candidate_source_assets(storage: LocalStorage, target: dict[str, Any], cont
         if payload and payload.get("id") != target.get("id"):
             results.append(payload)
     return _dedupe_assets(results)
+
+
+def _reference_library_scan(storage: LocalStorage, target: dict[str, Any], context: dict[str, Any], *, limit: int = 120) -> dict[str, Any]:
+    project_id = str(context.get("project", {}).get("project_id", "") if isinstance(context.get("project", {}), dict) else "")
+    target_id = str(target.get("id", ""))
+    target_type = str(target.get("type", ""))
+    allowed_types = {
+        "source_document",
+        "decomposition_report",
+        "common_novel_analysis_report",
+        "web_fiction_business_analysis_report",
+        "published_fiction_analysis_report",
+        "classic_literary_analysis_report",
+        "analysis_conversion_report",
+        "material_card",
+        "knowledge_card",
+        "style_decomposition_report",
+        "writing_template",
+        "craft_template",
+        "draft_chapter",
+        "draft_version",
+    }
+    included: list[dict[str, Any]] = []
+    excluded: list[dict[str, str]] = []
+    scanned = 0
+    for category in DATA_DIRS:
+        for path in reversed(storage.list_json(category)):
+            if len(included) >= limit:
+                break
+            try:
+                data = storage.read_json(path)
+            except Exception:
+                continue
+            if not isinstance(data, dict):
+                continue
+            scanned += 1
+            asset_id = str(data.get("id", ""))
+            asset_type = str(data.get("type", ""))
+            if asset_id == target_id or asset_type == target_type == "draft_version":
+                continue
+            if asset_type not in allowed_types:
+                continue
+            metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            row_project = str(metadata.get("project_id", ""))
+            if project_id and row_project and row_project != project_id:
+                excluded.append({"path": _display_path(storage.root, path), "reason": "cross_project_reference"})
+                continue
+            rights = metadata.get("rights", {}) if isinstance(metadata.get("rights", {}), dict) else {}
+            authorization = str(rights.get("authorization") or metadata.get("rights_authorization") or "").lower()
+            risk = str(metadata.get("risk_level") or metadata.get("copyright_risk") or "").lower()
+            if asset_type in {"source_document", "draft_chapter", "draft_version"} and authorization in {"restricted", "unknown"}:
+                excluded.append({"path": _display_path(storage.root, path), "reason": f"high_raw_text_risk:{authorization or risk or 'unknown'}"})
+                continue
+            item = dict(data)
+            item["_scan_path"] = _display_path(storage.root, path)
+            included.append(item)
+        if len(included) >= limit:
+            break
+    return {
+        "included_assets": _dedupe_assets(included),
+        "excluded": excluded,
+        "scanned_count": scanned,
+        "scope": {"project_id": project_id, "limit": limit, "allowed_types": sorted(allowed_types)},
+    }
+
+
+def _model_assisted_originality_review(
+    checks: list[dict[str, Any]],
+    skeleton_checks: list[dict[str, Any]],
+    role_checks: list[dict[str, Any]],
+    forbidden_hits: list[dict[str, Any]],
+    library_scan: dict[str, Any],
+) -> dict[str, Any]:
+    high = [
+        *[item for item in checks if item.get("risk") == "high"],
+        *[item for item in skeleton_checks if item.get("risk") == "high"],
+        *[item for item in role_checks if item.get("risk") == "high"],
+    ]
+    medium = [
+        *[item for item in checks if item.get("risk") == "medium"],
+        *[item for item in skeleton_checks if item.get("risk") == "medium"],
+        *[item for item in role_checks if item.get("risk") == "medium"],
+    ]
+    recommendation = "pass"
+    if high or any(item.get("kind") == "license_risk" and item.get("element") == "restricted" for item in forbidden_hits):
+        recommendation = "block_publish"
+    elif medium or forbidden_hits:
+        recommendation = "human_review"
+    return {
+        "provider": "local-rules-review",
+        "model_name": "deterministic-originality-reviewer",
+        "recommendation": recommendation,
+        "rationale": [
+            f"reference library scan included {len(library_scan.get('included_assets', []))} assets and excluded {len(library_scan.get('excluded', []))}",
+            f"high risk structural hits: {len(high)}",
+            f"medium risk structural hits: {len(medium)}",
+            f"forbidden/license hits: {len(forbidden_hits)}",
+        ],
+        "next_action": "rewrite and rerun originality gate" if recommendation == "block_publish" else "human review required before release" if recommendation == "human_review" else "safe to continue through publish gate",
+    }
 
 
 def _similarity_check(target_text: str, source: dict[str, Any]) -> dict[str, Any]:

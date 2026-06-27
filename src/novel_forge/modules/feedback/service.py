@@ -8,11 +8,17 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
-from novel_forge.schemas import FeedbackImportBatch, FeedbackInsight, ReaderFeedback, ReaderSentimentReport, validate_common_fields
+from novel_forge.schemas import FeedbackImportBatch, FeedbackInsight, OperationalMetricSnapshot, ReaderFeedback, ReaderSentimentReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 
-FEEDBACK_TYPES = {"feedback_import_batch", "reader_feedback", "feedback_insight", "reader_sentiment_report"}
+FEEDBACK_TYPES = {
+    "feedback_import_batch",
+    "reader_feedback",
+    "feedback_insight",
+    "reader_sentiment_report",
+    "operational_metric_snapshot",
+}
 
 
 def import_feedback(storage: LocalStorage, input_path: str) -> Path:
@@ -278,6 +284,77 @@ def create_reader_sentiment_report(
             references=filter_project_safe_references(storage, resolved_project_id, [*refs, workspace]),
         )
         run.guard("write_reader_sentiment_report", "reader_sentiment_report")
+        result = _write(storage, asset)
+        run.succeed(output_assets=[result["path"]])
+        return result
+
+
+def create_operational_metric_snapshot(
+    storage: LocalStorage,
+    *,
+    feedback_paths: list[str | Path] | None = None,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+) -> dict[str, Any]:
+    feedback_assets = _selected_feedback_assets(storage, feedback_paths or [], project_id=project_id)
+    if not feedback_assets:
+        raise FileNotFoundError("no reader_feedback assets found for operational metric snapshot")
+    rows: list[dict[str, str]] = []
+    refs: list[str] = []
+    for item in feedback_assets:
+        rows = _merge_rows(rows, item["content"].get("rows", []))
+        refs.extend([item["id"], item["path"]])
+    project = project_scope_from_asset(storage, {"metadata": {"project_id": project_id or ""}, "references": refs}, workspace_path=workspace_path or _first_workspace(feedback_assets))
+    resolved_project_id = str(project.get("project_id", project_id or ""))
+    workspace = str(project.get("workspace_path", workspace_path or ""))
+    chapter_trends = build_chapter_trends(rows)
+    trend_metrics = build_trend_metrics(chapter_trends, rows)
+    retention_risk = assess_retention_risk(chapter_trends, rows)
+    distribution = _sentiment_distribution(rows)
+    heat = _character_heat(rows)
+    follow_risk = _follow_read_risk(distribution, trend_metrics, retention_risk)
+    dropoffs = _chapter_dropoffs(rows, chapter_trends)
+    read_metrics = _read_metrics(rows)
+    engagement_metrics = _engagement_metrics(rows, distribution, trend_metrics)
+    recommendations = _operational_recommendations(read_metrics, engagement_metrics, follow_risk, dropoffs, heat)
+    with AgentExecutionContext(
+        storage,
+        agent_key="feedback",
+        skill="reader-feedback",
+        operation="create-operational-metric-snapshot",
+        input_assets=[item["path"] for item in feedback_assets],
+        output_types=["operational_metric_snapshot"],
+        workspace_path=workspace,
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("write_operational_metric_snapshot", "operational_metric_snapshot")
+        asset = OperationalMetricSnapshot(
+            title=f"Operational metric snapshot {utc_now()}",
+            tags=["feedback", "operations", follow_risk.get("level", "unknown")],
+            content={
+                "project_id": resolved_project_id or "global",
+                "snapshot_at": utc_now(),
+                "read_metrics": read_metrics,
+                "engagement_metrics": engagement_metrics,
+                "character_heat": heat,
+                "chapter_dropoffs": dropoffs,
+                "recommendations": recommendations,
+                "feedback_asset_ids": [item["id"] for item in feedback_assets],
+                "row_count": len(rows),
+                "follow_read_risk": follow_risk,
+                "trend_metrics": trend_metrics,
+                "sentiment_distribution": distribution,
+            },
+            metadata={
+                "project_id": resolved_project_id,
+                "workspace_path": workspace,
+                "workflow": "reader-feedback-operational-metrics",
+                "row_count": len(rows),
+                "risk_level": follow_risk.get("level", "unknown"),
+            },
+            references=filter_project_safe_references(storage, resolved_project_id, [*refs, workspace]),
+        )
         result = _write(storage, asset)
         run.succeed(output_assets=[result["path"]])
         return result
@@ -754,6 +831,117 @@ def _feedback_recommendation(content: dict[str, Any]) -> str:
     if isinstance(content.get("next_generation_constraints"), list) and content["next_generation_constraints"]:
         return str(content["next_generation_constraints"][0])
     return ""
+
+
+def _read_metrics(rows: list[dict[str, str]]) -> dict[str, Any]:
+    views = [_numeric(row, "views", "view_count", "曝光", "阅读曝光") for row in rows]
+    reads = [_numeric(row, "reads", "read_count", "阅读", "有效阅读") for row in rows]
+    completions = [_numeric(row, "completion_rate", "completion", "完读率") for row in rows]
+    completion_rate = _average([_normalize_rate(value) for value in completions if value > 0])
+    return {
+        "total_views": int(sum(views)),
+        "total_reads": int(sum(reads)),
+        "read_through_rate": round(sum(reads) / max(1.0, sum(views)), 4) if views else 0.0,
+        "average_completion_rate": completion_rate,
+        "chapter_count": len({_chapter_number(row.get("chapter", "")) for row in rows if _chapter_number(row.get("chapter", "")) is not None}),
+    }
+
+
+def _engagement_metrics(rows: list[dict[str, str]], distribution: dict[str, int], trend_metrics: dict[str, Any]) -> dict[str, Any]:
+    favorites = sum(_numeric(row, "favorites", "favorite", "收藏") for row in rows)
+    collections = sum(_numeric(row, "collections", "bookmark", "bookmarks", "追书", "书架") for row in rows)
+    comments = len([row for row in rows if str(row.get("comment", "")).strip()])
+    total_sentiment = max(1, sum(int(value) for value in distribution.values()))
+    return {
+        "favorites": int(favorites),
+        "collections": int(collections),
+        "comment_count": comments,
+        "comment_rate": round(comments / max(1, len(rows)), 4),
+        "positive_ratio": round(distribution.get("positive", 0) / total_sentiment, 4),
+        "negative_ratio": round(distribution.get("negative", 0) / total_sentiment, 4),
+        "rating_slope": trend_metrics.get("rating_slope", 0),
+        "rating_volatility": trend_metrics.get("rating_volatility", 0),
+    }
+
+
+def _chapter_dropoffs(rows: list[dict[str, str]], chapter_trends: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[int, list[dict[str, str]]] = {}
+    for row in rows:
+        chapter = _chapter_number(row.get("chapter", ""))
+        if chapter is not None:
+            grouped.setdefault(chapter, []).append(row)
+    results: list[dict[str, Any]] = []
+    previous_reads: float | None = None
+    trend_by_chapter = {int(item["chapter"]): item for item in chapter_trends}
+    for chapter in sorted(grouped):
+        chapter_rows = grouped[chapter]
+        reads = sum(_numeric(row, "reads", "read_count", "阅读", "有效阅读") for row in chapter_rows)
+        explicit_drop = sum(1 for row in chapter_rows if _contains_drop_signal(row))
+        drop_rate = round((previous_reads - reads) / max(1.0, previous_reads), 4) if previous_reads and reads < previous_reads else 0.0
+        trend = trend_by_chapter.get(chapter, {})
+        risk = "high" if drop_rate >= 0.35 or explicit_drop >= 3 else "medium" if drop_rate >= 0.18 or explicit_drop else "low"
+        results.append(
+            {
+                "chapter": chapter,
+                "reads": int(reads),
+                "drop_rate": drop_rate,
+                "explicit_drop_signals": explicit_drop,
+                "average_rating": trend.get("average_rating", 0),
+                "risk": risk,
+            }
+        )
+        previous_reads = reads or previous_reads
+    return results
+
+
+def _operational_recommendations(
+    read_metrics: dict[str, Any],
+    engagement_metrics: dict[str, Any],
+    follow_risk: dict[str, Any],
+    dropoffs: list[dict[str, Any]],
+    heat: list[dict[str, Any]],
+) -> list[str]:
+    recommendations: list[str] = []
+    if follow_risk.get("level") in {"medium", "high"}:
+        recommendations.append("treat the next chapter as retention repair before expanding new lore")
+    if read_metrics.get("average_completion_rate", 0) and float(read_metrics.get("average_completion_rate", 0)) < 0.55:
+        recommendations.append("shorten exposition blocks and move payoff earlier in the chapter")
+    high_dropoffs = [item for item in dropoffs if item.get("risk") == "high"]
+    if high_dropoffs:
+        recommendations.append(f"review chapter {high_dropoffs[0].get('chapter')} as the current strongest drop-off point")
+    if engagement_metrics.get("negative_ratio", 0) > 0.35:
+        recommendations.append("run chapter audit with reader toxicity and motivation clarity as required dimensions")
+    if heat:
+        recommendations.append(f"preserve visible pressure or payoff for high-heat character {heat[0].get('character')}")
+    return _dedupe(recommendations or ["collect more operational feedback before changing the outline"])
+
+
+def _numeric(row: dict[str, str], *keys: str) -> float:
+    for key in keys:
+        value = row.get(key)
+        if value is None:
+            continue
+        text = str(value).replace("%", "").replace(",", "").strip()
+        if not text:
+            continue
+        try:
+            return float(text)
+        except ValueError:
+            continue
+    return 0.0
+
+
+def _average(values: list[float]) -> float:
+    return round(sum(values) / len(values), 4) if values else 0.0
+
+
+def _normalize_rate(value: float) -> float:
+    return round(value / 100, 4) if value > 1 else round(value, 4)
+
+
+def _contains_drop_signal(row: dict[str, str]) -> bool:
+    comment = str(row.get("comment", "")).lower()
+    return any(term in comment for term in ["drop", "弃", "不追", "退订", "流失"])
 
 
 def _write(storage: LocalStorage, asset: Any) -> dict[str, Any]:

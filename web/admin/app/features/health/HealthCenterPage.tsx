@@ -3,15 +3,16 @@
 import { Activity, Archive, Database, RefreshCw, RotateCcw, Search, UploadCloud, Workflow } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
-import type { BackupRow, MinioStatus, ProjectHealthReport, ProjectRow, QdrantSearchResult } from "../../shared/types";
+import type { BackupRow, FeatureAssetRow, MinioStatus, ProjectHealthReport, ProjectRow, QdrantSearchResult } from "../../shared/types";
 import { DataTable, Metric, PanelHeader } from "../../shared/ui";
-import { archiveEvents, createBackup, loadHealthData, qdrantSearch, rebuildQdrantIndex, restoreBackup, syncMinio } from "./api";
+import { archiveEvents, createBackup, loadHealthData, qdrantSearch, rebuildQdrantIndex, restoreBackup, runFailureDrill, runLongChainAcceptance, syncMinio } from "./api";
 
 export function HealthCenterPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [report, setReport] = useState<ProjectHealthReport | null>(null);
   const [backups, setBackups] = useState<BackupRow[]>([]);
   const [minioStatus, setMinioStatus] = useState<MinioStatus | null>(null);
+  const [operationReports, setOperationReports] = useState<FeatureAssetRow[]>([]);
   const [qdrantResult, setQdrantResult] = useState<QdrantSearchResult | null>(null);
   const [projectId, setProjectId] = useState("");
   const [restorePath, setRestorePath] = useState("");
@@ -21,11 +22,12 @@ export function HealthCenterPage() {
   const [error, setError] = useState("");
 
   async function refresh(nextProjectId = projectId) {
-    const [projectRows, healthReport, backupRows, objectStatus] = await loadHealthData(nextProjectId);
+    const [projectRows, healthReport, backupRows, objectStatus, opsRows] = await loadHealthData(nextProjectId);
     setProjects(projectRows);
     setReport(healthReport);
     setBackups(backupRows);
     setMinioStatus(objectStatus);
+    setOperationReports(opsRows);
     setProjectId(nextProjectId || projectRows[0]?.project_id || "");
   }
 
@@ -58,6 +60,7 @@ export function HealthCenterPage() {
         <Metric label="失败任务" value={String(report?.summary.failed_task_count ?? 0)} />
         <Metric label="待处理 Handoff" value={String(report?.summary.pending_handoff_count ?? 0)} />
         <Metric label="资产" value={String(report?.summary.asset_count ?? 0)} />
+        <Metric label="演练报告" value={String(operationReports.length)} />
       </section>
 
       <section className="panel">
@@ -102,6 +105,25 @@ export function HealthCenterPage() {
       </section>
 
       <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="故障演练 / 长链路验收" icon={<Workflow size={18} />} />
+          <div className="studioActions">
+            <button className="primaryButton" disabled={busy} onClick={() => runAction(runFailureDrill, "本地故障演练报告已生成")}>故障演练</button>
+            <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => runLongChainAcceptance(projectId, 10), "10 章长链路验收已生成")}>10章验收</button>
+            <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => runLongChainAcceptance(projectId, 50), "50 章长链路验收已生成")}>50章验收</button>
+          </div>
+          <DataTable
+            emptyText="暂无运维报告"
+            columns={["类型", "标题", "状态", "建议", "路径"]}
+            rows={operationReports.map((row) => [
+              row.type,
+              row.title,
+              <span className={row.status === "failed" || row.status === "block" ? "badge warn" : row.status === "passed" || row.status === "pass" ? "badge ok" : "badge muted"} key={`${row.path}-status`}>{row.status || "-"}</span>,
+              row.recommendation || row.summary || "-",
+              <span className="pathText" key={row.path}>{row.path}</span>
+            ])}
+          />
+        </div>
         <div className="panel">
           <PanelHeader title="向量命中" icon={<Search size={18} />} />
           <DataTable

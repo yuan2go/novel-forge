@@ -5,7 +5,14 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from novel_forge.api.routers.context import ProductRouterContext
-from novel_forge.modules.continuity_graph import build_continuity_graph, create_chapter_continuity_report, create_continuity_graph_snapshot
+from novel_forge.modules.continuity_graph import (
+    apply_canon_patch,
+    build_continuity_graph,
+    create_canon_graph_snapshot,
+    create_canon_patch_from_draft,
+    create_chapter_continuity_report,
+    create_continuity_graph_snapshot,
+)
 from novel_forge.storage.local import LocalStorage
 
 
@@ -16,6 +23,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(tags=["product-continuity"])
     ContinuityGraphSnapshotRequest = models["ContinuityGraphSnapshotRequest"]
     ChapterContinuityReportRequest = models["ChapterContinuityReportRequest"]
+    CanonPatchRequest = models["CanonPatchRequest"]
+    CanonPatchApplyRequest = models["CanonPatchApplyRequest"]
 
     @router.get("/product/continuity/graph")
     def continuity_graph(
@@ -44,6 +53,17 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/continuity/canon-snapshot")
+    def canon_graph_snapshot(request: ContinuityGraphSnapshotRequest) -> dict[str, Any]:
+        try:
+            return create_canon_graph_snapshot(
+                LocalStorage(app_settings.root),
+                project_id=request.project_id,
+                workspace_path=request.workspace_path,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/continuity/chapter-report")
     def chapter_continuity_report(request: ChapterContinuityReportRequest) -> dict[str, Any]:
         try:
@@ -51,6 +71,33 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 LocalStorage(app_settings.root),
                 request.draft_path,
                 workspace_path=request.workspace_path,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/continuity/canon-patch")
+    def canon_patch_endpoint(request: CanonPatchRequest) -> dict[str, Any]:
+        try:
+            return create_canon_patch_from_draft(
+                LocalStorage(app_settings.root),
+                request.draft_path,
+                workspace_path=request.workspace_path,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/continuity/canon-patch/apply")
+    def canon_patch_apply_endpoint(request: CanonPatchApplyRequest) -> dict[str, Any]:
+        try:
+            return apply_canon_patch(
+                LocalStorage(app_settings.root),
+                request.patch_path,
+                confirmed=request.confirmed,
+                note=request.note,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

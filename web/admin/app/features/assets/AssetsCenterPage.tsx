@@ -1,17 +1,22 @@
 "use client";
 
-import { Database, Edit3, Library, Search } from "lucide-react";
+import { Database, Edit3, Library, Network, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
-import type { AssetDetail, AssetRow, ProjectRow } from "../../shared/types";
+import type { AssetDetail, AssetGraph, AssetRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { createCreativeAsset, loadAssetDetail, loadAssetsData, saveAssetContent, type CreativeLibrary } from "./api";
+import { createCreativeAsset, loadAssetDetail, loadAssetGraph, loadAssetsData, saveAssetContent, type CreativeLibrary } from "./api";
 
 const assetTypes = [
   "genre_market_profile",
   "material_card",
   "knowledge_card",
+  "character_card",
+  "world_bible",
   "continuity_bible",
+  "foreshadowing_thread",
+  "chapter_plan",
+  "review_report",
   "style_profile",
   "quality_standard_profile",
   "writing_template",
@@ -27,6 +32,7 @@ export function AssetsCenterPage() {
   const [keyword, setKeyword] = useState("");
   const [selectedPath, setSelectedPath] = useState("");
   const [detail, setDetail] = useState<AssetDetail | null>(null);
+  const [graph, setGraph] = useState<AssetGraph | null>(null);
   const [draftContent, setDraftContent] = useState("{}");
   const [newType, setNewType] = useState(assetTypes[0]);
   const [newTitle, setNewTitle] = useState("");
@@ -35,6 +41,8 @@ export function AssetsCenterPage() {
   const [error, setError] = useState("");
 
   const selectedProject = projects.find((project) => project.project_id === projectId);
+  const typedContent = parseDraftContent(draftContent);
+  const typedFields = detail ? typedEditorFields(detail.summary.type) : [];
   const byType = useMemo(() => {
     return assets.reduce<Record<string, number>>((counts, asset) => {
       counts[asset.type] = (counts[asset.type] ?? 0) + 1;
@@ -57,7 +65,9 @@ export function AssetsCenterPage() {
     setError("");
     try {
       const nextDetail = await loadAssetDetail(path);
+      const nextGraph = await loadAssetGraph(path, 2);
       setDetail(nextDetail);
+      setGraph(nextGraph);
       setDraftContent(JSON.stringify(nextDetail.asset.content ?? {}, null, 2));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -77,6 +87,11 @@ export function AssetsCenterPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function updateTypedField(field: string, value: unknown) {
+    const nextContent = { ...parseDraftContent(draftContent), [field]: value };
+    setDraftContent(JSON.stringify(nextContent, null, 2));
   }
 
   useEffect(() => {
@@ -166,6 +181,39 @@ export function AssetsCenterPage() {
                 <Metric label="标题" value={detail.summary.title || detail.summary.id} />
                 <Metric label="风险" value={detail.summary.risk_level || "-"} />
               </div>
+              {typedFields.length ? (
+                <div className="typedEditorGrid">
+                  {typedFields.map((field) => (
+                    <label className={field.kind === "textarea" || field.kind === "list" ? "typedField wide" : "typedField"} key={field.key}>
+                      <span>{field.label}</span>
+                      {field.kind === "textarea" ? (
+                        <textarea
+                          rows={field.rows ?? 5}
+                          value={String(typedContent[field.key] ?? "")}
+                          onChange={(event) => updateTypedField(field.key, event.target.value)}
+                        />
+                      ) : field.kind === "number" ? (
+                        <input
+                          type="number"
+                          value={Number(typedContent[field.key] ?? field.defaultValue ?? 0)}
+                          onChange={(event) => updateTypedField(field.key, Number(event.target.value || 0))}
+                        />
+                      ) : field.kind === "list" ? (
+                        <textarea
+                          rows={field.rows ?? 4}
+                          value={listToText(typedContent[field.key])}
+                          onChange={(event) => updateTypedField(field.key, textToList(event.target.value))}
+                        />
+                      ) : (
+                        <input
+                          value={String(typedContent[field.key] ?? "")}
+                          onChange={(event) => updateTypedField(field.key, event.target.value)}
+                        />
+                      )}
+                    </label>
+                  ))}
+                </div>
+              ) : null}
               <textarea value={draftContent} onChange={(event) => setDraftContent(event.target.value)} rows={18} />
               <button
                 className="primaryButton"
@@ -180,6 +228,150 @@ export function AssetsCenterPage() {
           )}
         </div>
       </section>
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="引用图谱" icon={<Network size={18} />} />
+          {graph ? (
+            <>
+              <div className="assetGraphCanvas">
+                {graph.nodes.map((node) => (
+                  <div className={node.id === graph.start_id ? "graphNode active" : "graphNode"} key={node.id}>
+                    <strong>{node.title || node.id}</strong>
+                    <span>{node.type}</span>
+                    <small>{node.path}</small>
+                  </div>
+                ))}
+              </div>
+              <DataTable
+                emptyText="暂无引用边"
+                columns={["来源", "关系", "目标"]}
+                rows={graph.edges.map((edge, index) => [
+                  <span className="pathText" key={`${index}-source`}>{edge.source}</span>,
+                  edge.relation,
+                  <span className="pathText" key={`${index}-target`}>{edge.target}</span>
+                ])}
+              />
+            </>
+          ) : (
+            <p className="muted">选择资产后显示引用图谱。</p>
+          )}
+        </div>
+        <div className="panel">
+          <PanelHeader title="影响提示" icon={<Network size={18} />} />
+          <p className="muted">引用图谱展示直接和二级上下游关系；需要正式变更前，进入“变更影响分析中心”生成可保存的影响报告。</p>
+          <DataTable
+            emptyText="暂无引用节点"
+            columns={["类型", "标题", "路径"]}
+            rows={(graph?.nodes ?? []).map((node) => [
+              node.type,
+              node.title || node.id,
+              <span className="pathText" key={node.path}>{node.path}</span>
+            ])}
+          />
+        </div>
+      </section>
     </FeatureShell>
   );
+}
+
+type TypedEditorField = {
+  key: string;
+  label: string;
+  kind?: "text" | "textarea" | "list" | "number";
+  rows?: number;
+  defaultValue?: number;
+};
+
+const TYPE_EDITOR_FIELDS: Record<string, TypedEditorField[]> = {
+  character_card: [
+    { key: "name", label: "人物名" },
+    { key: "role", label: "角色定位" },
+    { key: "external_goal", label: "外在目标", kind: "textarea", rows: 3 },
+    { key: "internal_need", label: "内在需求", kind: "textarea", rows: 3 },
+    { key: "current_state", label: "当前状态" },
+    { key: "current_location", label: "当前位置" },
+    { key: "power_level", label: "战力/等级" },
+    { key: "relationships", label: "关系网", kind: "list" },
+    { key: "arc", label: "成长曲线", kind: "textarea", rows: 4 }
+  ],
+  world_bible: [
+    { key: "worldview_rules", label: "世界规则", kind: "list" },
+    { key: "locations", label: "地点体系", kind: "list" },
+    { key: "organizations", label: "组织势力", kind: "list" },
+    { key: "power_system", label: "力量体系", kind: "textarea", rows: 4 },
+    { key: "constraints", label: "不可违背设定", kind: "list" }
+  ],
+  continuity_bible: [
+    { key: "timeline", label: "时间线", kind: "list" },
+    { key: "entities", label: "Canon 实体", kind: "list" },
+    { key: "open_threads", label: "未回收伏笔", kind: "list" },
+    { key: "constraints", label: "连续性约束", kind: "list" }
+  ],
+  foreshadowing_thread: [
+    { key: "thread_id", label: "伏笔 ID" },
+    { key: "status", label: "状态 planned/seeded/developing/paid_off" },
+    { key: "setup", label: "埋设方式", kind: "textarea", rows: 3 },
+    { key: "payoff_plan", label: "回收计划", kind: "textarea", rows: 3 },
+    { key: "related_chapters", label: "相关章节", kind: "list" }
+  ],
+  chapter_plan: [
+    { key: "chapter", label: "章节号", kind: "number", defaultValue: 1 },
+    { key: "objective", label: "章节目标", kind: "textarea", rows: 3 },
+    { key: "beats", label: "节拍", kind: "list" },
+    { key: "information_points", label: "信息点", kind: "list" },
+    { key: "hook", label: "章末钩子", kind: "textarea", rows: 3 },
+    { key: "word_budget", label: "字数预算", kind: "number", defaultValue: 2500 },
+    { key: "feedback_constraints", label: "读者反馈约束", kind: "list" }
+  ],
+  review_report: [
+    { key: "score", label: "总分", kind: "number", defaultValue: 0 },
+    { key: "strengths", label: "优点", kind: "list" },
+    { key: "issues", label: "问题清单", kind: "list" },
+    { key: "revision_suggestions", label: "修订建议", kind: "list" },
+    { key: "gate_decision", label: "门禁结论" }
+  ],
+  writing_template: [
+    { key: "template_id", label: "模板 ID" },
+    { key: "use_case", label: "使用场景" },
+    { key: "structure", label: "结构", kind: "textarea", rows: 5 },
+    { key: "constraints", label: "约束", kind: "list" },
+    { key: "examples", label: "抽象示例", kind: "list" }
+  ],
+  craft_template: [
+    { key: "template_id", label: "模板 ID" },
+    { key: "craft_type", label: "技法类型" },
+    { key: "steps", label: "步骤", kind: "list" },
+    { key: "anti_patterns", label: "反模式", kind: "list" },
+    { key: "review_checks", label: "审稿检查项", kind: "list" }
+  ],
+  review_rule_pack: [
+    { key: "rule_pack_id", label: "规则包 ID" },
+    { key: "dimensions", label: "评分维度", kind: "textarea", rows: 5 },
+    { key: "blocking_rules", label: "阻断规则", kind: "list" },
+    { key: "manual_gate_rules", label: "人工确认规则", kind: "list" }
+  ]
+};
+
+function typedEditorFields(assetType: string) {
+  return TYPE_EDITOR_FIELDS[assetType] ?? [];
+}
+
+function parseDraftContent(value: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+  } catch {
+    return {};
+  }
+}
+
+function listToText(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.map((item) => typeof item === "string" ? item : JSON.stringify(item)).join("\n");
+  }
+  return typeof value === "string" ? value : "";
+}
+
+function textToList(value: string) {
+  return value.split("\n").map((item) => item.trim()).filter(Boolean);
 }

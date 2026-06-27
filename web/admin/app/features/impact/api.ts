@@ -5,6 +5,8 @@ export type ChangeImpactRow = FeatureAssetRow & {
   target_path?: string;
   target_asset_type?: string;
   impacted_count?: number;
+  impacted_assets?: Array<{ id?: string; path?: string; type?: string; title?: string; severity?: string; depth?: number; recommended_action?: string }>;
+  impact_edges?: Array<{ source?: string; target?: string; relation?: string; depth?: number }>;
   recommendation?: string;
   severity_summary?: Record<string, number>;
 };

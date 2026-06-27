@@ -1,20 +1,36 @@
 from pathlib import Path
+import os
 import sys
 import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.model_adapters import MockModelAdapter
+from novel_forge.model_adapters import MockModelAdapter, model_from_env
 from novel_forge.modules.agent_runs import (
     create_agent_rollback_report,
     create_agent_sla_report,
     guard_agent_action,
     start_agent_run,
 )
-from novel_forge.modules.continuity_graph import build_continuity_graph, create_chapter_continuity_report, create_chapter_stability_preflight_report, create_continuity_graph_snapshot
+from novel_forge.modules.continuity_graph import (
+    apply_canon_patch,
+    build_continuity_graph,
+    create_canon_patch_from_draft,
+    create_chapter_continuity_report,
+    create_chapter_stability_preflight_report,
+    create_continuity_graph_snapshot,
+)
 from novel_forge.modules.editor import apply_editor_patch, create_draft_diff_report, create_editor_patch
-from novel_forge.modules.evaluation_center import compare_model_runs, create_model_benchmark_task, create_model_profile, run_model_benchmark
+from novel_forge.modules.evaluation_center import (
+    compare_model_runs,
+    create_model_benchmark_task,
+    create_model_profile,
+    create_model_routing_policy,
+    resolve_model_route,
+    run_model_benchmark,
+    run_model_benchmark_batch,
+)
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.schemas import ChapterPlan, CharacterCard, ContinuityBible, DraftChapter, ForeshadowingThread
 from novel_forge.storage.local import LocalStorage
@@ -99,6 +115,56 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
             self.assertEqual(storage.read_asset(snapshot["path"]).type, "continuity_graph_snapshot")
             report = create_chapter_continuity_report(storage, draft_path)
             self.assertEqual(storage.read_asset(report["path"]).type, "chapter_continuity_report")
+
+    def test_canon_patch_updates_continuity_after_final_draft_confirmation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = init_workspace(storage, "Canon Patch Project")
+            workspace_ref = str(workspace.relative_to(storage.root))
+            project_id = storage.read_asset(workspace).content["project_id"]
+            storage.write_asset(
+                "continuity",
+                ContinuityBible(
+                    title="Canon bible",
+                    content={"project_id": project_id, "worldview_rules": [], "timeline": [], "entities": [], "open_threads": [], "constraints": []},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+            storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="林乔",
+                    content={"name": "林乔", "role": "protagonist", "current_state": "active", "current_location": "钟城"},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Final Draft",
+                    content={"chapter": 3, "text": "林乔抵达钟塔。林乔发现铜铃真相。", "copyright_boundary": "fixture"},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref, "draft_status": "final"},
+                    references=[workspace_ref],
+                ),
+            )
+
+            patch = create_canon_patch_from_draft(storage, draft_path, workspace_path=workspace_ref)
+            patch_asset = storage.read_asset(patch["path"])
+            self.assertEqual(patch_asset.type, "canon_patch")
+            self.assertEqual(patch_asset.content["status"], "proposed")
+            self.assertTrue(patch_asset.content["proposed_events"])
+            applied = apply_canon_patch(storage, patch["path"], confirmed=True, note="unit test accepted")
+            self.assertTrue(applied["updated_targets"])
+            updated_bibles = [
+                storage.read_asset(path)
+                for path in storage.list_json("continuity")
+                if storage.read_json(path).get("type") == "continuity_bible"
+            ]
+            self.assertTrue(updated_bibles[0].content["timeline"])
+            self.assertEqual(storage.read_asset(patch["path"]).content["status"], "applied")
 
     def test_long_form_stability_preflight_checks_character_foreshadowing_timeline_and_settings(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -197,6 +263,25 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
             self.assertEqual(storage.read_asset(run["path"]).type, "model_benchmark_run")
             comparison = compare_model_runs(storage, [run["path"]], task_type="generate")
             self.assertEqual(storage.read_asset(comparison["path"]).type, "model_comparison_report")
+            batch = run_model_benchmark_batch(storage, task_paths=[task["path"]], candidates=[{"provider": "mock", "model_name": "mock-model"}])
+            self.assertTrue(batch["comparisons"])
+            policy = create_model_routing_policy(storage, comparison_paths=[comparison["path"]])
+            self.assertEqual(storage.read_asset(policy["path"]).type, "model_routing_policy")
+            route = resolve_model_route(storage, task_type="generate")
+            self.assertEqual(route["provider"], "mock")
+
+            previous_root = os.environ.get("NOVEL_FORGE_ROOT")
+            previous_provider = os.environ.pop("NOVEL_FORGE_MODEL_PROVIDER", None)
+            os.environ["NOVEL_FORGE_ROOT"] = tmp
+            try:
+                self.assertEqual(model_from_env("generate").name, "mock-model")
+            finally:
+                if previous_root is None:
+                    os.environ.pop("NOVEL_FORGE_ROOT", None)
+                else:
+                    os.environ["NOVEL_FORGE_ROOT"] = previous_root
+                if previous_provider is not None:
+                    os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = previous_provider
 
 
 if __name__ == "__main__":

@@ -97,6 +97,8 @@ def list_change_impact_reports(storage: LocalStorage, *, project_id: str | None 
                 "target_path": content.get("target_path", ""),
                 "target_asset_type": content.get("target_asset_type", ""),
                 "impacted_count": len(content.get("impacted_assets", []) if isinstance(content.get("impacted_assets", []), list) else []),
+                "impacted_assets": (content.get("impacted_assets", []) if isinstance(content.get("impacted_assets", []), list) else [])[:25],
+                "impact_edges": (content.get("impact_edges", []) if isinstance(content.get("impact_edges", []), list) else [])[:50],
                 "recommendation": content.get("recommendation", ""),
                 "severity_summary": content.get("severity_summary", {}),
                 "project_id": metadata.get("project_id", ""),

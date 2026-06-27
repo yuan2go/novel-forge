@@ -19,6 +19,9 @@ from novel_forge.modules.chapter_production_bus import (
     start_chapter_production,
 )
 from novel_forge.modules.editor import apply_editor_patch
+from novel_forge.modules.long_planning import create_long_form_macro_plan
+from novel_forge.modules.operations import create_local_ops_drill_report, create_long_chain_acceptance_report
+from novel_forge.modules.publishing import create_publishing_log, create_publishing_plan
 from novel_forge.modules.production_chain import (
     create_chapter_plan_version,
     create_draft_version,
@@ -27,7 +30,7 @@ from novel_forge.modules.production_chain import (
     list_production_versions,
 )
 from novel_forge.modules.workspace.service import init_workspace
-from novel_forge.schemas import ChapterPlan, CharacterCard, ContinuityBible, CraftTemplate, DraftChapter, FeedbackInsight, ForeshadowingThread, KnowledgeCard, MaterialCard, Outline, WritingTemplate, WorldBible
+from novel_forge.schemas import ChapterPlan, CharacterCard, ContinuityBible, CraftTemplate, DraftChapter, FeedbackInsight, ForeshadowingThread, KnowledgeCard, MaterialCard, Outline, ReleasePackage, WritingTemplate, WorldBible
 from novel_forge.storage.local import LocalStorage
 from novel_forge.workers.tasks import chapter_production_run_task
 
@@ -605,6 +608,87 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertEqual(report.content["gate_status"], "blocked")
             self.assertTrue(report.content["blocking_violations"])
             self.assertTrue(any(item["dimension"] == "setting_rule_conflict" for item in report.content["blocking_violations"]))
+
+    def test_long_form_macro_plan_is_schema_backed_and_project_scoped(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = init_workspace(storage, "Macro Project")
+            workspace_asset = storage.read_asset(workspace)
+            project_id = workspace_asset.content["project_id"]
+            workspace_ref = str(workspace.relative_to(storage.root))
+            outline = storage.write_asset(
+                "outlines",
+                Outline(
+                    title="Macro outline",
+                    content={"acts": [{"act": 1, "goal": "open macro plan"}]},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+
+            result = create_long_form_macro_plan(
+                storage,
+                workspace_path=workspace_ref,
+                source_path=str(outline.relative_to(storage.root)),
+                target_word_count=500000,
+                volume_count=3,
+                chapters_per_volume=60,
+            )
+            asset = storage.read_asset(result["path"])
+            self.assertEqual(asset.type, "long_form_macro_plan")
+            self.assertEqual(asset.metadata["project_id"], project_id)
+            self.assertEqual(asset.content["volume_count"], 3)
+            self.assertTrue(asset.content["mainline_matrix"])
+            self.assertTrue(asset.content["commercial_pacing_table"])
+
+    def test_publishing_plan_and_log_are_versioned_release_assets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = init_workspace(storage, "Publishing Project")
+            workspace_asset = storage.read_asset(workspace)
+            project_id = workspace_asset.content["project_id"]
+            workspace_ref = str(workspace.relative_to(storage.root))
+            release_path = storage.write_asset(
+                "publishing",
+                ReleasePackage(
+                    title="Release package ch1",
+                    content={
+                        "target_asset_id": "draft-1",
+                        "publish_gate_report_id": "gate-1",
+                        "title_candidates": ["Ch1"],
+                        "summary": "Ready chapter",
+                        "tags": ["release"],
+                        "channel": "local",
+                        "status": "ready",
+                        "draft_path": "data/drafts/draft-1.json",
+                        "publish_gate_report_path": "data/publishing/gate-1.json",
+                    },
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+
+            plan = create_publishing_plan(storage, release_package_paths=[release_path], workspace_path=workspace_ref)
+            self.assertEqual(storage.read_asset(plan["path"]).type, "publishing_plan")
+            self.assertEqual(storage.read_asset(plan["path"]).content["chapter_queue"][0]["status"], "ready")
+            log = create_publishing_log(storage, release_path, publishing_plan_path=plan["path"])
+            self.assertEqual(storage.read_asset(log["path"]).type, "publishing_log")
+            self.assertEqual(storage.read_asset(log["path"]).content["status"], "published")
+            self.assertTrue(storage.read_asset(log["path"]).content["rollback_plan"]["available"])
+
+    def test_local_ops_and_long_chain_acceptance_reports_are_schema_backed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            ops = create_local_ops_drill_report(storage)
+            self.assertEqual(storage.read_asset(ops["path"]).type, "local_ops_drill_report")
+            self.assertIn(storage.read_asset(ops["path"]).content["status"], {"passed", "warning", "failed"})
+            acceptance = create_long_chain_acceptance_report(storage, chapter_count=10)
+            self.assertEqual(storage.read_asset(acceptance["path"]).type, "long_chain_acceptance_report")
+            self.assertEqual(storage.read_asset(acceptance["path"]).content["chapter_count"], 10)
+            self.assertIn(storage.read_asset(acceptance["path"]).content["recommendation"], {"pass", "revise", "block"})
 
 
 if __name__ == "__main__":

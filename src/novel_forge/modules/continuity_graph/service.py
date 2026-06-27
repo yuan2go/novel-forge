@@ -8,7 +8,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
-from novel_forge.schemas import ChapterContinuityReport, ContinuityGraphSnapshot, CanonGraphSnapshot, validate_common_fields
+from novel_forge.schemas import ChapterContinuityReport, ContinuityGraphSnapshot, CanonGraphSnapshot, CanonPatch, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 CONTINUITY_TYPES = {
@@ -27,6 +27,7 @@ CONTINUITY_TYPES = {
     "revision_plan",
     "chapter_audit_report",
     "canon_graph_snapshot",
+    "canon_patch",
 }
 
 
@@ -216,6 +217,121 @@ def create_chapter_continuity_report(
         result = _write(storage, asset)
         run.succeed(output_assets=[result["path"]], token_used=len(checks))
         return result
+
+
+def create_canon_patch_from_draft(
+    storage: LocalStorage,
+    draft_path: str | Path,
+    *,
+    workspace_path: str | None = None,
+) -> dict[str, Any]:
+    path = resolve_path(storage.root, draft_path)
+    draft = storage.read_asset(path)
+    if draft.type not in {"draft_chapter", "draft_version"}:
+        raise ValueError("draft_path must point to draft_chapter or draft_version")
+    project = project_scope_from_asset(storage, draft, input_path=path, workspace_path=workspace_path)
+    project_id = str(project.get("project_id", ""))
+    workspace = str(project.get("workspace_path", "") or workspace_path or "")
+    graph = build_continuity_graph(storage, project_id=project_id or None, workspace_path=workspace, include_content_snapshot=True)
+    canon = _build_canon_graph_payload(graph, target_asset=draft.to_dict(), chapter=_positive_int(draft.content.get("chapter", 1)))
+    proposed_events = _extract_draft_events(draft.to_dict())
+    entity_updates = _extract_entity_updates(draft.to_dict(), canon)
+    thread_updates = _extract_thread_updates(draft.to_dict(), canon)
+    relationship_updates = _extract_relationship_updates(draft.to_dict(), canon)
+    with AgentExecutionContext(
+        storage,
+        agent_key="continuity",
+        operation="create-canon-patch-from-draft",
+        input_assets=[path],
+        output_types=["canon_patch"],
+        workspace_path=workspace,
+        sla_seconds=600,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("write_canon_patch", "canon_patch")
+        asset = CanonPatch(
+            title=f"Canon patch for {draft.title or draft.id}",
+            source=draft.id,
+            tags=["canon", "patch", "proposed", f"chapter-{draft.content.get('chapter', 1)}"],
+            content={
+                "patch_id": make_id("canon_patch", draft.id),
+                "target_draft_id": draft.id,
+                "target_draft_path": _display_path(storage.root, path),
+                "chapter": draft.content.get("chapter", 1),
+                "status": "proposed",
+                "proposed_events": proposed_events,
+                "entity_updates": entity_updates,
+                "thread_updates": thread_updates,
+                "relationship_updates": relationship_updates,
+                "apply_plan": {
+                    "mode": "human_confirmed",
+                    "target_assets": _canon_patch_targets(graph),
+                    "writes": ["continuity_bible.timeline", "canon_patch.status"],
+                    "rollback": "restore JSON backup from data/backups or reject patch before apply",
+                },
+                "human_gate": {
+                    "required": True,
+                    "status": "waiting_human",
+                    "instructions": "Review extracted canon events, entity updates, and thread updates before applying.",
+                },
+                "canon_graph_summary": canon.get("summary", {}),
+                "created_at": utc_now(),
+            },
+            metadata={"project_id": project_id, "workspace_path": workspace, "workflow": "canon-auto-update", "risk_level": "medium"},
+            references=filter_project_safe_references(storage, project_id, [draft.id, _display_path(storage.root, path), *[node["id"] for node in graph["nodes"][:80]]]),
+        )
+        result = _write(storage, asset)
+        run.succeed(output_assets=[result["path"]], token_used=len(proposed_events) + len(entity_updates) + len(thread_updates))
+        return result
+
+
+def apply_canon_patch(
+    storage: LocalStorage,
+    patch_path: str | Path,
+    *,
+    confirmed: bool = False,
+    note: str = "",
+) -> dict[str, Any]:
+    path = resolve_path(storage.root, patch_path)
+    patch = storage.read_asset(path)
+    if patch.type != "canon_patch":
+        raise ValueError("patch_path must point to canon_patch")
+    if not confirmed:
+        raise ValueError("confirmed=true is required to apply canon_patch")
+    project = project_scope_from_asset(storage, patch, input_path=path)
+    project_id = str(project.get("project_id", ""))
+    with AgentExecutionContext(
+        storage,
+        agent_key="continuity",
+        operation="apply-canon-patch",
+        input_assets=[path],
+        output_types=["canon_patch", "continuity_bible"],
+        workspace_path=str(project.get("workspace_path", "")),
+        sla_seconds=600,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("write_continuity_bible", "continuity_bible")
+        updated_targets = _apply_patch_to_continuity_bibles(storage, patch.to_dict(), project_id)
+        data = storage.read_json(path)
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        human_gate = content.get("human_gate", {}) if isinstance(content.get("human_gate", {}), dict) else {}
+        human_gate.update({"status": "confirmed", "note": note, "confirmed_at": utc_now()})
+        content["human_gate"] = human_gate
+        content["status"] = "applied"
+        content["applied_at"] = utc_now()
+        content["applied_targets"] = updated_targets
+        data["content"] = content
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        metadata["asset_status"] = "applied"
+        data["metadata"] = metadata
+        data["updated_at"] = utc_now()
+        errors = validate_common_fields(data)
+        if errors:
+            raise ValueError("; ".join(errors))
+        run.guard("write_canon_patch", "canon_patch")
+        storage.write_json(path, data)
+        run.succeed(output_assets=[_display_path(storage.root, path), *updated_targets])
+        return {"path": _display_path(storage.root, path), "asset": data, "updated_targets": updated_targets}
 
 
 def create_chapter_stability_preflight_report(
@@ -602,6 +718,185 @@ def _canon_violations(
                     }
                 )
     return violations
+
+
+def _extract_draft_events(draft: dict[str, Any]) -> list[dict[str, Any]]:
+    content = draft.get("content", {}) if isinstance(draft.get("content", {}), dict) else {}
+    text = str(content.get("text") or content.get("summary") or "")
+    chapter = _positive_int(content.get("chapter", 1))
+    sentences = _sentences(text)
+    events: list[dict[str, Any]] = []
+    for index, sentence in enumerate(sentences[:12], start=1):
+        if _contains_any(sentence, ["决定", "发现", "抵达", "离开", "交给", "获得", "失去", "揭示", "响", "出现", "选择", "payoff", "reveal"]):
+            events.append(
+                {
+                    "event_id": f"chapter_{chapter}_event_{index}",
+                    "chapter": chapter,
+                    "event": sentence[:180],
+                    "source": "draft_text_rule_extraction",
+                    "confidence": "medium",
+                }
+            )
+    if not events and sentences:
+        events.append({"event_id": f"chapter_{chapter}_event_1", "chapter": chapter, "event": sentences[-1][:180], "source": "draft_last_sentence", "confidence": "low"})
+    return events
+
+
+def _extract_entity_updates(draft: dict[str, Any], canon: dict[str, Any]) -> list[dict[str, Any]]:
+    content = draft.get("content", {}) if isinstance(draft.get("content", {}), dict) else {}
+    text = str(content.get("text") or "")
+    chapter = _positive_int(content.get("chapter", 1))
+    updates: list[dict[str, Any]] = []
+    for entity in canon.get("entities", []) if isinstance(canon.get("entities", []), list) else []:
+        if not isinstance(entity, dict) or entity.get("entity_type") != "character":
+            continue
+        name = str(entity.get("name", "")).strip()
+        if not name or name not in text:
+            continue
+        update = {
+            "entity_id": entity.get("entity_id", ""),
+            "asset_id": entity.get("asset_id", ""),
+            "name": name,
+            "chapter": chapter,
+            "state": _state_from_text(text, name) or entity.get("state", ""),
+            "location": _location_from_text(text, name) or entity.get("location", ""),
+            "power_level": entity.get("power_level", ""),
+            "evidence": _sentence_with(text, name)[:180],
+            "confidence": "medium",
+        }
+        updates.append(update)
+    return updates[:20]
+
+
+def _extract_thread_updates(draft: dict[str, Any], canon: dict[str, Any]) -> list[dict[str, Any]]:
+    content = draft.get("content", {}) if isinstance(draft.get("content", {}), dict) else {}
+    text = str(content.get("text") or "")
+    chapter = _positive_int(content.get("chapter", 1))
+    updates: list[dict[str, Any]] = []
+    for thread in canon.get("lifecycle_threads", []) if isinstance(canon.get("lifecycle_threads", []), list) else []:
+        if not isinstance(thread, dict):
+            continue
+        terms = [str(thread.get("title", "")), str(thread.get("setup", "")), str(thread.get("payoff_plan", ""))]
+        if not any(term and term in text for term in terms):
+            continue
+        status = "paid_off" if _contains_any(text, ["揭示", "回收", "真相", "payoff", "答案"]) else "developing"
+        updates.append(
+            {
+                "thread_id": thread.get("thread_id", ""),
+                "asset_id": thread.get("asset_id", ""),
+                "chapter": chapter,
+                "from_status": thread.get("status", ""),
+                "to_status": status,
+                "evidence": _sentence_with(text, terms[0] or terms[1])[:180],
+                "confidence": "medium",
+            }
+        )
+    return updates[:20]
+
+
+def _extract_relationship_updates(draft: dict[str, Any], canon: dict[str, Any]) -> list[dict[str, Any]]:
+    text = str((draft.get("content", {}) if isinstance(draft.get("content", {}), dict) else {}).get("text") or "")
+    names = [
+        str(entity.get("name", ""))
+        for entity in canon.get("entities", [])
+        if isinstance(entity, dict) and entity.get("entity_type") == "character" and str(entity.get("name", "")).strip()
+    ]
+    updates: list[dict[str, Any]] = []
+    for left in names:
+        for right in names:
+            if left >= right:
+                continue
+            sentence = _sentence_with(text, left, right)
+            if not sentence:
+                continue
+            relation = "conflict" if _contains_any(sentence, ["冲突", "背叛", "质问", "威胁"]) else "interaction"
+            updates.append({"source": left, "target": right, "relation": relation, "evidence": sentence[:180], "confidence": "low"})
+    return updates[:20]
+
+
+def _canon_patch_targets(graph: dict[str, Any]) -> list[dict[str, str]]:
+    targets = [node for node in graph.get("nodes", []) if isinstance(node, dict) and node.get("type") == "continuity_bible"]
+    return [{"asset_id": str(node.get("id", "")), "path": str(node.get("path", "")), "type": "continuity_bible"} for node in targets[:5]]
+
+
+def _apply_patch_to_continuity_bibles(storage: LocalStorage, patch: dict[str, Any], project_id: str) -> list[str]:
+    updated: list[str] = []
+    content = patch.get("content", {}) if isinstance(patch.get("content", {}), dict) else {}
+    events = content.get("proposed_events", []) if isinstance(content.get("proposed_events", []), list) else []
+    if not events:
+        return updated
+    for path in storage.list_json("continuity"):
+        data = storage.read_json(path)
+        if not isinstance(data, dict) or data.get("type") != "continuity_bible":
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        if project_id and str(metadata.get("project_id", "")) != project_id:
+            continue
+        bible_content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        timeline = bible_content.get("timeline", []) if isinstance(bible_content.get("timeline", []), list) else []
+        for event in events:
+            timeline.append(
+                {
+                    "chapter": event.get("chapter", content.get("chapter", 1)),
+                    "event": event.get("event", ""),
+                    "source_canon_patch_id": patch.get("id", ""),
+                    "source_draft_id": content.get("target_draft_id", ""),
+                    "created_at": utc_now(),
+                }
+            )
+        bible_content["timeline"] = timeline
+        bible_content["last_canon_patch_id"] = patch.get("id", "")
+        data["content"] = bible_content
+        data["updated_at"] = utc_now()
+        errors = validate_common_fields(data)
+        if errors:
+            raise ValueError("; ".join(errors))
+        storage.write_json(path, data)
+        updated.append(_display_path(storage.root, path))
+    return updated
+
+
+def _sentences(text: str) -> list[str]:
+    separators = "。！？!?\n"
+    rows: list[str] = []
+    current = ""
+    for char in str(text):
+        current += char
+        if char in separators:
+            if current.strip():
+                rows.append(current.strip())
+            current = ""
+    if current.strip():
+        rows.append(current.strip())
+    return rows
+
+
+def _sentence_with(text: str, *terms: str) -> str:
+    for sentence in _sentences(text):
+        if all(term and term in sentence for term in terms if term):
+            return sentence
+    return ""
+
+
+def _state_from_text(text: str, name: str) -> str:
+    sentence = _sentence_with(text, name)
+    if _contains_any(sentence, ["死亡", "阵亡", "死去"]):
+        return "dead"
+    if _contains_any(sentence, ["受伤", "昏迷", "重伤"]):
+        return "injured"
+    if _contains_any(sentence, ["消失", "失踪"]):
+        return "missing"
+    return "active" if sentence else ""
+
+
+def _location_from_text(text: str, name: str) -> str:
+    sentence = _sentence_with(text, name)
+    markers = ["抵达", "来到", "进入", "离开", "回到"]
+    for marker in markers:
+        if marker in sentence:
+            tail = sentence.split(marker, 1)[-1].strip(" ，。！？")
+            return tail[:24]
+    return ""
 
 
 def _iter_asset_paths(storage: LocalStorage) -> list[Path]:
@@ -1058,7 +1353,7 @@ def _state_conflict(states: set[str]) -> bool:
     return bool(states & dead and states & active)
 
 
-def _write(storage: LocalStorage, asset: ContinuityGraphSnapshot | CanonGraphSnapshot | ChapterContinuityReport) -> dict[str, Any]:
+def _write(storage: LocalStorage, asset: ContinuityGraphSnapshot | CanonGraphSnapshot | CanonPatch | ChapterContinuityReport) -> dict[str, Any]:
     errors = validate_common_fields(asset.to_dict())
     if errors:
         raise ValueError("; ".join(errors))

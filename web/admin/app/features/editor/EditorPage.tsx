@@ -17,6 +17,7 @@ export function EditorPage() {
   const [basePath, setBasePath] = useState("");
   const [targetPath, setTargetPath] = useState("");
   const [instructions, setInstructions] = useState("按审稿问题生成段落级修改建议，保持原创性边界和项目连续性。");
+  const [selectedOperationIds, setSelectedOperationIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -25,6 +26,8 @@ export function EditorPage() {
   const drafts = assets.filter((asset) => ["draft_chapter", "draft_version"].includes(asset.type));
   const patches = artifacts.filter((artifact) => artifact.type === "editor_patch");
   const diffs = artifacts.filter((artifact) => artifact.type === "draft_diff_report");
+  const selectedPatch = patches.find((patch) => patch.path === patchPath);
+  const operations = selectedPatch?.operations ?? [];
 
   async function refresh(nextProjectId = projectId) {
     const [projectRows, artifactRows, assetRows] = await loadEditorData(nextProjectId);
@@ -54,6 +57,10 @@ export function EditorPage() {
   useEffect(() => {
     refresh().catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)));
   }, []);
+
+  useEffect(() => {
+    setSelectedOperationIds([]);
+  }, [patchPath]);
 
   return (
     <FeatureShell title="AI 编辑器" subtitle="基于 editor_patch 和 draft_diff_report 做段落级建议、应用、diff 和回滚前复盘。">
@@ -88,12 +95,42 @@ export function EditorPage() {
               <option value="">选择 Patch</option>
               {patches.map((patch) => <option value={patch.path} key={patch.path}>{patch.title}</option>)}
             </select>
-            <button className="secondaryButton" disabled={busy || !patchPath} onClick={() => runAction(() => applyEditorPatch(patchPath), "Patch 已应用")}>应用 Patch</button>
+            <button className="secondaryButton" disabled={busy || !patchPath || !selectedOperationIds.length} onClick={() => runAction(() => applyEditorPatch(patchPath, selectedOperationIds), "选中建议已应用")}>应用选中</button>
+            <button className="secondaryButton" disabled={busy || !patchPath} onClick={() => runAction(() => applyEditorPatch(patchPath), "Patch 已全部应用")}>应用全部</button>
             <input value={basePath} onChange={(event) => setBasePath(event.target.value)} placeholder="base draft path" />
             <input value={targetPath} onChange={(event) => setTargetPath(event.target.value)} placeholder="target draft path" />
             <button className="secondaryButton" disabled={busy || !basePath || !targetPath} onClick={() => runAction(() => createDraftDiffReport(basePath, targetPath), "Diff 报告已创建")}>创建 Diff</button>
           </div>
         </div>
+      </section>
+      <section className="panel">
+        <PanelHeader title="段落级建议" icon={<GitPullRequest size={18} />} />
+        <div className="studioActions">
+          <button className="secondaryButton" disabled={!operations.length} onClick={() => setSelectedOperationIds(operations.map(operationId))}>全选</button>
+          <button className="secondaryButton" disabled={!selectedOperationIds.length} onClick={() => setSelectedOperationIds([])}>清空</button>
+        </div>
+        <DataTable
+          emptyText="选择或生成 editor_patch 后显示建议"
+          columns={["选择", "段落", "风险", "修订原因", "原文", "建议"]}
+          rows={operations.map((operation, index) => {
+            const opId = operationId(operation, index);
+            return [
+              <input
+                type="checkbox"
+                checked={selectedOperationIds.includes(opId)}
+                onChange={(event) => {
+                  setSelectedOperationIds((current) => event.target.checked ? [...new Set([...current, opId])] : current.filter((item) => item !== opId));
+                }}
+                key={`${opId}-check`}
+              />,
+              String(operation.paragraph_index ?? operation.target ?? index + 1),
+              <span className={statusClass(String(operation.risk ?? "low"))} key={`${opId}-risk`}>{String(operation.risk ?? "low")}</span>,
+              String(operation.rationale || operation.instruction || "-"),
+              <span className="previewText" key={`${opId}-before`}>{String(operation.before || "").slice(0, 160)}</span>,
+              <span className="previewText" key={`${opId}-after`}>{String(operation.after || "").slice(0, 160)}</span>
+            ];
+          })}
+        />
       </section>
       <section className="panel">
         <PanelHeader title="编辑资产" icon={<FileSearch size={18} />} />
@@ -112,4 +149,8 @@ export function EditorPage() {
       </section>
     </FeatureShell>
   );
+}
+
+function operationId(operation: Record<string, unknown>, index = 0) {
+  return String(operation.op_id || `op-${index + 1}`);
 }

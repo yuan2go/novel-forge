@@ -416,6 +416,17 @@ class ChapterContinuityReportRequest(BaseModel):
     workspace_path: str | None = None
 
 
+class CanonPatchRequest(BaseModel):
+    draft_path: str
+    workspace_path: str | None = None
+
+
+class CanonPatchApplyRequest(BaseModel):
+    patch_path: str
+    confirmed: bool = False
+    note: str = ""
+
+
 class ModelProfileRequest(BaseModel):
     provider: str
     model_name: str
@@ -443,6 +454,18 @@ class ModelBenchmarkRunRequest(BaseModel):
 class ModelComparisonRequest(BaseModel):
     run_paths: list[str]
     task_type: str = ""
+    workspace_path: str | None = None
+
+
+class ModelBenchmarkBatchRequest(BaseModel):
+    task_paths: list[str]
+    candidates: list[dict[str, str]] = Field(default_factory=list)
+    workspace_path: str | None = None
+
+
+class ModelRoutingPolicyRequest(BaseModel):
+    comparison_paths: list[str]
+    status: str = "active"
     workspace_path: str | None = None
 
 
@@ -480,6 +503,12 @@ class FeedbackInsightRequest(BaseModel):
 
 class FeedbackStrategyApplyRequest(BaseModel):
     report_path: str
+    workspace_path: str | None = None
+
+
+class OperationalMetricSnapshotRequest(BaseModel):
+    feedback_paths: list[str] = Field(default_factory=list)
+    project_id: str | None = None
     workspace_path: str | None = None
 
 
@@ -525,6 +554,41 @@ class ReleasePackageRequest(BaseModel):
     publish_gate_path: str | None = None
     channel: str = "local"
     human_override: bool = False
+
+
+class PublishingPlanRequest(BaseModel):
+    release_package_paths: list[str] = Field(default_factory=list)
+    project_id: str | None = None
+    workspace_path: str | None = None
+    channel: str = "local"
+    cadence: str = "daily"
+    start_date: str = ""
+
+
+class PublishingLogRequest(BaseModel):
+    release_package_path: str
+    publishing_plan_path: str | None = None
+    channel: str = "local"
+    status: str = "published"
+    external_url: str = ""
+    rollback_note: str = ""
+
+
+class LongFormMacroPlanRequest(BaseModel):
+    workspace_path: str | None = None
+    source_path: str | None = None
+    target_word_count: int = 1_000_000
+    volume_count: int = 5
+    chapters_per_volume: int = 80
+
+
+class LocalOpsDrillRequest(BaseModel):
+    include_external_services: bool = False
+
+
+class LongChainAcceptanceRequest(BaseModel):
+    project_id: str | None = None
+    chapter_count: int = 10
 
 
 class DraftSaveRequest(BaseModel):
@@ -708,22 +772,32 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "DraftDiffReportRequest": DraftDiffReportRequest,
         "ContinuityGraphSnapshotRequest": ContinuityGraphSnapshotRequest,
         "ChapterContinuityReportRequest": ChapterContinuityReportRequest,
+        "CanonPatchRequest": CanonPatchRequest,
+        "CanonPatchApplyRequest": CanonPatchApplyRequest,
         "ModelProfileRequest": ModelProfileRequest,
         "ModelBenchmarkTaskRequest": ModelBenchmarkTaskRequest,
         "ModelBenchmarkRunRequest": ModelBenchmarkRunRequest,
         "ModelComparisonRequest": ModelComparisonRequest,
+        "ModelBenchmarkBatchRequest": ModelBenchmarkBatchRequest,
+        "ModelRoutingPolicyRequest": ModelRoutingPolicyRequest,
         "PromptVersionRequest": PromptVersionRequest,
         "PromptRegressionRequest": PromptRegressionRequest,
         "FeedbackImportBatchRequest": FeedbackImportBatchRequest,
         "ReaderSentimentReportRequest": ReaderSentimentReportRequest,
         "FeedbackInsightRequest": FeedbackInsightRequest,
         "FeedbackStrategyApplyRequest": FeedbackStrategyApplyRequest,
+        "OperationalMetricSnapshotRequest": OperationalMetricSnapshotRequest,
         "ProjectMetricSnapshotRequest": ProjectMetricSnapshotRequest,
         "LocalSettingsProfileRequest": LocalSettingsProfileRequest,
         "ChapterAuditRequest": ChapterAuditRequest,
         "OriginalityReportRequest": OriginalityReportRequest,
         "PublishGateRequest": PublishGateRequest,
         "ReleasePackageRequest": ReleasePackageRequest,
+        "PublishingPlanRequest": PublishingPlanRequest,
+        "PublishingLogRequest": PublishingLogRequest,
+        "LongFormMacroPlanRequest": LongFormMacroPlanRequest,
+        "LocalOpsDrillRequest": LocalOpsDrillRequest,
+        "LongChainAcceptanceRequest": LongChainAcceptanceRequest,
         "DraftSaveRequest": DraftSaveRequest,
         "DraftExportRequest": DraftExportRequest,
         "ReviewIssueStatusRequest": ReviewIssueStatusRequest,

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { FeedbackAssetRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { applyFeedbackStrategy, createFeedbackInsight, createSentimentReport, importFeedbackBatch, loadFeedbackData } from "./api";
+import { applyFeedbackStrategy, createFeedbackInsight, createOperationalSnapshot, createSentimentReport, importFeedbackBatch, loadFeedbackData } from "./api";
 
 export function ReaderFeedbackPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
@@ -19,11 +19,16 @@ export function ReaderFeedbackPage() {
   const selectedProject = projects.find((project) => project.project_id === projectId);
   const feedbackRows = feedbackAssets.filter((row) => row.type === "reader_feedback");
   const sentimentRows = feedbackAssets.filter((row) => row.type === "reader_sentiment_report");
+  const operationalRows = feedbackAssets.filter((row) => row.type === "operational_metric_snapshot");
   const latestSentiment = sentimentRows[0];
+  const latestOperational = operationalRows[0];
   const distribution = latestSentiment?.sentiment_distribution || {};
-  const followRisk = latestSentiment?.follow_read_risk || {};
+  const followRisk = latestOperational?.follow_read_risk || latestSentiment?.follow_read_risk || {};
   const strategy = latestSentiment?.next_chapter_strategy || {};
-  const heat = latestSentiment?.character_heat || [];
+  const heat = latestOperational?.character_heat || latestSentiment?.character_heat || [];
+  const readMetrics = latestOperational?.read_metrics || {};
+  const engagement = latestOperational?.engagement_metrics || {};
+  const dropoffs = latestOperational?.chapter_dropoffs || [];
 
   async function refresh(nextProjectId = projectId) {
     const [projectRows, assetRows] = await loadFeedbackData(nextProjectId);
@@ -59,6 +64,7 @@ export function ReaderFeedbackPage() {
       <section className="summaryBand manuscriptSummary">
         <Metric label="反馈资产" value={String(feedbackRows.length)} />
         <Metric label="情绪报告" value={String(sentimentRows.length)} />
+        <Metric label="运营快照" value={String(operationalRows.length)} />
         <Metric label="负向反馈" value={String(distribution.negative ?? 0)} />
         <Metric label="追读风险" value={String(followRisk.level ?? "unknown")} />
       </section>
@@ -87,6 +93,7 @@ export function ReaderFeedbackPage() {
           <p className="previewText">{strategy.primary_strategy || "生成情绪报告后会出现下一章策略。"}</p>
           <div className="studioActions">
             <button className="primaryButton" disabled={busy || !feedbackRows.length} onClick={() => runAction(() => createSentimentReport(feedbackRows.slice(0, 12).map((row) => row.path), projectId, selectedProject?.path), "情绪报告已生成")}>情绪报告</button>
+            <button className="secondaryButton" disabled={busy || !feedbackRows.length} onClick={() => runAction(() => createOperationalSnapshot(feedbackRows.slice(0, 24).map((row) => row.path), projectId, selectedProject?.path), "运营指标快照已生成")}>运营快照</button>
             <button className="secondaryButton" disabled={busy || !feedbackRows.length} onClick={() => runAction(() => createFeedbackInsight(feedbackRows[0]?.path), "反馈洞察已生成")}>反馈洞察</button>
             <button className="secondaryButton" disabled={busy || !latestSentiment} onClick={() => runAction(() => applyFeedbackStrategy(latestSentiment?.path || "", selectedProject?.path), "下一章策略已回写")}>回写策略</button>
           </div>
@@ -100,6 +107,26 @@ export function ReaderFeedbackPage() {
             emptyText="暂无角色热度"
             columns={["角色", "提及", "热度"]}
             rows={heat.slice(0, 12).map((row) => [row.character, String(row.mentions), String(row.heat)])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="运营数据" icon={<Activity size={18} />} />
+          <div className="summaryBand">
+            <Metric label="阅读" value={String(readMetrics.total_reads ?? 0)} />
+            <Metric label="完读" value={String(readMetrics.average_completion_rate ?? 0)} />
+            <Metric label="评论率" value={String(engagement.comment_rate ?? 0)} />
+          </div>
+          <DataTable
+            emptyText="暂无章节流失点"
+            columns={["章节", "阅读", "流失率", "弃读信号", "评分", "风险"]}
+            rows={dropoffs.slice(0, 12).map((row) => [
+              String(row.chapter),
+              String(row.reads),
+              String(row.drop_rate),
+              String(row.explicit_drop_signals),
+              String(row.average_rating),
+              <span className={statusClass(row.risk)} key={`drop-${row.chapter}`}>{row.risk}</span>
+            ])}
           />
         </div>
         <div className="panel">

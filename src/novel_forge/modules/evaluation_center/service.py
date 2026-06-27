@@ -15,6 +15,7 @@ from novel_forge.schemas import (
     ModelBenchmarkTask,
     ModelComparisonReport,
     ModelProfile,
+    ModelRoutingPolicy,
     PromptRegressionReport,
     PromptVersion,
     validate_common_fields,
@@ -26,6 +27,7 @@ EVALUATION_TYPES = {
     "model_benchmark_task",
     "model_benchmark_run",
     "model_comparison_report",
+    "model_routing_policy",
     "prompt_version",
     "prompt_regression_report",
 }
@@ -153,6 +155,7 @@ def run_model_benchmark(
             validated = {}
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
         scores = _score_output(task, validated, status=status, latency_ms=latency_ms)
+        cost_estimate = _estimate_run_cost(storage, provider=provider, model_name=model_name, scores=scores, task=task)
         run.guard("write_model_benchmark_run", "model_benchmark_run")
         asset = ModelBenchmarkRun(
             title=f"{provider}/{model_name} on {task.title or task.id}",
@@ -167,6 +170,7 @@ def run_model_benchmark(
                 "model_name": model_name,
                 "scores": scores,
                 "latency_ms": latency_ms,
+                "cost_estimate": cost_estimate,
                 "status": status,
                 "error": error,
                 "raw_output": raw_output,
@@ -227,6 +231,150 @@ def compare_model_runs(
         result = _write(storage, asset)
         agent_run.succeed(output_assets=[result["path"]])
         return result
+
+
+def run_model_benchmark_batch(
+    storage: LocalStorage,
+    *,
+    task_paths: list[str | Path],
+    candidates: list[dict[str, str]] | None = None,
+    workspace_path: str | None = None,
+) -> dict[str, Any]:
+    if not task_paths:
+        raise ValueError("task_paths must not be empty")
+    model_candidates = candidates or _active_model_candidates(storage)
+    if not model_candidates:
+        model_candidates = [{"provider": "mock", "model_name": "mock-model"}]
+    run_results: list[dict[str, Any]] = []
+    comparison_results: list[dict[str, Any]] = []
+    with AgentExecutionContext(
+        storage,
+        agent_key="model_evaluation",
+        operation="run-model-benchmark-batch",
+        input_assets=task_paths,
+        output_types=["model_benchmark_run", "model_comparison_report"],
+        workspace_path=workspace_path or "",
+        sla_seconds=3600,
+    ) as batch_run:
+        batch_run.guard("read_asset")
+        for task_path in task_paths:
+            task_run_paths: list[str] = []
+            for candidate in model_candidates:
+                result = run_model_benchmark(
+                    storage,
+                    task_path,
+                    provider=str(candidate.get("provider") or "mock"),
+                    model_name=str(candidate.get("model_name") or "mock-model"),
+                )
+                run_results.append(result)
+                task_run_paths.append(result["path"])
+            comparison = compare_model_runs(storage, task_run_paths, workspace_path=workspace_path)
+            comparison_results.append(comparison)
+        batch_run.succeed(
+            output_assets=[*[item["path"] for item in run_results], *[item["path"] for item in comparison_results]],
+            token_used=len(run_results),
+        )
+    return {"runs": run_results, "comparisons": comparison_results, "candidate_count": len(model_candidates)}
+
+
+def create_model_routing_policy(
+    storage: LocalStorage,
+    *,
+    comparison_paths: list[str | Path],
+    status: str = "active",
+    workspace_path: str | None = None,
+) -> dict[str, Any]:
+    if not comparison_paths:
+        raise ValueError("comparison_paths must not be empty")
+    comparisons = [_read_comparison(storage, item) for item in comparison_paths]
+    project = _project_scope(
+        storage,
+        [{"id": row["id"], "path": row["path"], "type": row["asset"].get("type", "")} for row in comparisons],
+        workspace_path=workspace_path,
+    )
+    task_routes: dict[str, Any] = {}
+    fallbacks: dict[str, list[dict[str, Any]]] = {}
+    tradeoffs: dict[str, Any] = {}
+    for row in comparisons:
+        content = row["content"]
+        task_type = str(content.get("task_type") or "generate")
+        runs = content.get("runs", []) if isinstance(content.get("runs", []), list) else []
+        ranked = sorted(runs, key=lambda item: float(item.get("overall", 0)) if isinstance(item, dict) else 0, reverse=True)
+        winner = content.get("winner", {}) if isinstance(content.get("winner", {}), dict) else {}
+        if not winner and ranked:
+            winner = ranked[0]
+        task_routes[task_type] = {
+            "provider": winner.get("provider", "mock"),
+            "model_name": winner.get("model_name", "mock-model"),
+            "source_comparison_path": row["path"],
+            "overall": winner.get("overall", 0),
+            "latency_ms": winner.get("latency_ms", 0),
+            "reason": content.get("recommendation", ""),
+        }
+        fallbacks[task_type] = [
+            {
+                "provider": item.get("provider", ""),
+                "model_name": item.get("model_name", ""),
+                "overall": item.get("overall", 0),
+                "latency_ms": item.get("latency_ms", 0),
+            }
+            for item in ranked[1:4]
+            if isinstance(item, dict)
+        ]
+        tradeoffs[task_type] = {
+            "score_summary": content.get("score_summary", {}),
+            "selection_rule": "highest overall benchmark score, then latest active policy",
+        }
+    with AgentExecutionContext(
+        storage,
+        agent_key="model_evaluation",
+        operation="create-model-routing-policy",
+        input_assets=comparison_paths,
+        output_types=["model_routing_policy"],
+        workspace_path=str(project.get("workspace_path", "")),
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("write_model_routing_policy", "model_routing_policy")
+        asset = ModelRoutingPolicy(
+            title=f"Model routing policy {utc_now()}",
+            tags=["model-routing", status],
+            content={
+                "policy_id": make_id("model_routing_policy", str(project.get("project_id") or "global")),
+                "task_routes": task_routes,
+                "fallbacks": fallbacks,
+                "cost_quality_tradeoffs": tradeoffs,
+                "effective_from": utc_now(),
+                "status": status,
+                "created_at": utc_now(),
+            },
+            metadata={"project_id": project.get("project_id", ""), "workspace_path": project.get("workspace_path", ""), "status": status},
+            references=filter_project_safe_references(
+                storage,
+                str(project.get("project_id", "")),
+                [row["id"] for row in comparisons] + [row["path"] for row in comparisons],
+            ),
+        )
+        result = _write(storage, asset)
+        run.succeed(output_assets=[result["path"]])
+        return result
+
+
+def resolve_model_route(
+    storage: LocalStorage,
+    *,
+    task_type: str,
+    project_id: str | None = None,
+) -> dict[str, Any]:
+    policy = _latest_active_routing_policy(storage, project_id=project_id)
+    if not policy:
+        return {"provider": "mock", "model_name": "mock-model", "source": "default"}
+    content = policy.get("content", {}) if isinstance(policy.get("content", {}), dict) else {}
+    routes = content.get("task_routes", {}) if isinstance(content.get("task_routes", {}), dict) else {}
+    route = routes.get(task_type) or routes.get("generate") or {}
+    if not isinstance(route, dict) or not route:
+        return {"provider": "mock", "model_name": "mock-model", "source": "default"}
+    return {**route, "source": "model_routing_policy", "policy_id": content.get("policy_id", ""), "policy_path": policy.get("path", "")}
 
 
 def create_prompt_version(
@@ -329,8 +477,11 @@ def list_model_evaluation_assets(storage: LocalStorage, *, project_id: str | Non
                 "task_type": content.get("task_type", ""),
                 "status": content.get("status", ""),
                 "scores": content.get("scores", {}),
+                "score": content.get("scores", {}).get("overall", 0) if isinstance(content.get("scores", {}), dict) else 0,
+                "cost_estimate": content.get("cost_estimate", {}),
                 "latency_ms": content.get("latency_ms", ""),
                 "recommendation": content.get("recommendation", ""),
+                "task_routes": content.get("task_routes", {}),
                 "updated_at": data.get("updated_at", ""),
             }
         )
@@ -419,6 +570,14 @@ def _read_run(storage: LocalStorage, value: str | Path) -> dict[str, Any]:
     return {"path": _display_path(storage.root, path), "id": data.get("id", ""), "asset": data, "content": data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}}
 
 
+def _read_comparison(storage: LocalStorage, value: str | Path) -> dict[str, Any]:
+    path = resolve_path(storage.root, value)
+    data = storage.read_json(path)
+    if not isinstance(data, dict) or data.get("type") != "model_comparison_report":
+        raise ValueError(f"path must point to a model_comparison_report asset: {value}")
+    return {"path": _display_path(storage.root, path), "id": data.get("id", ""), "asset": data, "content": data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}}
+
+
 def _run_summary(row: dict[str, Any] | None) -> dict[str, Any]:
     if not row:
         return {}
@@ -446,6 +605,78 @@ def _recommendation(ranked: list[dict[str, Any]]) -> str:
     return f"prefer {winner.get('provider', '')}/{winner.get('model_name', '')} for this benchmark until a stronger run is recorded"
 
 
+def _estimate_run_cost(storage: LocalStorage, *, provider: str, model_name: str, scores: dict[str, Any], task: Any) -> dict[str, Any]:
+    profile = _model_profile(storage, provider=provider, model_name=model_name)
+    cost_profile = profile.get("content", {}).get("cost_profile", {}) if isinstance(profile.get("content", {}), dict) else {}
+    input_per_1k = float(cost_profile.get("input_per_1k", 0) or 0)
+    output_per_1k = float(cost_profile.get("output_per_1k", 0) or 0)
+    prompt_chars = len(str(task.content.get("prompt_template", ""))) + len(str(task.content.get("input_assets", [])))
+    output_chars = int(scores.get("output_chars", 0) or 0)
+    input_tokens = max(1, int(prompt_chars / 4))
+    output_tokens = max(1, int(output_chars / 4))
+    estimated = round((input_tokens / 1000) * input_per_1k + (output_tokens / 1000) * output_per_1k, 6)
+    return {
+        "currency": cost_profile.get("currency", "USD"),
+        "input_tokens_estimate": input_tokens,
+        "output_tokens_estimate": output_tokens,
+        "cost": estimated,
+        "source": "model_profile.cost_profile" if cost_profile else "default_zero_cost",
+    }
+
+
+def _model_profile(storage: LocalStorage, *, provider: str, model_name: str) -> dict[str, Any]:
+    for path in reversed(storage.list_json("runs")):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "model_profile":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if str(content.get("provider", "")) == provider and str(content.get("model_name", "")) == model_name:
+            return data
+    return {"content": {"cost_profile": {"input_per_1k": 0, "output_per_1k": 0, "currency": "USD"}}}
+
+
+def _active_model_candidates(storage: LocalStorage) -> list[dict[str, str]]:
+    candidates: list[dict[str, str]] = []
+    for path in storage.list_json("runs"):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "model_profile":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        status = str(content.get("status", "") or data.get("metadata", {}).get("status", ""))
+        if status not in {"active", "candidate", "default"}:
+            continue
+        provider = str(content.get("provider") or data.get("metadata", {}).get("provider") or "").strip()
+        model_name = str(content.get("model_name") or data.get("metadata", {}).get("model_name") or "").strip()
+        if provider and model_name:
+            candidates.append({"provider": provider, "model_name": model_name})
+    return candidates[:12]
+
+
+def _latest_active_routing_policy(storage: LocalStorage, *, project_id: str | None = None) -> dict[str, Any] | None:
+    policies: list[dict[str, Any]] = []
+    for path in storage.list_json("runs"):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "model_routing_policy":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        if content.get("status") != "active":
+            continue
+        if project_id and str(metadata.get("project_id", "")) != project_id:
+            continue
+        policies.append({**data, "path": _display_path(storage.root, path)})
+    return sorted(policies, key=lambda item: str(item.get("updated_at", "")), reverse=True)[0] if policies else None
+
+
 def _asset_ref(storage: LocalStorage, value: str | Path) -> dict[str, str]:
     path = resolve_path(storage.root, value)
     if path.exists() and path.is_file():
@@ -471,7 +702,10 @@ def _project_scope(storage: LocalStorage, refs: list[dict[str, str]], *, workspa
     return {"project_id": "", "workspace_path": "", "title": ""}
 
 
-def _write(storage: LocalStorage, asset: ModelProfile | ModelBenchmarkTask | ModelBenchmarkRun | ModelComparisonReport | PromptVersion | PromptRegressionReport) -> dict[str, Any]:
+def _write(
+    storage: LocalStorage,
+    asset: ModelProfile | ModelBenchmarkTask | ModelBenchmarkRun | ModelComparisonReport | ModelRoutingPolicy | PromptVersion | PromptRegressionReport,
+) -> dict[str, Any]:
     errors = validate_common_fields(asset.to_dict())
     if errors:
         raise ValueError("; ".join(errors))

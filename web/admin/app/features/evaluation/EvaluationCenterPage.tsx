@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AssetRow, FeatureAssetRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { compareRuns, createBenchmarkTask, createModelProfile, loadEvaluationData, runBenchmark } from "./api";
+import { compareRuns, createBenchmarkTask, createModelProfile, createPromptRegression, createPromptVersion, createRoutingPolicy, loadEvaluationData, runBenchmark, runBenchmarkBatch } from "./api";
 
 const taskTypes = ["outline_generation", "chapter_plan", "draft_chapter", "review", "originality", "style_review"];
 
@@ -20,6 +20,11 @@ export function EvaluationCenterPage() {
   const [selectedInput, setSelectedInput] = useState("");
   const [taskPath, setTaskPath] = useState("");
   const [runPaths, setRunPaths] = useState("");
+  const [candidateText, setCandidateText] = useState("mock/mock-model");
+  const [promptId, setPromptId] = useState("draft_chapter_prompt");
+  const [promptVersion, setPromptVersion] = useState("v1");
+  const [candidateVersion, setCandidateVersion] = useState("v2");
+  const [promptTemplate, setPromptTemplate] = useState("Return schema-valid JSON for this Novel Forge task.");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -31,6 +36,9 @@ export function EvaluationCenterPage() {
       return groups;
     }, {});
   }, [assets]);
+  const totalEstimatedCost = assets
+    .filter((asset) => asset.type === "model_benchmark_run")
+    .reduce((sum, asset) => sum + Number((asset as FeatureAssetRow & { cost_estimate?: { cost?: number } }).cost_estimate?.cost ?? 0), 0);
 
   async function refresh(nextProjectId = projectId) {
     const [projectRows, evaluationAssets, sourceAssets] = await loadEvaluationData(nextProjectId);
@@ -71,6 +79,8 @@ export function EvaluationCenterPage() {
         <Metric label="评测任务" value={String(grouped.model_benchmark_task?.length ?? 0)} />
         <Metric label="Benchmark Run" value={String(grouped.model_benchmark_run?.length ?? 0)} />
         <Metric label="对比报告" value={String(grouped.model_comparison_report?.length ?? 0)} />
+        <Metric label="路由策略" value={String(grouped.model_routing_policy?.length ?? 0)} />
+        <Metric label="估算成本" value={totalEstimatedCost.toFixed(4)} />
       </section>
 
       <section className="workspaceGrid">
@@ -104,9 +114,46 @@ export function EvaluationCenterPage() {
           </label>
           <input placeholder="benchmark task path" value={taskPath} onChange={(event) => setTaskPath(event.target.value)} />
           <input placeholder="run paths, comma separated" value={runPaths} onChange={(event) => setRunPaths(event.target.value)} />
+          <input placeholder="candidates: provider/model, one per comma" value={candidateText} onChange={(event) => setCandidateText(event.target.value)} />
           <div className="studioActions">
             <button className="primaryButton" disabled={busy || !taskPath} onClick={() => runAction(() => runBenchmark(taskPath, provider, modelName), "Benchmark 已运行")}>运行</button>
+            <button className="secondaryButton" disabled={busy || !taskPath} onClick={() => runAction(() => runBenchmarkBatch([taskPath], parseCandidates(candidateText), selectedProject?.path), "批量 Benchmark 已运行")}>批量跑分</button>
             <button className="secondaryButton" disabled={busy || !runPaths.trim()} onClick={() => runAction(() => compareRuns(runPaths.split(",").map((item) => item.trim()).filter(Boolean), taskType, selectedProject?.path), "对比报告已生成")}>A/B 对比</button>
+            <button className="secondaryButton" disabled={busy || !(grouped.model_comparison_report?.length)} onClick={() => runAction(() => createRoutingPolicy((grouped.model_comparison_report || []).slice(0, 8).map((asset) => asset.path), selectedProject?.path), "模型路由策略已生效")}>生成路由策略</button>
+          </div>
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="评测集管理" icon={<FlaskConical size={18} />} />
+          <p className="previewText">model_benchmark_task 是当前评测集单元；批量跑分会对同一任务运行多个 provider/model，并生成 comparison。</p>
+          <DataTable
+            emptyText="暂无评测任务"
+            columns={["任务", "标题", "状态", "路径"]}
+            rows={(grouped.model_benchmark_task || []).map((asset) => [
+              (asset as FeatureAssetRow & { task_type?: string }).task_type || asset.type,
+              asset.title,
+              <span className={statusClass(asset.status || "active")} key={`${asset.path}-status`}>{asset.status || "active"}</span>,
+              <button className="linkButton" key={asset.path} onClick={() => setTaskPath(asset.path)}>{asset.path}</button>
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="Prompt Regression" icon={<GitCompare size={18} />} />
+          <div className="formGrid wide">
+            <input value={promptId} onChange={(event) => setPromptId(event.target.value)} placeholder="prompt id" />
+            <input value={promptVersion} onChange={(event) => setPromptVersion(event.target.value)} placeholder="baseline version" />
+            <input value={candidateVersion} onChange={(event) => setCandidateVersion(event.target.value)} placeholder="candidate version" />
+            <textarea value={promptTemplate} onChange={(event) => setPromptTemplate(event.target.value)} rows={4} />
+            <button className="secondaryButton" disabled={busy || !promptId || !promptVersion} onClick={() => runAction(() => createPromptVersion(promptId, promptVersion, taskType, promptTemplate), "Prompt 版本已保存")}>保存 Prompt</button>
+            <button
+              className="primaryButton"
+              disabled={busy || !promptId || !runPaths.trim()}
+              onClick={() => runAction(() => createPromptRegression(promptId, promptVersion, candidateVersion, runPaths.split(",").map((item) => item.trim()).filter(Boolean)), "Prompt 回归报告已生成")}
+            >
+              回归评测
+            </button>
           </div>
         </div>
       </section>
@@ -121,7 +168,7 @@ export function EvaluationCenterPage() {
               asset.type,
               asset.title,
               <span className={statusClass(asset.status || "")} key={asset.path}>{asset.status || "-"}</span>,
-              String(asset.score ?? "-"),
+              `${String(asset.score ?? "-")}${(asset as FeatureAssetRow & { cost_estimate?: { cost?: number } }).cost_estimate ? ` / $${Number((asset as FeatureAssetRow & { cost_estimate?: { cost?: number } }).cost_estimate?.cost ?? 0).toFixed(4)}` : ""}`,
               <span className="pathText" key={`${asset.path}-path`}>{asset.path}</span>
             ])}
           />
@@ -137,4 +184,15 @@ export function EvaluationCenterPage() {
       </section>
     </FeatureShell>
   );
+}
+
+function parseCandidates(value: string) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const [provider, modelName] = item.split("/");
+      return { provider: provider || "mock", model_name: modelName || "mock-model" };
+    });
 }

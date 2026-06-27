@@ -41,7 +41,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 92)
+        self.assertEqual(len(SCHEMA_CLASSES), 100)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
         self.assertIn("review_report", SCHEMA_CLASSES)
@@ -88,6 +88,14 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("agent_rollback_report", SCHEMA_CLASSES)
         self.assertIn("editor_patch", SCHEMA_CLASSES)
         self.assertIn("draft_diff_report", SCHEMA_CLASSES)
+        self.assertIn("long_form_macro_plan", SCHEMA_CLASSES)
+        self.assertIn("canon_patch", SCHEMA_CLASSES)
+        self.assertIn("model_routing_policy", SCHEMA_CLASSES)
+        self.assertIn("operational_metric_snapshot", SCHEMA_CLASSES)
+        self.assertIn("publishing_plan", SCHEMA_CLASSES)
+        self.assertIn("publishing_log", SCHEMA_CLASSES)
+        self.assertIn("local_ops_drill_report", SCHEMA_CLASSES)
+        self.assertIn("long_chain_acceptance_report", SCHEMA_CLASSES)
         self.assertIn("chapter_continuity_report", SCHEMA_CLASSES)
         self.assertIn("continuity_graph_snapshot", SCHEMA_CLASSES)
         self.assertIn("canon_graph_snapshot", SCHEMA_CLASSES)

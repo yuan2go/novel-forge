@@ -16,6 +16,7 @@ export function ChangeImpactPage() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const latestReport = reports[0];
 
   async function refresh(nextProjectId = projectId) {
     const [projectRows, reportRows, assetRows] = await loadImpactData(nextProjectId);
@@ -83,6 +84,52 @@ export function ChangeImpactPage() {
             <span className="pathText" key={report.path}>{report.path}</span>
           ])}
         />
+      </section>
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="影响图谱" icon={<Network size={18} />} />
+          {latestReport ? (
+            <>
+              <div className="severityStrip">
+                {Object.entries(latestReport.severity_summary ?? {}).map(([severity, count]) => (
+                  <span className={statusClass(severity)} key={severity}>{severity}: {String(count)}</span>
+                ))}
+              </div>
+              <div className="assetGraphCanvas">
+                {(latestReport.impacted_assets ?? []).slice(0, 12).map((asset) => (
+                  <div className={`graphNode ${asset.severity || ""}`} key={asset.path || asset.id}>
+                    <strong>{asset.title || asset.id || asset.path}</strong>
+                    <span>{asset.type || "-"}</span>
+                    <small>depth {asset.depth ?? "-"} / {asset.severity || "low"}</small>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="muted">生成报告后展示影响节点。</p>
+          )}
+        </div>
+        <div className="panel">
+          <PanelHeader title="影响边与动作" icon={<GitPullRequest size={18} />} />
+          <DataTable
+            emptyText="暂无影响边"
+            columns={["来源", "关系", "目标"]}
+            rows={(latestReport?.impact_edges ?? []).slice(0, 20).map((edge, index) => [
+              <span className="pathText" key={`${index}-source`}>{edge.source || "-"}</span>,
+              edge.relation || "-",
+              <span className="pathText" key={`${index}-target`}>{edge.target || "-"}</span>
+            ])}
+          />
+          <DataTable
+            emptyText="暂无建议动作"
+            columns={["资产", "严重度", "建议"]}
+            rows={(latestReport?.impacted_assets ?? []).slice(0, 10).map((asset) => [
+              <span className="pathText" key={`${asset.path}-path`}>{asset.path || asset.id || "-"}</span>,
+              <span className={statusClass(asset.severity || "")} key={`${asset.path}-severity`}>{asset.severity || "-"}</span>,
+              asset.recommended_action || "-"
+            ])}
+          />
+        </div>
       </section>
     </FeatureShell>
   );

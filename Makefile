@@ -27,6 +27,7 @@ help:
 
 test:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m unittest discover -s tests -p 'test_*.py'
+	npm --prefix $(WEB_DIR) test
 
 lint:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m compileall -q src tests

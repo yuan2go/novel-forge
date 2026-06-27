@@ -136,3 +136,17 @@ Observed scale:
 - `web/admin/package.json` uses `next lint`, which is not a valid lint entry for the installed Next version.
 
 Current tab set follows the V6/V7 grouped IA in one page. Phase 2 shell semantics are present, but component extraction and routed feature modules are still needed before adding much more UI depth.
+
+## UI Implementation Update 2026-06-28
+
+The frontend is no longer a single-page-only implementation. V6 feature pages now exist under `web/admin/app/features/*`, and the P2 UI gaps have been upgraded as follows:
+
+| Area | Current status |
+|---|---|
+| Publishing Center | Implemented inside the quality/publishing feature flow with release package version registry, publishing calendar summary, platform rule snapshots, publishing log table, rollback evidence, and configurable local channel/cadence/start date. |
+| Asset Workbench | Asset detail now includes typed deep editor fields plus reference graph visualization from `/product/assets/graph`. |
+| Change Impact Analysis | Reports now display severity summary, impacted nodes, impact edges, and recommended actions, not only tabular counts. |
+| Frontend Tests | `web/admin/tests/feature-architecture.test.mjs` verifies the V6/V7 navigation groups, routed feature modules, publishing/graph/impact affordances, and API client endpoints. |
+| Documentation Status | `v6-v7-gap-analysis.md`, `v6-v7-implementation-plan.md`, and this inventory have been updated to reflect current implementation rather than Phase 0 state. |
+
+Remaining UI depth is mostly refinement, not missing existence: richer graph layout, browser-level page smoke tests, and platform-adapter-specific publishing panels can be added after local workflows stabilize.

@@ -3,7 +3,7 @@
 import { Activity, RotateCcw, Server, TimerReset } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
-import type { DeadLetter, ProjectRow, TaskCenter, TaskControl, TaskRow } from "../../shared/types";
+import type { AgentEventRow, AgentRunRow, DeadLetter, ProjectRow, TaskCenter, TaskControl, TaskRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import { loadTaskData, retryDeadLetter, retryTask } from "./api";
 
@@ -12,6 +12,8 @@ export function TasksCenterPage() {
   const [center, setCenter] = useState<TaskCenter | null>(null);
   const [control, setControl] = useState<TaskControl | null>(null);
   const [deadLetters, setDeadLetters] = useState<DeadLetter[]>([]);
+  const [agentRuns, setAgentRuns] = useState<AgentRunRow[]>([]);
+  const [agentEvents, setAgentEvents] = useState<AgentEventRow[]>([]);
   const [projectId, setProjectId] = useState("");
   const [status, setStatus] = useState("");
   const [taskType, setTaskType] = useState("");
@@ -24,11 +26,13 @@ export function TasksCenterPage() {
   const selectedProject = projects.find((project) => project.project_id === projectId);
 
   async function refresh(nextOffset = offset) {
-    const [projectRows, taskCenter, taskControl, deadLetterRows] = await loadTaskData({ projectId, status, taskType, step, offset: nextOffset });
+    const [projectRows, taskCenter, taskControl, deadLetterRows, runRows, eventRows] = await loadTaskData({ projectId, status, taskType, step, offset: nextOffset });
     setProjects(projectRows);
     setCenter(taskCenter);
     setControl(taskControl);
     setDeadLetters(deadLetterRows);
+    setAgentRuns(runRows);
+    setAgentEvents(eventRows);
     setOffset(nextOffset);
   }
 
@@ -75,6 +79,7 @@ export function TasksCenterPage() {
         <Metric label="失败" value={String(center?.summary.by_status?.failed ?? 0)} />
         <Metric label="Dead Letter" value={String(control?.dead_letters?.count ?? deadLetters.length)} />
         <Metric label="Worker" value={control?.celery.healthy ? "healthy" : "offline"} />
+        <Metric label="Agent Runs" value={String(agentRuns.length)} />
       </section>
 
       <section className="workspaceGrid">
@@ -113,6 +118,40 @@ export function TasksCenterPage() {
 
       <section className="workspaceGrid">
         <div className="panel">
+          <PanelHeader title="Agent Timeline / Evidence" icon={<Activity size={18} />} />
+          <DataTable
+            emptyText="暂无 Agent Run"
+            columns={["Agent", "操作", "状态", "模型", "Token", "证据", "输出", "路径"]}
+            rows={agentRuns.slice(0, 40).map((run) => [
+              run.agent_type,
+              run.operation,
+              <span className={statusClass(run.status)} key={`${run.path}-status`}>{run.status}</span>,
+              `${run.model_provider || "-"} / ${run.model_name || "-"}`,
+              `${run.token_used ?? 0}/${run.token_budget ?? 0}`,
+              compactJson(run.evidence),
+              String(run.output_assets?.length ?? 0),
+              <span className="pathText" key={run.path}>{run.path}</span>
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="Agent Events" icon={<Activity size={18} />} />
+          <DataTable
+            emptyText="暂无 Agent Event"
+            columns={["事件", "状态", "消息", "时间", "Run"]}
+            rows={agentEvents.slice(0, 60).map((event) => [
+              event.event_type,
+              <span className={statusClass(event.status)} key={`${event.path}-status`}>{event.status}</span>,
+              event.message || "-",
+              event.created_at || "-",
+              <span className="pathText" key={event.path}>{event.agent_run_path}</span>
+            ])}
+          />
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
           <PanelHeader title="完整 Timeline" icon={<Activity size={18} />} />
           <DataTable
             emptyText="暂无事件"
@@ -142,4 +181,10 @@ export function TasksCenterPage() {
       </section>
     </FeatureShell>
   );
+}
+
+function compactJson(value: unknown) {
+  if (!value || typeof value !== "object") return "-";
+  const text = JSON.stringify(value);
+  return text.length > 90 ? `${text.slice(0, 90)}...` : text;
 }

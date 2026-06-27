@@ -17,6 +17,7 @@ from novel_forge.modules.chapter_production_bus import (
     resume_chapter_production,
     start_chapter_production,
 )
+from novel_forge.modules.long_planning import create_long_form_macro_plan, list_long_form_macro_plans
 from novel_forge.modules.production_chain import (
     create_chapter_plan_version,
     create_draft_version,
@@ -40,6 +41,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ChapterProductionResumeRequest = models["ChapterProductionResumeRequest"]
     ChapterProductionControlRequest = models["ChapterProductionControlRequest"]
     ChapterProductionRecoverRequest = models["ChapterProductionRecoverRequest"]
+    LongFormMacroPlanRequest = models["LongFormMacroPlanRequest"]
 
     @router.get("/product/production/versions")
     def production_versions(
@@ -58,6 +60,32 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ) -> list[dict[str, Any]]:
         try:
             return list_chapter_production_runs(LocalStorage(app_settings.root), project_id=project_id, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/production/macro-plans")
+    def macro_plans(
+        project_id: str | None = None,
+        limit: int = Query(default=100, ge=1, le=500),
+    ) -> list[dict[str, Any]]:
+        try:
+            return list_long_form_macro_plans(LocalStorage(app_settings.root), project_id=project_id, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/production/macro-plan")
+    def macro_plan_endpoint(request: LongFormMacroPlanRequest) -> dict[str, Any]:
+        try:
+            return create_long_form_macro_plan(
+                LocalStorage(app_settings.root),
+                workspace_path=request.workspace_path,
+                source_path=request.source_path,
+                target_word_count=request.target_word_count,
+                volume_count=request.volume_count,
+                chapters_per_volume=request.chapters_per_volume,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

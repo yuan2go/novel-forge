@@ -10,6 +10,8 @@ from fastapi.responses import StreamingResponse
 from novel_forge.api import product as _product_services
 from novel_forge.api.routers._bindings import bind_product_symbols
 from novel_forge.api.routers.context import ProductRouterContext
+from novel_forge.modules.operations import create_local_ops_drill_report, create_long_chain_acceptance_report, list_operation_reports
+from novel_forge.storage.local import LocalStorage
 
 bind_product_symbols(globals(), _product_services)
 
@@ -25,6 +27,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     QdrantIndexRequest = models['QdrantIndexRequest']
     QdrantSearchRequest = models['QdrantSearchRequest']
     MinioSyncRequest = models['MinioSyncRequest']
+    LocalOpsDrillRequest = models['LocalOpsDrillRequest']
+    LongChainAcceptanceRequest = models['LongChainAcceptanceRequest']
 
     @router.get("/product/system/postgres/strict-check")
     def postgres_strict_check_endpoint(sync: bool = False) -> dict[str, Any]:
@@ -37,6 +41,31 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def product_health_endpoint(project_id: str | None = None) -> dict[str, Any]:
         try:
             return project_health_report(app_settings, project_id=project_id)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/system/operation-reports")
+    def operation_reports_endpoint(limit: int = Query(default=100, ge=1, le=500)) -> list[dict[str, Any]]:
+        try:
+            return list_operation_reports(LocalStorage(app_settings.root), limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/system/failure-drill")
+    def failure_drill_endpoint(request: LocalOpsDrillRequest) -> dict[str, Any]:
+        try:
+            return create_local_ops_drill_report(LocalStorage(app_settings.root), settings=app_settings if request.include_external_services else None)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/system/long-chain-acceptance")
+    def long_chain_acceptance_endpoint(request: LongChainAcceptanceRequest) -> dict[str, Any]:
+        try:
+            return create_long_chain_acceptance_report(
+                LocalStorage(app_settings.root),
+                project_id=request.project_id,
+                chapter_count=request.chapter_count,
+            )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

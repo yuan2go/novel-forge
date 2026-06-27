@@ -9,93 +9,10 @@ from typing import Any
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.storage.local import LocalStorage
+from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATION_STATEMENTS, get_migration_status, run_migrations
 
-POSTGRES_SCHEMA_VERSION = "20260625_0001_initial_industrial_schema"
-
-POSTGRES_SCHEMA_STATEMENTS = [
-    """
-    CREATE TABLE IF NOT EXISTS nf_schema_migrations (
-        migration_id TEXT PRIMARY KEY,
-        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-    """,
-    """
-    CREATE TABLE IF NOT EXISTS nf_assets (
-        path TEXT PRIMARY KEY,
-        category TEXT NOT NULL,
-        asset_id TEXT NOT NULL,
-        asset_type TEXT NOT NULL,
-        title TEXT NOT NULL,
-        source TEXT NOT NULL,
-        project_id TEXT NOT NULL DEFAULT '',
-        workspace_path TEXT NOT NULL DEFAULT '',
-        tags TEXT[] NOT NULL DEFAULT '{}',
-        version TEXT NOT NULL,
-        content_hash TEXT NOT NULL,
-        payload JSONB NOT NULL,
-        size_bytes BIGINT NOT NULL,
-        mtime_ns BIGINT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        indexed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-    """,
-    """
-    CREATE TABLE IF NOT EXISTS nf_asset_versions (
-        version_id BIGSERIAL PRIMARY KEY,
-        path TEXT NOT NULL,
-        asset_id TEXT NOT NULL,
-        asset_type TEXT NOT NULL,
-        content_hash TEXT NOT NULL,
-        payload JSONB NOT NULL,
-        recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        UNIQUE (path, content_hash)
-    )
-    """,
-    """
-    CREATE TABLE IF NOT EXISTS nf_task_statuses (
-        status_asset_id TEXT PRIMARY KEY,
-        path TEXT NOT NULL DEFAULT '',
-        run_id TEXT NOT NULL,
-        step TEXT NOT NULL,
-        status TEXT NOT NULL,
-        input_paths TEXT[] NOT NULL DEFAULT '{}',
-        output_paths TEXT[] NOT NULL DEFAULT '{}',
-        error_message TEXT NOT NULL DEFAULT '',
-        payload JSONB NOT NULL,
-        recorded_at TEXT NOT NULL,
-        indexed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-    """,
-    "ALTER TABLE nf_task_statuses ADD COLUMN IF NOT EXISTS path TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE nf_assets ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE nf_assets ADD COLUMN IF NOT EXISTS workspace_path TEXT NOT NULL DEFAULT ''",
-    """
-    CREATE TABLE IF NOT EXISTS nf_projects (
-        project_id TEXT PRIMARY KEY,
-        workspace_asset_id TEXT NOT NULL,
-        workspace_path TEXT NOT NULL UNIQUE,
-        title TEXT NOT NULL,
-        series_title TEXT NOT NULL DEFAULT '',
-        book_number INTEGER,
-        status TEXT NOT NULL DEFAULT 'active',
-        config JSONB NOT NULL,
-        payload JSONB NOT NULL,
-        updated_at TEXT NOT NULL,
-        indexed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-    """,
-    "CREATE INDEX IF NOT EXISTS idx_nf_assets_category ON nf_assets(category)",
-    "CREATE INDEX IF NOT EXISTS idx_nf_assets_type ON nf_assets(asset_type)",
-    "CREATE INDEX IF NOT EXISTS idx_nf_assets_project ON nf_assets(project_id, workspace_path)",
-    "CREATE INDEX IF NOT EXISTS idx_nf_assets_tags ON nf_assets USING GIN(tags)",
-    "CREATE INDEX IF NOT EXISTS idx_nf_asset_versions_asset_id ON nf_asset_versions(asset_id)",
-    "CREATE INDEX IF NOT EXISTS idx_nf_task_statuses_run_step ON nf_task_statuses(run_id, step)",
-    "CREATE INDEX IF NOT EXISTS idx_nf_task_statuses_status ON nf_task_statuses(status)",
-    "CREATE INDEX IF NOT EXISTS idx_nf_projects_status ON nf_projects(status)",
-    "CREATE INDEX IF NOT EXISTS idx_nf_projects_series ON nf_projects(series_title, book_number)",
-    f"INSERT INTO nf_schema_migrations (migration_id) VALUES ('{POSTGRES_SCHEMA_VERSION}') ON CONFLICT (migration_id) DO NOTHING",
-]
+POSTGRES_SCHEMA_VERSION = LATEST_MIGRATION_ID
+POSTGRES_SCHEMA_STATEMENTS = MIGRATION_STATEMENTS
 
 
 @dataclass(frozen=True)
@@ -125,25 +42,10 @@ class PostgresAssetStore:
         return cls(settings.database_url)
 
     def initialize(self) -> None:
-        with _connect(self.database_url) as connection:
-            with connection.cursor() as cursor:
-                for statement in POSTGRES_SCHEMA_STATEMENTS:
-                    cursor.execute(statement)
+        run_migrations(self.database_url)
 
     def migration_status(self) -> dict[str, Any]:
-        self.initialize()
-        with _connect(self.database_url) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT migration_id, applied_at FROM nf_schema_migrations ORDER BY applied_at ASC")
-                rows = cursor.fetchall()
-        applied = [{"migration_id": row[0], "applied_at": str(row[1])} for row in rows]
-        applied_ids = {row["migration_id"] for row in applied}
-        return {
-            "current": POSTGRES_SCHEMA_VERSION,
-            "applied": applied,
-            "ok": POSTGRES_SCHEMA_VERSION in applied_ids,
-            "missing": [] if POSTGRES_SCHEMA_VERSION in applied_ids else [POSTGRES_SCHEMA_VERSION],
-        }
+        return get_migration_status(self.database_url)
 
     def sync_from_local(self, storage: LocalStorage) -> PostgresSyncResult:
         self.initialize()

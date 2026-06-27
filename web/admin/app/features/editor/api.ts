@@ -24,11 +24,12 @@ export function createEditorPatch(draftPath: string, instructions: string, works
   });
 }
 
-export function applyEditorPatch(patchPath: string) {
+export function applyEditorPatch(patchPath: string, operationIds: string[] = []) {
   return postJson("/product/editor/apply", {
     patch_path: patchPath,
     apply: true,
-    change_summary: "applied from editor workbench"
+    change_summary: operationIds.length ? "selected editor patch operations applied from editor workbench" : "applied from editor workbench",
+    operation_ids: operationIds
   });
 }
 

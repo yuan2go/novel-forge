@@ -381,3 +381,20 @@ Current V5 is a working local production platform prototype. The biggest immedia
 - `web/admin/app/page.tsx`
 
 Therefore V6/V7 should start with modularization and an information architecture shell, then add new schema-backed domains.
+
+## Implementation Status Update 2026-06-28
+
+The earlier P0/P1 gaps have been largely converted into schema-backed services, feature pages, and tests. The current P2 status is:
+
+1. Database migration: upgraded from a single schema-init statement list to Alembic-style ordered migration modules under `src/novel_forge/storage/migrations/versions/`. `PostgresAssetStore.initialize()` now applies missing migrations and `migration_status()` reports current, available, missing, and extra revisions.
+2. Frontend tests: `web/admin` now has a dependency-free Node test baseline under `web/admin/tests/`, and `make test` runs both Python unit tests and frontend architecture tests.
+3. Publishing Center: release packages now record `release_version`, `version_key`, and `platform_rules`; publishing plans expose local calendars, platform rule snapshots, queue status, and gate policy; publishing logs expose rollback evidence and external URL fields in the Web Admin.
+4. Asset graph and impact analysis: asset detail workbench consumes `/product/assets/graph`; change impact reports expose `impacted_assets` and `impact_edges`; the Web Admin displays graph nodes, severity summaries, and recommended actions.
+5. Documentation drift: this section, `v6-v7-implementation-plan.md`, and `ui-inventory.md` now describe the implemented state rather than the initial Phase 0 baseline.
+
+Remaining P2 work is no longer basic existence, but depth:
+
+- Add true Alembic CLI compatibility only if the local deployment starts requiring complex irreversible migrations.
+- Add browser-level Playwright smoke tests after UI stabilizes around routed pages.
+- Add richer graph layout and node drill-down for very large projects.
+- Add export/publish automation only after platform policy and copyright gates are explicitly approved.

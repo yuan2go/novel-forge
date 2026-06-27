@@ -9,6 +9,7 @@ from novel_forge.modules.feedback import (
     analyze_feedback,
     apply_feedback_strategy_to_workspace,
     create_feedback_import_batch,
+    create_operational_metric_snapshot,
     create_reader_sentiment_report,
     list_feedback_assets,
 )
@@ -24,6 +25,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ReaderSentimentReportRequest = models["ReaderSentimentReportRequest"]
     FeedbackInsightRequest = models["FeedbackInsightRequest"]
     FeedbackStrategyApplyRequest = models["FeedbackStrategyApplyRequest"]
+    OperationalMetricSnapshotRequest = models["OperationalMetricSnapshotRequest"]
 
     @router.get("/product/feedback/assets")
     def feedback_assets(project_id: str | None = None, limit: int = Query(default=100, ge=1, le=500)) -> list[dict[str, Any]]:
@@ -51,6 +53,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def feedback_sentiment_report_endpoint(request: ReaderSentimentReportRequest) -> dict[str, Any]:
         try:
             return create_reader_sentiment_report(
+                LocalStorage(app_settings.root),
+                feedback_paths=request.feedback_paths,
+                project_id=request.project_id,
+                workspace_path=request.workspace_path,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/feedback/operational-snapshot")
+    def feedback_operational_snapshot_endpoint(request: OperationalMetricSnapshotRequest) -> dict[str, Any]:
+        try:
+            return create_operational_metric_snapshot(
                 LocalStorage(app_settings.root),
                 feedback_paths=request.feedback_paths,
                 project_id=request.project_id,

@@ -157,6 +157,11 @@ class CanonGraphSnapshot(BaseAsset):
 
 
 @dataclass
+class CanonPatch(BaseAsset):
+    type: str = "canon_patch"
+
+
+@dataclass
 class StyleProfile(BaseAsset):
     type: str = "style_profile"
 
@@ -189,6 +194,11 @@ class WritingTemplate(BaseAsset):
 @dataclass
 class CraftTemplate(BaseAsset):
     type: str = "craft_template"
+
+
+@dataclass
+class LongFormMacroPlan(BaseAsset):
+    type: str = "long_form_macro_plan"
 
 
 @dataclass
@@ -304,6 +314,16 @@ class ReleasePackage(BaseAsset):
 
 
 @dataclass
+class PublishingPlan(BaseAsset):
+    type: str = "publishing_plan"
+
+
+@dataclass
+class PublishingLog(BaseAsset):
+    type: str = "publishing_log"
+
+
+@dataclass
 class ReaderFeedback(BaseAsset):
     type: str = "reader_feedback"
 
@@ -321,6 +341,11 @@ class FeedbackInsight(BaseAsset):
 @dataclass
 class ReaderSentimentReport(BaseAsset):
     type: str = "reader_sentiment_report"
+
+
+@dataclass
+class OperationalMetricSnapshot(BaseAsset):
+    type: str = "operational_metric_snapshot"
 
 
 @dataclass
@@ -473,6 +498,21 @@ class PromptRegressionReport(BaseAsset):
     type: str = "prompt_regression_report"
 
 
+@dataclass
+class ModelRoutingPolicy(BaseAsset):
+    type: str = "model_routing_policy"
+
+
+@dataclass
+class LocalOpsDrillReport(BaseAsset):
+    type: str = "local_ops_drill_report"
+
+
+@dataclass
+class LongChainAcceptanceReport(BaseAsset):
+    type: str = "long_chain_acceptance_report"
+
+
 SCHEMA_CLASSES = {
     cls().type: cls
     for cls in [
@@ -506,6 +546,7 @@ SCHEMA_CLASSES = {
         ChapterContinuityReport,
         ContinuityGraphSnapshot,
         CanonGraphSnapshot,
+        CanonPatch,
         StyleProfile,
         StyleDecompositionReport,
         StyleBlendPreset,
@@ -513,6 +554,7 @@ SCHEMA_CLASSES = {
         ReviewRulePack,
         WritingTemplate,
         CraftTemplate,
+        LongFormMacroPlan,
         Outline,
         OutlineVersion,
         ChapterPlan,
@@ -534,10 +576,13 @@ SCHEMA_CLASSES = {
         OriginalityReport,
         PublishGateReport,
         ReleasePackage,
+        PublishingPlan,
+        PublishingLog,
         ReaderFeedback,
         FeedbackImportBatch,
         FeedbackInsight,
         ReaderSentimentReport,
+        OperationalMetricSnapshot,
         ProjectMetricSnapshot,
         LocalSettingsProfile,
         TrainingExercise,
@@ -568,6 +613,9 @@ SCHEMA_CLASSES = {
         ModelComparisonReport,
         PromptVersion,
         PromptRegressionReport,
+        ModelRoutingPolicy,
+        LocalOpsDrillReport,
+        LongChainAcceptanceReport,
     ]
 }
 

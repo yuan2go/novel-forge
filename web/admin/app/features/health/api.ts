@@ -1,12 +1,13 @@
 import { fetchJson, postJson } from "../../shared/api";
-import type { BackupRow, MinioStatus, ProjectHealthReport, ProjectRow, QdrantSearchResult } from "../../shared/types";
+import type { BackupRow, FeatureAssetRow, MinioStatus, ProjectHealthReport, ProjectRow, QdrantSearchResult } from "../../shared/types";
 
 export function loadHealthData(projectId?: string) {
   return Promise.all([
     fetchJson<ProjectRow[]>("/product/projects"),
     fetchJson<ProjectHealthReport>(projectId ? `/product/system/health?project_id=${encodeURIComponent(projectId)}` : "/product/system/health"),
     fetchJson<BackupRow[]>("/product/system/backups?limit=40"),
-    fetchJson<MinioStatus>("/product/minio/objects?limit=80")
+    fetchJson<MinioStatus>("/product/minio/objects?limit=80"),
+    fetchJson<FeatureAssetRow[]>("/product/system/operation-reports?limit=80")
   ]);
 }
 
@@ -36,4 +37,15 @@ export function qdrantSearch(query: string, projectId?: string): Promise<QdrantS
 
 export function syncMinio() {
   return postJson("/product/minio/sync", {});
+}
+
+export function runFailureDrill() {
+  return postJson("/product/system/failure-drill", { include_external_services: true });
+}
+
+export function runLongChainAcceptance(projectId?: string, chapterCount = 10) {
+  return postJson("/product/system/long-chain-acceptance", {
+    project_id: projectId || null,
+    chapter_count: chapterCount
+  });
 }

@@ -10,6 +10,9 @@ export type ProjectRow = {
   open_hook_count?: number;
   open_issue_count?: number;
   status?: string;
+  recommendation?: string;
+  task_type?: string;
+  cost_estimate?: { cost?: number; currency?: string; source?: string };
   updated_at?: string;
   project_config?: Record<string, unknown>;
 };
@@ -25,10 +28,26 @@ export type AssetRow = {
   score?: number;
   risk_level?: string;
   asset_status?: string;
+  status?: string;
   project_role?: string;
   updated_at?: string;
   summary?: string;
   tags?: string[];
+  channel?: string;
+  release_version?: string;
+  version_key?: string;
+  draft_path?: string;
+  calendar_count?: number;
+  next_scheduled_at?: string;
+  chapter_queue_count?: number;
+  platform_targets?: Array<Record<string, unknown>>;
+  platform_rules?: Record<string, unknown>;
+  gate_policy?: Record<string, unknown>;
+  rollback_available?: boolean;
+  release_package_path?: string;
+  scheduled_at?: string;
+  published_at?: string;
+  external_url?: string;
 };
 
 export type AssetDetail = {
@@ -51,6 +70,28 @@ export type AssetDetail = {
   asset: Record<string, unknown>;
 };
 
+export type AssetGraphNode = {
+  id: string;
+  path: string;
+  category?: string;
+  type: string;
+  title: string;
+};
+
+export type AssetGraphEdge = {
+  source: string;
+  target: string;
+  relation: string;
+};
+
+export type AssetGraph = {
+  path: string;
+  start_id: string;
+  depth: number;
+  nodes: AssetGraphNode[];
+  edges: AssetGraphEdge[];
+};
+
 export type Health = {
   root: string;
   local_counts: Record<string, number>;
@@ -70,6 +111,7 @@ export type FeatureAssetRow = {
   score?: number;
   risk_level?: string;
   status?: string;
+  recommendation?: string;
   updated_at?: string;
   summary?: string;
   tags?: string[];
@@ -93,6 +135,19 @@ export type TaskRow = {
   updated_at?: string;
   error_message?: string;
   message?: string;
+};
+
+export type AgentEventRow = {
+  path: string;
+  id: string;
+  agent_run_id: string;
+  agent_run_path: string;
+  event_type: string;
+  status: string;
+  message: string;
+  payload?: Record<string, unknown>;
+  project_id?: string;
+  created_at?: string;
 };
 
 export type TaskCenter = {
@@ -241,6 +296,10 @@ export type AgentRunRow = {
   cost_estimate: number;
   error: string;
   human_gate: Record<string, unknown>;
+  input_assets?: string[];
+  output_assets?: string[];
+  checkpoint?: Record<string, unknown>;
+  evidence?: Record<string, unknown>;
   project_id: string;
   workspace_path: string;
   started_at: string;
@@ -347,6 +406,9 @@ export type FeedbackAssetRow = {
   sentiment_distribution: Record<string, number>;
   character_heat?: Array<{ character: string; mentions: number; heat: number }>;
   follow_read_risk?: { level?: string; score?: number; negative_ratio?: number };
+  read_metrics?: Record<string, number>;
+  engagement_metrics?: Record<string, number>;
+  chapter_dropoffs?: Array<{ chapter: number; reads: number; drop_rate: number; explicit_drop_signals: number; average_rating: number; risk: string }>;
   next_chapter_strategy?: {
     primary_strategy?: string;
     constraints?: string[];

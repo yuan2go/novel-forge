@@ -5,7 +5,12 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.feedback import apply_feedback_strategy_to_workspace, create_feedback_import_batch, create_reader_sentiment_report
+from novel_forge.modules.feedback import (
+    apply_feedback_strategy_to_workspace,
+    create_feedback_import_batch,
+    create_operational_metric_snapshot,
+    create_reader_sentiment_report,
+)
 from novel_forge.modules.metrics import create_project_metric_snapshot
 from novel_forge.modules.settings_center import create_local_settings_profile
 from novel_forge.schemas import ChapterPlan, DraftChapter, Outline, ProjectWorkspaceState
@@ -58,7 +63,12 @@ class FeedbackMetricsSettingsTests(unittest.TestCase):
                 ),
             )
             csv_path = Path(tmp) / "feedback.csv"
-            csv_path.write_text("reader,chapter,rating,comment\nr1,1,5,钩子很好追读\nr2,1,2,节奏慢想弃文\n", encoding="utf-8")
+            csv_path.write_text(
+                "reader,chapter,rating,comment,reads,views,completion_rate,favorites,collections\n"
+                "r1,1,5,钩子很好追读,100,200,0.82,3,5\n"
+                "r2,1,2,节奏慢想弃文,60,200,0.41,0,1\n",
+                encoding="utf-8",
+            )
 
             imported = create_feedback_import_batch(
                 storage,
@@ -80,6 +90,15 @@ class FeedbackMetricsSettingsTests(unittest.TestCase):
             self.assertIn("follow_read_risk", sentiment_asset.content)
             self.assertIn("character_heat", sentiment_asset.content)
             self.assertIn("next_chapter_strategy", sentiment_asset.content)
+            operational = create_operational_metric_snapshot(
+                storage,
+                feedback_paths=[imported["reader_feedback"]["path"]],
+                workspace_path=str(workspace_path.relative_to(storage.root)),
+            )
+            operational_asset = storage.read_asset(operational["path"])
+            self.assertEqual(operational_asset.type, "operational_metric_snapshot")
+            self.assertGreater(operational_asset.content["read_metrics"]["total_reads"], 0)
+            self.assertTrue(operational_asset.content["chapter_dropoffs"])
             applied_strategy = apply_feedback_strategy_to_workspace(
                 storage,
                 sentiment["path"],

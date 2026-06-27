@@ -520,3 +520,38 @@ If failures are unrelated baseline failures, document them and fix only if they 
 - Remove router imports.
 - Restore all route decorators inside `register_product_routes()`.
 - Keep service function compatibility unchanged.
+
+## P2 Hardening Update 2026-06-28
+
+### Completed
+
+1. PostgreSQL migrations now use an Alembic-style migration chain:
+   - `src/novel_forge/storage/migrations/runner.py`
+   - `src/novel_forge/storage/migrations/versions/v20260625_0001_initial_industrial_schema.py`
+   - `src/novel_forge/storage/migrations/versions/v20260628_0002_query_and_release_indexes.py`
+   - `tests/unit/test_postgres_migrations.py`
+
+2. Frontend systematic tests now exist:
+   - `web/admin/package.json` has `npm test`.
+   - `web/admin/tests/feature-architecture.test.mjs` verifies navigation, routed feature modules, P2 page affordances, and API client contracts.
+   - `make test` runs both Python tests and frontend tests.
+
+3. Publishing Center is upgraded from release buttons to a local publishing workbench:
+   - release package version registry (`release_version`, `version_key`);
+   - publishing calendar and queue summaries;
+   - platform rule snapshots;
+   - publishing logs with rollback evidence and external URL support.
+
+4. Asset visibility is upgraded:
+   - asset detail pages load reference graph data;
+   - change impact reports expose impacted nodes and edges;
+   - Web Admin displays severity strips, graph nodes, edge tables, and recommended actions.
+
+5. Documentation was updated to match the implemented state.
+
+### Next Optional Depth
+
+1. Add Playwright smoke tests for critical routed pages after UI copy/layout churn slows down.
+2. Add a real graph layout renderer if project graphs exceed simple chip grids.
+3. Add migration downgrade scripts only when the project starts needing reversible destructive migrations.
+4. Add platform-specific publishing adapters only after platform policy and local automation boundaries are approved.

@@ -38,3 +38,11 @@ export function applyFeedbackStrategy(reportPath: string, workspacePath?: string
     workspace_path: workspacePath || null
   });
 }
+
+export function createOperationalSnapshot(feedbackPaths: string[], projectId?: string, workspacePath?: string) {
+  return postJson("/product/feedback/operational-snapshot", {
+    feedback_paths: feedbackPaths,
+    project_id: projectId || null,
+    workspace_path: workspacePath || null
+  });
+}

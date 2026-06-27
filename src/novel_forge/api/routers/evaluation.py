@@ -7,11 +7,14 @@ from fastapi import APIRouter, HTTPException, Query
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.evaluation_center import (
     compare_model_runs,
+    create_model_routing_policy,
     create_model_benchmark_task,
     create_model_profile,
     create_prompt_regression_report,
     create_prompt_version,
     list_model_evaluation_assets,
+    resolve_model_route,
+    run_model_benchmark_batch,
     run_model_benchmark,
 )
 from novel_forge.storage.local import LocalStorage
@@ -26,6 +29,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ModelBenchmarkTaskRequest = models["ModelBenchmarkTaskRequest"]
     ModelBenchmarkRunRequest = models["ModelBenchmarkRunRequest"]
     ModelComparisonRequest = models["ModelComparisonRequest"]
+    ModelBenchmarkBatchRequest = models["ModelBenchmarkBatchRequest"]
+    ModelRoutingPolicyRequest = models["ModelRoutingPolicyRequest"]
     PromptVersionRequest = models["PromptVersionRequest"]
     PromptRegressionRequest = models["PromptRegressionRequest"]
 
@@ -80,6 +85,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/evaluation/benchmark-batch")
+    def benchmark_batch_endpoint(request: ModelBenchmarkBatchRequest) -> dict[str, Any]:
+        try:
+            return run_model_benchmark_batch(
+                LocalStorage(app_settings.root),
+                task_paths=request.task_paths,
+                candidates=request.candidates or None,
+                workspace_path=request.workspace_path,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/evaluation/compare")
     def compare_endpoint(request: ModelComparisonRequest) -> dict[str, Any]:
         try:
@@ -91,6 +110,27 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/evaluation/routing-policy")
+    def routing_policy_endpoint(request: ModelRoutingPolicyRequest) -> dict[str, Any]:
+        try:
+            return create_model_routing_policy(
+                LocalStorage(app_settings.root),
+                comparison_paths=request.comparison_paths,
+                status=request.status,
+                workspace_path=request.workspace_path,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/evaluation/route")
+    def route_endpoint(task_type: str = "generate", project_id: str | None = None) -> dict[str, Any]:
+        try:
+            return resolve_model_route(LocalStorage(app_settings.root), task_type=task_type, project_id=project_id)
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

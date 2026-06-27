@@ -6,14 +6,17 @@ import { FeatureShell } from "../../shared/feature-shell";
 import type { AssetRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import {
+  createCanonPatch,
   createChapterPlanVersion,
   createDraftVersion,
   createGenerationRun,
+  createLongFormMacroPlan,
   createOutlineVersion,
   loadProductionData,
   resumeChapterProduction,
   startChapterProduction,
   type ChapterProductionRun,
+  type LongFormMacroPlanRow,
   type ProductionVersionRow
 } from "./api";
 
@@ -22,6 +25,7 @@ export function ProductionChainPage() {
   const [versions, setVersions] = useState<ProductionVersionRow[]>([]);
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [chapterRuns, setChapterRuns] = useState<ChapterProductionRun[]>([]);
+  const [macroPlans, setMacroPlans] = useState<LongFormMacroPlanRow[]>([]);
   const [projectId, setProjectId] = useState("");
   const [selectedPath, setSelectedPath] = useState("");
   const [outlinePath, setOutlinePath] = useState("");
@@ -34,17 +38,21 @@ export function ProductionChainPage() {
   const [outputPath, setOutputPath] = useState("");
   const [provider, setProvider] = useState("local-rules");
   const [model, setModel] = useState("local-rules");
+  const [targetWordCount, setTargetWordCount] = useState(1000000);
+  const [volumeCount, setVolumeCount] = useState(5);
+  const [chaptersPerVolume, setChaptersPerVolume] = useState(80);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
   async function refresh(nextProjectId = projectId) {
     const projectChanged = nextProjectId !== projectId;
-    const [projectRows, versionRows, assetRows, runRows] = await loadProductionData(nextProjectId);
+    const [projectRows, versionRows, assetRows, runRows, macroRows] = await loadProductionData(nextProjectId);
     setProjects(projectRows);
     setVersions(versionRows);
     setAssets(assetRows);
     setChapterRuns(runRows);
+    setMacroPlans(macroRows);
     setProjectId(nextProjectId || projectRows[0]?.project_id || "");
     setSelectedPath((current) => projectChanged ? assetRows[0]?.path || "" : current || assetRows[0]?.path || "");
     setOutlinePath((current) => projectChanged ? assetRows.find((asset) => asset.type === "outline")?.path || "" : current || assetRows.find((asset) => asset.type === "outline")?.path || "");
@@ -87,6 +95,60 @@ export function ProductionChainPage() {
         <Metric label="ChapterPlan" value={String(versions.filter((row) => row.type === "chapter_plan_version").length)} />
         <Metric label="GenerationRun" value={String(versions.filter((row) => row.type === "generation_run").length)} />
         <Metric label="章节总线" value={String(chapterRuns.length)} />
+        <Metric label="宏观规划" value={String(macroPlans.length)} />
+      </section>
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="百万字宏观规划" icon={<GitPullRequest size={18} />} />
+          <div className="formGrid wide">
+            <input type="number" min={100000} step={10000} value={targetWordCount} onChange={(event) => setTargetWordCount(Number(event.target.value || 1000000))} />
+            <input type="number" min={1} value={volumeCount} onChange={(event) => setVolumeCount(Number(event.target.value || 5))} />
+            <input type="number" min={10} value={chaptersPerVolume} onChange={(event) => setChaptersPerVolume(Number(event.target.value || 80))} />
+            <button
+              className="primaryButton"
+              disabled={busy || !selectedProject?.path}
+              onClick={() => runAction(
+                () => createLongFormMacroPlan(selectedProject?.path || "", outlinePath || selectedProject?.path || "", targetWordCount, volumeCount, chaptersPerVolume),
+                "长篇宏观规划已生成"
+              )}
+            >
+              <GitPullRequest size={18} />
+              生成宏观规划
+            </button>
+          </div>
+          <DataTable
+            emptyText="暂无宏观规划"
+            columns={["标题", "字数", "卷数", "主线", "支线", "Gate", "路径"]}
+            rows={macroPlans.map((row) => [
+              row.title,
+              String(row.target_word_count ?? "-"),
+              String(row.volume_count ?? "-"),
+              String(row.mainline_count ?? "-"),
+              String(row.subplot_count ?? "-"),
+              String(row.gate_count ?? "-"),
+              <span className="pathText" key={row.path}>{row.path}</span>
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="Final Draft 后 Canon 更新" icon={<Workflow size={18} />} />
+          <p className="previewText">从最终稿抽取事件、人物状态、地点移动、伏笔推进，生成等待人工确认的 canon patch。</p>
+          <div className="formGrid wide">
+            <select value={selectedRunPath} onChange={(event) => setSelectedRunPath(event.target.value)}>
+              <option value="">选择章节 run</option>
+              {chapterRuns.map((run) => <option value={run.path} key={run.path}>Ch{run.chapter} {run.status}: {run.final_draft_path || run.current_step}</option>)}
+            </select>
+            <input value={selectedRun?.final_draft_path || ""} readOnly placeholder="final draft path" />
+            <button
+              className="secondaryButton"
+              disabled={busy || !selectedRun?.final_draft_path}
+              onClick={() => runAction(() => createCanonPatch(selectedRun?.final_draft_path || "", selectedProject?.path), "Canon patch 已生成，等待人工确认")}
+            >
+              <Workflow size={18} />
+              生成 Canon Patch
+            </button>
+          </div>
+        </div>
       </section>
       <section className="workspaceGrid">
         <div className="panel">

@@ -46,3 +46,38 @@ export function compareRuns(runPaths: string[], taskType: string, workspacePath?
     workspace_path: workspacePath || null
   });
 }
+
+export function runBenchmarkBatch(taskPaths: string[], candidates: Array<{ provider: string; model_name: string }>, workspacePath?: string) {
+  return postJson("/product/evaluation/benchmark-batch", {
+    task_paths: taskPaths,
+    candidates,
+    workspace_path: workspacePath || null
+  });
+}
+
+export function createRoutingPolicy(comparisonPaths: string[], workspacePath?: string) {
+  return postJson("/product/evaluation/routing-policy", {
+    comparison_paths: comparisonPaths,
+    status: "active",
+    workspace_path: workspacePath || null
+  });
+}
+
+export function createPromptVersion(promptId: string, version: string, taskType: string, template: string) {
+  return postJson("/product/evaluation/prompt-version", {
+    prompt_id: promptId,
+    version,
+    task_type: taskType,
+    template,
+    status: "active"
+  });
+}
+
+export function createPromptRegression(promptId: string, baselineVersion: string, candidateVersion: string, benchmarkRuns: string[]) {
+  return postJson("/product/evaluation/prompt-regression", {
+    prompt_id: promptId,
+    baseline_version: baselineVersion,
+    candidate_version: candidateVersion,
+    benchmark_runs: benchmarkRuns
+  });
+}

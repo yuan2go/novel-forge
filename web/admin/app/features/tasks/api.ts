@@ -1,5 +1,5 @@
 import { fetchJson, postJson } from "../../shared/api";
-import type { DeadLetter, ProjectRow, TaskCenter, TaskControl } from "../../shared/types";
+import type { AgentEventRow, AgentRunRow, DeadLetter, ProjectRow, TaskCenter, TaskControl } from "../../shared/types";
 
 export function loadTaskData(options: { projectId?: string; status?: string; taskType?: string; step?: string; offset?: number }) {
   const params = new URLSearchParams({ limit: "120", offset: String(options.offset ?? 0) });
@@ -11,7 +11,9 @@ export function loadTaskData(options: { projectId?: string; status?: string; tas
     fetchJson<ProjectRow[]>("/product/projects"),
     fetchJson<TaskCenter>(`/product/tasks?${params.toString()}`),
     fetchJson<TaskControl>("/product/tasks/control"),
-    fetchJson<DeadLetter[]>("/product/tasks/dead-letters?limit=80")
+    fetchJson<DeadLetter[]>("/product/tasks/dead-letters?limit=80"),
+    fetchJson<AgentRunRow[]>(options.projectId ? `/product/agents/runs?project_id=${encodeURIComponent(options.projectId)}&limit=80` : "/product/agents/runs?limit=80"),
+    fetchJson<AgentEventRow[]>(options.projectId ? `/product/agents/events?project_id=${encodeURIComponent(options.projectId)}&limit=120` : "/product/agents/events?limit=120")
   ]);
 }
 
