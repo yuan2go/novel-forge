@@ -222,6 +222,267 @@ class AnalysisHandoffRequest(BaseModel):
     purpose: str = ""
 
 
+class ContextBuildPlanRequest(BaseModel):
+    target_path: str
+    query: str = ""
+    top_k: int = 8
+    token_budget: int = 4000
+    backend: str = "auto"
+    workspace_path: str | None = None
+
+
+class ContextBundleRequest(BaseModel):
+    build_plan_path: str
+    max_items: int | None = None
+
+
+class OutlineVersionRequest(BaseModel):
+    outline_path: str
+    change_summary: str = "manual outline version"
+    status: str = "active"
+
+
+class ChapterPlanVersionRequest(BaseModel):
+    chapter_plan_path: str
+    change_summary: str = "manual chapter plan version"
+    status: str = "active"
+
+
+class DraftVersionRequest(BaseModel):
+    draft_path: str
+    change_summary: str = "manual draft version"
+    status: str = "active"
+
+
+class GenerationRunRequest(BaseModel):
+    input_path: str
+    context_bundle_path: str
+    output_path: str | None = None
+    provider: str = "local-rules"
+    model: str = "local-rules"
+    prompt_version: str = "prompt-v1"
+    status: str = "succeeded"
+
+
+class ChapterProductionRunRequest(BaseModel):
+    outline_path: str
+    chapter_plan_path: str | None = None
+    workspace_path: str | None = None
+    chapter: int | None = None
+    run_to: str = "next_chapter_plan"
+
+
+class ChapterProductionResumeRequest(BaseModel):
+    run_path: str
+    from_step: str | None = None
+    run_to: str | None = None
+    force: bool = False
+
+
+class WorkflowDefinitionCreateRequest(BaseModel):
+    name: str
+    nodes: list[dict[str, Any]] = Field(default_factory=list)
+    entry_node_id: str
+    status: str = "active"
+    version: str = "0.1.0"
+
+
+class WorkflowNodeCreateRequest(BaseModel):
+    workflow_id: str
+    node_id: str
+    node_type: str
+    operation: str
+    input_types: list[str] = Field(default_factory=list)
+    output_types: list[str] = Field(default_factory=list)
+    processor: dict[str, Any] = Field(default_factory=dict)
+    quality_gate: dict[str, Any] = Field(default_factory=dict)
+
+
+class NodeRunCreateRequest(BaseModel):
+    run_id: str
+    node_id: str
+    node_type: str
+    operation: str
+    status: str = "succeeded"
+    input_assets: list[str] = Field(default_factory=list)
+    output_assets: list[str] = Field(default_factory=list)
+    processor: dict[str, Any] = Field(default_factory=dict)
+    error: str = ""
+
+
+class ChangeImpactRequest(BaseModel):
+    target_path: str
+    max_depth: int = 4
+    project_id: str | None = None
+
+
+class AgentContractCreateRequest(BaseModel):
+    agent_key: str = ""
+    skill: str = ""
+    operation: str
+    input_types: list[str] = Field(default_factory=list)
+    output_types: list[str] = Field(default_factory=list)
+    quality_gates: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class AgentRunCreateRequest(BaseModel):
+    agent_key: str = ""
+    skill: str = ""
+    operation: str
+    input_assets: list[str] = Field(default_factory=list)
+    output_assets: list[str] = Field(default_factory=list)
+    status: str = "running"
+    contract_path: str | None = None
+    workspace_path: str | None = None
+    model_provider: str = "local"
+    model_name: str = "local"
+    prompt_version: str = "prompt-v1"
+    token_budget: int = 0
+
+
+class AgentEventCreateRequest(BaseModel):
+    agent_run_path: str
+    event_type: str
+    status: str = "info"
+    message: str = ""
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentRunStatusRequest(BaseModel):
+    agent_run_path: str
+    status: str
+    output_assets: list[str] = Field(default_factory=list)
+    error: str = ""
+    checkpoint: dict[str, Any] = Field(default_factory=dict)
+    evidence: dict[str, Any] = Field(default_factory=dict)
+    human_gate: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentSlaRequest(BaseModel):
+    agent_run_path: str
+    sla_seconds: int = 1800
+
+
+class AgentRollbackRequest(BaseModel):
+    agent_run_path: str
+    rollback_strategy: str = "mark_outputs_rolled_back"
+    apply: bool = False
+    reason: str = ""
+
+
+class EditorPatchRequest(BaseModel):
+    draft_path: str
+    instructions: str = ""
+    operations: list[dict[str, Any]] = Field(default_factory=list)
+    workspace_path: str | None = None
+
+
+class EditorPatchApplyRequest(BaseModel):
+    patch_path: str
+    apply: bool = True
+    change_summary: str = "editor patch applied"
+    operation_ids: list[str] = Field(default_factory=list)
+    operation_indexes: list[int] = Field(default_factory=list)
+
+
+class DraftDiffReportRequest(BaseModel):
+    base_path: str
+    target_path: str
+
+
+class ContinuityGraphSnapshotRequest(BaseModel):
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class ChapterContinuityReportRequest(BaseModel):
+    draft_path: str
+    workspace_path: str | None = None
+
+
+class ModelProfileRequest(BaseModel):
+    provider: str
+    model_name: str
+    task_types: list[str] = Field(default_factory=list)
+    status: str = "candidate"
+    capabilities: dict[str, Any] = Field(default_factory=dict)
+    cost_profile: dict[str, Any] = Field(default_factory=dict)
+
+
+class ModelBenchmarkTaskRequest(BaseModel):
+    task_type: str
+    input_assets: list[str] = Field(default_factory=list)
+    rubric: dict[str, Any] = Field(default_factory=dict)
+    expected_output_type: str = "generate"
+    prompt_template: str = ""
+    workspace_path: str | None = None
+
+
+class ModelBenchmarkRunRequest(BaseModel):
+    task_path: str
+    provider: str = "mock"
+    model_name: str = "mock-model"
+
+
+class ModelComparisonRequest(BaseModel):
+    run_paths: list[str]
+    task_type: str = ""
+    workspace_path: str | None = None
+
+
+class PromptVersionRequest(BaseModel):
+    prompt_id: str
+    version: str
+    task_type: str
+    template: str
+    status: str = "draft"
+
+
+class PromptRegressionRequest(BaseModel):
+    prompt_id: str
+    baseline_version: str
+    candidate_version: str
+    benchmark_runs: list[str] = Field(default_factory=list)
+
+
+class FeedbackImportBatchRequest(BaseModel):
+    input_path: str
+    workspace_path: str | None = None
+    source_label: str = ""
+    platform: str = "manual"
+
+
+class ReaderSentimentReportRequest(BaseModel):
+    feedback_paths: list[str] = Field(default_factory=list)
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class FeedbackInsightRequest(BaseModel):
+    input_path: str | None = None
+
+
+class FeedbackStrategyApplyRequest(BaseModel):
+    report_path: str
+    workspace_path: str | None = None
+
+
+class ProjectMetricSnapshotRequest(BaseModel):
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class LocalSettingsProfileRequest(BaseModel):
+    title: str = "Local production settings"
+    profile_id: str | None = None
+    model_routing: dict[str, Any] = Field(default_factory=dict)
+    storage_config: dict[str, Any] = Field(default_factory=dict)
+    agent_defaults: dict[str, Any] = Field(default_factory=dict)
+    validation: dict[str, Any] = Field(default_factory=dict)
+    status: str = "active"
+    workspace_path: str | None = None
+
+
 class ChapterAuditRequest(BaseModel):
     draft_path: str
     workspace_path: str | None = None
@@ -406,6 +667,41 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AnalysisRunRequest": AnalysisRunRequest,
         "AnalysisConvertRequest": AnalysisConvertRequest,
         "AnalysisHandoffRequest": AnalysisHandoffRequest,
+        "ContextBuildPlanRequest": ContextBuildPlanRequest,
+        "ContextBundleRequest": ContextBundleRequest,
+        "OutlineVersionRequest": OutlineVersionRequest,
+        "ChapterPlanVersionRequest": ChapterPlanVersionRequest,
+        "DraftVersionRequest": DraftVersionRequest,
+        "GenerationRunRequest": GenerationRunRequest,
+        "ChapterProductionRunRequest": ChapterProductionRunRequest,
+        "ChapterProductionResumeRequest": ChapterProductionResumeRequest,
+        "WorkflowDefinitionCreateRequest": WorkflowDefinitionCreateRequest,
+        "WorkflowNodeCreateRequest": WorkflowNodeCreateRequest,
+        "NodeRunCreateRequest": NodeRunCreateRequest,
+        "ChangeImpactRequest": ChangeImpactRequest,
+        "AgentContractCreateRequest": AgentContractCreateRequest,
+        "AgentRunCreateRequest": AgentRunCreateRequest,
+        "AgentEventCreateRequest": AgentEventCreateRequest,
+        "AgentRunStatusRequest": AgentRunStatusRequest,
+        "AgentSlaRequest": AgentSlaRequest,
+        "AgentRollbackRequest": AgentRollbackRequest,
+        "EditorPatchRequest": EditorPatchRequest,
+        "EditorPatchApplyRequest": EditorPatchApplyRequest,
+        "DraftDiffReportRequest": DraftDiffReportRequest,
+        "ContinuityGraphSnapshotRequest": ContinuityGraphSnapshotRequest,
+        "ChapterContinuityReportRequest": ChapterContinuityReportRequest,
+        "ModelProfileRequest": ModelProfileRequest,
+        "ModelBenchmarkTaskRequest": ModelBenchmarkTaskRequest,
+        "ModelBenchmarkRunRequest": ModelBenchmarkRunRequest,
+        "ModelComparisonRequest": ModelComparisonRequest,
+        "PromptVersionRequest": PromptVersionRequest,
+        "PromptRegressionRequest": PromptRegressionRequest,
+        "FeedbackImportBatchRequest": FeedbackImportBatchRequest,
+        "ReaderSentimentReportRequest": ReaderSentimentReportRequest,
+        "FeedbackInsightRequest": FeedbackInsightRequest,
+        "FeedbackStrategyApplyRequest": FeedbackStrategyApplyRequest,
+        "ProjectMetricSnapshotRequest": ProjectMetricSnapshotRequest,
+        "LocalSettingsProfileRequest": LocalSettingsProfileRequest,
         "ChapterAuditRequest": ChapterAuditRequest,
         "OriginalityReportRequest": OriginalityReportRequest,
         "PublishGateRequest": PublishGateRequest,

@@ -47,18 +47,18 @@ The system should support:
 - Review reports.
 - Revision plans.
 - Originality, style, quality, chapter, publish, and release artifacts in first-generation form.
+- Analysis reports for web fiction, published fiction, classic literature, and analysis conversion in first-generation form.
+- Context build plans, context bundles, outline versions, chapter-plan versions, draft versions, and generation runs in first-generation form.
 - Feedback insights.
 - Workflow runs and task status records.
 
 ## Target Outputs
 
-Future platform work should add:
+Future platform work should deepen:
 
-- analysis reports for web fiction, published fiction, and classic literature;
-- analysis-to-asset conversion reports;
-- context build plans and context bundles;
-- outline versions and chapter-plan versions;
-- generation runs;
+- semantic review for analysis reports and conversion gates;
+- manual context curation, stale-context warnings, and richer context replay;
+- chapter queues, parameter trace dashboards, and upstream invalidation for versioned production;
 - editor patches;
 - revision tasks;
 - continuity audits and change impact reports;
@@ -86,9 +86,9 @@ It must not copy protected expression, distinctive characters, settings, scenes,
 The next development direction should be:
 
 1. Platform skeleton: workflow/node run, artifact version, context bundle, generation run, quality gate, revision task.
-2. Context Builder and actual-context replay.
-3. Versioned outline/chapter-plan/draft production chain.
-4. Analysis Center upgrade.
+2. Context Builder curation and stale-context warnings.
+3. Versioned outline/chapter-plan/draft production dashboards and chapter queue.
+4. Analysis Center semantic scoring and conversion gates.
 5. Long-form stability workbench.
 6. AI Editor patch workflow.
 7. Agent industrialization.

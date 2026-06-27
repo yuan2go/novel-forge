@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import utc_now
+from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import build_production_context
-from novel_forge.schemas import StyleDecompositionReport, StyleReviewReport
+from novel_forge.schemas import StyleDecompositionReport, StyleReviewReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 
@@ -23,41 +24,54 @@ def create_style_decomposition_report(
     metrics = _style_metrics(text)
     context = build_production_context(storage, source, input_path=path, workspace_path=workspace_path)
     project = context["project"]
-    risk_level = "medium" if _contains_protected_source_hint(source) else "low"
-    asset = StyleDecompositionReport(
-        title=f"Style decomposition for {source.title}",
-        source=source.id,
-        tags=["style", "style-decomposition", "abstract-parameters"],
-        content={
-            "source_asset_id": source.id,
-            "extract_level": "abstract_parameters_only",
-            "style_features": metrics,
-            "usable_parameters": {
-                "sentence_length": metrics["sentence_length"],
-                "paragraph_density": metrics["paragraph_density"],
-                "dialogue_ratio": metrics["dialogue_ratio"],
-                "description_ratio": metrics["description_ratio"],
-                "information_density": metrics["information_density"],
+    with AgentExecutionContext(
+        storage,
+        agent_key="style",
+        operation="create-style-decomposition-report",
+        input_assets=[path],
+        output_types=["style_decomposition_report"],
+        workspace_path=str(project.get("workspace_path", "")),
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        risk_level = "medium" if _contains_protected_source_hint(source) else "low"
+        asset = StyleDecompositionReport(
+            title=f"Style decomposition for {source.title}",
+            source=source.id,
+            tags=["style", "style-decomposition", "abstract-parameters"],
+            content={
+                "source_asset_id": source.id,
+                "extract_level": "abstract_parameters_only",
+                "style_features": metrics,
+                "usable_parameters": {
+                    "sentence_length": metrics["sentence_length"],
+                    "paragraph_density": metrics["paragraph_density"],
+                    "dialogue_ratio": metrics["dialogue_ratio"],
+                    "description_ratio": metrics["description_ratio"],
+                    "information_density": metrics["information_density"],
+                },
+                "do_not_copy": [
+                    "proper nouns",
+                    "signature phrases",
+                    "source-specific metaphors",
+                    "unique scene sequence",
+                ],
+                "risk_level": risk_level,
             },
-            "do_not_copy": [
-                "proper nouns",
-                "signature phrases",
-                "source-specific metaphors",
-                "unique scene sequence",
-            ],
-            "risk_level": risk_level,
-        },
-        metadata={
-            "workflow": "style-decomposition",
-            "project_id": project.get("project_id", ""),
-            "workspace_path": project.get("workspace_path", ""),
-            "copyright_boundary": "abstract style parameters only; no source expression reuse",
-            "risk_level": risk_level,
-            "created_at": utc_now(),
-        },
-        references=[source.id],
-    )
-    return storage.write_asset("styles", asset)
+            metadata={
+                "workflow": "style-decomposition",
+                "project_id": project.get("project_id", ""),
+                "workspace_path": project.get("workspace_path", ""),
+                "copyright_boundary": "abstract style parameters only; no source expression reuse",
+                "risk_level": risk_level,
+                "created_at": utc_now(),
+            },
+            references=[source.id],
+        )
+        run.guard("write_style_decomposition_report", "style_decomposition_report")
+        output = _write(storage, "styles", asset)
+        run.succeed(output_assets=[output])
+        return output
 
 
 def create_style_review_report(
@@ -78,31 +92,44 @@ def create_style_review_report(
     ai_taste_points = _ai_taste_points(text)
     risk = "medium" if score < 70 or ai_taste_points else "low"
     project = context["project"]
-    asset = StyleReviewReport(
-        title=f"Style review for {draft.title}",
-        source=draft.id,
-        tags=["style", "style-review", "quality-gate"],
-        content={
-            "target_draft_id": draft.id,
-            "expected_style_profile_id": str(profile.get("id", "style_profile_missing")) if isinstance(profile, dict) else "style_profile_missing",
-            "style_match_score": score,
-            "drift_points": drift_points,
-            "ai_taste_points": ai_taste_points,
-            "rewrite_suggestions": _rewrite_suggestions(drift_points, ai_taste_points),
-            "copyright_style_risk": risk,
-            "observed_parameters": metrics,
-        },
-        metadata={
-            "workflow": "style-review",
-            "project_id": project.get("project_id", ""),
-            "workspace_path": project.get("workspace_path", ""),
-            "style_profile_path": profile.get("path", "") if isinstance(profile, dict) else "",
-            "created_at": utc_now(),
-            "risk_level": risk,
-        },
-        references=_dedupe([draft.id, str(profile.get("id", "")) if isinstance(profile, dict) else ""]),
-    )
-    return storage.write_asset("reviews", asset)
+    with AgentExecutionContext(
+        storage,
+        agent_key="style",
+        operation="create-style-review-report",
+        input_assets=[path],
+        output_types=["style_review_report"],
+        workspace_path=str(project.get("workspace_path", "")),
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        asset = StyleReviewReport(
+            title=f"Style review for {draft.title}",
+            source=draft.id,
+            tags=["style", "style-review", "quality-gate"],
+            content={
+                "target_draft_id": draft.id,
+                "expected_style_profile_id": str(profile.get("id", "style_profile_missing")) if isinstance(profile, dict) else "style_profile_missing",
+                "style_match_score": score,
+                "drift_points": drift_points,
+                "ai_taste_points": ai_taste_points,
+                "rewrite_suggestions": _rewrite_suggestions(drift_points, ai_taste_points),
+                "copyright_style_risk": risk,
+                "observed_parameters": metrics,
+            },
+            metadata={
+                "workflow": "style-review",
+                "project_id": project.get("project_id", ""),
+                "workspace_path": project.get("workspace_path", ""),
+                "style_profile_path": profile.get("path", "") if isinstance(profile, dict) else "",
+                "created_at": utc_now(),
+                "risk_level": risk,
+            },
+            references=_dedupe([draft.id, str(profile.get("id", "")) if isinstance(profile, dict) else ""]),
+        )
+        run.guard("write_style_review_report", "style_review_report")
+        output = _write(storage, "reviews", asset)
+        run.succeed(output_assets=[output])
+        return output
 
 
 def style_drift_trend(storage: LocalStorage, project_id: str | None = None, limit: int = 50) -> dict[str, Any]:
@@ -258,3 +285,10 @@ def _dedupe(values: list[str]) -> list[str]:
             seen.add(value)
             result.append(value)
     return result
+
+
+def _write(storage: LocalStorage, category: str, asset: Any) -> Path:
+    errors = validate_common_fields(asset.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    return storage.write_asset(category, asset)

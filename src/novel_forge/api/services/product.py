@@ -18,6 +18,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.evaluation.quality import QUALITY_DIMENSIONS
 from novel_forge.model_adapters import model_from_env, validate_model_output
 from novel_forge.modules.common import resolve_path
+from novel_forge.modules.agent_runs import create_agent_failure_report, update_agent_run_status
 from novel_forge.modules.creative_assets import create_creative_asset
 from novel_forge.modules.ingestion.service import discover_source_files
 from novel_forge.modules.source_intake import (
@@ -2159,6 +2160,14 @@ def bind_handoff_output(root: str | Path, request: dict[str, Any]) -> dict[str, 
         _display_path(storage.root, handoff_path),
         {"output_path": output_display, "validation_valid": validation["valid"]},
     )
+    _sync_handoff_agent_run(
+        storage,
+        handoff,
+        status="succeeded" if request.get("mark_completed", True) else "verifying",
+        output_paths=[output_path],
+        event_type="handoff.output.bound",
+        message=f"handoff output bound: {output_display}",
+    )
     continued = None
     if request.get("auto_continue_batch", True):
         continued = _auto_continue_bound_batch_handoff(root, storage, handoff_path, output_path, output)
@@ -2223,6 +2232,33 @@ def update_handoff_acceptance(root: str | Path, request: dict[str, Any]) -> dict
     data["content"] = content
     data["updated_at"] = utc_now()
     _write_validated_json(storage, handoff_path, data)
+    if status in {"needs_fix", "rejected"}:
+        _sync_handoff_agent_run(
+            storage,
+            data,
+            status="needs_revision",
+            error=str(statuses[index].get("note") or f"acceptance check {index} {status}"),
+            event_type="handoff.acceptance.needs_revision",
+            message=str(statuses[index].get("note") or f"acceptance check {index} {status}"),
+        )
+    elif content.get("status") == "completed":
+        output_paths = [str(item.get("path", "")) for item in content.get("bound_outputs", []) if isinstance(item, dict)]
+        _sync_handoff_agent_run(
+            storage,
+            data,
+            status="succeeded",
+            output_paths=output_paths,
+            event_type="handoff.acceptance.completed",
+            message="all handoff acceptance checks passed",
+        )
+    else:
+        _sync_handoff_agent_run(
+            storage,
+            data,
+            status="verifying",
+            event_type="handoff.acceptance.updated",
+            message=f"acceptance check {index} moved to {status}",
+        )
     return _handoff_acceptance_payload(storage, handoff_path, storage.read_json(handoff_path))
 
 
@@ -2244,6 +2280,15 @@ def fail_handoff(root: str | Path, request: dict[str, Any]) -> dict[str, Any]:
     data["metadata"] = metadata
     data["updated_at"] = utc_now()
     _write_validated_json(storage, handoff_path, data)
+    _sync_handoff_agent_run(
+        storage,
+        data,
+        status="failed",
+        error=reason,
+        event_type="handoff.failed",
+        message=reason,
+        failure_report=True,
+    )
     _write_audit_log(storage, "handoff.fail", _display_path(storage.root, handoff_path), {"reason": reason})
     return asset_detail(storage, str(handoff_path))
 
@@ -2293,6 +2338,13 @@ def retry_handoff(root: str | Path, request: dict[str, Any]) -> dict[str, Any]:
         str(old.get("id", "")),
         reason=str(request.get("reason") or "handoff retried"),
     )
+    _sync_handoff_agent_run(
+        storage,
+        old,
+        status="cancelled",
+        event_type="handoff.retried",
+        message=str(request.get("reason") or "handoff retried"),
+    )
     new_data = storage.read_json(new_path)
     if isinstance(new_data, dict):
         new_metadata = new_data.get("metadata", {}) if isinstance(new_data.get("metadata", {}), dict) else {}
@@ -2312,6 +2364,46 @@ def retry_handoff(root: str | Path, request: dict[str, Any]) -> dict[str, Any]:
         "previous": asset_detail(storage, str(old_path)),
         "handoff": asset_detail(storage, str(new_path)),
     }
+
+
+def _sync_handoff_agent_run(
+    storage: LocalStorage,
+    handoff_data: dict[str, Any],
+    *,
+    status: str,
+    output_paths: list[str | Path] | None = None,
+    error: str = "",
+    event_type: str,
+    message: str,
+    failure_report: bool = False,
+) -> dict[str, Any] | None:
+    agent_run_path = _handoff_agent_run_path(handoff_data)
+    if not agent_run_path:
+        return None
+    if failure_report:
+        return create_agent_failure_report(
+            storage,
+            agent_run_path=agent_run_path,
+            error_type="handoff_failure",
+            error_message=error or message,
+            recovery_instruction="Inspect the handoff acceptance checks, retry the handoff, or regenerate a fresh handoff package.",
+        )
+    return update_agent_run_status(
+        storage,
+        agent_run_path,
+        status=status,
+        output_assets=output_paths or [],
+        error=error,
+        event_type=event_type,
+        message=message,
+    )
+
+
+def _handoff_agent_run_path(handoff_data: dict[str, Any]) -> str:
+    content = handoff_data.get("content", {}) if isinstance(handoff_data.get("content", {}), dict) else {}
+    metadata = handoff_data.get("metadata", {}) if isinstance(handoff_data.get("metadata", {}), dict) else {}
+    agent_run = content.get("agent_run", {}) if isinstance(content.get("agent_run", {}), dict) else {}
+    return str(agent_run.get("path") or metadata.get("agent_run_path") or "")
 
 
 def _handoff_acceptance_payload(storage: LocalStorage, path: Path, data: dict[str, Any]) -> dict[str, Any]:
@@ -3723,8 +3815,8 @@ def _handoff_row(storage: LocalStorage, path: Path, data: dict[str, Any]) -> dic
 
 def draft_workbench(storage: LocalStorage, project_id: str | None = None) -> dict[str, Any]:
     return {
-        "chapter_plans": _asset_rows(storage, "chapter_plans", project_id=project_id),
-        "drafts": _asset_rows(storage, "drafts", project_id=project_id),
+        "chapter_plans": _asset_rows(storage, "chapter_plans", asset_type="chapter_plan", project_id=project_id),
+        "drafts": _asset_rows(storage, "drafts", asset_type="draft_chapter", project_id=project_id),
         "reviews": _asset_rows(storage, "reviews", asset_type="review_report", project_id=project_id),
         "revision_plans": _asset_rows(storage, "reviews", asset_type="revision_plan", project_id=project_id),
         "workspace": [project_detail(storage, project_id)] if project_id else list_projects(storage)[:1],

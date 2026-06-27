@@ -137,6 +137,16 @@ class PowerScaleRule(BaseAsset):
 
 
 @dataclass
+class ChapterContinuityReport(BaseAsset):
+    type: str = "chapter_continuity_report"
+
+
+@dataclass
+class ContinuityGraphSnapshot(BaseAsset):
+    type: str = "continuity_graph_snapshot"
+
+
+@dataclass
 class StyleProfile(BaseAsset):
     type: str = "style_profile"
 
@@ -177,13 +187,58 @@ class Outline(BaseAsset):
 
 
 @dataclass
+class OutlineVersion(BaseAsset):
+    type: str = "outline_version"
+
+
+@dataclass
 class ChapterPlan(BaseAsset):
     type: str = "chapter_plan"
 
 
 @dataclass
+class ChapterPlanVersion(BaseAsset):
+    type: str = "chapter_plan_version"
+
+
+@dataclass
+class ContextBuildPlan(BaseAsset):
+    type: str = "context_build_plan"
+
+
+@dataclass
+class ContextBundle(BaseAsset):
+    type: str = "context_bundle"
+
+
+@dataclass
+class GenerationRun(BaseAsset):
+    type: str = "generation_run"
+
+
+@dataclass
+class ChapterProductionRun(BaseAsset):
+    type: str = "chapter_production_run"
+
+
+@dataclass
 class DraftChapter(BaseAsset):
     type: str = "draft_chapter"
+
+
+@dataclass
+class DraftVersion(BaseAsset):
+    type: str = "draft_version"
+
+
+@dataclass
+class EditorPatch(BaseAsset):
+    type: str = "editor_patch"
+
+
+@dataclass
+class DraftDiffReport(BaseAsset):
+    type: str = "draft_diff_report"
 
 
 @dataclass
@@ -239,8 +294,28 @@ class ReaderFeedback(BaseAsset):
 
 
 @dataclass
+class FeedbackImportBatch(BaseAsset):
+    type: str = "feedback_import_batch"
+
+
+@dataclass
 class FeedbackInsight(BaseAsset):
     type: str = "feedback_insight"
+
+
+@dataclass
+class ReaderSentimentReport(BaseAsset):
+    type: str = "reader_sentiment_report"
+
+
+@dataclass
+class ProjectMetricSnapshot(BaseAsset):
+    type: str = "project_metric_snapshot"
+
+
+@dataclass
+class LocalSettingsProfile(BaseAsset):
+    type: str = "local_settings_profile"
 
 
 @dataclass
@@ -264,6 +339,21 @@ class WorkflowRun(BaseAsset):
 
 
 @dataclass
+class WorkflowDefinition(BaseAsset):
+    type: str = "workflow_definition"
+
+
+@dataclass
+class WorkflowNode(BaseAsset):
+    type: str = "workflow_node"
+
+
+@dataclass
+class NodeRun(BaseAsset):
+    type: str = "node_run"
+
+
+@dataclass
 class TaskStatus(BaseAsset):
     type: str = "task_status"
 
@@ -281,6 +371,91 @@ class BatchTaskItem(BaseAsset):
 @dataclass
 class ProjectWorkspaceState(BaseAsset):
     type: str = "project_workspace_state"
+
+
+@dataclass
+class ChangeImpactReport(BaseAsset):
+    type: str = "change_impact_report"
+
+
+@dataclass
+class AgentContract(BaseAsset):
+    type: str = "agent_contract"
+
+
+@dataclass
+class AgentRun(BaseAsset):
+    type: str = "agent_run"
+
+
+@dataclass
+class AgentCheckpoint(BaseAsset):
+    type: str = "agent_checkpoint"
+
+
+@dataclass
+class AgentEvent(BaseAsset):
+    type: str = "agent_event"
+
+
+@dataclass
+class AgentBudget(BaseAsset):
+    type: str = "agent_budget"
+
+
+@dataclass
+class AgentGate(BaseAsset):
+    type: str = "agent_gate"
+
+
+@dataclass
+class AgentMetric(BaseAsset):
+    type: str = "agent_metric"
+
+
+@dataclass
+class AgentFailureReport(BaseAsset):
+    type: str = "agent_failure_report"
+
+
+@dataclass
+class AgentSlaReport(BaseAsset):
+    type: str = "agent_sla_report"
+
+
+@dataclass
+class AgentRollbackReport(BaseAsset):
+    type: str = "agent_rollback_report"
+
+
+@dataclass
+class ModelProfile(BaseAsset):
+    type: str = "model_profile"
+
+
+@dataclass
+class ModelBenchmarkTask(BaseAsset):
+    type: str = "model_benchmark_task"
+
+
+@dataclass
+class ModelBenchmarkRun(BaseAsset):
+    type: str = "model_benchmark_run"
+
+
+@dataclass
+class ModelComparisonReport(BaseAsset):
+    type: str = "model_comparison_report"
+
+
+@dataclass
+class PromptVersion(BaseAsset):
+    type: str = "prompt_version"
+
+
+@dataclass
+class PromptRegressionReport(BaseAsset):
+    type: str = "prompt_regression_report"
 
 
 SCHEMA_CLASSES = {
@@ -312,6 +487,8 @@ SCHEMA_CLASSES = {
         ContinuityBible,
         ForeshadowingThread,
         PowerScaleRule,
+        ChapterContinuityReport,
+        ContinuityGraphSnapshot,
         StyleProfile,
         StyleDecompositionReport,
         StyleBlendPreset,
@@ -320,8 +497,17 @@ SCHEMA_CLASSES = {
         WritingTemplate,
         CraftTemplate,
         Outline,
+        OutlineVersion,
         ChapterPlan,
+        ChapterPlanVersion,
+        ContextBuildPlan,
+        ContextBundle,
+        GenerationRun,
+        ChapterProductionRun,
         DraftChapter,
+        DraftVersion,
+        EditorPatch,
+        DraftDiffReport,
         ReviewReport,
         RevisionPlan,
         QualityScoreReport,
@@ -331,15 +517,39 @@ SCHEMA_CLASSES = {
         PublishGateReport,
         ReleasePackage,
         ReaderFeedback,
+        FeedbackImportBatch,
         FeedbackInsight,
+        ReaderSentimentReport,
+        ProjectMetricSnapshot,
+        LocalSettingsProfile,
         TrainingExercise,
         ImagePrompt,
         ClaudeCodeHandoff,
         WorkflowRun,
+        WorkflowDefinition,
+        WorkflowNode,
+        NodeRun,
         TaskStatus,
         TaskDeadLetter,
         BatchTaskItem,
         ProjectWorkspaceState,
+        ChangeImpactReport,
+        AgentContract,
+        AgentRun,
+        AgentCheckpoint,
+        AgentEvent,
+        AgentBudget,
+        AgentGate,
+        AgentMetric,
+        AgentFailureReport,
+        AgentSlaReport,
+        AgentRollbackReport,
+        ModelProfile,
+        ModelBenchmarkTask,
+        ModelBenchmarkRun,
+        ModelComparisonReport,
+        PromptVersion,
+        PromptRegressionReport,
     ]
 }
 

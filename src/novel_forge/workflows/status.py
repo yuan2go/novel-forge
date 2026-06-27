@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 from novel_forge.core.ids import utc_now
+from novel_forge.modules.workflow_nodes import record_node_run
 from novel_forge.schemas import TaskStatus
 from novel_forge.storage.local import LocalStorage
 
@@ -23,12 +24,14 @@ def execute_task(
     _record_status_path(
         write_task_status(storage, run_id, step, "pending", input_paths=input_paths), status_paths, status_collector
     )
+    started_at = utc_now()
     _record_status_path(
         write_task_status(storage, run_id, step, "running", input_paths=input_paths), status_paths, status_collector
     )
     try:
         result = action()
     except Exception as exc:
+        error_message = f"{type(exc).__name__}: {exc}"
         _record_status_path(
             write_task_status(
                 storage,
@@ -36,14 +39,43 @@ def execute_task(
                 step,
                 "failed",
                 input_paths=input_paths,
-                error_message=f"{type(exc).__name__}: {exc}",
+                error_message=error_message,
             ),
             status_paths,
             status_collector,
         )
+        record_node_run(
+            storage,
+            run_id=run_id,
+            node_id=step,
+            node_type="workflow_step",
+            operation=step,
+            status="failed",
+            input_assets=input_paths,
+            output_assets=[],
+            processor={"kind": "workflow_step", "name": step},
+            started_at=started_at,
+            finished_at=utc_now(),
+            error=error_message,
+            quality_gate={"required": False, "status": "skipped"},
+        )
         raise
 
     output_paths = [result] if isinstance(result, Path) else []
+    record_node_run(
+        storage,
+        run_id=run_id,
+        node_id=step,
+        node_type="workflow_step",
+        operation=step,
+        status="succeeded",
+        input_assets=input_paths,
+        output_assets=output_paths,
+        processor={"kind": "workflow_step", "name": step},
+        started_at=started_at,
+        finished_at=utc_now(),
+        quality_gate={"required": False, "status": "not_applicable"},
+    )
     _record_status_path(
         write_task_status(storage, run_id, step, "completed", input_paths=input_paths, output_paths=output_paths),
         status_paths,

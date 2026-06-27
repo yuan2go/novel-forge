@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from novel_forge.core.constants import ASSET_DIR_BY_TYPE
+from novel_forge.core.constants import ASSET_DIR_BY_TYPE, SKILL_NAMES
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.storage.local import LocalStorage
@@ -244,6 +244,8 @@ def _asset_by_path_or_id(storage: LocalStorage, value: str, asset_type: str) -> 
 
 
 def _project_id_for_reference(storage: LocalStorage, reference: str) -> str:
+    if not _reference_may_be_asset(reference):
+        return ""
     candidate = resolve_path(storage.root, reference)
     if candidate.exists() and candidate.is_file():
         try:
@@ -262,6 +264,21 @@ def _project_id_for_reference(storage: LocalStorage, reference: str) -> str:
             if reference in {str(data.get("id", "")), _display_path(storage.root, path)}:
                 return _project_id_from_data(data)
     return ""
+
+
+def _reference_may_be_asset(reference: str) -> bool:
+    value = str(reference or "").strip()
+    if not value:
+        return False
+    if value in SKILL_NAMES:
+        return False
+    if value.startswith(("http://", "https://", "skill:", "mailto:")):
+        return False
+    if "/" in value or value.endswith(".json"):
+        return True
+    asset_prefixes = {asset_type.replace("_", "-") for asset_type in ASSET_DIR_BY_TYPE}
+    asset_prefixes.update({"project", "workspace"})
+    return any(value.startswith(f"{prefix}-") for prefix in asset_prefixes)
 
 
 def _project_id_from_data(data: Any) -> str:

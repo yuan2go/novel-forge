@@ -1,0 +1,147 @@
+import {
+  Activity,
+  BarChart3,
+  BookMarked,
+  BookOpen,
+  Boxes,
+  CheckCircle2,
+  Database,
+  FileSearch,
+  GitPullRequest,
+  Home,
+  Layers3,
+  Library,
+  ListChecks,
+  MessageSquareText,
+  Network,
+  PenLine,
+  Save,
+  Send,
+  Server,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
+  Wand2,
+  Workflow
+} from "lucide-react";
+import type { ReactNode } from "react";
+
+export type NavGroupKey = "workspace" | "assets" | "analysis" | "production" | "management";
+
+export type NavItemKey =
+  | "workbench"
+  | "projects"
+  | "topic_library"
+  | "material_library"
+  | "knowledge_library"
+  | "setting_bible"
+  | "style_center"
+  | "writing_templates"
+  | "quality_standards"
+  | "analysis_center"
+  | "web_fiction_analysis"
+  | "published_fiction_analysis"
+  | "classic_literary_analysis"
+  | "asset_converter"
+  | "batch_deconstruction"
+  | "outline_generation"
+  | "chapter_plan_generation"
+  | "context_builder"
+  | "chapter_production"
+  | "ai_editor"
+  | "review_center"
+  | "originality_center"
+  | "publishing_center"
+  | "reader_feedback"
+  | "production_control"
+  | "change_impact"
+  | "model_evaluation"
+  | "data_statistics"
+  | "settings_center"
+  | "task_center"
+  | "handoffs"
+  | "health";
+
+export type NavItem = {
+  key: NavItemKey;
+  label: string;
+  description: string;
+  href: string;
+  icon: ReactNode;
+};
+
+export type NavGroup = {
+  key: NavGroupKey;
+  label: string;
+  items: NavItem[];
+};
+
+export const navGroups: NavGroup[] = [
+  {
+    key: "workspace",
+    label: "工作区",
+    items: [
+      { key: "workbench", label: "工作台", description: "本地小说工厂总览", href: "/", icon: <Home size={17} /> },
+      { key: "projects", label: "项目管理", description: "项目生命周期与绑定配置", href: "/projects", icon: <Boxes size={17} /> }
+    ]
+  },
+  {
+    key: "assets",
+    label: "创作资产",
+    items: [
+      { key: "topic_library", label: "题材库", description: "平台、题材、选题资产", href: "/assets?library=topics", icon: <BookMarked size={17} /> },
+      { key: "material_library", label: "素材库", description: "可复用素材卡", href: "/assets?library=materials", icon: <Library size={17} /> },
+      { key: "knowledge_library", label: "知识库", description: "多学科知识卡", href: "/assets?library=knowledge", icon: <Database size={17} /> },
+      { key: "setting_bible", label: "设定书", description: "世界观、连续性和长篇设定", href: "/assets?library=bible", icon: <BookOpen size={17} /> },
+      { key: "style_center", label: "文风中心", description: "参数化 style profile", href: "/assets?library=style", icon: <Wand2 size={17} /> },
+      { key: "writing_templates", label: "写作模板", description: "冲突、节奏、钩子和修辞模板", href: "/templates", icon: <PenLine size={17} /> },
+      { key: "quality_standards", label: "精品标准", description: "质量标准和审稿规则", href: "/assets?library=quality", icon: <ShieldCheck size={17} /> }
+    ]
+  },
+  {
+    key: "analysis",
+    label: "分析拆解",
+    items: [
+      { key: "analysis_center", label: "分析拆解中心", description: "统一分析入口", href: "/analysis", icon: <FileSearch size={17} /> },
+      { key: "web_fiction_analysis", label: "网文商业结构", description: "商业结构和爽点拆解", href: "/analysis?mode=web_fiction_business", icon: <Layers3 size={17} /> },
+      { key: "published_fiction_analysis", label: "出版技法拆解", description: "出版小说技法抽象", href: "/analysis?mode=published_fiction", icon: <BookOpen size={17} /> },
+      { key: "classic_literary_analysis", label: "名著深度拆解", description: "经典名著结构分析", href: "/analysis?mode=classic_literary", icon: <BookMarked size={17} /> },
+      { key: "asset_converter", label: "资产转换器", description: "拆解报告转可复用资产", href: "/analysis?mode=converter", icon: <Workflow size={17} /> },
+      { key: "batch_deconstruction", label: "批量拆书", description: "批处理 item 和 Claude Code 模式", href: "/batch", icon: <ListChecks size={17} /> }
+    ]
+  },
+  {
+    key: "production",
+    label: "生产流程",
+    items: [
+      { key: "outline_generation", label: "大纲生成", description: "大纲版本链", href: "/production?stage=outline", icon: <GitPullRequest size={17} /> },
+      { key: "chapter_plan_generation", label: "细纲生成", description: "章节计划版本链", href: "/production?stage=chapter_plan", icon: <ListChecks size={17} /> },
+      { key: "context_builder", label: "上下文构建器", description: "RAG 与 token 预算", href: "/context", icon: <Network size={17} /> },
+      { key: "chapter_production", label: "章节生产", description: "生成记录和稿件版本", href: "/manuscript", icon: <PenLine size={17} /> },
+      { key: "ai_editor", label: "AI 编辑器", description: "patch、diff 和回滚", href: "/editor", icon: <Save size={17} /> },
+      { key: "review_center", label: "审稿中心", description: "审稿和修订闭环", href: "/review", icon: <CheckCircle2 size={17} /> },
+      { key: "originality_center", label: "原创性保护", description: "原创风险与质量门禁", href: "/quality?tab=originality", icon: <ShieldCheck size={17} /> },
+      { key: "publishing_center", label: "发布中心", description: "发布前门禁和 release package", href: "/quality?tab=publishing", icon: <Send size={17} /> },
+      { key: "reader_feedback", label: "读者反馈", description: "评论导入和策略回写", href: "/feedback", icon: <MessageSquareText size={17} /> }
+    ]
+  },
+  {
+    key: "management",
+    label: "管理工具",
+    items: [
+      { key: "production_control", label: "生产总控", description: "运行实体观测", href: "/control", icon: <Activity size={17} /> },
+      { key: "change_impact", label: "变更影响", description: "长篇变更影响分析", href: "/impact", icon: <GitPullRequest size={17} /> },
+      { key: "model_evaluation", label: "模型评测", description: "Benchmark 和模型路由", href: "/evaluation", icon: <SlidersHorizontal size={17} /> },
+      { key: "data_statistics", label: "数据统计", description: "产能、质量、成本趋势", href: "/statistics", icon: <BarChart3 size={17} /> },
+      { key: "settings_center", label: "设置中心", description: "本地生产配置", href: "/settings", icon: <Settings size={17} /> },
+      { key: "task_center", label: "任务中心", description: "任务、timeline 和恢复", href: "/tasks", icon: <ListChecks size={17} /> },
+      { key: "handoffs", label: "Handoff", description: "Claude Code / Codex 执行包", href: "/handoffs", icon: <Workflow size={17} /> },
+      { key: "health", label: "健康检查", description: "服务、备份和存储状态", href: "/health", icon: <Server size={17} /> }
+    ]
+  }
+];
+
+export function navItemForPath(pathname: string): NavItem | undefined {
+  const items = navGroups.flatMap((group) => group.items);
+  return items.find((item) => item.href === pathname) ?? items.find((item) => item.href.split("?")[0] === pathname);
+}

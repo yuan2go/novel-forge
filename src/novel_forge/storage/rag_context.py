@@ -24,6 +24,7 @@ RAG_BUCKETS = {
     "knowledge_cards": "知识卡",
     "foreshadowing": "伏笔",
     "material_cards": "素材卡",
+    "writing_templates": "写作模板",
 }
 
 TYPE_BUCKETS = {
@@ -42,6 +43,8 @@ TYPE_BUCKETS = {
     "conflict_pattern": ["material_cards"],
     "emotion_curve": ["material_cards"],
     "hook_pattern": ["foreshadowing", "material_cards"],
+    "writing_template": ["writing_templates", "material_cards"],
+    "craft_template": ["writing_templates", "material_cards"],
 }
 
 FORESHADOWING_TERMS = ("伏笔", "foreshadow", "hook", "continuity_thread", "continuity_threads", "open_issue", "open_issues")
@@ -282,6 +285,14 @@ def _asset_context_summary(data: dict[str, Any]) -> str:
         "motivation_chain",
         "principles",
         "usable_patterns",
+        "template_kind",
+        "structure",
+        "usage_constraints",
+        "anti_copy_rules",
+        "craft_domain",
+        "pattern",
+        "use_cases",
+        "risks",
         "do_not_copy",
         "chapter_states",
         "continuity_threads",

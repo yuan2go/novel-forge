@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, run_metadata
 from novel_forge.schemas import MaterialCard
 from novel_forge.storage.local import LocalStorage
@@ -9,35 +10,47 @@ from novel_forge.storage.local import LocalStorage
 
 def build_materials(storage: LocalStorage, input_path: str | None = None) -> Path:
     knowledge = read_previous(storage, "knowledge", input_path)
-    asset = MaterialCard(
-        title="Suspense production material card",
-        source=knowledge.id,
-        tags=[
-            "material",
-            "suspense",
-            "reusable",
-            "hook",
-            "conflict",
-            "reader-retention",
-            "chapter-ending",
-        ],
-        content={
-            "usable_patterns": knowledge.content.get("principles", []),
-            "prompt_fragments": [
-                "Design a clue that changes the protagonist's available choices.",
-                "End the chapter with a new obligation, not just a question.",
+    with AgentExecutionContext(
+        storage,
+        agent_key="material",
+        operation="build-materials",
+        input_assets=[input_path or knowledge.id],
+        output_types=["material_card"],
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        asset = MaterialCard(
+            title="Suspense production material card",
+            source=knowledge.id,
+            tags=[
+                "material",
+                "suspense",
+                "reusable",
+                "hook",
+                "conflict",
+                "reader-retention",
+                "chapter-ending",
             ],
-            "do_not_copy": ["names", "sentences", "unique settings", "plot sequence combinations"],
-        },
-        metadata={
-            "copyright_boundary": "reusable abstract production material only",
-            "tag_facets": {
-                "genre": ["suspense"],
-                "function": ["hook", "conflict", "reader-retention", "chapter-ending"],
-                "source_type": ["knowledge_card"],
+            content={
+                "usable_patterns": knowledge.content.get("principles", []),
+                "prompt_fragments": [
+                    "Design a clue that changes the protagonist's available choices.",
+                    "End the chapter with a new obligation, not just a question.",
+                ],
+                "do_not_copy": ["names", "sentences", "unique settings", "plot sequence combinations"],
             },
-            "run_metadata": run_metadata("build-materials", knowledge, provider="local-rules", model="material-transform-v1"),
-        },
-        references=[knowledge.id],
-    )
-    return storage.write_asset("materials", asset)
+            metadata={
+                "copyright_boundary": "reusable abstract production material only",
+                "tag_facets": {
+                    "genre": ["suspense"],
+                    "function": ["hook", "conflict", "reader-retention", "chapter-ending"],
+                    "source_type": ["knowledge_card"],
+                },
+                "run_metadata": run_metadata("build-materials", knowledge, provider="local-rules", model="material-transform-v1"),
+            },
+            references=[knowledge.id],
+        )
+        run.guard("write_material_card", "material_card")
+        path = storage.write_asset("materials", asset)
+        run.succeed(output_assets=[str(path.relative_to(storage.root))])
+        return path

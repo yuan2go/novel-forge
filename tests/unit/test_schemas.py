@@ -5,13 +5,28 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.schemas import (
+    AgentContract,
+    AgentRun,
     AnalysisConversionReport,
     ChapterAuditReport,
+    ChapterProductionRun,
+    ChapterPlanVersion,
     ClaudeCodeHandoff,
     CommonNovelAnalysisReport,
+    ContextBuildPlan,
+    ContextBundle,
+    DraftVersion,
+    FeedbackImportBatch,
+    GenerationRun,
+    ChangeImpactReport,
+    LocalSettingsProfile,
+    NodeRun,
     OriginalityReport,
+    OutlineVersion,
+    ProjectMetricSnapshot,
     PublishGateReport,
     ProjectWorkspaceState,
+    ReaderSentimentReport,
     ReleasePackage,
     ReviewReport,
     SCHEMA_CLASSES,
@@ -23,7 +38,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 54)
+        self.assertEqual(len(SCHEMA_CLASSES), 89)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
         self.assertIn("review_report", SCHEMA_CLASSES)
@@ -45,6 +60,41 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("published_fiction_analysis_report", SCHEMA_CLASSES)
         self.assertIn("classic_literary_analysis_report", SCHEMA_CLASSES)
         self.assertIn("analysis_conversion_report", SCHEMA_CLASSES)
+        self.assertIn("context_build_plan", SCHEMA_CLASSES)
+        self.assertIn("context_bundle", SCHEMA_CLASSES)
+        self.assertIn("outline_version", SCHEMA_CLASSES)
+        self.assertIn("chapter_plan_version", SCHEMA_CLASSES)
+        self.assertIn("draft_version", SCHEMA_CLASSES)
+        self.assertIn("generation_run", SCHEMA_CLASSES)
+        self.assertIn("chapter_production_run", SCHEMA_CLASSES)
+        self.assertIn("workflow_definition", SCHEMA_CLASSES)
+        self.assertIn("workflow_node", SCHEMA_CLASSES)
+        self.assertIn("node_run", SCHEMA_CLASSES)
+        self.assertIn("change_impact_report", SCHEMA_CLASSES)
+        self.assertIn("agent_contract", SCHEMA_CLASSES)
+        self.assertIn("agent_run", SCHEMA_CLASSES)
+        self.assertIn("agent_checkpoint", SCHEMA_CLASSES)
+        self.assertIn("agent_event", SCHEMA_CLASSES)
+        self.assertIn("agent_budget", SCHEMA_CLASSES)
+        self.assertIn("agent_gate", SCHEMA_CLASSES)
+        self.assertIn("agent_metric", SCHEMA_CLASSES)
+        self.assertIn("agent_failure_report", SCHEMA_CLASSES)
+        self.assertIn("agent_sla_report", SCHEMA_CLASSES)
+        self.assertIn("agent_rollback_report", SCHEMA_CLASSES)
+        self.assertIn("editor_patch", SCHEMA_CLASSES)
+        self.assertIn("draft_diff_report", SCHEMA_CLASSES)
+        self.assertIn("chapter_continuity_report", SCHEMA_CLASSES)
+        self.assertIn("continuity_graph_snapshot", SCHEMA_CLASSES)
+        self.assertIn("model_profile", SCHEMA_CLASSES)
+        self.assertIn("model_benchmark_task", SCHEMA_CLASSES)
+        self.assertIn("model_benchmark_run", SCHEMA_CLASSES)
+        self.assertIn("model_comparison_report", SCHEMA_CLASSES)
+        self.assertIn("prompt_version", SCHEMA_CLASSES)
+        self.assertIn("prompt_regression_report", SCHEMA_CLASSES)
+        self.assertIn("feedback_import_batch", SCHEMA_CLASSES)
+        self.assertIn("reader_sentiment_report", SCHEMA_CLASSES)
+        self.assertIn("project_metric_snapshot", SCHEMA_CLASSES)
+        self.assertIn("local_settings_profile", SCHEMA_CLASSES)
 
     def test_common_fields_validate(self):
         asset = SourceDocument(
@@ -170,6 +220,166 @@ class SchemaTests(unittest.TestCase):
         )
         self.assertEqual(validate_common_fields(conversion.to_dict()), [])
 
+    def test_context_and_versioned_production_asset_validation(self):
+        plan = ContextBuildPlan(
+            title="context plan",
+            content={
+                "target_asset_id": "chapter_plan_1",
+                "target_asset_type": "chapter_plan",
+                "target_path": "data/chapter_plans/chapter_plan_1.json",
+                "query": "chapter objective",
+                "top_k": 3,
+                "token_budget": {"max_tokens": 2000, "reserved_for_prompt": 300, "reserved_for_response": 700},
+                "selection_policy": {"project_scoped": True},
+                "candidate_assets": [],
+                "exclusions": [],
+            },
+        )
+        self.assertEqual(validate_common_fields(plan.to_dict()), [])
+
+        bundle = ContextBundle(
+            title="context bundle",
+            content={
+                "build_plan_id": plan.id,
+                "target_asset_id": "chapter_plan_1",
+                "selected_assets": [],
+                "compressed_context": {},
+                "token_budget": {"max_tokens": 2000},
+                "token_estimate": 16,
+                "actual_context": "No eligible project-scoped context assets were selected.",
+                "source_asset_ids": [],
+            },
+        )
+        self.assertEqual(validate_common_fields(bundle.to_dict()), [])
+
+        outline_version = OutlineVersion(
+            title="outline v0",
+            content={
+                "outline_id": "outline_1",
+                "version_index": 0,
+                "base_outline_id": "outline_1",
+                "acts": [],
+                "change_summary": "initial",
+                "status": "active",
+            },
+        )
+        chapter_plan_version = ChapterPlanVersion(
+            title="plan v0",
+            content={
+                "chapter_plan_id": "plan_1",
+                "version_index": 0,
+                "base_chapter_plan_id": "outline_1",
+                "chapter": 1,
+                "objective": "open conflict",
+                "beats": ["hook"],
+                "hook": "bell rings",
+                "word_budget": {"target": 2500},
+                "conflict": "public risk",
+                "information_points": ["clock clue"],
+                "status": "active",
+            },
+        )
+        draft_version = DraftVersion(
+            title="draft v0",
+            content={
+                "draft_id": "draft_1",
+                "version_index": 0,
+                "chapter": 1,
+                "text": "original draft",
+                "source_draft_id": "draft_1",
+                "change_summary": "initial",
+                "status": "active",
+            },
+        )
+        run = GenerationRun(
+            title="run",
+            content={
+                "run_id": "run_1",
+                "input_asset_id": "plan_1",
+                "input_asset_path": "data/chapter_plans/plan_1.json",
+                "context_bundle_id": bundle.id,
+                "output_asset_id": "draft_1",
+                "provider": "mock",
+                "model": "mock",
+                "prompt_version": "prompt-v1",
+                "status": "succeeded",
+                "started_at": "2026-01-01T00:00:00Z",
+                "finished_at": "2026-01-01T00:00:00Z",
+            },
+        )
+        self.assertEqual(validate_common_fields(outline_version.to_dict()), [])
+        self.assertEqual(validate_common_fields(chapter_plan_version.to_dict()), [])
+        self.assertEqual(validate_common_fields(draft_version.to_dict()), [])
+        self.assertEqual(validate_common_fields(run.to_dict()), [])
+
+        bad_run = run.to_dict()
+        bad_run["content"]["status"] = "done"
+        self.assertIn("generation_run status must be planned, prepared, running, succeeded, failed, or cancelled", validate_common_fields(bad_run))
+
+    def test_workflow_impact_and_agent_asset_validation(self):
+        node_run = NodeRun(
+            title="node run",
+            content={
+                "run_id": "run-1",
+                "node_id": "draft",
+                "node_type": "generation",
+                "operation": "draft",
+                "status": "succeeded",
+                "input_assets": [],
+                "output_assets": [],
+                "processor": {"kind": "local_service"},
+                "started_at": "2026-01-01T00:00:00Z",
+                "finished_at": "2026-01-01T00:00:00Z",
+            },
+        )
+        impact = ChangeImpactReport(
+            title="impact",
+            content={
+                "target_asset_id": "outline-1",
+                "target_path": "data/outlines/outline-1.json",
+                "impacted_assets": [],
+                "impact_edges": [],
+                "severity_summary": {"blocking": 0, "high": 0, "medium": 0, "low": 0},
+                "recommendation": "no_action",
+            },
+        )
+        contract = AgentContract(
+            title="contract",
+            content={
+                "contract_id": "contract-1",
+                "agent_type": "Draft Agent",
+                "operation": "draft",
+                "input_types": ["chapter_plan"],
+                "output_types": ["draft_chapter"],
+                "permissions": {"permission_profile": "draft_generation_from_approved_context"},
+                "tool_allowlist": ["read_asset", "call_model_adapter"],
+                "allowed_write_types": ["draft_chapter"],
+                "quality_gates": [{"gate": "schema_validation", "required": True}],
+            },
+        )
+        agent_run = AgentRun(
+            title="agent run",
+            content={
+                "run_id": "agent-run-1",
+                "agent_type": "Draft Agent",
+                "operation": "draft",
+                "status": "waiting_human",
+                "input_assets": [],
+                "output_assets": [],
+                "contract_id": "contract-1",
+                "permissions": {"tool_allowlist": ["read_asset"]},
+                "started_at": "2026-01-01T00:00:00Z",
+            },
+        )
+        self.assertEqual(validate_common_fields(node_run.to_dict()), [])
+        self.assertEqual(validate_common_fields(impact.to_dict()), [])
+        self.assertEqual(validate_common_fields(contract.to_dict()), [])
+        self.assertEqual(validate_common_fields(agent_run.to_dict()), [])
+
+        bad_run = agent_run.to_dict()
+        bad_run["content"]["status"] = "done"
+        self.assertIn("agent_run status is invalid", validate_common_fields(bad_run))
+
     def test_project_workspace_state_required_content(self):
         workspace = ProjectWorkspaceState(title="workspace", content={})
         errors = validate_common_fields(workspace.to_dict())
@@ -225,6 +435,60 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("feedback_insight retention_risk.level must be low, medium, high, or unknown", errors)
         self.assertIn("feedback_insight trend_metrics.rating_slope must be numeric", errors)
         self.assertIn("feedback_insight trend_metrics.confidence must be none, low, medium, or high", errors)
+
+    def test_feedback_metrics_and_settings_assets_validate(self):
+        batch = FeedbackImportBatch(
+            title="batch",
+            content={
+                "batch_id": "batch1",
+                "source": "feedback.csv",
+                "rows": [{"chapter": "1", "rating": "5", "comment": "hook works"}],
+                "row_count": 1,
+                "columns": ["chapter", "rating", "comment"],
+                "status": "imported",
+                "imported_at": "2026-01-01T00:00:00Z",
+            },
+        )
+        sentiment = ReaderSentimentReport(
+            title="sentiment",
+            content={
+                "feedback_asset_ids": ["feedback1"],
+                "sentiment_distribution": {"positive": 1, "neutral": 0, "negative": 0},
+                "clusters": [{"label": "hook", "polarity": "positive", "count": 1}],
+                "reader_expectations": ["preserve hook clarity"],
+                "poison_points": [],
+                "sweet_points": ["hook"],
+                "recommendations": ["continue"],
+                "confidence": "low",
+            },
+        )
+        snapshot = ProjectMetricSnapshot(
+            title="snapshot",
+            content={
+                "project_id": "p1",
+                "snapshot_at": "2026-01-01T00:00:00Z",
+                "throughput": {"asset_count": 1},
+                "quality": {"average_review_score": 80, "review_pass_rate": 1.0, "originality_risk_rate": 0.0},
+                "task_health": {"failed": 0, "running": 0, "waiting_handoff": 0, "dead_letters": 0},
+                "agent_health": {"runs": 0, "failed": 0},
+                "storage_health": {"data_dirs": 1},
+                "recommendations": ["ok"],
+            },
+        )
+        settings = LocalSettingsProfile(
+            title="settings",
+            content={
+                "profile_id": "local",
+                "local_mode": True,
+                "model_routing": {"default_provider": "local-rules"},
+                "storage": {"root": "."},
+                "agent_defaults": {"tool_allowlist_enforced": True},
+                "validation": {"strict_local_prod": False},
+                "status": "active",
+            },
+        )
+        for asset in [batch, sentiment, snapshot, settings]:
+            self.assertEqual(validate_common_fields(asset.to_dict()), [])
 
     def test_source_document_requires_rights_metadata(self):
         data = {

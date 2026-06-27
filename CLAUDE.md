@@ -80,12 +80,12 @@ Implemented or partially implemented:
 
 Known P0 gaps to respect in planning:
 
-1. Analysis Center is not fully upgraded: published-fiction craft analysis, classic literary depth analysis, common analysis core, and one-click conversion into materials, knowledge, templates, and review rules still need complete schema/service/UI/handoff coverage.
-2. Context Builder is not yet a visual production tool: `context_build_plan`, `context_bundle`, token budget view, asset selection/ranking, compression preview, and actual-context replay are still needed.
-3. Outline/chapter-plan/draft production is not fully versioned: `outline_version`, `chapter_plan_version`, `generation_run`, chapter queue, generation parameter trace UI, and invalidation warnings are still needed.
+1. Context Builder is now schema/API/UI backed for `context_build_plan` and `context_bundle`; remaining work is deeper manual source selection, richer compression controls, and invalidation warnings.
+2. Outline/chapter-plan/draft production now records `outline_version`, `chapter_plan_version`, `draft_version`, and `generation_run`; remaining work is chapter queue, parameter trace dashboards, and upstream-change invalidation.
+3. Analysis Center first slice is implemented: common/web-fiction/published/classic report schemas, services, UI, handoff packets, and analysis-to-asset conversion exist. Remaining work is stronger provider-backed semantic scoring, richer visualization, and conversion review gates.
 4. AI Editor is not yet a full editing workbench: paragraph-level suggestions, single/batch apply, `editor_patch`, operation presets, rollback, and replay are still needed.
-5. Long-form stability remains shallow: timeline workbench, foreshadowing placement/payoff, relationship graph, faction/map/prop systems, `change_impact_report`, and impact visualization are still needed.
-6. Agent industrialization is incomplete: `agent_contract`, `agent_run`, `agent_checkpoint`, `agent_budget`, `agent_gate`, `agent_metric`, state machine, UI, recovery, rollback, and acceptance flow are still needed.
+5. Long-form stability remains shallow, but `change_impact_report` now exists with downstream reference scanning and Web Admin visibility. Remaining work is timeline workbench, foreshadowing placement/payoff, relationship graph, faction/map/prop systems, and deeper impact visualization.
+6. Agent industrialization first slice exists: `agent_contract`, `agent_run`, `agent_checkpoint`, `agent_event`, `agent_budget`, `agent_gate`, `agent_metric`, `agent_failure_report`, state machine validation, handoff synchronization, and Production Control visibility. Remaining work is full executor enforcement, SLA/recovery, rollback, and deeper Agent Center UI.
 7. Reader Feedback Center is not fully productized: web import, sentiment distribution, payoff/toxic-point clustering, role heat, retention/drop-off analysis, and feedback-to-plan loops are still needed.
 8. Publishing Center is first-generation only: publishing calendar, chapter queue, platform status, title/summary/hook checks, `publishing_plan`, `publishing_log`, and post-release data recovery are still needed.
 9. Model Evaluation Center is not built: `model_profile`, `model_benchmark_task`, `model_benchmark_run`, A/B comparison, cost-quality analysis, prompt regression, and model routing are still needed.

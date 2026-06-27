@@ -19,6 +19,12 @@ The Phase 1-3 baseline has moved beyond the original audit:
 - `/product/analysis/reports`, `/product/analysis/run`, `/product/analysis/convert`, and `/product/analysis/handoff` are registered, tested, and shown in the Web Admin analysis workbench.
 - Analysis reports are explicitly blocked from generation RAG (`metadata.use_in_generation_rag=false`); only converted abstract creative assets can flow into production.
 - Claude Code/Codex handoff skills now cover web-fiction business analysis, published-fiction craft analysis, classic literary depth analysis, and analysis-to-asset conversion.
+- Context Builder now has schema-backed `context_build_plan` and `context_bundle` assets in `data/contexts`, with service/API/UI coverage for target selection, backend/top-k/token budget, candidate ranking metadata, compression preview, and actual-context replay.
+- Versioned production chain now records `outline_version`, `chapter_plan_version`, `draft_version`, and `generation_run` assets through `modules/production_chain`, `/product/production/*` routes, draft generation integration, and Web Admin production panels.
+- Workflow/node run contract now has schema-backed `workflow_definition`, `workflow_node`, and `node_run` assets, `/product/workflow/*` APIs, automatic `node_run` records from workflow task execution, and sample pipeline sidecar handling.
+- Agent runtime first slice is persisted: `agent_contract`, `agent_run`, `agent_event`, `agent_checkpoint`, `agent_budget`, `agent_gate`, `agent_metric`, and `agent_failure_report` schemas exist; `/product/agents/*` routes are registered; Claude Code/Codex handoffs create waiting-human Agent runs and synchronize success/failure/retry state.
+- Long-form change impact first slice exists: `change_impact_report` scans project-scoped downstream references, records severity and recommendations, exposes `/product/impact/*`, and is visible in the Web Admin Change Impact page.
+- Production Control now has a real Web Admin panel for task state, worker/queue status, node runs, Agent runs, failed items, dead letters, and human gates.
 
 Remaining gaps should be read against this updated baseline, not the initial Phase 0 state.
 
@@ -35,7 +41,9 @@ src/novel_forge/
   api/
     app.py
     health.py
+    models.py
     product.py
+    routers/
   cli/
   core/
   evaluation/
@@ -43,6 +51,7 @@ src/novel_forge/
   model_adapters/
   modules/
     chapter_plan/
+    context_builder/
     characters/
     cleaning/
     decomposition/
@@ -54,6 +63,7 @@ src/novel_forge/
     knowledge/
     materials/
     outline/
+    production_chain/
     review/
     revision/
     source_intake/
@@ -81,11 +91,9 @@ src/novel_forge/
 
 Key backend concentration:
 
-- `src/novel_forge/api/product.py`: 6024 lines.
-- `register_product_routes()` registers 73 `/product/...` endpoints.
-- The same file also contains project lifecycle, project scope audit, task center, recovery, uploads, asset editing, handoffs, batch item scheduling, drafts, reviews, revisions, Qdrant, MinIO, local backup/restore, Postgres strict check, publish record, and many helper functions.
-- `src/novel_forge/workers/tasks.py` imports `enqueue_batch_deconstruct`, `process_batch_item_step`, and `retry_task` directly from `api.product`, which couples workers to API implementation.
-- `tests/unit/test_product_api.py` imports many internal service functions directly from `api.product`, which makes API splitting riskier unless compatibility shims are preserved.
+- `src/novel_forge/api/product.py` is now a small compatibility facade.
+- Product routes are registered through `src/novel_forge/api/routers/`, including projects, tasks, assets, handoffs, batch, drafts, reviews/audit, system, libraries, analysis, context builder, and production chain.
+- Some domain orchestration remains in compatibility services imported by routers/workers. Future cleanup should continue moving API-owned helpers into `modules/*` services without breaking public paths.
 
 ### Frontend
 
@@ -102,10 +110,9 @@ web/admin/
 
 Key frontend concentration:
 
-- `web/admin/app/page.tsx`: 4361 lines.
-- It contains type declarations, API client calls, all page state, all tabs, task controls, asset detail panels, typed asset editor, handoff workbench, batch UI, draft UI, review UI, and utility helpers.
-- Current tab set is V5-oriented: `studio`, `projects`, `health`, `tasks`, `assets`, `handoffs`, `batch`, `drafts`, `reviews`.
-- There is no routed V6 shell and no feature component directories.
+- `web/admin/app/page.tsx`: about 6.8k lines after V6 shell, creative asset workbenches, analysis center, context builder, production chain, quality gates, tasks, handoffs, batch, drafts, and reviews were added.
+- It still contains type declarations, API client calls, all page state, all tabs, task controls, asset detail panels, typed asset editor, and feature panels in one file.
+- Current tab set follows the V6 grouped IA, but feature components have not yet been extracted into `components/*`.
 
 ### Tests
 
@@ -134,7 +141,7 @@ Observed test scale:
 - 3237 lines of tests.
 - Strongest coverage is around Product API internals, storage, task status, source intake, model adapters, CLI, and V5 workflow services.
 - There are no frontend tests.
-- Agent runs, context builder assets, publishing calendar/logs, feedback analytics, and model evaluation assets do not yet have full tests. Phase 4 analysis center and Phase 6 first-slice publishing/originality gate assets now have backend tests.
+- Publishing calendar/logs, feedback analytics, and model evaluation assets do not yet have full tests. Analysis center, context builder, versioned production chain, workflow/node runs, Agent run persistence, change impact reports, and first-slice publishing/originality gate assets now have backend/API tests.
 
 ## Current V5 Capabilities to Preserve
 
@@ -151,11 +158,13 @@ The current implementation already provides a strong local production base:
 9. Draft workbench: generate, edit, save, diff, export Markdown/DOCX/EPUB, publish record.
 10. Review/revision flow: review, issue status, revision plan, revision application preview/result.
 11. RAG context builder with project-scoped buckets for characters, worldbuilding, previous summaries, knowledge, foreshadowing, and materials.
-12. Qdrant indexing/search with semantic embedding requirement, collection dimension/model checks, vector cache, batch embedding, and backend metadata.
-13. MinIO object sync/status and local backup/restore.
-14. Postgres write-through and strict local-prod checks.
-15. OpenAI-compatible model adapters, output validation, deterministic mock adapters, and embedding adapters.
-16. Health report with task, scope, Postgres, embedding, Celery, queue trend, failures, handoffs, backups.
+12. Schema/API/UI backed Context Builder assets with replayable `context_build_plan` and `context_bundle`.
+13. Versioned production chain records for outline, chapter plan, draft, and generation runs.
+14. Qdrant indexing/search with semantic embedding requirement, collection dimension/model checks, vector cache, batch embedding, and backend metadata.
+15. MinIO object sync/status and local backup/restore.
+16. Postgres write-through and strict local-prod checks.
+17. OpenAI-compatible model adapters, output validation, deterministic mock adapters, and embedding adapters.
+18. Health report with task, scope, Postgres, embedding, Celery, queue trend, failures, handoffs, backups.
 
 These are not to be removed during V6/V7.
 
@@ -204,8 +213,8 @@ The target also adds Agent industrialization as a cross-cutting runtime layer.
 | Setting bible | World and character assets exist | Bible center with rules, characters, forces, timeline, foreshadowing, impact graph | P1 |
 | Outline | Outline asset exists | Versioned outline editor and comparison | P1 |
 | Chapter plan | Chapter plan asset exists | Deep detailed outline editor with scene, conflict, information, hook, token/word budget | P1 |
-| Context builder | RAG builder exists backend-side | Visual context builder with priority, token budget, preview, saved bundle | P0/P1 |
-| Chapter production | Draft generation exists | Queue, preflight checks, generation settings, progress, generation run history | P1 |
+| Context builder | RAG builder plus `context_build_plan`/`context_bundle` service/API/UI exists | Manual source curation, richer token controls, invalidation warnings | P1 |
+| Chapter production | Draft generation records context plan, context bundle, draft version, and generation run | Queue, preflight checklist UI depth, generation settings, progress history | P1 |
 | AI editor | Basic draft editor exists | Rich editor, paragraph suggestions, selective apply, rollback, related docs | P1 |
 | Review center | V5 review/revision page exists | Multi-dimensional audit center, not a single review action | P0/P1 |
 | Originality center | Source compliance and overlap checks exist | Dedicated originality reports for text/plot/role/setting/style similarity | P0 |
@@ -226,7 +235,7 @@ The target also adds Agent industrialization as a cross-cutting runtime layer.
 | Context routes | RAG is backend helper and metadata | `/product/context/build`, `/product/context/bundles`, preview and send to generation | P1 |
 | Publishing routes | Export and publish record | publish plan, publish gate, package, logs, platform checks | P1 |
 | Feedback routes | Feedback CLI/services | import batches, insights, sentiment, risk, strategy suggestions | P1 |
-| Agent routes | Agent runtime profiles only | contracts, runs, checkpoints, events, gates, metrics, failure reports | P2/P7 |
+| Agent routes | `/product/agents/*` exists for contracts, runs, events, and status updates | metrics dashboards, rollback actions, worker/model execution enforcement everywhere | P1/P7 |
 | Evaluation routes | Provider health only | models, benchmark tasks/runs, comparisons, prompt versions, regression reports | P2/P8 |
 
 ## Schema Gap Summary
@@ -236,29 +245,31 @@ Existing schema classes are all in `src/novel_forge/schemas/assets.py`, backed b
 ### Existing asset types
 
 ```text
-source_document, cleaned_text, decomposition_report, commercial_pattern,
-narrative_pattern, character_mechanism, conflict_pattern, emotion_curve,
-hook_pattern, knowledge_card, material_card, asset_collection, topic_seed,
-world_bible, character_card, outline, chapter_plan, draft_chapter,
-review_report, revision_plan, reader_feedback, feedback_insight,
+source_document, cleaned_text, decomposition_report, analysis reports,
+knowledge_card, material_card, asset_collection, platform/topic/style/quality
+profiles, continuity assets, outline/chapter-plan/context/version/generation
+assets, draft/review/revision/quality/publishing gate assets, reader feedback,
 training_exercise, image_prompt, claude_code_handoff, workflow_run,
-task_status, task_dead_letter, batch_task_item, project_workspace_state
+workflow_definition, workflow_node, node_run, task_status, task_dead_letter,
+batch_task_item, project_workspace_state, change_impact_report,
+agent_contract, agent_run, agent_checkpoint, agent_event, agent_budget,
+agent_gate, agent_metric, agent_failure_report
 ```
 
 ### Missing or incomplete V6/V7 asset types
 
 | Domain | Needed asset types |
 |---|---|
-| Platform/topic | `platform_profile`, `genre_market_profile`, `topic_fit_report` |
-| Style | `style_profile`, `style_decomposition_report`, `style_blend_preset`, `style_review_report` |
-| Quality standards | `quality_standard_profile`, `quality_score_report`, `review_rule_pack` |
-| Long-novel continuity | `continuity_bible`, `foreshadowing_thread`, `power_scale_rule`, `chapter_continuity_report` |
-| Analysis | `common_novel_analysis_report`, `web_fiction_business_analysis_report`, `published_fiction_analysis_report`, `classic_literary_analysis_report`, `analysis_conversion_report` |
-| Planning/context | `outline_version`, `chapter_plan_version`, `context_build_plan`, `context_bundle` |
-| Generation/editor | `generation_run`, `editor_patch`, `draft_diff_report` |
-| Quality/publishing | `chapter_audit_report`, `style_audit_report`, `continuity_audit_report`, `platform_fit_report`, `originality_report`, `publish_gate_report`, `release_package`, `publishing_plan`, `publishing_log` |
+| Platform/topic | First slice exists: `platform_profile`, `genre_market_profile`, `topic_fit_report`; remaining depth is market scoring and trend import. |
+| Style | First slice exists: `style_profile`, `style_decomposition_report`, `style_blend_preset`, `style_review_report`; remaining depth is richer drift analytics. |
+| Quality standards | First slice exists: `quality_standard_profile`, `quality_score_report`, `review_rule_pack`; remaining depth is provider-backed rubric scoring. |
+| Long-novel continuity | First slice exists: `continuity_bible`, `foreshadowing_thread`, `power_scale_rule`, `change_impact_report`; missing `chapter_continuity_report` and graph UI depth. |
+| Analysis | Implemented first slice: `common_novel_analysis_report`, `web_fiction_business_analysis_report`, `published_fiction_analysis_report`, `classic_literary_analysis_report`, `analysis_conversion_report`. |
+| Planning/context | Implemented first slice: `outline_version`, `chapter_plan_version`, `context_build_plan`, `context_bundle`. |
+| Generation/editor | Implemented first slice: `generation_run`, `draft_version`; missing `editor_patch`, `draft_diff_report`. |
+| Quality/publishing | First slice exists: `chapter_audit_report`, `originality_report`, `publish_gate_report`, `release_package`; missing `style_audit_report`, `continuity_audit_report`, `platform_fit_report`, `publishing_plan`, `publishing_log`. |
 | Feedback/stats | `feedback_import_batch`, `reader_sentiment_report`, `project_metric_snapshot` |
-| Agent runtime | `agent_contract`, `agent_run`, `agent_checkpoint`, `agent_event`, `agent_budget`, `agent_gate`, `agent_metric`, `agent_failure_report` |
+| Agent runtime | Implemented first slice: `agent_contract`, `agent_run`, `agent_checkpoint`, `agent_event`, `agent_budget`, `agent_gate`, `agent_metric`, `agent_failure_report`; remaining depth is pervasive execution enforcement and rollback. |
 | Model evaluation | `model_profile`, `model_benchmark_task`, `model_benchmark_run`, `model_comparison_report`, `prompt_version`, `prompt_regression_report` |
 
 ### Directory mapping gap
@@ -285,18 +296,17 @@ Current:
 - `AGENTS.md` defines seven agent classes: Chief Editor, Engineering, Draft, Review, Knowledge, Material, Quality.
 - `src/novel_forge/agents/runtime.py` has permission profiles, tool allowlists, allowed write types, skill-to-agent mapping, and enforcement helpers.
 - Handoff binding calls `enforce_agent_action()` for output type policy.
+- `modules/agent_runs` persists Agent contracts, runs, events, checkpoints, budgets, gates, metrics, and failure reports.
+- `/product/agents/runs`, `/product/agents/events`, `/product/agents/contracts`, and `/product/agents/runs/status` are registered.
+- Claude Code/Codex handoff creation starts a `waiting_human` Agent run; bind/fail/retry operations synchronize Agent run status and failure evidence.
 
-Missing for V6/V7:
+Remaining for full V6/V7:
 
-1. Agent is not a first-class persisted runtime entity.
-2. No `agent_contract` asset/table.
-3. No `agent_run` lifecycle state machine.
-4. No checkpoint, budget, SLA, metric, gate, or failure report assets.
-5. Task center sees tasks and handoffs, but not all Agent runs as first-class rows.
-6. Permissions are partly enforced at handoff output binding, but not uniformly at worker/model/service execution boundaries.
-7. No rollback plan attached to Agent output.
-8. No per-run evidence pack tying input assets, output assets, contract, prompt version, model, token/cost, and validation result.
-9. No model/Agent benchmark feedback loop.
+1. Permission allowlists are not yet uniformly enforced at every worker/model/service execution boundary.
+2. Agent rollback policy is recorded conceptually but not yet implemented as one-click rollback actions.
+3. SLA/timeout and rate-limit controls are not yet enforced across all workers.
+4. Model/Agent benchmark feedback loop remains Phase 8 work.
+5. Agent Center can be deeper than the current Production Control panel: metrics, timelines, retries, rollback, and gate details need richer UI.
 
 ## Stability and Performance Risks
 

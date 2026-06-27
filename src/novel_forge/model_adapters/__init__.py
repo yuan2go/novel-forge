@@ -9,6 +9,7 @@ from novel_forge.model_adapters.embeddings import (
 )
 from novel_forge.model_adapters.local_rules import LocalRuleEngine
 from novel_forge.model_adapters.mock import MockModelAdapter
+from novel_forge.model_adapters.guarded import GuardedModelAdapter
 from novel_forge.model_adapters.providers import (
     PROVIDER_ADAPTERS,
     ChatGPTAdapter,
@@ -31,6 +32,7 @@ __all__ = [
     "embedding_provider_health",
     "cosine_similarity",
     "MockModelAdapter",
+    "GuardedModelAdapter",
     "LocalRuleEngine",
     "ProviderAdapter",
     "ClaudeCodeAdapter",

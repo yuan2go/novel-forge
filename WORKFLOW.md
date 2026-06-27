@@ -110,7 +110,7 @@ Do not use chat history, UI state, or untracked temporary files as the source of
 
 ## Context Workflow
 
-The Context Builder is P0 because it directly affects chapter quality.
+The Context Builder now has the first schema/service/API/UI slice because it directly affects chapter quality.
 
 Target flow:
 
@@ -126,16 +126,18 @@ production target
   -> actual-context replay
 ```
 
-Required future artifacts:
+Implemented first-slice artifacts:
 
 - `context_build_plan`
 - `context_bundle`
+
+Remaining work: manual curation, richer compression controls, stale-context warnings, and deeper replay UI.
 
 Context must exclude raw copyrighted source text from draft generation. Reference-derived material may enter context only after abstraction and lineage tracking.
 
 ## Versioned Production Chain
 
-The production chain should become version-aware.
+The production chain is now version-aware at the core artifact layer.
 
 ```text
 outline_version
@@ -155,7 +157,14 @@ Examples:
 - Outline changes can invalidate chapter plans, draft versions, foreshadowing placement, and publish queue.
 - Character motivation changes can invalidate chapter plans, dialogue, review reports, and revision tasks.
 
-Target future artifact:
+Implemented first-slice artifacts:
+
+- `outline_version`
+- `chapter_plan_version`
+- `draft_version`
+- `generation_run`
+
+Remaining future artifact:
 
 - `change_impact_report`
 
@@ -232,7 +241,7 @@ Reference-work analysis must remain abstract and must not become draft prose.
 
 ## Agent Workflow
 
-Agents should be implemented only after node/artifact/run/context/gate foundations exist.
+Agents run only after node/artifact/run/context/gate foundations exist. The first persisted runtime slice now exists for contracts, runs, events, checkpoints, budgets, gates, metrics, and failure reports.
 
 Target Agent flow:
 
@@ -248,6 +257,14 @@ agent_contract
 ```
 
 Agent autonomy without artifact contracts is not acceptable.
+
+Current implementation notes:
+
+- Claude Code/Codex handoffs create `waiting_human` Agent runs.
+- Handoff output binding marks the related Agent run `succeeded`.
+- Handoff failure creates an `agent_failure_report`.
+- Handoff retry cancels the superseded Agent run and creates a new handoff/run pair.
+- Production Control shows Agent runs alongside task status, node runs, dead letters, failed items, and human gates.
 
 ## Publishing and Feedback Workflow
 

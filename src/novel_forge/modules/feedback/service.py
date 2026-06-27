@@ -4,29 +4,155 @@ import csv
 from pathlib import Path
 from typing import Any
 
-from novel_forge.core.ids import utc_now
+from novel_forge.core.ids import make_id, utc_now
+from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, resolve_path
-from novel_forge.schemas import FeedbackInsight, ReaderFeedback
+from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.schemas import FeedbackImportBatch, FeedbackInsight, ReaderFeedback, ReaderSentimentReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
+
+
+FEEDBACK_TYPES = {"feedback_import_batch", "reader_feedback", "feedback_insight", "reader_sentiment_report"}
 
 
 def import_feedback(storage: LocalStorage, input_path: str) -> Path:
     path = resolve_path(storage.root, input_path)
     if not path.exists():
         raise FileNotFoundError(f"feedback file not found: {path}")
-    rows: list[dict[str, str]] = []
-    with path.open("r", encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle)
-        for row in reader:
-            rows.append(dict(row))
-    asset = ReaderFeedback(
-        title=path.stem,
-        source=str(path),
-        tags=["feedback", "reader"],
-        content={"rows": rows},
-        metadata={"imported_at": utc_now(), "row_count": len(rows)},
-    )
-    return storage.write_asset("feedback", asset)
+    with AgentExecutionContext(
+        storage,
+        agent_key="feedback",
+        skill="reader-feedback",
+        operation="legacy-import-feedback",
+        output_types=["reader_feedback"],
+        sla_seconds=300,
+    ) as run:
+        run.guard("import_feedback_file")
+        rows = _read_csv_rows(path)
+        asset = ReaderFeedback(
+            title=path.stem,
+            source=str(path),
+            tags=["feedback", "reader"],
+            content={"rows": rows},
+            metadata={"imported_at": utc_now(), "row_count": len(rows)},
+        )
+        run.guard("write_reader_feedback", "reader_feedback")
+        output = storage.write_asset("feedback", asset)
+        run.succeed(output_assets=[_display_path(storage.root, output)])
+        return output
+
+
+def list_feedback_assets(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in reversed(storage.list_json("feedback")):
+        data = storage.read_json(path)
+        if not isinstance(data, dict) or data.get("type") not in FEEDBACK_TYPES:
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if project_id and str(metadata.get("project_id", "")) != project_id:
+            continue
+        rows.append(
+            {
+                "path": _display_path(storage.root, path),
+                "id": data.get("id", ""),
+                "type": data.get("type", ""),
+                "title": data.get("title") or data.get("name", ""),
+                "project_id": metadata.get("project_id", ""),
+                "workspace_path": metadata.get("workspace_path", ""),
+                "row_count": content.get("row_count", len(content.get("rows", [])) if isinstance(content.get("rows"), list) else 0),
+                "average_rating": content.get("average_rating", 0),
+                "confidence": content.get("confidence") or content.get("trend_metrics", {}).get("confidence", ""),
+                "sentiment_distribution": content.get("sentiment_distribution", {}),
+                "character_heat": content.get("character_heat", []),
+                "follow_read_risk": content.get("follow_read_risk", {}),
+                "next_chapter_strategy": content.get("next_chapter_strategy", {}),
+                "recommendation": _feedback_recommendation(content),
+                "status": content.get("status", metadata.get("asset_status", "")),
+                "updated_at": data.get("updated_at", ""),
+            }
+        )
+        if len(rows) >= limit:
+            break
+    return rows
+
+
+def create_feedback_import_batch(
+    storage: LocalStorage,
+    input_path: str,
+    *,
+    workspace_path: str | None = None,
+    source_label: str = "",
+    platform: str = "manual",
+) -> dict[str, Any]:
+    path = resolve_path(storage.root, input_path)
+    if not path.exists():
+        raise FileNotFoundError(f"feedback file not found: {path}")
+    rows = _read_csv_rows(path)
+    project = project_scope_from_asset(storage, {}, workspace_path=workspace_path)
+    project_id = str(project.get("project_id", ""))
+    workspace = str(project.get("workspace_path", ""))
+    with AgentExecutionContext(
+        storage,
+        agent_key="feedback",
+        skill="reader-feedback",
+        operation="import-feedback-batch",
+        output_types=["feedback_import_batch", "reader_feedback"],
+        workspace_path=workspace,
+        sla_seconds=300,
+    ) as run:
+        run.guard("import_feedback_file")
+        batch_id = make_id("feedback_import_batch", path.stem)
+        columns = sorted({key for row in rows for key in row})
+        batch_asset = FeedbackImportBatch(
+            title=f"Feedback import: {source_label or path.stem}",
+            source=str(path),
+            tags=["feedback", "import", platform],
+            content={
+                "batch_id": batch_id,
+                "source": str(path),
+                "source_label": source_label or path.stem,
+                "platform": platform,
+                "rows": rows,
+                "row_count": len(rows),
+                "columns": columns,
+                "status": "imported",
+                "imported_at": utc_now(),
+            },
+            metadata={
+                "project_id": project_id,
+                "workspace_path": workspace,
+                "workflow": "feedback-import",
+                "source_kind": "local_upload",
+                "privacy_boundary": "aggregate reader feedback; do not store private identities beyond supplied columns",
+            },
+        )
+        run.guard("write_feedback_import_batch", "feedback_import_batch")
+        batch_result = _write(storage, batch_asset)
+        feedback_asset = ReaderFeedback(
+            title=f"Reader feedback: {source_label or path.stem}",
+            source=batch_asset.id,
+            tags=["feedback", "reader", platform],
+            content={"rows": rows, "row_count": len(rows), "columns": columns, "import_batch_id": batch_asset.id},
+            metadata={
+                "project_id": project_id,
+                "workspace_path": workspace,
+                "workflow": "feedback-import",
+                "imported_at": utc_now(),
+                "row_count": len(rows),
+                "source_path": _display_path(storage.root, path) if path.is_relative_to(storage.root) else str(path),
+            },
+            references=filter_project_safe_references(storage, project_id, [batch_asset.id, batch_result["path"], workspace]),
+        )
+        run.guard("write_reader_feedback", "reader_feedback")
+        feedback_result = _write(storage, feedback_asset)
+        run.succeed(output_assets=[batch_result["path"], feedback_result["path"]])
+        return {"batch": batch_result, "reader_feedback": feedback_result}
 
 
 def analyze_feedback(storage: LocalStorage, input_path: str | None = None) -> Path:
@@ -40,30 +166,197 @@ def analyze_feedback(storage: LocalStorage, input_path: str | None = None) -> Pa
     retention_risk = assess_retention_risk(chapter_trends, rows)
     sentiment_signals = mine_sentiment_signals(rows)
     adjustment_plan = build_plot_adjustment_plan(chapter_trends, retention_risk, sentiment_signals, trend_metrics)
-    asset = FeedbackInsight(
-        title=f"Insight from {feedback.title}",
-        source=feedback.id,
-        tags=["feedback", "insight"],
-        content={
-            "signals": sentiment_signals["signals"],
-            "average_rating": average_rating(rows),
-            "next_generation_constraints": adjustment_plan["next_generation_constraints"],
-            "chapter_trends": chapter_trends,
-            "trend_metrics": trend_metrics,
-            "retention_risk": retention_risk,
-            "sentiment_signals": sentiment_signals,
-            "plot_adjustment_plan": adjustment_plan,
-            "raw_comment_summary": comments[:240],
-        },
-        metadata={
-            "workflow": "feedback-trend-analysis",
-            "feedback_asset_count": len([path for path in storage.list_json("feedback") if _is_reader_feedback(storage, path)]),
-            "row_count": len(rows),
-            "chapter_count": len(chapter_trends),
-        },
-        references=[feedback.id],
-    )
-    return storage.write_asset("feedback", asset)
+    with AgentExecutionContext(
+        storage,
+        agent_key="feedback",
+        skill="reader-feedback",
+        operation="analyze-feedback",
+        input_assets=[input_path or feedback.id],
+        output_types=["feedback_insight"],
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("analyze_feedback")
+        asset = FeedbackInsight(
+            title=f"Insight from {feedback.title}",
+            source=feedback.id,
+            tags=["feedback", "insight"],
+            content={
+                "signals": sentiment_signals["signals"],
+                "average_rating": average_rating(rows),
+                "next_generation_constraints": adjustment_plan["next_generation_constraints"],
+                "chapter_trends": chapter_trends,
+                "trend_metrics": trend_metrics,
+                "retention_risk": retention_risk,
+                "sentiment_signals": sentiment_signals,
+                "plot_adjustment_plan": adjustment_plan,
+                "raw_comment_summary": comments[:240],
+            },
+            metadata={
+                "workflow": "feedback-trend-analysis",
+                "feedback_asset_count": len([path for path in storage.list_json("feedback") if _is_reader_feedback(storage, path)]),
+                "row_count": len(rows),
+                "chapter_count": len(chapter_trends),
+            },
+            references=[feedback.id],
+        )
+        run.guard("write_feedback_insight", "feedback_insight")
+        output = storage.write_asset("feedback", asset)
+        run.succeed(output_assets=[_display_path(storage.root, output)])
+        return output
+
+
+def create_reader_sentiment_report(
+    storage: LocalStorage,
+    *,
+    feedback_paths: list[str | Path] | None = None,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+) -> dict[str, Any]:
+    feedback_assets = _selected_feedback_assets(storage, feedback_paths or [], project_id=project_id)
+    if not feedback_assets:
+        raise FileNotFoundError("no reader_feedback assets found for sentiment report")
+    rows: list[dict[str, str]] = []
+    refs: list[str] = []
+    for item in feedback_assets:
+        rows = _merge_rows(rows, item["content"].get("rows", []))
+        refs.extend([item["id"], item["path"]])
+    project = project_scope_from_asset(storage, {"metadata": {"project_id": project_id or ""}, "references": refs}, workspace_path=workspace_path or _first_workspace(feedback_assets))
+    resolved_project_id = str(project.get("project_id", project_id or ""))
+    workspace = str(project.get("workspace_path", workspace_path or ""))
+    with AgentExecutionContext(
+        storage,
+        agent_key="feedback",
+        skill="reader-feedback",
+        operation="create-reader-sentiment-report",
+        input_assets=[item["path"] for item in feedback_assets],
+        output_types=["reader_sentiment_report"],
+        workspace_path=workspace,
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        signals = mine_sentiment_signals(rows)
+        distribution = _sentiment_distribution(rows)
+        clusters = _feedback_clusters(signals, distribution, rows)
+        chapter_trends = build_chapter_trends(rows)
+        trend_metrics = build_trend_metrics(chapter_trends, rows)
+        retention_risk = assess_retention_risk(chapter_trends, rows)
+        adjustment_plan = build_plot_adjustment_plan(chapter_trends, retention_risk, signals, trend_metrics)
+        character_heat = _character_heat(rows)
+        follow_read_risk = _follow_read_risk(distribution, trend_metrics, retention_risk)
+        next_strategy = _next_chapter_strategy(adjustment_plan, follow_read_risk, character_heat)
+        asset = ReaderSentimentReport(
+            title=f"Reader sentiment report {utc_now()}",
+            tags=["feedback", "reader-sentiment", retention_risk.get("level", "unknown")],
+            content={
+                "feedback_asset_ids": [item["id"] for item in feedback_assets],
+                "feedback_asset_paths": [item["path"] for item in feedback_assets],
+                "sentiment_distribution": distribution,
+                "clusters": clusters,
+                "reader_expectations": _reader_expectations(signals, retention_risk),
+                "poison_points": _cluster_labels(clusters, polarity="negative"),
+                "sweet_points": _cluster_labels(clusters, polarity="positive"),
+                "character_heat": character_heat,
+                "follow_read_risk": follow_read_risk,
+                "next_chapter_strategy": next_strategy,
+                "recommendations": adjustment_plan["recommended_actions"],
+                "next_generation_constraints": adjustment_plan["next_generation_constraints"],
+                "chapter_trends": chapter_trends,
+                "trend_metrics": trend_metrics,
+                "retention_risk": retention_risk,
+                "confidence": trend_metrics.get("confidence", "none"),
+                "created_at": utc_now(),
+            },
+            metadata={
+                "project_id": resolved_project_id,
+                "workspace_path": workspace,
+                "workflow": "reader-feedback-sentiment",
+                "row_count": len(rows),
+                "feedback_asset_count": len(feedback_assets),
+                "risk_level": retention_risk.get("level", "unknown"),
+            },
+            references=filter_project_safe_references(storage, resolved_project_id, [*refs, workspace]),
+        )
+        run.guard("write_reader_sentiment_report", "reader_sentiment_report")
+        result = _write(storage, asset)
+        run.succeed(output_assets=[result["path"]])
+        return result
+
+
+def apply_feedback_strategy_to_workspace(
+    storage: LocalStorage,
+    report_path: str | Path,
+    *,
+    workspace_path: str | None = None,
+) -> dict[str, Any]:
+    report_file = resolve_path(storage.root, report_path)
+    report = storage.read_asset(report_file)
+    if report.type != "reader_sentiment_report":
+        raise ValueError("report_path must point to a reader_sentiment_report asset")
+    project = project_scope_from_asset(storage, report, input_path=report_file, workspace_path=workspace_path)
+    workspace = str(project.get("workspace_path") or workspace_path or "")
+    if not workspace:
+        raise ValueError("workspace_path is required to apply feedback strategy")
+    workspace_file = resolve_path(storage.root, workspace)
+    data = storage.read_json(workspace_file)
+    if not isinstance(data, dict) or data.get("type") != "project_workspace_state":
+        raise ValueError("workspace_path must point to a project_workspace_state asset")
+    with AgentExecutionContext(
+        storage,
+        agent_key="feedback",
+        skill="reader-feedback",
+        operation="apply-feedback-strategy-to-workspace",
+        input_assets=[report_file, workspace_file],
+        output_types=["project_workspace_state"],
+        workspace_path=workspace,
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("update_project_workspace", "project_workspace_state")
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        memory = content.get("memory", {}) if isinstance(content.get("memory", {}), dict) else {}
+        strategy = report.content.get("next_chapter_strategy", {}) if isinstance(report.content.get("next_chapter_strategy", {}), dict) else {}
+        memory["reader_feedback"] = {
+            "latest_report_id": report.id,
+            "latest_report_path": _display_path(storage.root, report_file),
+            "follow_read_risk": report.content.get("follow_read_risk", {}),
+            "character_heat": report.content.get("character_heat", []),
+            "next_chapter_strategy": strategy,
+            "applied_at": utc_now(),
+        }
+        content["memory"] = memory
+        open_issues = content.get("open_issues", []) if isinstance(content.get("open_issues", []), list) else []
+        risk_level = str((report.content.get("follow_read_risk", {}) if isinstance(report.content.get("follow_read_risk", {}), dict) else {}).get("level", "unknown"))
+        if risk_level in {"medium", "high"}:
+            open_issues.append(
+                {
+                    "kind": "reader_retention_risk",
+                    "status": "open",
+                    "severity": risk_level,
+                    "source_report_id": report.id,
+                    "source_report_path": _display_path(storage.root, report_file),
+                    "message": strategy.get("primary_strategy", "repair reader retention pressure"),
+                    "created_at": utc_now(),
+                }
+            )
+        content["open_issues"] = _dedupe_issue_rows(open_issues)
+        content["feedback_constraints"] = strategy.get("constraints", report.content.get("next_generation_constraints", []))
+        data["content"] = content
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        metadata["last_feedback_strategy_report_path"] = _display_path(storage.root, report_file)
+        data["metadata"] = metadata
+        data["updated_at"] = utc_now()
+        errors = validate_common_fields(data)
+        if errors:
+            raise ValueError("; ".join(errors))
+        storage.write_json(workspace_file, data)
+        run.succeed(output_assets=[_display_path(storage.root, workspace_file)])
+        return {
+            "path": _display_path(storage.root, workspace_file),
+            "workspace_path": _display_path(storage.root, workspace_file),
+            "asset": data,
+            "applied_report_path": _display_path(storage.root, report_file),
+        }
 
 
 def average_rating(rows: list[dict[str, str]]) -> float:
@@ -221,6 +514,197 @@ def _feedback_rows(storage: LocalStorage, primary_id: str) -> list[dict[str, str
         return rows
     primary = storage.read_asset(storage.latest("feedback"))
     return _merge_rows([], primary.content.get("rows", [])) if primary.id == primary_id else []
+
+
+def _read_csv_rows(path: Path) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            rows.append({str(key): str(value) for key, value in dict(row).items()})
+    return rows
+
+
+def _selected_feedback_assets(storage: LocalStorage, feedback_paths: list[str | Path], project_id: str | None = None) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    candidates: list[Path] = []
+    for item in feedback_paths:
+        candidates.append(resolve_path(storage.root, item))
+    if not candidates:
+        candidates = list(reversed(storage.list_json("feedback")))
+    for path in candidates:
+        data = storage.read_json(path)
+        if not isinstance(data, dict) or data.get("type") != "reader_feedback":
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        if project_id and metadata.get("project_id") != project_id:
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        rows.append(
+            {
+                "path": _display_path(storage.root, path),
+                "id": data.get("id", ""),
+                "content": content,
+                "metadata": metadata,
+            }
+        )
+    return rows
+
+
+def _sentiment_distribution(rows: list[dict[str, str]]) -> dict[str, int]:
+    distribution = {"positive": 0, "neutral": 0, "negative": 0}
+    for row in rows:
+        comment = row.get("comment", "")
+        positive = sum(comment.lower().count(term) for terms in POSITIVE_KEYWORDS.values() for term in terms)
+        negative = sum(comment.lower().count(term) for terms in NEGATIVE_KEYWORDS.values() for term in terms)
+        rating = _rating(row)
+        if rating is not None and rating >= 4:
+            positive += 1
+        if rating is not None and rating <= 2:
+            negative += 1
+        if positive > negative:
+            distribution["positive"] += 1
+        elif negative > positive:
+            distribution["negative"] += 1
+        else:
+            distribution["neutral"] += 1
+    return distribution
+
+
+def _feedback_clusters(signals: dict[str, Any], distribution: dict[str, int], rows: list[dict[str, str]]) -> list[dict[str, Any]]:
+    clusters: list[dict[str, Any]] = []
+    for label, count in signals.get("positive_keywords", {}).items():
+        if count:
+            clusters.append({"label": label, "polarity": "positive", "count": int(count), "evidence": "keyword and rating aggregate"})
+    for label, count in signals.get("negative_keywords", {}).items():
+        if count:
+            clusters.append({"label": label, "polarity": "negative", "count": int(count), "evidence": "keyword and rating aggregate"})
+    if not clusters:
+        clusters.append({"label": "low_signal", "polarity": "neutral", "count": len(rows), "evidence": "insufficient strong keyword signal"})
+    clusters.append({"label": "overall_positive", "polarity": "positive", "count": distribution["positive"], "evidence": "row sentiment classification"})
+    clusters.append({"label": "overall_negative", "polarity": "negative", "count": distribution["negative"], "evidence": "row sentiment classification"})
+    return [cluster for cluster in clusters if int(cluster.get("count", 0)) > 0]
+
+
+def _reader_expectations(signals: dict[str, Any], retention_risk: dict[str, Any]) -> list[str]:
+    expectations = []
+    if signals["positive_keywords"].get("hook", 0) or signals["positive_keywords"].get("suspense", 0):
+        expectations.append("keep chapter-end hook explicit and concrete")
+    if retention_risk.get("level") in {"medium", "high"}:
+        expectations.append("repair retention pressure before expanding secondary lore")
+    if signals["negative_keywords"].get("motive", 0):
+        expectations.append("make protagonist motive and choice cost visible earlier")
+    if signals["negative_keywords"].get("slow", 0):
+        expectations.append("increase scene conflict density and reduce exposition")
+    return expectations or ["collect more feedback and preserve current chapter promise"]
+
+
+def _character_heat(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        explicit = row.get("character") or row.get("角色") or row.get("role")
+        candidates = [explicit] if explicit else []
+        comment = row.get("comment", "")
+        for marker in ["林乔", "主角", "女主", "男主", "反派", "师父", "妹妹", "队友"]:
+            if marker in comment:
+                candidates.append(marker)
+        for candidate in candidates:
+            name = str(candidate or "").strip()
+            if not name:
+                continue
+            counts[name] = counts.get(name, 0) + 1
+    ranked = sorted(counts.items(), key=lambda item: item[1], reverse=True)
+    return [{"character": name, "mentions": count, "heat": min(100, count * 20)} for name, count in ranked[:12]]
+
+
+def _follow_read_risk(distribution: dict[str, int], trend_metrics: dict[str, Any], retention_risk: dict[str, Any]) -> dict[str, Any]:
+    negative = int(distribution.get("negative", 0))
+    positive = int(distribution.get("positive", 0))
+    total = max(1, sum(int(value) for value in distribution.values()))
+    negative_ratio = round(negative / total, 4)
+    score = float(retention_risk.get("score", 0)) + negative_ratio * 4
+    if float(trend_metrics.get("rating_slope", 0)) < -0.25:
+        score += 1
+    if positive > negative and score > 0:
+        score -= 0.5
+    level = "high" if score >= 3 else "medium" if score >= 1.5 else "low"
+    return {
+        "level": level,
+        "score": round(max(0.0, score), 2),
+        "negative_ratio": negative_ratio,
+        "rating_slope": trend_metrics.get("rating_slope", 0),
+        "reasons": retention_risk.get("reasons", []),
+    }
+
+
+def _next_chapter_strategy(adjustment_plan: dict[str, Any], follow_read_risk: dict[str, Any], character_heat: list[dict[str, Any]]) -> dict[str, Any]:
+    heated = character_heat[0]["character"] if character_heat else ""
+    constraints = list(adjustment_plan.get("next_generation_constraints", []))
+    actions = list(adjustment_plan.get("recommended_actions", []))
+    if heated:
+        constraints.append(f"give {heated} a visible pressure or payoff beat")
+    if follow_read_risk.get("level") in {"medium", "high"}:
+        actions.insert(0, "open with unresolved obligation, then deliver one concrete payoff before adding new setup")
+    return {
+        "primary_strategy": actions[0] if actions else "continue current arc and collect feedback",
+        "constraints": _dedupe([str(item) for item in constraints]),
+        "actions": _dedupe([str(item) for item in actions]),
+        "focus_character": heated,
+        "risk_level": follow_read_risk.get("level", "unknown"),
+    }
+
+
+def _cluster_labels(clusters: list[dict[str, Any]], *, polarity: str) -> list[str]:
+    return [str(cluster.get("label", "")) for cluster in clusters if cluster.get("polarity") == polarity and cluster.get("label")]
+
+
+def _dedupe_issue_rows(rows: list[Any]) -> list[dict[str, Any]]:
+    seen: set[tuple[str, str, str]] = set()
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        key = (str(row.get("kind", "")), str(row.get("source_report_id", "")), str(row.get("message", "")))
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(row)
+    return result
+
+
+def _first_workspace(feedback_assets: list[dict[str, Any]]) -> str:
+    for item in feedback_assets:
+        workspace = str(item.get("metadata", {}).get("workspace_path", ""))
+        if workspace:
+            return workspace
+    return ""
+
+
+def _feedback_recommendation(content: dict[str, Any]) -> str:
+    if isinstance(content.get("retention_risk"), dict):
+        level = content["retention_risk"].get("level", "unknown")
+        return "repair_retention" if level in {"medium", "high"} else "monitor"
+    if isinstance(content.get("recommendations"), list) and content["recommendations"]:
+        return str(content["recommendations"][0])
+    if isinstance(content.get("next_generation_constraints"), list) and content["next_generation_constraints"]:
+        return str(content["next_generation_constraints"][0])
+    return ""
+
+
+def _write(storage: LocalStorage, asset: Any) -> dict[str, Any]:
+    data = asset.to_dict()
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset_auto(asset)
+    return {"path": _display_path(storage.root, path), "asset": data, "validation": {"ok": True, "errors": []}}
+
+
+def _display_path(root: Path, path: Path) -> str:
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
 
 
 def _is_reader_feedback(storage: LocalStorage, path: Path) -> bool:

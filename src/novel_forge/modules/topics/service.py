@@ -4,18 +4,38 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.model_adapters import ModelAdapter, model_from_env, validate_model_output
+from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous
 from novel_forge.schemas import TopicSeed
 from novel_forge.storage.local import LocalStorage
 
 
 def develop_topic(storage: LocalStorage, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
-    model = model or model_from_env("topic")
     material = read_previous(storage, "materials", input_path)
-    generated = validate_model_output(
-        "generate",
-        model.generate("Develop a differentiated suspense topic seed.", {"material": material.content}),
-    )
+    model = model or model_from_env("topic")
+    with AgentExecutionContext(
+        storage,
+        agent_key="topic",
+        operation="develop-topic",
+        input_assets=[input_path or material.id],
+        output_types=["topic_seed"],
+        model_provider=model.name,
+        model_name=model.name,
+        sla_seconds=600,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("call_model_adapter")
+        generated = validate_model_output(
+            "generate",
+            model.generate("Develop a differentiated suspense topic seed.", {"material": material.content}),
+        )
+        run.guard("write_topic_seed", "topic_seed")
+        path = _write_topic(storage, material, generated, model)
+        run.succeed(output_assets=[str(path.relative_to(storage.root)) if path.is_absolute() and path.is_relative_to(storage.root) else str(path)])
+        return path
+
+
+def _write_topic(storage: LocalStorage, material: Any, generated: dict[str, Any], model: ModelAdapter) -> Path:
     material_tags = _string_list(material.tags)
     asset = TopicSeed(
         title="钟楼回声调查",

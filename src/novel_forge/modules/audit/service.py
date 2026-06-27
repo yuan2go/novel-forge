@@ -6,6 +6,7 @@ from typing import Any
 
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import utc_now
+from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.modules.standards import create_quality_score_report
@@ -77,7 +78,20 @@ def create_originality_report(
             _dedupe([target.id, *[str(item.get("id", "")) for item in source_assets]]),
         ),
     )
-    return storage.write_asset("reviews", asset)
+    with AgentExecutionContext(
+        storage,
+        agent_key="review",
+        operation="create-originality-report",
+        input_assets=[path],
+        output_types=["originality_report"],
+        workspace_path=str(project.get("workspace_path", "")),
+        sla_seconds=600,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("write_originality_report", "originality_report")
+        output = storage.write_asset("reviews", asset)
+        run.succeed(output_assets=[_display_path(storage.root, output)])
+        return output
 
 
 def create_chapter_audit_report(
@@ -136,7 +150,20 @@ def create_chapter_audit_report(
             _dedupe([target.id, _asset_id(quality), _asset_id(style), _asset_id(originality), *context.get("profile_references", [])]),
         ),
     )
-    return storage.write_asset("reviews", asset)
+    with AgentExecutionContext(
+        storage,
+        agent_key="review",
+        operation="create-chapter-audit-report",
+        input_assets=[path, quality_path, style_path, originality_path],
+        output_types=["chapter_audit_report"],
+        workspace_path=str(project.get("workspace_path", "")),
+        sla_seconds=600,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("write_chapter_audit_report", "chapter_audit_report")
+        output = storage.write_asset("reviews", asset)
+        run.succeed(output_assets=[_display_path(storage.root, output)])
+        return output
 
 
 def create_publish_gate_report(
@@ -191,7 +218,20 @@ def create_publish_gate_report(
             _dedupe([target.id, _asset_id(audit), *context.get("profile_references", [])]),
         ),
     )
-    return storage.write_asset("publishing", asset)
+    with AgentExecutionContext(
+        storage,
+        agent_key="publishing",
+        operation="create-publish-gate-report",
+        input_assets=[path, audit_path],
+        output_types=["publish_gate_report"],
+        workspace_path=str(project.get("workspace_path", "")),
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("write_publish_gate_report", "publish_gate_report")
+        output = storage.write_asset("publishing", asset)
+        run.succeed(output_assets=[_display_path(storage.root, output)])
+        return output
 
 
 def create_release_package(
@@ -241,7 +281,20 @@ def create_release_package(
         },
         references=filter_project_safe_references(storage, str(project.get("project_id", "")), _dedupe([target.id, _asset_id(gate)])),
     )
-    return storage.write_asset("publishing", asset)
+    with AgentExecutionContext(
+        storage,
+        agent_key="publishing",
+        operation="create-release-package",
+        input_assets=[path, gate_path],
+        output_types=["release_package"],
+        workspace_path=str(project.get("workspace_path", "")),
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("write_release_package", "release_package")
+        output = storage.write_asset("publishing", asset)
+        run.succeed(output_assets=[_display_path(storage.root, output)])
+        return output
 
 
 def _candidate_source_assets(storage: LocalStorage, target: dict[str, Any], context: dict[str, Any]) -> list[dict[str, Any]]:

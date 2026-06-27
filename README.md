@@ -157,13 +157,13 @@ See [Industrial Stack](docs/01-architecture/industrial-stack.md) for service bou
 
 Current P0 direction:
 
-1. Platform skeleton: workflow/node run, artifact version, context bundle, generation run, quality gate, revision task.
-2. Context Builder: `context_build_plan`, `context_bundle`, token budget, asset selection/ranking, compression preview, actual-context replay.
-3. Versioned production chain: `outline_version`, `chapter_plan_version`, `generation_run`, chapter queue, invalidation warnings.
-4. Analysis Center upgrade: web fiction, published fiction, classic literature, common analysis core, analysis-to-asset conversion.
-5. Long-form stability: timeline, foreshadowing, relationship/faction/map/prop systems, change impact report.
+1. Platform skeleton: workflow/node run, artifact version, context bundle, generation run, quality gate, revision task. First slice exists for `workflow_definition`, `workflow_node`, `node_run`, and the versioned production assets.
+2. Context Builder: first schema/service/API/UI slice exists for `context_build_plan`, `context_bundle`, token budget, asset ranking, compression preview, and actual-context replay; next work is manual curation and invalidation.
+3. Versioned production chain: `outline_version`, `chapter_plan_version`, `draft_version`, and `generation_run` now exist; next work is chapter queue, invalidation warnings, and parameter dashboards.
+4. Analysis Center upgrade: first schema/service/UI/handoff slice exists for web fiction, published fiction, classic literature, common analysis core, and analysis-to-asset conversion; next work is semantic scoring and richer conversion gates.
+5. Long-form stability: `change_impact_report` first slice exists; next work is timeline, foreshadowing placement/payoff, relationship/faction/map/prop systems, and invalidation visualization.
 6. AI Editor: paragraph suggestions, `editor_patch`, apply/rollback, diff replay.
-7. Agent industrialization: contract, run, checkpoint, budget, gate, metric, state machine, Agent Center UI.
+7. Agent industrialization: `agent_contract`, `agent_run`, event/checkpoint/budget/gate/metric/failure assets and Production Control visibility exist; next work is full executor enforcement, rollback, SLA, and deeper Agent Center UI.
 8. Reader feedback, publishing operations, and model evaluation centers.
 
 ## Key Docs

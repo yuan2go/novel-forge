@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from novel_forge.api.product import enqueue_batch_deconstruct, process_batch_item_step, retry_task
+from novel_forge.modules.agent_runs import AgentExecutionContext
+from novel_forge.storage.local import LocalStorage
 from novel_forge.workflows import pipeline
 
 try:
@@ -25,14 +27,20 @@ def _task(*task_args: Any, **task_kwargs: Any) -> Callable[[Callable[..., Any]],
 
 @_task(name="novel_forge.run_pipeline")
 def run_pipeline_task(root: str, sample: bool = False) -> dict[str, str]:
-    path = pipeline.run_pipeline(root, sample=sample)
-    return {"path": _display_path(root, path)}
+    with _worker_context(root, "run-pipeline") as run:
+        run.guard("run_worker_task")
+        path = pipeline.run_pipeline(root, sample=sample)
+        run.succeed()
+        return {"path": _display_path(root, path)}
 
 
 @_task(name="novel_forge.run_step")
 def run_step_task(root: str, step: str, input_path: str | None = None) -> dict[str, str]:
-    path = _run_step(root, step, input_path)
-    return {"path": _display_path(root, path)}
+    with _worker_context(root, f"run-step:{step}", input_assets=[input_path] if input_path else []) as run:
+        run.guard("run_worker_task")
+        path = _run_step(root, step, input_path)
+        run.succeed()
+        return {"path": _display_path(root, path)}
 
 
 @_task(name="novel_forge.ingest_many")
@@ -46,17 +54,20 @@ def ingest_many_task(
     source_url: str = "",
     allow_downstream_generation: bool = False,
 ) -> dict[str, list[str]]:
-    paths = pipeline.ingest_many(
-        root,
-        input_path,
-        title=title,
-        rights_authorization=rights_authorization,
-        license_name=license_name,
-        copyright_note=copyright_note,
-        source_url=source_url,
-        allow_downstream_generation=allow_downstream_generation,
-    )
-    return {"paths": [_display_path(root, path) for path in paths]}
+    with _worker_context(root, "ingest-many", input_assets=[input_path]) as run:
+        run.guard("run_worker_task")
+        paths = pipeline.ingest_many(
+            root,
+            input_path,
+            title=title,
+            rights_authorization=rights_authorization,
+            license_name=license_name,
+            copyright_note=copyright_note,
+            source_url=source_url,
+            allow_downstream_generation=allow_downstream_generation,
+        )
+        run.succeed()
+        return {"paths": [_display_path(root, path) for path in paths]}
 
 
 @_task(name="novel_forge.batch_deconstruct")
@@ -72,18 +83,22 @@ def batch_deconstruct_task(
     workspace_path: str | None = None,
     analysis_mode: str = "auto",
 ) -> dict:
-    return enqueue_batch_deconstruct(
-        root,
-        input_path,
-        title=title,
-        rights_authorization=rights_authorization,
-        license_name=license_name,
-        copyright_note=copyright_note,
-        source_url=source_url,
-        allow_downstream_generation=allow_downstream_generation,
-        workspace_path=workspace_path,
-        analysis_mode=analysis_mode,
-    )
+    with _worker_context(root, "batch-deconstruct", input_assets=[input_path], workspace_path=workspace_path) as run:
+        run.guard("run_worker_task")
+        result = enqueue_batch_deconstruct(
+            root,
+            input_path,
+            title=title,
+            rights_authorization=rights_authorization,
+            license_name=license_name,
+            copyright_note=copyright_note,
+            source_url=source_url,
+            allow_downstream_generation=allow_downstream_generation,
+            workspace_path=workspace_path,
+            analysis_mode=analysis_mode,
+        )
+        run.succeed()
+        return result
 
 
 @_task(name="novel_forge.batch_item_step")
@@ -93,7 +108,11 @@ def batch_item_step_task(
     step: str,
     workspace_path: str | None = None,
 ) -> dict:
-    return process_batch_item_step(root, item_path, step=step, workspace_path=workspace_path, enqueue_next=True)
+    with _worker_context(root, f"batch-item-step:{step}", input_assets=[item_path], workspace_path=workspace_path) as run:
+        run.guard("run_worker_task")
+        result = process_batch_item_step(root, item_path, step=step, workspace_path=workspace_path, enqueue_next=True)
+        run.succeed()
+        return result
 
 
 @_task(name="novel_forge.retry_product_task")
@@ -104,22 +123,56 @@ def retry_product_task(
     step: str | None = None,
     workspace_path: str | None = None,
 ) -> dict:
-    return retry_task(root, status_path=status_path, run_id=run_id, step=step, workspace_path=workspace_path)
+    with _worker_context(root, "retry-product-task", input_assets=[status_path] if status_path else [], workspace_path=workspace_path) as run:
+        run.guard("run_worker_task")
+        result = retry_task(root, status_path=status_path, run_id=run_id, step=step, workspace_path=workspace_path)
+        run.succeed()
+        return result
 
 
 @_task(name="novel_forge.postgres_sync")
 def postgres_sync_task(root: str) -> dict:
-    return pipeline.postgres_sync(root)
+    with _worker_context(root, "postgres-sync") as run:
+        run.guard("run_worker_task")
+        result = pipeline.postgres_sync(root)
+        run.succeed()
+        return result
 
 
 @_task(name="novel_forge.qdrant_index")
 def qdrant_index_task(root: str) -> dict:
-    return pipeline.qdrant_index(root)
+    with _worker_context(root, "qdrant-index") as run:
+        run.guard("run_worker_task")
+        result = pipeline.qdrant_index(root)
+        run.succeed()
+        return result
 
 
 @_task(name="novel_forge.minio_sync")
 def minio_sync_task(root: str, categories: list[str] | None = None) -> dict:
-    return pipeline.minio_sync(root, categories=categories)
+    with _worker_context(root, "minio-sync") as run:
+        run.guard("run_worker_task")
+        result = pipeline.minio_sync(root, categories=categories)
+        run.succeed()
+        return result
+
+
+def _worker_context(
+    root: str,
+    operation: str,
+    *,
+    input_assets: list[str | None] | None = None,
+    workspace_path: str | None = None,
+) -> AgentExecutionContext:
+    return AgentExecutionContext(
+        LocalStorage(root),
+        agent_key="engineering",
+        operation=f"worker:{operation}",
+        input_assets=[item for item in input_assets or [] if item],
+        output_types=[],
+        workspace_path=workspace_path,
+        sla_seconds=1800,
+    )
 
 
 def _run_step(root: str, step: str, input_path: str | None) -> Path:

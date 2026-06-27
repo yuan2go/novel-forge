@@ -465,6 +465,7 @@ def run_pipeline(root: str | Path, sample: bool = False) -> Path:
         outputs.append(run_step("revise", [review_path], lambda: revise(storage.root, str(review_path))))
         outputs.append(run_step("import-feedback", [feedback_path], lambda: import_feedback(storage.root, str(feedback_path))))
         outputs.append(run_step("analyze-feedback", [outputs[-1]], lambda: analyze_feedback(storage.root, str(outputs[-1]))))
+        outputs.extend(path for path in _production_sidecar_outputs(storage, outputs) if path not in outputs)
         _attach_run_assets_to_workspace(storage, workspace_path, [*outputs, *status_paths])
         binding_outputs = _workspace_binding_outputs(storage, workspace_path)
         if binding_outputs:
@@ -517,12 +518,14 @@ def run_pipeline(root: str | Path, sample: bool = False) -> Path:
     )
     run_path = storage.write_asset("runs", run)
     _attach_run_assets_to_workspace(storage, workspace_path, [run_path])
+    related_run_assets = _with_related_run_assets(storage, [*outputs, *status_paths, run_path], include_scoped=True)
     final_asset = outputs[-1]
     summary = {
         "run_id": run.id,
         "status": "completed",
         "outputs": _relative_paths(storage, outputs),
         "task_statuses": _relative_paths(storage, status_paths),
+        "related_run_assets": _relative_paths(storage, related_run_assets),
         "run_log": run_log,
         "run_record": str(run_path.relative_to(storage.root)),
         "copied_final_output": f"examples/sample_outputs/{final_asset.name}",
@@ -586,6 +589,95 @@ def _workspace_binding_outputs(storage: LocalStorage, workspace_path: Path | str
     return outputs
 
 
+def _production_sidecar_outputs(storage: LocalStorage, output_paths: list[Path]) -> list[Path]:
+    tracked_ids: set[str] = set()
+    tracked_paths: set[str] = set()
+    for path in output_paths:
+        try:
+            resolved = path.resolve()
+            data = storage.read_json(resolved)
+        except Exception:
+            continue
+        if not isinstance(data, dict):
+            continue
+        tracked_ids.add(str(data.get("id", "")))
+        tracked_paths.add(str(resolved.relative_to(storage.root)))
+    sidecars: list[Path] = []
+    sidecar_types = {
+        "context_build_plan",
+        "context_bundle",
+        "node_run",
+        "outline_version",
+        "chapter_plan_version",
+        "draft_version",
+        "generation_run",
+    }
+    changed = True
+    while changed:
+        changed = False
+        for category in ["contexts", "outlines", "chapter_plans", "drafts", "runs"]:
+            for path in storage.list_json(category):
+                try:
+                    data = storage.read_json(path)
+                except Exception:
+                    continue
+                if not isinstance(data, dict) or data.get("type") not in sidecar_types:
+                    continue
+                if _display_path(storage.root, path) in tracked_paths:
+                    continue
+                if not _sidecar_links_tracked_asset(data, tracked_ids, tracked_paths):
+                    continue
+                sidecars.append(path)
+                tracked_paths.add(_display_path(storage.root, path))
+                tracked_ids.add(str(data.get("id", "")))
+                changed = True
+    return sidecars
+
+
+def _sidecar_links_tracked_asset(data: dict, tracked_ids: set[str], tracked_paths: set[str]) -> bool:
+    values: set[str] = set()
+    values.add(str(data.get("source", "")))
+    for reference in data.get("references", []) if isinstance(data.get("references", []), list) else []:
+        values.add(str(reference))
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    for payload in [content, metadata]:
+        for key in [
+            "target_asset_id",
+            "target_path",
+            "build_plan_id",
+            "build_plan_path",
+            "outline_id",
+            "outline_path",
+            "chapter_plan_id",
+            "chapter_plan_path",
+            "draft_id",
+            "draft_path",
+            "source_draft_id",
+            "input_asset_id",
+            "input_asset_path",
+            "context_build_plan_id",
+            "context_build_plan_path",
+            "context_bundle_id",
+            "context_bundle_path",
+            "output_asset_id",
+            "output_asset_path",
+            "source_asset_id",
+            "source_asset_path",
+        ]:
+            value = payload.get(key)
+            if value:
+                values.add(str(value))
+    return bool(values & tracked_ids or values & tracked_paths)
+
+
+def _display_path(root: Path, path: Path) -> str:
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
+
+
 def clean_previous_sample_run(storage: LocalStorage) -> list[str]:
     summary_path = storage.root / "examples" / "sample_outputs" / "pipeline-summary.json"
     if not summary_path.exists():
@@ -598,7 +690,7 @@ def clean_previous_sample_run(storage: LocalStorage) -> list[str]:
         return []
 
     candidates: list[str] = []
-    for key in ["outputs", "task_statuses"]:
+    for key in ["outputs", "task_statuses", "related_run_assets"]:
         values = summary.get(key, [])
         if isinstance(values, list):
             candidates.extend(str(value) for value in values)
@@ -610,6 +702,7 @@ def clean_previous_sample_run(storage: LocalStorage) -> list[str]:
     if isinstance(outputs, list) and outputs:
         candidates.append(f"examples/sample_outputs/{Path(str(outputs[-1])).name}")
     candidates.append(str(summary_path.relative_to(storage.root)))
+    candidates.extend(_previous_sample_project_assets(storage))
 
     removed: list[str] = []
     seen: set[Path] = set()
@@ -624,6 +717,25 @@ def clean_previous_sample_run(storage: LocalStorage) -> list[str]:
             path.unlink()
             removed.append(str(path.relative_to(storage.root)))
     return removed
+
+
+def _previous_sample_project_assets(storage: LocalStorage) -> list[str]:
+    candidates: list[str] = []
+    for category in DATA_DIRS:
+        for path in storage.list_json(category):
+            try:
+                data = storage.read_json(path)
+            except Exception:
+                continue
+            if not isinstance(data, dict):
+                continue
+            metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            project_id = str(metadata.get("project_id") or content.get("project_id") or "")
+            title = str(data.get("title") or data.get("name") or "")
+            if project_id.startswith("project-sample-novel-workspace") or "sample pipeline" in title.lower() or "sample novel workspace" in title.lower():
+                candidates.append(str(path.relative_to(storage.root)))
+    return candidates
 
 
 def _is_safe_sample_cleanup_path(storage: LocalStorage, path: Path) -> bool:
@@ -702,7 +814,8 @@ def _attach_run_assets_to_workspace(storage: LocalStorage, workspace_path: Path,
     project_id = str(content.get("project_id") or workspace.get("id") or "")
     workspace_id = str(workspace.get("id") or "")
     workspace_ref = str(workspace_path.relative_to(storage.root))
-    for path in asset_paths:
+    paths_to_attach = sorted(_with_related_run_assets(storage, asset_paths, include_scoped=True), key=lambda path: _attach_priority(storage, path))
+    for path in paths_to_attach:
         try:
             resolved = Path(path).resolve()
             resolved.relative_to(storage.root)
@@ -712,11 +825,11 @@ def _attach_run_assets_to_workspace(storage: LocalStorage, workspace_path: Path,
         if not isinstance(data, dict) or data.get("type") == "project_workspace_state":
             continue
         metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
-        if not metadata.get("project_id"):
+        if metadata.get("project_id") in {"", None, "local-system"}:
             metadata["project_id"] = project_id
-        if not metadata.get("workspace_id"):
+        if metadata.get("workspace_id") in {"", None, "local-system"}:
             metadata["workspace_id"] = workspace_id
-        if not metadata.get("workspace_path"):
+        if metadata.get("workspace_path") in {"", None, "local-system"}:
             metadata["workspace_path"] = workspace_ref
         if not metadata.get("project_asset_role"):
             metadata["project_asset_role"] = str(data.get("type", ""))
@@ -727,9 +840,124 @@ def _attach_run_assets_to_workspace(storage: LocalStorage, workspace_path: Path,
         for ref in [project_id, workspace_id]:
             if ref and ref not in references:
                 references.append(ref)
-        data["references"] = filter_project_safe_references(storage, project_id, references)
+        data["references"] = list(dict.fromkeys(reference for reference in references if reference))
         data["updated_at"] = utc_now()
         storage.write_json(resolved, data)
+
+
+def _attach_priority(storage: LocalStorage, path: Path) -> tuple[int, str]:
+    try:
+        data = storage.read_json(path)
+    except Exception:
+        return (50, str(path))
+    asset_type = str(data.get("type", "")) if isinstance(data, dict) else ""
+    priorities = {
+        "agent_contract": 0,
+        "agent_run": 1,
+        "workflow_run": 2,
+        "task_status": 3,
+        "agent_event": 4,
+        "agent_checkpoint": 5,
+        "agent_budget": 6,
+        "agent_gate": 7,
+        "agent_metric": 8,
+        "agent_failure_report": 9,
+        "agent_sla_report": 10,
+        "agent_rollback_report": 11,
+    }
+    return (priorities.get(asset_type, 20), str(path))
+
+
+def _with_related_run_assets(storage: LocalStorage, asset_paths: list[Path], *, include_scoped: bool = False) -> list[Path]:
+    result: list[Path] = []
+    known: set[str] = set()
+    for path in asset_paths:
+        resolved = Path(path).resolve()
+        result.append(resolved)
+        _add_asset_identity(storage, resolved, known)
+    changed = True
+    while changed:
+        changed = False
+        for path in storage.list_json("runs"):
+            resolved = path.resolve()
+            if resolved in result:
+                continue
+            try:
+                data = storage.read_json(resolved)
+            except Exception:
+                continue
+            if not isinstance(data, dict):
+                continue
+            metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            project_scope = str(metadata.get("project_id") or "")
+            workspace_scope = str(metadata.get("workspace_path") or "")
+            scoped = bool(project_scope or workspace_scope)
+            if not include_scoped and scoped:
+                continue
+            if include_scoped and scoped and project_scope != "local-system" and workspace_scope != "local-system":
+                continue
+            refs = _run_asset_reference_values(storage, resolved, data)
+            if refs.intersection(known) or (data.get("type") == "agent_contract" and known):
+                result.append(resolved)
+                known.update(refs)
+                _add_asset_identity(storage, resolved, known)
+                changed = True
+    return result
+
+
+def _add_asset_identity(storage: LocalStorage, path: Path, known: set[str]) -> None:
+    try:
+        data = storage.read_json(path)
+    except Exception:
+        return
+    if not isinstance(data, dict):
+        return
+    try:
+        known.add(str(path.relative_to(storage.root)))
+    except ValueError:
+        known.add(str(path))
+    if data.get("id"):
+        known.add(str(data.get("id")))
+    known.update(_run_asset_reference_values(storage, path, data))
+
+
+def _run_asset_reference_values(storage: LocalStorage, path: Path, data: dict) -> set[str]:
+    values: set[str] = set()
+    try:
+        values.add(str(path.relative_to(storage.root)))
+    except ValueError:
+        values.add(str(path))
+    for key in ["id", "source"]:
+        if data.get(key):
+            values.add(str(data.get(key)))
+    for ref in data.get("references", []) if isinstance(data.get("references", []), list) else []:
+        if str(ref).strip():
+            values.add(str(ref))
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    for key in [
+        "agent_run_id",
+        "agent_run_path",
+        "contract_id",
+        "contract_path",
+        "checkpoint_id",
+        "gate_id",
+        "rollback_id",
+        "task_id",
+        "run_id",
+    ]:
+        if content.get(key):
+            values.add(str(content.get(key)))
+    for row_key in ["input_assets", "output_assets"]:
+        rows = content.get(row_key, [])
+        if isinstance(rows, list):
+            for row in rows:
+                if isinstance(row, dict):
+                    for key in ["id", "path", "type", "title"]:
+                        if row.get(key):
+                            values.add(str(row.get(key)))
+                elif str(row).strip():
+                    values.add(str(row))
+    return values
 
 
 def validate_skills(root: Path) -> list[str]:

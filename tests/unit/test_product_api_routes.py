@@ -24,7 +24,16 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/projects",
                 "/product/tasks",
                 "/product/tasks/timeline",
+                "/product/workflow/node-runs",
+                "/product/workflow/definitions",
+                "/product/workflow/nodes",
+                "/product/agents/runs",
+                "/product/agents/events",
+                "/product/agents/contracts",
+                "/product/agents/sla",
+                "/product/agents/rollback",
                 "/product/assets/detail",
+                "/product/manuscript/workbench",
                 "/product/libraries/creative",
                 "/product/libraries/creative/{library_key}",
                 "/product/creative-assets",
@@ -32,6 +41,43 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/analysis/run",
                 "/product/analysis/convert",
                 "/product/analysis/handoff",
+                "/product/context/assets",
+                "/product/context/build-plan",
+                "/product/context/bundle",
+                "/product/continuity/graph",
+                "/product/continuity/graph-snapshot",
+                "/product/continuity/chapter-report",
+                "/product/editor/artifacts",
+                "/product/editor/patch",
+                "/product/editor/apply",
+                "/product/editor/diff-report",
+                "/product/evaluation/assets",
+                "/product/evaluation/model-profile",
+                "/product/evaluation/benchmark-task",
+                "/product/evaluation/benchmark-run",
+                "/product/evaluation/compare",
+                "/product/evaluation/prompt-version",
+                "/product/evaluation/prompt-regression",
+                "/product/feedback/assets",
+                "/product/feedback/import-batch",
+                "/product/feedback/sentiment-report",
+                "/product/feedback/insight",
+                "/product/feedback/apply-strategy",
+                "/product/metrics/snapshots",
+                "/product/metrics/snapshot",
+                "/product/settings/assets",
+                "/product/settings/profile",
+                "/product/production/versions",
+                "/product/production/chapter-runs",
+                "/product/production/chapter-run",
+                "/product/production/chapter-run/start",
+                "/product/production/chapter-run/resume",
+                "/product/production/outline-version",
+                "/product/production/chapter-plan-version",
+                "/product/production/draft-version",
+                "/product/production/generation-run",
+                "/product/impact/reports",
+                "/product/impact/report",
                 "/product/handoffs",
                 "/product/batch/deconstruct",
                 "/product/drafts",
@@ -51,6 +97,9 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(client.get("/product/tasks").status_code, 200)
             self.assertEqual(client.get("/product/system/health").status_code, 200)
             self.assertEqual(client.get("/product/libraries/creative").status_code, 200)
+            self.assertEqual(client.get("/product/feedback/assets").status_code, 200)
+            self.assertEqual(client.get("/product/metrics/snapshots").status_code, 200)
+            self.assertEqual(client.get("/product/settings/assets").status_code, 200)
             schema = client.get("/product/libraries/creative/schema")
             self.assertEqual(schema.status_code, 200, schema.text)
             self.assertIn("asset_collection", schema.json()["asset_types"])
@@ -65,6 +114,13 @@ class ProductApiRouterTests(unittest.TestCase):
 
             project = client.post("/product/projects", json={"title": "Bound Project"})
             self.assertEqual(project.status_code, 200, project.text)
+            settings_profile = client.post("/product/settings/profile", json={"workspace_path": project.json()["path"]})
+            self.assertEqual(settings_profile.status_code, 200, settings_profile.text)
+            metric_snapshot = client.post(
+                "/product/metrics/snapshot",
+                json={"project_id": project.json()["project_id"], "workspace_path": project.json()["path"]},
+            )
+            self.assertEqual(metric_snapshot.status_code, 200, metric_snapshot.text)
             config = project.json()["project_config"]
             for key in [
                 "platform_profile_path",
@@ -77,7 +133,7 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(client.post("/product/styles/decompose", json={"source_path": config["style_profile_path"]}).status_code, 200)
             self.assertEqual(client.get("/product/styles/trend").status_code, 200)
 
-            from novel_forge.schemas import DraftChapter, SourceDocument
+            from novel_forge.schemas import ChapterPlan, DraftChapter, Outline, SourceDocument
             from novel_forge.storage.local import LocalStorage
 
             storage = LocalStorage(tmp)
@@ -115,6 +171,67 @@ class ProductApiRouterTests(unittest.TestCase):
             )
             self.assertEqual(analysis_handoff.status_code, 200, analysis_handoff.text)
 
+            outline_path = storage.write_asset(
+                "outlines",
+                Outline(
+                    title="API Outline",
+                    content={"acts": [{"act": 1, "goal": "open mystery"}]},
+                    metadata={"project_id": project.json()["project_id"], "workspace_path": project.json()["path"]},
+                ),
+            )
+            chapter_plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="API Chapter Plan",
+                    source=storage.read_asset(outline_path).id,
+                    content={
+                        "chapter": 1,
+                        "objective": "open clock mystery",
+                        "beats": ["rain", "archive mismatch"],
+                        "hook": "next bell rings",
+                    },
+                    metadata={"project_id": project.json()["project_id"], "workspace_path": project.json()["path"]},
+                    references=[storage.read_asset(outline_path).id],
+                ),
+            )
+            chapter_plan_ref = str(chapter_plan_path.relative_to(storage.root))
+            context_plan = client.post(
+                "/product/context/build-plan",
+                json={"target_path": chapter_plan_ref, "query": "clock mystery", "workspace_path": project.json()["path"]},
+            )
+            self.assertEqual(context_plan.status_code, 200, context_plan.text)
+            context_bundle = client.post("/product/context/bundle", json={"build_plan_path": context_plan.json()["path"]})
+            self.assertEqual(context_bundle.status_code, 200, context_bundle.text)
+            self.assertEqual(client.get(f"/product/context/assets?project_id={project.json()['project_id']}").status_code, 200)
+            outline_version = client.post("/product/production/outline-version", json={"outline_path": str(outline_path.relative_to(storage.root))})
+            self.assertEqual(outline_version.status_code, 200, outline_version.text)
+            chapter_plan_version = client.post("/product/production/chapter-plan-version", json={"chapter_plan_path": chapter_plan_ref})
+            self.assertEqual(chapter_plan_version.status_code, 200, chapter_plan_version.text)
+            chapter_run = client.post(
+                "/product/production/chapter-run/start",
+                json={
+                    "outline_path": str(outline_path.relative_to(storage.root)),
+                    "chapter_plan_path": chapter_plan_ref,
+                    "workspace_path": project.json()["path"],
+                    "chapter": 1,
+                    "run_to": "final_draft",
+                },
+            )
+            self.assertEqual(chapter_run.status_code, 200, chapter_run.text)
+            self.assertEqual(chapter_run.json()["status"], "succeeded")
+            self.assertTrue(chapter_run.json()["outputs"]["final_draft_path"])
+            chapter_runs = client.get(f"/product/production/chapter-runs?project_id={project.json()['project_id']}")
+            self.assertEqual(chapter_runs.status_code, 200, chapter_runs.text)
+            self.assertGreaterEqual(len(chapter_runs.json()), 1)
+            chapter_run_detail = client.get(f"/product/production/chapter-run?path={chapter_run.json()['path']}")
+            self.assertEqual(chapter_run_detail.status_code, 200, chapter_run_detail.text)
+            chapter_run_resume = client.post(
+                "/product/production/chapter-run/resume",
+                json={"run_path": chapter_run.json()["path"], "from_step": "next_chapter_plan", "run_to": "next_chapter_plan"},
+            )
+            self.assertEqual(chapter_run_resume.status_code, 200, chapter_run_resume.text)
+            self.assertTrue(chapter_run_resume.json()["outputs"]["next_chapter_plan_path"])
+
             draft_path = storage.write_asset(
                 "drafts",
                 DraftChapter(
@@ -130,6 +247,21 @@ class ProductApiRouterTests(unittest.TestCase):
                 ),
             )
             draft_ref = str(draft_path.relative_to(storage.root))
+            draft_version = client.post("/product/production/draft-version", json={"draft_path": draft_ref})
+            self.assertEqual(draft_version.status_code, 200, draft_version.text)
+            generation_run = client.post(
+                "/product/production/generation-run",
+                json={"input_path": chapter_plan_ref, "context_bundle_path": context_bundle.json()["path"], "output_path": draft_ref},
+            )
+            self.assertEqual(generation_run.status_code, 200, generation_run.text)
+            manuscript = client.get(
+                f"/product/manuscript/workbench?project_id={project.json()['project_id']}&draft_path={draft_ref}"
+            )
+            self.assertEqual(manuscript.status_code, 200, manuscript.text)
+            manuscript_json = manuscript.json()
+            self.assertEqual(manuscript_json["selected_draft"]["path"], draft_ref)
+            self.assertGreaterEqual(manuscript_json["trace_summary"]["generation_run_count"], 1)
+            self.assertEqual(client.get(f"/product/production/versions?project_id={project.json()['project_id']}").status_code, 200)
             originality = client.post("/product/audits/originality", json={"draft_path": draft_ref, "workspace_path": project.json()["path"]})
             self.assertEqual(originality.status_code, 200, originality.text)
             audit = client.post("/product/audits/chapter", json={"draft_path": draft_ref, "workspace_path": project.json()["path"]})

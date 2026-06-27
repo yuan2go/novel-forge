@@ -500,6 +500,7 @@ h3 {
   gap: 8px;
   padding: 0 14px;
   font-weight: 650;
+  text-decoration: none;
 }
 
 .primaryButton {
@@ -622,6 +623,104 @@ th {
 .studioPage {
   display: grid;
   gap: 16px;
+}
+
+.manuscriptShell {
+  display: grid;
+  gap: 16px;
+  width: min(1580px, calc(100vw - 28px));
+  margin: 0 auto;
+  padding: 18px 0 36px;
+}
+
+.manuscriptHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.manuscriptHeader h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  line-height: 1.16;
+}
+
+.manuscriptHeader p {
+  max-width: 840px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.manuscriptGrid {
+  display: grid;
+  grid-template-columns: 310px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.manuscriptSidebar {
+  position: sticky;
+  top: 14px;
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+}
+
+.chapterList {
+  display: grid;
+  gap: 8px;
+}
+
+.chapterCard {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  min-height: 86px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.chapterCard:hover,
+.chapterCard.active {
+  border-color: #bcd2ff;
+  background: #eef4ff;
+}
+
+.chapterCard span,
+.chapterCard small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.chapterCard strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.manuscriptMain {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.manuscriptReaderEditor {
+  grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1.08fr);
+}
+
+.manuscriptSummary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.manuscriptEvidenceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
 }
 
 .studioHeader {
@@ -1405,7 +1504,17 @@ pre {
     padding-top: 10px;
   }
 
+  .manuscriptShell {
+    width: min(100vw - 20px, 760px);
+    padding-top: 10px;
+  }
+
   .factorySidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .manuscriptSidebar {
     position: static;
     max-height: none;
   }
@@ -1416,6 +1525,7 @@ pre {
 
   .factoryTopbar,
   .factoryPageHeader,
+  .manuscriptHeader,
   .creativeLibraryHero,
   .placeholderHero {
     align-items: stretch;
@@ -1464,6 +1574,9 @@ pre {
   }
 
   .summaryBand,
+  .manuscriptGrid,
+  .manuscriptEvidenceGrid,
+  .manuscriptSummary,
   .workspaceGrid,
   .splitGrid,
   .studioHeader,

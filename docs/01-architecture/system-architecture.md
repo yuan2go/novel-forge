@@ -63,9 +63,9 @@ Implemented or partially implemented:
 | Project / Workspace | project lifecycle, series, workspace state, project asset references | partially implemented |
 | Asset / Artifact | schema-backed assets, versions, lineage, object copies, index rows | partially implemented |
 | Workflow | runs, task status, retries, recovery, future node definitions and invalidation | partially implemented |
-| Knowledge / Analysis | deconstruction, craft analysis, classic analysis, conversion to knowledge/material/template/rules | partial; Analysis Center still P0 |
-| Context | context build plan, context bundle, token budget, compression preview, actual-context replay | retrieval base exists; visual builder still P0 |
-| Production | topic/world/character/outline/chapter-plan/draft/review/revision chain | base chain exists; versioned chain still P0 |
+| Knowledge / Analysis | deconstruction, craft analysis, classic analysis, conversion to knowledge/material/template/rules | first schema/service/UI/handoff slice implemented; semantic scoring and richer conversion gates remain |
+| Context | context build plan, context bundle, token budget, compression preview, actual-context replay | schema/service/API/UI slice implemented; manual curation and invalidation remain |
+| Production | topic/world/character/outline/chapter-plan/draft/review/revision chain | base chain plus outline/chapter-plan/draft versions and generation runs implemented |
 | Evaluation | quality, style, originality, continuity, platform fit, publish gate, model evaluation | first-generation reviews exist; deeper gates still P0/P1 |
 | Long-form Stability | continuity bible, timeline, foreshadowing, relationship graph, change impact | shallow schemas exist; workbench still P0 |
 | Agent | contracts, runs, checkpoints, budgets, gates, metrics, state machine | handoff exists; industrial runtime still P0 |
@@ -149,9 +149,9 @@ Do not call external providers in tests. Do not write malformed or unvalidated p
 ## Architecture Priority
 
 1. Platform skeleton: workflow/node run, artifact version, context bundle, generation run, quality gate, revision task.
-2. Context Builder.
-3. Versioned production chain.
-4. Analysis Center upgrade.
+2. Context Builder curation and invalidation.
+3. Versioned production chain dashboards and chapter queue.
+4. Analysis Center semantic scoring and conversion gates.
 5. Long-form stability workbench.
 6. AI Editor patch system.
 7. Agent industrialization.

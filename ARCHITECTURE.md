@@ -86,7 +86,8 @@ Responsibilities:
 - run node chains;
 - record `WorkflowRun` and `TaskStatus`;
 - support recovery, retry, dead letters, and run logs;
-- later support `WorkflowDefinition`, `WorkflowNode`, `NodeRun`, invalidation, and chapter queues.
+- support `WorkflowDefinition`, `WorkflowNode`, and `NodeRun`;
+- later support deeper invalidation wiring and chapter queues.
 
 Current implemented pipeline:
 
@@ -144,7 +145,7 @@ Responsibilities:
 - conversion of analysis results into materials, knowledge cards, templates, style profiles, and review rules;
 - abstract mechanisms only, never protected expression.
 
-Current status: web-fiction decomposition and handoff exist; full Analysis Center schema/service/UI/handoff coverage is still P0.
+Current status: first Analysis Center slice is implemented with common, web-fiction, published-fiction, classic-literary report schemas, services, UI, handoff packets, and conversion to abstract assets. Remaining work is provider-backed semantic scoring, richer visualization, and conversion review gates.
 
 ### 5. Context Layer
 
@@ -158,7 +159,7 @@ Responsibilities:
 - final context bundle;
 - replay of the actual context sent to a model.
 
-Current status: retrieval foundations exist through local search/vector search/Qdrant; visual Context Builder is still P0.
+Current status: retrieval foundations exist through local search/vector search/Qdrant, and `context_build_plan` / `context_bundle` now have schema, service, API, UI, token budget, ranking metadata, compression preview, and actual-context replay. Remaining work is manual source curation and invalidation warning UI.
 
 ### 6. Production Layer
 
@@ -171,7 +172,7 @@ Responsibilities:
 - chapter queue;
 - invalidation when upstream outline/world/character/continuity changes.
 
-Current status: base generation chain exists; full versioned production chain is still P0.
+Current status: base generation chain exists, and outline, chapter plan, draft, and generation-run artifacts now produce versioned records. Remaining work is chapter queue, parameter trace dashboard, and upstream-change invalidation.
 
 ### 7. Evaluation Layer
 
@@ -202,7 +203,7 @@ Responsibilities:
 - change impact report;
 - invalidation visualization.
 
-Current status: continuity/foreshadowing/power-rule schemas exist in shallow form; workbench and impact analysis are still P0.
+Current status: continuity/foreshadowing/power-rule schemas exist in shallow form. `change_impact_report` exists with project-scoped downstream reference scanning, severity summaries, recommendations, API routes, and Web Admin visibility. Remaining P0/P1 work is richer continuity workbenches and invalidation visualization.
 
 ### 9. Agent Layer
 
@@ -218,7 +219,7 @@ Responsibilities:
 - resumable and rollback-capable execution;
 - Agent Center UI.
 
-Current status: permission profile, tool allowlist, handoff, and acceptance concepts exist. Industrial Agent runtime is still P0/P1.
+Current status: permission profile, tool allowlist, handoff, acceptance, persisted agent contracts/runs/events/checkpoints/budgets/gates/metrics/failure reports, API routes, and Production Control visibility exist. Remaining P0/P1 work is full executor enforcement, rollback actions, SLA/timeout policy, and deeper Agent Center timelines.
 
 ### 10. Analytics and Publishing Layer
 
@@ -257,9 +258,9 @@ Default local validation must remain fast and low-dependency.
 Preferred order:
 
 1. Platform skeleton: workflow run/node run/artifact version/context bundle/generation run/quality gate/revision task.
-2. Context Builder.
-3. Versioned outline/chapter-plan/draft production chain.
-4. Analysis Center upgrade.
+2. Context Builder curation and invalidation.
+3. Versioned outline/chapter-plan/draft production dashboards and chapter queue.
+4. Analysis Center semantic scoring and conversion gates.
 5. Long-form stability workbench.
 6. AI Editor patch system.
 7. Agent industrialization.

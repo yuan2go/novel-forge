@@ -6,6 +6,7 @@ from typing import Any
 from novel_forge.agents import runtime_profile_for_skill
 from novel_forge.model_adapters import ClaudeCodeAdapter
 from novel_forge.modules.common import resolve_path
+from novel_forge.modules.agent_runs import ensure_agent_contract, record_agent_event, start_agent_run
 from novel_forge.schemas import BaseAsset, ClaudeCodeHandoff
 from novel_forge.storage.local import LocalStorage
 
@@ -241,6 +242,31 @@ def _write_handoff(
 ) -> Path:
     adapter = ClaudeCodeAdapter()
     agent_runtime = runtime_profile_for_skill(skill)
+    contract = ensure_agent_contract(
+        storage,
+        skill=skill,
+        operation=operation,
+        input_types=[source_asset.type],
+        output_types=[expected_output_type],
+        quality_gates=[
+            {"gate": "schema_validation", "required": True, "expected_output_type": expected_output_type},
+            {"gate": "acceptance_checks", "required": True, "count": len(acceptance_checks)},
+            {"gate": "human_execution", "required": True, "runtime": "claude-code", "model": "codex"},
+        ],
+    )
+    agent_run = start_agent_run(
+        storage,
+        skill=skill,
+        operation=operation,
+        input_assets=[source_path],
+        status="waiting_human",
+        contract_path=contract["path"],
+        model_provider="claude-code",
+        model_name="codex",
+        prompt_version=f"{skill}:0.1.0",
+        human_gate={"required": True, "status": "waiting_operator", "reason": "Claude Code handoff requires manual execution"},
+        evidence={"expected_output_type": expected_output_type, "expected_output_dir": expected_output_dir},
+    )
     input_files = [
         {
             "path": _relative_path(storage, source_path),
@@ -277,6 +303,16 @@ def _write_handoff(
             "runtime_model": "codex",
             "skill": skill,
             "agent_runtime": agent_runtime,
+            "agent_contract": {
+                "id": contract["id"],
+                "path": contract["path"],
+            },
+            "agent_run": {
+                "id": agent_run["asset"]["content"]["run_id"],
+                "asset_id": agent_run["asset"]["id"],
+                "path": agent_run["path"],
+                "status": agent_run["asset"]["content"]["status"],
+            },
             "status": "pending",
             "input_files": input_files,
             "source_asset": _asset_summary(storage, source_path, source_asset),
@@ -306,13 +342,35 @@ def _write_handoff(
             "permission_profile": agent_runtime["permission_profile"],
             "tool_allowlist": agent_runtime["allowed_tools"],
             "allowed_write_types": agent_runtime["allowed_write_types"],
+            "agent_contract_id": contract["id"],
+            "agent_contract_path": contract["path"],
+            "agent_run_id": agent_run["asset"]["content"]["run_id"],
+            "agent_run_asset_id": agent_run["asset"]["id"],
+            "agent_run_path": agent_run["path"],
             "copyright_boundary": "handoff references source files only; analysis output must stay at abstract structure or transformed knowledge level",
             "automated_model_call": False,
             "external_api": False,
         },
-        references=[source_asset.id, _relative_path(storage, source_path), *skill_files],
+        references=[
+            source_asset.id,
+            _relative_path(storage, source_path),
+            contract["id"],
+            contract["path"],
+            agent_run["asset"]["content"]["run_id"],
+            agent_run["path"],
+            *skill_files,
+        ],
     )
-    return storage.write_asset("runs", asset)
+    path = storage.write_asset("runs", asset)
+    record_agent_event(
+        storage,
+        agent_run_path=agent_run["path"],
+        event_type="handoff.created",
+        status="waiting_human",
+        message=f"Claude Code handoff created for {operation}",
+        payload={"handoff_path": _relative_path(storage, path), "expected_output_type": expected_output_type},
+    )
+    return path
 
 
 def _resolve_input(storage: LocalStorage, input_path: str | None, fallback_categories: list[str]) -> Path:

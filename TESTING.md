@@ -90,7 +90,7 @@ Current tests should continue covering:
 
 ## New Test Requirements For Platform Migration
 
-As P0 platform work is implemented, add tests for:
+As P0 platform work is implemented, keep or add tests for:
 
 ### 1. Context Builder
 
@@ -101,13 +101,16 @@ As P0 platform work is implemented, add tests for:
 - final `context_bundle` content;
 - actual-context replay;
 - guarantee that raw protected source text is not used in draft context.
+- API routes for creating context plans and bundles.
 
 ### 2. Versioned Production Chain
 
 - `outline_version` creation;
 - `chapter_plan_version` creation;
+- `draft_version` creation;
 - `generation_run` metadata;
 - draft version append-only behavior;
+- API routes for production version records;
 - upstream change invalidation;
 - chapter queue behavior.
 

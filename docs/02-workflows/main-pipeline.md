@@ -98,9 +98,9 @@ Every future pipeline step should be expressible as a node with:
 
 1. Keep existing CLI pipeline stable.
 2. Add workflow/node run and artifact-version contracts around current steps.
-3. Add Context Builder before expanding generation complexity.
-4. Add versioned outline/chapter-plan/draft chain.
-5. Upgrade Analysis Center after the production chain can consume analysis outputs reliably.
+3. Keep Context Builder schema/service/API/UI stable and add manual curation plus stale-context warnings.
+4. Keep versioned outline/chapter-plan/draft/generation-run records stable and add chapter queue plus invalidation.
+5. Deepen Analysis Center semantic scoring and conversion review gates after the production chain can consume analysis outputs reliably.
 6. Add long-form stability, editor patches, Agent runs, publishing, feedback analytics, and model evaluation after the core chain is traceable.
 
 ## Non-Negotiable Boundaries

@@ -99,10 +99,10 @@ src/novel_forge/api/
 | `reviews.py` | review run, revision plan, issue patch, revision apply | review quality upgrades and revision loop |
 | `health.py` | product health and Postgres strict check | project health page metrics |
 | `system.py` | backups, restore, event archive, Qdrant, MinIO | local production diagnostics |
-| `analysis.py` | none yet | analysis modes, web/published/classic run, conversion, reports |
-| `libraries.py` | none yet | topic/material/knowledge/style/standard library operations |
-| `planning.py` | none yet | outline versions, chapter plan versions |
-| `context.py` | none yet | context build plans and bundles |
+| `analysis.py` | analysis modes, web/published/classic run, conversion, reports, handoffs | provider/rubric-backed scoring and richer report visualization |
+| `libraries.py` | topic/material/knowledge/style/standard library operations, style trend/scoring, quality score | deeper editors and graph views |
+| `production_chain.py` | outline versions, chapter-plan versions, draft versions, generation runs | chapter queue, invalidation, parameter dashboards |
+| `context_builder.py` | context build plans and bundles | manual curation, stale-context warnings, richer compression controls |
 | `audit.py` | chapter audit, originality report, publish gate, release package | future split into `originality.py` and `publishing.py` only if the shared quality-gate module grows too large |
 | `originality.py` | deferred | deeper originality similarity engines |
 | `publishing.py` | deferred; publish record today in drafts | publishing plan, calendar, publishing log |
@@ -377,6 +377,8 @@ Current acceptance status:
 
 Goal: make outline -> chapter plan -> context -> generation -> editor traceable.
 
+Status update 2026-06-27: the first traceability slice is implemented. Context Builder has schema-backed `context_build_plan` and `context_bundle` assets, service/API/UI coverage, token budget and retrieval metadata, compression preview, and actual-context replay. Production Chain has `outline_version`, `chapter_plan_version`, `draft_version`, and `generation_run` assets plus `/product/production/*` APIs and Web Admin panels. Draft generation now creates a context plan, freezes a context bundle, writes a draft version, and records a generation run. Workflow/node run contract now has `workflow_definition`, `workflow_node`, and `node_run` assets, `/product/workflow/*` APIs, and automatic NodeRun recording from workflow task execution. Change impact first slice has `change_impact_report`, `/product/impact/*`, downstream reference scanning, severity summaries, recommendations, and a Web Admin Change Impact page.
+
 ### New Schemas
 
 - `outline_version`
@@ -384,6 +386,7 @@ Goal: make outline -> chapter plan -> context -> generation -> editor traceable.
 - `context_build_plan`
 - `context_bundle`
 - `generation_run`
+- `draft_version`
 - `editor_patch`
 - `draft_diff_report`
 
@@ -392,6 +395,11 @@ Goal: make outline -> chapter plan -> context -> generation -> editor traceable.
 - Context builder records actual selected assets, token budget, priority, compression result, risks, and sent context.
 - Chapter generation records provider/model, prompt version, context bundle, style profile, quality standard, latency, token, error.
 - Editor suggestions can be applied individually and rollback creates version record.
+
+Current acceptance status:
+
+- Passed in unit/API tests for context build plan creation, context bundle creation, production version creation, generation-run creation, draft integration, workflow/node run recording, change impact report creation, OpenAPI registration, and schema validation.
+- Remaining work: manual source toggles/priorities in UI, stale-context invalidation warnings wired into generation preflight, chapter queue, parameter dashboards, `editor_patch`, and `draft_diff_report`.
 
 ## Phase 6: Quality, Originality, Publishing, Feedback
 
@@ -423,6 +431,8 @@ Goal: turn review into release gate.
 
 Goal: make Agent runs persisted, observable, recoverable, and permission-enforced.
 
+Status update 2026-06-27: the first persisted Agent runtime slice is implemented. The schema registry validates `agent_contract`, `agent_run`, `agent_checkpoint`, `agent_event`, `agent_budget`, `agent_gate`, `agent_metric`, and `agent_failure_report`. `modules/agent_runs` creates/reuses contracts, starts runs, records events/checkpoints/budgets/gates/failures, updates run status, and lists runs/events. `/product/agents/*` routes are registered and tested. Claude Code/Codex handoffs create `waiting_human` Agent runs, bind-output marks them `succeeded`, failed handoffs create failure reports, and retries cancel superseded runs. The Web Admin Production Control Center now shows Agent runs, NodeRuns, failures, dead letters, and human gates.
+
 ### New Schemas
 
 - `agent_contract`
@@ -436,10 +446,15 @@ Goal: make Agent runs persisted, observable, recoverable, and permission-enforce
 
 ### Acceptance
 
-- Any Agent run appears in task/Agent center.
+- Any Agent run appears in Production Control/Agent views.
 - Any Agent output is schema-validated.
 - Any high-risk output supports human gate.
 - Tool allowlist and output type allowlist are enforced at execution boundaries.
+
+Current acceptance status:
+
+- Passed in schema/service/API tests for Agent contract/run/event persistence, Handoff integration, OpenAPI registration, and status updates.
+- Remaining work: enforce allowlists inside every worker/model/service executor, one-click rollback actions, SLA/timeout enforcement, metrics aggregation, and deeper Agent timeline UI.
 
 ## Phase 8: Model Evaluation Center
 

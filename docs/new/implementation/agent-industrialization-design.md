@@ -11,8 +11,10 @@ Current files:
 - `AGENTS.md`
 - `docs/09-skills/agent-skill-map.md`
 - `src/novel_forge/agents/runtime.py`
+- `src/novel_forge/modules/agent_runs/service.py`
 - `src/novel_forge/modules/handoff/service.py`
-- `src/novel_forge/api/product.py` handoff validation/binding functions
+- `src/novel_forge/api/routers/agents.py`
+- `src/novel_forge/api/services/product.py` handoff validation/binding functions
 
 Current agent classes:
 
@@ -35,13 +37,27 @@ Current runtime support:
 - `validate_write_type_allowed()`
 - `enforce_agent_action()`
 - handoff output type enforcement during binding
+- persisted `agent_contract`
+- persisted `agent_run`
+- persisted `agent_event`
+- persisted `agent_checkpoint`
+- persisted `agent_budget`
+- persisted `agent_gate`
+- persisted `agent_metric`
+- persisted `agent_failure_report`
+- `/product/agents/runs`
+- `/product/agents/events`
+- `/product/agents/contracts`
+- `/product/agents/runs/status`
+- Claude Code/Codex handoff creates `waiting_human` Agent runs and synchronizes success/failure/retry status
 
 Current gap:
 
-- Agent activity is not persisted as an `agent_run`.
-- There is no standard contract/checkpoint/event/budget/gate/metric/failure-report model.
-- Task center can show tasks and handoffs, but not all Agent runs as first-class operations.
 - Permission allowlists are not consistently enforced in every worker/model/service boundary.
+- Agent rollback policy is not yet implemented as one-click rollback operations.
+- SLA/timeout/rate-limit enforcement is not yet uniform across Celery and local execution.
+- Agent metrics exist as schema but are not yet aggregated into scorecards or model routing.
+- Production Control shows Agent runs, but a deeper Agent Center timeline and gate-detail view is still needed.
 
 ## Target Agent Set
 

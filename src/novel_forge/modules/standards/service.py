@@ -5,9 +5,10 @@ from typing import Any
 
 from novel_forge.core.ids import utc_now
 from novel_forge.evaluation.creative_gate import evaluate_draft_quality
+from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import build_production_context
-from novel_forge.schemas import QualityScoreReport
+from novel_forge.schemas import QualityScoreReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 
@@ -24,30 +25,43 @@ def create_quality_score_report(
     evaluation = evaluate_quality_standard(target, context, review_result=review_result)
     project = context["project"]
     standard = context["profiles"].get("quality_standard_profile") or {}
-    asset = QualityScoreReport(
-        title=f"Quality score for {target.title}",
-        source=target.id,
-        tags=["quality", "quality-score", "publish-gate"],
-        content={
-            "target_asset_id": target.id,
-            "standard_id": evaluation["standard_id"],
-            "overall_score": evaluation["overall_score"],
-            "scores": evaluation["scores"],
-            "gate_results": evaluation["gate_results"],
-            "recommendation": evaluation["recommendation"],
-            "dimension_details": evaluation["dimension_details"],
-        },
-        metadata={
-            "workflow": "quality-standard-gate",
-            "project_id": project.get("project_id", ""),
-            "workspace_path": project.get("workspace_path", ""),
-            "quality_standard_profile_path": standard.get("path", "") if isinstance(standard, dict) else "",
-            "created_at": utc_now(),
-            "risk_level": "high" if evaluation["recommendation"] == "block_publish" else "medium",
-        },
-        references=_dedupe([target.id, str(standard.get("id", "")) if isinstance(standard, dict) else ""]),
-    )
-    return storage.write_asset("reviews", asset)
+    with AgentExecutionContext(
+        storage,
+        agent_key="review",
+        operation="create-quality-score-report",
+        input_assets=[path],
+        output_types=["quality_score_report"],
+        workspace_path=str(project.get("workspace_path", "")),
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        asset = QualityScoreReport(
+            title=f"Quality score for {target.title}",
+            source=target.id,
+            tags=["quality", "quality-score", "publish-gate"],
+            content={
+                "target_asset_id": target.id,
+                "standard_id": evaluation["standard_id"],
+                "overall_score": evaluation["overall_score"],
+                "scores": evaluation["scores"],
+                "gate_results": evaluation["gate_results"],
+                "recommendation": evaluation["recommendation"],
+                "dimension_details": evaluation["dimension_details"],
+            },
+            metadata={
+                "workflow": "quality-standard-gate",
+                "project_id": project.get("project_id", ""),
+                "workspace_path": project.get("workspace_path", ""),
+                "quality_standard_profile_path": standard.get("path", "") if isinstance(standard, dict) else "",
+                "created_at": utc_now(),
+                "risk_level": "high" if evaluation["recommendation"] == "block_publish" else "medium",
+            },
+            references=_dedupe([target.id, str(standard.get("id", "")) if isinstance(standard, dict) else ""]),
+        )
+        run.guard("write_quality_score_report", "quality_score_report")
+        output = _write(storage, asset)
+        run.succeed(output_assets=[output])
+        return output
 
 
 def evaluate_quality_standard(
@@ -173,3 +187,10 @@ def _dedupe(values: list[str]) -> list[str]:
             seen.add(value)
             result.append(value)
     return result
+
+
+def _write(storage: LocalStorage, asset: Any) -> Path:
+    errors = validate_common_fields(asset.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    return storage.write_asset("reviews", asset)

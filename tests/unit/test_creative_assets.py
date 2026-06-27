@@ -79,6 +79,30 @@ class CreativeAssetsTests(unittest.TestCase):
             self.assertEqual(setting[0]["type"], "continuity_bible")
             self.assertEqual(setting[0]["project_id"], project_id)
 
+            writing = create_creative_asset(
+                storage,
+                {
+                    "asset_type": "writing_template",
+                    "title": "Hook template",
+                    "project_id": project_id,
+                    "workspace_path": workspace_rel,
+                    "content": {"template_kind": "chapter_hook", "structure": ["pressure", "choice", "hook"]},
+                },
+            )
+            craft = create_creative_asset(
+                storage,
+                {
+                    "asset_type": "craft_template",
+                    "title": "Conflict craft",
+                    "project_id": project_id,
+                    "workspace_path": workspace_rel,
+                    "content": {"craft_domain": "conflict", "pattern": "choice creates cost"},
+                },
+            )
+            material = list_creative_assets(storage, "material_library", project_id=project_id)
+            self.assertIn(writing["path"], {row["path"] for row in material})
+            self.assertIn(craft["path"], {row["path"] for row in material})
+
     def test_project_bound_profiles_feed_draft_and_review(self):
         with tempfile.TemporaryDirectory() as tmp:
             detail = create_project_with_defaults(tmp, "Production Context Project")

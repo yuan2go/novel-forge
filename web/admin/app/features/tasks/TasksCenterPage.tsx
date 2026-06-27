@@ -1,0 +1,145 @@
+"use client";
+
+import { Activity, RotateCcw, Server, TimerReset } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FeatureShell } from "../../shared/feature-shell";
+import type { DeadLetter, ProjectRow, TaskCenter, TaskControl, TaskRow } from "../../shared/types";
+import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
+import { loadTaskData, retryDeadLetter, retryTask } from "./api";
+
+export function TasksCenterPage() {
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [center, setCenter] = useState<TaskCenter | null>(null);
+  const [control, setControl] = useState<TaskControl | null>(null);
+  const [deadLetters, setDeadLetters] = useState<DeadLetter[]>([]);
+  const [projectId, setProjectId] = useState("");
+  const [status, setStatus] = useState("");
+  const [taskType, setTaskType] = useState("");
+  const [step, setStep] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+
+  const selectedProject = projects.find((project) => project.project_id === projectId);
+
+  async function refresh(nextOffset = offset) {
+    const [projectRows, taskCenter, taskControl, deadLetterRows] = await loadTaskData({ projectId, status, taskType, step, offset: nextOffset });
+    setProjects(projectRows);
+    setCenter(taskCenter);
+    setControl(taskControl);
+    setDeadLetters(deadLetterRows);
+    setOffset(nextOffset);
+  }
+
+  async function runAction(action: () => Promise<unknown>, message: string) {
+    setBusy(true);
+    setNotice("");
+    setError("");
+    try {
+      await action();
+      setNotice(message);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function taskRow(row: TaskRow) {
+    return [
+      row.task_type,
+      row.step,
+      <span className={statusClass(row.status)} key={`${row.path}-status`}>{row.status}</span>,
+      `${Math.round((row.progress ?? 0) * 100)}%`,
+      row.updated_at || row.recorded_at || "-",
+      <button className="secondaryButton" key={`${row.path}-retry`} disabled={busy || !["failed", "dead_letter", "cancelled"].includes(row.status)} onClick={() => runAction(() => retryTask(row, selectedProject?.path), "任务已重试")}>
+        <RotateCcw size={16} />
+        重试
+      </button>
+    ];
+  }
+
+  useEffect(() => {
+    refresh(0).catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)));
+  }, []);
+
+  return (
+    <FeatureShell title="任务中心" subtitle="最新状态、完整 timeline、dead-letter、worker health 和队列压力统一进入任务恢复操作台。">
+      {notice ? <div className="noticeLine">{notice}</div> : null}
+      {error ? <div className="errorLine">{error}</div> : null}
+
+      <section className="summaryBand manuscriptSummary">
+        <Metric label="任务总数" value={String(center?.summary.task_count ?? 0)} />
+        <Metric label="失败" value={String(center?.summary.by_status?.failed ?? 0)} />
+        <Metric label="Dead Letter" value={String(control?.dead_letters?.count ?? deadLetters.length)} />
+        <Metric label="Worker" value={control?.celery.healthy ? "healthy" : "offline"} />
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="筛选" icon={<TimerReset size={18} />} />
+          <div className="formGrid">
+            <select value={projectId} onChange={(event) => setProjectId(event.target.value)}>
+              <option value="">全部项目</option>
+              {projects.map((project) => <option value={project.project_id} key={project.project_id}>{project.title}</option>)}
+            </select>
+            <input placeholder="状态 failed/running" value={status} onChange={(event) => setStatus(event.target.value)} />
+            <input placeholder="任务类型" value={taskType} onChange={(event) => setTaskType(event.target.value)} />
+            <input placeholder="步骤" value={step} onChange={(event) => setStep(event.target.value)} />
+            <button className="primaryButton" disabled={busy} onClick={() => refresh(0)}>应用</button>
+          </div>
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="Worker / Queue" icon={<Server size={18} />} />
+          <div className="summaryBand">
+            <Metric label="Active" value={String(control?.celery.active_count ?? 0)} />
+            <Metric label="Reserved" value={String(control?.celery.reserved_count ?? 0)} />
+            <Metric label="Scheduled" value={String(control?.celery.scheduled_count ?? 0)} />
+          </div>
+        </div>
+      </section>
+
+      <section className="panel">
+        <PanelHeader title="最新状态" icon={<Activity size={18} />} />
+        <DataTable
+          emptyText="暂无任务"
+          columns={["任务", "步骤", "状态", "进度", "更新时间", "操作"]}
+          rows={(center?.latest ?? []).map(taskRow)}
+        />
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="完整 Timeline" icon={<Activity size={18} />} />
+          <DataTable
+            emptyText="暂无事件"
+            columns={["任务", "步骤", "状态", "进度", "时间", "操作"]}
+            rows={(center?.timeline.events ?? []).map(taskRow)}
+          />
+          <div className="studioActions">
+            <button className="secondaryButton" disabled={offset <= 0 || busy} onClick={() => refresh(Math.max(0, offset - 120))}>上一页</button>
+            <button className="secondaryButton" disabled={!center?.pagination?.next_offset || busy} onClick={() => refresh(center?.pagination?.next_offset ?? offset)}>下一页</button>
+          </div>
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="Dead Letter" icon={<RotateCcw size={18} />} />
+          <DataTable
+            emptyText="暂无 dead-letter"
+            columns={["任务", "ID", "错误", "时间", "操作"]}
+            rows={deadLetters.map((letter) => [
+              letter.task_name,
+              letter.task_id,
+              letter.error_message || "-",
+              letter.created_at,
+              <button className="secondaryButton" key={letter.path} disabled={busy} onClick={() => runAction(() => retryDeadLetter(letter.path), "Dead-letter 已恢复")}>恢复</button>
+            ])}
+          />
+        </div>
+      </section>
+    </FeatureShell>
+  );
+}

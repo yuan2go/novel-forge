@@ -186,13 +186,96 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     ],
     "writing_template": ["template_id", "name", "template_kind", "structure", "usage_constraints", "anti_copy_rules"],
     "craft_template": ["template_id", "name", "craft_domain", "pattern", "use_cases", "risks"],
+    "context_build_plan": [
+        "target_asset_id",
+        "target_asset_type",
+        "target_path",
+        "query",
+        "token_budget",
+        "selection_policy",
+        "candidate_assets",
+        "exclusions",
+    ],
+    "context_bundle": [
+        "build_plan_id",
+        "target_asset_id",
+        "selected_assets",
+        "compressed_context",
+        "token_budget",
+        "token_estimate",
+        "actual_context",
+        "source_asset_ids",
+    ],
     "outline": ["acts"],
+    "outline_version": ["outline_id", "version_index", "base_outline_id", "acts", "change_summary", "status"],
     "chapter_plan": ["chapter", "objective", "beats", "hook"],
+    "chapter_plan_version": [
+        "chapter_plan_id",
+        "version_index",
+        "base_chapter_plan_id",
+        "chapter",
+        "objective",
+        "beats",
+        "hook",
+        "word_budget",
+        "conflict",
+        "information_points",
+        "status",
+    ],
+    "generation_run": [
+        "run_id",
+        "input_asset_id",
+        "input_asset_path",
+        "context_bundle_id",
+        "output_asset_id",
+        "provider",
+        "model",
+        "prompt_version",
+        "status",
+        "started_at",
+        "finished_at",
+    ],
+    "chapter_production_run": [
+        "run_id",
+        "status",
+        "current_step",
+        "chapter",
+        "step_order",
+        "steps",
+        "timeline",
+        "created_at",
+        "updated_at",
+    ],
     "draft_chapter": ["chapter", "text", "copyright_boundary"],
+    "draft_version": ["draft_id", "version_index", "chapter", "text", "source_draft_id", "change_summary", "status"],
+    "editor_patch": ["target_draft_id", "target_draft_path", "operations", "status", "created_at"],
+    "draft_diff_report": ["base_draft_id", "target_draft_id", "diff_summary", "operations", "created_at"],
     "review_report": ["rubric", "summary"],
     "revision_plan": ["steps", "target_score", "must_preserve"],
     "reader_feedback": ["rows"],
+    "feedback_import_batch": ["batch_id", "source", "rows", "row_count", "columns", "status", "imported_at"],
     "feedback_insight": ["signals", "average_rating", "next_generation_constraints"],
+    "reader_sentiment_report": [
+        "feedback_asset_ids",
+        "sentiment_distribution",
+        "clusters",
+        "reader_expectations",
+        "poison_points",
+        "sweet_points",
+        "recommendations",
+        "confidence",
+    ],
+    "project_metric_snapshot": [
+        "project_id",
+        "snapshot_at",
+        "throughput",
+        "quality",
+        "task_health",
+        "agent_health",
+        "storage_health",
+        "recommendations",
+    ],
+    "local_settings_profile": ["profile_id", "local_mode", "model_routing", "storage", "agent_defaults", "validation", "status"],
     "training_exercise": ["objective", "prompt", "rubric"],
     "image_prompt": ["prompt"],
     "claude_code_handoff": [
@@ -208,6 +291,20 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "acceptance_checks",
     ],
     "workflow_run": ["status"],
+    "workflow_definition": ["workflow_id", "name", "version", "nodes", "entry_node_id", "status"],
+    "workflow_node": ["node_id", "workflow_id", "node_type", "operation", "input_types", "output_types", "processor", "quality_gate"],
+    "node_run": [
+        "run_id",
+        "node_id",
+        "node_type",
+        "operation",
+        "status",
+        "input_assets",
+        "output_assets",
+        "processor",
+        "started_at",
+        "finished_at",
+    ],
     "task_status": ["status", "step"],
     "task_dead_letter": ["task_name", "task_id", "error_message", "payload"],
     "batch_task_item": ["batch_id", "item_index", "source_path", "status"],
@@ -218,6 +315,45 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "continuity_threads",
         "open_issues",
     ],
+    "change_impact_report": ["target_asset_id", "target_path", "impacted_assets", "impact_edges", "severity_summary", "recommendation"],
+    "agent_contract": [
+        "contract_id",
+        "agent_type",
+        "operation",
+        "input_types",
+        "output_types",
+        "permissions",
+        "tool_allowlist",
+        "allowed_write_types",
+        "quality_gates",
+    ],
+    "agent_run": [
+        "run_id",
+        "agent_type",
+        "operation",
+        "status",
+        "input_assets",
+        "output_assets",
+        "contract_id",
+        "permissions",
+        "started_at",
+    ],
+    "agent_checkpoint": ["agent_run_id", "checkpoint_id", "status", "state", "created_at"],
+    "agent_event": ["agent_run_id", "event_type", "status", "message", "created_at"],
+    "agent_budget": ["agent_run_id", "token_budget", "token_used", "cost_estimate", "status"],
+    "agent_gate": ["agent_run_id", "gate_id", "gate_type", "status", "result", "created_at"],
+    "agent_metric": ["agent_run_id", "metric_name", "value", "created_at"],
+    "agent_failure_report": ["agent_run_id", "error_type", "error_message", "recovery_instruction", "created_at"],
+    "agent_sla_report": ["agent_run_id", "status", "started_at", "deadline_at", "elapsed_seconds", "sla_seconds", "breach"],
+    "agent_rollback_report": ["agent_run_id", "rollback_id", "target_asset_paths", "rollback_strategy", "status", "created_at"],
+    "chapter_continuity_report": ["target_asset_id", "chapter", "continuity_checks", "violations", "recommendation"],
+    "continuity_graph_snapshot": ["project_id", "nodes", "edges", "summary", "created_at"],
+    "model_profile": ["provider", "model_name", "capabilities", "cost_profile", "status"],
+    "model_benchmark_task": ["task_id", "task_type", "input_assets", "rubric", "expected_output_type"],
+    "model_benchmark_run": ["task_id", "provider", "model_name", "scores", "latency_ms", "status", "created_at"],
+    "model_comparison_report": ["task_type", "runs", "winner", "score_summary", "recommendation"],
+    "prompt_version": ["prompt_id", "version", "task_type", "template", "status"],
+    "prompt_regression_report": ["prompt_id", "baseline_version", "candidate_version", "benchmark_runs", "recommendation"],
 }
 
 TOP_LEVEL_REQUIRED_FIELDS: dict[str, list[str]] = {
@@ -336,6 +472,8 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
             errors.append(f"{asset_type} missing required field: {key}")
     if asset_type == "workflow_run" and isinstance(content, dict):
         errors.extend(_validate_workflow_run_content(content))
+    if asset_type in {"workflow_definition", "workflow_node", "node_run"} and isinstance(content, dict):
+        errors.extend(_validate_workflow_contract_content(asset_type, content))
     if asset_type == "claude_code_handoff" and isinstance(content, dict):
         errors.extend(_validate_claude_code_handoff_content(content))
     if asset_type == "task_status" and isinstance(content, dict):
@@ -344,8 +482,12 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.extend(_validate_task_dead_letter_content(content))
     if asset_type == "batch_task_item" and isinstance(content, dict):
         errors.extend(_validate_batch_task_item_content(content))
-    if asset_type == "feedback_insight" and isinstance(content, dict):
-        errors.extend(_validate_feedback_insight_content(content))
+    if asset_type in {"feedback_import_batch", "feedback_insight", "reader_sentiment_report"} and isinstance(content, dict):
+        errors.extend(_validate_feedback_content(asset_type, content))
+    if asset_type == "project_metric_snapshot" and isinstance(content, dict):
+        errors.extend(_validate_project_metric_snapshot_content(content))
+    if asset_type == "local_settings_profile" and isinstance(content, dict):
+        errors.extend(_validate_local_settings_profile_content(content))
     if asset_type == "project_workspace_state" and isinstance(content, dict):
         errors.extend(_validate_project_workspace_state_content(content))
     if asset_type == "review_report" and isinstance(content, dict):
@@ -366,6 +508,20 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.extend(_validate_release_gate_content(asset_type, content))
     if asset_type in _ANALYSIS_ASSET_TYPES and isinstance(content, dict):
         errors.extend(_validate_analysis_asset_content(asset_type, content, data.get("metadata", {})))
+    if asset_type in {"context_build_plan", "context_bundle"} and isinstance(content, dict):
+        errors.extend(_validate_context_asset_content(asset_type, content))
+    if asset_type in {"outline_version", "chapter_plan_version", "draft_version", "generation_run", "chapter_production_run"} and isinstance(content, dict):
+        errors.extend(_validate_versioned_production_content(asset_type, content))
+    if asset_type in {"editor_patch", "draft_diff_report"} and isinstance(content, dict):
+        errors.extend(_validate_editor_asset_content(asset_type, content))
+    if asset_type == "change_impact_report" and isinstance(content, dict):
+        errors.extend(_validate_change_impact_report_content(content))
+    if asset_type.startswith("agent_") and isinstance(content, dict):
+        errors.extend(_validate_agent_asset_content(asset_type, content))
+    if asset_type in {"chapter_continuity_report", "continuity_graph_snapshot"} and isinstance(content, dict):
+        errors.extend(_validate_deep_continuity_content(asset_type, content))
+    if asset_type in {"model_profile", "model_benchmark_task", "model_benchmark_run", "model_comparison_report", "prompt_version", "prompt_regression_report"} and isinstance(content, dict):
+        errors.extend(_validate_model_evaluation_content(asset_type, content))
 
     return errors
 
@@ -399,6 +555,49 @@ def _validate_workflow_run_content(content: dict[str, Any]) -> list[str]:
             errors.append("failed workflow_run must include recovery_instruction")
         if _is_missing(content.get("run_log")):
             errors.append("failed workflow_run must include run_log")
+    return errors
+
+
+def _validate_workflow_contract_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "workflow_definition":
+        nodes = content.get("nodes")
+        if not isinstance(nodes, list):
+            errors.append("workflow_definition nodes must be a list")
+        elif not nodes:
+            errors.append("workflow_definition nodes must not be empty")
+        if content.get("status") not in {"draft", "active", "archived"}:
+            errors.append("workflow_definition status must be draft, active, or archived")
+    if asset_type == "workflow_node":
+        for key in ["input_types", "output_types"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"workflow_node {key} must be a list")
+        if not isinstance(content.get("processor"), dict):
+            errors.append("workflow_node processor must be an object")
+        if not isinstance(content.get("quality_gate"), dict):
+            errors.append("workflow_node quality_gate must be an object")
+    if asset_type == "node_run":
+        if content.get("status") not in {
+            "planned",
+            "prepared",
+            "running",
+            "waiting_human",
+            "verifying",
+            "succeeded",
+            "needs_revision",
+            "failed",
+            "dead_letter",
+            "recovered",
+            "cancelled",
+        }:
+            errors.append("node_run status is invalid")
+        for key in ["input_assets", "output_assets"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"node_run {key} must be a list")
+        if not isinstance(content.get("processor"), dict):
+            errors.append("node_run processor must be an object")
+        if "quality_gate" in content and not isinstance(content.get("quality_gate"), dict):
+            errors.append("node_run quality_gate must be an object")
     return errors
 
 
@@ -500,6 +699,47 @@ def _validate_source_rights(metadata: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _validate_feedback_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "feedback_import_batch":
+        if content.get("status") not in {"imported", "failed", "partial"}:
+            errors.append("feedback_import_batch status must be imported, failed, or partial")
+        if not isinstance(content.get("rows"), list):
+            errors.append("feedback_import_batch rows must be a list")
+        if not isinstance(content.get("row_count"), int) or content.get("row_count", 0) < 0:
+            errors.append("feedback_import_batch row_count must be a non-negative integer")
+        if not isinstance(content.get("columns"), list):
+            errors.append("feedback_import_batch columns must be a list")
+    if asset_type == "feedback_insight":
+        errors.extend(_validate_feedback_insight_content(content))
+    if asset_type == "reader_sentiment_report":
+        distribution = content.get("sentiment_distribution")
+        if not isinstance(distribution, dict):
+            errors.append("reader_sentiment_report sentiment_distribution must be an object")
+        else:
+            for key in ["positive", "neutral", "negative"]:
+                if key in distribution and (not isinstance(distribution.get(key), int) or distribution.get(key, 0) < 0):
+                    errors.append(f"reader_sentiment_report sentiment_distribution.{key} must be a non-negative integer")
+        clusters = content.get("clusters")
+        if not isinstance(clusters, list):
+            errors.append("reader_sentiment_report clusters must be a list")
+        else:
+            for index, cluster in enumerate(clusters):
+                if not isinstance(cluster, dict):
+                    errors.append(f"reader_sentiment_report clusters[{index}] must be an object")
+                    continue
+                if _is_missing(cluster.get("label")):
+                    errors.append(f"reader_sentiment_report clusters[{index}].label must not be empty")
+                if "count" in cluster and (not isinstance(cluster.get("count"), int) or cluster.get("count", 0) < 0):
+                    errors.append(f"reader_sentiment_report clusters[{index}].count must be a non-negative integer")
+        for key in ["feedback_asset_ids", "reader_expectations", "poison_points", "sweet_points", "recommendations"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"reader_sentiment_report {key} must be a list")
+        if content.get("confidence") not in {"none", "low", "medium", "high"}:
+            errors.append("reader_sentiment_report confidence must be none, low, medium, or high")
+    return errors
+
+
 def _validate_feedback_insight_content(content: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     chapter_trends = content.get("chapter_trends")
@@ -541,6 +781,43 @@ def _validate_feedback_insight_content(content: dict[str, Any]) -> list[str]:
             errors.append("feedback_insight plot_adjustment_plan must be an object")
         elif not isinstance(plot_adjustment_plan.get("next_generation_constraints", []), list):
             errors.append("feedback_insight plot_adjustment_plan.next_generation_constraints must be a list")
+    return errors
+
+
+def _validate_project_metric_snapshot_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for key in ["throughput", "quality", "task_health", "agent_health", "storage_health"]:
+        if not isinstance(content.get(key), dict):
+            errors.append(f"project_metric_snapshot {key} must be an object")
+    recommendations = content.get("recommendations")
+    if not isinstance(recommendations, list):
+        errors.append("project_metric_snapshot recommendations must be a list")
+    quality = content.get("quality") if isinstance(content.get("quality"), dict) else {}
+    for score_key in ["average_review_score", "review_pass_rate", "originality_risk_rate"]:
+        if score_key in quality and not isinstance(quality.get(score_key), (int, float)):
+            errors.append(f"project_metric_snapshot quality.{score_key} must be numeric")
+    task_health = content.get("task_health") if isinstance(content.get("task_health"), dict) else {}
+    for count_key in ["failed", "running", "waiting_handoff", "dead_letters"]:
+        if count_key in task_health and (not isinstance(task_health.get(count_key), int) or task_health.get(count_key, 0) < 0):
+            errors.append(f"project_metric_snapshot task_health.{count_key} must be a non-negative integer")
+    return errors
+
+
+def _validate_local_settings_profile_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(content.get("local_mode"), bool):
+        errors.append("local_settings_profile local_mode must be boolean")
+    for key in ["model_routing", "storage", "agent_defaults", "validation"]:
+        if not isinstance(content.get(key), dict):
+            errors.append(f"local_settings_profile {key} must be an object")
+    if content.get("status") not in {"draft", "active", "archived"}:
+        errors.append("local_settings_profile status must be draft, active, or archived")
+    model_routing = content.get("model_routing") if isinstance(content.get("model_routing"), dict) else {}
+    if "default_provider" in model_routing and _is_missing(model_routing.get("default_provider")):
+        errors.append("local_settings_profile model_routing.default_provider must not be empty when present")
+    validation = content.get("validation") if isinstance(content.get("validation"), dict) else {}
+    if "strict_local_prod" in validation and not isinstance(validation.get("strict_local_prod"), bool):
+        errors.append("local_settings_profile validation.strict_local_prod must be boolean")
     return errors
 
 
@@ -823,6 +1100,265 @@ def _validate_analysis_asset_content(asset_type: str, content: dict[str, Any], m
             errors.append("analysis_conversion_report rejected_items must be a list")
         if content.get("reuse_scope") not in {"project", "global", "research_only"}:
             errors.append("analysis_conversion_report reuse_scope must be project, global, or research_only")
+    return errors
+
+
+def _validate_context_asset_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    token_budget = content.get("token_budget")
+    if not isinstance(token_budget, dict):
+        errors.append(f"{asset_type} token_budget must be an object")
+    else:
+        max_tokens = token_budget.get("max_tokens")
+        if not isinstance(max_tokens, int) or max_tokens <= 0:
+            errors.append(f"{asset_type} token_budget.max_tokens must be a positive integer")
+    if asset_type == "context_build_plan":
+        if not isinstance(content.get("selection_policy"), dict):
+            errors.append("context_build_plan selection_policy must be an object")
+        for key in ["candidate_assets", "exclusions"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"context_build_plan {key} must be a list")
+        top_k = content.get("top_k")
+        if top_k is not None and (not isinstance(top_k, int) or top_k <= 0):
+            errors.append("context_build_plan top_k must be a positive integer")
+    if asset_type == "context_bundle":
+        selected_assets = content.get("selected_assets")
+        if not isinstance(selected_assets, list):
+            errors.append("context_bundle selected_assets must be a list")
+        source_asset_ids = content.get("source_asset_ids")
+        if not isinstance(source_asset_ids, list):
+            errors.append("context_bundle source_asset_ids must be a list")
+        token_estimate = content.get("token_estimate")
+        if not isinstance(token_estimate, (int, float)) or token_estimate < 0:
+            errors.append("context_bundle token_estimate must be a non-negative number")
+        if not isinstance(content.get("compressed_context"), (dict, list, str)):
+            errors.append("context_bundle compressed_context must be an object, list, or string")
+    return errors
+
+
+def _validate_versioned_production_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    status = content.get("status")
+    allowed_version_status = {"draft", "active", "superseded", "archived"}
+    if asset_type in {"outline_version", "chapter_plan_version", "draft_version"}:
+        version_index = content.get("version_index")
+        if not isinstance(version_index, int) or version_index < 0:
+            errors.append(f"{asset_type} version_index must be a non-negative integer")
+        if status not in allowed_version_status:
+            errors.append(f"{asset_type} status must be draft, active, superseded, or archived")
+    if asset_type == "outline_version" and not isinstance(content.get("acts"), list):
+        errors.append("outline_version acts must be a list")
+    if asset_type == "chapter_plan_version":
+        if not isinstance(content.get("beats"), list):
+            errors.append("chapter_plan_version beats must be a list")
+        if not isinstance(content.get("information_points"), list):
+            errors.append("chapter_plan_version information_points must be a list")
+        word_budget = content.get("word_budget")
+        if not isinstance(word_budget, (dict, int, float)):
+            errors.append("chapter_plan_version word_budget must be an object or number")
+    if asset_type == "generation_run":
+        if status not in {"planned", "prepared", "running", "succeeded", "failed", "cancelled"}:
+            errors.append("generation_run status must be planned, prepared, running, succeeded, failed, or cancelled")
+        for key in ["input_asset_path", "context_bundle_id", "provider", "model", "prompt_version", "started_at", "finished_at"]:
+            if not isinstance(content.get(key), str):
+                errors.append(f"generation_run {key} must be a string")
+        if "source_asset_ids" in content and not isinstance(content.get("source_asset_ids"), list):
+            errors.append("generation_run source_asset_ids must be a list")
+        if "metrics" in content and not isinstance(content.get("metrics"), dict):
+            errors.append("generation_run metrics must be an object")
+    if asset_type == "chapter_production_run":
+        if status not in {"planned", "running", "waiting_human", "succeeded", "failed", "cancelled", "recovered"}:
+            errors.append("chapter_production_run status must be planned, running, waiting_human, succeeded, failed, cancelled, or recovered")
+        if not isinstance(content.get("chapter"), int) or content.get("chapter", 0) < 1:
+            errors.append("chapter_production_run chapter must be a positive integer")
+        for key in ["step_order", "timeline"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"chapter_production_run {key} must be a list")
+        if not isinstance(content.get("steps"), dict):
+            errors.append("chapter_production_run steps must be an object")
+        if not isinstance(content.get("current_step"), str):
+            errors.append("chapter_production_run current_step must be a string")
+        if "outputs" in content and not isinstance(content.get("outputs"), dict):
+            errors.append("chapter_production_run outputs must be an object")
+    return errors
+
+
+def _validate_editor_asset_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "editor_patch":
+        operations = content.get("operations")
+        if not isinstance(operations, list) or not operations:
+            errors.append("editor_patch operations must be a non-empty list")
+        elif any(not isinstance(item, dict) for item in operations):
+            errors.append("editor_patch operations must contain objects")
+        if content.get("status") not in {"proposed", "applied", "rejected", "rolled_back"}:
+            errors.append("editor_patch status must be proposed, applied, rejected, or rolled_back")
+    if asset_type == "draft_diff_report":
+        operations = content.get("operations")
+        if not isinstance(operations, list):
+            errors.append("draft_diff_report operations must be a list")
+        summary = content.get("diff_summary")
+        if not isinstance(summary, dict):
+            errors.append("draft_diff_report diff_summary must be an object")
+    return errors
+
+
+def _validate_change_impact_report_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    impacted = content.get("impacted_assets")
+    if not isinstance(impacted, list):
+        errors.append("change_impact_report impacted_assets must be a list")
+    else:
+        for index, item in enumerate(impacted):
+            if not isinstance(item, dict):
+                errors.append(f"change_impact_report impacted_assets[{index}] must be an object")
+                continue
+            if item.get("severity") not in {"low", "medium", "high", "blocking"}:
+                errors.append(f"change_impact_report impacted_assets[{index}].severity must be low, medium, high, or blocking")
+            if _is_missing(item.get("path")):
+                errors.append(f"change_impact_report impacted_assets[{index}].path must not be empty")
+    edges = content.get("impact_edges")
+    if not isinstance(edges, list):
+        errors.append("change_impact_report impact_edges must be a list")
+    summary = content.get("severity_summary")
+    if not isinstance(summary, dict):
+        errors.append("change_impact_report severity_summary must be an object")
+    if content.get("recommendation") not in {"no_action", "review_impacts", "regenerate_downstream", "block_until_resolved"}:
+        errors.append("change_impact_report recommendation must be no_action, review_impacts, regenerate_downstream, or block_until_resolved")
+    return errors
+
+
+def _validate_agent_asset_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "agent_contract":
+        for key in ["input_types", "output_types", "tool_allowlist", "allowed_write_types", "quality_gates"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"agent_contract {key} must be a list")
+        for key in ["permissions"]:
+            if not isinstance(content.get(key), dict):
+                errors.append(f"agent_contract {key} must be an object")
+    if asset_type == "agent_run":
+        if content.get("status") not in {
+            "planned",
+            "prepared",
+            "running",
+            "waiting_human",
+            "verifying",
+            "succeeded",
+            "needs_revision",
+            "failed",
+            "dead_letter",
+            "recovered",
+            "cancelled",
+        }:
+            errors.append("agent_run status is invalid")
+        for key in ["input_assets", "output_assets"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"agent_run {key} must be a list")
+        if not isinstance(content.get("permissions"), dict):
+            errors.append("agent_run permissions must be an object")
+    if asset_type == "agent_checkpoint" and not isinstance(content.get("state"), dict):
+        errors.append("agent_checkpoint state must be an object")
+    if asset_type == "agent_event" and content.get("status") not in {
+        "info",
+        "warning",
+        "planned",
+        "prepared",
+        "running",
+        "waiting_human",
+        "verifying",
+        "succeeded",
+        "needs_revision",
+        "failed",
+        "dead_letter",
+        "recovered",
+        "cancelled",
+    }:
+        errors.append("agent_event status is invalid")
+    if asset_type == "agent_budget":
+        for key in ["token_budget", "token_used", "cost_estimate"]:
+            value = content.get(key)
+            if not isinstance(value, (int, float)) or value < 0:
+                errors.append(f"agent_budget {key} must be a non-negative number")
+        if content.get("status") not in {"within_budget", "near_limit", "exceeded"}:
+            errors.append("agent_budget status must be within_budget, near_limit, or exceeded")
+    if asset_type == "agent_gate":
+        if content.get("status") not in {"pending", "passed", "failed", "waived", "needs_human"}:
+            errors.append("agent_gate status must be pending, passed, failed, waived, or needs_human")
+        if not isinstance(content.get("result"), dict):
+            errors.append("agent_gate result must be an object")
+    if asset_type == "agent_metric":
+        if not isinstance(content.get("value"), (int, float, str, bool)):
+            errors.append("agent_metric value must be scalar")
+    if asset_type == "agent_sla_report":
+        if content.get("status") not in {"within_sla", "breached", "unknown"}:
+            errors.append("agent_sla_report status must be within_sla, breached, or unknown")
+        for key in ["elapsed_seconds", "sla_seconds"]:
+            value = content.get(key)
+            if not isinstance(value, (int, float)) or value < 0:
+                errors.append(f"agent_sla_report {key} must be a non-negative number")
+        if not isinstance(content.get("breach"), bool):
+            errors.append("agent_sla_report breach must be boolean")
+    if asset_type == "agent_rollback_report":
+        if not isinstance(content.get("target_asset_paths"), list):
+            errors.append("agent_rollback_report target_asset_paths must be a list")
+        if content.get("status") not in {"planned", "applied", "failed", "not_required"}:
+            errors.append("agent_rollback_report status must be planned, applied, failed, or not_required")
+    return errors
+
+
+def _validate_deep_continuity_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "chapter_continuity_report":
+        if not isinstance(content.get("continuity_checks"), list):
+            errors.append("chapter_continuity_report continuity_checks must be a list")
+        if not isinstance(content.get("violations"), list):
+            errors.append("chapter_continuity_report violations must be a list")
+        if content.get("recommendation") not in {"pass", "revise", "block"}:
+            errors.append("chapter_continuity_report recommendation must be pass, revise, or block")
+    if asset_type == "continuity_graph_snapshot":
+        for key in ["nodes", "edges"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"continuity_graph_snapshot {key} must be a list")
+        if not isinstance(content.get("summary"), dict):
+            errors.append("continuity_graph_snapshot summary must be an object")
+    return errors
+
+
+def _validate_model_evaluation_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "model_profile":
+        for key in ["capabilities", "cost_profile"]:
+            if not isinstance(content.get(key), dict):
+                errors.append(f"model_profile {key} must be an object")
+        if content.get("status") not in {"active", "candidate", "disabled", "failed"}:
+            errors.append("model_profile status must be active, candidate, disabled, or failed")
+    if asset_type == "model_benchmark_task":
+        if not isinstance(content.get("input_assets"), list):
+            errors.append("model_benchmark_task input_assets must be a list")
+        if not isinstance(content.get("rubric"), dict):
+            errors.append("model_benchmark_task rubric must be an object")
+    if asset_type == "model_benchmark_run":
+        if not isinstance(content.get("scores"), dict):
+            errors.append("model_benchmark_run scores must be an object")
+        latency = content.get("latency_ms")
+        if not isinstance(latency, (int, float)) or latency < 0:
+            errors.append("model_benchmark_run latency_ms must be a non-negative number")
+        if content.get("status") not in {"succeeded", "failed", "skipped"}:
+            errors.append("model_benchmark_run status must be succeeded, failed, or skipped")
+    if asset_type == "model_comparison_report":
+        if not isinstance(content.get("runs"), list):
+            errors.append("model_comparison_report runs must be a list")
+        if not isinstance(content.get("score_summary"), dict):
+            errors.append("model_comparison_report score_summary must be an object")
+    if asset_type == "prompt_version":
+        if content.get("status") not in {"draft", "active", "archived"}:
+            errors.append("prompt_version status must be draft, active, or archived")
+    if asset_type == "prompt_regression_report":
+        if not isinstance(content.get("benchmark_runs"), list):
+            errors.append("prompt_regression_report benchmark_runs must be a list")
+        if content.get("recommendation") not in {"promote", "keep_baseline", "needs_revision"}:
+            errors.append("prompt_regression_report recommendation must be promote, keep_baseline, or needs_revision")
     return errors
 
 

@@ -7,6 +7,7 @@ from typing import Any
 
 from novel_forge.core.constants import ASSET_DIR_BY_TYPE
 from novel_forge.core.ids import utc_now
+from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.schemas import SCHEMA_CLASSES, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -177,13 +178,24 @@ def create_creative_asset(storage: LocalStorage, payload: dict[str, Any]) -> dic
     errors = validate_common_fields(data)
     if errors:
         raise ValueError("; ".join(errors))
-    path = storage.write_asset_auto(asset)
-    return {
-        "path": str(path.relative_to(storage.root)),
-        "library": _LIBRARY_BY_TYPE[asset_type],
-        "asset": data,
-        "validation": {"ok": True, "errors": []},
-    }
+    with AgentExecutionContext(
+        storage,
+        agent_key="creative_asset",
+        operation="create-creative-asset",
+        output_types=[asset_type],
+        workspace_path=workspace_path,
+        sla_seconds=300,
+    ) as run:
+        run.guard("write_creative_asset", asset_type)
+        path = storage.write_asset_auto(asset)
+        result = {
+            "path": str(path.relative_to(storage.root)),
+            "library": _LIBRARY_BY_TYPE[asset_type],
+            "asset": data,
+            "validation": {"ok": True, "errors": []},
+        }
+        run.succeed(output_assets=[result["path"]])
+        return result
 
 
 def creative_asset_schema() -> dict[str, Any]:
@@ -246,6 +258,8 @@ def _matches_project(data: dict[str, Any], project_id: str | None, *, include_gl
         return True
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    if str(metadata.get("library_scope", "")).strip() == "global":
+        return include_global
     record_project_id = str(metadata.get("project_id") or content.get("project_id") or "").strip()
     if record_project_id == project_id:
         return True
@@ -495,6 +509,9 @@ def _default_metadata(asset_type: str, *, project_id: str, workspace_path: str, 
         "created_by": "creative_asset_workbench",
         "created_at": utc_now(),
     }
+    if scope == "global":
+        metadata["project_id"] = project_id or "local-system"
+        metadata["workspace_path"] = workspace_path or "local-system"
     if project_id:
         metadata["project_id"] = project_id
     if workspace_path:
