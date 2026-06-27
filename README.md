@@ -1,18 +1,32 @@
 # Novel Forge V5
 
-Novel Forge V5 is a file-based, testable AI novel production system rebuilt from the V4 documentation and audit assets. It focuses on industrialized long-form fiction production instead of one-off chapter generation.
+Novel Forge V5 is a local-first AI novel production platform.
 
-Core pipeline:
+It is not an AI chapter generator. It is designed to turn source materials, abstracted reference analysis, multidisciplinary knowledge, reusable creative assets, context bundles, review reports, revision tasks, reader feedback, and publishing gates into a controlled long-form fiction production workflow.
+
+Internal architecture vision: Novel Operating System.
+
+Repository/package/CLI name remains `novel-forge` in V5. Do not rename the project to Novel Operating System unless a separate migration task approves repository, package, command, path, and documentation changes.
+
+Core executable pipeline:
 
 ```text
 source material -> cleaned text -> decomposition -> knowledge/material assets -> topic -> world -> characters -> outline -> chapter plan -> draft -> review -> revision -> feedback insight
 ```
 
+Target platform pipeline:
+
+```text
+project strategy -> analysis center -> context build plan -> context bundle -> versioned outline/chapter-plan/draft -> review pipeline -> editor patch/revision task -> continuity/publish gates -> publishing/feedback analytics -> next planning loop
+```
+
 ## Principles
 
-- Extract structure, rhythm, hooks, conflict mechanics, emotional curves, and commercial logic from reference works.
-- Do not copy original expression, character combinations, settings, or plot sequences from copyrighted works.
-- Keep raw sources, decomposition reports, generated assets, and final drafts in separate directories.
+- Extract structure, rhythm, hooks, conflict mechanics, emotional curves, craft technique, and commercial logic from reference works.
+- Do not copy original expression, character combinations, settings, scenes, or plot sequences from copyrighted works.
+- Keep raw sources, decomposition/analysis reports, generated assets, drafts, reviews, publishing assets, feedback, and runs in separate directories.
+- Treat prompts as node execution parameters, not the product architecture.
+- Prefer workflow nodes, schema-backed artifacts, context replay, versioning, and quality gates.
 - Use deterministic mock adapters for tests; real OpenAI-compatible providers are opt-in through environment variables.
 
 ## Quick Start
@@ -44,6 +58,7 @@ make local-up
 ```
 
 The command creates `.env` from `.env.example` when needed, starts the full Docker Compose stack, initializes and syncs PostgreSQL, then runs a smoke test.
+
 Docker mounts `.local/workspace/` into the containers as `/runtime`, so generated JSON assets, uploads, indexes, exports, and sample outputs remain local runtime state.
 
 Open:
@@ -89,15 +104,29 @@ Model calls use strict JSON prompts and output validation. Invalid model output 
 ./novel-forge extract-knowledge --input data/decompositions/<file>.json
 ./novel-forge build-materials
 ./novel-forge generate-topic
+./novel-forge topic-development
+./novel-forge training-exercise
 ./novel-forge generate-world
 ./novel-forge generate-characters
 ./novel-forge generate-outline
 ./novel-forge generate-chapter-plan
 ./novel-forge draft
 ./novel-forge review --input data/drafts/<file>.json
+./novel-forge compare-reviews --input data/drafts/<file>.json
 ./novel-forge revise --input data/reviews/<file>.json
 ./novel-forge import-feedback examples/sample_inputs/sample_feedback.csv
 ./novel-forge analyze-feedback
+./novel-forge claude-deconstruct
+./novel-forge claude-knowledge
+./novel-forge build-index
+./novel-forge search
+./novel-forge build-vector-index
+./novel-forge vector-search --query "..."
+./novel-forge qdrant-index
+./novel-forge qdrant-search --query "..."
+./novel-forge minio-sync
+./novel-forge init-workspace
+./novel-forge workspace-status
 ./novel-forge run-pipeline --sample
 ./novel-forge industrial-status
 ./novel-forge status
@@ -110,12 +139,12 @@ These commands default to the current directory unless `NOVEL_FORGE_ROOT` is set
 
 The default testable core still runs without third-party dependencies. Production-style infrastructure is available through optional adapters:
 
-- PostgreSQL for asset indexes, task statuses, and content-hash version records.
+- PostgreSQL for asset indexes, projects, task statuses, and content-hash version records.
 - FastAPI for backend API access.
 - Redis + Celery for async batch and long-running workflow execution.
 - Qdrant for real vector retrieval.
 - MinIO for object copies of raw material, artifacts, and exports.
-- Next.js for the product console under `web/admin/`: project space, project configuration, project-scoped task/assets, batch deconstruction, draft workbench, and review/revision flow.
+- Next.js for the product console under `web/admin/`.
 - Neo4j remains opt-in for relationship-heavy graph queries.
 
 ```bash
@@ -124,15 +153,38 @@ make local-up
 
 See [Industrial Stack](docs/01-architecture/industrial-stack.md) for service boundaries.
 
-## Skills
+## Platform Migration Priorities
 
-V5 includes repository-level Skills under `skills/`. Skills capture reusable creative capabilities and quality gates; they do not store source text or copyrighted content.
+Current P0 direction:
 
+1. Platform skeleton: workflow/node run, artifact version, context bundle, generation run, quality gate, revision task.
+2. Context Builder: `context_build_plan`, `context_bundle`, token budget, asset selection/ranking, compression preview, actual-context replay.
+3. Versioned production chain: `outline_version`, `chapter_plan_version`, `generation_run`, chapter queue, invalidation warnings.
+4. Analysis Center upgrade: web fiction, published fiction, classic literature, common analysis core, analysis-to-asset conversion.
+5. Long-form stability: timeline, foreshadowing, relationship/faction/map/prop systems, change impact report.
+6. AI Editor: paragraph suggestions, `editor_patch`, apply/rollback, diff replay.
+7. Agent industrialization: contract, run, checkpoint, budget, gate, metric, state machine, Agent Center UI.
+8. Reader feedback, publishing operations, and model evaluation centers.
+
+## Key Docs
+
+- [CLAUDE.md](CLAUDE.md)
+- [AGENTS.md](AGENTS.md)
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [WORKFLOW.md](WORKFLOW.md)
+- [TESTING.md](TESTING.md)
+- [System Architecture](docs/01-architecture/system-architecture.md)
+- [Main Pipeline](docs/02-workflows/main-pipeline.md)
+- [Testing Strategy](docs/05-testing/testing-strategy.md)
 - [Skills System](docs/09-skills/README.md)
 - [Agent Skill Map](docs/09-skills/agent-skill-map.md)
 - [Claude Code Runtime Skill Sync](docs/09-skills/runtime-sync.md)
 - [Skills Architecture](docs/01-architecture/skills-system.md)
 - [Skill Usage Workflow](docs/02-workflows/skill-usage.md)
+
+## Skills
+
+V5 includes repository-level Skills under `skills/`. Skills capture reusable creative capabilities and quality gates; they do not store source text or copyrighted content.
 
 Preview runtime mapping:
 
@@ -149,3 +201,5 @@ make sync-skills
 ## Current Implementation Scope
 
 V5 keeps the Python standard-library core, dataclass schemas, local JSON storage, deterministic mock adapters, and `unittest` tests. Industrial services and real model providers are opt-in so local validation remains fast and dependency-light.
+
+Do not document target platform features as completed until schema, service, API/UI, tests, and validation exist.
