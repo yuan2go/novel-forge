@@ -1,5 +1,11 @@
 # Main Pipeline
 
+## Purpose
+
+The main pipeline is the executable baseline for Novel Forge as a local-first AI novel production platform.
+
+It should remain testable and deterministic by default while evolving toward a workflow-node, artifact-version, context-bundle, and quality-gate architecture.
+
 ## Command
 
 ```bash
@@ -8,29 +14,101 @@
 
 For normal local runs, execute the sample pipeline through `make demo` or pass `--root .local/demo-workspace`. Generated assets and sample outputs should live in an ignored runtime workspace, not in the repository root.
 
-## Steps
+## Current Executable Steps
 
-1. Import source material.
-2. Clean text.
-3. Decompose narrative/commercial mechanisms.
-4. Extract knowledge.
-5. Build reusable materials.
-6. Generate topic.
-7. Generate world.
-8. Generate characters.
-9. Generate outline.
-10. Generate chapter plan.
-11. Draft chapter.
-12. Review draft.
-13. Produce revision plan.
-14. Import feedback.
-15. Analyze feedback.
+```text
+ingest
+  -> clean
+  -> decompose
+  -> extract-knowledge
+  -> build-materials
+  -> generate-topic
+  -> generate-world
+  -> generate-characters
+  -> generate-outline
+  -> generate-chapter-plan
+  -> draft
+  -> init-workspace
+  -> update-workspace-draft
+  -> review
+  -> review-derived reports
+  -> update-workspace-review
+  -> revise
+  -> import-feedback
+  -> analyze-feedback
+```
 
-## Acceptance
+## Current Acceptance
 
-A successful run creates a `WorkflowRun` JSON in `<workspace>/data/runs/` and a summary in `<workspace>/examples/sample_outputs/`.
-Each pipeline step also writes `TaskStatus` JSON records under `<workspace>/data/runs/` for `pending`, `running`, and `completed`. If a step fails, the failed step writes a `failed` TaskStatus and the pipeline writes a failed `WorkflowRun` with an error message.
+A successful run creates:
 
-`WorkflowRun.content.run_log` contains a readable ordered log built from TaskStatus assets. Failed runs also include `recovery_instruction` and write a recovery note under `<workspace>/data/runs/`.
+- a `WorkflowRun` JSON in `<workspace>/data/runs/`;
+- `TaskStatus` JSON records in `<workspace>/data/runs/` for pipeline steps;
+- a summary in `<workspace>/examples/sample_outputs/`.
 
-When `run-pipeline --sample` is used, the pipeline first reads the previous `<workspace>/examples/sample_outputs/pipeline-summary.json` and removes only the sample output files referenced by that summary. This keeps repeated sample runs from accumulating duplicate generated assets while avoiding broad cleanup of user data.
+If a step fails:
+
+- the failed step records failed status;
+- the pipeline writes a failed `WorkflowRun`;
+- the run includes error message, readable run log, recovery instruction, and recovery note path.
+
+When `run-pipeline --sample` is used, the pipeline removes only sample output files referenced by the previous sample summary. It must not broadly clean user data.
+
+## Platform Direction
+
+The current pipeline should be incrementally migrated toward this target:
+
+```text
+project strategy
+  -> platform/genre strategy
+  -> analysis center
+  -> analysis-to-asset conversion
+  -> context build plan
+  -> context bundle
+  -> topic/world/character planning
+  -> outline version
+  -> chapter-plan version
+  -> generation run
+  -> draft version
+  -> review pipeline
+  -> editor patch / revision task
+  -> continuity and platform gates
+  -> release package
+  -> publishing plan/log
+  -> reader feedback analytics
+  -> next chapter plan update
+```
+
+## Node Contract
+
+Every future pipeline step should be expressible as a node with:
+
+| Contract Field | Required Meaning |
+|---|---|
+| node id/type | stable name and production role |
+| inputs | artifact paths, project/workspace id, parameters |
+| context bundle | actual model/retrieval context when applicable |
+| processor | service, model adapter, handoff, worker, or future Agent |
+| output artifact | schema-backed asset or version |
+| gate | pass/fail/needs_revision criteria |
+| run record | timing, provider, status, errors, prompt/Skill version |
+| recovery | retry, rollback, rerun, manual handoff, or invalidation path |
+
+## Priority Migration
+
+1. Keep existing CLI pipeline stable.
+2. Add workflow/node run and artifact-version contracts around current steps.
+3. Add Context Builder before expanding generation complexity.
+4. Add versioned outline/chapter-plan/draft chain.
+5. Upgrade Analysis Center after the production chain can consume analysis outputs reliably.
+6. Add long-form stability, editor patches, Agent runs, publishing, feedback analytics, and model evaluation after the core chain is traceable.
+
+## Non-Negotiable Boundaries
+
+- Raw reference text must not be injected into draft generation.
+- Analysis outputs are abstract mechanisms, not draft prose.
+- Draft generation must not skip chapter plan.
+- Drafts must not skip review before release decisions.
+- Revisions must create a new artifact/version or patch record.
+- Failed runs must produce recovery information.
+- Provider calls must be opt-in and schema-validated.
