@@ -48,6 +48,17 @@ TYPE_BUCKETS = {
 }
 
 FORESHADOWING_TERMS = ("伏笔", "foreshadow", "hook", "continuity_thread", "continuity_threads", "open_issue", "open_issues")
+COPYRIGHT_RISK_ORDER = {"low": 0, "medium": 1, "unknown": 1, "high": 2}
+COPYRIGHT_BLOCKING_RISKS = {"high"}
+GENERATION_RAG_BLOCKED_TYPES = {
+    "source_document",
+    "cleaned_text",
+    "decomposition_report",
+    "common_novel_analysis_report",
+    "web_fiction_business_analysis_report",
+    "published_fiction_analysis_report",
+    "classic_literary_analysis_report",
+}
 
 
 @dataclass
@@ -77,13 +88,17 @@ class RagContextBuilder:
             limit=max(requested_top_k * 8, 40),
             backend=requested_backend,
         )
-        items = self._select_items(ranked, input_asset, source_path, scope, requested_top_k)
+        items = self._select_items(ranked, input_asset, source_path, scope, requested_top_k, query_text)
         if len(items) < requested_top_k:
-            items = self._fill_from_project_scan(items, input_asset, source_path, scope, requested_top_k)
+            items = self._fill_from_project_scan(items, input_asset, source_path, scope, requested_top_k, query_text)
         buckets = {name: [] for name in RAG_BUCKETS}
         for item in items:
             for bucket in item["categories"]:
                 buckets.setdefault(bucket, []).append(item)
+        filtered_assets = self._copyright_filtered_assets(input_asset, source_path, scope)
+        recall_explanation = _recall_explanation(query_text, items, requested_top_k, actual_backend)
+        omission_check = _omission_check(input_asset, buckets, filtered_assets)
+        copyright_filter = _copyright_filter_summary(items, filtered_assets)
         source_asset_ids = _dedupe([str(item["asset_id"]) for item in items if item.get("asset_id")])
         return {
             "version": RAG_CONTEXT_VERSION,
@@ -102,6 +117,14 @@ class RagContextBuilder:
             "source_paths": _dedupe([str(item["path"]) for item in items if item.get("path")]),
             "items": items,
             "buckets": buckets,
+            "recall_explanation": recall_explanation,
+            "omission_check": omission_check,
+            "copyright_filter": copyright_filter,
+            "quality": {
+                "recall_explanation": recall_explanation,
+                "omission_check": omission_check,
+                "copyright_filter": copyright_filter,
+            },
         }
 
     def _ranked_candidates(self, query: str, limit: int, backend: str) -> tuple[list[dict[str, Any]], str, list[dict[str, Any]]]:
@@ -137,6 +160,7 @@ class RagContextBuilder:
         source_path: str,
         scope: dict[str, str],
         top_k: int,
+        query: str,
     ) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
         seen: set[str] = set()
@@ -145,7 +169,7 @@ class RagContextBuilder:
             if not path_text:
                 continue
             path = self.storage.root / path_text
-            item = self._item_from_path(path, result, input_asset, source_path, scope)
+            item = self._item_from_path(path, result, input_asset, source_path, scope, query)
             if not item:
                 continue
             key = str(item["path"])
@@ -164,12 +188,13 @@ class RagContextBuilder:
         source_path: str,
         scope: dict[str, str],
         top_k: int,
+        query: str,
     ) -> list[dict[str, Any]]:
         seen = {str(item["path"]) for item in items}
         for category in DATA_DIRS:
             for path in reversed(self.storage.list_json(category)):
                 result = {"path": _relative_path(self.storage, path), "score": 0.0, "ranker": "project-scoped-asset-priority"}
-                item = self._item_from_path(path, result, input_asset, source_path, scope)
+                item = self._item_from_path(path, result, input_asset, source_path, scope, query)
                 if not item or str(item["path"]) in seen:
                     continue
                 seen.add(str(item["path"]))
@@ -185,6 +210,7 @@ class RagContextBuilder:
         input_asset: BaseAsset,
         source_path: str,
         scope: dict[str, str],
+        query: str,
     ) -> dict[str, Any] | None:
         try:
             data = self.storage.read_json(path)
@@ -200,7 +226,11 @@ class RagContextBuilder:
         categories = _categories_for_asset(data)
         if not categories:
             return None
+        copyright = _copyright_assessment(data)
+        if not copyright["eligible"]:
+            return None
         asset_scope = _project_scope_for_asset(self.storage, data, relative)
+        summary = _asset_context_summary(data)
         return {
             "asset_id": str(data.get("id", "")),
             "path": relative,
@@ -211,8 +241,50 @@ class RagContextBuilder:
             "ranker": str(result.get("ranker") or "project-scoped-asset-priority"),
             "project_id": asset_scope.get("project_id", ""),
             "workspace_path": asset_scope.get("workspace_path", ""),
-            "summary": _asset_context_summary(data),
+            "summary": summary,
+            "copyright": copyright,
+            "recall_explanation": _item_recall_explanation(query, data, categories, result, summary),
         }
+
+    def _copyright_filtered_assets(
+        self,
+        input_asset: BaseAsset,
+        source_path: str,
+        scope: dict[str, str],
+    ) -> list[dict[str, Any]]:
+        filtered: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for category in DATA_DIRS:
+            for path in reversed(self.storage.list_json(category)):
+                try:
+                    data = self.storage.read_json(path)
+                except Exception:
+                    continue
+                if not isinstance(data, dict):
+                    continue
+                relative = _relative_path(self.storage, path)
+                if data.get("id") == input_asset.id or relative == source_path:
+                    continue
+                if relative in seen or not _matches_project_scope(self.storage, data, relative, scope):
+                    continue
+                if not _categories_for_asset(data) and data.get("type") not in GENERATION_RAG_BLOCKED_TYPES:
+                    continue
+                copyright = _copyright_assessment(data)
+                if copyright["eligible"]:
+                    continue
+                seen.add(relative)
+                filtered.append(
+                    {
+                        "asset_id": str(data.get("id", "")),
+                        "path": relative,
+                        "type": str(data.get("type", "")),
+                        "title": str(data.get("title") or data.get("name") or ""),
+                        "risk_level": copyright["risk_level"],
+                        "reason": copyright["reason"],
+                        "signals": copyright["signals"],
+                    }
+                )
+        return filtered[:200]
 
 
 def build_rag_context(
@@ -237,11 +309,165 @@ def retrieval_metadata(context: dict[str, Any]) -> dict[str, Any]:
         "retrieval_requested_backend": context.get("requested_backend", ""),
         "retrieval_backend_attempts": context.get("backend_attempts", []),
         "retrieval_source_asset_ids": context.get("source_asset_ids", []),
+        "retrieval_quality": context.get("quality", {}),
+        "retrieval_omissions": context.get("omission_check", {}).get("missing_buckets", []),
+        "retrieval_filtered_asset_count": context.get("copyright_filter", {}).get("filtered_count", 0),
     }
 
 
 def retrieval_reference_ids(input_asset_id: str, context: dict[str, Any]) -> list[str]:
     return _dedupe([input_asset_id, *[str(item) for item in context.get("source_asset_ids", []) if str(item).strip()]])
+
+
+def _recall_explanation(query: str, items: list[dict[str, Any]], top_k: int, backend: str) -> dict[str, Any]:
+    return {
+        "backend": backend,
+        "query_terms": _query_terms(query),
+        "requested_top_k": top_k,
+        "returned_count": len(items),
+        "coverage_by_bucket": {bucket: len([item for item in items if bucket in item.get("categories", [])]) for bucket in RAG_BUCKETS},
+        "items": [
+            {
+                "asset_id": item.get("asset_id", ""),
+                "path": item.get("path", ""),
+                "type": item.get("type", ""),
+                "title": item.get("title", ""),
+                "score": item.get("score", 0),
+                "ranker": item.get("ranker", ""),
+                "matched_terms": item.get("recall_explanation", {}).get("matched_terms", []),
+                "bucket_reasons": item.get("recall_explanation", {}).get("bucket_reasons", []),
+                "reason": item.get("recall_explanation", {}).get("reason", ""),
+            }
+            for item in items
+        ],
+    }
+
+
+def _omission_check(input_asset: BaseAsset, buckets: dict[str, list[dict[str, Any]]], filtered_assets: list[dict[str, Any]]) -> dict[str, Any]:
+    expected = _expected_buckets_for_input(input_asset.type)
+    missing = [bucket for bucket in expected if not buckets.get(bucket)]
+    filtered_by_bucket = _filtered_bucket_counts(filtered_assets)
+    return {
+        "expected_buckets": expected,
+        "present_buckets": [bucket for bucket in expected if buckets.get(bucket)],
+        "missing_buckets": missing,
+        "missing_count": len(missing),
+        "filtered_by_bucket": filtered_by_bucket,
+        "status": "passed" if not missing else "warning",
+        "recommendations": [_bucket_recommendation(bucket) for bucket in missing],
+    }
+
+
+def _copyright_filter_summary(items: list[dict[str, Any]], filtered_assets: list[dict[str, Any]]) -> dict[str, Any]:
+    selected_risks = [str(item.get("copyright", {}).get("risk_level", "unknown")) for item in items]
+    max_selected_risk = _max_risk(selected_risks)
+    return {
+        "policy": "exclude raw/analysis reports and assets with high copyright risk or explicit use_in_generation_rag=false",
+        "selected_count": len(items),
+        "selected_max_risk": max_selected_risk,
+        "filtered_count": len(filtered_assets),
+        "filtered_assets": filtered_assets,
+        "status": "passed" if max_selected_risk != "high" else "blocked",
+    }
+
+
+def _item_recall_explanation(query: str, data: dict[str, Any], categories: list[str], result: dict[str, Any], summary: str) -> dict[str, Any]:
+    matched_terms = _matched_query_terms(query, data, summary)
+    bucket_reasons = [f"{data.get('type', '')} maps to {category}" for category in categories]
+    return {
+        "reason": "semantic/vector rank plus project-scoped bucket eligibility" if result.get("score") else "project-scoped fallback plus bucket eligibility",
+        "matched_terms": matched_terms,
+        "bucket_reasons": bucket_reasons,
+        "ranker": str(result.get("ranker") or "project-scoped-asset-priority"),
+        "score": round(float(result.get("score", 0.0)), 6),
+    }
+
+
+def _copyright_assessment(data: dict[str, Any]) -> dict[str, Any]:
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    signals: list[str] = []
+    if data.get("type") in GENERATION_RAG_BLOCKED_TYPES:
+        signals.append("blocked_asset_type")
+    if metadata.get("use_in_generation_rag") is False or content.get("use_in_generation_rag") is False:
+        signals.append("explicit_generation_rag_denied")
+    risk_values = [
+        metadata.get("copyright_risk"),
+        metadata.get("risk_level"),
+        metadata.get("license_risk"),
+        metadata.get("commercial_risk"),
+        content.get("copyright_risk"),
+        content.get("risk_level"),
+        content.get("license_risk"),
+        content.get("commercial_risk"),
+    ]
+    normalized_risks = [_normalize_risk(value) for value in risk_values if str(value or "").strip()]
+    risk_level = _max_risk(normalized_risks) if normalized_risks else "unknown"
+    if risk_level in COPYRIGHT_BLOCKING_RISKS:
+        signals.append(f"{risk_level}_copyright_risk")
+    license_name = " ".join(str(value or "").lower() for value in [metadata.get("license"), metadata.get("license_name"), content.get("license"), content.get("source_license")])
+    if any(marker in license_name for marker in ["non-commercial", "noncommercial", "cc by-nc", "by-nc", "nc-sa"]):
+        risk_level = _max_risk([risk_level, "high"])
+        signals.append("non_commercial_license")
+    eligible = not signals or not any(signal in {"blocked_asset_type", "explicit_generation_rag_denied", "high_copyright_risk", "non_commercial_license"} for signal in signals)
+    return {
+        "eligible": eligible,
+        "risk_level": risk_level,
+        "reason": "eligible for generation RAG" if eligible else "; ".join(signals),
+        "signals": signals,
+    }
+
+
+def _expected_buckets_for_input(asset_type: str) -> list[str]:
+    if asset_type in {"chapter_plan", "draft_chapter", "draft_version", "review_report", "revision_plan"}:
+        return ["characters", "worldbuilding", "previous_summaries", "knowledge_cards", "foreshadowing", "material_cards", "writing_templates"]
+    if asset_type in {"outline", "outline_version"}:
+        return ["characters", "worldbuilding", "knowledge_cards", "material_cards", "writing_templates"]
+    return ["knowledge_cards", "material_cards"]
+
+
+def _filtered_bucket_counts(filtered_assets: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for item in filtered_assets:
+        for bucket in TYPE_BUCKETS.get(str(item.get("type", "")), []):
+            counts[bucket] = counts.get(bucket, 0) + 1
+    return counts
+
+
+def _bucket_recommendation(bucket: str) -> str:
+    labels = RAG_BUCKETS.get(bucket, bucket)
+    return f"Add or bind project-scoped {labels} assets before generation if this chapter depends on that dimension."
+
+
+def _query_terms(query: str) -> list[str]:
+    terms: list[str] = []
+    for raw in str(query or "").replace("\n", " ").replace(",", " ").replace("，", " ").split():
+        term = raw.strip().lower()
+        if len(term) >= 2 and term not in terms:
+            terms.append(term)
+        if len(terms) >= 24:
+            break
+    return terms
+
+
+def _matched_query_terms(query: str, data: dict[str, Any], summary: str) -> list[str]:
+    haystack = json.dumps({"title": data.get("title", ""), "tags": data.get("tags", []), "summary": summary}, ensure_ascii=False).lower()
+    return [term for term in _query_terms(query) if term in haystack][:12]
+
+
+def _normalize_risk(value: Any) -> str:
+    risk = str(value or "unknown").strip().lower().replace("_", "-")
+    if risk in {"low", "medium", "high", "unknown"}:
+        return risk
+    if risk in {"non-commercial", "noncommercial", "restricted", "blocked"}:
+        return "high"
+    return "unknown"
+
+
+def _max_risk(values: list[str]) -> str:
+    if not values:
+        return "unknown"
+    return max((_normalize_risk(value) for value in values), key=lambda value: COPYRIGHT_RISK_ORDER.get(value, 1))
 
 
 def _default_query(asset: BaseAsset) -> str:
@@ -307,7 +533,13 @@ def _asset_context_summary(data: dict[str, Any]) -> str:
     return _compact_text(json.dumps(payload, ensure_ascii=False, sort_keys=True), limit=500)
 
 
-def _project_scope_for_asset(storage: LocalStorage, data: dict[str, Any], path: str = "") -> dict[str, str]:
+def _project_scope_for_asset(storage: LocalStorage, data: dict[str, Any], path: str = "", visited: set[str] | None = None) -> dict[str, str]:
+    visited = visited or set()
+    identity = path or str(data.get("id", ""))
+    if identity:
+        if identity in visited:
+            return {"project_id": "", "workspace_id": "", "workspace_path": ""}
+        visited.add(identity)
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
     if data.get("type") == "project_workspace_state":
@@ -327,7 +559,7 @@ def _project_scope_for_asset(storage: LocalStorage, data: dict[str, Any], path: 
         referenced = _read_reference(storage, str(reference))
         if referenced:
             ref_path, ref_data = referenced
-            ref_scope = _project_scope_for_asset(storage, ref_data, ref_path)
+            ref_scope = _project_scope_for_asset(storage, ref_data, ref_path, visited)
             if ref_scope.get("project_id") or ref_scope.get("workspace_path"):
                 return ref_scope
     return scope

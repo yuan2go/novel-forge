@@ -130,6 +130,7 @@ ASSET_DIR_BY_TYPE = {
     "craft_template": "templates",
     "context_build_plan": "contexts",
     "context_bundle": "contexts",
+    "rag_quality_report": "contexts",
     "outline": "outlines",
     "outline_version": "outlines",
     "chapter_plan": "chapter_plans",

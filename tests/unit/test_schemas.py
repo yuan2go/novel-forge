@@ -25,6 +25,7 @@ from novel_forge.schemas import (
     OutlineVersion,
     ProjectMetricSnapshot,
     PublishGateReport,
+    RagQualityReport,
     ProjectWorkspaceState,
     ReaderSentimentReport,
     ReleasePackage,
@@ -38,7 +39,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 89)
+        self.assertEqual(len(SCHEMA_CLASSES), 90)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
         self.assertIn("review_report", SCHEMA_CLASSES)
@@ -62,6 +63,7 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("analysis_conversion_report", SCHEMA_CLASSES)
         self.assertIn("context_build_plan", SCHEMA_CLASSES)
         self.assertIn("context_bundle", SCHEMA_CLASSES)
+        self.assertIn("rag_quality_report", SCHEMA_CLASSES)
         self.assertIn("outline_version", SCHEMA_CLASSES)
         self.assertIn("chapter_plan_version", SCHEMA_CLASSES)
         self.assertIn("draft_version", SCHEMA_CLASSES)
@@ -251,6 +253,20 @@ class SchemaTests(unittest.TestCase):
             },
         )
         self.assertEqual(validate_common_fields(bundle.to_dict()), [])
+
+        rag_report = RagQualityReport(
+            title="rag quality",
+            content={
+                "target_asset_id": "chapter_plan_1",
+                "retrieval_backend": "local",
+                "recall_explanation": {"items": []},
+                "omission_check": {"missing_buckets": []},
+                "copyright_filter": {"filtered_assets": []},
+                "context_budget_score": {"score": 86, "status": "healthy"},
+                "recommendation": "pass",
+            },
+        )
+        self.assertEqual(validate_common_fields(rag_report.to_dict()), [])
 
         outline_version = OutlineVersion(
             title="outline v0",

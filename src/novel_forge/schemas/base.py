@@ -206,6 +206,15 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "actual_context",
         "source_asset_ids",
     ],
+    "rag_quality_report": [
+        "target_asset_id",
+        "retrieval_backend",
+        "recall_explanation",
+        "omission_check",
+        "copyright_filter",
+        "context_budget_score",
+        "recommendation",
+    ],
     "outline": ["acts"],
     "outline_version": ["outline_id", "version_index", "base_outline_id", "acts", "change_summary", "status"],
     "chapter_plan": ["chapter", "objective", "beats", "hook"],
@@ -510,6 +519,8 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.extend(_validate_analysis_asset_content(asset_type, content, data.get("metadata", {})))
     if asset_type in {"context_build_plan", "context_bundle"} and isinstance(content, dict):
         errors.extend(_validate_context_asset_content(asset_type, content))
+    if asset_type == "rag_quality_report" and isinstance(content, dict):
+        errors.extend(_validate_rag_quality_report_content(content))
     if asset_type in {"outline_version", "chapter_plan_version", "draft_version", "generation_run", "chapter_production_run"} and isinstance(content, dict):
         errors.extend(_validate_versioned_production_content(asset_type, content))
     if asset_type in {"editor_patch", "draft_diff_report"} and isinstance(content, dict):
@@ -633,8 +644,8 @@ def _validate_claude_code_handoff_content(content: dict[str, Any]) -> list[str]:
 def _validate_task_status_content(content: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     status = content.get("status", "")
-    if status not in {"pending", "running", "completed", "failed"}:
-        errors.append("task_status status must be pending, running, completed, or failed")
+    if status not in {"pending", "running", "completed", "failed", "paused", "cancelled"}:
+        errors.append("task_status status must be pending, running, completed, failed, paused, or cancelled")
     for key in ["input_paths", "output_paths"]:
         if key not in content:
             errors.append(f"task_status content missing required field: {key}")
@@ -1136,6 +1147,19 @@ def _validate_context_asset_content(asset_type: str, content: dict[str, Any]) ->
     return errors
 
 
+def _validate_rag_quality_report_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for key in ["recall_explanation", "omission_check", "copyright_filter", "context_budget_score"]:
+        if not isinstance(content.get(key), dict):
+            errors.append(f"rag_quality_report {key} must be an object")
+    score = (content.get("context_budget_score") or {}).get("score") if isinstance(content.get("context_budget_score"), dict) else None
+    if not isinstance(score, (int, float)) or score < 0 or score > 100:
+        errors.append("rag_quality_report context_budget_score.score must be between 0 and 100")
+    if content.get("recommendation") not in {"pass", "pass_with_warnings", "revise", "block"}:
+        errors.append("rag_quality_report recommendation must be pass, pass_with_warnings, revise, or block")
+    return errors
+
+
 def _validate_versioned_production_content(asset_type: str, content: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     status = content.get("status")
@@ -1167,8 +1191,8 @@ def _validate_versioned_production_content(asset_type: str, content: dict[str, A
         if "metrics" in content and not isinstance(content.get("metrics"), dict):
             errors.append("generation_run metrics must be an object")
     if asset_type == "chapter_production_run":
-        if status not in {"planned", "running", "waiting_human", "succeeded", "failed", "cancelled", "recovered"}:
-            errors.append("chapter_production_run status must be planned, running, waiting_human, succeeded, failed, cancelled, or recovered")
+        if status not in {"planned", "running", "paused", "waiting_human", "succeeded", "failed", "cancelled", "recovered"}:
+            errors.append("chapter_production_run status must be planned, running, paused, waiting_human, succeeded, failed, cancelled, or recovered")
         if not isinstance(content.get("chapter"), int) or content.get("chapter", 0) < 1:
             errors.append("chapter_production_run chapter must be a positive integer")
         for key in ["step_order", "timeline"]:

@@ -7,12 +7,11 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.chapter_plan.service import generate_chapter_plan as generate_chapter_plan_service
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.context_builder import create_context_build_plan, create_context_bundle
+from novel_forge.modules.continuity_graph import create_chapter_stability_preflight_report
 from novel_forge.modules.drafting import service as drafting_service
-from novel_forge.modules.editor import create_draft_diff_report
+from novel_forge.modules.editor import execute_revision_plan
 from novel_forge.modules.production_chain.service import (
     create_chapter_plan_version,
-    create_draft_version,
-    create_generation_run,
     create_outline_version,
 )
 from novel_forge.modules.production_context import (
@@ -24,12 +23,13 @@ from novel_forge.modules.review import service as review_service
 from novel_forge.modules.revision import service as revision_service
 from novel_forge.modules.workflow_nodes import record_node_run
 from novel_forge.modules.workspace.service import update_workspace
-from novel_forge.schemas import ChapterPlan, ChapterProductionRun, DraftChapter, TaskStatus, validate_common_fields
+from novel_forge.schemas import ChapterProductionRun, TaskStatus, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 CHAPTER_PRODUCTION_STEPS = [
     "outline_checkpoint",
     "chapter_plan",
+    "stability_preflight",
     "context_bundle",
     "draft_v0",
     "review",
@@ -41,6 +41,7 @@ CHAPTER_PRODUCTION_STEPS = [
 STEP_LABELS = {
     "outline_checkpoint": "大纲版本检查点",
     "chapter_plan": "章节细纲",
+    "stability_preflight": "长篇稳定性预检",
     "context_bundle": "上下文包",
     "draft_v0": "草稿 v0",
     "review": "审稿门禁",
@@ -48,6 +49,13 @@ STEP_LABELS = {
     "final_draft": "最终稿",
     "next_chapter_plan": "下一章细纲",
 }
+
+
+class ChapterProductionGateBlocked(ValueError):
+    def __init__(self, message: str, *, report_path: str, updates: dict[str, Any] | None = None) -> None:
+        super().__init__(message)
+        self.report_path = report_path
+        self.updates = updates or {}
 
 
 def start_chapter_production(
@@ -58,6 +66,8 @@ def start_chapter_production(
     workspace_path: str | None = None,
     chapter: int | None = None,
     run_to: str = "next_chapter_plan",
+    execute: bool = True,
+    execution_mode: str = "sync",
 ) -> dict[str, Any]:
     storage.ensure_layout()
     _validate_step(run_to)
@@ -102,6 +112,7 @@ def start_chapter_production(
                 "outline_version_path": "",
                 "chapter_plan_path": plan_ref,
                 "chapter_plan_version_path": "",
+                "stability_preflight_path": "",
                 "context_build_plan_path": "",
                 "context_bundle_path": "",
                 "draft_v0_path": "",
@@ -111,6 +122,8 @@ def start_chapter_production(
                 "final_draft_version_path": "",
                 "final_diff_report_path": "",
                 "final_generation_run_path": "",
+                "final_forward_patch_path": "",
+                "final_rollback_patch_path": "",
                 "next_chapter_plan_path": "",
                 "next_chapter_plan_version_path": "",
             },
@@ -118,11 +131,25 @@ def start_chapter_production(
                 "requires_project": True,
                 "requires_production_profiles": True,
                 "requires_context_bundle_before_draft": True,
+                "requires_stability_preflight_before_context": True,
                 "requires_review_before_revision": True,
                 "requires_revision_before_final": True,
                 "copyright_boundary": "references are used as abstract project context; protected expression is not copied into generation",
             },
             "production_context_preflight": production_context.get("preflight", {}),
+            "control": {
+                "execution_mode": execution_mode,
+                "celery_task_id": "",
+                "pause_requested": False,
+                "pause_reason": "",
+                "pause_requested_at": "",
+                "paused_at": "",
+                "cancel_requested": False,
+                "cancel_reason": "",
+                "cancel_requested_at": "",
+                "cancelled_at": "",
+                "last_resumed_at": "",
+            },
             "created_at": now,
             "updated_at": now,
             "recovery_instruction": "",
@@ -136,6 +163,8 @@ def start_chapter_production(
         references=filter_project_safe_references(storage, project_id, [outline.id, _display_path(storage.root, outline_file), workspace, *production_context.get("profile_references", [])]),
     )
     run_path = storage.write_asset("runs", asset)
+    if not execute:
+        return chapter_production_run_detail(storage, run_path)
     return resume_chapter_production(storage, run_path, run_to=run_to)
 
 
@@ -146,10 +175,15 @@ def resume_chapter_production(
     from_step: str | None = None,
     run_to: str | None = None,
     force: bool = False,
+    clear_pause: bool = True,
 ) -> dict[str, Any]:
     run_file = resolve_path(storage.root, run_path)
     data = _read_run_data(storage, run_file)
     content = _content(data)
+    if str(content.get("status", "")) == "cancelled" and not force:
+        return chapter_production_run_detail(storage, run_file)
+    if clear_pause:
+        _prepare_control_for_resume(content)
     target_step = run_to or str(content.get("run_to") or "next_chapter_plan")
     _validate_step(target_step)
     start_index = _step_index(from_step) if from_step else _next_step_index(content)
@@ -161,15 +195,99 @@ def resume_chapter_production(
     content["updated_at"] = utc_now()
     _write_run_data(storage, run_file, data)
     for step in CHAPTER_PRODUCTION_STEPS[start_index : target_index + 1]:
+        control_result = _honor_control_requests(storage, run_file, data, step)
+        if control_result:
+            return control_result
         if not force and _step_state(content, step).get("status") == "completed":
             continue
         ok = _execute_bus_step(storage, run_file, data, step)
         data = _read_run_data(storage, run_file)
         content = _content(data)
+        control_result = _honor_control_requests(storage, run_file, data, step)
+        if control_result:
+            return control_result
         if not ok:
             return chapter_production_run_detail(storage, run_file)
     _mark_run_status(storage, run_file, data, "succeeded", target_step)
     return chapter_production_run_detail(storage, run_file)
+
+
+def pause_chapter_production(storage: LocalStorage, run_path: str | Path, *, reason: str = "") -> dict[str, Any]:
+    run_file = resolve_path(storage.root, run_path)
+    data = _read_run_data(storage, run_file)
+    content = _content(data)
+    if str(content.get("status", "")) in {"succeeded", "failed", "cancelled"}:
+        return chapter_production_run_detail(storage, run_file)
+    control = _control(content)
+    now = utc_now()
+    control["pause_requested"] = True
+    control["pause_reason"] = reason
+    control["pause_requested_at"] = now
+    content["status"] = "paused"
+    content["updated_at"] = now
+    _append_control_event(content, "paused", reason or "pause requested")
+    _write_run_data(storage, run_file, data)
+    return chapter_production_run_detail(storage, run_file)
+
+
+def cancel_chapter_production(storage: LocalStorage, run_path: str | Path, *, reason: str = "") -> dict[str, Any]:
+    run_file = resolve_path(storage.root, run_path)
+    data = _read_run_data(storage, run_file)
+    content = _content(data)
+    if str(content.get("status", "")) in {"succeeded", "cancelled"}:
+        return chapter_production_run_detail(storage, run_file)
+    control = _control(content)
+    now = utc_now()
+    control["cancel_requested"] = True
+    control["cancel_reason"] = reason
+    control["cancel_requested_at"] = now
+    control["cancelled_at"] = now
+    content["status"] = "cancelled"
+    content["updated_at"] = now
+    _append_control_event(content, "cancelled", reason or "cancel requested")
+    _write_run_data(storage, run_file, data)
+    _write_task_status(storage, str(content.get("run_id", "")), f"chapter-production:{content.get('current_step', '')}", "cancelled", error_message=reason or "cancel requested")
+    return chapter_production_run_detail(storage, run_file)
+
+
+def mark_chapter_production_celery_task(storage: LocalStorage, run_path: str | Path, task_id: str) -> dict[str, Any]:
+    run_file = resolve_path(storage.root, run_path)
+    data = _read_run_data(storage, run_file)
+    content = _content(data)
+    control = _control(content)
+    control["execution_mode"] = "celery"
+    control["celery_task_id"] = task_id
+    content["updated_at"] = utc_now()
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    metadata["celery_task_id"] = task_id
+    data["metadata"] = metadata
+    _write_run_data(storage, run_file, data)
+    return chapter_production_run_detail(storage, run_file)
+
+
+def recover_chapter_production(
+    storage: LocalStorage,
+    run_path: str | Path,
+    *,
+    run_to: str | None = None,
+    force: bool = True,
+) -> dict[str, Any]:
+    run_file = resolve_path(storage.root, run_path)
+    data = _read_run_data(storage, run_file)
+    content = _content(data)
+    failed_step = _failed_step(content)
+    if not failed_step:
+        failed_step = str(content.get("current_step") or "outline_checkpoint")
+    control = _control(content)
+    control["pause_requested"] = False
+    control["cancel_requested"] = False
+    control["last_resumed_at"] = utc_now()
+    content["status"] = "recovered"
+    content["recovery_instruction"] = ""
+    content["updated_at"] = utc_now()
+    _append_control_event(content, "recovered", f"recovering from {failed_step}")
+    _write_run_data(storage, run_file, data)
+    return resume_chapter_production(storage, run_file, from_step=failed_step, run_to=run_to or str(content.get("run_to") or "next_chapter_plan"), force=force)
 
 
 def list_chapter_production_runs(storage: LocalStorage, *, project_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
@@ -200,6 +318,7 @@ def chapter_production_run_detail(storage: LocalStorage, run_path: str | Path) -
         "timeline": _content(data).get("timeline", []),
         "outputs": _content(data).get("outputs", {}),
         "constraints": _content(data).get("constraints", {}),
+        "control": _content(data).get("control", {}),
         "recovery_instruction": _content(data).get("recovery_instruction", ""),
     }
 
@@ -222,7 +341,16 @@ def _execute_bus_step(storage: LocalStorage, run_file: Path, data: dict[str, Any
         data = _read_run_data(storage, run_file)
         run_log = _build_run_log(storage, status_paths)
         recovery = _build_recovery_instruction(run_log, f"{type(exc).__name__}: {exc}")
-        _mark_step(storage, run_file, data, step, "failed", input_paths=input_paths, error=str(exc), status_paths=status_paths)
+        gate_output_paths: list[str] = []
+        if isinstance(exc, ChapterProductionGateBlocked):
+            content = _content(data)
+            outputs = _outputs(content)
+            outputs.update({key: str(value or "") for key, value in exc.updates.items()})
+            content["outputs"] = outputs
+            gate_output_paths = [exc.report_path]
+            recovery = f"{recovery} Gate report: {exc.report_path}"
+            _write_run_data(storage, run_file, data)
+        _mark_step(storage, run_file, data, step, "failed", input_paths=input_paths, output_paths=gate_output_paths, error=str(exc), status_paths=status_paths)
         content = _content(data)
         content["status"] = "failed"
         content["current_step"] = step
@@ -263,7 +391,19 @@ def _perform_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], s
             plan_path = _create_chapter_plan_from_outline(storage, data, chapter)
         version = create_chapter_plan_version(storage, plan_path, change_summary=f"chapter {chapter} production bus checkpoint")
         return _step_result(plan_path, [plan_path, version["path"]], {"chapter_plan_path": plan_path, "chapter_plan_version_path": version["path"]})
+    if step == "stability_preflight":
+        _require(outputs, "chapter_plan_path", step)
+        report = create_chapter_stability_preflight_report(storage, outputs["chapter_plan_path"], workspace_path=workspace_path)
+        report_asset = storage.read_asset(report["path"])
+        recommendation = str(report_asset.content.get("recommendation", "pass"))
+        updates = {"stability_preflight_path": report["path"]}
+        if recommendation == "block":
+            violations = report_asset.content.get("blocking_violations", [])
+            message = f"long-form stability preflight blocked chapter {chapter}: {len(violations)} blocking violation(s)"
+            raise ChapterProductionGateBlocked(message, report_path=report["path"], updates=updates)
+        return _step_result(report["path"], [report["path"]], updates)
     if step == "context_bundle":
+        _require(outputs, "stability_preflight_path", step)
         _require(outputs, "chapter_plan_path", step)
         context_plan = create_context_build_plan(
             storage,
@@ -279,7 +419,14 @@ def _perform_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], s
     if step == "draft_v0":
         _require(outputs, "chapter_plan_path", step)
         _require(outputs, "context_bundle_path", step)
-        draft_path = drafting_service.draft(storage, outputs["chapter_plan_path"], context_bundle_path=outputs["context_bundle_path"], workspace_path=workspace_path)
+        _require(outputs, "stability_preflight_path", step)
+        draft_path = drafting_service.draft(
+            storage,
+            outputs["chapter_plan_path"],
+            context_bundle_path=outputs["context_bundle_path"],
+            stability_preflight_path=outputs["stability_preflight_path"],
+            workspace_path=workspace_path,
+        )
         _update_workspace_best_effort(storage, workspace_path, draft_path, chapter, "drafted")
         return _step_result(_display_path(storage.root, draft_path), [_display_path(storage.root, draft_path)], {"draft_v0_path": _display_path(storage.root, draft_path)})
     if step == "review":
@@ -303,36 +450,11 @@ def _perform_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], s
 def _create_chapter_plan_from_outline(storage: LocalStorage, data: dict[str, Any], chapter: int) -> str:
     outputs = _outputs(_content(data))
     outline_path = outputs.get("outline_path", "")
-    outline_file = resolve_path(storage.root, outline_path)
-    outline = storage.read_asset(outline_file)
     project_id = str(data.get("metadata", {}).get("project_id", ""))
     workspace_path = str(data.get("metadata", {}).get("workspace_path", ""))
-    if chapter == 1:
-        generated = generate_chapter_plan_service(storage, outline_path)
-        _ensure_project_metadata(storage, generated, project_id, workspace_path)
-        return _display_path(storage.root, generated)
-    asset = ChapterPlan(
-        title=f"Chapter {chapter} production plan",
-        source=outline.id,
-        tags=["chapter-plan", f"chapter-{chapter}", "production-bus"],
-        content={
-            "chapter": chapter,
-            "objective": f"continue the project arc from chapter {chapter - 1} while opening a fresh decision point",
-            "beats": [
-                "recap the immediate consequence of the previous hook without repeating text",
-                "force the protagonist into a concrete choice",
-                "pay off one small setup and open one larger question",
-                "end on a forward-moving hook",
-            ],
-            "hook": "a new consequence reframes the previous chapter's final clue",
-            "word_budget": {"target": 2500, "min": 1800, "max": 3200},
-            "conflict": "previous consequence creates a new tactical obligation",
-            "information_points": ["continuity carry-forward", "new conflict escalation", "next hook"],
-        },
-        metadata={"project_id": project_id, "workspace_path": workspace_path},
-        references=filter_project_safe_references(storage, project_id, [outline.id, outline_path]),
-    )
-    return _display_path(storage.root, storage.write_asset("chapter_plans", asset))
+    generated = generate_chapter_plan_service(storage, outline_path, workspace_path=workspace_path, chapter=chapter)
+    _ensure_project_metadata(storage, generated, project_id, workspace_path)
+    return _display_path(storage.root, generated)
 
 
 def _create_final_draft(storage: LocalStorage, data: dict[str, Any]) -> dict[str, Any]:
@@ -340,77 +462,26 @@ def _create_final_draft(storage: LocalStorage, data: dict[str, Any]) -> dict[str
     outputs = _outputs(content)
     for key in ["draft_v0_path", "review_path", "revision_plan_path", "context_bundle_path"]:
         _require(outputs, key, "final_draft")
-    draft_file = resolve_path(storage.root, outputs["draft_v0_path"])
-    review_file = resolve_path(storage.root, outputs["review_path"])
-    revision_file = resolve_path(storage.root, outputs["revision_plan_path"])
-    draft = storage.read_asset(draft_file)
-    review = storage.read_asset(review_file)
-    revision = storage.read_asset(revision_file)
-    if draft.type != "draft_chapter" or review.type != "review_report" or revision.type != "revision_plan":
-        raise ValueError("final_draft requires draft_chapter, review_report, and revision_plan inputs")
-    project_id = str(data.get("metadata", {}).get("project_id", ""))
     workspace_path = str(data.get("metadata", {}).get("workspace_path", ""))
-    before_text = str(draft.content.get("text", ""))
-    revised_text = _revision_text(before_text, revision.to_dict(), review.to_dict())
-    final = DraftChapter(
-        title=f"{draft.title or 'Chapter draft'} final",
-        source=draft.id,
-        tags=_dedupe([*draft.tags, "draft", "final", "chapter-production"]),
-        content={
-            **draft.content,
-            "text": revised_text,
-            "chapter": content.get("chapter", draft.content.get("chapter", 1)),
-            "copyright_boundary": draft.content.get("copyright_boundary", "final draft produced from project-owned draft and revision plan"),
-            "finalization": {
-                "chapter_production_run_id": data.get("id", ""),
-                "chapter_production_run_path": _display_path(storage.root, resolve_path(storage.root, data.get("_path", ""))) if data.get("_path") else "",
-                "review_id": review.id,
-                "revision_plan_id": revision.id,
-                "target_score": revision.content.get("target_score", 0),
-            },
-        },
-        metadata={
-            **draft.metadata,
-            "project_id": project_id,
-            "workspace_path": workspace_path,
-            "draft_status": "final",
-            "previous_draft_id": draft.id,
-            "previous_draft_path": _display_path(storage.root, draft_file),
-            "review_id": review.id,
-            "review_path": _display_path(storage.root, review_file),
-            "revision_plan_id": revision.id,
-            "revision_plan_path": _display_path(storage.root, revision_file),
-            "chapter_production_run_id": data.get("id", ""),
-            "finalized_at": utc_now(),
-        },
-        references=filter_project_safe_references(
-            storage,
-            project_id,
-            _dedupe([draft.id, _display_path(storage.root, draft_file), review.id, _display_path(storage.root, review_file), revision.id, _display_path(storage.root, revision_file), *draft.references]),
-        ),
-    )
-    final_path = storage.write_asset("drafts", final)
-    final_ref = _display_path(storage.root, final_path)
-    version = create_draft_version(storage, final_path, change_summary="chapter production final draft", status="active")
-    diff = create_draft_diff_report(storage, outputs["draft_v0_path"], final_ref)
-    generation = create_generation_run(
+    result = execute_revision_plan(
         storage,
-        outputs["revision_plan_path"],
-        outputs["context_bundle_path"],
-        output_path=final_ref,
-        provider="revision-plan",
-        model="local-rules",
-        prompt_version="prompt-v1",
-        status="succeeded",
-        metrics={"revision_step_count": len(revision.content.get("steps", [])), "final_char_count": len(revised_text)},
+        draft_path=outputs["draft_v0_path"],
+        review_path=outputs["review_path"],
+        revision_path=outputs["revision_plan_path"],
+        context_bundle_path=outputs["context_bundle_path"],
+        workspace_path=workspace_path,
+        chapter_production_run_id=str(data.get("id", "")),
+        chapter_production_run_path=_display_path(storage.root, resolve_path(storage.root, data.get("_path", ""))) if data.get("_path") else "",
     )
-    _update_workspace_best_effort(storage, workspace_path, final_path, _positive_chapter(content.get("chapter", 1)), "final")
+    _update_workspace_best_effort(storage, workspace_path, result["final_draft_path"], _positive_chapter(content.get("chapter", 1)), "final")
     return {
-        "final_draft_path": final_ref,
-        "final_draft_version_path": version["path"],
-        "final_diff_report_path": diff["path"],
-        "final_generation_run_path": generation["path"],
-        "output_paths": [final_ref, version["path"], diff["path"], generation["path"]],
+        "final_draft_path": result["final_draft_path"],
+        "final_draft_version_path": result["final_draft_version_path"],
+        "final_diff_report_path": result["final_diff_report_path"],
+        "final_generation_run_path": result["final_generation_run_path"],
+        "final_forward_patch_path": result["forward_patch_path"],
+        "final_rollback_patch_path": result["rollback_patch_path"],
+        "output_paths": result["output_paths"],
     }
 
 
@@ -421,43 +492,27 @@ def _create_next_chapter_plan(storage: LocalStorage, data: dict[str, Any]) -> di
     _require(outputs, "outline_path", "next_chapter_plan")
     final = storage.read_asset(resolve_path(storage.root, outputs["final_draft_path"]))
     current_plan = storage.read_asset(resolve_path(storage.root, outputs["chapter_plan_path"]))
-    outline = storage.read_asset(resolve_path(storage.root, outputs["outline_path"]))
     project_id = str(data.get("metadata", {}).get("project_id", ""))
     workspace_path = str(data.get("metadata", {}).get("workspace_path", ""))
     next_chapter = _positive_chapter(content.get("chapter", 1)) + 1
     final_text = str(final.content.get("text", ""))
-    plan = ChapterPlan(
-        title=f"Chapter {next_chapter} plan",
-        source=outline.id,
-        tags=["chapter-plan", f"chapter-{next_chapter}", "next", "production-bus"],
-        content={
-            "chapter": next_chapter,
-            "objective": f"resolve the immediate consequence from chapter {next_chapter - 1} and raise the next obligation",
-            "beats": [
-                "open with the direct consequence of the previous hook",
-                "show one changed relationship or resource constraint",
-                "force a choice that spends information gained in the previous chapter",
-                "close with a sharper external pressure",
-            ],
-            "hook": _next_hook(final_text),
-            "word_budget": current_plan.content.get("word_budget", {"target": 2500, "min": 1800, "max": 3200}),
-            "conflict": "the prior chapter's final consequence becomes a new operational problem",
-            "information_points": [
-                "carry forward final draft state",
-                "do not repeat previous chapter prose",
-                "preserve active continuity and unresolved hooks",
-            ],
-            "carry_forward": {
-                "previous_chapter": content.get("chapter", 1),
-                "previous_draft_id": final.id,
-                "previous_draft_path": outputs["final_draft_path"],
-                "previous_hook": _last_sentence(final_text),
-            },
+    next_path = generate_chapter_plan_service(
+        storage,
+        outputs["outline_path"],
+        workspace_path=workspace_path,
+        chapter=next_chapter,
+        carry_forward={
+            "previous_chapter": content.get("chapter", 1),
+            "previous_plan_id": current_plan.id,
+            "previous_plan_path": outputs["chapter_plan_path"],
+            "previous_draft_id": final.id,
+            "previous_draft_path": outputs["final_draft_path"],
+            "previous_hook": _last_sentence(final_text),
+            "suggested_next_hook": _next_hook(final_text),
+            "previous_word_budget": current_plan.content.get("word_budget", {"target": 2500, "min": 1800, "max": 3200}),
         },
-        metadata={"project_id": project_id, "workspace_path": workspace_path},
-        references=filter_project_safe_references(storage, project_id, [outline.id, outputs["outline_path"], current_plan.id, outputs["chapter_plan_path"], final.id, outputs["final_draft_path"]]),
     )
-    next_path = storage.write_asset("chapter_plans", plan)
+    _ensure_project_metadata(storage, next_path, project_id, workspace_path)
     next_ref = _display_path(storage.root, next_path)
     version = create_chapter_plan_version(storage, next_path, change_summary="chapter production next-chapter seed", status="draft")
     return {"next_chapter_plan_path": next_ref, "next_chapter_plan_version_path": version["path"]}
@@ -537,6 +592,100 @@ def _mark_run_status(storage: LocalStorage, run_file: Path, data: dict[str, Any]
     _write_run_data(storage, run_file, data)
 
 
+def _prepare_control_for_resume(content: dict[str, Any]) -> None:
+    control = _control(content)
+    if content.get("status") == "paused" or control.get("pause_requested"):
+        control["pause_requested"] = False
+        control["pause_reason"] = ""
+        control["last_resumed_at"] = utc_now()
+        content["recovery_instruction"] = ""
+        _append_control_event(content, "running", "resume requested")
+
+
+def _honor_control_requests(storage: LocalStorage, run_file: Path, data: dict[str, Any], step: str) -> dict[str, Any] | None:
+    latest = _read_run_data(storage, run_file)
+    content = _content(latest)
+    control = _control(content)
+    run_id = str(content.get("run_id", ""))
+    if control.get("cancel_requested") or content.get("status") == "cancelled":
+        now = utc_now()
+        control["cancel_requested"] = True
+        control["cancelled_at"] = control.get("cancelled_at") or now
+        content["status"] = "cancelled"
+        content["current_step"] = step
+        content["updated_at"] = now
+        content["recovery_instruction"] = str(control.get("cancel_reason") or "chapter production run cancelled")
+        _append_control_event(content, "cancelled", content["recovery_instruction"])
+        _write_run_data(storage, run_file, latest)
+        _write_task_status(storage, run_id, f"chapter-production:{step}", "cancelled", error_message=content["recovery_instruction"])
+        return chapter_production_run_detail(storage, run_file)
+    if control.get("pause_requested") or content.get("status") == "paused":
+        now = utc_now()
+        control["pause_requested"] = True
+        control["paused_at"] = control.get("paused_at") or now
+        content["status"] = "paused"
+        content["current_step"] = step
+        content["updated_at"] = now
+        content["recovery_instruction"] = str(control.get("pause_reason") or "chapter production run paused at step boundary")
+        _append_control_event(content, "paused", content["recovery_instruction"])
+        _write_run_data(storage, run_file, latest)
+        _write_task_status(storage, run_id, f"chapter-production:{step}", "paused", error_message=content["recovery_instruction"])
+        return chapter_production_run_detail(storage, run_file)
+    return None
+
+
+def _control(content: dict[str, Any]) -> dict[str, Any]:
+    control = content.get("control")
+    if not isinstance(control, dict):
+        control = {}
+        content["control"] = control
+    defaults = {
+        "execution_mode": "sync",
+        "celery_task_id": "",
+        "pause_requested": False,
+        "pause_reason": "",
+        "pause_requested_at": "",
+        "paused_at": "",
+        "cancel_requested": False,
+        "cancel_reason": "",
+        "cancel_requested_at": "",
+        "cancelled_at": "",
+        "last_resumed_at": "",
+    }
+    for key, value in defaults.items():
+        control.setdefault(key, value)
+    return control
+
+
+def _append_control_event(content: dict[str, Any], status: str, message: str) -> None:
+    event = {
+        "step": content.get("current_step", ""),
+        "label": STEP_LABELS.get(str(content.get("current_step", "")), str(content.get("current_step", ""))),
+        "status": status,
+        "input_paths": [],
+        "output_paths": [],
+        "error": message,
+        "task_status_paths": [],
+        "recorded_at": utc_now(),
+        "control_event": True,
+    }
+    timeline = content.setdefault("timeline", [])
+    if isinstance(timeline, list):
+        if timeline and timeline[-1].get("status") == status and timeline[-1].get("control_event"):
+            timeline[-1] = event
+        else:
+            timeline.append(event)
+
+
+def _failed_step(content: dict[str, Any]) -> str:
+    steps = content.get("steps", {}) if isinstance(content.get("steps", {}), dict) else {}
+    for step in CHAPTER_PRODUCTION_STEPS:
+        state = steps.get(step, {}) if isinstance(steps.get(step, {}), dict) else {}
+        if state.get("status") == "failed":
+            return step
+    return ""
+
+
 def _initial_steps() -> dict[str, dict[str, Any]]:
     return {step: _initial_step(step) for step in CHAPTER_PRODUCTION_STEPS}
 
@@ -592,8 +741,9 @@ def _step_inputs(content: dict[str, Any], step: str) -> list[str]:
     mapping = {
         "outline_checkpoint": ["outline_path"],
         "chapter_plan": ["outline_path", "chapter_plan_path"],
-        "context_bundle": ["chapter_plan_path"],
-        "draft_v0": ["chapter_plan_path", "context_bundle_path"],
+        "stability_preflight": ["chapter_plan_path"],
+        "context_bundle": ["chapter_plan_path", "stability_preflight_path"],
+        "draft_v0": ["chapter_plan_path", "stability_preflight_path", "context_bundle_path"],
         "review": ["draft_v0_path"],
         "revision_plan": ["review_path"],
         "final_draft": ["draft_v0_path", "review_path", "revision_plan_path"],
@@ -609,6 +759,7 @@ def _step_result(main_path: str | Path, output_paths: list[str | Path], updates:
 def _run_row(storage: LocalStorage, path: Path, data: dict[str, Any]) -> dict[str, Any]:
     content = _content(data)
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    control = _control(content)
     steps = _step_rows(data)
     return {
         "path": _display_path(storage.root, path),
@@ -621,9 +772,16 @@ def _run_row(storage: LocalStorage, path: Path, data: dict[str, Any]) -> dict[st
         "chapter": content.get("chapter", ""),
         "status": content.get("status", ""),
         "current_step": content.get("current_step", ""),
+        "execution_mode": control.get("execution_mode", "sync"),
+        "celery_task_id": control.get("celery_task_id", metadata.get("celery_task_id", "")),
+        "pause_requested": bool(control.get("pause_requested")),
+        "cancel_requested": bool(control.get("cancel_requested")),
         "completed_steps": sum(1 for step in steps if step.get("status") == "completed"),
         "total_steps": len(CHAPTER_PRODUCTION_STEPS),
+        "stability_preflight_path": _outputs(content).get("stability_preflight_path", ""),
         "final_draft_path": _outputs(content).get("final_draft_path", ""),
+        "final_forward_patch_path": _outputs(content).get("final_forward_patch_path", ""),
+        "final_rollback_patch_path": _outputs(content).get("final_rollback_patch_path", ""),
         "next_chapter_plan_path": _outputs(content).get("next_chapter_plan_path", ""),
         "updated_at": data.get("updated_at", ""),
         "summary": content.get("recovery_instruction") or f"{content.get('current_step', '')} / {content.get('status', '')}",
@@ -666,24 +824,6 @@ def _positive_chapter(value: Any) -> int:
 def _context_query(storage: LocalStorage, chapter_plan_path: str) -> str:
     plan = storage.read_asset(resolve_path(storage.root, chapter_plan_path))
     return f"chapter {plan.content.get('chapter', '')} {plan.content.get('objective', '')} {plan.content.get('hook', '')} character world continuity knowledge material"
-
-
-def _revision_text(original_text: str, revision: dict[str, Any], review: dict[str, Any]) -> str:
-    steps = revision.get("content", {}).get("steps", [])
-    if not isinstance(steps, list):
-        steps = []
-    issues = review.get("issues", []) if isinstance(review.get("issues", []), list) else []
-    lines = ["", "", "【修订执行记录】"]
-    for index, step in enumerate(steps, start=1):
-        lines.append(f"{index}. {step}")
-    if issues:
-        lines.append("【审稿问题处理】")
-        for issue in issues[:5]:
-            if isinstance(issue, dict):
-                message = str(issue.get("message") or issue.get("dimension") or "review issue")
-                lines.append(f"- 已处理：{message}")
-    lines.append("【定稿确认】本最终稿由章节生产总线根据审稿与修订计划生成，保留原创边界与项目连续性。")
-    return original_text.rstrip() + "\n".join(lines) + "\n"
 
 
 def _next_hook(text: str) -> str:

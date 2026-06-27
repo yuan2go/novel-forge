@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 from novel_forge.api import product as _product_services
 from novel_forge.api.routers._bindings import bind_product_symbols
 from novel_forge.api.routers.context import ProductRouterContext
+from novel_forge.modules.drafting import service as drafting_service
 
 bind_product_symbols(globals(), _product_services)
 
@@ -44,9 +45,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.post("/product/drafts/generate")
     def generate_draft(request: DraftGenerateRequest) -> dict[str, Any]:
         try:
-            path = pipeline.draft(app_settings.root, request.chapter_plan_path)
-            outputs = {"draft_path": _display_path(app_settings.root, path)}
             storage = LocalStorage(app_settings.root)
+            path = drafting_service.draft(storage, request.chapter_plan_path, workspace_path=request.workspace_path)
+            outputs = {"draft_path": _display_path(app_settings.root, path)}
             if request.update_workspace:
                 workspace_path = pipeline.update_workspace(
                     app_settings.root,

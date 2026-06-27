@@ -212,6 +212,11 @@ class ContextBundle(BaseAsset):
 
 
 @dataclass
+class RagQualityReport(BaseAsset):
+    type: str = "rag_quality_report"
+
+
+@dataclass
 class GenerationRun(BaseAsset):
     type: str = "generation_run"
 
@@ -502,6 +507,7 @@ SCHEMA_CLASSES = {
         ChapterPlanVersion,
         ContextBuildPlan,
         ContextBundle,
+        RagQualityReport,
         GenerationRun,
         ChapterProductionRun,
         DraftChapter,

@@ -12,10 +12,11 @@ from novel_forge.modules.agent_runs import (
     guard_agent_action,
     start_agent_run,
 )
-from novel_forge.modules.continuity_graph import build_continuity_graph, create_chapter_continuity_report, create_continuity_graph_snapshot
+from novel_forge.modules.continuity_graph import build_continuity_graph, create_chapter_continuity_report, create_chapter_stability_preflight_report, create_continuity_graph_snapshot
 from novel_forge.modules.editor import apply_editor_patch, create_draft_diff_report, create_editor_patch
 from novel_forge.modules.evaluation_center import compare_model_runs, create_model_benchmark_task, create_model_profile, run_model_benchmark
-from novel_forge.schemas import CharacterCard, DraftChapter
+from novel_forge.modules.workspace.service import init_workspace
+from novel_forge.schemas import ChapterPlan, CharacterCard, ContinuityBible, DraftChapter, ForeshadowingThread
 from novel_forge.storage.local import LocalStorage
 
 
@@ -98,6 +99,88 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
             self.assertEqual(storage.read_asset(snapshot["path"]).type, "continuity_graph_snapshot")
             report = create_chapter_continuity_report(storage, draft_path)
             self.assertEqual(storage.read_asset(report["path"]).type, "chapter_continuity_report")
+
+    def test_long_form_stability_preflight_checks_character_foreshadowing_timeline_and_settings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = init_workspace(storage, "Preflight Project")
+            workspace_asset = storage.read_asset(workspace)
+            project_id = workspace_asset.content["project_id"]
+            workspace_ref = str(workspace.relative_to(storage.root))
+            character_path = storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="林乔",
+                    content={"name": "林乔", "role": "protagonist", "status": "死亡"},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+            storage.write_asset(
+                "continuity",
+                ContinuityBible(
+                    title="Preflight continuity",
+                    content={
+                        "project_id": project_id,
+                        "worldview_rules": [],
+                        "timeline": [{"chapter": 5, "event": "天门开启"}],
+                        "entities": [],
+                        "open_threads": [],
+                        "constraints": ["禁止主角离开钟城"],
+                    },
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref, storage.read_asset(character_path).id],
+                ),
+            )
+            storage.write_asset(
+                "continuity",
+                ForeshadowingThread(
+                    title="铜铃伏笔",
+                    content={
+                        "thread_id": "铜铃伏笔",
+                        "status": "abandoned",
+                        "setup": "铜铃伏笔",
+                        "payoff_plan": "不再使用",
+                        "related_chapters": [2],
+                    },
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Risky chapter plan",
+                    content={
+                        "chapter": 2,
+                        "objective": "林乔出场并救下同伴，随后主角离开钟城",
+                        "beats": ["铜铃伏笔再次出现", "天门开启的消息提前泄露"],
+                        "hook": "天门开启",
+                        "carry_forward": {"previous_chapter": 2},
+                    },
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+
+            report = create_chapter_stability_preflight_report(storage, plan_path, workspace_path=workspace_ref)
+            asset = storage.read_asset(report["path"])
+            dimensions = asset.content["dimensions"]
+            blocking_dimensions = {item["dimension"] for item in asset.content["blocking_violations"]}
+
+            self.assertEqual(asset.type, "chapter_continuity_report")
+            self.assertEqual(asset.content["gate"], "long_form_stability_preflight")
+            self.assertEqual(asset.content["recommendation"], "block")
+            self.assertEqual(dimensions["characters"]["status"], "blocked")
+            self.assertEqual(dimensions["foreshadowing"]["status"], "blocked")
+            self.assertEqual(dimensions["timeline"]["status"], "blocked")
+            self.assertEqual(dimensions["setting_conflicts"]["status"], "blocked")
+            self.assertIn("character_state_conflict", blocking_dimensions)
+            self.assertIn("foreshadowing_status_conflict", blocking_dimensions)
+            self.assertIn("timeline_regression", blocking_dimensions)
+            self.assertIn("future_timeline_leak", blocking_dimensions)
+            self.assertIn("setting_rule_conflict", blocking_dimensions)
 
     def test_model_evaluation_assets_can_run_and_compare(self):
         with tempfile.TemporaryDirectory() as tmp:

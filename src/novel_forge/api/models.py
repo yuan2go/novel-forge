@@ -270,6 +270,7 @@ class ChapterProductionRunRequest(BaseModel):
     workspace_path: str | None = None
     chapter: int | None = None
     run_to: str = "next_chapter_plan"
+    async_task: bool = False
 
 
 class ChapterProductionResumeRequest(BaseModel):
@@ -277,6 +278,21 @@ class ChapterProductionResumeRequest(BaseModel):
     from_step: str | None = None
     run_to: str | None = None
     force: bool = False
+    async_task: bool = False
+
+
+class ChapterProductionControlRequest(BaseModel):
+    run_path: str
+    reason: str = ""
+    terminate: bool = False
+    signal: str = "SIGTERM"
+
+
+class ChapterProductionRecoverRequest(BaseModel):
+    run_path: str
+    run_to: str | None = None
+    force: bool = True
+    async_task: bool = False
 
 
 class WorkflowDefinitionCreateRequest(BaseModel):
@@ -675,6 +691,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "GenerationRunRequest": GenerationRunRequest,
         "ChapterProductionRunRequest": ChapterProductionRunRequest,
         "ChapterProductionResumeRequest": ChapterProductionResumeRequest,
+        "ChapterProductionControlRequest": ChapterProductionControlRequest,
+        "ChapterProductionRecoverRequest": ChapterProductionRecoverRequest,
         "WorkflowDefinitionCreateRequest": WorkflowDefinitionCreateRequest,
         "WorkflowNodeCreateRequest": WorkflowNodeCreateRequest,
         "NodeRunCreateRequest": NodeRunCreateRequest,

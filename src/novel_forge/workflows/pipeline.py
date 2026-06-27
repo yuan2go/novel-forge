@@ -606,16 +606,18 @@ def _production_sidecar_outputs(storage: LocalStorage, output_paths: list[Path])
     sidecar_types = {
         "context_build_plan",
         "context_bundle",
+        "rag_quality_report",
         "node_run",
         "outline_version",
         "chapter_plan_version",
+        "chapter_continuity_report",
         "draft_version",
         "generation_run",
     }
     changed = True
     while changed:
         changed = False
-        for category in ["contexts", "outlines", "chapter_plans", "drafts", "runs"]:
+        for category in ["contexts", "continuity", "outlines", "chapter_plans", "drafts", "runs"]:
             for path in storage.list_json(category):
                 try:
                     data = storage.read_json(path)
@@ -660,6 +662,10 @@ def _sidecar_links_tracked_asset(data: dict, tracked_ids: set[str], tracked_path
             "context_build_plan_path",
             "context_bundle_id",
             "context_bundle_path",
+            "rag_quality_report_id",
+            "rag_quality_report_path",
+            "stability_preflight_id",
+            "stability_preflight_path",
             "output_asset_id",
             "output_asset_path",
             "source_asset_id",

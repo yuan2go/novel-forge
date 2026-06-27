@@ -1,33 +1,336 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any
 
-from novel_forge.modules.common import read_previous
+from novel_forge.model_adapters import (
+    GuardedModelAdapter,
+    ModelAdapter,
+    ModelOutputValidationError,
+    model_from_env,
+    parse_json_object,
+    validate_model_output,
+)
+from novel_forge.modules.agent_runs import AgentExecutionContext
+from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.planning_context import build_planning_context, planning_context_metadata
 from novel_forge.modules.production_chain import create_chapter_plan_version
+from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.schemas import ChapterPlan
 from novel_forge.storage.local import LocalStorage
 
+PROMPT_VERSION = "chapter-plan-v2-project-context"
 
-def generate_chapter_plan(storage: LocalStorage, input_path: str | None = None) -> Path:
-    outline = read_previous(storage, "outlines", input_path)
-    asset = ChapterPlan(
-        title="Chapter 1 plan",
-        source=outline.id,
-        tags=["chapter-plan", "chapter-1"],
-        content={
-            "chapter": 1,
-            "objective": "introduce the impossible clock signal and protagonist pressure",
-            "beats": [
-                "rainy public square signal",
-                "protagonist notices archive mismatch",
-                "supervisor orders silence",
-                "anonymous note predicts next bell",
-            ],
-            "hook": "the next bell rings from a dismantled tower",
-            "quality_targets": ["causal chain", "chapter hook", "originality boundary"],
-        },
-        references=[outline.id],
+
+def generate_chapter_plan(
+    storage: LocalStorage,
+    input_path: str | None = None,
+    model: ModelAdapter | None = None,
+    *,
+    workspace_path: str | None = None,
+    chapter: int | None = None,
+    carry_forward: dict[str, Any] | None = None,
+) -> Path:
+    model = model or model_from_env("chapter_plan")
+    outline_path = resolve_path(storage.root, input_path) if input_path else storage.latest("outlines")
+    outline = storage.read_asset(outline_path)
+    outline_ref = _display_path(storage.root, outline_path)
+    target_chapter = _positive_chapter(chapter or _next_chapter_number(storage, outline.id))
+    planning_context = build_planning_context(storage, outline, input_path=outline_path, workspace_path=workspace_path, chapter=target_chapter)
+    production_context = planning_context["production_context"]
+    project_id = str(production_context.get("project", {}).get("project_id", ""))
+    workspace = str(production_context.get("project", {}).get("workspace_path", ""))
+    carry = carry_forward or {}
+    with AgentExecutionContext(
+        storage,
+        agent_key="chapter_plan",
+        operation="generate-chapter-plan",
+        input_assets=_dedupe([outline_ref, *planning_context.get("references", []), str(carry.get("previous_draft_path", "")), str(carry.get("previous_plan_path", ""))]),
+        output_types=["chapter_plan", "chapter_plan_version"],
+        model_provider=getattr(model, "name", "local"),
+        model_name=getattr(model, "name", "local"),
+        prompt_version=PROMPT_VERSION,
+        token_budget=2600,
+        sla_seconds=600,
+        workspace_path=workspace,
+    ) as run:
+        run.guard("read_asset")
+        guarded_model = GuardedModelAdapter(model, storage, run.path)
+        generated = validate_model_output(
+            "generate",
+            guarded_model.generate(
+                "Generate a chapter plan for the target chapter. Return JSON only.",
+                {
+                    "required_output": {
+                        "chapter": target_chapter,
+                        "objective": "string",
+                        "beats": ["string"],
+                        "hook": "string",
+                        "word_budget": {"target": 2500, "min": 1800, "max": 3200},
+                        "conflict": "string",
+                        "information_points": ["string"],
+                        "quality_targets": ["string"],
+                        "continuity_checks": ["string"],
+                        "feedback_constraints": ["string"],
+                        "risk_controls": ["string"],
+                    },
+                    "outline": outline.to_dict(),
+                    "target_chapter": target_chapter,
+                    "carry_forward": carry,
+                    "planning_context": planning_context,
+                    "copyright_boundary": "Use references as abstract constraints only. Do not copy protected scenes, names, settings, or prose.",
+                },
+            ),
+        )
+        packet = _chapter_plan_packet(
+            generated,
+            outline.to_dict(),
+            planning_context,
+            target_chapter=target_chapter,
+            carry_forward=carry,
+            model_name=getattr(model, "name", ""),
+        )
+        asset = ChapterPlan(
+            title=str(packet.get("title") or f"Chapter {target_chapter} plan"),
+            source=outline.id,
+            tags=_dedupe(["chapter-plan", f"chapter-{target_chapter}", "model-driven", "project-context", *packet.get("tags", [])]),
+            content={
+                "chapter": target_chapter,
+                "objective": packet["objective"],
+                "beats": packet["beats"],
+                "hook": packet["hook"],
+                "word_budget": packet["word_budget"],
+                "conflict": packet.get("conflict", ""),
+                "information_points": packet.get("information_points", []),
+                "quality_targets": packet.get("quality_targets", []),
+                "continuity_checks": packet.get("continuity_checks", []),
+                "feedback_constraints": packet.get("feedback_constraints", []),
+                "risk_controls": packet.get("risk_controls", []),
+                "carry_forward": carry,
+                "planning_context": planning_context,
+                "model_output": generated,
+                "agent_run_path": run.path,
+                "copyright_boundary": generated.get("copyright_boundary")
+                or "chapter plan generated from project profiles and abstract references; no protected expression copied",
+            },
+            metadata={
+                "model": getattr(model, "name", "local"),
+                "provider": str(generated.get("provider", getattr(model, "name", "local"))),
+                "agent_run_path": run.path,
+                "prompt_version": PROMPT_VERSION,
+                "source_asset_path": outline_ref,
+                "chapter": target_chapter,
+                **planning_context_metadata(planning_context),
+                "run_metadata": run_metadata(
+                    "generate-chapter-plan",
+                    outline,
+                    provider=str(generated.get("provider", getattr(model, "name", "local"))),
+                    model=str(generated.get("model", getattr(model, "name", "local"))),
+                    prompt_version=PROMPT_VERSION,
+                ),
+            },
+            references=filter_project_safe_references(
+                storage,
+                project_id,
+                _dedupe([outline.id, outline_ref, workspace, str(carry.get("previous_draft_id", "")), str(carry.get("previous_draft_path", "")), *planning_context.get("references", [])]),
+            ),
+        )
+        run.guard("write_chapter_plan", "chapter_plan")
+        path = storage.write_asset("chapter_plans", asset)
+        run.guard("write_chapter_plan_version", "chapter_plan_version")
+        version = create_chapter_plan_version(storage, path, change_summary="model-driven chapter plan from project planning context")
+        run.succeed(output_assets=[_display_path(storage.root, path), version["path"]], token_used=len(json.dumps(packet, ensure_ascii=False)))
+        return path
+
+
+def _chapter_plan_packet(
+    generated: dict[str, Any],
+    outline: dict[str, Any],
+    planning_context: dict[str, Any],
+    *,
+    target_chapter: int,
+    carry_forward: dict[str, Any],
+    model_name: str,
+) -> dict[str, Any]:
+    text = str(generated.get("text", "")).strip()
+    if model_name != "mock-model":
+        packet = _parse_json_payload(text)
+        return _normalize_chapter_plan_packet(packet, planning_context, target_chapter=target_chapter)
+    try:
+        return _normalize_chapter_plan_packet(_parse_json_payload(text), planning_context, target_chapter=target_chapter)
+    except ModelOutputValidationError:
+        return _fallback_chapter_plan_packet(outline, planning_context, target_chapter=target_chapter, carry_forward=carry_forward)
+
+
+def _normalize_chapter_plan_packet(packet: dict[str, Any], planning_context: dict[str, Any], *, target_chapter: int) -> dict[str, Any]:
+    beats = _strings(packet.get("beats"))
+    if not beats:
+        raise ModelOutputValidationError("chapter plan JSON must contain non-empty beats")
+    objective = str(packet.get("objective") or "").strip()
+    hook = str(packet.get("hook") or "").strip()
+    if not objective or not hook:
+        raise ModelOutputValidationError("chapter plan JSON must contain objective and hook")
+    quality_targets = _strings(packet.get("quality_targets")) or planning_context.get("quality_standard", {}).get("dimensions", [])
+    continuity_checks = _strings(packet.get("continuity_checks")) or planning_context.get("continuity", {}).get("constraints", [])
+    feedback_constraints = _strings(packet.get("feedback_constraints")) or planning_context.get("feedback", {}).get("constraints", [])
+    return {
+        "title": str(packet.get("title") or f"Chapter {target_chapter} plan").strip(),
+        "objective": objective,
+        "beats": beats,
+        "hook": hook,
+        "word_budget": _word_budget(packet.get("word_budget"), planning_context),
+        "conflict": str(packet.get("conflict") or "").strip(),
+        "information_points": _strings(packet.get("information_points")),
+        "quality_targets": _dedupe([str(item) for item in quality_targets if str(item).strip()]),
+        "continuity_checks": _dedupe([str(item) for item in continuity_checks if str(item).strip()]),
+        "feedback_constraints": _dedupe([str(item) for item in feedback_constraints if str(item).strip()]),
+        "risk_controls": _strings(packet.get("risk_controls")),
+        "tags": _strings(packet.get("tags")),
+    }
+
+
+def _fallback_chapter_plan_packet(
+    outline: dict[str, Any],
+    planning_context: dict[str, Any],
+    *,
+    target_chapter: int,
+    carry_forward: dict[str, Any],
+) -> dict[str, Any]:
+    quality_targets = planning_context.get("quality_standard", {}).get("dimensions", []) or [
+        "causal_chain",
+        "chapter_hook",
+        "originality_boundary",
+    ]
+    continuity_checks = planning_context.get("continuity", {}).get("constraints", [])
+    feedback_constraints = planning_context.get("feedback", {}).get("constraints", [])
+    act = _act_for_chapter(outline, target_chapter)
+    carry_hook = str(carry_forward.get("previous_hook", "") or "").strip()
+    objective = (
+        f"advance chapter {target_chapter} from the outline goal: {act.get('goal') or 'maintain forward momentum'}"
+        if target_chapter == 1
+        else f"resolve the previous chapter consequence and advance chapter {target_chapter} toward: {act.get('goal') or 'the next obligation'}"
     )
-    path = storage.write_asset("chapter_plans", asset)
-    create_chapter_plan_version(storage, path)
-    return path
+    beats = [
+        carry_hook or "open with a concrete pressure point connected to the outline promise",
+        "make the protagonist choose between two visible costs",
+        "pay off one small setup while planting one higher-order question",
+        "close on a hook that changes the next chapter's immediate objective",
+    ]
+    return {
+        "title": f"Chapter {target_chapter} plan",
+        "objective": objective,
+        "beats": beats,
+        "hook": carry_hook or str(act.get("turn") or "a new consequence makes the next action unavoidable"),
+        "word_budget": _word_budget(None, planning_context),
+        "conflict": "the protagonist's safest option becomes more expensive than action",
+        "information_points": _dedupe([
+            "preserve project continuity",
+            "avoid repeating prior chapter prose",
+            "make the causal chain explicit",
+            *continuity_checks[:3],
+        ]),
+        "quality_targets": quality_targets,
+        "continuity_checks": continuity_checks,
+        "feedback_constraints": feedback_constraints,
+        "risk_controls": [
+            "do not copy protected source expression",
+            "do not bypass project quality standard",
+            "do not contradict continuity bible",
+        ],
+        "tags": ["deterministic-fallback"],
+    }
+
+
+def _parse_json_payload(text: str) -> dict[str, Any]:
+    try:
+        return parse_json_object(text)
+    except ModelOutputValidationError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start >= 0 and end > start:
+            return parse_json_object(text[start : end + 1])
+        raise
+
+
+def _act_for_chapter(outline: dict[str, Any], chapter: int) -> dict[str, Any]:
+    content = outline.get("content", {}) if isinstance(outline.get("content", {}), dict) else {}
+    acts = content.get("acts", []) if isinstance(content.get("acts", []), list) else []
+    for act in acts:
+        if not isinstance(act, dict):
+            continue
+        chapters = act.get("chapters", []) if isinstance(act.get("chapters", []), list) else []
+        if any(isinstance(row, dict) and _positive_chapter(row.get("chapter")) == chapter for row in chapters):
+            return act
+    if acts:
+        index = min(max(chapter - 1, 0), len(acts) - 1)
+        return acts[index] if isinstance(acts[index], dict) else {}
+    return {}
+
+
+def _word_budget(value: Any, planning_context: dict[str, Any]) -> dict[str, int]:
+    if isinstance(value, dict):
+        return {
+            "target": _positive_chapter(value.get("target") or 2500),
+            "min": _positive_chapter(value.get("min") or 1800),
+            "max": _positive_chapter(value.get("max") or 3200),
+        }
+    platform = planning_context.get("profiles", {}).get("platform_profile", {}) if isinstance(planning_context.get("profiles", {}), dict) else {}
+    content = platform.get("content", {}) if isinstance(platform.get("content", {}), dict) else {}
+    chapter_length = content.get("chapter_length") if isinstance(content.get("chapter_length"), dict) else {}
+    target = _positive_chapter(chapter_length.get("target") or chapter_length.get("recommended") or 2500)
+    return {
+        "target": target,
+        "min": _positive_chapter(chapter_length.get("min") or int(target * 0.72)),
+        "max": _positive_chapter(chapter_length.get("max") or int(target * 1.28)),
+    }
+
+
+def _next_chapter_number(storage: LocalStorage, outline_id: str) -> int:
+    chapters: list[int] = []
+    for path in storage.list_json("chapter_plans"):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "chapter_plan":
+            continue
+        if str(data.get("source", "")) != outline_id:
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        chapters.append(_positive_chapter(content.get("chapter", 1)))
+    return max(chapters, default=0) + 1
+
+
+def _strings(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def _positive_chapter(value: Any) -> int:
+    try:
+        number = int(value)
+    except Exception:
+        number = 1
+    return max(number, 1)
+
+
+def _display_path(root: Path, path: str | Path) -> str:
+    candidate = Path(path)
+    try:
+        return str(candidate.relative_to(root))
+    except ValueError:
+        return str(candidate)
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if value and value not in seen:
+            seen.add(value)
+            result.append(value)
+    return result

@@ -64,9 +64,16 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
     "outline": {
         "agent": "Outline Agent",
         "permission_profile": "outline_generation_from_project_character_only",
-        "allowed_tools": ["read_asset", "write_outline", "write_outline_version", "run_validation"],
+        "allowed_tools": ["read_asset", "call_model_adapter", "write_outline", "write_outline_version", "run_validation"],
         "allowed_write_types": ["outline", "outline_version", "task_status", "workflow_run"],
         "forbidden": ["copy_plot_sequence", "write_draft_prose", "ignore_long_form_constraints"],
+    },
+    "chapter_plan": {
+        "agent": "Chapter Plan Agent",
+        "permission_profile": "chapter_plan_generation_from_project_outline_only",
+        "allowed_tools": ["read_asset", "call_model_adapter", "write_chapter_plan", "write_chapter_plan_version", "run_validation"],
+        "allowed_write_types": ["chapter_plan", "chapter_plan_version", "task_status", "workflow_run"],
+        "forbidden": ["skip_project_profiles", "ignore_continuity_feedback_or_quality_standard", "write_draft_prose"],
     },
     "creative_asset": {
         "agent": "Material Agent",
@@ -185,8 +192,17 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
     "ai_editor": {
         "agent": "AI Editor Agent",
         "permission_profile": "patch_based_editing_with_diff_and_rollback",
-        "allowed_tools": ["read_asset", "write_editor_patch", "write_draft_diff_report", "write_draft_version", "run_validation"],
-        "allowed_write_types": ["editor_patch", "draft_diff_report", "draft_version", "task_status", "workflow_run"],
+        "allowed_tools": [
+            "read_asset",
+            "call_model_adapter",
+            "write_editor_patch",
+            "write_draft_chapter",
+            "write_draft_diff_report",
+            "write_draft_version",
+            "write_generation_run",
+            "run_validation",
+        ],
+        "allowed_write_types": ["editor_patch", "draft_chapter", "draft_diff_report", "draft_version", "generation_run", "task_status", "workflow_run"],
         "forbidden": ["overwrite_drafts_without_patch", "apply_unreviewed_high_risk_patch", "remove_copyright_boundary"],
     },
     "continuity": {

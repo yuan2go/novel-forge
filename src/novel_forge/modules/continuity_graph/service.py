@@ -35,6 +35,7 @@ def build_continuity_graph(
     project_id: str | None = None,
     workspace_path: str | None = None,
     limit: int = 500,
+    include_content_snapshot: bool = False,
 ) -> dict[str, Any]:
     storage.ensure_layout()
     nodes: list[dict[str, Any]] = []
@@ -78,7 +79,7 @@ def build_continuity_graph(
             for edge in _content_edges(node, index):
                 edges.append(edge)
         graph = {
-            "nodes": [_strip_raw(node) for node in nodes],
+            "nodes": [_strip_raw(node, include_content_snapshot=include_content_snapshot) for node in nodes],
             "edges": _dedupe_edges(edges),
             "summary": _summary(nodes, edges),
             "built_at": utc_now(),
@@ -183,6 +184,66 @@ def create_chapter_continuity_report(
         return result
 
 
+def create_chapter_stability_preflight_report(
+    storage: LocalStorage,
+    chapter_plan_path: str | Path,
+    *,
+    workspace_path: str | None = None,
+) -> dict[str, Any]:
+    path = resolve_path(storage.root, chapter_plan_path)
+    plan = storage.read_asset(path)
+    if plan.type != "chapter_plan":
+        raise ValueError("chapter_plan_path must point to chapter_plan")
+    project = project_scope_from_asset(storage, plan, input_path=path, workspace_path=workspace_path)
+    project_id = str(project.get("project_id", ""))
+    workspace = str(project.get("workspace_path", "") or workspace_path or "")
+    graph = build_continuity_graph(storage, project_id=project_id or None, workspace_path=workspace, include_content_snapshot=True)
+    checks, violations, dimensions = _stability_preflight_checks(plan.to_dict(), graph)
+    recommendation = "block" if any(item["severity"] == "high" for item in violations) else "revise" if violations else "pass"
+    with AgentExecutionContext(
+        storage,
+        agent_key="continuity",
+        operation="create-chapter-stability-preflight-report",
+        input_assets=[path],
+        output_types=["chapter_continuity_report"],
+        workspace_path=workspace,
+        sla_seconds=600,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("write_chapter_continuity_report", "chapter_continuity_report")
+        asset = ChapterContinuityReport(
+            title=f"Long-form stability preflight for {plan.title or plan.id}",
+            source=plan.id,
+            tags=["continuity", "preflight", "long-form-stability", recommendation],
+            content={
+                "report_id": make_id("chapter_stability_preflight", plan.id),
+                "target_asset_id": plan.id,
+                "target_asset_type": plan.type,
+                "chapter_plan_id": plan.id,
+                "chapter_plan_path": _display_path(storage.root, path),
+                "chapter": plan.content.get("chapter", 1),
+                "gate": "long_form_stability_preflight",
+                "gate_status": "blocked" if recommendation == "block" else "passed_with_warnings" if recommendation == "revise" else "passed",
+                "dimensions": dimensions,
+                "continuity_checks": checks,
+                "violations": violations,
+                "blocking_violations": [item for item in violations if item.get("severity") == "high"],
+                "graph_summary": graph["summary"],
+                "recommendation": recommendation,
+                "created_at": utc_now(),
+            },
+            metadata={"project_id": project_id, "workspace_path": workspace, "gate": "long_form_stability_preflight"},
+            references=filter_project_safe_references(
+                storage,
+                project_id,
+                [plan.id, _display_path(storage.root, path), *[node["id"] for node in graph["nodes"][:100]], *[node["path"] for node in graph["nodes"][:100]]],
+            ),
+        )
+        result = _write(storage, asset)
+        run.succeed(output_assets=[result["path"]], token_used=len(checks) + len(violations))
+        return result
+
+
 def _iter_asset_paths(storage: LocalStorage) -> list[Path]:
     paths: list[Path] = []
     for category in DATA_DIRS:
@@ -210,8 +271,13 @@ def _node(storage: LocalStorage, path: Path, data: dict[str, Any]) -> dict[str, 
     }
 
 
-def _strip_raw(node: dict[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in node.items() if key != "raw"}
+def _strip_raw(node: dict[str, Any], *, include_content_snapshot: bool = False) -> dict[str, Any]:
+    stripped = {key: value for key, value in node.items() if key != "raw"}
+    if include_content_snapshot:
+        raw = node.get("raw", {}) if isinstance(node.get("raw", {}), dict) else {}
+        content = raw.get("content", {}) if isinstance(raw.get("content", {}), dict) else {}
+        stripped["content"] = content
+    return stripped
 
 
 def _reference_values(data: dict[str, Any]) -> list[str]:
@@ -333,6 +399,276 @@ def _continuity_checks(text: str, graph: dict[str, Any]) -> tuple[list[dict[str,
             }
         )
     return checks, violations
+
+
+def _stability_preflight_checks(plan: dict[str, Any], graph: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    nodes = graph.get("nodes", []) if isinstance(graph.get("nodes", []), list) else []
+    content = plan.get("content", {}) if isinstance(plan.get("content", {}), dict) else {}
+    chapter = _positive_int(content.get("chapter", 1))
+    plan_text = _searchable_text(content)
+    checks: list[dict[str, Any]] = []
+    violations: list[dict[str, Any]] = []
+    dimensions = {
+        "characters": _check_character_stability(nodes, plan_text, chapter),
+        "foreshadowing": _check_foreshadowing_stability(nodes, plan_text, chapter),
+        "timeline": _check_timeline_stability(nodes, content, chapter),
+        "setting_conflicts": _check_setting_conflicts(nodes, plan_text, chapter),
+    }
+    for dimension, payload in dimensions.items():
+        checks.append(
+            {
+                "check": dimension,
+                "status": payload["status"],
+                "asset_count": payload.get("asset_count", 0),
+                "matched_count": payload.get("matched_count", 0),
+                "summary": payload.get("summary", ""),
+            }
+        )
+        violations.extend(payload.get("violations", []))
+    return checks, violations, dimensions
+
+
+def _check_character_stability(nodes: list[dict[str, Any]], plan_text: str, chapter: int) -> dict[str, Any]:
+    character_nodes = [node for node in nodes if node.get("type") == "character_card"]
+    matched = [node for node in character_nodes if _node_mentioned(node, plan_text)]
+    violations: list[dict[str, Any]] = []
+    for node in matched:
+        content = _node_content(node)
+        status_text = " ".join(_strings([content.get("status"), content.get("state"), content.get("current_state"), content.get("fate")])).lower()
+        if any(term in status_text for term in ["dead", "死亡", "已死", "阵亡"]) and _contains_any(plan_text, ["出场", "救", "行动", "alive", "appears", "returns"]):
+            violations.append(
+                _violation(
+                    "high",
+                    "character_state_conflict",
+                    f"Chapter {chapter} appears to use character '{node.get('title')}' as active despite a dead/removed character state.",
+                    "Update the character card or rewrite the chapter plan so character state remains consistent.",
+                    node,
+                )
+            )
+    if character_nodes and not matched:
+        violations.append(
+            {
+                "severity": "medium",
+                "dimension": "character_presence",
+                "message": "Chapter plan does not explicitly connect to known character cards.",
+                "recommendation": "Bind at least one active character or explain why this chapter is plot/world focused.",
+            }
+        )
+    return {
+        "status": "blocked" if any(item["severity"] == "high" for item in violations) else "warning" if violations else "passed",
+        "asset_count": len(character_nodes),
+        "matched_count": len(matched),
+        "matched_assets": [_node_ref(node) for node in matched],
+        "violations": violations,
+        "summary": "checks active character state and whether chapter plan references known characters",
+    }
+
+
+def _check_foreshadowing_stability(nodes: list[dict[str, Any]], plan_text: str, chapter: int) -> dict[str, Any]:
+    thread_nodes = [node for node in nodes if node.get("type") == "foreshadowing_thread"]
+    matched = [node for node in thread_nodes if _node_mentioned(node, plan_text) or _thread_text(node) in plan_text]
+    violations: list[dict[str, Any]] = []
+    for node in thread_nodes:
+        content = _node_content(node)
+        status = str(content.get("status", "")).strip()
+        related = [_positive_int(item) for item in content.get("related_chapters", []) if _positive_int(item)]
+        due = bool(related and chapter in related)
+        mentioned = node in matched
+        if status in {"paid_off", "abandoned"} and mentioned:
+            violations.append(
+                _violation(
+                    "high" if status == "abandoned" else "medium",
+                    "foreshadowing_status_conflict",
+                    f"Chapter {chapter} references foreshadowing '{node.get('title')}' with status {status}.",
+                    "Reopen the thread intentionally or remove the stale foreshadowing reference.",
+                    node,
+                )
+            )
+        if due and status in {"planned", "seeded", "developing"} and not mentioned:
+            violations.append(
+                _violation(
+                    "medium",
+                    "foreshadowing_due_missing",
+                    f"Foreshadowing '{node.get('title')}' is related to chapter {chapter} but is not visible in the chapter plan.",
+                    "Add a setup/payoff beat or reschedule the thread.",
+                    node,
+                )
+            )
+    return {
+        "status": "blocked" if any(item["severity"] == "high" for item in violations) else "warning" if violations else "passed",
+        "asset_count": len(thread_nodes),
+        "matched_count": len(matched),
+        "matched_assets": [_node_ref(node) for node in matched],
+        "violations": violations,
+        "summary": "checks active foreshadowing threads, due chapters, and stale/payoff conflicts",
+    }
+
+
+def _check_timeline_stability(nodes: list[dict[str, Any]], plan_content: dict[str, Any], chapter: int) -> dict[str, Any]:
+    timeline_entries: list[dict[str, Any]] = []
+    for node in nodes:
+        if node.get("type") != "continuity_bible":
+            continue
+        content = _node_content(node)
+        for item in content.get("timeline", []) if isinstance(content.get("timeline", []), list) else []:
+            if isinstance(item, dict):
+                timeline_entries.append({**item, "_node": node})
+            else:
+                timeline_entries.append({"event": str(item), "_node": node})
+    violations: list[dict[str, Any]] = []
+    previous_chapter = _positive_int((plan_content.get("carry_forward", {}) if isinstance(plan_content.get("carry_forward", {}), dict) else {}).get("previous_chapter", 0))
+    if previous_chapter >= chapter:
+        violations.append(
+            {
+                "severity": "high",
+                "dimension": "timeline_regression",
+                "message": f"Chapter {chapter} carries forward from chapter {previous_chapter}, which is not earlier than the target chapter.",
+                "recommendation": "Fix carry_forward.previous_chapter or target chapter number before generation.",
+            }
+        )
+    for entry in timeline_entries:
+        entry_chapter = _positive_int(entry.get("chapter", 0))
+        if entry_chapter > chapter and _timeline_entry_mentions_plan(entry, plan_content):
+            violations.append(
+                _violation(
+                    "high",
+                    "future_timeline_leak",
+                    f"Chapter {chapter} appears to use future timeline event from chapter {entry_chapter}: {entry.get('event') or entry.get('summary') or entry.get('title')}",
+                    "Move the beat to the correct chapter or update continuity timeline.",
+                    entry.get("_node", {}),
+                )
+            )
+    return {
+        "status": "blocked" if any(item["severity"] == "high" for item in violations) else "warning" if violations else "passed",
+        "asset_count": len(timeline_entries),
+        "matched_count": len([entry for entry in timeline_entries if _timeline_entry_mentions_plan(entry, plan_content)]),
+        "violations": violations,
+        "summary": "checks chapter order, carry-forward order, and future timeline leakage",
+    }
+
+
+def _check_setting_conflicts(nodes: list[dict[str, Any]], plan_text: str, chapter: int) -> dict[str, Any]:
+    source_nodes = [node for node in nodes if node.get("type") in {"continuity_bible", "world_bible", "power_scale_rule"}]
+    violations: list[dict[str, Any]] = []
+    checked_rules = 0
+    for node in source_nodes:
+        content = _node_content(node)
+        for rule in _setting_rules(content):
+            checked_rules += 1
+            forbidden = _forbidden_phrase(rule)
+            if forbidden and forbidden in plan_text:
+                violations.append(
+                    _violation(
+                        "high",
+                        "setting_rule_conflict",
+                        f"Chapter {chapter} conflicts with setting rule: {rule}",
+                        "Rewrite the chapter plan or explicitly update the setting/continuity bible before generation.",
+                        node,
+                    )
+                )
+    return {
+        "status": "blocked" if any(item["severity"] == "high" for item in violations) else "warning" if violations else "passed",
+        "asset_count": len(source_nodes),
+        "matched_count": checked_rules,
+        "violations": violations,
+        "summary": "checks continuity/world/power constraints for explicit forbidden setting conflicts",
+    }
+
+
+def _setting_rules(content: dict[str, Any]) -> list[str]:
+    rules: list[str] = []
+    for key in ["constraints", "worldview_rules", "rules", "power_rules", "limits"]:
+        value = content.get(key)
+        if isinstance(value, list):
+            rules.extend(str(item).strip() for item in value if str(item).strip())
+        elif isinstance(value, dict):
+            rules.extend(f"{key}: {item}" for item in value.values() if str(item).strip())
+        elif str(value or "").strip():
+            rules.append(str(value).strip())
+    return rules
+
+
+def _forbidden_phrase(rule: str) -> str:
+    text = str(rule).strip()
+    prefixes = ["禁止", "不得", "不能", "不可", "不允许", "forbid ", "forbidden ", "prohibit ", "must not ", "cannot "]
+    lowered = text.lower()
+    for prefix in prefixes:
+        if lowered.startswith(prefix):
+            return text[len(prefix) :].strip().lower() if prefix.isascii() else text[len(prefix) :].strip()
+        marker = f" {prefix}"
+        if marker in lowered:
+            index = lowered.index(marker) + len(marker)
+            return text[index:].strip().lower() if prefix.isascii() else text[index:].strip()
+    return ""
+
+
+def _timeline_entry_mentions_plan(entry: dict[str, Any], plan_content: dict[str, Any]) -> bool:
+    plan_text = _searchable_text(plan_content)
+    values = [str(entry.get(key, "")).strip() for key in ["event", "summary", "title", "marker"] if str(entry.get(key, "")).strip()]
+    return any(value and value in plan_text for value in values)
+
+
+def _node_mentioned(node: dict[str, Any], text: str) -> bool:
+    content = _node_content(node)
+    names = [str(node.get("title", "")).strip(), str(content.get("name", "")).strip(), str(content.get("alias", "")).strip()]
+    aliases = content.get("aliases", [])
+    if isinstance(aliases, list):
+        names.extend(str(item).strip() for item in aliases if str(item).strip())
+    return any(name and name in text for name in names)
+
+
+def _thread_text(node: dict[str, Any]) -> str:
+    content = _node_content(node)
+    return " ".join(_strings([content.get("thread_id"), content.get("setup"), content.get("payoff_plan")]))
+
+
+def _node_content(node: dict[str, Any]) -> dict[str, Any]:
+    snapshot = node.get("content", {}) if isinstance(node.get("content", {}), dict) else {}
+    if snapshot:
+        return snapshot
+    raw = node.get("raw", {}) if isinstance(node.get("raw", {}), dict) else {}
+    content = raw.get("content", {}) if isinstance(raw.get("content", {}), dict) else {}
+    return content
+
+
+def _node_ref(node: dict[str, Any]) -> dict[str, Any]:
+    return {"id": node.get("id", ""), "path": node.get("path", ""), "type": node.get("type", ""), "title": node.get("title", "")}
+
+
+def _violation(severity: str, dimension: str, message: str, recommendation: str, node: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "severity": severity,
+        "dimension": dimension,
+        "message": message,
+        "recommendation": recommendation,
+        "evidence_asset_id": node.get("id", ""),
+        "evidence_asset_path": node.get("path", ""),
+    }
+
+
+def _searchable_text(value: Any) -> str:
+    if isinstance(value, dict):
+        return " ".join(_searchable_text(item) for item in value.values()).lower()
+    if isinstance(value, list):
+        return " ".join(_searchable_text(item) for item in value).lower()
+    return str(value or "").lower()
+
+
+def _strings(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return [str(value).strip()] if str(value or "").strip() else []
+
+
+def _contains_any(text: str, terms: list[str]) -> bool:
+    return any(term.lower() in text for term in terms)
+
+
+def _positive_int(value: Any) -> int:
+    try:
+        return max(int(value), 0)
+    except Exception:
+        return 0
 
 
 def _as_list(value: Any) -> list[Any]:

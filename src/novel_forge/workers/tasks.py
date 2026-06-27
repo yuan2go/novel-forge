@@ -5,6 +5,7 @@ from typing import Any, Callable
 
 from novel_forge.api.product import enqueue_batch_deconstruct, process_batch_item_step, retry_task
 from novel_forge.modules.agent_runs import AgentExecutionContext
+from novel_forge.modules.chapter_production_bus import recover_chapter_production, resume_chapter_production
 from novel_forge.storage.local import LocalStorage
 from novel_forge.workflows import pipeline
 
@@ -126,6 +127,29 @@ def retry_product_task(
     with _worker_context(root, "retry-product-task", input_assets=[status_path] if status_path else [], workspace_path=workspace_path) as run:
         run.guard("run_worker_task")
         result = retry_task(root, status_path=status_path, run_id=run_id, step=step, workspace_path=workspace_path)
+        run.succeed()
+        return result
+
+
+@_task(name="novel_forge.chapter_production_run")
+def chapter_production_run_task(
+    root: str,
+    run_path: str,
+    from_step: str | None = None,
+    run_to: str | None = None,
+    force: bool = False,
+    recover_failed: bool = False,
+    clear_pause: bool = True,
+    request_id: str = "",
+) -> dict:
+    operation = "chapter-production-recover" if recover_failed else "chapter-production-resume"
+    with _worker_context(root, operation, input_assets=[run_path]) as run:
+        run.guard("run_worker_task")
+        storage = LocalStorage(root)
+        if recover_failed:
+            result = recover_chapter_production(storage, run_path, run_to=run_to, force=True)
+        else:
+            result = resume_chapter_production(storage, run_path, from_step=from_step, run_to=run_to, force=force, clear_pause=clear_pause)
         run.succeed()
         return result
 
