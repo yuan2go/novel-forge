@@ -5,18 +5,25 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.schemas import (
+    AnalysisConversionReport,
+    ChapterAuditReport,
     ClaudeCodeHandoff,
+    CommonNovelAnalysisReport,
+    OriginalityReport,
+    PublishGateReport,
     ProjectWorkspaceState,
+    ReleasePackage,
     ReviewReport,
     SCHEMA_CLASSES,
     SourceDocument,
+    StyleProfile,
     validate_common_fields,
 )
 
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 30)
+        self.assertEqual(len(SCHEMA_CLASSES), 54)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
         self.assertIn("review_report", SCHEMA_CLASSES)
@@ -24,6 +31,20 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("task_dead_letter", SCHEMA_CLASSES)
         self.assertIn("batch_task_item", SCHEMA_CLASSES)
         self.assertIn("claude_code_handoff", SCHEMA_CLASSES)
+        self.assertIn("platform_profile", SCHEMA_CLASSES)
+        self.assertIn("genre_market_profile", SCHEMA_CLASSES)
+        self.assertIn("style_profile", SCHEMA_CLASSES)
+        self.assertIn("quality_standard_profile", SCHEMA_CLASSES)
+        self.assertIn("continuity_bible", SCHEMA_CLASSES)
+        self.assertIn("chapter_audit_report", SCHEMA_CLASSES)
+        self.assertIn("originality_report", SCHEMA_CLASSES)
+        self.assertIn("publish_gate_report", SCHEMA_CLASSES)
+        self.assertIn("release_package", SCHEMA_CLASSES)
+        self.assertIn("common_novel_analysis_report", SCHEMA_CLASSES)
+        self.assertIn("web_fiction_business_analysis_report", SCHEMA_CLASSES)
+        self.assertIn("published_fiction_analysis_report", SCHEMA_CLASSES)
+        self.assertIn("classic_literary_analysis_report", SCHEMA_CLASSES)
+        self.assertIn("analysis_conversion_report", SCHEMA_CLASSES)
 
     def test_common_fields_validate(self):
         asset = SourceDocument(
@@ -61,6 +82,93 @@ class SchemaTests(unittest.TestCase):
         data = report.to_dict()
         self.assertEqual(data["score"], 75)
         self.assertIn("revision_suggestions", data)
+
+    def test_release_gate_asset_validation(self):
+        originality = OriginalityReport(
+            title="originality",
+            content={
+                "target_asset_id": "draft1",
+                "source_asset_ids": [],
+                "similarity_checks": [],
+                "forbidden_element_hits": [],
+                "plot_skeleton_risk": "low",
+                "character_setup_risk": "low",
+                "style_expression_risk": "low",
+                "risk_level": "low",
+                "recommendation": "pass",
+                "human_gate_required": False,
+            },
+        )
+        self.assertEqual(validate_common_fields(originality.to_dict()), [])
+        bad_gate = PublishGateReport(title="bad", content={"target_asset_id": "draft1", "gates": {}, "decision": "ship"})
+        errors = validate_common_fields(bad_gate.to_dict())
+        self.assertIn("publish_gate_report content missing required field: blocking_issues", errors)
+        self.assertIn("publish_gate_report decision must be ready, needs_revision, or blocked", errors)
+
+        audit = ChapterAuditReport(
+            title="audit",
+            content={
+                "target_asset_id": "draft1",
+                "dimension_scores": {"plot": 80},
+                "issues": [],
+                "gate_results": {"plot": True},
+                "linked_reports": {},
+                "recommendation": "pass",
+            },
+        )
+        release = ReleasePackage(
+            title="release",
+            content={
+                "target_asset_id": "draft1",
+                "publish_gate_report_id": "gate1",
+                "title_candidates": ["Chapter 1"],
+                "summary": "summary",
+                "tags": [],
+                "channel": "local",
+                "status": "ready",
+            },
+        )
+        self.assertEqual(validate_common_fields(audit.to_dict()), [])
+        self.assertEqual(validate_common_fields(release.to_dict()), [])
+
+    def test_analysis_assets_reject_direct_generation_rag(self):
+        report = CommonNovelAnalysisReport(
+            title="analysis",
+            content={
+                "source_asset_id": "source1",
+                "analysis_scope": "structure",
+                "structure_map": {},
+                "character_map": {},
+                "conflict_map": {},
+                "theme_map": {},
+                "risk_boundary": "abstract only",
+                "reusable_findings": ["hook density"],
+            },
+            metadata={
+                "copyright_boundary": "abstract structure only",
+                "copyright_risk": "low",
+                "abstraction_level": "abstract",
+                "use_in_generation_rag": True,
+            },
+        )
+        errors = validate_common_fields(report.to_dict())
+        self.assertIn("common_novel_analysis_report must not enter generation RAG directly; convert to abstract assets first", errors)
+
+        conversion = AnalysisConversionReport(
+            title="conversion",
+            content={
+                "source_report_id": "report1",
+                "source_report_type": "web_fiction_business_analysis_report",
+                "conversion_targets": ["material_card"],
+                "created_assets": [],
+                "rejected_items": [],
+                "reuse_scope": "project",
+                "copyright_risk": "low",
+                "abstraction_level": "template",
+            },
+            metadata={"copyright_boundary": "abstract structure only"},
+        )
+        self.assertEqual(validate_common_fields(conversion.to_dict()), [])
 
     def test_project_workspace_state_required_content(self):
         workspace = ProjectWorkspaceState(title="workspace", content={})
@@ -137,6 +245,32 @@ class SchemaTests(unittest.TestCase):
         errors = validate_common_fields(data)
 
         self.assertIn("source_document metadata.rights must be recorded", errors)
+
+    def test_style_profile_rejects_specific_author_imitation(self):
+        profile = StyleProfile(
+            title="bad style",
+            content={
+                "style_id": "bad",
+                "name": "bad",
+                "scope": "project",
+                "source_boundary": {
+                    "source_asset_ids": [],
+                    "derived_from_protected_text": False,
+                    "copyright_risk": "low",
+                    "allowed_usage": "parameter_only",
+                },
+                "language_parameters": {},
+                "narrative_parameters": {},
+                "emotion_parameters": {},
+                "forbidden_patterns": ["do not copy source text"],
+                "target_author": "protected author",
+            },
+            metadata={"copyright_boundary": "abstract structure only"},
+        )
+
+        errors = validate_common_fields(profile.to_dict())
+
+        self.assertIn("style_profile must not request specific author imitation", errors)
 
 
 if __name__ == "__main__":

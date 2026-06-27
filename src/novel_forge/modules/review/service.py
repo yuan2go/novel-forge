@@ -10,6 +10,10 @@ from novel_forge.evaluation.creative_gate import evaluate_draft_quality, gate_is
 from novel_forge.model_adapters import ModelAdapter, model_from_env, validate_model_output
 from novel_forge.model_adapters.mock import MockModelAdapter
 from novel_forge.modules.common import read_previous, run_metadata
+from novel_forge.modules.audit import create_chapter_audit_report, create_originality_report
+from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, quality_dimensions_from_context
+from novel_forge.modules.standards import create_quality_score_report, evaluate_quality_standard
+from novel_forge.modules.style import create_style_review_report
 from novel_forge.schemas import ReviewReport
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import build_rag_context, retrieval_metadata, retrieval_reference_ids
@@ -19,6 +23,8 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
     agent_profile = agent_runtime_profile("review")
     model = model or model_from_env("review")
     draft_asset = read_previous(storage, "drafts", input_path)
+    production_context = build_production_context(storage, draft_asset, input_path=input_path)
+    quality_dimensions = quality_dimensions_from_context(production_context) or QUALITY_DIMENSIONS
     retrieved_context = build_rag_context(
         storage,
         draft_asset,
@@ -32,24 +38,28 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
             model,
             draft_asset.content.get("text", ""),
             {
-                "rubric": QUALITY_DIMENSIONS,
+                "rubric": quality_dimensions,
                 "draft_asset_id": draft_asset.id,
                 "copyright_boundary": draft_asset.content.get("copyright_boundary", ""),
                 "retrieved_context": retrieved_context,
+                "production_context": production_context,
             },
         ),
     )
     enforce_agent_action(agent_profile, "write_review_report", "review_report")
     quality_gate = evaluate_draft_quality(draft_asset.content.get("text", ""))
+    standard_evaluation = evaluate_quality_standard(draft_asset, production_context, review_result=result)
     issues = [*result["issues"], *gate_issues(quality_gate)]
     asset = ReviewReport(
         title=f"Review for {draft_asset.title}",
         source=draft_asset.id,
         tags=["review", "quality"],
         content={
-            "rubric": QUALITY_DIMENSIONS,
+            "rubric": quality_dimensions,
             "summary": f"{model.name} review completed",
             "quality_gates": quality_gate,
+            "quality_standard_evaluation": standard_evaluation,
+            "production_context": production_context,
             "retrieved_context": retrieved_context,
             "model_output": result,
         },
@@ -57,6 +67,14 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
             "model": model.name,
             "provider": result.get("provider", model.name),
             "agent_runtime": agent_profile,
+            "project_id": production_context["project"].get("project_id", ""),
+            "workspace_path": production_context["project"].get("workspace_path", ""),
+            "quality_standard_profile_id": _profile_id(production_context, "quality_standard_profile"),
+            "style_profile_id": _profile_id(production_context, "style_profile"),
+            "style_blend_preset_id": _profile_id(production_context, "style_blend_preset"),
+            "continuity_bible_id": _profile_id(production_context, "continuity_bible"),
+            "preflight_ready": production_context["preflight"].get("ready", False),
+            "preflight_warnings": production_context["preflight"].get("warnings", []),
             **retrieval_metadata(retrieved_context),
             "run_metadata": run_metadata(
                 "review",
@@ -81,14 +99,69 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
             ]
         ),
         next_action=result["next_action"],
-        references=retrieval_reference_ids(draft_asset.id, retrieved_context),
+        references=filter_project_safe_references(
+            storage,
+            str(production_context["project"].get("project_id", "")),
+            _dedupe([*retrieval_reference_ids(draft_asset.id, retrieved_context), *production_context.get("profile_references", [])]),
+        ),
     )
-    return storage.write_asset("reviews", asset)
+    review_path = storage.write_asset("reviews", asset)
+    draft_path_for_reports = input_path or str(storage.root / "data" / "drafts" / f"{draft_asset.id}.json")
+    quality_path = create_quality_score_report(
+        storage,
+        draft_path_for_reports,
+        workspace_path=production_context["project"].get("workspace_path", ""),
+        review_result={**result, "issues": issues},
+    )
+    style_path = create_style_review_report(
+        storage,
+        draft_path_for_reports,
+        workspace_path=production_context["project"].get("workspace_path", ""),
+    )
+    originality_path = create_originality_report(
+        storage,
+        draft_path_for_reports,
+        workspace_path=production_context["project"].get("workspace_path", ""),
+    )
+    chapter_audit_path = create_chapter_audit_report(
+        storage,
+        draft_path_for_reports,
+        workspace_path=production_context["project"].get("workspace_path", ""),
+        quality_path=quality_path,
+        style_path=style_path,
+        originality_path=originality_path,
+    )
+    review_data = storage.read_json(review_path)
+    if isinstance(review_data, dict):
+        metadata = review_data.get("metadata", {}) if isinstance(review_data.get("metadata", {}), dict) else {}
+        metadata["quality_score_report_path"] = str(quality_path.relative_to(storage.root))
+        metadata["style_review_report_path"] = str(style_path.relative_to(storage.root))
+        metadata["originality_report_path"] = str(originality_path.relative_to(storage.root))
+        metadata["chapter_audit_report_path"] = str(chapter_audit_path.relative_to(storage.root))
+        review_data["metadata"] = metadata
+        references = [str(item) for item in review_data.get("references", []) if str(item).strip()]
+        for linked in [
+            storage.read_json(quality_path).get("id", ""),
+            storage.read_json(style_path).get("id", ""),
+            storage.read_json(originality_path).get("id", ""),
+            storage.read_json(chapter_audit_path).get("id", ""),
+        ]:
+            if linked and linked not in references:
+                references.append(str(linked))
+        review_data["references"] = references
+        storage.write_json(review_path, review_data)
+    return review_path
 
 
 def _checked_model_review(agent_profile: dict, model: ModelAdapter, content: str, context: dict[str, Any]) -> dict[str, Any]:
     enforce_agent_action(agent_profile, "call_model_adapter")
     return model.review(content, context)
+
+
+def _profile_id(context: dict, asset_type: str) -> str:
+    profiles = context.get("profiles", {}) if isinstance(context.get("profiles", {}), dict) else {}
+    profile = profiles.get(asset_type)
+    return str(profile.get("id", "")) if isinstance(profile, dict) else ""
 
 
 @dataclass(frozen=True)

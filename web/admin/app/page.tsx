@@ -3,6 +3,8 @@
 import {
   Activity,
   Archive,
+  BarChart3,
+  BookMarked,
   BookOpen,
   Boxes,
   CheckCircle2,
@@ -10,9 +12,12 @@ import {
   Database,
   FileSearch,
   GitPullRequest,
+  Home,
   Layers3,
   Languages,
+  Library,
   ListChecks,
+  MessageSquareText,
   Network,
   PenLine,
   Pause,
@@ -21,9 +26,14 @@ import {
   RotateCcw,
   Save,
   Search,
+  Send,
   Server,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
   Trash2,
   UploadCloud,
+  Wand2,
   Workflow
 } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
@@ -49,6 +59,75 @@ type AssetRow = {
   score?: number;
   risk_level?: string;
   asset_status?: string;
+};
+
+type CreativeAssetRow = {
+  path: string;
+  category: string;
+  library: string;
+  type: string;
+  id: string;
+  title: string;
+  tags: string[];
+  source: string;
+  project_id: string;
+  workspace_path: string;
+  scope: string;
+  risk_level: string;
+  asset_status: string;
+  updated_at: string;
+  preview: string;
+};
+
+type CreativeLibrary = {
+  key: string;
+  title: string;
+  title_zh: string;
+  description: string;
+  description_zh: string;
+  asset_types: string[];
+  categories: string[];
+  assets: CreativeAssetRow[];
+};
+
+type CreativeAssetCreateResult = {
+  path: string;
+  library: string;
+  asset: Record<string, unknown>;
+  validation: { ok: boolean; errors: string[] };
+};
+
+type StyleTrend = {
+  project_id: string;
+  count: number;
+  average_score: number;
+  latest_score: number;
+  rows: Array<{
+    path: string;
+    id: string;
+    title: string;
+    target_draft_id: string;
+    score: number;
+    risk: string;
+    drift_count: number;
+    updated_at: string;
+  }>;
+};
+
+type AnalysisReportRow = {
+  path: string;
+  id: string;
+  type: string;
+  title: string;
+  source: string;
+  project_id: string;
+  workspace_path: string;
+  copyright_risk: string;
+  abstraction_level: string;
+  use_in_generation_rag: boolean;
+  created_assets: number;
+  updated_at: string;
+  summary: string;
 };
 
 type ProjectRow = {
@@ -91,6 +170,18 @@ type ProjectConfig = {
   quality_threshold: number;
   audience: string;
   status: string;
+  platform_profile_id?: string;
+  platform_profile_path?: string;
+  genre_market_profile_id?: string;
+  genre_market_profile_path?: string;
+  quality_standard_profile_id?: string;
+  quality_standard_profile_path?: string;
+  style_profile_id?: string;
+  style_profile_path?: string;
+  style_blend_preset_id?: string;
+  style_blend_preset_path?: string;
+  continuity_bible_id?: string;
+  continuity_bible_path?: string;
 };
 
 type TaskCenter = {
@@ -497,17 +588,104 @@ type GitHubSource = {
 };
 
 type Language = "en" | "zh";
-type TabKey = "projects" | "health" | "tasks" | "assets" | "handoffs" | "batch" | "drafts" | "reviews";
+type TabKey =
+  | "workbench"
+  | "projects"
+  | "topic_library"
+  | "material_library"
+  | "knowledge_library"
+  | "setting_bible"
+  | "style_center"
+  | "writing_templates"
+  | "quality_standards"
+  | "analysis_center"
+  | "web_fiction_analysis"
+  | "published_fiction_analysis"
+  | "classic_literary_analysis"
+  | "asset_converter"
+  | "outline_generation"
+  | "chapter_plan_generation"
+  | "context_builder"
+  | "chapter_production"
+  | "ai_editor"
+  | "review_center"
+  | "originality_center"
+  | "publishing_center"
+  | "reader_feedback"
+  | "production_control"
+  | "change_impact"
+  | "model_evaluation"
+  | "data_statistics"
+  | "settings_center"
+  | "task_center"
+  | "health"
+  | "handoffs"
+  | "studio"
+  | "tasks"
+  | "assets"
+  | "batch"
+  | "drafts"
+  | "reviews";
 
-const tabConfig: { key: TabKey; icon: ReactNode }[] = [
-  { key: "projects", icon: <Boxes size={17} /> },
-  { key: "health", icon: <Activity size={17} /> },
-  { key: "tasks", icon: <ListChecks size={17} /> },
-  { key: "assets", icon: <FileSearch size={17} /> },
-  { key: "handoffs", icon: <Workflow size={17} /> },
-  { key: "batch", icon: <Layers3 size={17} /> },
-  { key: "drafts", icon: <PenLine size={17} /> },
-  { key: "reviews", icon: <GitPullRequest size={17} /> }
+type NavGroupKey = "workspace" | "assets" | "analysis" | "production" | "management";
+
+const navGroups: Array<{ key: NavGroupKey; items: Array<{ key: TabKey; icon: ReactNode }> }> = [
+  {
+    key: "workspace",
+    items: [
+      { key: "workbench", icon: <Home size={17} /> },
+      { key: "projects", icon: <Boxes size={17} /> }
+    ]
+  },
+  {
+    key: "assets",
+    items: [
+      { key: "topic_library", icon: <BookMarked size={17} /> },
+      { key: "material_library", icon: <Library size={17} /> },
+      { key: "knowledge_library", icon: <Database size={17} /> },
+      { key: "setting_bible", icon: <BookOpen size={17} /> },
+      { key: "style_center", icon: <Wand2 size={17} /> },
+      { key: "writing_templates", icon: <PenLine size={17} /> },
+      { key: "quality_standards", icon: <ShieldCheck size={17} /> }
+    ]
+  },
+  {
+    key: "analysis",
+    items: [
+      { key: "analysis_center", icon: <FileSearch size={17} /> },
+      { key: "web_fiction_analysis", icon: <Layers3 size={17} /> },
+      { key: "published_fiction_analysis", icon: <BookOpen size={17} /> },
+      { key: "classic_literary_analysis", icon: <BookMarked size={17} /> },
+      { key: "asset_converter", icon: <Workflow size={17} /> }
+    ]
+  },
+  {
+    key: "production",
+    items: [
+      { key: "outline_generation", icon: <GitPullRequest size={17} /> },
+      { key: "chapter_plan_generation", icon: <ListChecks size={17} /> },
+      { key: "context_builder", icon: <Network size={17} /> },
+      { key: "chapter_production", icon: <PenLine size={17} /> },
+      { key: "ai_editor", icon: <Save size={17} /> },
+      { key: "review_center", icon: <CheckCircle2 size={17} /> },
+      { key: "originality_center", icon: <ShieldCheck size={17} /> },
+      { key: "publishing_center", icon: <Send size={17} /> },
+      { key: "reader_feedback", icon: <MessageSquareText size={17} /> }
+    ]
+  },
+  {
+    key: "management",
+    items: [
+      { key: "production_control", icon: <Activity size={17} /> },
+      { key: "change_impact", icon: <GitPullRequest size={17} /> },
+      { key: "model_evaluation", icon: <SlidersHorizontal size={17} /> },
+      { key: "data_statistics", icon: <BarChart3 size={17} /> },
+      { key: "settings_center", icon: <Settings size={17} /> },
+      { key: "task_center", icon: <ListChecks size={17} /> },
+      { key: "handoffs", icon: <Workflow size={17} /> },
+      { key: "health", icon: <Server size={17} /> }
+    ]
+  }
 ];
 
 const serviceIcons: Record<string, ReactNode> = {
@@ -527,12 +705,59 @@ const copy = {
     run: "Run",
     language: "中文",
     metrics: { assets: "Assets", projects: "Projects", tasks: "Tasks", api: "API" },
+    nav: {
+      workspace: "Workspace",
+      assets: "Creative Assets",
+      analysis: "Analysis",
+      production: "Production",
+      management: "Management Tools"
+    },
+    status: {
+      localMode: "Local mode",
+      dataSync: "Data sync",
+      modelStatus: "Model",
+      autosave: "Autosave",
+      search: "Search project, asset, task",
+      notifications: "Notifications",
+      healthy: "ready",
+      warning: "attention",
+      offline: "offline"
+    },
     tabs: {
+      workbench: "Workbench",
       projects: "Projects",
+      topic_library: "Topic Library",
+      material_library: "Material Library",
+      knowledge_library: "Knowledge Library",
+      setting_bible: "Setting Bible",
+      style_center: "Style Center",
+      writing_templates: "Writing Templates",
+      quality_standards: "Quality Standards",
+      analysis_center: "Analysis Center",
+      web_fiction_analysis: "Web Fiction Analysis",
+      published_fiction_analysis: "Published Fiction Analysis",
+      classic_literary_analysis: "Classic Literary Analysis",
+      asset_converter: "Asset Converter",
+      outline_generation: "Outline Generation",
+      chapter_plan_generation: "Chapter Plan",
+      context_builder: "Context Builder",
+      chapter_production: "Chapter Production",
+      ai_editor: "AI Editor",
+      review_center: "Review Center",
+      originality_center: "Originality Protection",
+      publishing_center: "Publishing Center",
+      reader_feedback: "Reader Feedback",
+      production_control: "Production Control",
+      change_impact: "Change Impact",
+      model_evaluation: "Model Evaluation",
+      data_statistics: "Data Statistics",
+      settings_center: "Settings",
+      task_center: "Task Center",
       health: "Health",
+      handoffs: "Handoffs",
+      studio: "Studio",
       tasks: "Tasks",
       assets: "Assets",
-      handoffs: "Handoffs",
       batch: "Batch",
       drafts: "Drafts",
       reviews: "Review"
@@ -578,12 +803,59 @@ const copy = {
     run: "运行",
     language: "English",
     metrics: { assets: "资产", projects: "项目", tasks: "任务", api: "API" },
+    nav: {
+      workspace: "工作区",
+      assets: "创作资产",
+      analysis: "分析拆解",
+      production: "生产流程",
+      management: "管理工具"
+    },
+    status: {
+      localMode: "本地模式",
+      dataSync: "数据同步",
+      modelStatus: "模型状态",
+      autosave: "自动保存",
+      search: "搜索项目、资产、任务",
+      notifications: "通知",
+      healthy: "就绪",
+      warning: "需关注",
+      offline: "离线"
+    },
     tabs: {
+      workbench: "工作台",
       projects: "项目",
+      topic_library: "题材库",
+      material_library: "素材库",
+      knowledge_library: "知识库",
+      setting_bible: "设定书",
+      style_center: "文风中心",
+      writing_templates: "写作模板",
+      quality_standards: "精品标准",
+      analysis_center: "分析拆解中心",
+      web_fiction_analysis: "网文商业结构拆解",
+      published_fiction_analysis: "出版小说技法拆解",
+      classic_literary_analysis: "经典名著深度拆解",
+      asset_converter: "资产转换器",
+      outline_generation: "大纲生成",
+      chapter_plan_generation: "细纲生成",
+      context_builder: "上下文构建器",
+      chapter_production: "章节生产",
+      ai_editor: "AI 编辑器",
+      review_center: "审稿中心",
+      originality_center: "原创性保护中心",
+      publishing_center: "发布中心",
+      reader_feedback: "读者反馈中心",
+      production_control: "生产总控中心",
+      change_impact: "变更影响分析中心",
+      model_evaluation: "模型评测中心",
+      data_statistics: "数据统计",
+      settings_center: "设置中心",
+      task_center: "任务中心",
       health: "健康",
+      handoffs: "执行包",
+      studio: "创作台",
       tasks: "任务",
       assets: "资产",
-      handoffs: "执行包",
       batch: "批处理",
       drafts: "稿件",
       reviews: "审稿"
@@ -629,6 +901,18 @@ const copy = {
   run: string;
   language: string;
   metrics: { assets: string; projects: string; tasks: string; api: string };
+  nav: Record<NavGroupKey, string>;
+  status: {
+    localMode: string;
+    dataSync: string;
+    modelStatus: string;
+    autosave: string;
+    search: string;
+    notifications: string;
+    healthy: string;
+    warning: string;
+    offline: string;
+  };
   tabs: Record<TabKey, string>;
   handoffs: {
     title: string;
@@ -667,7 +951,7 @@ const copy = {
 
 export default function AdminPage() {
   const [language, setLanguage] = useState<Language>("en");
-  const [activeTab, setActiveTab] = useState<TabKey>("projects");
+  const [activeTab, setActiveTab] = useState<TabKey>("workbench");
   const [health, setHealth] = useState<Health | null>(null);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [seriesRows, setSeriesRows] = useState<SeriesRow[]>([]);
@@ -679,6 +963,7 @@ export default function AdminPage() {
   const [backups, setBackups] = useState<BackupRow[]>([]);
   const [deadLetters, setDeadLetters] = useState<DeadLetter[]>([]);
   const [assets, setAssets] = useState<AssetRow[]>([]);
+  const [creativeLibraries, setCreativeLibraries] = useState<CreativeLibrary[]>([]);
   const [assetDetail, setAssetDetail] = useState<AssetDetail | null>(null);
   const [assetVersions, setAssetVersions] = useState<AssetVersions | null>(null);
   const [assetGraph, setAssetGraph] = useState<AssetGraph | null>(null);
@@ -695,6 +980,9 @@ export default function AdminPage() {
   const [keyword, setKeyword] = useState("");
   const [category, setCategory] = useState("");
   const [collectionTitle, setCollectionTitle] = useState("Saved asset set");
+  const [creativeAssetTitle, setCreativeAssetTitle] = useState("New creative asset");
+  const [creativeAssetType, setCreativeAssetType] = useState("");
+  const [creativeKeyword, setCreativeKeyword] = useState("");
   const [projectTitle, setProjectTitle] = useState("New Novel Project");
   const [seriesTitle, setSeriesTitle] = useState("");
   const [bookNumber, setBookNumber] = useState("1");
@@ -718,6 +1006,11 @@ export default function AdminPage() {
   const [qdrantQuery, setQdrantQuery] = useState("");
   const [qdrantResult, setQdrantResult] = useState<QdrantSearchResult | null>(null);
   const [minioStatus, setMinioStatus] = useState<MinioStatus | null>(null);
+  const [styleTrend, setStyleTrend] = useState<StyleTrend | null>(null);
+  const [analysisReports, setAnalysisReports] = useState<AnalysisReportRow[]>([]);
+  const [analysisSourcePath, setAnalysisSourcePath] = useState("");
+  const [analysisReportPath, setAnalysisReportPath] = useState("");
+  const [analysisTargets, setAnalysisTargets] = useState("writing_template, material_card, review_rule_pack");
   const [handoffInput, setHandoffInput] = useState("");
   const [handoffGenre, setHandoffGenre] = useState("");
   const [handoffReader, setHandoffReader] = useState("");
@@ -734,7 +1027,19 @@ export default function AdminPage() {
     update_cadence: "",
     quality_threshold: 80,
     audience: "",
-    status: "active"
+    status: "active",
+    platform_profile_id: "",
+    platform_profile_path: "",
+    genre_market_profile_id: "",
+    genre_market_profile_path: "",
+    quality_standard_profile_id: "",
+    quality_standard_profile_path: "",
+    style_profile_id: "",
+    style_profile_path: "",
+    style_blend_preset_id: "",
+    style_blend_preset_path: "",
+    continuity_bible_id: "",
+    continuity_bible_path: ""
   });
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -796,7 +1101,16 @@ export default function AdminPage() {
       const healthPath = nextProjectId
         ? `/product/system/health?project_id=${encodeURIComponent(nextProjectId)}`
         : "/product/system/health";
-      const [taskData, assetData, draftData, batchData, handoffData, deadLetterData, githubSourceData, auditData, strictData, healthReport, backupRows] = await Promise.all([
+      const creativeLibraryPath = nextProjectId
+        ? `/product/libraries/creative?project_id=${encodeURIComponent(nextProjectId)}&limit_per_library=40`
+        : "/product/libraries/creative?limit_per_library=40";
+      const styleTrendPath = nextProjectId
+        ? `/product/styles/trend?project_id=${encodeURIComponent(nextProjectId)}&limit=40`
+        : "/product/styles/trend?limit=40";
+      const analysisReportPath = nextProjectId
+        ? `/product/analysis/reports?project_id=${encodeURIComponent(nextProjectId)}&limit=80`
+        : "/product/analysis/reports?limit=80";
+      const [taskData, assetData, draftData, batchData, handoffData, deadLetterData, githubSourceData, auditData, strictData, healthReport, backupRows, creativeLibraryData, styleTrendData, analysisReportData] = await Promise.all([
         fetchJson<TaskCenter>(taskPath),
         fetchJson<AssetRow[]>(assetPath),
         fetchJson<DraftWorkbench>(draftPath),
@@ -807,7 +1121,10 @@ export default function AdminPage() {
         fetchJson<ProjectScopeAudit>(auditPath),
         fetchJson<PostgresStrictCheck>("/product/system/postgres/strict-check"),
         fetchJson<ProjectHealthReport>(healthPath),
-        fetchJson<BackupRow[]>("/product/system/backups?limit=20")
+        fetchJson<BackupRow[]>("/product/system/backups?limit=20"),
+        fetchJson<CreativeLibrary[]>(creativeLibraryPath),
+        fetchJson<StyleTrend>(styleTrendPath),
+        fetchJson<AnalysisReportRow[]>(analysisReportPath)
       ]);
       setHealth(healthData);
       setTaskControl(controlData);
@@ -824,6 +1141,9 @@ export default function AdminPage() {
       setPostgresStrict(strictData);
       setProjectHealth(healthReport);
       setBackups(backupRows);
+      setCreativeLibraries(creativeLibraryData);
+      setStyleTrend(styleTrendData);
+      setAnalysisReports(analysisReportData);
       setSelectedProjectId(nextProjectId);
       if (selectedProject) {
         setSelectedWorkspace(selectedProject.path);
@@ -834,6 +1154,8 @@ export default function AdminPage() {
       setSelectedReview((current) => current || draftData.reviews[0]?.path || "");
       setSelectedRevision((current) => current || draftData.revision_plans[0]?.path || "");
       setHandoffInput((current) => current || assetData[0]?.path || draftData.chapter_plans[0]?.path || "");
+      setAnalysisSourcePath((current) => current || assetData[0]?.path || draftData.chapter_plans[0]?.path || "");
+      setAnalysisReportPath((current) => current || analysisReportData[0]?.path || "");
     } catch (caught) {
       setError(messageOf(caught));
     }
@@ -887,7 +1209,7 @@ export default function AdminPage() {
       setAssetDetail(detail);
       setAssetVersions(versions);
       setAssetGraph(graph);
-      setActiveTab("assets");
+      setActiveTab(tabForAssetType(String(detail.asset.type ?? "")));
     } catch (caught) {
       setError(messageOf(caught));
     }
@@ -901,6 +1223,29 @@ export default function AdminPage() {
     } catch (caught) {
       setError(messageOf(caught));
     }
+  }
+
+  async function refreshCreativeLibrary(libraryKey: string, keywordOverride?: string) {
+    const params = new URLSearchParams({ limit: "100" });
+    if (selectedProjectId) params.set("project_id", selectedProjectId);
+    const effectiveKeyword = keywordOverride ?? creativeKeyword;
+    if (effectiveKeyword.trim()) params.set("keyword", effectiveKeyword.trim());
+    const rows = await fetchJson<CreativeAssetRow[]>(`/product/libraries/creative/${encodeURIComponent(libraryKey)}?${params.toString()}`);
+    setCreativeLibraries((current) =>
+      current.map((library) => (library.key === libraryKey ? { ...library, assets: rows } : library))
+    );
+    return rows;
+  }
+
+  async function openAssetWithoutTabSwitch(path: string) {
+    const [detail, versions, graph] = await Promise.all([
+      fetchJson<AssetDetail>(`/product/assets/detail?path=${encodeURIComponent(path)}`),
+      fetchJson<AssetVersions>(`/product/assets/versions?path=${encodeURIComponent(path)}`),
+      fetchJson<AssetGraph>(`/product/assets/graph?path=${encodeURIComponent(path)}&depth=1`)
+    ]);
+    setAssetDetail(detail);
+    setAssetVersions(versions);
+    setAssetGraph(graph);
   }
 
   async function runAction(action: () => Promise<unknown>, label: string) {
@@ -958,64 +1303,220 @@ export default function AdminPage() {
     return () => events.close();
   }, [selectedProjectId, taskOffset, taskStatusFilter, taskTypeFilter, taskStepFilter, taskDateFrom, taskDateTo]);
 
+  const selectedProject = projects.find((project) => project.project_id === selectedProjectId);
+  const pageTitle = text.tabs[activeTab];
+  const pageSubtitle = pageSummary(activeTab, language);
+  const notificationCount =
+    (projectHealth?.summary.failed_task_count ?? 0) +
+    (projectHealth?.summary.pending_handoff_count ?? 0) +
+    (projectHealth?.summary.scope_issue_count ?? 0) +
+    (projectHealth?.summary.dead_letter_count ?? 0);
+  const dataSyncOk = Boolean(postgresStrict?.ready && !scopeAudit?.summary.issue_count);
+  const modelOk = Boolean(projectHealth?.embedding?.ok);
+  const autosaveOk = Boolean(draftEditor || selectedDraft || !selectedProjectId);
+  const activeCreativeLibraryKey = creativeLibraryKeyForTab(activeTab);
+  const activeCreativeLibrary = activeCreativeLibraryKey
+    ? creativeLibraries.find((library) => library.key === activeCreativeLibraryKey)
+    : null;
+  const analysisTabs: TabKey[] = ["analysis_center", "web_fiction_analysis", "published_fiction_analysis", "classic_literary_analysis", "asset_converter"];
+  const batchTabs: TabKey[] = ["batch"];
+  const draftTabs: TabKey[] = ["chapter_production", "ai_editor", "drafts"];
+  const reviewTabs: TabKey[] = ["review_center", "reviews"];
+  const placeholderTabs: TabKey[] = [
+    "writing_templates",
+    "outline_generation",
+    "chapter_plan_generation",
+    "context_builder",
+    "reader_feedback",
+    "production_control",
+    "change_impact",
+    "model_evaluation",
+    "data_statistics",
+    "settings_center"
+  ];
+
   return (
-    <main className="shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Novel Forge V5</p>
+    <main className="factoryShell">
+      <aside className="factorySidebar" aria-label={language === "zh" ? "小说工厂导航" : "Novel factory navigation"}>
+        <div className="factoryBrand">
+          <p className="eyebrow">Novel Forge V6/V7</p>
           <h1>{text.title}</h1>
+          <span className="localModeBadge">{text.status.localMode}</span>
         </div>
-        <div className="actions">
-          <button
-            title={text.language}
-            onClick={() => setLanguage((current) => (current === "en" ? "zh" : "en"))}
-            className="secondaryButton"
-          >
-            <Languages size={18} />
-            {text.language}
-          </button>
-          <button title={text.refresh} onClick={() => loadAll()} className="iconButton">
-            <RefreshCw size={18} />
-          </button>
-          <button
-            title={text.runSample}
-            onClick={() =>
-              runAction(
-                () => postJson("/pipeline/run", { sample: true, async_task: false }),
-                "sample pipeline"
-              )
-            }
-            disabled={busy}
-            className="primaryButton"
-          >
-            <Play size={18} />
-            {text.run}
-          </button>
+
+        <div className="projectBadge">
+          <span>{language === "zh" ? "当前项目" : "Current Project"}</span>
+          <strong>{selectedProject?.title || (language === "zh" ? "未选择项目" : "No project selected")}</strong>
+          <small>{selectedWorkspace || selectedProjectId || "local workspace"}</small>
         </div>
-      </header>
 
-      <section className="summaryBand">
-        <Metric label={text.metrics.assets} value={String(totalAssets)} />
-        <Metric label={text.metrics.projects} value={String(projects.length)} />
-        <Metric label={text.metrics.tasks} value={String(taskCenter?.summary.task_count ?? 0)} />
-        <Metric label={text.metrics.api} value={API_BASE} code />
-      </section>
+        <nav className="sidebarNav">
+          {navGroups.map((group) => (
+            <div className="navGroup" key={group.key}>
+              <p>{text.nav[group.key]}</p>
+              {group.items.map((item) => (
+                <button
+                  key={item.key}
+                  className={activeTab === item.key ? "navItem active" : "navItem"}
+                  onClick={() => setActiveTab(item.key)}
+                >
+                  {item.icon}
+                  <span>{text.tabs[item.key]}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+      </aside>
 
-      {notice ? <div className="noticeLine">{notice}</div> : null}
-      {error ? <div className="errorLine">{error}</div> : null}
+      <section className="factoryWorkspace">
+        <header className="factoryTopbar">
+          <div className="statusStrip" aria-label={language === "zh" ? "系统状态" : "System status"}>
+            <span className="statusPill ok">{text.status.localMode}</span>
+            <span className={dataSyncOk ? "statusPill ok" : "statusPill warn"}>
+              {text.status.dataSync}: {dataSyncOk ? text.status.healthy : text.status.warning}
+            </span>
+            <span className={modelOk ? "statusPill ok" : "statusPill warn"}>
+              {text.status.modelStatus}: {modelOk ? text.status.healthy : text.status.warning}
+            </span>
+            <span className={autosaveOk ? "statusPill ok" : "statusPill muted"}>
+              {text.status.autosave}: {autosaveOk ? text.status.healthy : text.status.offline}
+            </span>
+          </div>
+          <div className="topbarTools">
+            <form
+              className="globalSearch"
+              onSubmit={(event) => {
+                setActiveTab("material_library");
+                searchAssets(event);
+              }}
+            >
+              <Search size={17} />
+              <input
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder={text.status.search}
+                aria-label={text.status.search}
+              />
+            </form>
+            <span className={notificationCount ? "notificationPill warn" : "notificationPill"}>
+              {text.status.notifications}: {notificationCount}
+            </span>
+            <button
+              title={text.language}
+              onClick={() => setLanguage((current) => (current === "en" ? "zh" : "en"))}
+              className="secondaryButton"
+            >
+              <Languages size={18} />
+              {text.language}
+            </button>
+            <button title={text.refresh} onClick={() => loadAll()} className="iconButton">
+              <RefreshCw size={18} />
+            </button>
+            <button
+              title={text.runSample}
+              onClick={() =>
+                runAction(
+                  () => postJson("/pipeline/run", { sample: true, async_task: false }),
+                  "sample pipeline"
+                )
+              }
+              disabled={busy}
+              className="primaryButton"
+            >
+              <Play size={18} />
+              {text.run}
+            </button>
+          </div>
+        </header>
 
-      <nav className="tabbar" aria-label="Workspaces">
-        {tabConfig.map((tab) => (
-          <button
-            key={tab.key}
-            className={activeTab === tab.key ? "tab active" : "tab"}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.icon}
-            {text.tabs[tab.key]}
-          </button>
-        ))}
-      </nav>
+        <section className="factoryPageHeader">
+          <div>
+            <p className="eyebrow">{language === "zh" ? "个人本地小说工厂" : "Personal Local Novel Factory"}</p>
+            <h2>{pageTitle}</h2>
+            <p>{pageSubtitle}</p>
+          </div>
+          <div className="pageHeaderMeta">
+            <span className="statPill">{projectConfig.genre || (language === "zh" ? "题材未设" : "genre unset")}</span>
+            <span className="statPill">{projectConfig.target_platform || (language === "zh" ? "平台未设" : "platform unset")}</span>
+          </div>
+        </section>
+
+        <section className="summaryBand factoryMetrics">
+          <Metric label={text.metrics.assets} value={String(totalAssets)} />
+          <Metric label={text.metrics.projects} value={String(projects.length)} />
+          <Metric label={text.metrics.tasks} value={String(taskCenter?.summary.task_count ?? 0)} />
+          <Metric label={text.metrics.api} value={API_BASE} code />
+        </section>
+
+        {notice ? <div className="noticeLine">{notice}</div> : null}
+        {error ? <div className="errorLine">{error}</div> : null}
+
+        <div className="factoryPageBody">
+      {activeTab === "workbench" || activeTab === "studio" ? (
+        <StudioPanel
+          language={language}
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          selectedWorkspace={selectedWorkspace}
+          projectConfig={projectConfig}
+          drafts={drafts}
+          selectedPlan={selectedPlan}
+          setSelectedPlan={setSelectedPlan}
+          selectedDraft={selectedDraft}
+          setSelectedDraft={setSelectedDraft}
+          draftEditor={draftEditor}
+          setDraftEditor={setDraftEditor}
+          draftExport={draftExport}
+          assets={assets}
+          batchItems={batchItems}
+          handoffs={handoffs}
+          taskCenter={taskCenter}
+          taskControl={taskControl}
+          projectHealth={projectHealth}
+          githubSources={githubSources}
+          uploadResult={uploadResult}
+          busy={busy}
+          onGenerateDraft={() =>
+            runAction(
+              () =>
+                postJson("/product/drafts/generate", {
+                  chapter_plan_path: selectedPlan || null,
+                  workspace_path: selectedWorkspace || null,
+                  update_workspace: true
+                }),
+              "draft generated"
+            )
+          }
+          onSaveDraft={() =>
+            runAction(async () => {
+              if (!draftEditor) return {};
+              const saved = await postJson("/product/drafts/save", {
+                draft_path: draftEditor.path,
+                text: draftEditor.text,
+                title: draftEditor.title,
+                status: "edited",
+                workspace_path: selectedWorkspace || null
+              });
+              await loadDraftEditor(String((saved as { draft_path?: string }).draft_path || draftEditor.path));
+              return saved;
+            }, "draft saved")
+          }
+          onExportDraft={(format) =>
+            runAction(async () => {
+              const exported = await postJson("/product/drafts/export", {
+                draft_path: draftEditor?.path || selectedDraft,
+                format
+              });
+              setDraftExport(exported as Record<string, unknown>);
+              return exported;
+            }, `draft exported ${format}`)
+          }
+          onOpenAsset={selectAsset}
+          onOpenHandoff={selectHandoff}
+          onOpenTab={setActiveTab}
+        />
+      ) : null}
 
       {activeTab === "projects" ? (
         <ProjectsPanel
@@ -1035,6 +1536,7 @@ export default function AdminPage() {
           selectedWorkspace={selectedWorkspace}
           projectConfig={projectConfig}
           setProjectConfig={setProjectConfig}
+          creativeLibraries={creativeLibraries}
           busy={busy}
           onCreate={() =>
             runAction(
@@ -1042,7 +1544,12 @@ export default function AdminPage() {
                 postJson("/product/projects", {
                   title: projectTitle,
                   series_title: seriesTitle || null,
-                  book_number: bookNumber ? Number(bookNumber) : null
+                  book_number: bookNumber ? Number(bookNumber) : null,
+                  platform_profile_path: projectConfig.platform_profile_path || null,
+                  genre_market_profile_path: projectConfig.genre_market_profile_path || null,
+                  quality_standard_profile_path: projectConfig.quality_standard_profile_path || null,
+                  style_profile_path: projectConfig.style_profile_path || null,
+                  continuity_bible_path: projectConfig.continuity_bible_path || null
                 }),
               "project created"
             )
@@ -1181,7 +1688,7 @@ export default function AdminPage() {
         />
       ) : null}
 
-      {activeTab === "tasks" ? (
+      {activeTab === "task_center" || activeTab === "tasks" ? (
         <TasksPanel
           language={language}
           taskCenter={taskCenter}
@@ -1260,6 +1767,123 @@ export default function AdminPage() {
             )
           }
           busy={busy}
+        />
+      ) : null}
+
+      {activeCreativeLibraryKey ? (
+        <CreativeLibraryPanel
+          language={language}
+          library={activeCreativeLibrary}
+          fallbackLibraryKey={activeCreativeLibraryKey}
+          selectedProjectId={selectedProjectId}
+          selectedWorkspace={selectedWorkspace}
+          createTitle={creativeAssetTitle}
+          setCreateTitle={setCreativeAssetTitle}
+          createType={creativeAssetType}
+          setCreateType={setCreativeAssetType}
+          keyword={creativeKeyword}
+          setKeyword={setCreativeKeyword}
+          detail={assetDetail}
+          versions={assetVersions}
+          graph={assetGraph}
+          selectedDraft={selectedDraft}
+          styleTrend={styleTrend}
+          busy={busy}
+          onSelect={selectAsset}
+          onRefresh={(libraryKey, keywordValue) =>
+            runAction(
+              () => refreshCreativeLibrary(libraryKey, keywordValue),
+              "creative library refreshed"
+            )
+          }
+          onCreate={(assetType, title) =>
+            runAction(async () => {
+              const created = await postJson("/product/creative-assets", {
+                asset_type: assetType,
+                title,
+                project_id: selectedProjectId || null,
+                workspace_path: selectedWorkspace || null,
+                scope: selectedProjectId ? "project" : "global"
+              }) as CreativeAssetCreateResult;
+              await refreshCreativeLibrary(created.library);
+              await openAssetWithoutTabSwitch(created.path);
+              return created;
+            }, "creative asset created")
+          }
+          onSave={(path, patch) =>
+            runAction(async () => {
+              const updated = await fetchJson<AssetDetail>("/product/assets/detail", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path, ...patch })
+              });
+              setAssetDetail(updated);
+              if (activeCreativeLibraryKey) await refreshCreativeLibrary(activeCreativeLibraryKey);
+              return updated;
+            }, "asset saved")
+          }
+          onSaveContent={(path, content) =>
+            runAction(async () => {
+              const updated = await fetchJson<AssetDetail>("/product/assets/content", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path, content })
+              });
+              setAssetDetail(updated);
+              if (activeCreativeLibraryKey) await refreshCreativeLibrary(activeCreativeLibraryKey);
+              return updated;
+            }, "asset content saved")
+          }
+          onSaveTyped={(path, fields) =>
+            runAction(async () => {
+              const updated = await fetchJson<AssetDetail>("/product/assets/typed", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path, fields })
+              });
+              setAssetDetail(updated);
+              if (activeCreativeLibraryKey) await refreshCreativeLibrary(activeCreativeLibraryKey);
+              return updated;
+            }, "typed asset saved")
+          }
+          onStyleDecompose={(sourcePath) =>
+            runAction(async () => {
+              const created = await postJson("/product/styles/decompose", {
+                source_path: sourcePath,
+                workspace_path: selectedWorkspace || null
+              }) as { path: string };
+              await refreshCreativeLibrary("style_center");
+              await openAssetWithoutTabSwitch(created.path);
+              return created;
+            }, "style decomposed")
+          }
+          onStyleReview={(draftPath, styleProfilePath) =>
+            runAction(async () => {
+              const created = await postJson("/product/styles/review", {
+                draft_path: draftPath,
+                style_profile_path: styleProfilePath || null,
+                workspace_path: selectedWorkspace || null
+              }) as { path: string };
+              await refreshCreativeLibrary("style_center");
+              await openAssetWithoutTabSwitch(created.path);
+              const trendPath = selectedProjectId
+                ? `/product/styles/trend?project_id=${encodeURIComponent(selectedProjectId)}&limit=40`
+                : "/product/styles/trend?limit=40";
+              setStyleTrend(await fetchJson<StyleTrend>(trendPath));
+              return created;
+            }, "style reviewed")
+          }
+          onQualityScore={(targetPath) =>
+            runAction(async () => {
+              const created = await postJson("/product/quality/score", {
+                target_path: targetPath,
+                workspace_path: selectedWorkspace || null
+              }) as { path: string };
+              await refreshCreativeLibrary("quality_standards");
+              await openAssetWithoutTabSwitch(created.path);
+              return created;
+            }, "quality scored")
+          }
         />
       ) : null}
 
@@ -1409,7 +2033,67 @@ export default function AdminPage() {
         />
       ) : null}
 
-      {activeTab === "batch" ? (
+      {analysisTabs.includes(activeTab) ? (
+        <AnalysisPanel
+          language={language}
+          tab={activeTab}
+          reports={analysisReports}
+          assets={assets}
+          handoffs={handoffs}
+          sourcePath={analysisSourcePath}
+          setSourcePath={setAnalysisSourcePath}
+          reportPath={analysisReportPath}
+          setReportPath={setAnalysisReportPath}
+          targets={analysisTargets}
+          setTargets={setAnalysisTargets}
+          busy={busy}
+          onRunAnalysis={(analysisType) =>
+            runAction(async () => {
+              const created = await postJson("/product/analysis/run", {
+                source_path: analysisSourcePath,
+                analysis_type: analysisType,
+                workspace_path: selectedWorkspace || null
+              }) as { path: string };
+              setAnalysisReportPath(created.path);
+              await openAssetWithoutTabSwitch(created.path);
+              return created;
+            }, "analysis report created")
+          }
+          onCreateHandoff={(analysisType) =>
+            runAction(async () => {
+              const created = await postJson("/product/analysis/handoff", {
+                input_path: analysisSourcePath,
+                analysis_type: analysisType,
+                workspace_path: selectedWorkspace || null,
+                purpose: pageSummary(activeTab, language)
+              }) as { path: string; asset?: Record<string, unknown> };
+              if (created.path) {
+                await selectHandoff(created.path);
+              }
+              return created;
+            }, "analysis handoff created")
+          }
+          onConvert={(reportPathOverride) =>
+            runAction(async () => {
+              const converted = await postJson("/product/analysis/convert", {
+                report_path: reportPathOverride || analysisReportPath,
+                targets: analysisTargets
+                  .split(",")
+                  .map((item) => item.trim())
+                  .filter(Boolean),
+                workspace_path: selectedWorkspace || null,
+                reuse_scope: selectedProjectId ? "project" : "global"
+              }) as { path: string; created_assets?: Array<{ path: string }> };
+              await openAssetWithoutTabSwitch(converted.path);
+              return converted;
+            }, "analysis converted")
+          }
+          onOpenAsset={selectAsset}
+          onOpenHandoff={selectHandoff}
+        />
+      ) : null}
+
+      {batchTabs.includes(activeTab) ? (
         <BatchPanel
           language={language}
           batchInput={batchInput}
@@ -1513,7 +2197,7 @@ export default function AdminPage() {
         />
       ) : null}
 
-      {activeTab === "drafts" ? (
+      {draftTabs.includes(activeTab) ? (
         <DraftsPanel
           language={language}
           drafts={drafts}
@@ -1566,7 +2250,7 @@ export default function AdminPage() {
         />
       ) : null}
 
-      {activeTab === "reviews" ? (
+      {reviewTabs.includes(activeTab) ? (
         <ReviewPanel
           language={language}
           drafts={drafts}
@@ -1641,6 +2325,88 @@ export default function AdminPage() {
           onOpenAsset={selectAsset}
         />
       ) : null}
+      {activeTab === "originality_center" || activeTab === "publishing_center" ? (
+        <QualityGatePanel
+          language={language}
+          mode={activeTab}
+          assets={assets}
+          drafts={drafts}
+          selectedDraft={selectedDraft}
+          setSelectedDraft={setSelectedDraft}
+          selectedWorkspace={selectedWorkspace}
+          setSelectedWorkspace={setSelectedWorkspace}
+          busy={busy}
+          onRunOriginality={() =>
+            runAction(async () => {
+              const created = (await postJson("/product/audits/originality", {
+                draft_path: selectedDraft,
+                workspace_path: selectedWorkspace || null
+              })) as { path?: string; originality_report_path?: string };
+              if (created.path || created.originality_report_path) {
+                await openAssetWithoutTabSwitch(String(created.path || created.originality_report_path));
+              }
+              return created;
+            }, "originality report")
+          }
+          onRunChapterAudit={() =>
+            runAction(async () => {
+              const created = (await postJson("/product/audits/chapter", {
+                draft_path: selectedDraft,
+                workspace_path: selectedWorkspace || null
+              })) as { path?: string; chapter_audit_path?: string };
+              if (created.path || created.chapter_audit_path) {
+                await openAssetWithoutTabSwitch(String(created.path || created.chapter_audit_path));
+              }
+              return created;
+            }, "chapter audit")
+          }
+          onRunPublishGate={() =>
+            runAction(async () => {
+              const created = (await postJson("/product/publishing/gate", {
+                draft_path: selectedDraft,
+                workspace_path: selectedWorkspace || null,
+                human_override: false
+              })) as { path?: string; publish_gate_report_path?: string };
+              if (created.path || created.publish_gate_report_path) {
+                await openAssetWithoutTabSwitch(String(created.path || created.publish_gate_report_path));
+              }
+              return created;
+            }, "publish gate")
+          }
+          onCreateReleasePackage={() =>
+            runAction(async () => {
+              const created = (await postJson("/product/publishing/release-package", {
+                draft_path: selectedDraft,
+                workspace_path: selectedWorkspace || null,
+                channel: "local",
+                human_override: false
+              })) as { path?: string; release_package_path?: string };
+              if (created.path || created.release_package_path) {
+                await openAssetWithoutTabSwitch(String(created.path || created.release_package_path));
+              }
+              return created;
+            }, "release package")
+          }
+          onOpenAsset={selectAsset}
+        />
+      ) : null}
+          {placeholderTabs.includes(activeTab) ? (
+            <FactoryPlaceholderPage
+              language={language}
+              tab={activeTab}
+              assets={assets}
+              projects={projects}
+              taskCenter={taskCenter}
+              taskControl={taskControl}
+              projectHealth={projectHealth}
+              drafts={drafts}
+              handoffs={handoffs}
+              batchItems={batchItems}
+              onOpenTab={setActiveTab}
+            />
+          ) : null}
+        </div>
+      </section>
     </main>
   );
 }
@@ -1652,6 +2418,817 @@ function Metric({ label, value, code = false }: { label: string; value: string; 
       <strong className={code ? "pathText" : undefined}>{value}</strong>
     </div>
   );
+}
+
+function creativeLibraryKeyForTab(tab: TabKey): string | null {
+  const mapping: Partial<Record<TabKey, string>> = {
+    topic_library: "topic_library",
+    material_library: "material_library",
+    knowledge_library: "knowledge_library",
+    setting_bible: "setting_bible",
+    style_center: "style_center",
+    quality_standards: "quality_standards"
+  };
+  return mapping[tab] ?? null;
+}
+
+function tabForAssetType(assetType: string): TabKey {
+  if (["platform_profile", "genre_market_profile", "topic_seed", "topic_fit_report"].includes(assetType)) {
+    return "topic_library";
+  }
+  if (["material_card", "asset_collection", "writing_template", "craft_template"].includes(assetType)) {
+    return "material_library";
+  }
+  if (assetType === "knowledge_card") {
+    return "knowledge_library";
+  }
+  if (["world_bible", "character_card", "continuity_bible", "foreshadowing_thread", "power_scale_rule"].includes(assetType)) {
+    return "setting_bible";
+  }
+  if (["style_profile", "style_decomposition_report", "style_blend_preset", "style_review_report"].includes(assetType)) {
+    return "style_center";
+  }
+  if (["quality_standard_profile", "review_rule_pack", "quality_score_report"].includes(assetType)) {
+    return "quality_standards";
+  }
+  if (assetType === "originality_report") {
+    return "originality_center";
+  }
+  if (["publish_gate_report", "release_package"].includes(assetType)) {
+    return "publishing_center";
+  }
+  if (["draft_chapter"].includes(assetType)) {
+    return "chapter_production";
+  }
+  if (["review_report", "revision_plan", "chapter_audit_report"].includes(assetType)) {
+    return "review_center";
+  }
+  if (assetType === "web_fiction_business_analysis_report" || assetType === "common_novel_analysis_report") {
+    return "web_fiction_analysis";
+  }
+  if (assetType === "published_fiction_analysis_report") {
+    return "published_fiction_analysis";
+  }
+  if (assetType === "classic_literary_analysis_report") {
+    return "classic_literary_analysis";
+  }
+  if (assetType === "analysis_conversion_report") {
+    return "asset_converter";
+  }
+  if (["task_status", "task_dead_letter", "workflow_run", "batch_task_item"].includes(assetType)) {
+    return "task_center";
+  }
+  if (assetType === "claude_code_handoff") {
+    return "handoffs";
+  }
+  return "material_library";
+}
+
+function pageSummary(tab: TabKey, language: Language): string {
+  const zh = language === "zh";
+  const summaries: Record<TabKey, string> = {
+    workbench: zh ? "阅读、改稿、生成链路、资料来源和 Agent 工作观察集中在一个工作面。" : "Read, edit, trace generation, inspect sources, and observe agent work in one surface.",
+    projects: zh ? "管理本地项目生命周期、配置、项目隔离和系列信息。" : "Manage local project lifecycle, configuration, project scope, and series structure.",
+    topic_library: zh ? "沉淀题材、平台适配、商业潜力和选题风险。" : "Track genre ideas, platform fit, market potential, and topic risks.",
+    material_library: zh ? "管理可复用素材卡、拆解转化资产和任务输入集。" : "Manage reusable material cards, converted analysis assets, and task input sets.",
+    knowledge_library: zh ? "区分 GitHub、多学科、本地上传和项目内知识卡来源。" : "Separate GitHub, multidisciplinary, local upload, and project knowledge sources.",
+    setting_bible: zh ? "承载世界观、人物、时间线、伏笔、战力和长期连续性资产。" : "Hold worldview, characters, timelines, foreshadowing, power scale, and continuity assets.",
+    style_center: zh ? "用参数化文风资产控制表达，不做具体作者模仿。" : "Control prose with parameterized style assets without imitating specific authors.",
+    writing_templates: zh ? "管理冲突、节奏、章节钩子、修辞和可复用写作模板。" : "Manage conflict, pacing, chapter hook, rhetoric, and reusable craft templates.",
+    quality_standards: zh ? "沉淀精品标准、审稿规则包和质量门禁依据。" : "Store quality standards, review rule packs, and gate criteria.",
+    analysis_center: zh ? "统一观察导入、拆解、handoff、知识化和素材化流程。" : "Observe import, analysis, handoff, knowledge extraction, and material conversion.",
+    web_fiction_analysis: zh ? "面向网文商业结构、爽点、钩子、节奏和人设机制拆解。" : "Analyze web fiction structure, payoffs, hooks, pacing, and character mechanics.",
+    published_fiction_analysis: zh ? "面向出版小说技法、场景经营、叙事结构和角色弧光拆解。" : "Analyze published-fiction craft, scene design, narrative structure, and arcs.",
+    classic_literary_analysis: zh ? "面向经典名著的主题、人物、结构和可抽象技法拆解。" : "Analyze classics for theme, character, structure, and abstract craft.",
+    asset_converter: zh ? "把拆解报告转换为可复用、可审计、带版权边界的资产。" : "Convert analysis reports into reusable, auditable assets with copyright boundaries.",
+    outline_generation: zh ? "规划长纲版本、分卷结构、冲突升级链和目标读者承诺。" : "Plan outline versions, volume arcs, conflict escalation, and reader promises.",
+    chapter_plan_generation: zh ? "管理章节目标、信息点、钩子、冲突和字数预算。" : "Manage chapter goals, information beats, hooks, conflicts, and word budgets.",
+    context_builder: zh ? "构建人物、世界观、前文摘要、知识卡、伏笔和素材卡上下文。" : "Build context from characters, worldview, recaps, knowledge cards, foreshadowing, and materials.",
+    chapter_production: zh ? "生成、编辑、保存、导出章节正文并保留版本记录。" : "Generate, edit, save, export, and version chapter drafts.",
+    ai_editor: zh ? "面向段落级修订、diff、回滚和人工确认的编辑入口。" : "Entry for paragraph edits, diffs, rollback, and human confirmation.",
+    review_center: zh ? "执行章节审稿、评分、问题状态、修订计划和修订前后对比。" : "Run chapter review, scoring, issue states, revision plans, and comparisons.",
+    originality_center: zh ? "观察原创性风险、来源边界、抽象层级和发布前风险。" : "Observe originality risk, source boundaries, abstraction level, and pre-release risk.",
+    publishing_center: zh ? "管理发布门禁、导出稿件、平台检查和发布记录。" : "Manage publish gates, exports, platform checks, and release logs.",
+    reader_feedback: zh ? "导入评论反馈，识别爽点、毒点、期待和后续调整建议。" : "Import reader feedback and identify payoffs, pain points, expectations, and adjustments.",
+    production_control: zh ? "观察生产任务、队列压力、失败恢复、worker 和 dead-letter。" : "Observe production tasks, queue pressure, recovery, workers, and dead letters.",
+    change_impact: zh ? "追踪设定、角色、大纲或章节变更对后续资产的影响。" : "Track impact from setting, character, outline, or chapter changes.",
+    model_evaluation: zh ? "比较模型在拆解、知识、正文、审稿和编辑任务上的质量与成本。" : "Compare model quality and cost across analysis, knowledge, drafting, review, and editing.",
+    data_statistics: zh ? "查看产能、质量趋势、失败率、审稿通过率和成本指标。" : "Inspect throughput, quality trend, failure rate, review pass rate, and cost metrics.",
+    settings_center: zh ? "管理本地模型、提示词、平台规则、审稿规则和存储配置。" : "Manage local models, prompts, platform rules, review rules, and storage configuration.",
+    task_center: zh ? "查看最新状态、事件日志、失败恢复、批量重跑和队列状态。" : "View latest status, event logs, recovery, batch retry, and queue state.",
+    health: zh ? "检查 Postgres、Redis/Celery、Qdrant、MinIO、备份和项目健康。" : "Check Postgres, Redis/Celery, Qdrant, MinIO, backups, and project health.",
+    handoffs: zh ? "生成、验收、绑定 Claude Code/Codex 执行包和人工 gate。" : "Create, accept, bind, and gate Claude Code/Codex handoffs.",
+    studio: zh ? "阅读、改稿、生成链路、资料来源和 Agent 工作观察集中在一个工作面。" : "Read, edit, trace generation, inspect sources, and observe agent work in one surface.",
+    tasks: zh ? "查看最新状态、事件日志、失败恢复、批量重跑和队列状态。" : "View latest status, event logs, recovery, batch retry, and queue state.",
+    assets: zh ? "管理可复用素材卡、拆解转化资产和任务输入集。" : "Manage reusable material cards, converted analysis assets, and task input sets.",
+    batch: zh ? "面向网文商业结构、爽点、钩子、节奏和人设机制拆解。" : "Analyze web fiction structure, payoffs, hooks, pacing, and character mechanics.",
+    drafts: zh ? "生成、编辑、保存、导出章节正文并保留版本记录。" : "Generate, edit, save, export, and version chapter drafts.",
+    reviews: zh ? "执行章节审稿、评分、问题状态、修订计划和修订前后对比。" : "Run chapter review, scoring, issue states, revision plans, and comparisons."
+  };
+  return summaries[tab];
+}
+
+function FactoryPlaceholderPage(props: {
+  language: Language;
+  tab: TabKey;
+  assets: AssetRow[];
+  projects: ProjectRow[];
+  taskCenter: TaskCenter | null;
+  taskControl: TaskControl | null;
+  projectHealth: ProjectHealthReport | null;
+  drafts: DraftWorkbench | null;
+  handoffs: HandoffRow[];
+  batchItems: BatchItem[];
+  onOpenTab: (tab: TabKey) => void;
+}) {
+  const zh = props.language === "zh";
+  const title = copy[props.language].tabs[props.tab];
+  const matchingAssets = props.assets.filter((asset) => assetMatchesPage(props.tab, asset)).slice(0, 12);
+  const failedCount = props.projectHealth?.summary.failed_task_count ?? props.taskCenter?.summary.by_status.failed ?? 0;
+  const activeQueue = props.taskControl?.celery.active_count ?? 0;
+  const handoffCount = props.projectHealth?.summary.pending_handoff_count ?? props.handoffs.filter((item) => item.status !== "completed").length;
+  const actions = placeholderActions(props.tab, zh);
+
+  return (
+    <section className="placeholderPage">
+      <div className="panel placeholderHero">
+        <div>
+          <p className="eyebrow">{zh ? "V6/V7 工作台入口" : "V6/V7 workspace entry"}</p>
+          <h2>{title}</h2>
+          <p>{pageSummary(props.tab, props.language)}</p>
+        </div>
+        <div className="placeholderActions">
+          {actions.map((action) => (
+            <button className={action.primary ? "primaryButton" : "secondaryButton"} key={action.label} onClick={() => props.onOpenTab(action.tab)}>
+              {action.icon}
+              {action.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="placeholderGrid">
+        <div className="placeholderMetric panel">
+          <span>{zh ? "相关资产" : "Related assets"}</span>
+          <strong>{matchingAssets.length}</strong>
+        </div>
+        <div className="placeholderMetric panel">
+          <span>{zh ? "任务失败" : "Failed tasks"}</span>
+          <strong>{failedCount}</strong>
+        </div>
+        <div className="placeholderMetric panel">
+          <span>{zh ? "活跃队列" : "Active queue"}</span>
+          <strong>{activeQueue}</strong>
+        </div>
+        <div className="placeholderMetric panel">
+          <span>Handoff</span>
+          <strong>{handoffCount}</strong>
+        </div>
+      </div>
+
+      <div className="splitGrid">
+        <div className="panel">
+          <PanelHeader title={zh ? "资产命中" : "Asset Matches"} icon={<FileSearch size={18} />} />
+          <DataTable
+            emptyText={zh ? "暂无匹配资产" : "No matching assets"}
+            columns={zh ? ["类型", "标题", "来源/状态", "路径"] : ["Type", "Title", "Source/Status", "Path"]}
+            rows={matchingAssets.map((asset) => [
+              asset.type || asset.category,
+              asset.title || asset.path,
+              asset.source || asset.asset_status || asset.risk_level || "-",
+              asset.path
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title={zh ? "当前生产状态" : "Production State"} icon={<Activity size={18} />} />
+          <DataTable
+            emptyText={zh ? "暂无状态" : "No state"}
+            columns={zh ? ["项目", "数量", "状态"] : ["Item", "Count", "Status"]}
+            rows={[
+              [zh ? "项目" : "Projects", props.projects.length, props.projects[0]?.status || "-"],
+              [zh ? "批处理 item" : "Batch items", props.batchItems.length, props.batchItems.some((item) => item.status === "failed") ? "attention" : "ready"],
+              [zh ? "草稿" : "Drafts", props.drafts?.drafts.length ?? 0, props.drafts?.drafts[0]?.title || "-"],
+              [zh ? "最近事件" : "Recent events", props.taskCenter?.timeline.events.length ?? 0, props.taskCenter?.timeline.summary.latest_at || "-"]
+            ]}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function placeholderActions(tab: TabKey, zh: boolean): Array<{ label: string; tab: TabKey; icon: ReactNode; primary?: boolean }> {
+  if (["topic_library", "setting_bible", "style_center", "writing_templates", "quality_standards"].includes(tab)) {
+    return [
+      { label: zh ? "打开资产工作台" : "Open Assets", tab: "material_library", icon: <FileSearch size={18} />, primary: true },
+      { label: zh ? "进入审稿中心" : "Review Center", tab: "review_center", icon: <CheckCircle2 size={18} /> }
+    ];
+  }
+  if (["published_fiction_analysis", "classic_literary_analysis", "asset_converter"].includes(tab)) {
+    return [
+      { label: zh ? "进入拆解中心" : "Analysis Center", tab: "analysis_center", icon: <Layers3 size={18} />, primary: true },
+      { label: zh ? "打开 Handoff" : "Open Handoffs", tab: "handoffs", icon: <Workflow size={18} /> }
+    ];
+  }
+  if (["outline_generation", "chapter_plan_generation", "context_builder"].includes(tab)) {
+    return [
+      { label: zh ? "进入章节生产" : "Chapter Production", tab: "chapter_production", icon: <PenLine size={18} />, primary: true },
+      { label: zh ? "打开任务中心" : "Task Center", tab: "task_center", icon: <ListChecks size={18} /> }
+    ];
+  }
+  if (["originality_center", "publishing_center", "reader_feedback"].includes(tab)) {
+    return [
+      { label: zh ? "进入审稿中心" : "Review Center", tab: "review_center", icon: <CheckCircle2 size={18} />, primary: true },
+      { label: zh ? "进入章节生产" : "Chapter Production", tab: "chapter_production", icon: <PenLine size={18} /> }
+    ];
+  }
+  return [
+    { label: zh ? "打开任务中心" : "Task Center", tab: "task_center", icon: <ListChecks size={18} />, primary: true },
+    { label: zh ? "检查健康页" : "Open Health", tab: "health", icon: <Activity size={18} /> }
+  ];
+}
+
+function assetMatchesPage(tab: TabKey, asset: AssetRow): boolean {
+  const haystack = `${asset.type} ${asset.category} ${asset.title} ${asset.source} ${asset.tags.join(" ")}`.toLowerCase();
+  const needles: Partial<Record<TabKey, string[]>> = {
+    topic_library: ["topic", "genre", "market", "platform_profile"],
+    setting_bible: ["world", "character", "continuity", "foreshadowing", "power", "timeline"],
+    style_center: ["style"],
+    writing_templates: ["template", "craft", "rhetoric", "hook", "conflict"],
+    quality_standards: ["quality", "standard", "rubric", "review_rule"],
+    analysis_center: ["analysis_report", "analysis", "deconstruction", "conversion"],
+    web_fiction_analysis: ["web_fiction_business_analysis_report", "common_novel_analysis_report", "web", "decomposition"],
+    published_fiction_analysis: ["published_fiction_analysis_report", "published", "craft_analysis"],
+    classic_literary_analysis: ["classic_literary_analysis_report", "classic", "literary"],
+    asset_converter: ["analysis_conversion_report", "conversion", "converted", "material_card", "knowledge_card"],
+    outline_generation: ["outline", "long_outline"],
+    chapter_plan_generation: ["chapter_plan", "detailed_outline"],
+    context_builder: ["context", "rag", "summary", "knowledge_card", "material_card"],
+    originality_center: ["originality", "originality_report", "copyright", "risk"],
+    publishing_center: ["publish", "publish_gate_report", "release_package", "release", "export"],
+    reader_feedback: ["feedback", "reader", "sentiment", "comment"],
+    production_control: ["task", "workflow", "batch_item"],
+    change_impact: ["impact", "lineage", "graph"],
+    model_evaluation: ["model", "benchmark", "prompt"],
+    data_statistics: ["metric", "snapshot", "report"],
+    settings_center: ["profile", "config", "rule"]
+  };
+  const pageNeedles = needles[tab] ?? [];
+  return pageNeedles.some((needle) => haystack.includes(needle));
+}
+
+function StudioPanel(props: {
+  language: Language;
+  projects: ProjectRow[];
+  selectedProjectId: string;
+  selectedWorkspace: string;
+  projectConfig: ProjectConfig;
+  drafts: DraftWorkbench | null;
+  selectedPlan: string;
+  setSelectedPlan: (value: string) => void;
+  selectedDraft: string;
+  setSelectedDraft: (value: string) => void;
+  draftEditor: DraftEditorState | null;
+  setDraftEditor: (value: DraftEditorState | null) => void;
+  draftExport: Record<string, unknown> | null;
+  assets: AssetRow[];
+  batchItems: BatchItem[];
+  handoffs: HandoffRow[];
+  taskCenter: TaskCenter | null;
+  taskControl: TaskControl | null;
+  projectHealth: ProjectHealthReport | null;
+  githubSources: GitHubSource[];
+  uploadResult: UploadResult | null;
+  busy: boolean;
+  onGenerateDraft: () => void;
+  onSaveDraft: () => void;
+  onExportDraft: (format: string) => void;
+  onOpenAsset: (path: string) => void;
+  onOpenHandoff: (path: string) => void;
+  onOpenTab: (tab: TabKey) => void;
+}) {
+  const zh = props.language === "zh";
+  const project = props.projects.find((item) => item.project_id === props.selectedProjectId);
+  const draftRows = props.drafts?.drafts ?? [];
+  const currentDraftRow = draftRows.find((item) => item.path === props.selectedDraft) ?? draftRows[0];
+  const draftText = props.draftEditor?.text ?? "";
+  const paragraphs = draftText.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  const sourceRows = buildStudioSourceRows(props.assets, props.batchItems, props.handoffs, props.githubSources, props.uploadResult, zh);
+  const decompositionRows = props.assets.filter((asset) => asset.type === "decomposition_report" || asset.category === "decompositions");
+  const knowledgeRows = props.assets.filter((asset) => asset.type === "knowledge_card" || asset.category === "knowledge");
+  const githubKnowledgeRows = knowledgeRows.filter((asset) => knowledgeOrigin(asset, props.handoffs, props.batchItems) === "github");
+  const localKnowledgeRows = knowledgeRows.filter((asset) => knowledgeOrigin(asset, props.handoffs, props.batchItems) !== "github");
+  const materialRows = props.assets.filter((asset) => asset.type === "material_card" || asset.category === "materials");
+  const productionSteps = buildProductionSteps(props.assets, props.batchItems, props.handoffs, props.drafts, props.taskCenter, zh);
+  const agentRows = buildAgentWorkRows(props.assets, props.batchItems, props.handoffs, props.drafts, props.taskCenter, props.taskControl, props.projectHealth, zh);
+  const latestEvents = (props.taskCenter?.timeline.events ?? []).slice(0, 12);
+
+  return (
+    <section className="studioPage">
+      <div className="studioHeader panel">
+        <div>
+          <p className="eyebrow">{zh ? "小说生产驾驶舱" : "Novel Production Studio"}</p>
+          <h2>{project?.title || (zh ? "未选择项目" : "No Project Selected")}</h2>
+          <div className="miniMetrics">
+            <span className="statPill">{props.projectConfig.genre || (zh ? "未设题材" : "genre unset")}</span>
+            <span className="statPill">{props.projectConfig.target_platform || (zh ? "未设平台" : "platform unset")}</span>
+            <span className={props.projectHealth?.summary.failed_task_count ? "badge warn" : "badge ok"}>
+              {zh ? "失败任务" : "failed tasks"}: {props.projectHealth?.summary.failed_task_count ?? 0}
+            </span>
+            <span className={props.projectHealth?.summary.pending_handoff_count ? "badge warn" : "badge ok"}>
+              handoff: {props.projectHealth?.summary.pending_handoff_count ?? 0}
+            </span>
+          </div>
+        </div>
+        <div className="studioActions">
+          <button className="secondaryButton" onClick={() => props.onOpenTab("projects")}>
+            <Boxes size={18} />
+            {zh ? "项目" : "Project"}
+          </button>
+          <button className="secondaryButton" onClick={() => props.onOpenTab("task_center")}>
+            <ListChecks size={18} />
+            {zh ? "任务" : "Tasks"}
+          </button>
+          <button className="secondaryButton" onClick={() => props.onOpenTab("material_library")}>
+            <FileSearch size={18} />
+            {zh ? "资产" : "Assets"}
+          </button>
+        </div>
+      </div>
+
+      <div className="studioMainGrid">
+        <div className="panel novelWorkbench">
+          <PanelHeader title={zh ? "阅读与改稿" : "Read And Edit"} icon={<BookOpen size={18} />} />
+          <div className="studioSelectorGrid">
+            <SelectPath label={zh ? "章节计划" : "Chapter Plan"} latestLabel={zh ? "最新" : "Latest"} value={props.selectedPlan} onChange={props.setSelectedPlan} rows={props.drafts?.chapter_plans ?? []} />
+            <SelectPath label={zh ? "草稿章节" : "Draft Chapter"} latestLabel={zh ? "最新" : "Latest"} value={props.selectedDraft} onChange={props.setSelectedDraft} rows={draftRows} />
+          </div>
+          <div className="sectionActionLine">
+            <button className="primaryButton" disabled={props.busy || !props.selectedPlan} onClick={props.onGenerateDraft}>
+              <PenLine size={18} />
+              {zh ? "生成/重生成" : "Generate"}
+            </button>
+            <button className="secondaryButton" disabled={props.busy || !props.draftEditor} onClick={props.onSaveDraft}>
+              <Save size={18} />
+              {zh ? "保存修改" : "Save Edits"}
+            </button>
+            <button className="secondaryButton tableButton" disabled={props.busy || !props.draftEditor} onClick={() => props.onExportDraft("markdown")}>MD</button>
+            <button className="secondaryButton tableButton" disabled={props.busy || !props.draftEditor} onClick={() => props.onExportDraft("docx")}>DOCX</button>
+            <button className="secondaryButton tableButton" disabled={props.busy || !props.draftEditor} onClick={() => props.onExportDraft("epub")}>EPUB</button>
+          </div>
+          <input
+            value={props.draftEditor?.title ?? currentDraftRow?.title ?? ""}
+            onChange={(event) => props.draftEditor && props.setDraftEditor({ ...props.draftEditor, title: event.target.value })}
+            aria-label={zh ? "章节标题" : "Chapter title"}
+            placeholder={zh ? "章节标题" : "Chapter title"}
+          />
+          <div className="readerEditorGrid">
+            <article className="novelReader">
+              <div className="readerMeta">
+                <span className="statPill">v{props.draftEditor?.version_index ?? currentDraftRow?.chapter ?? "-"}</span>
+                <span className="statPill">{props.draftEditor?.status ?? currentDraftRow?.risk_level ?? "draft"}</span>
+              </div>
+              <h2>{props.draftEditor?.title || currentDraftRow?.title || (zh ? "未选择草稿" : "No draft selected")}</h2>
+              <div className="readerBody">
+                {paragraphs.length ? paragraphs.map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>) : <p>{zh ? "选择或生成草稿后可阅读正文。" : "Select or generate a draft to read the chapter."}</p>}
+              </div>
+            </article>
+            <textarea
+              className="studioDraftEditor"
+              value={draftText}
+              onChange={(event) => props.draftEditor && props.setDraftEditor({ ...props.draftEditor, text: event.target.value })}
+              aria-label={zh ? "正文编辑器" : "Draft editor"}
+            />
+          </div>
+          {props.draftExport ? <p className="previewText">{zh ? "最近导出" : "Latest export"}: {String(props.draftExport.path ?? "")}</p> : null}
+        </div>
+
+        <div className="panel generationPanel">
+          <PanelHeader title={zh ? "生成链路" : "Generation Trace"} icon={<Workflow size={18} />} />
+          <div className="productionSteps">
+            {productionSteps.map((step) => (
+              <button className={`productionStep ${step.status}`} key={step.key} onClick={() => props.onOpenTab(step.tab)}>
+                <span>{step.label}</span>
+                <strong>{step.count}</strong>
+                <small>{step.detail}</small>
+              </button>
+            ))}
+          </div>
+          <h3>{zh ? "最近生成事件" : "Recent Events"}</h3>
+          <DataTable
+            emptyText={zh ? "暂无事件" : "No events"}
+            columns={zh ? ["Agent", "步骤", "状态", "时间", "资产"] : ["Agent", "Step", "Status", "Time", "Asset"]}
+            rows={latestEvents.map((event) => [
+              agentNameForStep(event.step, event.task_type, zh),
+              event.step,
+              <span className={event.status === "completed" ? "badge ok" : event.status === "failed" ? "badge warn" : "badge muted"} key={`event-${event.path}`}>{event.status}</span>,
+              event.recorded_at,
+              <button className="linkButton" key={event.path} onClick={() => props.onOpenAsset(event.path)}>{event.path}</button>
+            ])}
+          />
+          <h3>{zh ? "Handoff 观察" : "Handoff Watch"}</h3>
+          <DataTable
+            emptyText={zh ? "暂无 handoff" : "No handoffs"}
+            columns={zh ? ["操作", "状态", "技能", "来源", "产物"] : ["Operation", "Status", "Skill", "Source", "Output"]}
+            rows={props.handoffs.slice(0, 8).map((handoff) => [
+              <button className="linkButton" key={handoff.path} onClick={() => props.onOpenHandoff(handoff.path)}>{handoff.operation}</button>,
+              <span className={handoff.status === "completed" ? "badge ok" : handoff.status === "failed" ? "badge warn" : "badge muted"} key={`status-${handoff.path}`}>{handoff.status}</span>,
+              handoff.skill,
+              handoff.source_path,
+              handoff.expected_output_type
+            ])}
+          />
+        </div>
+      </div>
+
+      <div className="studioSecondaryGrid">
+        <div className="panel">
+          <PanelHeader title={zh ? "资料来源与拆解结果" : "Sources And Deconstruction"} icon={<FileSearch size={18} />} />
+          <DataTable
+            emptyText={zh ? "暂无资料来源" : "No sources"}
+            columns={zh ? ["来源", "名称", "状态/风险", "产物", "路径"] : ["Source", "Name", "Status/Risk", "Output", "Path"]}
+            rows={sourceRows.slice(0, 14).map((row) => [
+              <span className={row.kindClass} key={`kind-${row.key}`}>{row.kind}</span>,
+              row.name,
+              row.status,
+              row.output,
+              row.path ? <button className="linkButton" key={row.key} onClick={() => row.openAs === "handoff" ? props.onOpenHandoff(row.path) : props.onOpenAsset(row.path)}>{row.path}</button> : "-"
+            ])}
+          />
+          <div className="knowledgeSplit">
+            <div>
+              <h3>{zh ? "GitHub 多学科知识" : "GitHub Knowledge"}</h3>
+              <DataTable
+                emptyText={zh ? "暂无 GitHub 知识卡" : "No GitHub knowledge cards"}
+                columns={zh ? ["标题", "风险", "来源", "资产"] : ["Title", "Risk", "Source", "Asset"]}
+                rows={githubKnowledgeRows.slice(0, 8).map((asset) => [
+                  asset.title || asset.path,
+                  asset.risk_level || "-",
+                  asset.source || "github",
+                  <button className="linkButton" key={asset.path} onClick={() => props.onOpenAsset(asset.path)}>{asset.path}</button>
+                ])}
+              />
+            </div>
+            <div>
+              <h3>{zh ? "本地上传/项目知识" : "Local Knowledge"}</h3>
+              <DataTable
+                emptyText={zh ? "暂无本地知识卡" : "No local knowledge cards"}
+                columns={zh ? ["标题", "状态", "来源", "资产"] : ["Title", "Status", "Source", "Asset"]}
+                rows={localKnowledgeRows.slice(0, 8).map((asset) => [
+                  asset.title || asset.path,
+                  asset.asset_status || "-",
+                  sourceLabelForAsset(asset, props.batchItems, zh),
+                  <button className="linkButton" key={asset.path} onClick={() => props.onOpenAsset(asset.path)}>{asset.path}</button>
+                ])}
+              />
+            </div>
+          </div>
+          <h3>{zh ? "小说拆解 / 素材化" : "Novel Deconstruction / Materials"}</h3>
+          <DataTable
+            emptyText={zh ? "暂无拆解产物" : "No deconstruction outputs"}
+            columns={zh ? ["类型", "标题", "来源", "资产"] : ["Type", "Title", "Source", "Asset"]}
+            rows={[...decompositionRows.slice(0, 8), ...materialRows.slice(0, 8)].map((asset) => [
+              asset.type,
+              asset.title || asset.path,
+              sourceLabelForAsset(asset, props.batchItems, zh),
+              <button className="linkButton" key={asset.path} onClick={() => props.onOpenAsset(asset.path)}>{asset.path}</button>
+            ])}
+          />
+        </div>
+
+        <div className="panel">
+          <PanelHeader title={zh ? "Agent 工作观察" : "Agent Work Board"} icon={<Activity size={18} />} />
+          <DataTable
+            emptyText={zh ? "暂无 Agent 状态" : "No agent state"}
+            columns={zh ? ["Agent", "输入", "工具/技能", "状态", "产物"] : ["Agent", "Input", "Tool/Skill", "Status", "Output"]}
+            rows={agentRows.map((row) => [
+              <strong key={`agent-${row.agent}`}>{row.agent}</strong>,
+              row.input,
+              row.skill,
+              <span className={row.statusClass} key={`status-${row.agent}`}>{row.status}</span>,
+              row.output
+            ])}
+          />
+          <h3>{zh ? "当前任务压力" : "Queue Pressure"}</h3>
+          <div className="miniMetrics">
+            <span className={props.taskControl?.celery.healthy ? "badge ok" : "badge warn"}>worker: {props.taskControl?.celery.healthy ? "healthy" : "offline"}</span>
+            <span className="statPill">active: {props.taskControl?.celery.active_count ?? 0}</span>
+            <span className="statPill">reserved: {props.taskControl?.celery.reserved_count ?? 0}</span>
+            <span className={props.projectHealth?.scope_audit.summary.issue_count ? "badge warn" : "badge ok"}>scope: {props.projectHealth?.scope_audit.summary.issue_count ?? 0}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+type StudioSourceRow = {
+  key: string;
+  kind: string;
+  kindClass: string;
+  name: string;
+  status: string;
+  output: string;
+  path: string;
+  openAs: "asset" | "handoff" | "";
+};
+
+type ProductionStep = {
+  key: string;
+  label: string;
+  count: number;
+  detail: string;
+  status: "ok" | "warn" | "muted";
+  tab: TabKey;
+};
+
+type AgentWorkRow = {
+  agent: string;
+  input: string;
+  skill: string;
+  status: string;
+  statusClass: string;
+  output: string;
+};
+
+function buildStudioSourceRows(
+  assets: AssetRow[],
+  batchItems: BatchItem[],
+  handoffs: HandoffRow[],
+  githubSources: GitHubSource[],
+  uploadResult: UploadResult | null,
+  zh: boolean
+): StudioSourceRow[] {
+  const rows: StudioSourceRow[] = [];
+  for (const source of githubSources.slice(0, 10)) {
+    rows.push({
+      key: `github-${source.repo}`,
+      kind: "GitHub",
+      kindClass: source.commercial_risk === "low" ? "badge ok" : "badge warn",
+      name: source.repo,
+      status: `${source.commercial_risk || "risk"} / ${source.license_check || "license"}`,
+      output: source.allowed_pipeline.join(", "),
+      path: "",
+      openAs: "",
+    });
+  }
+  for (const item of uploadResult?.items ?? []) {
+    rows.push({
+      key: `upload-${item.sha256}`,
+      kind: zh ? "本地上传" : "Local Upload",
+      kindClass: item.duplicate ? "badge warn" : "badge ok",
+      name: item.filename,
+      status: item.duplicate ? (zh ? "重复" : "duplicate") : item.minio.uploaded ? "MinIO" : "local",
+      output: `${item.format} / ${item.size_bytes} bytes`,
+      path: "",
+      openAs: "",
+    });
+  }
+  for (const item of batchItems.slice(0, 20)) {
+    rows.push({
+      key: `batch-${item.path}`,
+      kind: sourceKindForPath(item.source_path, zh),
+      kindClass: item.status === "completed" ? "badge ok" : item.status === "failed" ? "badge warn" : "badge muted",
+      name: item.source_name || item.source_path,
+      status: item.status,
+      output: item.material || item.knowledge || item.decomposition || item.handoff_path || item.analysis_mode,
+      path: item.path,
+      openAs: "asset",
+    });
+  }
+  for (const asset of assets.filter((row) => row.category === "raw" || row.type === "source_document").slice(0, 20)) {
+    rows.push({
+      key: `raw-${asset.path}`,
+      kind: sourceKindForPath(asset.source || asset.path, zh),
+      kindClass: "badge muted",
+      name: asset.title || asset.path,
+      status: asset.asset_status || "-",
+      output: asset.type,
+      path: asset.path,
+      openAs: "asset",
+    });
+  }
+  for (const handoff of handoffs.slice(0, 20)) {
+    rows.push({
+      key: `handoff-source-${handoff.path}`,
+      kind: handoff.source_path.toLowerCase().includes("github") ? "GitHub" : zh ? "执行包输入" : "Handoff Input",
+      kindClass: handoff.status === "completed" ? "badge ok" : handoff.status === "failed" ? "badge warn" : "badge muted",
+      name: handoff.operation,
+      status: handoff.status,
+      output: handoff.expected_output_type,
+      path: handoff.path,
+      openAs: "handoff",
+    });
+  }
+  return dedupeSourceRows(rows);
+}
+
+function dedupeSourceRows(rows: StudioSourceRow[]): StudioSourceRow[] {
+  const seen = new Set<string>();
+  const result: StudioSourceRow[] = [];
+  for (const row of rows) {
+    const key = row.path || row.key;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(row);
+  }
+  return result;
+}
+
+function sourceKindForPath(path: string, zh: boolean): string {
+  const text = path.toLowerCase();
+  if (text.includes("github")) return "GitHub";
+  if (text.includes("uploads") || text.includes("upload")) return zh ? "本地上传" : "Local Upload";
+  if (text.includes("gutenberg") || text.includes("cbeta") || text.includes("cbdb") || text.includes("chgis")) return zh ? "外部数据包" : "External Dataset";
+  return zh ? "本地资料" : "Local Source";
+}
+
+function knowledgeOrigin(asset: AssetRow, handoffs: HandoffRow[], batchItems: BatchItem[]): "github" | "upload" | "local" {
+  const text = `${asset.path} ${asset.title} ${asset.tags.join(" ")} ${asset.source}`.toLowerCase();
+  if (text.includes("github")) return "github";
+  const handoff = handoffs.find((item) => item.id === asset.source || item.path === asset.source || item.source_path === asset.source);
+  if (handoff?.source_path.toLowerCase().includes("github")) return "github";
+  if (handoff?.source_path.toLowerCase().includes("upload")) return "upload";
+  if (batchItems.some((item) => item.knowledge === asset.path && item.source_path.toLowerCase().includes("upload"))) return "upload";
+  return "local";
+}
+
+function sourceLabelForAsset(asset: AssetRow, batchItems: BatchItem[], zh: boolean): string {
+  const origin = knowledgeOrigin(asset, [], batchItems);
+  if (origin === "github") return "GitHub";
+  if (origin === "upload") return zh ? "本地上传" : "Local Upload";
+  if (asset.category === "raw") return zh ? "原始资料" : "Raw Source";
+  return zh ? "项目资产" : "Project Asset";
+}
+
+function buildProductionSteps(
+  assets: AssetRow[],
+  batchItems: BatchItem[],
+  handoffs: HandoffRow[],
+  drafts: DraftWorkbench | null,
+  taskCenter: TaskCenter | null,
+  zh: boolean
+): ProductionStep[] {
+  const failedTasks = taskCenter?.summary.by_status.failed ?? 0;
+  const waitingHandoffs = handoffs.filter((item) => item.status !== "completed" && item.status !== "superseded").length;
+  const rawCount = assets.filter((item) => item.category === "raw" || item.type === "source_document").length;
+  const decompositionCount = assets.filter((item) => item.category === "decompositions" || item.type === "decomposition_report").length;
+  const knowledgeCount = assets.filter((item) => item.category === "knowledge" || item.type === "knowledge_card").length;
+  const materialCount = assets.filter((item) => item.category === "materials" || item.type === "material_card").length;
+  const draftCount = drafts?.drafts.length ?? assets.filter((item) => item.type === "draft_chapter").length;
+  const reviewCount = drafts?.reviews.length ?? assets.filter((item) => item.type === "review_report").length;
+  return [
+    {
+      key: "sources",
+      label: zh ? "资料" : "Sources",
+      count: rawCount + batchItems.length,
+      detail: zh ? "本地上传 / 外部登记" : "uploads and registries",
+      status: stepStatus(rawCount + batchItems.length, false),
+      tab: "web_fiction_analysis",
+    },
+    {
+      key: "deconstruct",
+      label: zh ? "拆解" : "Deconstruct",
+      count: decompositionCount,
+      detail: zh ? "网文结构 / 章节机制" : "structure and chapter mechanics",
+      status: stepStatus(decompositionCount, failedTasks > 0),
+      tab: "web_fiction_analysis",
+    },
+    {
+      key: "knowledge",
+      label: zh ? "知识" : "Knowledge",
+      count: knowledgeCount,
+      detail: waitingHandoffs ? `${waitingHandoffs} handoff` : (zh ? "知识卡" : "knowledge cards"),
+      status: waitingHandoffs ? "warn" : stepStatus(knowledgeCount, false),
+      tab: "handoffs",
+    },
+    {
+      key: "materials",
+      label: zh ? "素材" : "Materials",
+      count: materialCount,
+      detail: zh ? "可复用素材卡" : "reusable material cards",
+      status: stepStatus(materialCount, false),
+      tab: "material_library",
+    },
+    {
+      key: "draft",
+      label: zh ? "正文" : "Draft",
+      count: draftCount,
+      detail: zh ? "章节草稿 / 版本" : "chapters and versions",
+      status: stepStatus(draftCount, false),
+      tab: "chapter_production",
+    },
+    {
+      key: "review",
+      label: zh ? "审修" : "Review",
+      count: reviewCount,
+      detail: zh ? "评分 / 修订计划" : "scores and revision plans",
+      status: stepStatus(reviewCount, failedTasks > 0),
+      tab: "review_center",
+    },
+  ];
+}
+
+function stepStatus(count: number, hasFailure: boolean): "ok" | "warn" | "muted" {
+  if (hasFailure) return "warn";
+  return count > 0 ? "ok" : "muted";
+}
+
+function buildAgentWorkRows(
+  assets: AssetRow[],
+  batchItems: BatchItem[],
+  handoffs: HandoffRow[],
+  drafts: DraftWorkbench | null,
+  taskCenter: TaskCenter | null,
+  taskControl: TaskControl | null,
+  projectHealth: ProjectHealthReport | null,
+  zh: boolean
+): AgentWorkRow[] {
+  const countType = (type: string) => assets.filter((asset) => asset.type === type || asset.category === type).length;
+  const failedTasks = taskCenter?.summary.by_status.failed ?? 0;
+  const scopeIssues = projectHealth?.scope_audit.summary.issue_count ?? 0;
+  const handoffPending = handoffs.filter((item) => item.status !== "completed" && item.status !== "superseded").length;
+  const rows: AgentWorkRow[] = [
+    {
+      agent: "Chief Editor Agent",
+      input: zh ? "项目状态 / 风险 / 审修结果" : "project state, risks, reviews",
+      skill: "quality-review, long-outline",
+      status: scopeIssues || failedTasks ? (zh ? "需决策" : "needs decision") : (zh ? "稳定" : "stable"),
+      statusClass: scopeIssues || failedTasks ? "badge warn" : "badge ok",
+      output: zh ? `范围问题 ${scopeIssues}` : `${scopeIssues} scope issues`,
+    },
+    {
+      agent: "Knowledge Agent",
+      input: zh ? "GitHub / 本地资料 / 拆解报告" : "GitHub, local sources, decompositions",
+      skill: "multidisciplinary-knowledge",
+      status: handoffPending ? (zh ? "等待执行包" : "handoff pending") : (zh ? "可用" : "ready"),
+      statusClass: handoffPending ? "badge warn" : "badge ok",
+      output: `${countType("knowledge_card")} knowledge`,
+    },
+    {
+      agent: "Material Agent",
+      input: zh ? "知识卡 / 拆解卡" : "knowledge and decomposition cards",
+      skill: "material-curation, anti-copy-abstraction",
+      status: countType("material_card") ? (zh ? "已产出" : "producing") : (zh ? "待素材" : "waiting"),
+      statusClass: countType("material_card") ? "badge ok" : "badge muted",
+      output: `${countType("material_card")} materials`,
+    },
+    {
+      agent: "Draft Agent",
+      input: zh ? "章节计划 / RAG 上下文" : "chapter plan and RAG context",
+      skill: "prose-generation, chapter-outline",
+      status: drafts?.drafts.length ? (zh ? "可编辑" : "editable") : (zh ? "待草稿" : "waiting"),
+      statusClass: drafts?.drafts.length ? "badge ok" : "badge muted",
+      output: `${drafts?.drafts.length ?? 0} drafts`,
+    },
+    {
+      agent: "Review Agent",
+      input: zh ? "草稿 / rubric / 质量阈值" : "drafts, rubric, thresholds",
+      skill: "quality-review",
+      status: drafts?.reviews.length ? (zh ? "有审稿" : "reviewed") : (zh ? "待审" : "waiting"),
+      statusClass: drafts?.reviews.length ? "badge ok" : "badge muted",
+      output: `${drafts?.reviews.length ?? 0} reviews`,
+    },
+    {
+      agent: "Quality Agent",
+      input: zh ? "schema / scope audit / 任务日志" : "schema, scope audit, task logs",
+      skill: "validation, recovery",
+      status: failedTasks ? (zh ? "需恢复" : "recovery needed") : (zh ? "通过" : "passing"),
+      statusClass: failedTasks ? "badge warn" : "badge ok",
+      output: `${taskCenter?.timeline.summary.event_count ?? 0} events`,
+    },
+    {
+      agent: "Engineering Agent",
+      input: zh ? "API / worker / 存储服务" : "API, workers, storage services",
+      skill: "FastAPI, Celery, Postgres",
+      status: taskControl?.celery.healthy ? (zh ? "worker 在线" : "worker online") : (zh ? "本地模式" : "local mode"),
+      statusClass: taskControl?.celery.healthy ? "badge ok" : "badge muted",
+      output: `${taskControl?.dead_letters.count ?? 0} dead letters`,
+    },
+    {
+      agent: "Outline / World / Character Agents",
+      input: zh ? "题材配置 / 世界观 / 人物资产" : "genre config, world, character assets",
+      skill: "long-outline, worldbuilding, character-design",
+      status: countType("outlines") || countType("worlds") || countType("characters") ? (zh ? "已建模" : "modeled") : (zh ? "待建模" : "waiting"),
+      statusClass: countType("outlines") || countType("worlds") || countType("characters") ? "badge ok" : "badge muted",
+      output: `${countType("outlines") + countType("worlds") + countType("characters")} assets`,
+    },
+  ];
+  return rows;
+}
+
+function agentNameForStep(step: string, taskType: string, zh: boolean): string {
+  const value = `${taskType} ${step}`.toLowerCase();
+  if (value.includes("handoff")) return "Claude Code / Codex";
+  if (value.includes("decompose") || value.includes("knowledge")) return "Knowledge Agent";
+  if (value.includes("material")) return "Material Agent";
+  if (value.includes("draft")) return "Draft Agent";
+  if (value.includes("review")) return "Review Agent";
+  if (value.includes("revise")) return "Review Agent";
+  if (value.includes("world") || value.includes("character") || value.includes("outline")) return "Outline Agent";
+  if (value.includes("failed") || value.includes("validate")) return "Quality Agent";
+  return zh ? "工程/流程 Agent" : "Engineering Agent";
 }
 
 function HealthPanel(props: {
@@ -1822,6 +3399,7 @@ function ProjectsPanel(props: {
   selectedWorkspace: string;
   projectConfig: ProjectConfig;
   setProjectConfig: (value: ProjectConfig) => void;
+  creativeLibraries: CreativeLibrary[];
   busy: boolean;
   onCreate: () => void;
   onSelectProject: (project: ProjectRow) => void;
@@ -1909,6 +3487,44 @@ function ProjectsPanel(props: {
             aria-label={zh ? "目标读者" : "Audience"}
             placeholder={zh ? "目标读者" : "Audience"}
           />
+          <div className="bindingPanel">
+            <div className="sectionHeaderLine">
+              <h3>{zh ? "生产输入绑定" : "Production Input Bindings"}</h3>
+              <span className="statPill">{projectBindingReady(props.projectConfig) ? (zh ? "完整" : "ready") : (zh ? "待补齐" : "incomplete")}</span>
+            </div>
+            <div className="bindingGrid">
+              <ProjectBindingSelect
+                label={zh ? "平台画像" : "Platform Profile"}
+                value={props.projectConfig.platform_profile_path || ""}
+                options={creativeAssetOptions(props.creativeLibraries, "platform_profile")}
+                onChange={(path) => props.setProjectConfig({ ...props.projectConfig, platform_profile_path: path })}
+              />
+              <ProjectBindingSelect
+                label={zh ? "题材市场" : "Genre Market"}
+                value={props.projectConfig.genre_market_profile_path || ""}
+                options={creativeAssetOptions(props.creativeLibraries, "genre_market_profile")}
+                onChange={(path) => props.setProjectConfig({ ...props.projectConfig, genre_market_profile_path: path })}
+              />
+              <ProjectBindingSelect
+                label={zh ? "精品标准" : "Quality Standard"}
+                value={props.projectConfig.quality_standard_profile_path || ""}
+                options={creativeAssetOptions(props.creativeLibraries, "quality_standard_profile")}
+                onChange={(path) => props.setProjectConfig({ ...props.projectConfig, quality_standard_profile_path: path })}
+              />
+              <ProjectBindingSelect
+                label={zh ? "文风目标" : "Style Target"}
+                value={props.projectConfig.style_profile_path || ""}
+                options={creativeAssetOptions(props.creativeLibraries, "style_profile")}
+                onChange={(path) => props.setProjectConfig({ ...props.projectConfig, style_profile_path: path })}
+              />
+              <ProjectBindingSelect
+                label={zh ? "连续性设定" : "Continuity Bible"}
+                value={props.projectConfig.continuity_bible_path || ""}
+                options={creativeAssetOptions(props.creativeLibraries, "continuity_bible")}
+                onChange={(path) => props.setProjectConfig({ ...props.projectConfig, continuity_bible_path: path })}
+              />
+            </div>
+          </div>
           <button className="secondaryButton" disabled={props.busy || !props.selectedProjectId} onClick={props.onSaveConfig}>
             <CheckCircle2 size={18} />
             {zh ? "保存配置" : "Save Config"}
@@ -2030,6 +3646,46 @@ function ProjectsPanel(props: {
         />
       </div>
     </section>
+  );
+}
+
+function ProjectBindingSelect({
+  label,
+  value,
+  options,
+  onChange
+}: {
+  label: string;
+  value: string;
+  options: CreativeAssetRow[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="bindingField">
+      <span>{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value="">auto / unbound</option>
+        {options.map((asset) => (
+          <option value={asset.path} key={asset.path}>
+            {asset.title || asset.path}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function creativeAssetOptions(libraries: CreativeLibrary[], assetType: string): CreativeAssetRow[] {
+  return libraries.flatMap((library) => library.assets).filter((asset) => asset.type === assetType);
+}
+
+function projectBindingReady(config: ProjectConfig): boolean {
+  return Boolean(
+    config.platform_profile_path &&
+    config.genre_market_profile_path &&
+    config.quality_standard_profile_path &&
+    config.style_profile_path &&
+    config.continuity_bible_path
   );
 }
 
@@ -2343,6 +3999,198 @@ function Progress({ value }: { value: number }) {
   );
 }
 
+function CreativeLibraryPanel(props: {
+  language: Language;
+  library: CreativeLibrary | null | undefined;
+  fallbackLibraryKey: string;
+  selectedProjectId: string;
+  selectedWorkspace: string;
+  createTitle: string;
+  setCreateTitle: (value: string) => void;
+  createType: string;
+  setCreateType: (value: string) => void;
+  keyword: string;
+  setKeyword: (value: string) => void;
+  detail: AssetDetail | null;
+  versions: AssetVersions | null;
+  graph: AssetGraph | null;
+  selectedDraft: string;
+  styleTrend: StyleTrend | null;
+  busy: boolean;
+  onSelect: (path: string) => void;
+  onRefresh: (libraryKey: string, keyword: string) => void;
+  onCreate: (assetType: string, title: string) => void;
+  onSave: (path: string, patch: Record<string, unknown>) => void;
+  onSaveContent: (path: string, content: Record<string, unknown>) => void;
+  onSaveTyped: (path: string, fields: Record<string, unknown>) => void;
+  onStyleDecompose: (sourcePath: string) => void;
+  onStyleReview: (draftPath: string, styleProfilePath?: string) => void;
+  onQualityScore: (targetPath: string) => void;
+}) {
+  const zh = props.language === "zh";
+  const library = props.library;
+  const title = library ? (zh ? library.title_zh : library.title) : props.fallbackLibraryKey;
+  const description = library ? (zh ? library.description_zh : library.description) : "";
+  const assetTypes = library?.asset_types ?? [];
+  const selectedType = assetTypes.includes(props.createType) ? props.createType : assetTypes[0] ?? "";
+  const selectedDetailType = String(props.detail?.asset.type ?? "");
+  const detailBelongsToLibrary = Boolean(library?.asset_types.includes(selectedDetailType));
+
+  return (
+    <section className="creativeLibraryPage">
+      <div className="panel creativeLibraryHero">
+        <div>
+          <p className="eyebrow">{zh ? "创作资产工作台" : "Creative Asset Workbench"}</p>
+          <h2>{title}</h2>
+          <p>{description || pageSummary(props.fallbackLibraryKey as TabKey, props.language)}</p>
+          <div className="miniMetrics">
+            <span className="statPill">{zh ? "项目" : "project"}: {props.selectedProjectId || (zh ? "全局" : "global")}</span>
+            <span className="statPill">{zh ? "资产类型" : "types"}: {assetTypes.length}</span>
+            <span className="statPill">{zh ? "资产数" : "assets"}: {library?.assets.length ?? 0}</span>
+          </div>
+        </div>
+        <div className="creativeCreateBox">
+          <select value={selectedType} onChange={(event) => props.setCreateType(event.target.value)} aria-label={zh ? "资产类型" : "Asset type"}>
+            {assetTypes.map((assetType) => (
+              <option key={assetType} value={assetType}>
+                {assetType}
+              </option>
+            ))}
+          </select>
+          <input
+            value={props.createTitle}
+            onChange={(event) => props.setCreateTitle(event.target.value)}
+            aria-label={zh ? "资产标题" : "Asset title"}
+            placeholder={zh ? "资产标题" : "Asset title"}
+          />
+          <button
+            className="primaryButton"
+            disabled={props.busy || !selectedType || !props.createTitle.trim()}
+            onClick={() => props.onCreate(selectedType, props.createTitle.trim())}
+          >
+            <Save size={18} />
+            {zh ? "创建资产" : "Create Asset"}
+          </button>
+        </div>
+      </div>
+
+      {props.fallbackLibraryKey === "style_center" ? (
+        <section className="panel operationPanel">
+          <div className="sectionHeaderLine">
+            <h3>{zh ? "文风任务" : "Style Operations"}</h3>
+            <span className="statPill">{zh ? "平均" : "avg"}: {props.styleTrend?.average_score ?? 0}</span>
+            <span className="statPill">{zh ? "最近" : "latest"}: {props.styleTrend?.latest_score ?? 0}</span>
+          </div>
+          <div className="actionRow">
+            <button className="secondaryButton" disabled={props.busy || !props.detail?.path} onClick={() => props.detail?.path && props.onStyleDecompose(props.detail.path)}>
+              <Wand2 size={18} />
+              {zh ? "拆解选中资产文风" : "Decompose Selected Style"}
+            </button>
+            <button className="secondaryButton" disabled={props.busy || !props.selectedDraft} onClick={() => props.onStyleReview(props.selectedDraft, props.detail?.asset.type === "style_profile" ? props.detail.path : undefined)}>
+              <ShieldCheck size={18} />
+              {zh ? "评分当前草稿" : "Review Current Draft"}
+            </button>
+          </div>
+          <DataTable
+            emptyText={zh ? "暂无文风评分" : "No style reviews"}
+            columns={zh ? ["分数", "风险", "漂移", "报告"] : ["Score", "Risk", "Drift", "Report"]}
+            rows={(props.styleTrend?.rows ?? []).slice(0, 5).map((row) => [
+              String(row.score),
+              <span className={row.risk === "low" ? "badge ok" : row.risk === "high" ? "badge warn" : "badge muted"} key={`risk-${row.path}`}>{row.risk}</span>,
+              String(row.drift_count),
+              <button className="linkButton" onClick={() => props.onSelect(row.path)} key={row.path}>{row.path}</button>
+            ])}
+          />
+        </section>
+      ) : null}
+
+      {props.fallbackLibraryKey === "quality_standards" ? (
+        <section className="panel operationPanel">
+          <div className="sectionHeaderLine">
+            <h3>{zh ? "质量门禁" : "Quality Gate"}</h3>
+            <span className="statPill">{zh ? "当前草稿" : "draft"}: {props.selectedDraft || "-"}</span>
+          </div>
+          <button className="secondaryButton" disabled={props.busy || !props.selectedDraft} onClick={() => props.onQualityScore(props.selectedDraft)}>
+            <ShieldCheck size={18} />
+            {zh ? "按精品标准评分当前草稿" : "Score Current Draft"}
+          </button>
+        </section>
+      ) : null}
+
+      <section className="splitGrid">
+        <div className="panel">
+          <PanelHeader title={zh ? "资产列表" : "Assets"} icon={<Library size={18} />} />
+          <form
+            className="searchBar"
+            onSubmit={(event) => {
+              event.preventDefault();
+              props.onRefresh(props.fallbackLibraryKey, props.keyword);
+            }}
+          >
+            <input
+              value={props.keyword}
+              onChange={(event) => props.setKeyword(event.target.value)}
+              aria-label={zh ? "库内搜索" : "Library search"}
+              placeholder={zh ? "库内搜索" : "Search in library"}
+            />
+            <button className="secondaryButton" disabled={props.busy}>
+              <Search size={18} />
+              {zh ? "搜索" : "Search"}
+            </button>
+            <button
+              type="button"
+              className="secondaryButton"
+              disabled={props.busy}
+              onClick={() => {
+                props.setKeyword("");
+                props.onRefresh(props.fallbackLibraryKey, "");
+              }}
+            >
+              <RefreshCw size={18} />
+              {zh ? "刷新" : "Refresh"}
+            </button>
+          </form>
+          <div className="libraryTypeGrid">
+            {assetTypes.map((assetType) => (
+              <button className={selectedType === assetType ? "typeChip active" : "typeChip"} key={assetType} onClick={() => props.setCreateType(assetType)}>
+                {assetType}
+              </button>
+            ))}
+          </div>
+          <DataTable
+            emptyText={zh ? "暂无资产" : "No assets"}
+            columns={zh ? ["标题", "类型", "状态", "风险", "更新时间", "路径"] : ["Title", "Type", "Status", "Risk", "Updated", "Path"]}
+            rows={(library?.assets ?? []).map((asset) => [
+              asset.title || asset.path,
+              asset.type,
+              <span className={asset.asset_status === "approved" ? "badge ok" : asset.asset_status === "blocked" ? "badge warn" : "badge muted"} key={`status-${asset.path}`}>
+                {asset.asset_status}
+              </span>,
+              <span className={asset.risk_level === "high" ? "badge warn" : asset.risk_level === "low" ? "badge ok" : "badge muted"} key={`risk-${asset.path}`}>
+                {asset.risk_level}
+              </span>,
+              asset.updated_at,
+              <button className="linkButton" onClick={() => props.onSelect(asset.path)} key={asset.path}>
+                {asset.path}
+              </button>
+            ])}
+          />
+        </div>
+        <AssetDetailPanel
+          language={props.language}
+          detail={detailBelongsToLibrary ? props.detail : null}
+          versions={props.versions}
+          graph={props.graph}
+          onSelect={props.onSelect}
+          onSave={props.onSave}
+          onSaveContent={props.onSaveContent}
+          onSaveTyped={props.onSaveTyped}
+        />
+      </section>
+    </section>
+  );
+}
+
 function AssetsPanel(props: {
   language: Language;
   health: Health | null;
@@ -2604,7 +4452,36 @@ function TypedAssetWorkbench({
   useEffect(() => {
     setEditValues(Object.fromEntries(editFields.map((field) => [field.key, field.value])));
   }, [detail.path]);
-  if (!["decomposition_report", "knowledge_card", "material_card", "draft_chapter", "review_report", "revision_plan", "batch_task_item"].includes(type)) {
+  const phase3Types = [
+    "platform_profile",
+    "genre_market_profile",
+    "topic_seed",
+    "topic_fit_report",
+    "world_bible",
+    "character_card",
+    "continuity_bible",
+    "foreshadowing_thread",
+    "power_scale_rule",
+    "style_profile",
+    "style_decomposition_report",
+    "style_blend_preset",
+    "quality_standard_profile",
+    "review_rule_pack",
+    "quality_score_report",
+    "style_review_report",
+    "chapter_audit_report",
+    "originality_report",
+    "publish_gate_report",
+    "release_package",
+    "common_novel_analysis_report",
+    "web_fiction_business_analysis_report",
+    "published_fiction_analysis_report",
+    "classic_literary_analysis_report",
+    "analysis_conversion_report",
+    "writing_template",
+    "craft_template"
+  ];
+  if (!["decomposition_report", "knowledge_card", "material_card", "draft_chapter", "review_report", "revision_plan", "batch_task_item", ...phase3Types].includes(type)) {
     return null;
   }
   return (
@@ -2688,6 +4565,60 @@ function TypedAssetWorkbench({
           <TypedList title={zh ? "建议" : "Suggestions"} values={asset.revision_suggestions} />
         </div>
       ) : null}
+      {type === "chapter_audit_report" ? (
+        <div className="typedGrid">
+          <TypedBlock title={zh ? "建议" : "Recommendation"} value={String(content.recommendation ?? "")} />
+          <TypedBlock title={zh ? "维度分" : "Dimension Scores"} value={formatJson(content.dimension_scores)} />
+          <TypedList title={zh ? "问题" : "Issues"} values={Array.isArray(content.issues) ? (content.issues as Array<Record<string, unknown>>).map((issue) => `${String(issue.severity ?? "")}: ${String(issue.message ?? issue.dimension ?? "")}`) : []} />
+          <TypedBlock title={zh ? "门禁结果" : "Gate Results"} value={formatJson(content.gate_results)} />
+          <TypedBlock title={zh ? "关联报告" : "Linked Reports"} value={formatJson(content.linked_reports)} />
+        </div>
+      ) : null}
+      {type === "originality_report" ? (
+        <div className="typedGrid">
+          <TypedBlock title={zh ? "风险等级" : "Risk Level"} value={String(content.risk_level ?? "")} />
+          <TypedBlock title={zh ? "建议" : "Recommendation"} value={String(content.recommendation ?? "")} />
+          <TypedList title={zh ? "相似检查" : "Similarity Checks"} values={Array.isArray(content.similarity_checks) ? (content.similarity_checks as Array<Record<string, unknown>>).map((item) => `${String(item.source_title ?? item.source_asset_id ?? "")}: ${String(item.similarity ?? "")} (${String(item.risk ?? "")})`) : []} />
+          <TypedList title={zh ? "风险命中" : "Forbidden Element Hits"} values={Array.isArray(content.forbidden_element_hits) ? (content.forbidden_element_hits as Array<Record<string, unknown>>).map((item) => `${String(item.kind ?? "")}: ${String(item.element ?? "")}`) : []} />
+          <TypedBlock title={zh ? "人工门禁" : "Human Gate"} value={String(content.human_gate_required ?? "")} />
+        </div>
+      ) : null}
+      {type === "publish_gate_report" ? (
+        <div className="typedGrid">
+          <TypedBlock title={zh ? "决策" : "Decision"} value={String(content.decision ?? "")} />
+          <TypedBlock title={zh ? "门禁" : "Gates"} value={formatJson(content.gates)} />
+          <TypedList title={zh ? "阻断问题" : "Blocking Issues"} values={Array.isArray(content.blocking_issues) ? (content.blocking_issues as Array<Record<string, unknown>>).map((issue) => `${String(issue.severity ?? "")}: ${String(issue.message ?? issue.dimension ?? "")}`) : []} />
+          <TypedBlock title={zh ? "所需报告" : "Required Reports"} value={formatJson(content.required_reports)} />
+          <TypedBlock title={zh ? "人工覆盖" : "Human Override"} value={String(content.human_override ?? "")} />
+        </div>
+      ) : null}
+      {type === "release_package" ? (
+        <div className="typedGrid">
+          <TypedBlock title={zh ? "状态" : "Status"} value={String(content.status ?? "")} />
+          <TypedList title={zh ? "候选标题" : "Title Candidates"} values={content.title_candidates} />
+          <TypedBlock title={zh ? "摘要" : "Summary"} value={String(content.summary ?? "")} />
+          <TypedList title={zh ? "标签" : "Tags"} values={content.tags} />
+          <TypedBlock title={zh ? "渠道" : "Channel"} value={String(content.channel ?? "")} />
+        </div>
+      ) : null}
+      {[
+        "common_novel_analysis_report",
+        "web_fiction_business_analysis_report",
+        "published_fiction_analysis_report",
+        "classic_literary_analysis_report",
+        "analysis_conversion_report"
+      ].includes(type) ? (
+        <div className="typedGrid">
+          <TypedBlock title={zh ? "版权/RAG 边界" : "Copyright/RAG Boundary"} value={`${String(metadata.copyright_risk ?? content.copyright_risk ?? "unknown")} / RAG: ${String(metadata.use_in_generation_rag ?? false)}`} />
+          <TypedBlock title={zh ? "抽象层级" : "Abstraction"} value={String(metadata.abstraction_level ?? content.abstraction_level ?? "")} />
+          <TypedBlock title={zh ? "源资产" : "Source Asset"} value={String(content.source_asset_id ?? content.source_report_id ?? "")} />
+          <TypedList title={zh ? "可复用项" : "Reusable Items"} values={analysisReusableItems(type, content)} />
+          <TypedBlock title={zh ? "结构/技法 JSON" : "Structure/Craft JSON"} value={analysisStructureJson(type, content)} />
+          {type === "analysis_conversion_report" ? (
+            <TypedList title={zh ? "已创建资产" : "Created Assets"} values={Array.isArray(content.created_assets) ? (content.created_assets as Array<Record<string, unknown>>).map((item) => `${String(item.type ?? "")}: ${String(item.path ?? "")}`) : []} />
+          ) : null}
+        </div>
+      ) : null}
       {type === "revision_plan" ? (
         <div className="typedGrid">
           <TypedList title={zh ? "修订步骤" : "Steps"} values={content.steps} />
@@ -2712,6 +4643,7 @@ function TypedAssetWorkbench({
           </div>
         </div>
       ) : null}
+      {phase3Types.includes(type) ? <CreativeTypedSummary language={language} content={content} /> : null}
     </div>
   );
 }
@@ -2741,6 +4673,48 @@ function TypedList({ title, values }: { title: string; values: unknown }) {
       )}
     </div>
   );
+}
+
+function CreativeTypedSummary({ language, content }: { language: Language; content: Record<string, unknown> }) {
+  const zh = language === "zh";
+  return (
+    <div className="typedGrid">
+      {Object.entries(content).slice(0, 12).map(([key, value]) => {
+        if (Array.isArray(value)) {
+          return <TypedList title={key} values={value} key={key} />;
+        }
+        return (
+          <TypedBlock
+            title={key}
+            value={typeof value === "object" && value !== null ? JSON.stringify(value, null, 2) : String(value ?? "")}
+            key={key}
+          />
+        );
+      })}
+      {!Object.keys(content).length ? <TypedBlock title={zh ? "内容" : "Content"} value="-" /> : null}
+    </div>
+  );
+}
+
+function analysisReusableItems(type: string, content: Record<string, unknown>): unknown {
+  if (type === "common_novel_analysis_report") return content.reusable_findings;
+  if (type === "web_fiction_business_analysis_report") return content.reusable_assets;
+  if (type === "published_fiction_analysis_report") return content.transferable_techniques;
+  if (type === "classic_literary_analysis_report") return content.transferable_abstractions;
+  if (type === "analysis_conversion_report") return content.conversion_targets;
+  return [];
+}
+
+function analysisStructureJson(type: string, content: Record<string, unknown>): string {
+  const keysByType: Record<string, string[]> = {
+    common_novel_analysis_report: ["structure_map", "character_map", "conflict_map", "theme_map"],
+    web_fiction_business_analysis_report: ["platform_pattern", "reader_promise", "hook_system", "payoff_loop", "pacing_model"],
+    published_fiction_analysis_report: ["craft_dimensions", "scene_design", "character_arc", "narrative_distance", "language_texture"],
+    classic_literary_analysis_report: ["deep_structure", "theme_system", "symbol_system", "social_relation_model", "fate_curve"],
+    analysis_conversion_report: ["created_assets", "rejected_items", "conversion_policy"]
+  };
+  const subset = Object.fromEntries((keysByType[type] ?? []).map((key) => [key, content[key]]));
+  return JSON.stringify(subset, null, 2);
 }
 
 type TypedEditField = {
@@ -2816,17 +4790,289 @@ function typedEditableFields(
       field("must_preserve", label("必须保留", "Must Preserve"), content.must_preserve)
     ];
   }
+  if (type === "chapter_audit_report") {
+    return [
+      field("target_asset_id", label("目标资产", "Target Asset"), content.target_asset_id),
+      field("dimension_scores", label("维度分 JSON", "Dimension Scores JSON"), content.dimension_scores),
+      field("issues", label("问题 JSON", "Issues JSON"), content.issues),
+      field("gate_results", label("门禁结果 JSON", "Gate Results JSON"), content.gate_results),
+      field("linked_reports", label("关联报告 JSON", "Linked Reports JSON"), content.linked_reports),
+      field("recommendation", label("建议", "Recommendation"), content.recommendation)
+    ];
+  }
+  if (type === "originality_report") {
+    return [
+      field("target_asset_id", label("目标资产", "Target Asset"), content.target_asset_id),
+      field("source_asset_ids", label("来源资产", "Source Assets"), content.source_asset_ids),
+      field("similarity_checks", label("相似检查 JSON", "Similarity Checks JSON"), content.similarity_checks),
+      field("forbidden_element_hits", label("风险命中 JSON", "Forbidden Hits JSON"), content.forbidden_element_hits),
+      field("plot_skeleton_risk", label("情节骨架风险", "Plot Skeleton Risk"), content.plot_skeleton_risk),
+      field("character_setup_risk", label("角色配置风险", "Character Setup Risk"), content.character_setup_risk),
+      field("style_expression_risk", label("风格表达风险", "Style Expression Risk"), content.style_expression_risk),
+      field("risk_level", label("总风险", "Risk Level"), content.risk_level),
+      field("recommendation", label("建议", "Recommendation"), content.recommendation),
+      field("human_gate_required", label("人工门禁", "Human Gate Required"), content.human_gate_required ? "true" : "false", "checkbox")
+    ];
+  }
+  if (type === "publish_gate_report") {
+    return [
+      field("target_asset_id", label("目标资产", "Target Asset"), content.target_asset_id),
+      field("gates", label("门禁 JSON", "Gates JSON"), content.gates),
+      field("decision", label("决策", "Decision"), content.decision),
+      field("blocking_issues", label("阻断问题 JSON", "Blocking Issues JSON"), content.blocking_issues),
+      field("required_reports", label("所需报告 JSON", "Required Reports JSON"), content.required_reports),
+      field("human_override", label("人工覆盖", "Human Override"), content.human_override ? "true" : "false", "checkbox")
+    ];
+  }
+  if (type === "release_package") {
+    return [
+      field("target_asset_id", label("目标资产", "Target Asset"), content.target_asset_id),
+      field("publish_gate_report_id", label("门禁报告", "Publish Gate Report"), content.publish_gate_report_id),
+      field("title_candidates", label("候选标题", "Title Candidates"), content.title_candidates),
+      field("summary", label("摘要", "Summary"), content.summary),
+      field("tags", label("标签", "Tags"), content.tags),
+      field("channel", label("渠道", "Channel"), content.channel),
+      field("status", label("状态", "Status"), content.status)
+    ];
+  }
+  if (
+    [
+      "common_novel_analysis_report",
+      "web_fiction_business_analysis_report",
+      "published_fiction_analysis_report",
+      "classic_literary_analysis_report",
+      "analysis_conversion_report"
+    ].includes(type)
+  ) {
+    return [
+      field("source_asset_id", label("源资产", "Source Asset"), content.source_asset_id ?? content.source_report_id),
+      field("copyright_risk", label("版权风险", "Copyright Risk"), content.copyright_risk ?? metadata.copyright_risk),
+      field("abstraction_level", label("抽象层级", "Abstraction Level"), content.abstraction_level ?? metadata.abstraction_level),
+      field("analysis_metrics", label("分析指标 JSON", "Analysis Metrics JSON"), content.analysis_metrics),
+      field("reusable_findings", label("可复用发现", "Reusable Findings"), analysisReusableItems(type, content)),
+      field("conversion_targets", label("转换目标", "Conversion Targets"), content.conversion_targets),
+      field("created_assets", label("已创建资产 JSON", "Created Assets JSON"), content.created_assets),
+      field("rejected_items", label("拒绝项 JSON", "Rejected Items JSON"), content.rejected_items)
+    ];
+  }
+  const phase3Editable = new Set([
+    "platform_profile",
+    "genre_market_profile",
+    "topic_seed",
+    "topic_fit_report",
+    "world_bible",
+    "character_card",
+    "continuity_bible",
+    "foreshadowing_thread",
+    "power_scale_rule",
+    "style_profile",
+    "style_decomposition_report",
+    "style_blend_preset",
+    "quality_standard_profile",
+    "review_rule_pack",
+    "quality_score_report",
+    "style_review_report",
+    "common_novel_analysis_report",
+    "web_fiction_business_analysis_report",
+    "published_fiction_analysis_report",
+    "classic_literary_analysis_report",
+    "analysis_conversion_report",
+    "writing_template",
+    "craft_template"
+  ]);
+  if (phase3Editable.has(type)) {
+    return creativeBusinessFields(type, content, field, label);
+  }
   return [];
+}
+
+function creativeBusinessFields(
+  type: string,
+  content: Record<string, unknown>,
+  field: (key: string, title: string, value: unknown, input?: TypedEditField["input"]) => TypedEditField,
+  label: (cn: string, en: string) => string
+): TypedEditField[] {
+  const map: Record<string, Array<[string, string, string, TypedEditField["input"]?]>> = {
+    platform_profile: [
+      ["platform_id", "平台 ID", "Platform ID"],
+      ["platform_name", "平台名称", "Platform Name"],
+      ["business_model", "商业模型", "Business Model"],
+      ["reader_expectation", "读者预期", "Reader Expectations"],
+      ["chapter_length_range", "章节字数范围 JSON", "Chapter Length Range JSON"],
+      ["update_frequency", "更新频率", "Update Frequency"],
+      ["opening_rules", "开篇规则 JSON", "Opening Rules JSON"],
+      ["review_risks", "审核/商业风险", "Review Risks"],
+      ["genre_fit", "适配题材", "Genre Fit"],
+      ["style_tendency", "文风倾向", "Style Tendency"]
+    ],
+    genre_market_profile: [
+      ["genre", "题材", "Genre"],
+      ["platform_id", "平台 ID", "Platform ID"],
+      ["reader_promise", "读者承诺", "Reader Promise"],
+      ["common_hooks", "常用钩子", "Common Hooks"],
+      ["common_conflicts", "常用冲突", "Common Conflicts"],
+      ["fatigue_points", "疲劳点", "Fatigue Points"],
+      ["differentiation_axes", "差异化轴", "Differentiation Axes"],
+      ["chapter_rhythm_template", "章节节奏模板", "Chapter Rhythm Template"]
+    ],
+    topic_seed: [
+      ["logline", "一句话卖点", "Logline"],
+      ["reader_attraction", "读者吸引点", "Reader Attraction"],
+      ["differentiation", "差异化", "Differentiation"],
+      ["platform_id", "平台 ID", "Platform ID"],
+      ["genre", "题材", "Genre"],
+      ["reader_promise", "读者承诺", "Reader Promise"],
+      ["differentiation_axes", "差异化轴", "Differentiation Axes"]
+    ],
+    topic_fit_report: [
+      ["topic_seed_id", "题材种子", "Topic Seed"],
+      ["platform_id", "平台 ID", "Platform ID"],
+      ["genre", "题材", "Genre"],
+      ["scores", "评分 JSON", "Scores JSON"],
+      ["recommendation", "建议", "Recommendation"],
+      ["must_adjust", "必须调整", "Must Adjust"]
+    ],
+    asset_collection: [
+      ["purpose", "集合用途", "Purpose"],
+      ["asset_paths", "资产路径", "Asset Paths"],
+      ["selection_criteria", "筛选标准", "Selection Criteria"],
+      ["use_cases", "适用场景", "Use Cases"],
+      ["excluded_assets", "排除资产", "Excluded Assets"]
+    ],
+    world_bible: [
+      ["setting", "设定概述", "Setting"],
+      ["rules", "世界规则", "Rules"],
+      ["conflict_system", "冲突系统", "Conflict System"]
+    ],
+    character_card: [
+      ["role", "角色定位", "Role"],
+      ["external_goal", "外部目标", "External Goal"],
+      ["internal_need", "内部需求", "Internal Need"],
+      ["motivation_chain", "动机链", "Motivation Chain"]
+    ],
+    continuity_bible: [
+      ["project_id", "项目 ID", "Project ID"],
+      ["worldview_rules", "世界观规则", "Worldview Rules"],
+      ["timeline", "时间线", "Timeline"],
+      ["entities", "实体状态", "Entities"],
+      ["open_threads", "开放线程", "Open Threads"],
+      ["constraints", "连续性约束", "Constraints"]
+    ],
+    foreshadowing_thread: [
+      ["thread_id", "伏笔 ID", "Thread ID"],
+      ["setup", "投放", "Setup"],
+      ["payoff_plan", "回收计划", "Payoff Plan"],
+      ["status", "状态", "Status"],
+      ["related_chapters", "相关章节", "Related Chapters"]
+    ],
+    power_scale_rule: [
+      ["scale_id", "体系 ID", "Scale ID"],
+      ["levels", "等级", "Levels"],
+      ["constraints", "约束", "Constraints"],
+      ["violation_checks", "违规检查", "Violation Checks"]
+    ],
+    style_profile: [
+      ["style_id", "文风 ID", "Style ID"],
+      ["name", "名称", "Name"],
+      ["scope", "范围", "Scope"],
+      ["source_boundary", "来源边界 JSON", "Source Boundary JSON"],
+      ["language_parameters", "语言参数 JSON", "Language Parameters JSON"],
+      ["narrative_parameters", "叙事参数 JSON", "Narrative Parameters JSON"],
+      ["emotion_parameters", "情绪参数 JSON", "Emotion Parameters JSON"],
+      ["forbidden_patterns", "禁用模式", "Forbidden Patterns"]
+    ],
+    style_decomposition_report: [
+      ["source_asset_id", "来源资产", "Source Asset"],
+      ["extract_level", "提取级别", "Extract Level"],
+      ["style_features", "风格特征 JSON", "Style Features JSON"],
+      ["usable_parameters", "可用参数 JSON", "Usable Parameters JSON"],
+      ["do_not_copy", "禁止复制", "Do Not Copy"],
+      ["risk_level", "风险", "Risk Level"]
+    ],
+    style_blend_preset: [
+      ["name", "名称", "Name"],
+      ["components", "混合组件 JSON", "Components JSON"],
+      ["conflict_resolution", "冲突解决 JSON", "Conflict Resolution JSON"]
+    ],
+    style_review_report: [
+      ["target_draft_id", "目标草稿", "Target Draft"],
+      ["expected_style_profile_id", "目标文风", "Expected Style Profile"],
+      ["style_match_score", "匹配分", "Style Match Score", "number"],
+      ["drift_points", "漂移点", "Drift Points"],
+      ["ai_taste_points", "AI 味问题", "AI Taste Points"],
+      ["rewrite_suggestions", "改写建议", "Rewrite Suggestions"],
+      ["copyright_style_risk", "版权风格风险", "Copyright Style Risk"]
+    ],
+    quality_standard_profile: [
+      ["standard_id", "标准 ID", "Standard ID"],
+      ["name", "名称", "Name"],
+      ["platform_id", "平台 ID", "Platform ID"],
+      ["genre", "题材", "Genre"],
+      ["target_length", "篇幅目标", "Target Length"],
+      ["dimensions", "维度 JSON", "Dimensions JSON"],
+      ["hard_gates", "硬门禁", "Hard Gates"]
+    ],
+    review_rule_pack: [
+      ["rule_pack_id", "规则包 ID", "Rule Pack ID"],
+      ["name", "名称", "Name"],
+      ["dimensions", "维度 JSON", "Dimensions JSON"],
+      ["checks", "检查项", "Checks"],
+      ["severity_policy", "严重度策略 JSON", "Severity Policy JSON"]
+    ],
+    quality_score_report: [
+      ["target_asset_id", "目标资产", "Target Asset"],
+      ["standard_id", "标准 ID", "Standard ID"],
+      ["overall_score", "总分", "Overall Score", "number"],
+      ["scores", "维度分 JSON", "Scores JSON"],
+      ["gate_results", "门禁结果 JSON", "Gate Results JSON"],
+      ["recommendation", "建议", "Recommendation"]
+    ],
+    writing_template: [
+      ["template_id", "模板 ID", "Template ID"],
+      ["name", "名称", "Name"],
+      ["template_kind", "模板类型", "Template Kind"],
+      ["structure", "结构", "Structure"],
+      ["usage_constraints", "使用约束", "Usage Constraints"],
+      ["anti_copy_rules", "防复制规则", "Anti-copy Rules"]
+    ],
+    craft_template: [
+      ["template_id", "模板 ID", "Template ID"],
+      ["name", "名称", "Name"],
+      ["craft_domain", "技法领域", "Craft Domain"],
+      ["pattern", "模式", "Pattern"],
+      ["use_cases", "适用场景", "Use Cases"],
+      ["risks", "风险", "Risks"]
+    ]
+  };
+  return (map[type] ?? Object.keys(content).map((key) => [key, key, key] as [string, string, string])).map(([key, cn, en, input]) =>
+    field(key, label(cn, en), content[key], input ?? (typeof content[key] === "number" ? "number" : "textarea"))
+  );
 }
 
 function typedFieldDisplayValue(value: unknown): string {
   if (Array.isArray(value)) {
+    if (value.some((item) => typeof item === "object" && item !== null)) {
+      return JSON.stringify(value, null, 2);
+    }
     return value.map(String).join("\n");
+  }
+  if (typeof value === "object" && value !== null) {
+    return JSON.stringify(value, null, 2);
   }
   if (typeof value === "boolean") {
     return value ? "true" : "false";
   }
   return value === undefined || value === null ? "" : String(value);
+}
+
+function formatJson(value: unknown): string {
+  if (value === undefined || value === null || value === "") {
+    return "-";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  return JSON.stringify(value, null, 2);
 }
 
 function typedEditPayload(fields: TypedEditField[], values: Record<string, string>): Record<string, unknown> {
@@ -3284,6 +5530,206 @@ function HandoffsPanel(props: {
   );
 }
 
+function AnalysisPanel(props: {
+  language: Language;
+  tab: TabKey;
+  reports: AnalysisReportRow[];
+  assets: AssetRow[];
+  handoffs: HandoffRow[];
+  sourcePath: string;
+  setSourcePath: (value: string) => void;
+  reportPath: string;
+  setReportPath: (value: string) => void;
+  targets: string;
+  setTargets: (value: string) => void;
+  busy: boolean;
+  onRunAnalysis: (analysisType: string) => void;
+  onCreateHandoff: (analysisType: string) => void;
+  onConvert: (reportPath?: string) => void;
+  onOpenAsset: (path: string) => void;
+  onOpenHandoff: (path: string) => void;
+}) {
+  const zh = props.language === "zh";
+  const selectedType = analysisTypeForTab(props.tab);
+  const [analysisType, setAnalysisType] = useState(selectedType);
+  useEffect(() => {
+    setAnalysisType(selectedType);
+  }, [selectedType]);
+  const visibleReports = props.reports.filter((report) => {
+    if (props.tab === "analysis_center" || props.tab === "asset_converter") return true;
+    return report.type === analysisReportTypeForRequest(analysisType);
+  });
+  const analysisHandoffs = props.handoffs.filter((handoff) =>
+    [
+      "hot_novel_business_deconstruction",
+      "published_fiction_craft_analysis",
+      "classic_literary_depth_analysis",
+      "analysis_to_asset_conversion"
+    ].includes(handoff.operation)
+  );
+  const reportCounts = {
+    web: props.reports.filter((report) => report.type === "web_fiction_business_analysis_report").length,
+    published: props.reports.filter((report) => report.type === "published_fiction_analysis_report").length,
+    classic: props.reports.filter((report) => report.type === "classic_literary_analysis_report").length,
+    conversions: props.reports.filter((report) => report.type === "analysis_conversion_report").length
+  };
+  return (
+    <section className="panel">
+      <PanelHeader title={copy[props.language].tabs[props.tab]} icon={<FileSearch size={18} />} />
+      <div className="typedGrid">
+        <Metric label={zh ? "网文商业报告" : "Web fiction reports"} value={String(reportCounts.web)} />
+        <Metric label={zh ? "出版技法报告" : "Published craft reports"} value={String(reportCounts.published)} />
+        <Metric label={zh ? "名著深读报告" : "Classic reports"} value={String(reportCounts.classic)} />
+        <Metric label={zh ? "转换记录" : "Conversions"} value={String(reportCounts.conversions)} />
+      </div>
+      <div className="noticeLine">
+        {zh
+          ? "分析报告只用于结构学习和审稿观察，默认不进入正文生成 RAG；必须先转换成抽象资产。"
+          : "Analysis reports are for structural learning and review only. They do not enter generation RAG until converted into abstract assets."}
+      </div>
+      <div className="formGrid wide">
+        <label className="inlineField">
+          <span>{zh ? "源资产路径" : "Source asset path"}</span>
+          <input value={props.sourcePath} onChange={(event) => props.setSourcePath(event.target.value)} />
+        </label>
+        <label className="inlineField">
+          <span>{zh ? "分析类型" : "Analysis type"}</span>
+          <select value={analysisType} onChange={(event) => setAnalysisType(event.target.value)}>
+            <option value="web_fiction_business">{zh ? "网文商业结构" : "Web fiction business"}</option>
+            <option value="published_fiction">{zh ? "出版小说技法" : "Published fiction craft"}</option>
+            <option value="classic_literary">{zh ? "经典名著深读" : "Classic literary depth"}</option>
+            <option value="common">{zh ? "通用小说结构" : "Common novel analysis"}</option>
+          </select>
+        </label>
+        <button className="primaryButton" disabled={props.busy || !props.sourcePath} onClick={() => props.onRunAnalysis(analysisType)}>
+          <Play size={18} />
+          {zh ? "运行本地分析" : "Run Local Analysis"}
+        </button>
+        <button className="secondaryButton" disabled={props.busy || !props.sourcePath} onClick={() => props.onCreateHandoff(analysisType)}>
+          <Workflow size={18} />
+          Claude Code
+        </button>
+      </div>
+      <div className="processStrip">
+        {["select source", "analyze", "human/model handoff", "convert", "review assets"].map((step) => (
+          <span key={step}>
+            <CheckCircle2 size={16} />
+            {step}
+          </span>
+        ))}
+      </div>
+      {props.assets.length ? (
+        <div className="assetChipGrid">
+          {props.assets.slice(0, 10).map((asset) => (
+            <button className="linkButton" key={asset.path} onClick={() => props.setSourcePath(asset.path)}>
+              {asset.type}: {asset.title || asset.path}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="splitGrid">
+        <div className="panel nestedPanel">
+          <PanelHeader title={zh ? "分析报告" : "Analysis Reports"} icon={<Layers3 size={18} />} />
+          <DataTable
+            emptyText={zh ? "暂无分析报告" : "No analysis reports"}
+            columns={zh ? ["类型", "标题", "风险", "RAG", "转换资产", "操作"] : ["Type", "Title", "Risk", "RAG", "Converted", "Action"]}
+            rows={visibleReports.map((report) => [
+              <span className="badge muted" key={`type-${report.path}`}>{report.type}</span>,
+              report.title,
+              <span className={report.copyright_risk === "high" ? "badge warn" : "badge ok"} key={`risk-${report.path}`}>
+                {report.copyright_risk || "unknown"}
+              </span>,
+              report.use_in_generation_rag ? "enabled" : "blocked",
+              String(report.created_assets),
+              <div className="tableActions" key={`actions-${report.path}`}>
+                <button className="linkButton" onClick={() => props.onOpenAsset(report.path)}>{zh ? "打开" : "Open"}</button>
+                {report.type !== "analysis_conversion_report" ? (
+                  <button
+                    className="secondaryButton tableButton"
+                    onClick={() => {
+                      props.setReportPath(report.path);
+                      props.onConvert(report.path);
+                    }}
+                    disabled={props.busy}
+                  >
+                    {zh ? "转换" : "Convert"}
+                  </button>
+                ) : null}
+              </div>
+            ])}
+          />
+        </div>
+        <div className="panel nestedPanel">
+          <PanelHeader title={zh ? "统一资产转换器" : "Unified Asset Converter"} icon={<Workflow size={18} />} />
+          <div className="formStack">
+            <label className="inlineField">
+              <span>{zh ? "报告路径" : "Report path"}</span>
+              <input value={props.reportPath} onChange={(event) => props.setReportPath(event.target.value)} />
+            </label>
+            <label className="inlineField">
+              <span>{zh ? "目标资产类型" : "Target asset types"}</span>
+              <input value={props.targets} onChange={(event) => props.setTargets(event.target.value)} />
+            </label>
+            <button className="primaryButton" disabled={props.busy || !props.reportPath} onClick={() => props.onConvert(props.reportPath)}>
+              <Archive size={18} />
+              {zh ? "转换为抽象资产" : "Convert to Abstract Assets"}
+            </button>
+          </div>
+          <ul className="checkList">
+            {(zh
+              ? ["报告本身不进正文 RAG", "高版权风险默认阻断素材/模板化", "输出资产带 reuse_scope 与 abstraction_level", "转换记录可追溯"]
+              : ["Reports stay out of generation RAG", "High copyright risk blocks material/template conversion", "Outputs carry reuse_scope and abstraction_level", "Conversion is traceable"]
+            ).map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="panel nestedPanel">
+        <PanelHeader title={zh ? "分析 Handoff" : "Analysis Handoffs"} icon={<Workflow size={18} />} />
+        <DataTable
+          emptyText={zh ? "暂无分析 handoff" : "No analysis handoffs"}
+          columns={zh ? ["操作", "状态", "期望输出", "来源", "路径"] : ["Operation", "Status", "Expected", "Source", "Path"]}
+          rows={analysisHandoffs.map((handoff) => [
+            handoff.operation,
+            <span className={handoff.status === "completed" ? "badge ok" : handoff.status === "failed" ? "badge warn" : "badge muted"} key={`status-${handoff.path}`}>
+              {handoff.status}
+            </span>,
+            handoff.expected_output_type,
+            handoff.source_path,
+            <button className="linkButton" onClick={() => props.onOpenHandoff(handoff.path)} key={handoff.path}>
+              {handoff.path}
+            </button>
+          ])}
+        />
+      </div>
+    </section>
+  );
+}
+
+function analysisTypeForTab(tab: TabKey): string {
+  const mapping: Partial<Record<TabKey, string>> = {
+    web_fiction_analysis: "web_fiction_business",
+    published_fiction_analysis: "published_fiction",
+    classic_literary_analysis: "classic_literary",
+    asset_converter: "web_fiction_business",
+    analysis_center: "web_fiction_business"
+  };
+  return mapping[tab] ?? "web_fiction_business";
+}
+
+function analysisReportTypeForRequest(analysisType: string): string {
+  const mapping: Record<string, string> = {
+    common: "common_novel_analysis_report",
+    web_fiction_business: "web_fiction_business_analysis_report",
+    published_fiction: "published_fiction_analysis_report",
+    classic_literary: "classic_literary_analysis_report"
+  };
+  return mapping[analysisType] ?? "web_fiction_business_analysis_report";
+}
+
 function BatchPanel(props: {
   language: Language;
   batchInput: string;
@@ -3632,6 +6078,93 @@ function ReviewPanel(props: {
             </button>
           ])}
         />
+      </div>
+    </section>
+  );
+}
+
+function QualityGatePanel(props: {
+  language: Language;
+  mode: "originality_center" | "publishing_center";
+  assets: AssetRow[];
+  drafts: DraftWorkbench | null;
+  selectedDraft: string;
+  setSelectedDraft: (value: string) => void;
+  selectedWorkspace: string;
+  setSelectedWorkspace: (value: string) => void;
+  busy: boolean;
+  onRunOriginality: () => void;
+  onRunChapterAudit: () => void;
+  onRunPublishGate: () => void;
+  onCreateReleasePackage: () => void;
+  onOpenAsset: (path: string) => void;
+}) {
+  const zh = props.language === "zh";
+  const reportTypes =
+    props.mode === "originality_center"
+      ? ["originality_report", "chapter_audit_report"]
+      : ["publish_gate_report", "release_package", "chapter_audit_report", "originality_report"];
+  const reports = props.assets.filter((asset) => reportTypes.includes(asset.type));
+  const latest = (type: string) => reports.find((asset) => asset.type === type);
+  return (
+    <section className="workspaceGrid">
+      <div className="panel">
+        <PanelHeader
+          title={props.mode === "originality_center" ? (zh ? "原创性保护工作台" : "Originality Protection Workbench") : (zh ? "发布门禁工作台" : "Publishing Gate Workbench")}
+          icon={props.mode === "originality_center" ? <ShieldCheck size={18} /> : <Send size={18} />}
+        />
+        <div className="formGrid">
+          <SelectPath label={zh ? "目标草稿" : "Target Draft"} latestLabel={zh ? "请选择草稿" : "Select Draft"} value={props.selectedDraft} onChange={props.setSelectedDraft} rows={props.drafts?.drafts ?? []} />
+          <SelectPath label={zh ? "项目工作区" : "Project Workspace"} latestLabel={zh ? "当前项目" : "Current Project"} value={props.selectedWorkspace} onChange={props.setSelectedWorkspace} rows={props.drafts?.workspace ?? []} />
+        </div>
+        <div className="summaryBand">
+          <Metric label={zh ? "原创性报告" : "Originality"} value={latest("originality_report")?.risk_level || "-"} />
+          <Metric label={zh ? "章节审稿" : "Chapter Audit"} value={latest("chapter_audit_report")?.risk_level || "-"} />
+          <Metric label={zh ? "发布门禁" : "Publish Gate"} value={latest("publish_gate_report")?.risk_level || "-"} />
+          <Metric label={zh ? "发布包" : "Release"} value={latest("release_package")?.asset_status || latest("release_package")?.risk_level || "-"} />
+        </div>
+        <div className="quickActions">
+          <button className="primaryButton" disabled={props.busy || !props.selectedDraft} onClick={props.onRunOriginality}>
+            <ShieldCheck size={18} />
+            {zh ? "运行原创性检查" : "Run Originality Check"}
+          </button>
+          <button className="secondaryButton" disabled={props.busy || !props.selectedDraft} onClick={props.onRunChapterAudit}>
+            <FileSearch size={18} />
+            {zh ? "生成章节审稿" : "Create Chapter Audit"}
+          </button>
+          <button className="secondaryButton" disabled={props.busy || !props.selectedDraft} onClick={props.onRunPublishGate}>
+            <CheckCircle2 size={18} />
+            {zh ? "执行发布门禁" : "Run Publish Gate"}
+          </button>
+          <button className="primaryButton" disabled={props.busy || !props.selectedDraft} onClick={props.onCreateReleasePackage}>
+            <Send size={18} />
+            {zh ? "生成发布包" : "Create Release Package"}
+          </button>
+        </div>
+      </div>
+      <div className="panel">
+        <PanelHeader title={zh ? "门禁证据链" : "Gate Evidence Chain"} icon={<ListChecks size={18} />} />
+        <DataTable
+          emptyText={zh ? "还没有门禁报告" : "No gate reports yet"}
+          columns={zh ? ["类型", "标题", "风险/状态", "路径"] : ["Type", "Title", "Risk/Status", "Path"]}
+          rows={reports.map((asset) => [
+            asset.type,
+            asset.title,
+            asset.risk_level || asset.asset_status || "-",
+            <button className="linkButton" key={asset.path} onClick={() => props.onOpenAsset(asset.path)}>
+              {asset.path}
+            </button>
+          ])}
+        />
+      </div>
+      <div className="panel">
+        <PanelHeader title={zh ? "V6 发布前约束" : "V6 Pre-release Constraints"} icon={<SlidersHorizontal size={18} />} />
+        <ul className="checkList">
+          <li>{zh ? "章节生成必须携带平台、题材、精品标准、文风和连续性设定。" : "Chapter production must carry platform, genre, quality, style, and continuity profiles."}</li>
+          <li>{zh ? "原创性报告高风险会阻断发布门禁。" : "High originality risk blocks the publish gate."}</li>
+          <li>{zh ? "发布包只能从通过门禁的草稿生成；未通过时状态为 blocked。" : "Release packages are ready only after the gate passes; otherwise they are blocked."}</li>
+          <li>{zh ? "报告资产都按项目隔离，并可从资产详情页追溯来源。" : "All report assets remain project-scoped and traceable from asset details."}</li>
+        </ul>
       </div>
     </section>
   );

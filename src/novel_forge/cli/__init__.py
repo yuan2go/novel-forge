@@ -403,6 +403,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"{category}: {count}")
             return 0
         if args.command == "validate":
+            LocalStorage(args.root).ensure_layout()
             ok, errors = pipeline.validate_project(args.root)
             if ok:
                 print("validation passed")

@@ -16,6 +16,77 @@ COMMON_CONTEXT_FILES = [
     "docs/09-skills/agent-skill-map.md",
 ]
 
+ANALYSIS_HANDOFF_DEFINITIONS = {
+    "web_fiction_business": {
+        "operation": "hot_novel_business_deconstruction",
+        "skill": "hot-novel-business-deconstruction",
+        "expected_output_type": "web_fiction_business_analysis_report",
+        "expected_output_dir": "data/analysis",
+        "title": "Claude Code web fiction business analysis",
+        "purpose": "extract abstract commercial structure, reader promise, hooks, pacing, and payoff loops",
+        "fallback_categories": ["cleaned", "raw", "decompositions"],
+        "skill_files": [
+            "skills/hot-novel-business-deconstruction/SKILL.md",
+            "skills/anti-copy-abstraction/SKILL.md",
+        ],
+        "acceptance": [
+            "Output type is web_fiction_business_analysis_report and passes schema validation.",
+            "Report contains platform_pattern, reader_promise, hook_system, payoff_loop, pacing_model, monetization_nodes, abstraction_boundary, and reusable_assets.",
+        ],
+    },
+    "published_fiction": {
+        "operation": "published_fiction_craft_analysis",
+        "skill": "published-fiction-craft-analysis",
+        "expected_output_type": "published_fiction_analysis_report",
+        "expected_output_dir": "data/analysis",
+        "title": "Claude Code published fiction craft analysis",
+        "purpose": "extract abstract scene craft, narrative distance, character arc, subtext, and transferable techniques",
+        "fallback_categories": ["cleaned", "raw", "decompositions"],
+        "skill_files": [
+            "skills/published-fiction-craft-analysis/SKILL.md",
+            "skills/anti-copy-abstraction/SKILL.md",
+        ],
+        "acceptance": [
+            "Output type is published_fiction_analysis_report and passes schema validation.",
+            "Report contains craft_dimensions, scene_design, character_arc, narrative_distance, language_texture, transferable_techniques, and do_not_copy.",
+        ],
+    },
+    "classic_literary": {
+        "operation": "classic_literary_depth_analysis",
+        "skill": "classic-literary-depth-analysis",
+        "expected_output_type": "classic_literary_analysis_report",
+        "expected_output_dir": "data/analysis",
+        "title": "Claude Code classic literary depth analysis",
+        "purpose": "extract abstract theme systems, symbol functions, social relation models, and fate curves",
+        "fallback_categories": ["cleaned", "raw", "decompositions"],
+        "skill_files": [
+            "skills/classic-literary-depth-analysis/SKILL.md",
+            "skills/anti-copy-abstraction/SKILL.md",
+        ],
+        "acceptance": [
+            "Output type is classic_literary_analysis_report and passes schema validation.",
+            "Report contains deep_structure, theme_system, symbol_system, social_relation_model, fate_curve, non_transferable_elements, and transferable_abstractions.",
+        ],
+    },
+    "analysis_conversion": {
+        "operation": "analysis_to_asset_conversion",
+        "skill": "analysis-to-asset-conversion",
+        "expected_output_type": "analysis_conversion_report",
+        "expected_output_dir": "data/analysis",
+        "title": "Claude Code analysis-to-asset conversion",
+        "purpose": "convert an analysis report into safe abstract creative assets and rejected high-risk items",
+        "fallback_categories": ["analysis", "decompositions"],
+        "skill_files": [
+            "skills/analysis-to-asset-conversion/SKILL.md",
+            "skills/anti-copy-abstraction/SKILL.md",
+        ],
+        "acceptance": [
+            "Output type is analysis_conversion_report and passes schema validation.",
+            "Report records source_report_id, conversion_targets, created_assets, rejected_items, reuse_scope, copyright_risk, and abstraction_level.",
+        ],
+    },
+}
+
 
 def create_deconstruction_handoff(
     storage: LocalStorage,
@@ -105,6 +176,51 @@ def create_knowledge_handoff(
             "KnowledgeCard content includes principles and story-safe constraints or checks derived from the source.",
             "Metadata declares an abstract-structure or knowledge-transformation copyright boundary.",
             "The output avoids high-risk operational advice, unverifiable certainty, and exposition dumps intended for direct prose insertion.",
+        ],
+    )
+
+
+def create_analysis_handoff(
+    storage: LocalStorage,
+    input_path: str | None = None,
+    analysis_type: str = "web_fiction_business",
+    workspace_path: str | None = None,
+    purpose: str = "",
+) -> Path:
+    definition = _analysis_definition(analysis_type)
+    source_path = _resolve_input(storage, input_path, fallback_categories=list(definition["fallback_categories"]))
+    source_asset = storage.read_asset(source_path)
+    payload = {
+        "analysis_type": analysis_type,
+        "purpose": purpose or str(definition["purpose"]),
+        "workspace_path": workspace_path or source_asset.metadata.get("workspace_path", ""),
+        "source_asset": _asset_summary(storage, source_path, source_asset),
+        "conversion_policy": "analysis reports are not generation RAG inputs; convert into abstract assets first",
+    }
+    return _write_handoff(
+        storage=storage,
+        operation=str(definition["operation"]),
+        skill=str(definition["skill"]),
+        title=f"{definition['title']}: {source_asset.title or source_asset.name}",
+        source_path=source_path,
+        source_asset=source_asset,
+        payload=payload,
+        expected_output_type=str(definition["expected_output_type"]),
+        expected_output_dir=str(definition["expected_output_dir"]),
+        skill_files=list(definition["skill_files"]),
+        instructions=[
+            "Open this handoff in Claude Code and use Codex as the analysis model in the current operator session.",
+            "Read the source asset from the referenced path; do not copy source prose into this handoff or downstream assets.",
+            "Apply the recorded analysis skill and keep the result at abstract mechanism, craft, structure, or template level.",
+            f"Write one schema-backed {definition['expected_output_type']} JSON asset under {definition['expected_output_dir']}.",
+            "Set metadata.use_in_generation_rag to false on the analysis report.",
+            "Run make validate after writing the asset and record any validation failures in the handoff status if follow-up is needed.",
+        ],
+        acceptance_checks=[
+            *list(definition["acceptance"]),
+            "Metadata declares an abstract-structure copyright boundary.",
+            "No protected expression, names, settings, or source-specific plot sequence is reused as generation material.",
+            "High-risk source material is marked for human review before conversion.",
         ],
     )
 
@@ -224,6 +340,28 @@ def _asset_summary(storage: LocalStorage, path: Path, asset: BaseAsset) -> dict[
         "rights_authorization": rights.get("authorization", ""),
         "allow_downstream_generation": rights.get("allow_downstream_generation", False),
     }
+
+
+def _analysis_definition(analysis_type: str) -> dict[str, Any]:
+    key = analysis_type.strip().lower().replace("-", "_")
+    aliases = {
+        "web": "web_fiction_business",
+        "web_fiction": "web_fiction_business",
+        "hot_novel_business": "web_fiction_business",
+        "published": "published_fiction",
+        "published_fiction_craft": "published_fiction",
+        "classic": "classic_literary",
+        "classic_literary_depth": "classic_literary",
+        "converter": "analysis_conversion",
+        "conversion": "analysis_conversion",
+        "analysis_to_asset": "analysis_conversion",
+    }
+    normalized = aliases.get(key, key)
+    try:
+        return ANALYSIS_HANDOFF_DEFINITIONS[normalized]
+    except KeyError as exc:
+        allowed = ", ".join(sorted(ANALYSIS_HANDOFF_DEFINITIONS))
+        raise ValueError(f"unsupported analysis handoff type: {analysis_type}; allowed: {allowed}") from exc
 
 
 def _relative_path(storage: LocalStorage, path: str | Path) -> str:

@@ -5,6 +5,7 @@ from pathlib import Path
 from novel_forge.agents import agent_runtime_profile, enforce_agent_action
 from novel_forge.model_adapters import ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.common import read_previous, run_metadata
+from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.schemas import DraftChapter
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import build_rag_context, retrieval_metadata, retrieval_reference_ids
@@ -14,6 +15,7 @@ def draft(storage: LocalStorage, input_path: str | None = None, model: ModelAdap
     agent_profile = agent_runtime_profile("draft")
     model = model or model_from_env("draft")
     plan = read_previous(storage, "chapter_plans", input_path)
+    production_context = build_production_context(storage, plan, input_path=input_path)
     retrieved_context = build_rag_context(
         storage,
         plan,
@@ -26,6 +28,7 @@ def draft(storage: LocalStorage, input_path: str | None = None, model: ModelAdap
             "plan": plan.content,
             "source_asset_id": plan.id,
             "retrieved_context": retrieved_context,
+            "production_context": production_context,
         }),
     )
     enforce_agent_action(agent_profile, "write_draft_chapter", "draft_chapter")
@@ -47,6 +50,7 @@ def draft(storage: LocalStorage, input_path: str | None = None, model: ModelAdap
             "text": draft_text,
             "model_output": generated,
             "retrieved_context": retrieved_context,
+            "production_context": production_context,
             "copyright_boundary": generated.get("copyright_boundary")
             or "original draft generated from chapter plan; no reference expression copied",
         },
@@ -54,6 +58,16 @@ def draft(storage: LocalStorage, input_path: str | None = None, model: ModelAdap
             "model": model.name,
             "provider": generated.get("provider", model.name),
             "agent_runtime": agent_profile,
+            "project_id": production_context["project"].get("project_id", ""),
+            "workspace_path": production_context["project"].get("workspace_path", ""),
+            "platform_profile_id": _profile_id(production_context, "platform_profile"),
+            "genre_market_profile_id": _profile_id(production_context, "genre_market_profile"),
+            "quality_standard_profile_id": _profile_id(production_context, "quality_standard_profile"),
+            "style_profile_id": _profile_id(production_context, "style_profile"),
+            "style_blend_preset_id": _profile_id(production_context, "style_blend_preset"),
+            "continuity_bible_id": _profile_id(production_context, "continuity_bible"),
+            "preflight_ready": production_context["preflight"].get("ready", False),
+            "preflight_warnings": production_context["preflight"].get("warnings", []),
             **retrieval_metadata(retrieved_context),
             "run_metadata": run_metadata(
                 "draft",
@@ -62,7 +76,11 @@ def draft(storage: LocalStorage, input_path: str | None = None, model: ModelAdap
                 model=generated.get("model", model.name),
             ),
         },
-        references=retrieval_reference_ids(plan.id, retrieved_context),
+        references=filter_project_safe_references(
+            storage,
+            str(production_context["project"].get("project_id", "")),
+            _dedupe([*retrieval_reference_ids(plan.id, retrieved_context), *production_context.get("profile_references", [])]),
+        ),
     )
     return storage.write_asset("drafts", asset)
 
@@ -70,3 +88,19 @@ def draft(storage: LocalStorage, input_path: str | None = None, model: ModelAdap
 def _checked_model_generate(agent_profile: dict, model: ModelAdapter, prompt: str, context: dict) -> dict:
     enforce_agent_action(agent_profile, "call_model_adapter")
     return model.generate(prompt, context)
+
+
+def _profile_id(context: dict, asset_type: str) -> str:
+    profiles = context.get("profiles", {}) if isinstance(context.get("profiles", {}), dict) else {}
+    profile = profiles.get(asset_type)
+    return str(profile.get("id", "")) if isinstance(profile, dict) else ""
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if value and value not in seen:
+            seen.add(value)
+            result.append(value)
+    return result

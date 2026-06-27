@@ -204,8 +204,22 @@ class ModuleServiceTests(unittest.TestCase):
             asset = storage.read_asset(review)
 
             self.assertIn("quality_gates", asset.content)
+            self.assertIn("quality_standard_evaluation", asset.content)
+            self.assertIn("production_context", asset.content)
+            self.assertIn("quality_score_report_path", asset.metadata)
+            self.assertIn("style_review_report_path", asset.metadata)
+            self.assertIn("originality_report_path", asset.metadata)
+            self.assertIn("chapter_audit_report_path", asset.metadata)
             self.assertIn("character_motivation_chain", asset.content["quality_gates"]["blocked_dimensions"])
             self.assertTrue(any(issue.get("reviewer") == "local-creative-gate" for issue in asset.issues))
+            quality_report = storage.read_asset(asset.metadata["quality_score_report_path"])
+            style_report = storage.read_asset(asset.metadata["style_review_report_path"])
+            originality_report = storage.read_asset(asset.metadata["originality_report_path"])
+            chapter_audit_report = storage.read_asset(asset.metadata["chapter_audit_report_path"])
+            self.assertEqual(quality_report.type, "quality_score_report")
+            self.assertEqual(style_report.type, "style_review_report")
+            self.assertEqual(originality_report.type, "originality_report")
+            self.assertEqual(chapter_audit_report.type, "chapter_audit_report")
 
     def test_ingest_many_rejects_directory_without_supported_sources(self):
         with tempfile.TemporaryDirectory() as tmp:

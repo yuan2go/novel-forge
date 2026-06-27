@@ -22,6 +22,7 @@ from novel_forge.modules.ingestion.service import ingest_many as ingest_many_ser
 from novel_forge.modules.knowledge.service import extract_knowledge as extract_knowledge_service
 from novel_forge.modules.materials.service import build_materials as build_materials_service
 from novel_forge.modules.outline.service import generate_outline as generate_outline_service
+from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.review.service import compare_reviews as compare_reviews_service
 from novel_forge.modules.review.service import review as review_service
 from novel_forge.modules.revision.service import revise as revise_service
@@ -453,6 +454,7 @@ def run_pipeline(root: str | Path, sample: bool = False) -> Path:
         workspace_path = outputs[-1]
         outputs.append(run_step("review", [draft_path], lambda: review(storage.root, str(draft_path))))
         review_path = outputs[-1]
+        outputs.extend(_review_derived_outputs(storage, review_path))
         outputs.append(
             run_step(
                 "update-workspace-review",
@@ -464,6 +466,10 @@ def run_pipeline(root: str | Path, sample: bool = False) -> Path:
         outputs.append(run_step("import-feedback", [feedback_path], lambda: import_feedback(storage.root, str(feedback_path))))
         outputs.append(run_step("analyze-feedback", [outputs[-1]], lambda: analyze_feedback(storage.root, str(outputs[-1]))))
         _attach_run_assets_to_workspace(storage, workspace_path, [*outputs, *status_paths])
+        binding_outputs = _workspace_binding_outputs(storage, workspace_path)
+        if binding_outputs:
+            outputs.extend(path for path in binding_outputs if path not in outputs)
+            _attach_run_assets_to_workspace(storage, workspace_path, binding_outputs)
     except Exception as exc:
         error_message = f"{type(exc).__name__}: {exc}"
         run_log = build_run_log(storage, status_paths)
@@ -529,6 +535,55 @@ def run_pipeline(root: str | Path, sample: bool = False) -> Path:
 
 def _relative_paths(storage: LocalStorage, paths: list[Path]) -> list[str]:
     return [str(path.relative_to(storage.root)) if path.is_absolute() else str(path) for path in paths]
+
+
+def _review_derived_outputs(storage: LocalStorage, review_path: Path) -> list[Path]:
+    try:
+        data = storage.read_json(review_path)
+    except Exception:
+        return []
+    if not isinstance(data, dict):
+        return []
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    outputs: list[Path] = []
+    for key in [
+        "quality_score_report_path",
+        "style_review_report_path",
+        "originality_report_path",
+        "chapter_audit_report_path",
+    ]:
+        value = metadata.get(key)
+        if isinstance(value, str) and value:
+            path = resolve_path(storage.root, value)
+            if path.exists():
+                outputs.append(path)
+    return outputs
+
+
+def _workspace_binding_outputs(storage: LocalStorage, workspace_path: Path | str) -> list[Path]:
+    try:
+        data = storage.read_json(resolve_path(storage.root, workspace_path))
+    except Exception:
+        return []
+    if not isinstance(data, dict):
+        return []
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    config = content.get("project_config", {}) if isinstance(content.get("project_config", {}), dict) else {}
+    outputs: list[Path] = []
+    for key in [
+        "platform_profile_path",
+        "genre_market_profile_path",
+        "quality_standard_profile_path",
+        "style_profile_path",
+        "style_blend_preset_path",
+        "continuity_bible_path",
+    ]:
+        value = config.get(key)
+        if isinstance(value, str) and value:
+            path = resolve_path(storage.root, value)
+            if path.exists() and path.is_file():
+                outputs.append(path)
+    return outputs
 
 
 def clean_previous_sample_run(storage: LocalStorage) -> list[str]:
@@ -657,17 +712,22 @@ def _attach_run_assets_to_workspace(storage: LocalStorage, workspace_path: Path,
         if not isinstance(data, dict) or data.get("type") == "project_workspace_state":
             continue
         metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
-        metadata.setdefault("project_id", project_id)
-        metadata.setdefault("workspace_id", workspace_id)
-        metadata.setdefault("workspace_path", workspace_ref)
-        metadata.setdefault("project_asset_role", str(data.get("type", "")))
-        metadata.setdefault("project_attached_at", utc_now())
+        if not metadata.get("project_id"):
+            metadata["project_id"] = project_id
+        if not metadata.get("workspace_id"):
+            metadata["workspace_id"] = workspace_id
+        if not metadata.get("workspace_path"):
+            metadata["workspace_path"] = workspace_ref
+        if not metadata.get("project_asset_role"):
+            metadata["project_asset_role"] = str(data.get("type", ""))
+        if not metadata.get("project_attached_at"):
+            metadata["project_attached_at"] = utc_now()
         data["metadata"] = metadata
         references = [str(item) for item in data.get("references", []) if str(item).strip()]
         for ref in [project_id, workspace_id]:
             if ref and ref not in references:
                 references.append(ref)
-        data["references"] = references
+        data["references"] = filter_project_safe_references(storage, project_id, references)
         data["updated_at"] = utc_now()
         storage.write_json(resolved, data)
 

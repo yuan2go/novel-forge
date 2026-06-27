@@ -34,12 +34,158 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "emotion_curve",
         "hook_patterns",
     ],
+    "common_novel_analysis_report": [
+        "source_asset_id",
+        "analysis_scope",
+        "structure_map",
+        "character_map",
+        "conflict_map",
+        "theme_map",
+        "risk_boundary",
+        "reusable_findings",
+    ],
+    "web_fiction_business_analysis_report": [
+        "source_asset_id",
+        "platform_pattern",
+        "reader_promise",
+        "hook_system",
+        "payoff_loop",
+        "pacing_model",
+        "monetization_nodes",
+        "abstraction_boundary",
+        "reusable_assets",
+    ],
+    "published_fiction_analysis_report": [
+        "source_asset_id",
+        "craft_dimensions",
+        "scene_design",
+        "character_arc",
+        "narrative_distance",
+        "language_texture",
+        "transferable_techniques",
+        "do_not_copy",
+    ],
+    "classic_literary_analysis_report": [
+        "source_asset_id",
+        "deep_structure",
+        "theme_system",
+        "symbol_system",
+        "social_relation_model",
+        "fate_curve",
+        "non_transferable_elements",
+        "transferable_abstractions",
+    ],
+    "analysis_conversion_report": [
+        "source_report_id",
+        "source_report_type",
+        "conversion_targets",
+        "created_assets",
+        "rejected_items",
+        "reuse_scope",
+        "copyright_risk",
+        "abstraction_level",
+    ],
     "knowledge_card": ["principles"],
     "material_card": ["usable_patterns", "do_not_copy"],
     "asset_collection": ["purpose", "asset_paths"],
+    "platform_profile": [
+        "platform_id",
+        "platform_name",
+        "business_model",
+        "reader_expectation",
+        "chapter_length_range",
+        "update_frequency",
+        "review_risks",
+        "genre_fit",
+        "style_tendency",
+    ],
+    "genre_market_profile": [
+        "genre",
+        "platform_id",
+        "reader_promise",
+        "common_hooks",
+        "common_conflicts",
+        "fatigue_points",
+        "differentiation_axes",
+        "chapter_rhythm_template",
+    ],
     "topic_seed": ["logline", "reader_attraction", "differentiation"],
+    "topic_fit_report": ["topic_seed_id", "platform_id", "genre", "scores", "recommendation", "must_adjust"],
     "world_bible": ["setting", "rules", "conflict_system"],
     "character_card": ["role", "external_goal", "internal_need", "motivation_chain"],
+    "continuity_bible": ["project_id", "worldview_rules", "timeline", "entities", "open_threads", "constraints"],
+    "foreshadowing_thread": ["thread_id", "setup", "payoff_plan", "status", "related_chapters"],
+    "power_scale_rule": ["scale_id", "levels", "constraints", "violation_checks"],
+    "style_profile": [
+        "style_id",
+        "name",
+        "scope",
+        "source_boundary",
+        "language_parameters",
+        "narrative_parameters",
+        "emotion_parameters",
+        "forbidden_patterns",
+    ],
+    "style_decomposition_report": [
+        "source_asset_id",
+        "extract_level",
+        "style_features",
+        "usable_parameters",
+        "do_not_copy",
+        "risk_level",
+    ],
+    "style_blend_preset": ["name", "components", "conflict_resolution"],
+    "quality_standard_profile": ["standard_id", "name", "dimensions", "hard_gates"],
+    "review_rule_pack": ["rule_pack_id", "name", "dimensions", "checks", "severity_policy"],
+    "quality_score_report": ["target_asset_id", "standard_id", "overall_score", "scores", "gate_results", "recommendation"],
+    "style_review_report": [
+        "target_draft_id",
+        "expected_style_profile_id",
+        "style_match_score",
+        "drift_points",
+        "ai_taste_points",
+        "rewrite_suggestions",
+        "copyright_style_risk",
+    ],
+    "chapter_audit_report": [
+        "target_asset_id",
+        "dimension_scores",
+        "issues",
+        "gate_results",
+        "linked_reports",
+        "recommendation",
+    ],
+    "originality_report": [
+        "target_asset_id",
+        "source_asset_ids",
+        "similarity_checks",
+        "forbidden_element_hits",
+        "plot_skeleton_risk",
+        "character_setup_risk",
+        "style_expression_risk",
+        "risk_level",
+        "recommendation",
+        "human_gate_required",
+    ],
+    "publish_gate_report": [
+        "target_asset_id",
+        "gates",
+        "decision",
+        "blocking_issues",
+        "required_reports",
+        "human_override",
+    ],
+    "release_package": [
+        "target_asset_id",
+        "publish_gate_report_id",
+        "title_candidates",
+        "summary",
+        "tags",
+        "channel",
+        "status",
+    ],
+    "writing_template": ["template_id", "name", "template_kind", "structure", "usage_constraints", "anti_copy_rules"],
+    "craft_template": ["template_id", "name", "craft_domain", "pattern", "use_cases", "risks"],
     "outline": ["acts"],
     "chapter_plan": ["chapter", "objective", "beats", "hook"],
     "draft_chapter": ["chapter", "text", "copyright_boundary"],
@@ -84,6 +230,30 @@ TOP_LEVEL_REQUIRED_FIELDS: dict[str, list[str]] = {
         "revision_suggestions",
         "next_action",
     ],
+}
+
+_REFERENCE_DERIVED_ASSET_TYPES = {
+    "decomposition_report",
+    "common_novel_analysis_report",
+    "web_fiction_business_analysis_report",
+    "published_fiction_analysis_report",
+    "classic_literary_analysis_report",
+    "analysis_conversion_report",
+    "knowledge_card",
+    "material_card",
+    "style_decomposition_report",
+    "style_profile",
+    "style_blend_preset",
+    "writing_template",
+    "craft_template",
+}
+
+_ANALYSIS_ASSET_TYPES = {
+    "common_novel_analysis_report",
+    "web_fiction_business_analysis_report",
+    "published_fiction_analysis_report",
+    "classic_literary_analysis_report",
+    "analysis_conversion_report",
 }
 
 
@@ -149,7 +319,7 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.append("source_document must keep original source path")
     if data.get("type") == "source_document":
         errors.extend(_validate_source_rights(data.get("metadata", {})))
-    if data.get("type") in {"decomposition_report", "knowledge_card", "material_card"}:
+    if data.get("type") in _REFERENCE_DERIVED_ASSET_TYPES:
         boundary = data.get("metadata", {}).get("copyright_boundary", "")
         if "abstract" not in boundary.lower() and "structure" not in boundary.lower():
             errors.append("reference-derived assets must declare abstract structure copyright boundary")
@@ -180,6 +350,22 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.extend(_validate_project_workspace_state_content(content))
     if asset_type == "review_report" and isinstance(content, dict):
         errors.extend(_validate_review_report_content(content))
+    if asset_type == "platform_profile" and isinstance(content, dict):
+        errors.extend(_validate_platform_profile_content(content))
+    if asset_type == "topic_fit_report" and isinstance(content, dict):
+        errors.extend(_validate_topic_fit_report_content(content))
+    if asset_type in {"quality_standard_profile", "review_rule_pack"} and isinstance(content, dict):
+        errors.extend(_validate_quality_dimensions_content(asset_type, content))
+    if asset_type == "quality_score_report" and isinstance(content, dict):
+        errors.extend(_validate_quality_score_report_content(content))
+    if asset_type in {"style_profile", "style_decomposition_report", "style_blend_preset", "style_review_report"} and isinstance(content, dict):
+        errors.extend(_validate_style_asset_content(asset_type, content, data.get("metadata", {})))
+    if asset_type in {"continuity_bible", "foreshadowing_thread", "power_scale_rule"} and isinstance(content, dict):
+        errors.extend(_validate_continuity_asset_content(asset_type, content))
+    if asset_type in {"chapter_audit_report", "originality_report", "publish_gate_report", "release_package"} and isinstance(content, dict):
+        errors.extend(_validate_release_gate_content(asset_type, content))
+    if asset_type in _ANALYSIS_ASSET_TYPES and isinstance(content, dict):
+        errors.extend(_validate_analysis_asset_content(asset_type, content, data.get("metadata", {})))
 
     return errors
 
@@ -189,8 +375,6 @@ def _is_missing(value: Any) -> bool:
         return True
     if isinstance(value, str):
         return value.strip() == ""
-    if isinstance(value, (list, dict)):
-        return len(value) == 0
     return False
 
 
@@ -399,3 +583,272 @@ def _validate_review_report_content(content: dict[str, Any]) -> list[str]:
                 if key in score_summary and not isinstance(score_summary.get(key), (int, float)):
                     errors.append(f"review_report score_summary.{key} must be numeric")
     return errors
+
+
+def _validate_platform_profile_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    business_model = content.get("business_model")
+    if business_model not in {"paid_serial", "free_ad", "ip_publish", "mixed", "custom"}:
+        errors.append("platform_profile business_model must be paid_serial, free_ad, ip_publish, mixed, or custom")
+    length_range = content.get("chapter_length_range")
+    if not isinstance(length_range, dict):
+        errors.append("platform_profile chapter_length_range must be an object")
+    else:
+        values: dict[str, float] = {}
+        for key in ["min", "max", "ideal"]:
+            value = length_range.get(key)
+            if not isinstance(value, (int, float)):
+                errors.append(f"platform_profile chapter_length_range.{key} must be numeric")
+            else:
+                values[key] = float(value)
+        if len(values) == 3 and not (values["min"] <= values["ideal"] <= values["max"]):
+            errors.append("platform_profile chapter_length_range must satisfy min <= ideal <= max")
+    for key in ["reader_expectation", "review_risks", "genre_fit", "style_tendency"]:
+        if key in content and not isinstance(content.get(key), list):
+            errors.append(f"platform_profile {key} must be a list")
+    return errors
+
+
+def _validate_topic_fit_report_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    scores = content.get("scores")
+    if not isinstance(scores, dict):
+        errors.append("topic_fit_report scores must be an object")
+    else:
+        for key, value in scores.items():
+            if not isinstance(value, (int, float)):
+                errors.append(f"topic_fit_report scores.{key} must be numeric")
+            elif value < 0 or value > 100:
+                errors.append(f"topic_fit_report scores.{key} must be between 0 and 100")
+    if not isinstance(content.get("must_adjust"), list):
+        errors.append("topic_fit_report must_adjust must be a list")
+    return errors
+
+
+def _validate_quality_dimensions_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    dimensions = content.get("dimensions")
+    if not isinstance(dimensions, dict):
+        errors.append(f"{asset_type} dimensions must be an object")
+    elif not dimensions:
+        errors.append(f"{asset_type} dimensions must not be empty")
+    else:
+        total_weight = 0.0
+        for name, dimension in dimensions.items():
+            if not isinstance(dimension, dict):
+                errors.append(f"{asset_type} dimensions.{name} must be an object")
+                continue
+            weight = dimension.get("weight")
+            threshold = dimension.get("threshold")
+            if not isinstance(weight, (int, float)) or weight < 0:
+                errors.append(f"{asset_type} dimensions.{name}.weight must be a non-negative number")
+            else:
+                total_weight += float(weight)
+            if threshold is not None and (not isinstance(threshold, (int, float)) or threshold < 0 or threshold > 100):
+                errors.append(f"{asset_type} dimensions.{name}.threshold must be between 0 and 100")
+        if total_weight <= 0:
+            errors.append(f"{asset_type} dimensions total weight must be greater than zero")
+    for key in ["hard_gates", "checks"]:
+        if key in content and not isinstance(content.get(key), list):
+            errors.append(f"{asset_type} {key} must be a list")
+    return errors
+
+
+def _validate_quality_score_report_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    score = content.get("overall_score")
+    if not isinstance(score, (int, float)) or score < 0 or score > 100:
+        errors.append("quality_score_report overall_score must be between 0 and 100")
+    scores = content.get("scores")
+    if not isinstance(scores, dict):
+        errors.append("quality_score_report scores must be an object")
+    else:
+        for key, value in scores.items():
+            if not isinstance(value, (int, float)) or value < 0 or value > 100:
+                errors.append(f"quality_score_report scores.{key} must be between 0 and 100")
+    gate_results = content.get("gate_results")
+    if not isinstance(gate_results, dict):
+        errors.append("quality_score_report gate_results must be an object")
+    return errors
+
+
+def _validate_style_asset_content(asset_type: str, content: dict[str, Any], metadata: Any) -> list[str]:
+    errors: list[str] = []
+    if _contains_author_imitation_request({"content": content, "metadata": metadata}):
+        errors.append(f"{asset_type} must not request specific author imitation")
+    if asset_type == "style_profile":
+        if content.get("scope") not in {"platform", "genre", "project", "blend"}:
+            errors.append("style_profile scope must be platform, genre, project, or blend")
+        source_boundary = content.get("source_boundary")
+        if not isinstance(source_boundary, dict):
+            errors.append("style_profile source_boundary must be an object")
+        else:
+            if source_boundary.get("allowed_usage") not in {"parameter_only", "abstract_reference_only"}:
+                errors.append("style_profile source_boundary.allowed_usage must be parameter_only or abstract_reference_only")
+            if not isinstance(source_boundary.get("derived_from_protected_text"), bool):
+                errors.append("style_profile source_boundary.derived_from_protected_text must be boolean")
+            if source_boundary.get("copyright_risk") not in {"low", "medium", "high", "unknown"}:
+                errors.append("style_profile source_boundary.copyright_risk must be low, medium, high, or unknown")
+        if not isinstance(content.get("forbidden_patterns"), list) or not content.get("forbidden_patterns"):
+            errors.append("style_profile forbidden_patterns must be a non-empty list")
+    if asset_type == "style_decomposition_report":
+        if content.get("extract_level") != "abstract_parameters_only":
+            errors.append("style_decomposition_report extract_level must be abstract_parameters_only")
+        if content.get("risk_level") not in {"low", "medium", "high", "unknown"}:
+            errors.append("style_decomposition_report risk_level must be low, medium, high, or unknown")
+        if not isinstance(content.get("do_not_copy"), list):
+            errors.append("style_decomposition_report do_not_copy must be a list")
+    if asset_type == "style_blend_preset":
+        components = content.get("components")
+        if not isinstance(components, list) or not components:
+            errors.append("style_blend_preset components must be a non-empty list")
+        else:
+            for index, component in enumerate(components):
+                if not isinstance(component, dict):
+                    errors.append(f"style_blend_preset components[{index}] must be an object")
+                    continue
+                weight = component.get("weight")
+                if not isinstance(weight, (int, float)) or weight <= 0:
+                    errors.append(f"style_blend_preset components[{index}].weight must be greater than zero")
+    if asset_type == "style_review_report":
+        score = content.get("style_match_score")
+        if not isinstance(score, (int, float)) or score < 0 or score > 100:
+            errors.append("style_review_report style_match_score must be between 0 and 100")
+        if content.get("copyright_style_risk") not in {"low", "medium", "high", "unknown"}:
+            errors.append("style_review_report copyright_style_risk must be low, medium, high, or unknown")
+    return errors
+
+
+def _validate_continuity_asset_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "continuity_bible":
+        for key in ["worldview_rules", "timeline", "entities", "open_threads", "constraints"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"continuity_bible {key} must be a list")
+    if asset_type == "foreshadowing_thread":
+        if content.get("status") not in {"planned", "seeded", "developing", "paid_off", "abandoned"}:
+            errors.append("foreshadowing_thread status must be planned, seeded, developing, paid_off, or abandoned")
+        if not isinstance(content.get("related_chapters"), list):
+            errors.append("foreshadowing_thread related_chapters must be a list")
+    if asset_type == "power_scale_rule":
+        for key in ["levels", "constraints", "violation_checks"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"power_scale_rule {key} must be a list")
+    return errors
+
+
+def _validate_release_gate_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "chapter_audit_report":
+        scores = content.get("dimension_scores")
+        if not isinstance(scores, dict):
+            errors.append("chapter_audit_report dimension_scores must be an object")
+        else:
+            for key, value in scores.items():
+                if not isinstance(value, (int, float)) or value < 0 or value > 100:
+                    errors.append(f"chapter_audit_report dimension_scores.{key} must be between 0 and 100")
+        if not isinstance(content.get("issues"), list):
+            errors.append("chapter_audit_report issues must be a list")
+        if not isinstance(content.get("gate_results"), dict):
+            errors.append("chapter_audit_report gate_results must be an object")
+        if not isinstance(content.get("linked_reports"), dict):
+            errors.append("chapter_audit_report linked_reports must be an object")
+        if content.get("recommendation") not in {"pass", "revise", "block_publish"}:
+            errors.append("chapter_audit_report recommendation must be pass, revise, or block_publish")
+    if asset_type == "originality_report":
+        for key in ["plot_skeleton_risk", "character_setup_risk", "style_expression_risk", "risk_level"]:
+            if content.get(key) not in {"low", "medium", "high", "unknown"}:
+                errors.append(f"originality_report {key} must be low, medium, high, or unknown")
+        if content.get("recommendation") not in {"pass", "revise_before_publish", "block_publish"}:
+            errors.append("originality_report recommendation must be pass, revise_before_publish, or block_publish")
+        if not isinstance(content.get("human_gate_required"), bool):
+            errors.append("originality_report human_gate_required must be boolean")
+        for key in ["source_asset_ids", "similarity_checks", "forbidden_element_hits"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"originality_report {key} must be a list")
+        for index, item in enumerate(content.get("similarity_checks", []) if isinstance(content.get("similarity_checks"), list) else []):
+            if not isinstance(item, dict):
+                errors.append(f"originality_report similarity_checks[{index}] must be an object")
+                continue
+            score = item.get("similarity")
+            if not isinstance(score, (int, float)) or score < 0 or score > 1:
+                errors.append(f"originality_report similarity_checks[{index}].similarity must be between 0 and 1")
+    if asset_type == "publish_gate_report":
+        if not isinstance(content.get("gates"), dict):
+            errors.append("publish_gate_report gates must be an object")
+        if content.get("decision") not in {"ready", "needs_revision", "blocked"}:
+            errors.append("publish_gate_report decision must be ready, needs_revision, or blocked")
+        if not isinstance(content.get("blocking_issues"), list):
+            errors.append("publish_gate_report blocking_issues must be a list")
+        if not isinstance(content.get("required_reports"), dict):
+            errors.append("publish_gate_report required_reports must be an object")
+        if not isinstance(content.get("human_override"), bool):
+            errors.append("publish_gate_report human_override must be boolean")
+    if asset_type == "release_package":
+        if not isinstance(content.get("title_candidates"), list) or not content.get("title_candidates"):
+            errors.append("release_package title_candidates must be a non-empty list")
+        if not isinstance(content.get("tags"), list):
+            errors.append("release_package tags must be a list")
+        if content.get("status") not in {"draft", "ready", "blocked", "published"}:
+            errors.append("release_package status must be draft, ready, blocked, or published")
+    return errors
+
+
+def _validate_analysis_asset_content(asset_type: str, content: dict[str, Any], metadata: Any) -> list[str]:
+    errors: list[str] = []
+    metadata_dict = metadata if isinstance(metadata, dict) else {}
+    risk = content.get("copyright_risk", metadata_dict.get("copyright_risk", metadata_dict.get("risk_level", "unknown")))
+    if risk not in {"low", "medium", "high", "unknown"}:
+        errors.append(f"{asset_type} copyright_risk must be low, medium, high, or unknown")
+    abstraction_level = content.get("abstraction_level", metadata_dict.get("abstraction_level", "abstract"))
+    if abstraction_level not in {"abstract", "mechanism", "template"}:
+        errors.append(f"{asset_type} abstraction_level must be abstract, mechanism, or template")
+    if metadata_dict.get("use_in_generation_rag") is True and asset_type != "analysis_conversion_report":
+        errors.append(f"{asset_type} must not enter generation RAG directly; convert to abstract assets first")
+    if asset_type != "analysis_conversion_report":
+        for key in ["structure_map", "character_map", "conflict_map", "theme_map", "craft_dimensions", "scene_design"]:
+            if key in content and not isinstance(content.get(key), (dict, list)):
+                errors.append(f"{asset_type} {key} must be an object or list")
+        for key in ["reusable_findings", "reusable_assets", "transferable_techniques", "transferable_abstractions"]:
+            if key in content and not isinstance(content.get(key), list):
+                errors.append(f"{asset_type} {key} must be a list")
+    if asset_type == "analysis_conversion_report":
+        if content.get("source_report_type") not in _ANALYSIS_ASSET_TYPES - {"analysis_conversion_report"}:
+            errors.append("analysis_conversion_report source_report_type must be an analysis report type")
+        if not isinstance(content.get("conversion_targets"), list):
+            errors.append("analysis_conversion_report conversion_targets must be a list")
+        if not isinstance(content.get("created_assets"), list):
+            errors.append("analysis_conversion_report created_assets must be a list")
+        if not isinstance(content.get("rejected_items"), list):
+            errors.append("analysis_conversion_report rejected_items must be a list")
+        if content.get("reuse_scope") not in {"project", "global", "research_only"}:
+            errors.append("analysis_conversion_report reuse_scope must be project, global, or research_only")
+    return errors
+
+
+def _contains_author_imitation_request(value: Any) -> bool:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            lowered_key = str(key).lower()
+            if lowered_key in {"author", "author_name", "target_author", "source_author", "imitate_author"} and not _is_missing(item):
+                return True
+            if _contains_author_imitation_request(item):
+                return True
+        return False
+    if isinstance(value, list):
+        return any(_contains_author_imitation_request(item) for item in value)
+    if not isinstance(value, str):
+        return False
+    lowered = value.lower()
+    blocked = [
+        "imitate author",
+        "author imitation",
+        "copy author style",
+        "specific author style",
+        "write like ",
+        "模仿作者",
+        "仿写作者",
+        "复刻作者",
+        "照着作者",
+    ]
+    return any(token in lowered for token in blocked)

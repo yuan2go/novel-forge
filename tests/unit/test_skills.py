@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class SkillTests(unittest.TestCase):
     def test_required_skills_exist(self):
-        self.assertEqual(len(SKILL_NAMES), 14)
+        self.assertEqual(len(SKILL_NAMES), 18)
         for skill_name in SKILL_NAMES:
             with self.subTest(skill_name=skill_name):
                 self.assertTrue((ROOT / "skills" / skill_name / "SKILL.md").exists())

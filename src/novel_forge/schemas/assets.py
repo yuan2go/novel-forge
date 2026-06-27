@@ -52,6 +52,31 @@ class HookPattern(BaseAsset):
 
 
 @dataclass
+class CommonNovelAnalysisReport(BaseAsset):
+    type: str = "common_novel_analysis_report"
+
+
+@dataclass
+class WebFictionBusinessAnalysisReport(BaseAsset):
+    type: str = "web_fiction_business_analysis_report"
+
+
+@dataclass
+class PublishedFictionAnalysisReport(BaseAsset):
+    type: str = "published_fiction_analysis_report"
+
+
+@dataclass
+class ClassicLiteraryAnalysisReport(BaseAsset):
+    type: str = "classic_literary_analysis_report"
+
+
+@dataclass
+class AnalysisConversionReport(BaseAsset):
+    type: str = "analysis_conversion_report"
+
+
+@dataclass
 class KnowledgeCard(BaseAsset):
     type: str = "knowledge_card"
 
@@ -67,8 +92,23 @@ class AssetCollection(BaseAsset):
 
 
 @dataclass
+class PlatformProfile(BaseAsset):
+    type: str = "platform_profile"
+
+
+@dataclass
+class GenreMarketProfile(BaseAsset):
+    type: str = "genre_market_profile"
+
+
+@dataclass
 class TopicSeed(BaseAsset):
     type: str = "topic_seed"
+
+
+@dataclass
+class TopicFitReport(BaseAsset):
+    type: str = "topic_fit_report"
 
 
 @dataclass
@@ -79,6 +119,56 @@ class WorldBible(BaseAsset):
 @dataclass
 class CharacterCard(BaseAsset):
     type: str = "character_card"
+
+
+@dataclass
+class ContinuityBible(BaseAsset):
+    type: str = "continuity_bible"
+
+
+@dataclass
+class ForeshadowingThread(BaseAsset):
+    type: str = "foreshadowing_thread"
+
+
+@dataclass
+class PowerScaleRule(BaseAsset):
+    type: str = "power_scale_rule"
+
+
+@dataclass
+class StyleProfile(BaseAsset):
+    type: str = "style_profile"
+
+
+@dataclass
+class StyleDecompositionReport(BaseAsset):
+    type: str = "style_decomposition_report"
+
+
+@dataclass
+class StyleBlendPreset(BaseAsset):
+    type: str = "style_blend_preset"
+
+
+@dataclass
+class QualityStandardProfile(BaseAsset):
+    type: str = "quality_standard_profile"
+
+
+@dataclass
+class ReviewRulePack(BaseAsset):
+    type: str = "review_rule_pack"
+
+
+@dataclass
+class WritingTemplate(BaseAsset):
+    type: str = "writing_template"
+
+
+@dataclass
+class CraftTemplate(BaseAsset):
+    type: str = "craft_template"
 
 
 @dataclass
@@ -111,6 +201,36 @@ class ReviewReport(BaseAsset):
 @dataclass
 class RevisionPlan(BaseAsset):
     type: str = "revision_plan"
+
+
+@dataclass
+class QualityScoreReport(BaseAsset):
+    type: str = "quality_score_report"
+
+
+@dataclass
+class StyleReviewReport(BaseAsset):
+    type: str = "style_review_report"
+
+
+@dataclass
+class ChapterAuditReport(BaseAsset):
+    type: str = "chapter_audit_report"
+
+
+@dataclass
+class OriginalityReport(BaseAsset):
+    type: str = "originality_report"
+
+
+@dataclass
+class PublishGateReport(BaseAsset):
+    type: str = "publish_gate_report"
+
+
+@dataclass
+class ReleasePackage(BaseAsset):
+    type: str = "release_package"
 
 
 @dataclass
@@ -175,17 +295,41 @@ SCHEMA_CLASSES = {
         ConflictPattern,
         EmotionCurve,
         HookPattern,
+        CommonNovelAnalysisReport,
+        WebFictionBusinessAnalysisReport,
+        PublishedFictionAnalysisReport,
+        ClassicLiteraryAnalysisReport,
+        AnalysisConversionReport,
         KnowledgeCard,
         MaterialCard,
         AssetCollection,
+        PlatformProfile,
+        GenreMarketProfile,
         TopicSeed,
+        TopicFitReport,
         WorldBible,
         CharacterCard,
+        ContinuityBible,
+        ForeshadowingThread,
+        PowerScaleRule,
+        StyleProfile,
+        StyleDecompositionReport,
+        StyleBlendPreset,
+        QualityStandardProfile,
+        ReviewRulePack,
+        WritingTemplate,
+        CraftTemplate,
         Outline,
         ChapterPlan,
         DraftChapter,
         ReviewReport,
         RevisionPlan,
+        QualityScoreReport,
+        StyleReviewReport,
+        ChapterAuditReport,
+        OriginalityReport,
+        PublishGateReport,
+        ReleasePackage,
         ReaderFeedback,
         FeedbackInsight,
         TrainingExercise,
