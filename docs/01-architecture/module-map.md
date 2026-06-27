@@ -1,26 +1,75 @@
 # Module Map
 
-| Module | Package | Data Directory | Status |
+## Purpose
+
+This map separates current executable modules from target platform layers. Do not confuse module presence with full platform capability.
+
+A module is a service/capability area. A workflow node is an executable production step. An artifact is a schema-backed output. A run records execution.
+
+## Current Modules
+
+| Module | Package / Area | Data Directory | Current Status |
 |---|---|---|---|
-| Ingestion | `modules/ingestion` | `data/raw` | executable through CLI |
-| Cleaning | `modules/cleaning` | `data/cleaned` | executable through CLI |
-| Decomposition | `modules/decomposition` | `data/decompositions` | mock executable |
-| Knowledge | `modules/knowledge` | `data/knowledge` | mock executable |
-| Materials | `modules/materials` | `data/materials` | mock executable |
-| Topics | `modules/topics` | `data/topics` | mock executable |
-| Worldbuilding | `modules/worldbuilding` | `data/worlds` | mock executable |
-| Characters | `modules/characters` | `data/characters` | mock executable |
-| Outline | `modules/outline` | `data/outlines` | mock executable |
-| Chapter Plan | `modules/chapter_plan` | `data/chapter_plans` | mock executable |
-| Drafting | `modules/drafting` | `data/drafts` | mock executable |
-| Review | `modules/review` | `data/reviews` | mock executable |
-| Revision | `modules/revision` | `data/reviews` | mock executable |
-| Feedback | `modules/feedback` | `data/feedback` | mock executable |
-| Training | `modules/training` | `data/training` | schema ready |
-| Image Prompts | `modules/image_prompts` | `data/image_prompts` | schema ready |
-| Skills | `skills/` | docs-backed capability layer | 14 validated Skills |
+| Ingestion | `modules/ingestion` | `data/raw` | executable through CLI/API workflow |
+| Cleaning | `modules/cleaning` | `data/cleaned` | executable through CLI/API workflow |
+| Decomposition | `modules/decomposition` | `data/decompositions` | executable; primarily web-fiction-style abstraction |
+| Analysis | analysis schemas/skills | `data/analysis` | partial; full Analysis Center still P0 |
+| Knowledge | `modules/knowledge` | `data/knowledge` | executable/mock-backed extraction |
+| Materials | `modules/materials` | `data/materials` | executable/mock-backed curation |
+| Platforms | profiles/schemas | `data/platforms` | profile assets exist in project config flow |
+| Genres | profiles/schemas | `data/genres` | profile assets exist in project config flow |
+| Topics | `modules/topics` | `data/topics` | executable through CLI |
+| Worldbuilding | `modules/worldbuilding` | `data/worlds` | executable through CLI |
+| Characters | `modules/characters` | `data/characters` | executable through CLI |
+| Continuity | continuity schemas/services | `data/continuity` | shallow schemas; workbench still P0 |
+| Styles | style assets/reports | `data/styles` | partial |
+| Quality Standards | standards/rules | `data/quality_standards` | partial |
+| Templates | template assets/skills | `data/templates` | partial |
+| Outline | `modules/outline` | `data/outlines` | executable; versioning still P0 |
+| Chapter Plan | `modules/chapter_plan` | `data/chapter_plans` | executable; versioning still P0 |
+| Drafting | `modules/drafting` | `data/drafts` | executable; editor patch workflow still P0 |
+| Review | `modules/review` | `data/reviews` | executable; deeper audit reports still P0/P1 |
+| Revision | `modules/revision` | `data/reviews` | executable; revision task/patch chain still P0 |
+| Publishing | publishing schemas/services | `data/publishing` | publish gate/release package first version |
+| Feedback | `modules/feedback` | `data/feedback` | CLI/back-end base; web productization still P0 |
+| Training | `modules/training` | `data/training` | executable/schema-backed exercise generation |
+| Image Prompts | schemas | `data/image_prompts` | schema ready |
+| Workspace | `modules/workspace` | `data/workspaces` | executable project/workspace state |
+| Runs | workflow/status services | `data/runs` | WorkflowRun, TaskStatus, handoff, dead letter base |
+| Skills | `skills/` | docs-backed capability layer | repository source of truth; runtime copies generated |
+
+## Platform Layer Mapping
+
+| Platform Layer | Current Modules / Areas | Missing or Incomplete P0/P1 Work |
+|---|---|---|
+| Workflow | `workflows/pipeline.py`, status services, Celery tasks | formal `WorkflowDefinition`, `WorkflowNode`, `NodeRun`, invalidation, chapter queue |
+| Knowledge | decomposition, analysis, knowledge, materials, templates | complete Analysis Center and analysis-to-asset conversion UI/service |
+| Context | search, vector search, Qdrant | `context_build_plan`, `context_bundle`, token budget, compression preview, replay UI |
+| Production | topics, worlds, characters, outlines, chapter plans, drafts | outline/chapter-plan versions, generation runs, parameter trace, invalidation warnings |
+| Evaluation | review, originality, style, publish gate | continuity audit, platform fit, semantic originality evidence, prompt regression |
+| Editor | draft workbench, diff/save | paragraph suggestions, `editor_patch`, apply/rollback workflow |
+| Long-form Stability | continuity assets | timeline, foreshadowing workbench, relationship/faction/map/prop systems, change impact |
+| Agent | handoff, permission/tool concepts | contracts, runs, checkpoints, budgets, gates, metrics, state machine, Agent Center UI |
+| Feedback | feedback import/insight | web import, sentiment, payoff/toxic clusters, role heat, retention/drop-off, feedback loop |
+| Publishing | publish gate, release package | publishing calendar, queue, platform status, publishing plan/log, post-release data |
+| Model Evaluation | provider metadata/health | model profiles, benchmark tasks/runs, A/B, cost-quality, routing |
 
 ## Service Boundary
 
-P0 workflow step logic lives in `src/novel_forge/modules/<module>/service.py`.
-`src/novel_forge/workflows/pipeline.py` is kept as the orchestration and compatibility layer: it initializes storage, preserves the public workflow function names used by the CLI/tests, runs the sample pipeline, and performs project validation.
+Current workflow step logic lives in `src/novel_forge/modules/<module>/service.py`.
+
+`src/novel_forge/workflows/pipeline.py` remains the orchestration and compatibility layer. It initializes storage, preserves public workflow function names used by CLI/tests, runs the sample pipeline, and performs project validation.
+
+Future platform migration should avoid putting all new logic into `pipeline.py`. Add domain services and keep `pipeline.py` thin.
+
+## Rule
+
+New P0 work must state whether it is:
+
+- current module extension;
+- new workflow node;
+- new artifact schema;
+- new UI workbench;
+- new quality gate;
+- new Agent contract;
+- new analytics/reporting surface.
