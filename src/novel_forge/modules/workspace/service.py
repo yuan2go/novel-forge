@@ -45,6 +45,8 @@ def init_workspace(
                 "platform_profile_path": "",
                 "genre_market_profile_id": "",
                 "genre_market_profile_path": "",
+                "creative_strategy_profile_id": "",
+                "creative_strategy_profile_path": "",
                 "quality_standard_profile_id": "",
                 "quality_standard_profile_path": "",
                 "style_profile_id": "",

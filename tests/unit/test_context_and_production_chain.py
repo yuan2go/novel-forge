@@ -6,6 +6,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.context_builder import create_context_build_plan, create_context_bundle, list_context_assets
+from novel_forge.modules.continuity_graph import create_canon_graph_snapshot
 from novel_forge.modules.drafting import service as drafting_service
 from novel_forge.modules.outline import service as outline_service
 from novel_forge.modules.chapter_plan import service as chapter_plan_service
@@ -26,7 +27,7 @@ from novel_forge.modules.production_chain import (
     list_production_versions,
 )
 from novel_forge.modules.workspace.service import init_workspace
-from novel_forge.schemas import ChapterPlan, CharacterCard, ContinuityBible, CraftTemplate, DraftChapter, FeedbackInsight, KnowledgeCard, MaterialCard, Outline, WritingTemplate
+from novel_forge.schemas import ChapterPlan, CharacterCard, ContinuityBible, CraftTemplate, DraftChapter, FeedbackInsight, ForeshadowingThread, KnowledgeCard, MaterialCard, Outline, WritingTemplate, WorldBible
 from novel_forge.storage.local import LocalStorage
 from novel_forge.workers.tasks import chapter_production_run_task
 
@@ -224,6 +225,38 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     metadata={"copyright_boundary": "abstract structure knowledge card"},
                 ),
             )
+            storage.write_asset(
+                "materials",
+                MaterialCard(
+                    title="Draft material",
+                    content={"usable_patterns": ["choice cost before hook"], "do_not_copy": ["protected scenes"]},
+                    metadata={"copyright_boundary": "abstract material card"},
+                ),
+            )
+            storage.write_asset(
+                "materials",
+                WritingTemplate(
+                    title="Draft hook template",
+                    content={"template_kind": "chapter_hook", "structure": ["pressure", "decision", "hook"]},
+                    metadata={"copyright_boundary": "abstract writing template"},
+                ),
+            )
+            storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="Draft protagonist",
+                    content={"name": "林乔", "role": "protagonist", "current_state": "active"},
+                    metadata={"copyright_boundary": "project-owned character"},
+                ),
+            )
+            storage.write_asset(
+                "worlds",
+                WorldBible(
+                    title="Draft world",
+                    content={"rules": ["clock signal changes available choices"], "locations": ["钟城"]},
+                    metadata={"copyright_boundary": "project-owned world bible"},
+                ),
+            )
             chapter_plan = storage.write_asset(
                 "chapter_plans",
                 ChapterPlan(
@@ -246,11 +279,26 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertIn("draft_version_path", draft.metadata)
             self.assertIn("generation_run_path", draft.metadata)
             self.assertIn("stability_preflight_path", draft.metadata)
-            self.assertEqual(draft.metadata["stability_preflight_recommendation"], "pass")
+            self.assertIn(draft.metadata["stability_preflight_recommendation"], {"pass", "revise"})
             self.assertEqual(storage.read_asset(draft.metadata["context_bundle_path"]).type, "context_bundle")
             self.assertEqual(storage.read_asset(draft.metadata["draft_version_path"]).type, "draft_version")
             self.assertEqual(storage.read_asset(draft.metadata["generation_run_path"]).type, "generation_run")
             self.assertEqual(storage.read_asset(draft.metadata["stability_preflight_path"]).type, "chapter_continuity_report")
+
+    def test_draft_service_blocks_low_quality_rag_context(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            chapter_plan = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Sparse chapter plan",
+                    content={"chapter": 1, "objective": "open without assets", "beats": ["empty context"], "hook": "missing canon"},
+                ),
+            )
+
+            with self.assertRaisesRegex(ValueError, "RAG quality gate"):
+                drafting_service.draft(storage, str(chapter_plan))
 
     def test_direct_draft_service_cannot_bypass_stability_preflight(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -293,6 +341,68 @@ class ContextAndProductionChainTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "stability preflight"):
                 drafting_service.draft(storage, str(chapter_plan.relative_to(storage.root)), workspace_path=workspace_ref)
+
+    def test_canon_graph_snapshot_structures_state_threads_and_preflight_violations(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = init_workspace(storage, "Canon Project")
+            workspace_asset = storage.read_asset(workspace)
+            project_id = workspace_asset.content["project_id"]
+            workspace_ref = str(workspace.relative_to(storage.root))
+            storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="林乔",
+                    content={"name": "林乔", "role": "protagonist", "current_state": "active", "current_location": "钟城"},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+            storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="林乔",
+                    content={"name": "林乔", "role": "protagonist", "current_state": "dead", "current_location": "港口"},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+            storage.write_asset(
+                "continuity",
+                ForeshadowingThread(
+                    title="Clock thread",
+                    content={"thread_id": "clock", "status": "unknown_state", "related_chapters": [1], "setup": "钟声", "payoff_plan": "揭示规则"},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+            chapter_plan = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Canon chapter plan",
+                    content={"chapter": 1, "objective": "林乔追查钟声", "beats": ["林乔行动"], "hook": "钟声再响"},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+
+            snapshot = create_canon_graph_snapshot(storage, project_id=project_id, workspace_path=workspace_ref)
+            snapshot_asset = storage.read_asset(snapshot["path"])
+            self.assertEqual(snapshot_asset.type, "canon_graph_snapshot")
+            self.assertTrue(snapshot_asset.content["entities"])
+            self.assertTrue(snapshot_asset.content["state_machines"]["characters"])
+            self.assertTrue(any(item["dimension"] == "character_state_machine" for item in snapshot_asset.content["violations"]))
+            self.assertTrue(any(item["dimension"] == "foreshadowing_lifecycle" for item in snapshot_asset.content["violations"]))
+
+            with self.assertRaisesRegex(ValueError, "stability preflight"):
+                drafting_service.draft(storage, str(chapter_plan.relative_to(storage.root)), workspace_path=workspace_ref)
+            preflights = [
+                storage.read_asset(path)
+                for path in storage.list_json("continuity")
+                if storage.read_json(path).get("type") == "chapter_continuity_report"
+            ]
+            self.assertTrue(any("canon_graph" in report.content for report in preflights))
 
     def test_chapter_production_bus_runs_and_resumes_end_to_end(self):
         with tempfile.TemporaryDirectory() as tmp:

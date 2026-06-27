@@ -63,6 +63,8 @@ DEFAULT_PROJECT_CONFIG = {
     "platform_profile_path": "",
     "genre_market_profile_id": "",
     "genre_market_profile_path": "",
+    "creative_strategy_profile_id": "",
+    "creative_strategy_profile_path": "",
     "quality_standard_profile_id": "",
     "quality_standard_profile_path": "",
     "style_profile_id": "",
@@ -201,6 +203,7 @@ def create_project_with_defaults(
     }
     config_patch.update(_create_or_use_project_binding(storage, project_id, workspace_path, title, "platform_profile", bindings))
     config_patch.update(_create_or_use_project_binding(storage, project_id, workspace_path, title, "genre_market_profile", bindings))
+    config_patch.update(_create_or_use_project_binding(storage, project_id, workspace_path, title, "creative_strategy_profile", bindings))
     config_patch.update(_create_or_use_project_binding(storage, project_id, workspace_path, title, "quality_standard_profile", bindings))
     config_patch.update(_create_or_use_project_binding(storage, project_id, workspace_path, title, "style_profile", bindings))
     config_patch.update(_create_or_use_project_binding(storage, project_id, workspace_path, title, "continuity_bible", bindings))
@@ -229,6 +232,7 @@ def _create_or_use_project_binding(
     title_by_type = {
         "platform_profile": f"{project_title} platform profile",
         "genre_market_profile": f"{project_title} genre market profile",
+        "creative_strategy_profile": f"{project_title} creative strategy",
         "quality_standard_profile": f"{project_title} quality standard",
         "style_profile": f"{project_title} style profile",
         "continuity_bible": f"{project_title} continuity bible",
@@ -371,6 +375,7 @@ def update_project_config(storage: LocalStorage, project_id_or_path: str, patch:
     for asset_type in [
         "platform_profile",
         "genre_market_profile",
+        "creative_strategy_profile",
         "quality_standard_profile",
         "style_profile",
         "style_blend_preset",

@@ -12,7 +12,7 @@ from novel_forge.modules.production_context import (
 from novel_forge.storage.local import LocalStorage
 
 FEEDBACK_TYPES = {"feedback_insight", "reader_sentiment_report"}
-CONTINUITY_TYPES = {"continuity_bible", "foreshadowing_thread", "power_scale_rule", "chapter_continuity_report", "continuity_graph_snapshot"}
+CONTINUITY_TYPES = {"continuity_bible", "foreshadowing_thread", "power_scale_rule", "chapter_continuity_report", "continuity_graph_snapshot", "canon_graph_snapshot"}
 
 
 def build_planning_context(
@@ -28,12 +28,14 @@ def build_planning_context(
     feedback_assets = _latest_project_assets(storage, FEEDBACK_TYPES, project_id, limit=8)
     continuity_assets = _latest_project_assets(storage, CONTINUITY_TYPES, project_id, limit=10)
     quality_dimensions = quality_dimensions_from_context(production_context)
-    feedback_constraints = _feedback_constraints(feedback_assets)
+    workspace_feedback = _workspace_feedback_constraints(storage, production_context)
+    feedback_constraints = _dedupe([*_feedback_constraints(feedback_assets), *workspace_feedback["constraints"]])
     continuity_constraints = _continuity_constraints(production_context, continuity_assets)
     references = [
         *profile_reference_ids(production_context),
         *_asset_references(feedback_assets),
         *_asset_references(continuity_assets),
+        *workspace_feedback["references"],
     ]
     return {
         "production_context": production_context,
@@ -46,6 +48,11 @@ def build_planning_context(
             "threshold": production_context.get("project_config", {}).get("quality_threshold", 0),
             "content": _profile_content(production_context, "quality_standard_profile"),
         },
+        "creative_strategy": {
+            "profile_id": _profile_id(production_context, "creative_strategy_profile"),
+            "content": _profile_content(production_context, "creative_strategy_profile"),
+            "constraints": _creative_strategy_constraints(production_context),
+        },
         "continuity": {
             "profile_id": _profile_id(production_context, "continuity_bible"),
             "assets": [_asset_summary(asset) for asset in continuity_assets],
@@ -54,13 +61,15 @@ def build_planning_context(
         "feedback": {
             "assets": [_asset_summary(asset) for asset in feedback_assets],
             "constraints": feedback_constraints,
+            "workspace_memory": workspace_feedback["memory"],
         },
         "chapter": chapter,
         "required_context": {
             "project_profile": bool(production_context.get("project", {}).get("project_id")),
+            "creative_strategy": bool(_profile_id(production_context, "creative_strategy_profile")),
             "quality_standard": bool(_profile_id(production_context, "quality_standard_profile")),
             "continuity": bool(_profile_id(production_context, "continuity_bible") or continuity_assets),
-            "feedback": bool(feedback_assets),
+            "feedback": bool(feedback_assets or workspace_feedback["constraints"]),
             "preflight_ready": production_context.get("preflight", {}).get("ready", False),
             "warnings": production_context.get("preflight", {}).get("warnings", []),
         },
@@ -77,6 +86,7 @@ def planning_context_metadata(context: dict[str, Any]) -> dict[str, Any]:
         "workspace_path": str(project.get("workspace_path", "")),
         "platform_profile_id": _profile_id(production_context, "platform_profile"),
         "genre_market_profile_id": _profile_id(production_context, "genre_market_profile"),
+        "creative_strategy_profile_id": _profile_id(production_context, "creative_strategy_profile"),
         "quality_standard_profile_id": _profile_id(production_context, "quality_standard_profile"),
         "style_profile_id": _profile_id(production_context, "style_profile"),
         "style_blend_preset_id": _profile_id(production_context, "style_blend_preset"),
@@ -172,6 +182,40 @@ def _feedback_constraints(assets: list[dict[str, Any]]) -> list[str]:
     return _dedupe(values)
 
 
+def _workspace_feedback_constraints(storage: LocalStorage, production_context: dict[str, Any]) -> dict[str, Any]:
+    workspace_path = str(production_context.get("project", {}).get("workspace_path", "") or "")
+    if not workspace_path:
+        return {"constraints": [], "references": [], "memory": {}}
+    try:
+        data = storage.read_json(Path(storage.root) / workspace_path)
+    except Exception:
+        return {"constraints": [], "references": [], "memory": {}}
+    if not isinstance(data, dict):
+        return {"constraints": [], "references": [], "memory": {}}
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    memory = content.get("memory", {}) if isinstance(content.get("memory", {}), dict) else {}
+    reader_memory = memory.get("reader_feedback", {}) if isinstance(memory.get("reader_feedback", {}), dict) else {}
+    strategy = reader_memory.get("next_chapter_strategy", {}) if isinstance(reader_memory.get("next_chapter_strategy", {}), dict) else {}
+    values = [
+        *_strings(content.get("feedback_constraints")),
+        *_strings(strategy.get("constraints")),
+        *_strings(strategy.get("recommended_actions")),
+    ]
+    if strategy.get("primary_strategy"):
+        values.append(f"reader feedback strategy: {strategy.get('primary_strategy')}")
+    follow_risk = reader_memory.get("follow_read_risk", {}) if isinstance(reader_memory.get("follow_read_risk", {}), dict) else {}
+    if follow_risk.get("level") in {"medium", "high"}:
+        values.append(f"follow-read risk is {follow_risk.get('level')}: repair clarity, momentum, and expected payoff")
+    for row in reader_memory.get("character_heat", []) if isinstance(reader_memory.get("character_heat", []), list) else []:
+        if isinstance(row, dict) and (row.get("name") or row.get("character")):
+            values.append(f"reader character heat: {row.get('name') or row.get('character')} score {row.get('score', row.get('heat', row.get('mentions', '')))}")
+    return {
+        "constraints": _dedupe(values),
+        "references": _dedupe([workspace_path, str(reader_memory.get("latest_report_id", "")), str(reader_memory.get("latest_report_path", ""))]),
+        "memory": _trim(reader_memory, max_items=8, max_text=360),
+    }
+
+
 def _continuity_constraints(production_context: dict[str, Any], assets: list[dict[str, Any]]) -> list[str]:
     values: list[str] = []
     profile = _profile_content(production_context, "continuity_bible")
@@ -187,6 +231,24 @@ def _continuity_constraints(production_context: dict[str, Any], assets: list[dic
         values.extend(_strings(content.get("continuity_checks")))
         if content.get("risk_level"):
             values.append(f"{asset.get('type')} risk: {content.get('risk_level')}")
+    return _dedupe(values)
+
+
+def _creative_strategy_constraints(production_context: dict[str, Any]) -> list[str]:
+    profile = _profile_content(production_context, "creative_strategy_profile")
+    values: list[str] = []
+    if profile.get("reader_promise"):
+        values.append(f"reader promise: {profile.get('reader_promise')}")
+    values.extend(_strings(profile.get("verification_rules")))
+    rhythm = profile.get("pleasure_rhythm", {}) if isinstance(profile.get("pleasure_rhythm", {}), dict) else {}
+    values.extend([f"pleasure rhythm {key}: {item}" for key, item in rhythm.items() if str(item).strip()])
+    pacing = profile.get("platform_pacing", {}) if isinstance(profile.get("platform_pacing", {}), dict) else {}
+    values.extend([f"platform pacing {key}: {item}" for key, item in pacing.items() if str(item).strip()])
+    for hook in profile.get("long_hooks", []) if isinstance(profile.get("long_hooks", []), list) else []:
+        if isinstance(hook, dict):
+            values.append(f"long hook {hook.get('hook_id', '')}: {hook.get('status', '')} -> {hook.get('payoff_window', '')}")
+        elif str(hook).strip():
+            values.append(f"long hook: {hook}")
     return _dedupe(values)
 
 

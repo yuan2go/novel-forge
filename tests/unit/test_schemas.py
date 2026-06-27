@@ -8,6 +8,7 @@ from novel_forge.schemas import (
     AgentContract,
     AgentRun,
     AnalysisConversionReport,
+    CanonGraphSnapshot,
     ChapterAuditReport,
     ChapterProductionRun,
     ChapterPlanVersion,
@@ -15,6 +16,7 @@ from novel_forge.schemas import (
     CommonNovelAnalysisReport,
     ContextBuildPlan,
     ContextBundle,
+    CreativeStrategyProfile,
     DraftVersion,
     FeedbackImportBatch,
     GenerationRun,
@@ -39,7 +41,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 90)
+        self.assertEqual(len(SCHEMA_CLASSES), 92)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
         self.assertIn("review_report", SCHEMA_CLASSES)
@@ -49,6 +51,7 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("claude_code_handoff", SCHEMA_CLASSES)
         self.assertIn("platform_profile", SCHEMA_CLASSES)
         self.assertIn("genre_market_profile", SCHEMA_CLASSES)
+        self.assertIn("creative_strategy_profile", SCHEMA_CLASSES)
         self.assertIn("style_profile", SCHEMA_CLASSES)
         self.assertIn("quality_standard_profile", SCHEMA_CLASSES)
         self.assertIn("continuity_bible", SCHEMA_CLASSES)
@@ -87,6 +90,7 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("draft_diff_report", SCHEMA_CLASSES)
         self.assertIn("chapter_continuity_report", SCHEMA_CLASSES)
         self.assertIn("continuity_graph_snapshot", SCHEMA_CLASSES)
+        self.assertIn("canon_graph_snapshot", SCHEMA_CLASSES)
         self.assertIn("model_profile", SCHEMA_CLASSES)
         self.assertIn("model_benchmark_task", SCHEMA_CLASSES)
         self.assertIn("model_benchmark_run", SCHEMA_CLASSES)
@@ -115,6 +119,35 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(validate_common_fields(data), [])
         self.assertEqual(data["type"], "source_document")
         self.assertTrue(data["id"])
+
+    def test_creative_strategy_and_canon_graph_assets_validate(self):
+        strategy = CreativeStrategyProfile(
+            title="Strategy",
+            content={
+                "strategy_id": "strategy_v1",
+                "reader_promise": "clear promise",
+                "volume_goals": {"volume_1": "setup and payoff"},
+                "pleasure_rhythm": {"chapter_loop": ["hook", "choice", "payoff"]},
+                "long_hooks": [{"hook_id": "mystery", "status": "seeded"}],
+                "platform_pacing": {"chapter_length_target": 2500},
+                "verification_rules": ["chapter plan states reader promise"],
+            },
+        )
+        canon = CanonGraphSnapshot(
+            title="Canon",
+            content={
+                "snapshot_id": "canon_1",
+                "project_id": "project_1",
+                "entities": [],
+                "relationships": [],
+                "state_machines": {"characters": []},
+                "lifecycle_threads": [],
+                "event_graph": [],
+                "violations": [],
+            },
+        )
+        self.assertEqual(validate_common_fields(strategy.to_dict()), [])
+        self.assertEqual(validate_common_fields(canon.to_dict()), [])
 
     def test_type_level_content_validation(self):
         asset = SourceDocument(title="Sample", source="input.txt", content={})

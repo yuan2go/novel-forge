@@ -71,6 +71,11 @@ def generate_outline(
                             }
                         ],
                         "quality_targets": ["string"],
+                        "creative_strategy_constraints": ["string"],
+                        "volume_goals": ["string"],
+                        "pleasure_rhythm": ["string"],
+                        "long_hooks": ["string"],
+                        "platform_pacing": ["string"],
                         "continuity_constraints": ["string"],
                         "feedback_constraints": ["string"],
                     },
@@ -90,6 +95,11 @@ def generate_outline(
                 "reader_promise": packet.get("reader_promise", ""),
                 "conflict_engine": packet.get("conflict_engine", ""),
                 "quality_targets": packet.get("quality_targets", []),
+                "creative_strategy_constraints": packet.get("creative_strategy_constraints", []),
+                "volume_goals": packet.get("volume_goals", []),
+                "pleasure_rhythm": packet.get("pleasure_rhythm", []),
+                "long_hooks": packet.get("long_hooks", []),
+                "platform_pacing": packet.get("platform_pacing", []),
                 "continuity_constraints": packet.get("continuity_constraints", []),
                 "feedback_constraints": packet.get("feedback_constraints", []),
                 "planning_context": planning_context,
@@ -162,12 +172,19 @@ def _normalize_outline_packet(packet: dict[str, Any], planning_context: dict[str
             }
         )
     quality_targets = _strings(packet.get("quality_targets")) or planning_context.get("quality_standard", {}).get("dimensions", [])
+    creative_strategy = planning_context.get("creative_strategy", {}) if isinstance(planning_context.get("creative_strategy", {}), dict) else {}
+    strategy_content = creative_strategy.get("content", {}) if isinstance(creative_strategy.get("content", {}), dict) else {}
     return {
         "title": str(packet.get("title") or "Project outline").strip(),
         "reader_promise": str(packet.get("reader_promise") or "").strip(),
         "conflict_engine": str(packet.get("conflict_engine") or "").strip(),
         "acts": normalized_acts,
         "quality_targets": _dedupe([str(item) for item in quality_targets if str(item).strip()]),
+        "creative_strategy_constraints": _strings(packet.get("creative_strategy_constraints")) or creative_strategy.get("constraints", []),
+        "volume_goals": _strings(packet.get("volume_goals")) or _strings(strategy_content.get("volume_goals")),
+        "pleasure_rhythm": _strings(packet.get("pleasure_rhythm")) or _strings(strategy_content.get("pleasure_rhythm")),
+        "long_hooks": _strings(packet.get("long_hooks")) or _strings(strategy_content.get("long_hooks")),
+        "platform_pacing": _strings(packet.get("platform_pacing")) or _strings(strategy_content.get("platform_pacing")),
         "continuity_constraints": _strings(packet.get("continuity_constraints")) or planning_context.get("continuity", {}).get("constraints", []),
         "feedback_constraints": _strings(packet.get("feedback_constraints")) or planning_context.get("feedback", {}).get("constraints", []),
         "tags": _strings(packet.get("tags")),
@@ -187,6 +204,9 @@ def _fallback_outline_packet(source_asset: dict[str, Any], planning_context: dic
     ]
     continuity_constraints = planning_context.get("continuity", {}).get("constraints", [])
     feedback_constraints = planning_context.get("feedback", {}).get("constraints", [])
+    creative_strategy = planning_context.get("creative_strategy", {}) if isinstance(planning_context.get("creative_strategy", {}), dict) else {}
+    strategy_content = creative_strategy.get("content", {}) if isinstance(creative_strategy.get("content", {}), dict) else {}
+    strategy_constraints = creative_strategy.get("constraints", []) if isinstance(creative_strategy.get("constraints", []), list) else []
     return {
         "title": f"{title} long-form outline",
         "reader_promise": f"A {genre} story tuned for {platform}, driven by escalating choices and clear payoffs.",
@@ -221,6 +241,11 @@ def _fallback_outline_packet(source_asset: dict[str, Any], planning_context: dic
             },
         ],
         "quality_targets": quality_targets,
+        "creative_strategy_constraints": strategy_constraints,
+        "volume_goals": _strings(strategy_content.get("volume_goals")) or ["establish the first volume promise and payoff ladder"],
+        "pleasure_rhythm": _strings(strategy_content.get("pleasure_rhythm")) or ["hook -> pressure -> choice -> cost -> payoff -> next hook"],
+        "long_hooks": _strings(strategy_content.get("long_hooks")) or ["seed one long hook and one relationship pressure"],
+        "platform_pacing": _strings(strategy_content.get("platform_pacing")) or ["front-load conflict in first 3 chapters"],
         "continuity_constraints": continuity_constraints,
         "feedback_constraints": feedback_constraints,
         "tags": ["deterministic-fallback"],

@@ -109,6 +109,15 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "differentiation_axes",
         "chapter_rhythm_template",
     ],
+    "creative_strategy_profile": [
+        "strategy_id",
+        "reader_promise",
+        "volume_goals",
+        "pleasure_rhythm",
+        "long_hooks",
+        "platform_pacing",
+        "verification_rules",
+    ],
     "topic_seed": ["logline", "reader_attraction", "differentiation"],
     "topic_fit_report": ["topic_seed_id", "platform_id", "genre", "scores", "recommendation", "must_adjust"],
     "world_bible": ["setting", "rules", "conflict_system"],
@@ -357,6 +366,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "agent_rollback_report": ["agent_run_id", "rollback_id", "target_asset_paths", "rollback_strategy", "status", "created_at"],
     "chapter_continuity_report": ["target_asset_id", "chapter", "continuity_checks", "violations", "recommendation"],
     "continuity_graph_snapshot": ["project_id", "nodes", "edges", "summary", "created_at"],
+    "canon_graph_snapshot": ["snapshot_id", "project_id", "entities", "relationships", "state_machines", "lifecycle_threads", "event_graph", "violations"],
     "model_profile": ["provider", "model_name", "capabilities", "cost_profile", "status"],
     "model_benchmark_task": ["task_id", "task_type", "input_assets", "rubric", "expected_output_type"],
     "model_benchmark_run": ["task_id", "provider", "model_name", "scores", "latency_ms", "status", "created_at"],
@@ -505,6 +515,8 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.extend(_validate_platform_profile_content(content))
     if asset_type == "topic_fit_report" and isinstance(content, dict):
         errors.extend(_validate_topic_fit_report_content(content))
+    if asset_type == "creative_strategy_profile" and isinstance(content, dict):
+        errors.extend(_validate_creative_strategy_profile_content(content))
     if asset_type in {"quality_standard_profile", "review_rule_pack"} and isinstance(content, dict):
         errors.extend(_validate_quality_dimensions_content(asset_type, content))
     if asset_type == "quality_score_report" and isinstance(content, dict):
@@ -529,7 +541,7 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.extend(_validate_change_impact_report_content(content))
     if asset_type.startswith("agent_") and isinstance(content, dict):
         errors.extend(_validate_agent_asset_content(asset_type, content))
-    if asset_type in {"chapter_continuity_report", "continuity_graph_snapshot"} and isinstance(content, dict):
+    if asset_type in {"chapter_continuity_report", "continuity_graph_snapshot", "canon_graph_snapshot"} and isinstance(content, dict):
         errors.extend(_validate_deep_continuity_content(asset_type, content))
     if asset_type in {"model_profile", "model_benchmark_task", "model_benchmark_run", "model_comparison_report", "prompt_version", "prompt_regression_report"} and isinstance(content, dict):
         errors.extend(_validate_model_evaluation_content(asset_type, content))
@@ -910,6 +922,16 @@ def _validate_topic_fit_report_content(content: dict[str, Any]) -> list[str]:
                 errors.append(f"topic_fit_report scores.{key} must be between 0 and 100")
     if not isinstance(content.get("must_adjust"), list):
         errors.append("topic_fit_report must_adjust must be a list")
+    return errors
+
+
+def _validate_creative_strategy_profile_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if not str(content.get("reader_promise", "")).strip():
+        errors.append("creative_strategy_profile reader_promise must not be empty")
+    for key in ["volume_goals", "pleasure_rhythm", "long_hooks", "platform_pacing", "verification_rules"]:
+        if not isinstance(content.get(key), (dict, list)):
+            errors.append(f"creative_strategy_profile {key} must be an object or list")
     return errors
 
 
@@ -1346,6 +1368,10 @@ def _validate_deep_continuity_content(asset_type: str, content: dict[str, Any]) 
                 errors.append(f"continuity_graph_snapshot {key} must be a list")
         if not isinstance(content.get("summary"), dict):
             errors.append("continuity_graph_snapshot summary must be an object")
+    if asset_type == "canon_graph_snapshot":
+        for key in ["entities", "relationships", "state_machines", "lifecycle_threads", "event_graph", "violations"]:
+            if not isinstance(content.get(key), (dict, list)):
+                errors.append(f"canon_graph_snapshot {key} must be an object or list")
     return errors
 
 

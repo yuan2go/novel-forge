@@ -8,7 +8,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
-from novel_forge.schemas import ChapterContinuityReport, ContinuityGraphSnapshot, validate_common_fields
+from novel_forge.schemas import ChapterContinuityReport, ContinuityGraphSnapshot, CanonGraphSnapshot, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 CONTINUITY_TYPES = {
@@ -26,6 +26,7 @@ CONTINUITY_TYPES = {
     "review_report",
     "revision_plan",
     "chapter_audit_report",
+    "canon_graph_snapshot",
 }
 
 
@@ -130,6 +131,39 @@ def create_continuity_graph_snapshot(
         return result
 
 
+def create_canon_graph_snapshot(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+) -> dict[str, Any]:
+    graph = build_continuity_graph(storage, project_id=project_id, workspace_path=workspace_path, include_content_snapshot=True)
+    canon = _build_canon_graph_payload(graph)
+    with AgentExecutionContext(
+        storage,
+        agent_key="continuity",
+        operation="create-canon-graph-snapshot",
+        output_types=["canon_graph_snapshot"],
+        workspace_path=workspace_path,
+        sla_seconds=600,
+    ) as run:
+        run.guard("write_canon_graph_snapshot", "canon_graph_snapshot")
+        asset = CanonGraphSnapshot(
+            title="Canon graph snapshot",
+            tags=["continuity", "canon", "snapshot"],
+            content=canon,
+            metadata={"project_id": project_id or "", "workspace_path": workspace_path or "", "risk_level": "high" if canon["violations"] else "low"},
+            references=filter_project_safe_references(
+                storage,
+                project_id or "",
+                [node["id"] for node in graph["nodes"]] + [node["path"] for node in graph["nodes"]],
+            ),
+        )
+        result = _write(storage, asset)
+        run.succeed(output_assets=[result["path"]], token_used=len(canon["entities"]) + len(canon["relationships"]))
+        return result
+
+
 def create_chapter_continuity_report(
     storage: LocalStorage,
     draft_path: str | Path,
@@ -198,7 +232,28 @@ def create_chapter_stability_preflight_report(
     project_id = str(project.get("project_id", ""))
     workspace = str(project.get("workspace_path", "") or workspace_path or "")
     graph = build_continuity_graph(storage, project_id=project_id or None, workspace_path=workspace, include_content_snapshot=True)
+    chapter = _positive_int(plan.content.get("chapter", 1))
+    canon_graph = _build_canon_graph_payload(graph, target_asset=plan.to_dict(), chapter=chapter)
     checks, violations, dimensions = _stability_preflight_checks(plan.to_dict(), graph)
+    canon_violations = canon_graph.get("violations", []) if isinstance(canon_graph.get("violations", []), list) else []
+    dimensions["canon_graph"] = {
+        "status": "blocked" if any(item.get("severity") == "high" for item in canon_violations) else "warning" if canon_violations else "passed",
+        "entity_count": len(canon_graph.get("entities", [])),
+        "relationship_count": len(canon_graph.get("relationships", [])),
+        "event_count": len(canon_graph.get("event_graph", [])),
+        "violation_count": len(canon_violations),
+        "summary": "checks structured character states, power levels, locations, foreshadowing lifecycle, and event causality",
+    }
+    checks.append(
+        {
+            "check": "canon_graph",
+            "status": dimensions["canon_graph"]["status"],
+            "asset_count": dimensions["canon_graph"]["entity_count"],
+            "matched_count": dimensions["canon_graph"]["event_count"],
+            "summary": dimensions["canon_graph"]["summary"],
+        }
+    )
+    violations.extend(canon_violations)
     recommendation = "block" if any(item["severity"] == "high" for item in violations) else "revise" if violations else "pass"
     with AgentExecutionContext(
         storage,
@@ -225,6 +280,7 @@ def create_chapter_stability_preflight_report(
                 "gate": "long_form_stability_preflight",
                 "gate_status": "blocked" if recommendation == "block" else "passed_with_warnings" if recommendation == "revise" else "passed",
                 "dimensions": dimensions,
+                "canon_graph": canon_graph,
                 "continuity_checks": checks,
                 "violations": violations,
                 "blocking_violations": [item for item in violations if item.get("severity") == "high"],
@@ -242,6 +298,310 @@ def create_chapter_stability_preflight_report(
         result = _write(storage, asset)
         run.succeed(output_assets=[result["path"]], token_used=len(checks) + len(violations))
         return result
+
+
+def _build_canon_graph_payload(
+    graph: dict[str, Any],
+    *,
+    target_asset: dict[str, Any] | None = None,
+    chapter: int | None = None,
+) -> dict[str, Any]:
+    nodes = graph.get("nodes", []) if isinstance(graph.get("nodes", []), list) else []
+    relationships = [
+        {
+            "source": edge.get("source", ""),
+            "target": edge.get("target", ""),
+            "relation": edge.get("relation", ""),
+            "evidence": edge.get("evidence", ""),
+            "source_path": edge.get("source_path", ""),
+            "target_path": edge.get("target_path", ""),
+        }
+        for edge in graph.get("edges", [])
+        if isinstance(edge, dict)
+    ]
+    entities = _canon_entities(nodes)
+    state_machines = _canon_state_machines(nodes, entities)
+    lifecycle_threads = _canon_lifecycle_threads(nodes)
+    event_graph = _canon_event_graph(nodes, target_asset=target_asset, chapter=chapter)
+    violations = _canon_violations(entities, lifecycle_threads, event_graph, target_asset=target_asset, chapter=chapter)
+    return {
+        "snapshot_id": make_id("canon_graph", graph.get("project_id") or graph.get("workspace_path") or "global"),
+        "project_id": graph.get("project_id", "global") or "global",
+        "workspace_path": graph.get("workspace_path", ""),
+        "entities": entities,
+        "relationships": relationships,
+        "state_machines": state_machines,
+        "lifecycle_threads": lifecycle_threads,
+        "event_graph": event_graph,
+        "violations": violations,
+        "summary": {
+            "entity_count": len(entities),
+            "relationship_count": len(relationships),
+            "state_machine_count": sum(len(value) for value in state_machines.values() if isinstance(value, list)),
+            "thread_count": len(lifecycle_threads),
+            "event_count": len(event_graph),
+            "violation_count": len(violations),
+        },
+        "built_at": utc_now(),
+    }
+
+
+def _canon_entities(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    entities: list[dict[str, Any]] = []
+    for node in nodes:
+        content = _node_content(node)
+        node_type = str(node.get("type", ""))
+        if node_type == "character_card":
+            entities.append(
+                {
+                    "entity_id": str(node.get("id", "")),
+                    "asset_id": str(node.get("id", "")),
+                    "asset_path": str(node.get("path", "")),
+                    "entity_type": "character",
+                    "name": str(content.get("name") or node.get("title") or ""),
+                    "aliases": content.get("aliases", []) if isinstance(content.get("aliases", []), list) else [],
+                    "state": str(content.get("current_state") or content.get("state") or content.get("status") or "active"),
+                    "location": str(content.get("current_location") or content.get("location") or ""),
+                    "power_level": str(content.get("power_level") or content.get("rank") or content.get("realm") or ""),
+                    "chapter": node.get("chapter", ""),
+                }
+            )
+        elif node_type in {"continuity_bible", "world_bible"}:
+            for index, item in enumerate(content.get("entities", []) if isinstance(content.get("entities", []), list) else [], start=1):
+                if isinstance(item, dict):
+                    name = str(item.get("name") or item.get("title") or item.get("id") or "").strip()
+                    entity_type = str(item.get("type") or item.get("entity_type") or "canon_entity").strip()
+                else:
+                    name = str(item).strip()
+                    entity_type = "canon_entity"
+                if not name:
+                    continue
+                entities.append(
+                    {
+                        "entity_id": f"{node.get('id', '')}:entity:{index}",
+                        "asset_id": str(node.get("id", "")),
+                        "asset_path": str(node.get("path", "")),
+                        "entity_type": entity_type,
+                        "name": name,
+                        "aliases": [],
+                        "state": "canon",
+                        "location": "",
+                        "power_level": "",
+                        "chapter": "",
+                    }
+                )
+        elif node_type == "power_scale_rule":
+            entities.append(
+                {
+                    "entity_id": str(node.get("id", "")),
+                    "asset_id": str(node.get("id", "")),
+                    "asset_path": str(node.get("path", "")),
+                    "entity_type": "power_scale",
+                    "name": str(node.get("title") or content.get("scale_id") or "power scale"),
+                    "aliases": [],
+                    "state": "active",
+                    "location": "",
+                    "power_level": str(content.get("current_level") or content.get("level") or ""),
+                    "chapter": "",
+                }
+            )
+    return entities
+
+
+def _canon_state_machines(nodes: list[dict[str, Any]], entities: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    character_states = [
+        {
+            "entity_id": entity.get("entity_id", ""),
+            "name": entity.get("name", ""),
+            "state": entity.get("state", ""),
+            "location": entity.get("location", ""),
+            "power_level": entity.get("power_level", ""),
+            "allowed_transitions": ["active", "injured", "missing", "dead", "transformed"],
+        }
+        for entity in entities
+        if entity.get("entity_type") == "character"
+    ]
+    power_scales: list[dict[str, Any]] = []
+    locations: list[dict[str, Any]] = []
+    item_ownership: list[dict[str, Any]] = []
+    for node in nodes:
+        content = _node_content(node)
+        if node.get("type") == "power_scale_rule":
+            power_scales.append(
+                {
+                    "asset_id": node.get("id", ""),
+                    "name": node.get("title", ""),
+                    "levels": content.get("levels", content.get("rules", [])),
+                    "limits": content.get("limits", []),
+                }
+            )
+        for item in content.get("locations", []) if isinstance(content.get("locations", []), list) else []:
+            locations.append({"asset_id": node.get("id", ""), "location": item})
+        for item in content.get("items", []) if isinstance(content.get("items", []), list) else []:
+            item_ownership.append({"asset_id": node.get("id", ""), "item": item})
+    return {
+        "characters": character_states,
+        "power_scales": power_scales,
+        "locations": locations,
+        "item_ownership": item_ownership,
+    }
+
+
+def _canon_lifecycle_threads(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    threads: list[dict[str, Any]] = []
+    valid_status = {"planned", "seeded", "developing", "paid_off", "abandoned", "reopened"}
+    for node in nodes:
+        content = _node_content(node)
+        if node.get("type") == "foreshadowing_thread":
+            status = str(content.get("status") or "planned").strip() or "planned"
+            threads.append(
+                {
+                    "thread_id": str(content.get("thread_id") or node.get("id", "")),
+                    "asset_id": node.get("id", ""),
+                    "asset_path": node.get("path", ""),
+                    "title": node.get("title", ""),
+                    "status": status,
+                    "status_valid": status in valid_status,
+                    "setup": content.get("setup", ""),
+                    "payoff_plan": content.get("payoff_plan", ""),
+                    "related_chapters": content.get("related_chapters", []) if isinstance(content.get("related_chapters", []), list) else [],
+                }
+            )
+        if node.get("type") == "continuity_bible":
+            for index, item in enumerate(content.get("open_threads", []) if isinstance(content.get("open_threads", []), list) else [], start=1):
+                threads.append(
+                    {
+                        "thread_id": f"{node.get('id', '')}:open_thread:{index}",
+                        "asset_id": node.get("id", ""),
+                        "asset_path": node.get("path", ""),
+                        "title": str(item),
+                        "status": "seeded",
+                        "status_valid": True,
+                        "setup": str(item),
+                        "payoff_plan": "",
+                        "related_chapters": [],
+                    }
+                )
+    return threads
+
+
+def _canon_event_graph(
+    nodes: list[dict[str, Any]],
+    *,
+    target_asset: dict[str, Any] | None = None,
+    chapter: int | None = None,
+) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    for node in nodes:
+        content = _node_content(node)
+        for index, item in enumerate(content.get("timeline", []) if isinstance(content.get("timeline", []), list) else [], start=1):
+            if isinstance(item, dict):
+                text = str(item.get("event") or item.get("summary") or item.get("title") or "").strip()
+                event_chapter = _positive_int(item.get("chapter", 0))
+            else:
+                text = str(item).strip()
+                event_chapter = _positive_int(node.get("chapter", 0))
+            if text:
+                events.append({"event_id": f"{node.get('id', '')}:timeline:{index}", "asset_id": node.get("id", ""), "chapter": event_chapter, "event": text, "kind": "timeline"})
+        if node.get("type") == "chapter_plan":
+            events.append(
+                {
+                    "event_id": f"{node.get('id', '')}:plan",
+                    "asset_id": node.get("id", ""),
+                    "chapter": _positive_int(content.get("chapter") or node.get("chapter")),
+                    "event": _compact_event_text([content.get("objective"), content.get("beats"), content.get("hook")]),
+                    "kind": "chapter_plan",
+                }
+            )
+        if node.get("type") == "draft_chapter":
+            events.append(
+                {
+                    "event_id": f"{node.get('id', '')}:draft",
+                    "asset_id": node.get("id", ""),
+                    "chapter": _positive_int(content.get("chapter") or node.get("chapter")),
+                    "event": _compact_event_text([content.get("summary"), content.get("text")]),
+                    "kind": "draft",
+                }
+            )
+    if target_asset:
+        content = target_asset.get("content", {}) if isinstance(target_asset.get("content", {}), dict) else {}
+        events.append(
+            {
+                "event_id": f"{target_asset.get('id', 'target')}:target",
+                "asset_id": target_asset.get("id", ""),
+                "chapter": _positive_int(chapter or content.get("chapter") or target_asset.get("chapter")),
+                "event": _compact_event_text([content.get("objective"), content.get("beats"), content.get("hook"), content.get("text")]),
+                "kind": "target",
+            }
+        )
+    return [event for event in events if str(event.get("event", "")).strip()]
+
+
+def _canon_violations(
+    entities: list[dict[str, Any]],
+    lifecycle_threads: list[dict[str, Any]],
+    event_graph: list[dict[str, Any]],
+    *,
+    target_asset: dict[str, Any] | None = None,
+    chapter: int | None = None,
+) -> list[dict[str, Any]]:
+    violations: list[dict[str, Any]] = []
+    by_name: dict[str, list[dict[str, Any]]] = {}
+    for entity in entities:
+        name = str(entity.get("name", "")).strip().lower()
+        if name:
+            by_name.setdefault(name, []).append(entity)
+    for name, rows in by_name.items():
+        states = {str(row.get("state", "")).lower() for row in rows if str(row.get("state", "")).strip()}
+        locations = {str(row.get("location", "")).lower() for row in rows if str(row.get("location", "")).strip()}
+        if _state_conflict(states):
+            violations.append(
+                {
+                    "severity": "high",
+                    "dimension": "character_state_machine",
+                    "message": f"Character '{name}' has conflicting canon states: {sorted(states)}",
+                    "recommendation": "Resolve the character state before chapter generation.",
+                    "evidence_asset_ids": _dedupe([str(row.get("asset_id", "")) for row in rows]),
+                }
+            )
+        if len(locations) > 2:
+            violations.append(
+                {
+                    "severity": "medium",
+                    "dimension": "location_movement",
+                    "message": f"Character '{name}' has multiple active locations: {sorted(locations)}",
+                    "recommendation": "Add an explicit travel or location transition beat.",
+                    "evidence_asset_ids": _dedupe([str(row.get("asset_id", "")) for row in rows]),
+                }
+            )
+    for thread in lifecycle_threads:
+        if not thread.get("status_valid"):
+            violations.append(
+                {
+                    "severity": "medium",
+                    "dimension": "foreshadowing_lifecycle",
+                    "message": f"Foreshadowing thread '{thread.get('title') or thread.get('thread_id')}' has invalid status {thread.get('status')}.",
+                    "recommendation": "Use planned/seeded/developing/paid_off/abandoned/reopened.",
+                    "evidence_asset_ids": [str(thread.get("asset_id", ""))],
+                }
+            )
+    target_chapter = _positive_int(chapter or 0)
+    target_text = _searchable_text((target_asset or {}).get("content", {}) if isinstance((target_asset or {}).get("content", {}), dict) else {})
+    if target_chapter:
+        for event in event_graph:
+            event_chapter = _positive_int(event.get("chapter", 0))
+            event_text = str(event.get("event", "")).strip().lower()
+            if event_chapter > target_chapter and event_text and event_text[:80] in target_text:
+                violations.append(
+                    {
+                        "severity": "high",
+                        "dimension": "event_causality",
+                        "message": f"Target chapter {target_chapter} appears to use future canon event from chapter {event_chapter}.",
+                        "recommendation": "Move the event or update the timeline.",
+                        "evidence_asset_ids": [str(event.get("asset_id", ""))],
+                    }
+                )
+    return violations
 
 
 def _iter_asset_paths(storage: LocalStorage) -> list[Path]:
@@ -364,6 +724,16 @@ def _dedupe_edges(edges: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         seen.add(key)
         result.append(edge)
+    return result
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if value and value not in seen:
+            seen.add(value)
+            result.append(value)
     return result
 
 
@@ -677,7 +1047,18 @@ def _as_list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else [value]
 
 
-def _write(storage: LocalStorage, asset: ContinuityGraphSnapshot | ChapterContinuityReport) -> dict[str, Any]:
+def _compact_event_text(values: list[Any]) -> str:
+    text = _searchable_text(values)
+    return text[:360]
+
+
+def _state_conflict(states: set[str]) -> bool:
+    dead = {"dead", "死亡", "已死", "阵亡", "removed"}
+    active = {"active", "alive", "行动", "出场", "injured", "missing", "transformed"}
+    return bool(states & dead and states & active)
+
+
+def _write(storage: LocalStorage, asset: ContinuityGraphSnapshot | CanonGraphSnapshot | ChapterContinuityReport) -> dict[str, Any]:
     errors = validate_common_fields(asset.to_dict())
     if errors:
         raise ValueError("; ".join(errors))

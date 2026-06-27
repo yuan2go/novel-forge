@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.modules.feedback import apply_feedback_strategy_to_workspace, create_feedback_import_batch, create_reader_sentiment_report
 from novel_forge.modules.metrics import create_project_metric_snapshot
 from novel_forge.modules.settings_center import create_local_settings_profile
-from novel_forge.schemas import DraftChapter, ProjectWorkspaceState
+from novel_forge.schemas import ChapterPlan, DraftChapter, Outline, ProjectWorkspaceState
 from novel_forge.storage.local import LocalStorage
 
 
@@ -37,6 +37,24 @@ class FeedbackMetricsSettingsTests(unittest.TestCase):
                     title="Draft",
                     content={"chapter": 1, "text": "原创章节。", "copyright_boundary": "fixture"},
                     metadata={"project_id": "project_industrial", "workspace_path": str(workspace_path.relative_to(storage.root))},
+                ),
+            )
+            outline_path = storage.write_asset(
+                "outlines",
+                Outline(
+                    title="Feedback outline",
+                    content={"acts": [{"act": 1, "goal": "retain readers"}], "feedback_constraints": []},
+                    metadata={"project_id": "project_industrial", "workspace_path": str(workspace_path.relative_to(storage.root))},
+                    references=[str(workspace_path.relative_to(storage.root))],
+                ),
+            )
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Feedback chapter plan",
+                    content={"chapter": 2, "objective": "repair retention", "beats": ["open pressure"], "hook": "next hook", "feedback_constraints": []},
+                    metadata={"project_id": "project_industrial", "workspace_path": str(workspace_path.relative_to(storage.root))},
+                    references=[str(workspace_path.relative_to(storage.root))],
                 ),
             )
             csv_path = Path(tmp) / "feedback.csv"
@@ -70,6 +88,10 @@ class FeedbackMetricsSettingsTests(unittest.TestCase):
             self.assertEqual(applied_strategy["workspace_path"], str(workspace_path.relative_to(storage.root)))
             workspace_after = storage.read_json(workspace_path)
             self.assertIn("reader_feedback", workspace_after["content"]["memory"])
+            self.assertTrue(applied_strategy["updated_assets"])
+            self.assertTrue(storage.read_asset(outline_path).content["feedback_constraints"])
+            self.assertTrue(storage.read_asset(plan_path).content["feedback_constraints"])
+            self.assertTrue(workspace_after["content"]["review_rubric_feedback_constraints"])
 
             snapshot = create_project_metric_snapshot(
                 storage,

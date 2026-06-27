@@ -11,6 +11,7 @@ from novel_forge.storage.local import LocalStorage
 PROFILE_BINDINGS = {
     "platform_profile": ("platform_profile_id", "platform_profile_path"),
     "genre_market_profile": ("genre_market_profile_id", "genre_market_profile_path"),
+    "creative_strategy_profile": ("creative_strategy_profile_id", "creative_strategy_profile_path"),
     "quality_standard_profile": ("quality_standard_profile_id", "quality_standard_profile_path"),
     "style_profile": ("style_profile_id", "style_profile_path"),
     "style_blend_preset": ("style_blend_preset_id", "style_blend_preset_path"),
@@ -318,6 +319,7 @@ def _create_default_profile_asset(storage: LocalStorage, project: dict[str, Any]
     title_by_type = {
         "platform_profile": f"{project.get('title') or 'Project'} platform profile",
         "genre_market_profile": f"{project.get('title') or 'Project'} genre market profile",
+        "creative_strategy_profile": f"{project.get('title') or 'Project'} creative strategy",
         "quality_standard_profile": f"{project.get('title') or 'Project'} quality standard",
         "style_profile": f"{project.get('title') or 'Project'} style profile",
         "continuity_bible": f"{project.get('title') or 'Project'} continuity bible",

@@ -26,6 +26,7 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
     draft_asset = read_previous(storage, "drafts", input_path)
     production_context = build_production_context(storage, draft_asset, input_path=input_path)
     quality_dimensions = quality_dimensions_from_context(production_context) or QUALITY_DIMENSIONS
+    feedback_rubric_constraints = _feedback_rubric_constraints(storage, production_context)
     retrieved_context = build_rag_context(
         storage,
         draft_asset,
@@ -56,6 +57,7 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                     "rubric": quality_dimensions,
                     "draft_asset_id": draft_asset.id,
                     "copyright_boundary": draft_asset.content.get("copyright_boundary", ""),
+                    "feedback_rubric_constraints": feedback_rubric_constraints,
                     "retrieved_context": retrieved_context,
                     "production_context": production_context,
                 },
@@ -75,6 +77,7 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                 "summary": f"{model.name} review completed",
                 "quality_gates": quality_gate,
                 "quality_standard_evaluation": standard_evaluation,
+                "feedback_rubric_constraints": feedback_rubric_constraints,
                 "production_context": production_context,
                 "retrieved_context": retrieved_context,
                 "agent_run_path": agent_run.path,
@@ -93,6 +96,7 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                 "continuity_bible_id": _profile_id(production_context, "continuity_bible"),
                 "preflight_ready": production_context["preflight"].get("ready", False),
                 "preflight_warnings": production_context["preflight"].get("warnings", []),
+                "feedback_rubric_loaded": bool(feedback_rubric_constraints),
                 **retrieval_metadata(retrieved_context),
                 "run_metadata": run_metadata(
                     "review",
@@ -114,6 +118,7 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                         for issue in gate_issues(quality_gate)
                         if issue.get("recommendation")
                     ],
+                    *feedback_rubric_constraints[:3],
                 ]
             ),
             next_action=result["next_action"],
@@ -184,6 +189,30 @@ def _profile_id(context: dict, asset_type: str) -> str:
     profiles = context.get("profiles", {}) if isinstance(context.get("profiles", {}), dict) else {}
     profile = profiles.get(asset_type)
     return str(profile.get("id", "")) if isinstance(profile, dict) else ""
+
+
+def _feedback_rubric_constraints(storage: LocalStorage, production_context: dict[str, Any]) -> list[str]:
+    workspace_path = str(production_context.get("project", {}).get("workspace_path", "") or "")
+    if not workspace_path:
+        return []
+    try:
+        data = storage.read_json(storage.root / workspace_path)
+    except Exception:
+        return []
+    if not isinstance(data, dict):
+        return []
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    values: list[str] = []
+    for key in ["review_rubric_feedback_constraints", "feedback_constraints"]:
+        value = content.get(key)
+        if isinstance(value, list):
+            values.extend(str(item).strip() for item in value if str(item).strip())
+    memory = content.get("memory", {}) if isinstance(content.get("memory", {}), dict) else {}
+    reader = memory.get("reader_feedback", {}) if isinstance(memory.get("reader_feedback", {}), dict) else {}
+    strategy = reader.get("next_chapter_strategy", {}) if isinstance(reader.get("next_chapter_strategy", {}), dict) else {}
+    if strategy.get("primary_strategy"):
+        values.append(f"review must check reader strategy: {strategy.get('primary_strategy')}")
+    return _dedupe(values)
 
 
 @dataclass(frozen=True)

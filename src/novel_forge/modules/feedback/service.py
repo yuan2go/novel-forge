@@ -341,6 +341,10 @@ def apply_feedback_strategy_to_workspace(
             )
         content["open_issues"] = _dedupe_issue_rows(open_issues)
         content["feedback_constraints"] = strategy.get("constraints", report.content.get("next_generation_constraints", []))
+        content["review_rubric_feedback_constraints"] = [
+            f"reader feedback: {item}"
+            for item in _dedupe([str(item) for item in content.get("feedback_constraints", []) if str(item).strip()])
+        ]
         data["content"] = content
         metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
         metadata["last_feedback_strategy_report_path"] = _display_path(storage.root, report_file)
@@ -350,12 +354,16 @@ def apply_feedback_strategy_to_workspace(
         if errors:
             raise ValueError("; ".join(errors))
         storage.write_json(workspace_file, data)
-        run.succeed(output_assets=[_display_path(storage.root, workspace_file)])
+        run.guard("update_production_feedback_constraints", "outline")
+        run.guard("update_production_feedback_constraints", "chapter_plan")
+        updated_assets = _apply_feedback_strategy_to_recent_assets(storage, project.get("project_id", ""), workspace, report, _display_path(storage.root, report_file), strategy)
+        run.succeed(output_assets=[_display_path(storage.root, workspace_file), *updated_assets])
         return {
             "path": _display_path(storage.root, workspace_file),
             "workspace_path": _display_path(storage.root, workspace_file),
             "asset": data,
             "applied_report_path": _display_path(storage.root, report_file),
+            "updated_assets": updated_assets,
         }
 
 
@@ -670,6 +678,63 @@ def _dedupe_issue_rows(rows: list[Any]) -> list[dict[str, Any]]:
         seen.add(key)
         result.append(row)
     return result
+
+
+def _apply_feedback_strategy_to_recent_assets(
+    storage: LocalStorage,
+    project_id: str,
+    workspace_path: str,
+    report: Any,
+    report_path: str,
+    strategy: dict[str, Any],
+    *,
+    limit_per_type: int = 6,
+) -> list[str]:
+    constraints = _dedupe([str(item) for item in strategy.get("constraints", []) if str(item).strip()])
+    if strategy.get("primary_strategy"):
+        constraints.insert(0, f"reader feedback strategy: {strategy.get('primary_strategy')}")
+    refs = _dedupe([report.id, report_path, workspace_path])
+    updated: list[str] = []
+    for category, asset_type in [("outlines", "outline"), ("chapter_plans", "chapter_plan")]:
+        count = 0
+        for path in reversed(storage.list_json(category)):
+            if count >= limit_per_type:
+                break
+            try:
+                data = storage.read_json(path)
+            except Exception:
+                continue
+            if not isinstance(data, dict) or data.get("type") != asset_type:
+                continue
+            metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            if project_id and str(metadata.get("project_id", "")) != project_id:
+                continue
+            content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            existing = content.get("feedback_constraints", []) if isinstance(content.get("feedback_constraints", []), list) else []
+            content["feedback_constraints"] = _dedupe([*[str(item) for item in existing], *constraints])
+            content["reader_feedback_strategy"] = {
+                "source_report_id": report.id,
+                "source_report_path": report_path,
+                "primary_strategy": strategy.get("primary_strategy", ""),
+                "constraints": constraints,
+                "risk_level": strategy.get("risk_level", ""),
+                "focus_character": strategy.get("focus_character", ""),
+                "applied_at": utc_now(),
+            }
+            data["content"] = content
+            references = data.get("references", []) if isinstance(data.get("references", []), list) else []
+            data["references"] = _dedupe([*[str(item) for item in references], *[str(item) for item in refs if str(item).strip()]])
+            metadata["feedback_strategy_report_id"] = report.id
+            metadata["feedback_strategy_applied_at"] = utc_now()
+            data["metadata"] = metadata
+            data["updated_at"] = utc_now()
+            errors = validate_common_fields(data)
+            if errors:
+                raise ValueError("; ".join(errors))
+            storage.write_json(path, data)
+            updated.append(_display_path(storage.root, path))
+            count += 1
+    return updated
 
 
 def _first_workspace(feedback_assets: list[dict[str, Any]]) -> str:

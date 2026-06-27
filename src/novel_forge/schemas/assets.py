@@ -102,6 +102,11 @@ class GenreMarketProfile(BaseAsset):
 
 
 @dataclass
+class CreativeStrategyProfile(BaseAsset):
+    type: str = "creative_strategy_profile"
+
+
+@dataclass
 class TopicSeed(BaseAsset):
     type: str = "topic_seed"
 
@@ -144,6 +149,11 @@ class ChapterContinuityReport(BaseAsset):
 @dataclass
 class ContinuityGraphSnapshot(BaseAsset):
     type: str = "continuity_graph_snapshot"
+
+
+@dataclass
+class CanonGraphSnapshot(BaseAsset):
+    type: str = "canon_graph_snapshot"
 
 
 @dataclass
@@ -485,6 +495,7 @@ SCHEMA_CLASSES = {
         AssetCollection,
         PlatformProfile,
         GenreMarketProfile,
+        CreativeStrategyProfile,
         TopicSeed,
         TopicFitReport,
         WorldBible,
@@ -494,6 +505,7 @@ SCHEMA_CLASSES = {
         PowerScaleRule,
         ChapterContinuityReport,
         ContinuityGraphSnapshot,
+        CanonGraphSnapshot,
         StyleProfile,
         StyleDecompositionReport,
         StyleBlendPreset,

@@ -28,9 +28,9 @@ CREATIVE_LIBRARY_DEFINITIONS: tuple[CreativeLibraryDefinition, ...] = (
         key="topic_library",
         title="Topic Library",
         title_zh="题材库",
-        description="Platform profiles, genre market profiles, topic seeds, and fit reports.",
-        description_zh="平台配置、题材市场画像、题材种子和适配评估。",
-        asset_types=("platform_profile", "genre_market_profile", "topic_seed", "topic_fit_report"),
+        description="Platform profiles, genre market profiles, creative strategy, topic seeds, and fit reports.",
+        description_zh="平台配置、题材市场画像、创作策略、题材种子和适配评估。",
+        asset_types=("platform_profile", "genre_market_profile", "creative_strategy_profile", "topic_seed", "topic_fit_report"),
         categories=("platforms", "genres", "topics"),
     ),
     CreativeLibraryDefinition(
@@ -315,6 +315,35 @@ def _default_content(asset_type: str, title: str, project_id: str) -> dict[str, 
             "fatigue_points": ["slow setup", "unclear promise", "repeated scenes"],
             "differentiation_axes": ["occupation", "setting rule", "relationship pressure"],
             "chapter_rhythm_template": "hook -> pressure -> choice -> consequence -> next hook",
+        },
+        "creative_strategy_profile": {
+            "strategy_id": "creative_strategy_custom_v1",
+            "reader_promise": "deliver a clear genre promise with visible choice pressure and chapter-end curiosity",
+            "volume_goals": {
+                "volume_1": "establish protagonist pressure, core world rule, repeatable conflict engine, and first long hook",
+                "current_volume": "convert every chapter into pressure, choice, cost, payoff, and next obligation",
+            },
+            "pleasure_rhythm": {
+                "chapter_loop": ["hook", "pressure", "choice", "cost", "payoff", "next_hook"],
+                "sweet_points": ["competence reveal", "relationship pressure", "rule discovery"],
+                "poison_points_to_avoid": ["unclear motive", "slow exposition", "repeated scene function"],
+                "density_target": {"hook_every_beats": 4, "payoff_every_chapters": 2},
+            },
+            "long_hooks": [
+                {"hook_id": "core_mystery", "status": "seeded", "payoff_window": "volume_1_end"},
+                {"hook_id": "relationship_pressure", "status": "planned", "payoff_window": "mid_volume"},
+            ],
+            "platform_pacing": {
+                "opening_window": "first_3_chapters",
+                "retention_window": "first_10_chapters",
+                "update_cadence": "daily",
+                "chapter_length_target": 2500,
+            },
+            "verification_rules": [
+                "chapter plan must state reader promise and next hook",
+                "chapter plan must include at least one choice-cost beat",
+                "draft must not bypass long-form continuity or RAG quality gates",
+            ],
         },
         "topic_seed": {
             "logline": "A differentiated project premise with a visible conflict engine.",

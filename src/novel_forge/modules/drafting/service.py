@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from novel_forge.agents import agent_runtime_profile, enforce_agent_action
 from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
@@ -55,7 +56,7 @@ def draft(
             plan_path,
             query=f"draft chapter {plan.title} {plan.content.get('objective', '')} {plan.content.get('hook', '')}",
             top_k=8,
-            token_budget=4000,
+            token_budget=8000,
             backend="auto",
             workspace_path=workspace_path,
         )
@@ -64,6 +65,7 @@ def draft(
         context_plan_ref = str(context_plan["path"])
     context_bundle_asset = context_bundle["asset"]
     retrieved_context = context_bundle_asset.get("content", {}).get("retrieved_context", {})
+    rag_quality_gate = _load_rag_quality_gate(storage, context_bundle_asset)
     with AgentExecutionContext(
         storage,
         agent_key="draft",
@@ -86,6 +88,7 @@ def draft(
                 "source_asset_id": plan.id,
                 "retrieved_context": retrieved_context,
                 "stability_preflight": stability_preflight["content"],
+                "rag_quality_gate": rag_quality_gate,
                 "context_build_plan": context_plan_asset.get("content", {}),
                 "context_bundle": context_bundle_asset.get("content", {}),
                 "actual_context": context_bundle_asset.get("content", {}).get("actual_context", ""),
@@ -115,6 +118,10 @@ def draft(
                 "stability_preflight": stability_preflight["content"],
                 "stability_preflight_path": stability_preflight["path"],
                 "stability_preflight_id": stability_preflight["id"],
+                "rag_quality_gate": rag_quality_gate,
+                "rag_quality_report_id": rag_quality_gate.get("report_id", ""),
+                "rag_quality_report_path": rag_quality_gate.get("report_path", ""),
+                "rag_quality_recommendation": rag_quality_gate.get("recommendation", ""),
                 "context_build_plan_id": context_plan_asset.get("id", ""),
                 "context_build_plan_path": context_plan_ref,
                 "context_bundle_id": context_bundle_asset.get("id", ""),
@@ -134,6 +141,7 @@ def draft(
                 "workspace_path": production_context["project"].get("workspace_path", ""),
                 "platform_profile_id": _profile_id(production_context, "platform_profile"),
                 "genre_market_profile_id": _profile_id(production_context, "genre_market_profile"),
+                "creative_strategy_profile_id": _profile_id(production_context, "creative_strategy_profile"),
                 "quality_standard_profile_id": _profile_id(production_context, "quality_standard_profile"),
                 "style_profile_id": _profile_id(production_context, "style_profile"),
                 "style_blend_preset_id": _profile_id(production_context, "style_blend_preset"),
@@ -142,6 +150,10 @@ def draft(
                 "stability_preflight_path": stability_preflight["path"],
                 "stability_preflight_recommendation": stability_preflight["recommendation"],
                 "stability_preflight_gate_status": stability_preflight["gate_status"],
+                "rag_quality_report_id": rag_quality_gate.get("report_id", ""),
+                "rag_quality_report_path": rag_quality_gate.get("report_path", ""),
+                "rag_quality_recommendation": rag_quality_gate.get("recommendation", ""),
+                "rag_quality_gate_status": rag_quality_gate.get("gate_status", ""),
                 "context_build_plan_id": context_plan_asset.get("id", ""),
                 "context_build_plan_path": context_plan_ref,
                 "context_bundle_id": context_bundle_asset.get("id", ""),
@@ -164,6 +176,8 @@ def draft(
                     plan_ref,
                     stability_preflight["id"],
                     stability_preflight["path"],
+                    str(rag_quality_gate.get("report_id", "")),
+                    str(rag_quality_gate.get("report_path", "")),
                     str(context_plan_asset.get("id", "")),
                     context_plan_ref,
                     str(context_bundle_asset.get("id", "")),
@@ -249,6 +263,43 @@ def _load_or_create_stability_preflight(
         "content": content,
         "recommendation": recommendation,
         "gate_status": str(content.get("gate_status", "")),
+    }
+
+
+def _load_rag_quality_gate(storage: LocalStorage, context_bundle_asset: dict[str, Any]) -> dict[str, Any]:
+    content = context_bundle_asset.get("content", {}) if isinstance(context_bundle_asset.get("content", {}), dict) else {}
+    report_path = str(content.get("rag_quality_report_path", "") or "")
+    if not report_path:
+        raise ValueError("draft generation blocked by RAG quality gate: missing rag_quality_report_path")
+    report_file = resolve_path(storage.root, report_path)
+    report = storage.read_asset(report_file)
+    if report.type != "rag_quality_report":
+        raise ValueError("draft generation blocked by RAG quality gate: report_path is not a rag_quality_report")
+    report_content = report.content
+    recommendation = str(report_content.get("recommendation", "block") or "block")
+    budget = report_content.get("context_budget_score", {}) if isinstance(report_content.get("context_budget_score", {}), dict) else {}
+    omission = report_content.get("omission_check", {}) if isinstance(report_content.get("omission_check", {}), dict) else {}
+    copyright_filter = report_content.get("copyright_filter", {}) if isinstance(report_content.get("copyright_filter", {}), dict) else {}
+    blocking_reasons: list[str] = []
+    if recommendation == "block":
+        blocking_reasons.append("recommendation=block")
+    if budget.get("status") in {"over_budget", "empty"}:
+        blocking_reasons.append(f"context_budget={budget.get('status')}")
+    if copyright_filter.get("status") == "blocked":
+        blocking_reasons.append("copyright_filter=blocked")
+    if int(omission.get("missing_count", 0) or 0) >= 5:
+        blocking_reasons.append(f"missing_buckets={omission.get('missing_count')}")
+    if blocking_reasons:
+        raise ValueError(f"draft generation blocked by RAG quality gate: {', '.join(blocking_reasons)}")
+    return {
+        "report_id": report.id,
+        "report_path": _display_path(storage.root, report_file),
+        "recommendation": recommendation,
+        "gate_status": "passed_with_warnings" if recommendation in {"revise", "pass_with_warnings"} else "passed",
+        "context_budget_score": budget,
+        "omission_check": omission,
+        "copyright_filter": copyright_filter,
+        "selected_asset_ids": report_content.get("selected_asset_ids", []) if isinstance(report_content.get("selected_asset_ids", []), list) else [],
     }
 
 

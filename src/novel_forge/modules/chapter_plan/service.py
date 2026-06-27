@@ -71,6 +71,12 @@ def generate_chapter_plan(
                         "conflict": "string",
                         "information_points": ["string"],
                         "quality_targets": ["string"],
+                        "reader_promise": "string",
+                        "volume_goal": "string",
+                        "pleasure_beats": ["string"],
+                        "long_hook_progress": ["string"],
+                        "platform_pacing": ["string"],
+                        "creative_strategy_constraints": ["string"],
                         "continuity_checks": ["string"],
                         "feedback_constraints": ["string"],
                         "risk_controls": ["string"],
@@ -104,6 +110,12 @@ def generate_chapter_plan(
                 "conflict": packet.get("conflict", ""),
                 "information_points": packet.get("information_points", []),
                 "quality_targets": packet.get("quality_targets", []),
+                "reader_promise": packet.get("reader_promise", ""),
+                "volume_goal": packet.get("volume_goal", ""),
+                "pleasure_beats": packet.get("pleasure_beats", []),
+                "long_hook_progress": packet.get("long_hook_progress", []),
+                "platform_pacing": packet.get("platform_pacing", []),
+                "creative_strategy_constraints": packet.get("creative_strategy_constraints", []),
                 "continuity_checks": packet.get("continuity_checks", []),
                 "feedback_constraints": packet.get("feedback_constraints", []),
                 "risk_controls": packet.get("risk_controls", []),
@@ -172,8 +184,17 @@ def _normalize_chapter_plan_packet(packet: dict[str, Any], planning_context: dic
     if not objective or not hook:
         raise ModelOutputValidationError("chapter plan JSON must contain objective and hook")
     quality_targets = _strings(packet.get("quality_targets")) or planning_context.get("quality_standard", {}).get("dimensions", [])
+    creative_strategy = planning_context.get("creative_strategy", {}) if isinstance(planning_context.get("creative_strategy", {}), dict) else {}
+    strategy_content = creative_strategy.get("content", {}) if isinstance(creative_strategy.get("content", {}), dict) else {}
+    strategy_constraints = creative_strategy.get("constraints", []) if isinstance(creative_strategy.get("constraints", []), list) else []
     continuity_checks = _strings(packet.get("continuity_checks")) or planning_context.get("continuity", {}).get("constraints", [])
     feedback_constraints = _strings(packet.get("feedback_constraints")) or planning_context.get("feedback", {}).get("constraints", [])
+    risk_controls = _dedupe(
+        [
+            *_strings(packet.get("risk_controls")),
+            *[f"creative strategy: {item}" for item in strategy_constraints[:8]],
+        ]
+    )
     return {
         "title": str(packet.get("title") or f"Chapter {target_chapter} plan").strip(),
         "objective": objective,
@@ -183,9 +204,15 @@ def _normalize_chapter_plan_packet(packet: dict[str, Any], planning_context: dic
         "conflict": str(packet.get("conflict") or "").strip(),
         "information_points": _strings(packet.get("information_points")),
         "quality_targets": _dedupe([str(item) for item in quality_targets if str(item).strip()]),
+        "reader_promise": str(packet.get("reader_promise") or strategy_content.get("reader_promise") or "").strip(),
+        "volume_goal": str(packet.get("volume_goal") or _first_strategy_value(strategy_content.get("volume_goals")) or "").strip(),
+        "pleasure_beats": _strings(packet.get("pleasure_beats")) or _strings(strategy_content.get("pleasure_rhythm")),
+        "long_hook_progress": _strings(packet.get("long_hook_progress")) or _strings(strategy_content.get("long_hooks")),
+        "platform_pacing": _strings(packet.get("platform_pacing")) or _strings(strategy_content.get("platform_pacing")),
+        "creative_strategy_constraints": _dedupe([str(item) for item in strategy_constraints if str(item).strip()]),
         "continuity_checks": _dedupe([str(item) for item in continuity_checks if str(item).strip()]),
         "feedback_constraints": _dedupe([str(item) for item in feedback_constraints if str(item).strip()]),
-        "risk_controls": _strings(packet.get("risk_controls")),
+        "risk_controls": risk_controls,
         "tags": _strings(packet.get("tags")),
     }
 
@@ -204,8 +231,13 @@ def _fallback_chapter_plan_packet(
     ]
     continuity_checks = planning_context.get("continuity", {}).get("constraints", [])
     feedback_constraints = planning_context.get("feedback", {}).get("constraints", [])
+    creative_strategy = planning_context.get("creative_strategy", {}) if isinstance(planning_context.get("creative_strategy", {}), dict) else {}
+    strategy_content = creative_strategy.get("content", {}) if isinstance(creative_strategy.get("content", {}), dict) else {}
+    strategy_constraints = creative_strategy.get("constraints", []) if isinstance(creative_strategy.get("constraints", []), list) else []
     act = _act_for_chapter(outline, target_chapter)
     carry_hook = str(carry_forward.get("previous_hook", "") or "").strip()
+    reader_promise = str(strategy_content.get("reader_promise") or "deliver a clear genre promise with visible pressure, payoff, and next-hook momentum")
+    volume_goal = _first_strategy_value(strategy_content.get("volume_goals")) or "advance the current volume promise without losing long-form continuity"
     objective = (
         f"advance chapter {target_chapter} from the outline goal: {act.get('goal') or 'maintain forward momentum'}"
         if target_chapter == 1
@@ -228,15 +260,30 @@ def _fallback_chapter_plan_packet(
             "preserve project continuity",
             "avoid repeating prior chapter prose",
             "make the causal chain explicit",
+            f"reader promise: {reader_promise}",
+            f"volume goal: {volume_goal}",
             *continuity_checks[:3],
         ]),
         "quality_targets": quality_targets,
+        "reader_promise": reader_promise,
+        "volume_goal": volume_goal,
+        "pleasure_beats": _strings(strategy_content.get("pleasure_rhythm")) or [
+            "open pressure",
+            "visible choice",
+            "cost disclosure",
+            "partial payoff",
+            "next hook",
+        ],
+        "long_hook_progress": _strings(strategy_content.get("long_hooks")) or ["seed or advance one long hook without premature payoff"],
+        "platform_pacing": _strings(strategy_content.get("platform_pacing")) or ["keep chapter objective and hook visible"],
+        "creative_strategy_constraints": _dedupe([str(item) for item in strategy_constraints if str(item).strip()]),
         "continuity_checks": continuity_checks,
         "feedback_constraints": feedback_constraints,
         "risk_controls": [
             "do not copy protected source expression",
             "do not bypass project quality standard",
             "do not contradict continuity bible",
+            *[f"creative strategy: {item}" for item in strategy_constraints[:8]],
         ],
         "tags": ["deterministic-fallback"],
     }
@@ -304,10 +351,35 @@ def _next_chapter_number(storage: LocalStorage, outline_id: str) -> int:
 
 def _strings(value: Any) -> list[str]:
     if isinstance(value, list):
-        return [str(item).strip() for item in value if str(item).strip()]
+        rows: list[str] = []
+        for item in value:
+            if isinstance(item, dict):
+                rows.extend(_strings(item))
+            elif str(item).strip():
+                rows.append(str(item).strip())
+        return rows
+    if isinstance(value, dict):
+        return [f"{key}: {item}" for key, item in value.items() if str(item).strip()]
     if isinstance(value, str) and value.strip():
         return [value.strip()]
     return []
+
+
+def _first_strategy_value(value: Any) -> str:
+    if isinstance(value, dict):
+        for item in value.values():
+            text = str(item or "").strip()
+            if text:
+                return text
+    if isinstance(value, list):
+        for item in value:
+            if isinstance(item, dict):
+                text = " ".join(str(part or "").strip() for part in item.values() if str(part or "").strip())
+            else:
+                text = str(item or "").strip()
+            if text:
+                return text
+    return str(value or "").strip()
 
 
 def _positive_chapter(value: Any) -> int:

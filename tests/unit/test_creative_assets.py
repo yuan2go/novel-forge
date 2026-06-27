@@ -132,6 +132,9 @@ class CreativeAssetsTests(unittest.TestCase):
             self.assertTrue(draft.metadata["preflight_ready"], draft.metadata["preflight_warnings"])
             self.assertEqual(draft.metadata["quality_standard_profile_id"], config["quality_standard_profile_id"])
             self.assertEqual(draft.metadata["style_profile_id"], config["style_profile_id"])
+            self.assertEqual(draft.metadata["creative_strategy_profile_id"], config["creative_strategy_profile_id"])
+            self.assertTrue(draft.metadata["rag_quality_report_path"])
+            self.assertNotEqual(draft.metadata["rag_quality_recommendation"], "block")
 
             review_path = review_service.review(storage, str(draft_path))
             review = storage.read_asset(review_path)

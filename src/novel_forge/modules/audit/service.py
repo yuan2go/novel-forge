@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -29,8 +30,10 @@ def create_originality_report(
     source_assets = _candidate_source_assets(storage, target.to_dict(), context)
     checks = [_similarity_check(target_text, source) for source in source_assets]
     checks = [item for item in checks if item["source_asset_id"] != target.id]
+    skeleton_checks = [_plot_skeleton_check(target.to_dict(), source) for source in source_assets if source.get("id") != target.id]
+    role_checks = [_role_configuration_check(target.to_dict(), source) for source in source_assets if source.get("id") != target.id]
     forbidden_hits = _forbidden_element_hits(target_text, source_assets)
-    risk_scores = _originality_risks(checks, forbidden_hits, context, target.to_dict())
+    risk_scores = _originality_risks(checks, skeleton_checks, role_checks, forbidden_hits, context, target.to_dict())
     risk_level = _max_risk(
         [
             risk_scores["plot_skeleton_risk"],
@@ -52,6 +55,8 @@ def create_originality_report(
             "target_asset_id": target.id,
             "source_asset_ids": _dedupe([str(item.get("id", "")) for item in source_assets]),
             "similarity_checks": checks,
+            "plot_skeleton_checks": skeleton_checks,
+            "role_configuration_checks": role_checks,
             "forbidden_element_hits": forbidden_hits,
             "plot_skeleton_risk": risk_scores["plot_skeleton_risk"],
             "character_setup_risk": risk_scores["character_setup_risk"],
@@ -113,8 +118,10 @@ def create_chapter_audit_report(
     quality = _read_asset_dict(storage, quality_path)
     style = _read_asset_dict(storage, style_path)
     originality = _read_asset_dict(storage, originality_path)
-    dimension_scores = _chapter_dimension_scores(quality, style, originality, context)
-    gate_results, issues = _chapter_gate_results(dimension_scores, quality, style, originality, context)
+    runtime_gate_evidence = _draft_runtime_gate_evidence(target.to_dict())
+    platform_compliance = _platform_compliance(target.to_dict(), context)
+    dimension_scores = _chapter_dimension_scores(quality, style, originality, context, runtime_gate_evidence, platform_compliance)
+    gate_results, issues = _chapter_gate_results(dimension_scores, quality, style, originality, context, runtime_gate_evidence, platform_compliance)
     recommendation = "pass"
     if any(issue.get("severity") == "high" for issue in issues):
         recommendation = "block_publish"
@@ -133,7 +140,11 @@ def create_chapter_audit_report(
                 "quality_score_report_path": _display_path(storage.root, Path(quality_path)),
                 "style_review_report_path": _display_path(storage.root, Path(style_path)),
                 "originality_report_path": _display_path(storage.root, Path(originality_path)),
+                "rag_quality_report_path": runtime_gate_evidence.get("rag_quality_report_path", ""),
+                "stability_preflight_path": runtime_gate_evidence.get("stability_preflight_path", ""),
             },
+            "runtime_gate_evidence": runtime_gate_evidence,
+            "platform_compliance": platform_compliance,
             "recommendation": recommendation,
             "production_context": context,
         },
@@ -329,6 +340,34 @@ def _similarity_check(target_text: str, source: dict[str, Any]) -> dict[str, Any
     }
 
 
+def _plot_skeleton_check(target: dict[str, Any], source: dict[str, Any]) -> dict[str, Any]:
+    target_signature = _plot_signature(target)
+    source_signature = _plot_signature(source)
+    similarity = _jaccard(target_signature, source_signature)
+    return {
+        "source_asset_id": str(source.get("id", "")),
+        "source_asset_type": str(source.get("type", "")),
+        "source_title": str(source.get("title") or source.get("name") or ""),
+        "similarity": similarity,
+        "matched_terms": sorted(target_signature & source_signature)[:24],
+        "risk": "high" if similarity >= 0.5 else ("medium" if similarity >= 0.3 else "low"),
+    }
+
+
+def _role_configuration_check(target: dict[str, Any], source: dict[str, Any]) -> dict[str, Any]:
+    target_signature = _role_signature(target)
+    source_signature = _role_signature(source)
+    similarity = _jaccard(target_signature, source_signature)
+    return {
+        "source_asset_id": str(source.get("id", "")),
+        "source_asset_type": str(source.get("type", "")),
+        "source_title": str(source.get("title") or source.get("name") or ""),
+        "similarity": similarity,
+        "matched_terms": sorted(target_signature & source_signature)[:24],
+        "risk": "high" if similarity >= 0.55 else ("medium" if similarity >= 0.35 else "low"),
+    }
+
+
 def _forbidden_element_hits(target_text: str, sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
     lowered = target_text.lower()
     hits: list[dict[str, Any]] = []
@@ -352,13 +391,18 @@ def _forbidden_element_hits(target_text: str, sources: list[dict[str, Any]]) -> 
 
 def _originality_risks(
     checks: list[dict[str, Any]],
+    skeleton_checks: list[dict[str, Any]],
+    role_checks: list[dict[str, Any]],
     forbidden_hits: list[dict[str, Any]],
     context: dict[str, Any],
     target: dict[str, Any],
 ) -> dict[str, str]:
     max_similarity = max((float(item.get("similarity", 0)) for item in checks), default=0.0)
-    plot = "high" if max_similarity >= 0.45 else ("medium" if max_similarity >= 0.25 else "low")
-    character = "medium" if any(item.get("kind") == "source_title" for item in forbidden_hits) else "low"
+    max_skeleton_similarity = max((float(item.get("similarity", 0)) for item in skeleton_checks), default=0.0)
+    max_role_similarity = max((float(item.get("similarity", 0)) for item in role_checks), default=0.0)
+    plot_signal = max(max_similarity, max_skeleton_similarity)
+    plot = "high" if plot_signal >= 0.45 else ("medium" if plot_signal >= 0.25 else "low")
+    character = "high" if max_role_similarity >= 0.55 else ("medium" if max_role_similarity >= 0.35 or any(item.get("kind") == "source_title" for item in forbidden_hits) else "low")
     style = "medium" if _profile_risk(context, "style_profile") in {"medium", "high"} else "low"
     source_license = "high" if any(item.get("kind") == "license_risk" and item.get("element") in {"restricted"} for item in forbidden_hits) else (
         "medium" if any(item.get("kind") == "license_risk" for item in forbidden_hits) else "low"
@@ -379,6 +423,8 @@ def _chapter_dimension_scores(
     style: dict[str, Any],
     originality: dict[str, Any],
     context: dict[str, Any],
+    runtime_gate_evidence: dict[str, Any],
+    platform_compliance: dict[str, Any],
 ) -> dict[str, float]:
     quality_content = quality.get("content", {}) if isinstance(quality.get("content", {}), dict) else {}
     style_content = style.get("content", {}) if isinstance(style.get("content", {}), dict) else {}
@@ -387,6 +433,9 @@ def _chapter_dimension_scores(
     scores["style_consistency"] = float(style_content.get("style_match_score", scores.get("style_consistency", 75)) or 0)
     scores["originality_safety"] = _risk_score(str(originality_content.get("risk_level", "unknown")))
     scores["production_preflight"] = 100.0 if context.get("preflight", {}).get("ready") else 60.0
+    scores["rag_context_quality"] = float(runtime_gate_evidence.get("rag_quality_score", 0) or 0)
+    scores["long_form_stability"] = 100.0 if runtime_gate_evidence.get("stability_gate_passed") else 45.0
+    scores["platform_compliance"] = float(platform_compliance.get("score", 0) or 0)
     return {str(key): float(value) for key, value in scores.items() if isinstance(value, (int, float))}
 
 
@@ -396,6 +445,8 @@ def _chapter_gate_results(
     style: dict[str, Any],
     originality: dict[str, Any],
     context: dict[str, Any],
+    runtime_gate_evidence: dict[str, Any],
+    platform_compliance: dict[str, Any],
 ) -> tuple[dict[str, bool], list[dict[str, Any]]]:
     quality_content = quality.get("content", {}) if isinstance(quality.get("content", {}), dict) else {}
     style_content = style.get("content", {}) if isinstance(style.get("content", {}), dict) else {}
@@ -405,6 +456,9 @@ def _chapter_gate_results(
         "style_match_passed": float(style_content.get("style_match_score", 0) or 0) >= 70,
         "originality_passed": originality_content.get("risk_level") == "low",
         "production_context_ready": bool(context.get("preflight", {}).get("ready")),
+        "rag_quality_gate_passed": bool(runtime_gate_evidence.get("rag_quality_gate_passed")),
+        "stability_preflight_passed": bool(runtime_gate_evidence.get("stability_gate_passed")),
+        "platform_compliance_passed": bool(platform_compliance.get("passed")),
     }
     issues: list[dict[str, Any]] = []
     for name, score in dimension_scores.items():
@@ -420,6 +474,10 @@ def _chapter_gate_results(
         issues.append({"dimension": "originality_safety", "severity": "medium", "message": "originality risk requires human gate", "recommendation": "revise or confirm safe abstraction"})
     for missing in context.get("preflight", {}).get("missing", []):
         issues.append({"dimension": "production_context", "severity": "high", "message": f"missing required profile: {missing}", "recommendation": "bind project profile before publishing"})
+    for issue in runtime_gate_evidence.get("issues", []) if isinstance(runtime_gate_evidence.get("issues", []), list) else []:
+        issues.append(issue)
+    for issue in platform_compliance.get("issues", []) if isinstance(platform_compliance.get("issues", []), list) else []:
+        issues.append(issue)
     return gate_results, issues
 
 
@@ -427,13 +485,21 @@ def _publish_gates(audit: dict[str, Any], context: dict[str, Any]) -> dict[str, 
     audit_content = audit.get("content", {}) if isinstance(audit.get("content", {}), dict) else {}
     chapter_recommendation = str(audit_content.get("recommendation", "block_publish"))
     linked = audit_content.get("linked_reports", {}) if isinstance(audit_content.get("linked_reports", {}), dict) else {}
+    runtime = audit_content.get("runtime_gate_evidence", {}) if isinstance(audit_content.get("runtime_gate_evidence", {}), dict) else {}
+    platform = audit_content.get("platform_compliance", {}) if isinstance(audit_content.get("platform_compliance", {}), dict) else {}
     gates = {
         "chapter_audit_passed": chapter_recommendation == "pass",
         "quality_report_present": bool(linked.get("quality_score_report_path")),
         "style_report_present": bool(linked.get("style_review_report_path")),
         "originality_report_present": bool(linked.get("originality_report_path")),
+        "rag_quality_report_present": bool(linked.get("rag_quality_report_path")),
+        "rag_quality_gate_passed": bool(runtime.get("rag_quality_gate_passed")),
+        "stability_preflight_present": bool(linked.get("stability_preflight_path")),
+        "stability_preflight_passed": bool(runtime.get("stability_gate_passed")),
+        "platform_compliance_passed": bool(platform.get("passed")),
         "platform_profile_bound": bool(context.get("profiles", {}).get("platform_profile")) if isinstance(context.get("profiles", {}), dict) else False,
         "genre_market_profile_bound": bool(context.get("profiles", {}).get("genre_market_profile")) if isinstance(context.get("profiles", {}), dict) else False,
+        "creative_strategy_profile_bound": bool(context.get("profiles", {}).get("creative_strategy_profile")) if isinstance(context.get("profiles", {}), dict) else False,
         "quality_standard_profile_bound": bool(context.get("profiles", {}).get("quality_standard_profile")) if isinstance(context.get("profiles", {}), dict) else False,
         "style_profile_bound": bool(context.get("profiles", {}).get("style_profile")) if isinstance(context.get("profiles", {}), dict) else False,
         "continuity_bible_bound": bool(context.get("profiles", {}).get("continuity_bible")) if isinstance(context.get("profiles", {}), dict) else False,
@@ -444,6 +510,89 @@ def _publish_gates(audit: dict[str, Any], context: dict[str, Any]) -> dict[str, 
             severity = "high" if key.endswith("_bound") or key == "chapter_audit_passed" else "medium"
             blocking.append({"dimension": key, "severity": severity, "message": f"publish gate failed: {key}", "recommendation": "complete required gate"})
     return {"gates": gates, "blocking_issues": blocking}
+
+
+def _draft_runtime_gate_evidence(target: dict[str, Any]) -> dict[str, Any]:
+    content = target.get("content", {}) if isinstance(target.get("content", {}), dict) else {}
+    metadata = target.get("metadata", {}) if isinstance(target.get("metadata", {}), dict) else {}
+    rag_gate = content.get("rag_quality_gate", {}) if isinstance(content.get("rag_quality_gate", {}), dict) else {}
+    rag_report_path = str(metadata.get("rag_quality_report_path") or content.get("rag_quality_report_path") or rag_gate.get("report_path") or "")
+    rag_recommendation = str(metadata.get("rag_quality_recommendation") or content.get("rag_quality_recommendation") or rag_gate.get("recommendation") or "")
+    rag_score = 0.0
+    budget = rag_gate.get("context_budget_score", {}) if isinstance(rag_gate.get("context_budget_score", {}), dict) else {}
+    if isinstance(budget.get("score"), (int, float)):
+        rag_score = float(budget.get("score"))
+    stability_path = str(metadata.get("stability_preflight_path") or content.get("stability_preflight_path") or "")
+    stability_recommendation = str(metadata.get("stability_preflight_recommendation") or content.get("stability_preflight", {}).get("recommendation", "") if isinstance(content.get("stability_preflight", {}), dict) else metadata.get("stability_preflight_recommendation") or "")
+    stability_status = str(metadata.get("stability_preflight_gate_status") or content.get("stability_preflight", {}).get("gate_status", "") if isinstance(content.get("stability_preflight", {}), dict) else metadata.get("stability_preflight_gate_status") or "")
+    issues: list[dict[str, Any]] = []
+    rag_passed = bool(rag_report_path) and rag_recommendation not in {"", "block"}
+    stability_passed = bool(stability_path) and stability_recommendation != "block" and stability_status != "blocked"
+    if not rag_report_path:
+        issues.append({"dimension": "rag_context_quality", "severity": "high", "message": "draft is missing RAG quality report", "recommendation": "rerun context builder before review/publish"})
+    elif not rag_passed:
+        issues.append({"dimension": "rag_context_quality", "severity": "high", "message": f"RAG quality gate is {rag_recommendation or 'unknown'}", "recommendation": "repair context assets before publishing"})
+    if not stability_path:
+        issues.append({"dimension": "long_form_stability", "severity": "high", "message": "draft is missing long-form stability preflight", "recommendation": "rerun chapter stability preflight"})
+    elif not stability_passed:
+        issues.append({"dimension": "long_form_stability", "severity": "high", "message": f"stability preflight is {stability_recommendation or stability_status}", "recommendation": "repair continuity before publishing"})
+    return {
+        "rag_quality_report_path": rag_report_path,
+        "rag_quality_recommendation": rag_recommendation,
+        "rag_quality_score": rag_score,
+        "rag_quality_gate_passed": rag_passed,
+        "stability_preflight_path": stability_path,
+        "stability_preflight_recommendation": stability_recommendation,
+        "stability_gate_status": stability_status,
+        "stability_gate_passed": stability_passed,
+        "issues": issues,
+    }
+
+
+def _platform_compliance(target: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    text = _asset_text(target)
+    char_count = len(re.sub(r"\s+", "", text))
+    profiles = context.get("profiles", {}) if isinstance(context.get("profiles", {}), dict) else {}
+    platform = profiles.get("platform_profile", {}) if isinstance(profiles.get("platform_profile", {}), dict) else {}
+    content = platform.get("content", {}) if isinstance(platform.get("content", {}), dict) else {}
+    length = content.get("chapter_length_range") if isinstance(content.get("chapter_length_range"), dict) else content.get("chapter_length", {}) if isinstance(content.get("chapter_length", {}), dict) else {}
+    min_len = int(length.get("min", 0) or 0) if isinstance(length, dict) else 0
+    max_len = int(length.get("max", 0) or 0) if isinstance(length, dict) else 0
+    issues: list[dict[str, Any]] = []
+    if min_len and char_count < min_len:
+        issues.append(
+            {
+                "dimension": "platform_compliance",
+                "severity": "medium",
+                "message": f"chapter length {char_count} is below platform minimum {min_len}",
+                "recommendation": "expand the chapter or mark this draft as internal-only before publishing",
+            }
+        )
+    if max_len and char_count > max_len:
+        issues.append(
+            {
+                "dimension": "platform_compliance",
+                "severity": "medium",
+                "message": f"chapter length {char_count} exceeds platform maximum {max_len}",
+                "recommendation": "split or tighten the chapter before publishing",
+            }
+        )
+    review_risks = content.get("review_risks", []) if isinstance(content.get("review_risks", []), list) else []
+    lowered = text.lower()
+    for risk in review_risks:
+        risk_text = str(risk).strip().lower()
+        if risk_text and risk_text in lowered:
+            issues.append({"dimension": "platform_compliance", "severity": "medium", "message": f"platform review risk appears in draft: {risk}", "recommendation": "revise platform-sensitive wording"})
+    score = 100.0
+    if issues:
+        score = max(55.0, 100.0 - 18.0 * len(issues))
+    return {
+        "passed": not any(issue.get("severity") == "high" for issue in issues),
+        "score": score,
+        "char_count": char_count,
+        "chapter_length_range": length,
+        "issues": issues,
+    }
 
 
 def _asset_by_reference(storage: LocalStorage, reference: str) -> dict[str, Any] | None:
@@ -487,6 +636,59 @@ def _asset_text(asset: Any) -> str:
     if isinstance(content, dict):
         return " ".join(str(value) for value in content.values() if isinstance(value, str))
     return str(data.get("title", "") if isinstance(data, dict) else "")
+
+
+def _plot_signature(data: dict[str, Any]) -> set[str]:
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    fields = [
+        content.get("objective"),
+        content.get("beats"),
+        content.get("hook"),
+        content.get("conflict"),
+        content.get("information_points"),
+        content.get("acts"),
+        content.get("structure_map"),
+        content.get("plot_points"),
+        content.get("chapter_trends"),
+    ]
+    return _semantic_terms(json.dumps(fields, ensure_ascii=False, sort_keys=True))
+
+
+def _role_signature(data: dict[str, Any]) -> set[str]:
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    fields = [
+        content.get("name"),
+        content.get("role"),
+        content.get("external_goal"),
+        content.get("internal_need"),
+        content.get("desire"),
+        content.get("motivation_chain"),
+        content.get("relationships"),
+        content.get("character_map"),
+        content.get("characters"),
+    ]
+    return _semantic_terms(json.dumps(fields, ensure_ascii=False, sort_keys=True))
+
+
+def _semantic_terms(text: str) -> set[str]:
+    tokens = set()
+    for token in re.split(r"[\s,，。；;:：\"'{}\[\]()/\\|]+", str(text).lower()):
+        cleaned = token.strip()
+        if len(cleaned) >= 2 and cleaned not in {"none", "null", "true", "false"}:
+            tokens.add(cleaned[:40])
+    compact = re.sub(r"\s+", "", str(text).lower())
+    if len(compact) >= 8:
+        for index in range(0, max(len(compact) - 8, 0), 4):
+            tokens.add(compact[index : index + 8])
+            if len(tokens) >= 160:
+                break
+    return tokens
+
+
+def _jaccard(left: set[str], right: set[str]) -> float:
+    if not left or not right:
+        return 0.0
+    return round(len(left & right) / max(len(left | right), 1), 4)
 
 
 def _ngrams(text: str, size: int = 18) -> set[str]:
