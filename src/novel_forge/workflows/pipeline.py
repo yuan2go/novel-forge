@@ -39,7 +39,9 @@ from novel_forge.workflows.industrial import industrial_status as industrial_sta
 from novel_forge.workflows.industrial import minio_sync as minio_sync_service
 from novel_forge.workflows.industrial import neo4j_status as neo4j_status_service
 from novel_forge.workflows.industrial import postgres_init as postgres_init_service
+from novel_forge.workflows.industrial import postgres_migrations as postgres_migrations_service
 from novel_forge.workflows.industrial import postgres_sync as postgres_sync_service
+from novel_forge.workflows.industrial import postgres_downgrade as postgres_downgrade_service
 from novel_forge.workflows.industrial import qdrant_index as qdrant_index_service
 from novel_forge.workflows.industrial import qdrant_search as qdrant_search_service
 from novel_forge.storage.asset_manifest import rebuild_asset_manifest as rebuild_asset_manifest_service
@@ -318,6 +320,14 @@ def postgres_init(root: str | Path) -> dict:
 
 def postgres_sync(root: str | Path) -> dict:
     return postgres_sync_service(root)
+
+
+def postgres_migrations(root: str | Path) -> dict:
+    return postgres_migrations_service(root)
+
+
+def postgres_downgrade(root: str | Path, target_revision: str | None = None, execute: bool = False) -> dict:
+    return postgres_downgrade_service(root, target_revision=target_revision, execute=execute)
 
 
 def qdrant_index(

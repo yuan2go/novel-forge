@@ -38,9 +38,10 @@ describe("Novel Forge admin feature architecture", () => {
     const assets = read("app/features/assets/AssetsCenterPage.tsx");
     assert.match(assets, /loadAssetGraph/);
     assert.match(assets, /引用图谱/);
+    assert.match(assets, /assetGraphCanvas layered/);
 
     const quality = read("app/features/quality/QualityGatePage.tsx");
-    for (const token of ["发布日历", "发布版本库", "平台规则与发布日志", "createPublishingLog"]) {
+    for (const token of ["发布日历", "发布版本库", "平台规则与发布日志", "preparePlatformRelease", "adapterDryRun"]) {
       assert.match(quality, new RegExp(token));
     }
 
@@ -55,8 +56,15 @@ describe("Novel Forge admin feature architecture", () => {
     assert.match(assetsApi, /\/product\/assets\/graph/);
 
     const qualityApi = read("app/features/quality/api.ts");
-    for (const endpoint of ["/product/publishing/plan", "/product/publishing/log", "/product/publishing/release-package"]) {
+    for (const endpoint of ["/product/publishing/plan", "/product/publishing/log", "/product/publishing/release-package", "/product/publishing/adapters", "/product/publishing/adapter-release"]) {
       assert.match(qualityApi, new RegExp(endpoint.replaceAll("/", "\\/")));
     }
+  });
+
+  it("contains an optional Playwright browser smoke test", () => {
+    const smoke = read("tests/playwright-smoke.test.mjs");
+    assert.match(smoke, /playwright/);
+    assert.match(smoke, /NOVEL_FORGE_WEB_BASE_URL/);
+    assert.match(smoke, /个人本地小说工厂/);
   });
 });

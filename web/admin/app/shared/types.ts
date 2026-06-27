@@ -76,6 +76,7 @@ export type AssetGraphNode = {
   category?: string;
   type: string;
   title: string;
+  layout?: { level?: number; x?: number; y?: number; cluster?: string };
 };
 
 export type AssetGraphEdge = {
@@ -90,6 +91,7 @@ export type AssetGraph = {
   depth: number;
   nodes: AssetGraphNode[];
   edges: AssetGraphEdge[];
+  layout?: Record<string, unknown>;
 };
 
 export type Health = {

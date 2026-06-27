@@ -144,9 +144,10 @@ The frontend is no longer a single-page-only implementation. V6 feature pages no
 | Area | Current status |
 |---|---|
 | Publishing Center | Implemented inside the quality/publishing feature flow with release package version registry, publishing calendar summary, platform rule snapshots, publishing log table, rollback evidence, and configurable local channel/cadence/start date. |
-| Asset Workbench | Asset detail now includes typed deep editor fields plus reference graph visualization from `/product/assets/graph`. |
+| Publishing Adapters | Implemented `local_file`, `manual_web`, and guarded `external_webhook` adapter boundaries. UI can prepare platform payloads; real external execution is fail-closed unless explicitly configured. |
+| Asset Workbench | Asset detail now includes typed deep editor fields plus layered reference graph visualization from `/product/assets/graph`. |
 | Change Impact Analysis | Reports now display severity summary, impacted nodes, impact edges, and recommended actions, not only tabular counts. |
-| Frontend Tests | `web/admin/tests/feature-architecture.test.mjs` verifies the V6/V7 navigation groups, routed feature modules, publishing/graph/impact affordances, and API client endpoints. |
+| Frontend Tests | `web/admin/tests/feature-architecture.test.mjs` verifies the V6/V7 navigation groups, routed feature modules, publishing/graph/impact affordances, and API client endpoints. `web/admin/tests/playwright-smoke.test.mjs` provides optional browser-level smoke coverage when Playwright is installed. |
 | Documentation Status | `v6-v7-gap-analysis.md`, `v6-v7-implementation-plan.md`, and this inventory have been updated to reflect current implementation rather than Phase 0 state. |
 
-Remaining UI depth is mostly refinement, not missing existence: richer graph layout, browser-level page smoke tests, and platform-adapter-specific publishing panels can be added after local workflows stabilize.
+Remaining UI depth is mostly refinement, not missing existence: graph zoom/search/minimap and named external platform panels can be added after local workflows stabilize.

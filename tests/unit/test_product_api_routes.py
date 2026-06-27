@@ -101,6 +101,8 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/publishing/assets",
                 "/product/publishing/plan",
                 "/product/publishing/log",
+                "/product/publishing/adapters",
+                "/product/publishing/adapter-release",
                 "/product/system/health",
                 "/product/system/operation-reports",
                 "/product/system/failure-drill",

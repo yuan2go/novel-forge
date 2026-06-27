@@ -8,6 +8,7 @@ from novel_forge.model_adapters import embedding_provider_health, provider_healt
 from novel_forge.storage.graph import neo4j_status as neo4j_status_service
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.object_store import sync_minio_assets
+from novel_forge.storage.migrations import downgrade_migrations
 from novel_forge.storage.postgres import PostgresAssetStore, postgres_available, sync_postgres_from_local
 from novel_forge.storage.qdrant_index import build_qdrant_index, qdrant_search_assets
 
@@ -41,6 +42,19 @@ def postgres_init(root: str | Path = ".") -> dict[str, Any]:
     store = PostgresAssetStore.from_settings(settings)
     store.initialize()
     return {"postgresql": "initialized"}
+
+
+def postgres_migrations(root: str | Path = ".") -> dict[str, Any]:
+    settings = settings_for(root)
+    store = PostgresAssetStore.from_settings(settings)
+    return store.migration_status()
+
+
+def postgres_downgrade(root: str | Path = ".", target_revision: str | None = None, execute: bool = False) -> dict[str, Any]:
+    settings = settings_for(root)
+    if not settings.database_url:
+        raise ValueError("DATABASE_URL is required for postgres-downgrade")
+    return downgrade_migrations(settings.database_url, target_revision=target_revision, execute=execute)
 
 
 def postgres_sync(root: str | Path = ".") -> dict[str, int]:

@@ -574,6 +574,14 @@ class PublishingLogRequest(BaseModel):
     rollback_note: str = ""
 
 
+class PublishingAdapterRequest(BaseModel):
+    release_package_path: str
+    publishing_plan_path: str | None = None
+    adapter_key: str = "manual_web"
+    dry_run: bool = True
+    external_url: str = ""
+
+
 class LongFormMacroPlanRequest(BaseModel):
     workspace_path: str | None = None
     source_path: str | None = None
@@ -795,6 +803,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "ReleasePackageRequest": ReleasePackageRequest,
         "PublishingPlanRequest": PublishingPlanRequest,
         "PublishingLogRequest": PublishingLogRequest,
+        "PublishingAdapterRequest": PublishingAdapterRequest,
         "LongFormMacroPlanRequest": LongFormMacroPlanRequest,
         "LocalOpsDrillRequest": LocalOpsDrillRequest,
         "LongChainAcceptanceRequest": LongChainAcceptanceRequest,

@@ -5,9 +5,22 @@ export function loadQualityData(projectId?: string) {
   return Promise.all([
     fetchJson<ProjectRow[]>("/product/projects"),
     fetchJson<AssetRow[]>(projectId ? `/product/projects/${encodeURIComponent(projectId)}/assets?limit=180` : "/assets?limit=160&rank=path"),
-    fetchJson<AssetRow[]>(projectId ? `/product/publishing/assets?project_id=${encodeURIComponent(projectId)}&limit=120` : "/product/publishing/assets?limit=120")
+    fetchJson<AssetRow[]>(projectId ? `/product/publishing/assets?project_id=${encodeURIComponent(projectId)}&limit=120` : "/product/publishing/assets?limit=120"),
+    fetchJson<PublishingAdapterRow[]>("/product/publishing/adapters")
   ]);
 }
+
+export type PublishingAdapterRow = {
+  key: string;
+  label: string;
+  mode: string;
+  external: boolean;
+  requires_endpoint: boolean;
+  configured: boolean;
+  can_execute: boolean;
+  dry_run_default: boolean;
+  description: string;
+};
 
 export function createChapterAudit(draftPath: string, workspacePath?: string) {
   return postJson("/product/audits/chapter", { draft_path: draftPath, workspace_path: workspacePath || null });
@@ -55,5 +68,15 @@ export function createPublishingLog(releasePackagePath: string, publishingPlanPa
     status,
     external_url: externalUrl,
     rollback_note: "local publication record with rollback source package"
+  });
+}
+
+export function preparePlatformRelease(releasePackagePath: string, publishingPlanPath?: string, adapterKey = "manual_web", dryRun = true, externalUrl = "") {
+  return postJson("/product/publishing/adapter-release", {
+    release_package_path: releasePackagePath,
+    publishing_plan_path: publishingPlanPath || null,
+    adapter_key: adapterKey,
+    dry_run: dryRun,
+    external_url: externalUrl
   });
 }

@@ -132,6 +132,14 @@ def build_parser() -> argparse.ArgumentParser:
     postgres_sync_p = sub.add_parser("postgres-sync", help="sync local JSON assets into PostgreSQL")
     add_root(postgres_sync_p)
 
+    postgres_migrations_p = sub.add_parser("postgres-migrations", help="show PostgreSQL migration status")
+    add_root(postgres_migrations_p)
+
+    postgres_downgrade_p = sub.add_parser("postgres-downgrade", help="plan or execute PostgreSQL migration downgrade")
+    postgres_downgrade_p.add_argument("--target-revision", default=None, help="revision to keep; omit to downgrade to empty")
+    postgres_downgrade_p.add_argument("--execute", action="store_true", help="execute downgrade instead of dry-run")
+    add_root(postgres_downgrade_p)
+
     qdrant_index_p = sub.add_parser("qdrant-index", help="build real Qdrant vector index from local assets")
     qdrant_index_p.add_argument("--recreate", action="store_true", help="delete and recreate incompatible collection")
     qdrant_index_p.add_argument("--batch-size", type=int, default=32, help="embedding/upsert batch size")
@@ -340,6 +348,22 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.command == "postgres-sync":
             print(json.dumps(pipeline.postgres_sync(args.root), ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "postgres-migrations":
+            print(json.dumps(pipeline.postgres_migrations(args.root), ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "postgres-downgrade":
+            print(
+                json.dumps(
+                    pipeline.postgres_downgrade(
+                        args.root,
+                        target_revision=args.target_revision,
+                        execute=args.execute,
+                    ),
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
             return 0
         if args.command == "qdrant-index":
             print(

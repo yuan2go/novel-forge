@@ -6,7 +6,13 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.audit import create_release_package
-from novel_forge.modules.publishing import create_publishing_log, create_publishing_plan, list_publishing_assets
+from novel_forge.modules.publishing import (
+    create_publishing_log,
+    create_publishing_plan,
+    list_publishing_assets,
+    prepare_platform_release,
+    publishing_adapter_status,
+)
 from novel_forge.schemas import DraftChapter, ProjectWorkspaceState
 from novel_forge.storage.local import LocalStorage
 
@@ -78,6 +84,21 @@ class PublishingCenterTests(unittest.TestCase):
             self.assertEqual(by_type["release_package"]["release_version"], package.content["release_version"])
             self.assertEqual(by_type["publishing_plan"]["next_scheduled_at"], "2026-07-01")
             self.assertTrue(by_type["publishing_log"]["rollback_available"])
+
+            adapters = {row["key"]: row for row in publishing_adapter_status()}
+            self.assertIn("manual_web", adapters)
+            self.assertFalse(adapters["manual_web"]["can_execute"])
+            adapter_result = prepare_platform_release(
+                storage,
+                str(package_path.relative_to(storage.root)),
+                publishing_plan_path=plan["path"],
+                adapter_key="manual_web",
+                dry_run=True,
+            )
+            self.assertEqual(adapter_result["adapter"], "manual_web")
+            adapter_log = storage.read_asset(adapter_result["path"])
+            self.assertEqual(adapter_log.content["adapter_result"]["status"], "manual_required")
+            self.assertTrue(adapter_log.content["adapter_payload"]["manual_checklist"])
 
 
 if __name__ == "__main__":

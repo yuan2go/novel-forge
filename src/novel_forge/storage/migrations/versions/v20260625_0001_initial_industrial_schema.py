@@ -86,3 +86,20 @@ UPGRADE_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS idx_nf_projects_status ON nf_projects(status)",
     "CREATE INDEX IF NOT EXISTS idx_nf_projects_series ON nf_projects(series_title, book_number)",
 ]
+
+DOWNGRADE_STATEMENTS = [
+    "DROP INDEX IF EXISTS idx_nf_projects_series",
+    "DROP INDEX IF EXISTS idx_nf_projects_status",
+    "DROP INDEX IF EXISTS idx_nf_task_statuses_status",
+    "DROP INDEX IF EXISTS idx_nf_task_statuses_run_step",
+    "DROP INDEX IF EXISTS idx_nf_asset_versions_asset_id",
+    "DROP INDEX IF EXISTS idx_nf_assets_tags",
+    "DROP INDEX IF EXISTS idx_nf_assets_project",
+    "DROP INDEX IF EXISTS idx_nf_assets_type",
+    "DROP INDEX IF EXISTS idx_nf_assets_category",
+    "DROP TABLE IF EXISTS nf_projects",
+    "DROP TABLE IF EXISTS nf_task_statuses",
+    "DROP TABLE IF EXISTS nf_asset_versions",
+    "DROP TABLE IF EXISTS nf_assets",
+    "DROP TABLE IF EXISTS nf_schema_migrations",
+]

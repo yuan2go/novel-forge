@@ -1927,12 +1927,14 @@ def asset_reference_graph(storage: LocalStorage, asset_path: str, depth: int = 1
                 _add_graph_edge(edges, edge_keys, candidate_id, node_id, "referenced_by")
                 queue.append((candidate_id, level + 1))
 
+    graph_nodes = sorted(nodes.values(), key=lambda item: item["path"])
     return {
         "path": _display_path(storage.root, path),
         "start_id": start_id,
         "depth": depth,
-        "nodes": sorted(nodes.values(), key=lambda item: item["path"]),
+        "nodes": _layout_graph_nodes(graph_nodes, edges, start_id),
         "edges": edges,
+        "layout": _graph_layout_summary(graph_nodes, edges, start_id),
     }
 
 
@@ -4702,6 +4704,70 @@ def _add_graph_edge(
         return
     edge_keys.add(key)
     edges.append({"source": source, "target": target, "relation": relation})
+
+
+def _layout_graph_nodes(nodes: list[dict[str, Any]], edges: list[dict[str, str]], start_id: str) -> list[dict[str, Any]]:
+    levels = _graph_levels(nodes, edges, start_id)
+    by_level: dict[int, list[dict[str, Any]]] = {}
+    for node in nodes:
+        level = levels.get(str(node.get("id", "")), 99)
+        by_level.setdefault(level, []).append(node)
+    positioned: list[dict[str, Any]] = []
+    for level, level_nodes in sorted(by_level.items()):
+        ordered = sorted(level_nodes, key=lambda item: (str(item.get("type", "")), str(item.get("title", "")), str(item.get("path", ""))))
+        for index, node in enumerate(ordered):
+            positioned.append(
+                {
+                    **node,
+                    "layout": {
+                        "level": level,
+                        "x": level * 260,
+                        "y": index * 118,
+                        "cluster": str(node.get("type", "unknown")),
+                    },
+                }
+            )
+    return positioned
+
+
+def _graph_layout_summary(nodes: list[dict[str, Any]], edges: list[dict[str, str]], start_id: str) -> dict[str, Any]:
+    levels = _graph_levels(nodes, edges, start_id)
+    clusters: dict[str, int] = {}
+    for node in nodes:
+        cluster = str(node.get("type", "unknown"))
+        clusters[cluster] = clusters.get(cluster, 0) + 1
+    return {
+        "algorithm": "deterministic_bfs_layered",
+        "start_id": start_id,
+        "level_count": len(set(levels.values())) if levels else 0,
+        "clusters": clusters,
+        "edge_count": len(edges),
+        "node_count": len(nodes),
+    }
+
+
+def _graph_levels(nodes: list[dict[str, Any]], edges: list[dict[str, str]], start_id: str) -> dict[str, int]:
+    node_ids = {str(node.get("id", "")) for node in nodes}
+    adjacency: dict[str, set[str]] = {node_id: set() for node_id in node_ids}
+    for edge in edges:
+        source = str(edge.get("source", ""))
+        target = str(edge.get("target", ""))
+        if source in adjacency and target:
+            adjacency[source].add(target)
+        if target in adjacency and source:
+            adjacency[target].add(source)
+    levels: dict[str, int] = {}
+    queue: list[tuple[str, int]] = [(start_id, 0)]
+    while queue:
+        node_id, level = queue.pop(0)
+        if node_id in levels and levels[node_id] <= level:
+            continue
+        levels[node_id] = level
+        for next_id in sorted(adjacency.get(node_id, [])):
+            queue.append((next_id, level + 1))
+    for node_id in node_ids:
+        levels.setdefault(node_id, 99)
+    return levels
 
 
 def _linked_records(

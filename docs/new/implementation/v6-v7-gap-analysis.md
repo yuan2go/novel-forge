@@ -394,7 +394,13 @@ The earlier P0/P1 gaps have been largely converted into schema-backed services, 
 
 Remaining P2 work is no longer basic existence, but depth:
 
-- Add true Alembic CLI compatibility only if the local deployment starts requiring complex irreversible migrations.
-- Add browser-level Playwright smoke tests after UI stabilizes around routed pages.
-- Add richer graph layout and node drill-down for very large projects.
-- Add export/publish automation only after platform policy and copyright gates are explicitly approved.
+- Browser-level smoke exists as an optional Playwright test. It skips when Playwright is not installed and becomes strict through `npm --prefix web/admin run smoke:browser` with `NOVEL_FORGE_WEB_BASE_URL`.
+- Migration downgrade exists as a dry-run-first CLI/library path. Destructive downgrade requires explicit `--execute`.
+- Asset graph layout now returns deterministic BFS-layered coordinates and UI renders layered graph nodes.
+- Publishing platform adapters now exist for `local_file`, `manual_web`, and guarded `external_webhook`. External execution remains fail-closed unless the local operator explicitly configures endpoint and permission environment variables.
+
+Remaining optional depth:
+
+- Install and run Playwright in CI/local production smoke when browser automation dependencies are available.
+- Add advanced graph interaction such as zoom, node search, and large-project minimap.
+- Add adapter implementations for named external platforms only after their platform rules and copyright gates are explicitly approved.

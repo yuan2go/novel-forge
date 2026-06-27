@@ -11,3 +11,12 @@ UPGRADE_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS idx_nf_task_statuses_run_status ON nf_task_statuses(run_id, status)",
     "CREATE INDEX IF NOT EXISTS idx_nf_projects_updated ON nf_projects(updated_at)",
 ]
+
+DOWNGRADE_STATEMENTS = [
+    "DROP INDEX IF EXISTS idx_nf_projects_updated",
+    "DROP INDEX IF EXISTS idx_nf_task_statuses_run_status",
+    "DROP INDEX IF EXISTS idx_nf_task_statuses_indexed",
+    "DROP INDEX IF EXISTS idx_nf_assets_updated",
+    "DROP INDEX IF EXISTS idx_nf_assets_workspace_type",
+    "DROP INDEX IF EXISTS idx_nf_assets_project_type",
+]

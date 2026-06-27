@@ -43,6 +43,12 @@ export function AssetsCenterPage() {
   const selectedProject = projects.find((project) => project.project_id === projectId);
   const typedContent = parseDraftContent(draftContent);
   const typedFields = detail ? typedEditorFields(detail.summary.type) : [];
+  const graphBounds = useMemo(() => {
+    const nodes = graph?.nodes ?? [];
+    const width = Math.max(520, ...nodes.map((node) => Number(node.layout?.x ?? 0) + 230));
+    const height = Math.max(240, ...nodes.map((node) => Number(node.layout?.y ?? 0) + 110));
+    return { width, height };
+  }, [graph]);
   const byType = useMemo(() => {
     return assets.reduce<Record<string, number>>((counts, asset) => {
       counts[asset.type] = (counts[asset.type] ?? 0) + 1;
@@ -233,11 +239,16 @@ export function AssetsCenterPage() {
           <PanelHeader title="引用图谱" icon={<Network size={18} />} />
           {graph ? (
             <>
-              <div className="assetGraphCanvas">
+              <div className="assetGraphCanvas layered" style={{ minWidth: graphBounds.width, minHeight: graphBounds.height }}>
                 {graph.nodes.map((node) => (
-                  <div className={node.id === graph.start_id ? "graphNode active" : "graphNode"} key={node.id}>
+                  <div
+                    className={node.id === graph.start_id ? "graphNode active" : "graphNode"}
+                    key={node.id}
+                    style={{ left: Number(node.layout?.x ?? 0), top: Number(node.layout?.y ?? 0) }}
+                  >
                     <strong>{node.title || node.id}</strong>
                     <span>{node.type}</span>
+                    <span>level {String(node.layout?.level ?? "-")}</span>
                     <small>{node.path}</small>
                   </div>
                 ))}

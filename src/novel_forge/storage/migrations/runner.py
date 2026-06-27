@@ -11,6 +11,7 @@ class Migration:
     migration_id: str
     down_revision: str | None
     upgrade_statements: tuple[str, ...]
+    downgrade_statements: tuple[str, ...]
 
 
 MIGRATIONS = tuple(
@@ -18,6 +19,7 @@ MIGRATIONS = tuple(
         migration_id=str(module.MIGRATION_ID),
         down_revision=module.DOWN_REVISION,
         upgrade_statements=tuple(module.UPGRADE_STATEMENTS),
+        downgrade_statements=tuple(getattr(module, "DOWNGRADE_STATEMENTS", ())),
     )
     for module in VERSION_MODULES
 )
@@ -45,6 +47,16 @@ def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] 
     return [migration for migration in migrations if migration.migration_id not in applied_ids]
 
 
+def downgrade_plan(target_revision: str | None, applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+    validate_migration_chain(migrations)
+    known_ids = [migration.migration_id for migration in migrations]
+    if target_revision is not None and target_revision not in known_ids:
+        raise ValueError(f"unknown target_revision: {target_revision}")
+    target_index = -1 if target_revision is None else known_ids.index(target_revision)
+    candidates = [migration for migration in migrations[target_index + 1 :] if migration.migration_id in applied_ids]
+    return list(reversed(candidates))
+
+
 def run_migrations(database_url: str) -> dict[str, Any]:
     validate_migration_chain()
     with _connect(database_url) as connection:
@@ -63,6 +75,44 @@ def run_migrations(database_url: str) -> dict[str, Any]:
             rows = cursor.fetchall()
     applied_after = [{"migration_id": row[0], "applied_at": str(row[1])} for row in rows]
     return _status_from_rows(applied_after)
+
+
+def downgrade_migrations(database_url: str, *, target_revision: str | None, execute: bool = False) -> dict[str, Any]:
+    validate_migration_chain()
+    with _connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            _ensure_migration_table(cursor)
+            applied = _applied_migration_rows(cursor)
+            applied_ids = {str(row["migration_id"]) for row in applied}
+            plan = downgrade_plan(target_revision, applied_ids)
+            statements = [statement for migration in plan for statement in migration.downgrade_statements]
+            missing_downgrade = [migration.migration_id for migration in plan if not migration.downgrade_statements]
+            if execute and missing_downgrade:
+                raise ValueError(f"missing downgrade statements for: {', '.join(missing_downgrade)}")
+            if execute:
+                for migration in plan:
+                    for statement in migration.downgrade_statements:
+                        cursor.execute(statement)
+                    if migration.migration_id != MIGRATIONS[0].migration_id:
+                        cursor.execute("DELETE FROM nf_schema_migrations WHERE migration_id = %s", [migration.migration_id])
+                if target_revision is None:
+                    applied_after: list[dict[str, str]] = []
+                else:
+                    _ensure_migration_table(cursor)
+                    applied_after = _applied_migration_rows(cursor)
+            else:
+                applied_after = applied
+    status = _status_from_rows(applied_after)
+    status.update(
+        {
+            "target_revision": target_revision,
+            "execute": execute,
+            "downgrade_plan": [migration.migration_id for migration in plan],
+            "downgrade_statement_count": len(statements),
+            "destructive": any("DROP TABLE" in statement.upper() for statement in statements),
+        }
+    )
+    return status
 
 
 def get_migration_status(database_url: str) -> dict[str, Any]:

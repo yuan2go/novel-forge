@@ -5,12 +5,13 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AssetRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { createChapterAudit, createOriginalityReport, createPublishGate, createPublishingLog, createPublishingPlan, createReleasePackage, loadQualityData } from "./api";
+import { createChapterAudit, createOriginalityReport, createPublishGate, createPublishingLog, createPublishingPlan, createReleasePackage, loadQualityData, preparePlatformRelease, type PublishingAdapterRow } from "./api";
 
 export function QualityGatePage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [publishingAssets, setPublishingAssets] = useState<AssetRow[]>([]);
+  const [publishingAdapters, setPublishingAdapters] = useState<PublishingAdapterRow[]>([]);
   const [projectId, setProjectId] = useState("");
   const [draftPath, setDraftPath] = useState("");
   const [chapterAuditPath, setChapterAuditPath] = useState("");
@@ -22,6 +23,8 @@ export function QualityGatePage() {
   const [publishStartDate, setPublishStartDate] = useState("");
   const [publishingLogStatus, setPublishingLogStatus] = useState("published");
   const [externalUrl, setExternalUrl] = useState("");
+  const [adapterKey, setAdapterKey] = useState("manual_web");
+  const [adapterDryRun, setAdapterDryRun] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -37,10 +40,11 @@ export function QualityGatePage() {
   const blockedPackages = releasePackages.filter((asset) => (asset.asset_status || asset.status) !== "ready");
 
   async function refresh(nextProjectId = projectId) {
-    const [projectRows, assetRows, publishingRows] = await loadQualityData(nextProjectId);
+    const [projectRows, assetRows, publishingRows, adapterRows] = await loadQualityData(nextProjectId);
     setProjects(projectRows);
     setAssets(assetRows);
     setPublishingAssets(publishingRows);
+    setPublishingAdapters(adapterRows);
     setProjectId(nextProjectId || projectRows[0]?.project_id || "");
     setDraftPath((current) => current || assetRows.find((asset) => asset.type.includes("draft"))?.path || "");
     setChapterAuditPath((current) => current || assetRows.find((asset) => asset.type === "chapter_audit_report")?.path || "");
@@ -174,6 +178,16 @@ export function QualityGatePage() {
         </div>
         <div className="panel">
           <PanelHeader title="平台规则与发布日志" icon={<Send size={18} />} />
+          <div className="formGrid wide">
+            <select value={adapterKey} onChange={(event) => setAdapterKey(event.target.value)}>
+              {publishingAdapters.map((adapter) => <option value={adapter.key} key={adapter.key}>{adapter.label}</option>)}
+            </select>
+            <label className="checkboxLine">
+              <input type="checkbox" checked={adapterDryRun} onChange={(event) => setAdapterDryRun(event.target.checked)} />
+              dry-run
+            </label>
+            <button className="secondaryButton" disabled={busy || !releasePackagePath} onClick={() => runAction(() => preparePlatformRelease(releasePackagePath, publishingPlanPath, adapterKey, adapterDryRun, externalUrl), "平台发布 payload 已准备")}>准备平台发布</button>
+          </div>
           <DataTable
             emptyText="暂无发布日志"
             columns={["日志状态", "渠道", "发布时间", "发布包", "链接", "回滚"]}
@@ -187,6 +201,13 @@ export function QualityGatePage() {
             ])}
           />
           <div className="publishingRuleList">
+            {publishingAdapters.map((adapter) => (
+              <div className="ruleCard" key={adapter.key}>
+                <strong>{adapter.label}</strong>
+                <span>{adapter.mode} / {adapter.external ? "external" : "local"} / {adapter.configured ? "configured" : "not configured"}</span>
+                <small>{adapter.description}</small>
+              </div>
+            ))}
             {publishingAssets.filter((asset) => asset.platform_rules && Object.keys(asset.platform_rules).length).slice(0, 4).map((asset) => (
               <div className="ruleCard" key={`${asset.path}-rules`}>
                 <strong>{asset.type}</strong>

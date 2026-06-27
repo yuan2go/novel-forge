@@ -551,7 +551,13 @@ If failures are unrelated baseline failures, document them and fix only if they 
 
 ### Next Optional Depth
 
-1. Add Playwright smoke tests for critical routed pages after UI copy/layout churn slows down.
-2. Add a real graph layout renderer if project graphs exceed simple chip grids.
-3. Add migration downgrade scripts only when the project starts needing reversible destructive migrations.
-4. Add platform-specific publishing adapters only after platform policy and local automation boundaries are approved.
+1. Playwright smoke tests are available through `web/admin/tests/playwright-smoke.test.mjs`. They are optional in default tests and strict through `npm --prefix web/admin run smoke:browser` when Playwright and a running Web Admin URL are available.
+2. Asset graphs now use deterministic BFS-layered layout coordinates. Future work can add zoom/minimap for very large project graphs.
+3. Migration downgrade is implemented as dry-run-first library/CLI support: `postgres-migrations` and `postgres-downgrade --target-revision ... [--execute]`.
+4. Publishing adapters are implemented with local/manual/webhook boundaries. External webhook execution is fail-closed unless `NOVEL_FORGE_PUBLISH_WEBHOOK_URL` and `NOVEL_FORGE_ALLOW_EXTERNAL_PUBLISH=true` are set.
+
+### Remaining Optional Depth
+
+1. Add browser dependency installation to local-prod bootstrap if Playwright becomes mandatory.
+2. Add named external platform adapters only after platform policy, copyright gate, and local operator approval are explicit.
+3. Add graph zoom/search/minimap after project graphs exceed the current layered layout readability.

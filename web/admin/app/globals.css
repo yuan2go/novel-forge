@@ -1306,6 +1306,20 @@ pre {
   margin: 12px 0;
 }
 
+.assetGraphCanvas.layered {
+  display: block;
+  position: relative;
+  overflow: auto;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background:
+    linear-gradient(#e2e8f0 1px, transparent 1px),
+    linear-gradient(90deg, #e2e8f0 1px, transparent 1px),
+    #f8fafc;
+  background-size: 40px 40px;
+  padding: 12px;
+}
+
 .graphNode {
   border: 1px solid var(--soft-line);
   border-radius: 8px;
@@ -1314,6 +1328,11 @@ pre {
   display: grid;
   gap: 4px;
   min-width: 0;
+}
+
+.assetGraphCanvas.layered .graphNode {
+  position: absolute;
+  width: 220px;
 }
 
 .graphNode.active {
