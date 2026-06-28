@@ -26,6 +26,23 @@ export function runWorkflowSchedulerTick(projectId?: string) {
     limit: 20,
     max_nodes_per_resume: 5,
     dry_run: false,
+    async_task: false,
+    iterations: 1,
+    interval_seconds: 0,
     apply_invalidation: true
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function enqueueWorkflowSchedulerLoop(projectId?: string) {
+  return postJson("/product/workflow/scheduler/tick", {
+    project_id: projectId || null,
+    limit: 20,
+    max_nodes_per_resume: 5,
+    dry_run: false,
+    async_task: true,
+    iterations: 5,
+    interval_seconds: 5,
+    apply_invalidation: true,
+    stop_when_idle: true
   }) as Promise<Record<string, unknown>>;
 }

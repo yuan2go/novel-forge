@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AgentRunRow, BatchItem, DeadLetter, HandoffRow, NodeRunRow, ProjectHealthReport, ProjectRow, TaskCenter, TaskControl } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { loadProductionControlData, runAgentBoundaryAudit, runWorkflowSchedulerTick } from "./api";
+import { enqueueWorkflowSchedulerLoop, loadProductionControlData, runAgentBoundaryAudit, runWorkflowSchedulerTick } from "./api";
 
 export function ProductionControlPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
@@ -20,6 +20,7 @@ export function ProductionControlPage() {
   const [projectId, setProjectId] = useState("");
   const [boundaryAudit, setBoundaryAudit] = useState<Record<string, unknown> | null>(null);
   const [schedulerResult, setSchedulerResult] = useState<Record<string, unknown> | null>(null);
+  const [schedulerQueue, setSchedulerQueue] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -76,6 +77,20 @@ export function ProductionControlPage() {
     }
   }
 
+  async function queueWorkflowScheduler() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await enqueueWorkflowSchedulerLoop(projectId);
+      setSchedulerQueue(result);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <FeatureShell title="生产总控中心" subtitle="任务、工作流节点、Agent、批处理 item、Handoff、dead-letter 和 worker health 的统一观测台。">
       {error ? <div className="errorLine">{error}</div> : null}
@@ -97,6 +112,7 @@ export function ProductionControlPage() {
             </select>
             <button className="secondaryButton" onClick={() => refresh()}>刷新</button>
             <button className="primaryButton" disabled={busy} onClick={tickWorkflowScheduler}>Workflow Scheduler</button>
+            <button className="secondaryButton" disabled={busy} onClick={queueWorkflowScheduler}>入队 Scheduler Loop</button>
             <button className="primaryButton" disabled={busy} onClick={auditAgentBoundaries}>Agent 边界审计</button>
           </div>
           <div className="summaryBand">
@@ -127,6 +143,7 @@ export function ProductionControlPage() {
             <Metric label="恢复" value={String(schedulerResult?.resumed_count ?? "-")} />
             <Metric label="跳过" value={String(schedulerResult?.skipped_count ?? "-")} />
             <Metric label="错误" value={String(schedulerResult?.error_count ?? "-")} />
+            <Metric label="队列任务" value={String(schedulerQueue?.task_id ?? "-")} />
           </div>
           <DataTable
             emptyText="点击 Workflow Scheduler 后显示自动恢复结果"

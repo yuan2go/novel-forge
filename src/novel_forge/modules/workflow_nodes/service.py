@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Any
 
@@ -663,6 +664,91 @@ def run_workflow_scheduler(
         "resumed": resumed,
         "skipped": skipped,
         "errors": errors,
+        "recommendation": _scheduler_recommendation(resumed, skipped, errors),
+    }
+
+
+def run_workflow_scheduler_loop(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    limit: int = 20,
+    max_nodes_per_resume: int = 5,
+    iterations: int = 1,
+    interval_seconds: float = 0.0,
+    apply_invalidation: bool = True,
+    stop_when_idle: bool = True,
+    run_id: str | None = None,
+) -> dict[str, Any]:
+    storage.ensure_layout()
+    from novel_forge.workflows.status import write_task_status
+
+    loop_id = run_id or make_id("workflow_scheduler_loop", utc_now())
+    status_paths: list[str] = []
+    pending_path = write_task_status(storage, loop_id, "workflow-scheduler-loop", "pending")
+    status_paths.append(_display_path(storage.root, pending_path))
+    running_path = write_task_status(storage, loop_id, "workflow-scheduler-loop", "running")
+    status_paths.append(_display_path(storage.root, running_path))
+    ticks: list[dict[str, Any]] = []
+    resumed: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    errors: list[dict[str, str]] = []
+    try:
+        for index in range(max(1, int(iterations or 1))):
+            tick = run_workflow_scheduler(
+                storage,
+                project_id=project_id,
+                limit=limit,
+                max_nodes_per_resume=max_nodes_per_resume,
+                dry_run=False,
+                apply_invalidation=apply_invalidation,
+            )
+            tick["iteration"] = index + 1
+            ticks.append(tick)
+            resumed.extend([item for item in tick.get("resumed", []) if isinstance(item, dict)])
+            skipped.extend([item for item in tick.get("skipped", []) if isinstance(item, dict)])
+            errors.extend([item for item in tick.get("errors", []) if isinstance(item, dict)])
+            if stop_when_idle and int(tick.get("candidate_count", 0) or 0) == 0:
+                break
+            if index + 1 < max(1, int(iterations or 1)) and interval_seconds > 0:
+                time.sleep(min(float(interval_seconds), 60.0))
+    except Exception as exc:
+        failed_path = write_task_status(storage, loop_id, "workflow-scheduler-loop", "failed", error_message=f"{type(exc).__name__}: {exc}")
+        status_paths.append(_display_path(storage.root, failed_path))
+        raise
+
+    final_status = "failed" if errors else "completed"
+    output_paths = _dedupe(
+        [
+            *[str(item.get("resume_workflow_run_path", "")) for item in resumed],
+            *[str(item.get("checkpoint_path", "")) for item in skipped],
+            *status_paths,
+        ]
+    )
+    final_path = write_task_status(
+        storage,
+        loop_id,
+        "workflow-scheduler-loop",
+        final_status,
+        output_paths=output_paths if final_status == "completed" else [],
+        error_message="; ".join(str(item.get("error", "")) for item in errors if item.get("error")) if errors else "",
+    )
+    status_paths.append(_display_path(storage.root, final_path))
+    return {
+        "scheduler_loop_id": loop_id,
+        "status": final_status,
+        "project_id": project_id or "",
+        "tick_count": len(ticks),
+        "candidate_count": sum(int(tick.get("candidate_count", 0) or 0) for tick in ticks),
+        "resumed_count": len(resumed),
+        "skipped_count": len(skipped),
+        "error_count": len(errors),
+        "resumed": resumed,
+        "skipped": skipped,
+        "errors": errors,
+        "ticks": ticks,
+        "latest_tick": ticks[-1] if ticks else {},
+        "task_status_paths": status_paths,
         "recommendation": _scheduler_recommendation(resumed, skipped, errors),
     }
 
@@ -1688,7 +1774,257 @@ def _execute_registered_service_processor(
             persist=True,
         )
         return {"status": "succeeded", "operation": operation, "output_assets": [str(result.get("path", ""))] if result.get("path") else [], "payload": {"path": result.get("path", "")}}
+    if operation in {"continuity_graph_snapshot", "create_continuity_graph_snapshot"}:
+        from novel_forge.modules.continuity_graph import create_continuity_graph_snapshot
+
+        result = create_continuity_graph_snapshot(
+            storage,
+            project_id=str(processor.get("project_id") or "") or None,
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"canon_graph_snapshot", "create_canon_graph_snapshot"}:
+        from novel_forge.modules.continuity_graph import create_canon_graph_snapshot
+
+        result = create_canon_graph_snapshot(
+            storage,
+            project_id=str(processor.get("project_id") or "") or None,
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"chapter_continuity_report", "create_chapter_continuity_report"}:
+        from novel_forge.modules.continuity_graph import create_chapter_continuity_report
+
+        result = create_chapter_continuity_report(
+            storage,
+            _processor_path(processor, input_assets, "draft_path", "target_path"),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"canon_patch_from_draft", "create_canon_patch_from_draft"}:
+        from novel_forge.modules.continuity_graph import create_canon_patch_from_draft
+
+        result = create_canon_patch_from_draft(
+            storage,
+            _processor_path(processor, input_assets, "draft_path", "target_path"),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"apply_canon_patch", "canon_patch_apply"}:
+        from novel_forge.modules.continuity_graph import apply_canon_patch
+
+        result = apply_canon_patch(
+            storage,
+            _processor_path(processor, input_assets, "patch_path", "target_path"),
+            confirmed=bool(processor.get("confirmed", False)),
+            note=str(processor.get("note") or "workflow service processor"),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"chapter_stability_preflight", "create_chapter_stability_preflight_report"}:
+        from novel_forge.modules.continuity_graph import create_chapter_stability_preflight_report
+
+        result = create_chapter_stability_preflight_report(
+            storage,
+            _processor_path(processor, input_assets, "chapter_plan_path", "target_path"),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"quality_score_report", "create_quality_score_report"}:
+        from novel_forge.modules.standards import create_quality_score_report
+
+        result = create_quality_score_report(
+            storage,
+            _processor_path(processor, input_assets, "target_path", "draft_path"),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"style_decomposition_report", "create_style_decomposition_report"}:
+        from novel_forge.modules.style import create_style_decomposition_report
+
+        result = create_style_decomposition_report(
+            storage,
+            _processor_path(processor, input_assets, "source_path", "target_path"),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"style_review_report", "create_style_review_report"}:
+        from novel_forge.modules.style import create_style_review_report
+
+        result = create_style_review_report(
+            storage,
+            _processor_path(processor, input_assets, "draft_path", "target_path"),
+            style_profile_path=str(processor.get("style_profile_path") or "") or None,
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"originality_report", "create_originality_report"}:
+        from novel_forge.modules.audit import create_originality_report
+
+        result = create_originality_report(
+            storage,
+            _processor_path(processor, input_assets, "draft_path", "target_path"),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"chapter_audit_report", "create_chapter_audit_report"}:
+        from novel_forge.modules.audit import create_chapter_audit_report
+
+        result = create_chapter_audit_report(
+            storage,
+            _processor_path(processor, input_assets, "draft_path", "target_path"),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+            quality_path=str(processor.get("quality_path") or "") or None,
+            style_path=str(processor.get("style_path") or "") or None,
+            originality_path=str(processor.get("originality_path") or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"publish_gate_report", "create_publish_gate_report"}:
+        from novel_forge.modules.audit import create_publish_gate_report
+
+        result = create_publish_gate_report(
+            storage,
+            _processor_path(processor, input_assets, "draft_path", "target_path"),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+            chapter_audit_path=str(processor.get("chapter_audit_path") or "") or None,
+            human_override=bool(processor.get("human_override", False)),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"release_package", "create_release_package"}:
+        from novel_forge.modules.audit import create_release_package
+
+        result = create_release_package(
+            storage,
+            _processor_path(processor, input_assets, "draft_path", "target_path"),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+            publish_gate_path=str(processor.get("publish_gate_path") or "") or None,
+            channel=str(processor.get("channel") or "local"),
+            human_override=bool(processor.get("human_override", False)),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"outline_version", "create_outline_version"}:
+        from novel_forge.modules.production_chain import create_outline_version
+
+        result = create_outline_version(storage, _processor_path(processor, input_assets, "outline_path", "target_path"), change_summary=str(processor.get("change_summary") or "workflow service processor"), status=str(processor.get("status") or "active"))
+        return _service_success(storage, operation, result)
+    if operation in {"chapter_plan_version", "create_chapter_plan_version"}:
+        from novel_forge.modules.production_chain import create_chapter_plan_version
+
+        result = create_chapter_plan_version(storage, _processor_path(processor, input_assets, "chapter_plan_path", "target_path"), change_summary=str(processor.get("change_summary") or "workflow service processor"), status=str(processor.get("status") or "active"))
+        return _service_success(storage, operation, result)
+    if operation in {"draft_version", "create_draft_version"}:
+        from novel_forge.modules.production_chain import create_draft_version
+
+        result = create_draft_version(storage, _processor_path(processor, input_assets, "draft_path", "target_path"), change_summary=str(processor.get("change_summary") or "workflow service processor"), status=str(processor.get("status") or "active"))
+        return _service_success(storage, operation, result)
+    if operation in {"review", "review_report"}:
+        from novel_forge.modules.review.service import review
+
+        result = review(storage, _processor_path(processor, input_assets, "draft_path", "target_path"))
+        return _service_success(storage, operation, result)
+    if operation in {"editor_patch", "create_editor_patch"}:
+        from novel_forge.modules.editor import create_editor_patch
+
+        operations = processor.get("operations", [])
+        result = create_editor_patch(
+            storage,
+            _processor_path(processor, input_assets, "draft_path", "target_path"),
+            instructions=str(processor.get("instructions") or ""),
+            operations=operations if isinstance(operations, list) else [],
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"apply_editor_patch", "editor_patch_apply"}:
+        from novel_forge.modules.editor import apply_editor_patch
+
+        result = apply_editor_patch(
+            storage,
+            _processor_path(processor, input_assets, "patch_path", "target_path"),
+            apply=bool(processor.get("apply", True)),
+            change_summary=str(processor.get("change_summary") or "workflow service processor"),
+            operation_ids=[str(item) for item in processor.get("operation_ids", [])] if isinstance(processor.get("operation_ids", []), list) else [],
+            operation_indexes=[int(item) for item in processor.get("operation_indexes", [])] if isinstance(processor.get("operation_indexes", []), list) else [],
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"draft_diff_report", "create_draft_diff_report"}:
+        from novel_forge.modules.editor import create_draft_diff_report
+
+        result = create_draft_diff_report(
+            storage,
+            _processor_path(processor, input_assets, "base_path", "draft_path"),
+            _processor_path(processor, input_assets[1:], "target_path"),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"publishing_plan", "create_publishing_plan"}:
+        from novel_forge.modules.publishing import create_publishing_plan
+
+        release_paths = processor.get("release_package_paths", input_assets)
+        result = create_publishing_plan(
+            storage,
+            release_package_paths=[str(item) for item in release_paths] if isinstance(release_paths, list) else [],
+            project_id=str(processor.get("project_id") or "") or None,
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+            channel=str(processor.get("channel") or "local"),
+            cadence=str(processor.get("cadence") or "daily"),
+            start_date=str(processor.get("start_date") or ""),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"publishing_log", "create_publishing_log"}:
+        from novel_forge.modules.publishing import create_publishing_log
+
+        result = create_publishing_log(
+            storage,
+            _processor_path(processor, input_assets, "release_package_path", "target_path"),
+            publishing_plan_path=str(processor.get("publishing_plan_path") or "") or None,
+            channel=str(processor.get("channel") or "local"),
+            status=str(processor.get("status") or "published"),
+            external_url=str(processor.get("external_url") or ""),
+            rollback_note=str(processor.get("rollback_note") or ""),
+        )
+        return _service_success(storage, operation, result)
     raise ValueError(f"unknown service processor operation: {operation or '<empty>'}")
+
+
+def _service_success(storage: LocalStorage, operation: str, result: Any) -> dict[str, Any]:
+    return {"status": "succeeded", "operation": operation, "output_assets": _service_output_assets(storage, result), "payload": _json_safe_service_payload(result)}
+
+
+def _processor_path(processor: dict[str, Any], input_assets: list[str], *keys: str) -> str:
+    for key in keys:
+        value = str(processor.get(key) or "").strip()
+        if value:
+            return value
+    if input_assets:
+        return str(input_assets[0])
+    raise ValueError(f"service processor requires one of: {', '.join(keys) or 'input_assets'}")
+
+
+def _service_output_assets(storage: LocalStorage, result: Any) -> list[str]:
+    values: list[str] = []
+    if isinstance(result, (str, Path)):
+        values.append(str(result))
+    elif isinstance(result, dict):
+        for key, value in result.items():
+            if key.endswith("path") and isinstance(value, (str, Path)):
+                values.append(str(value))
+            elif key.endswith("paths") and isinstance(value, list):
+                values.extend(str(item) for item in value if isinstance(item, (str, Path)))
+            elif key in {"updated_targets", "output_assets"} and isinstance(value, list):
+                values.extend(str(item) for item in value if isinstance(item, (str, Path)))
+            elif isinstance(value, dict) and key not in {"asset", "content", "metadata", "references", "payload"}:
+                values.extend(_service_output_assets(storage, value))
+    return _dedupe([_display_path(storage.root, resolve_path(storage.root, value)) if value and _path_exists(storage, value) else str(value) for value in values if str(value).strip()])
+
+
+def _json_safe_service_payload(value: Any) -> Any:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(key): _json_safe_service_payload(child) for key, child in value.items()}
+    if isinstance(value, list):
+        return [_json_safe_service_payload(item) for item in value]
+    if isinstance(value, tuple):
+        return [_json_safe_service_payload(item) for item in value]
+    return value
 
 
 def _trace_payload(trace: dict[str, Any] | None, *, trace_id: str, node_id: str) -> dict[str, str]:

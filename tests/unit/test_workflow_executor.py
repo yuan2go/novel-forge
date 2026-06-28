@@ -2,11 +2,12 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.agent_runs import list_agent_runs
-from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs, resume_workflow, run_workflow_scheduler
+from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs, resume_workflow, run_workflow_scheduler, run_workflow_scheduler_loop
 from novel_forge.schemas import ChapterPlan, CleanedText, DraftChapter, Outline, SourceDocument
 from novel_forge.storage.local import LocalStorage
 
@@ -434,6 +435,89 @@ class WorkflowExecutorTests(unittest.TestCase):
             processor = storage.read_asset(node_run["path"]).content["processor"]
             self.assertEqual(processor["registry_operation"], "module_completion_snapshot")
 
+    def test_scheduler_loop_records_task_status_and_worker_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            loop = run_workflow_scheduler_loop(storage, iterations=2, interval_seconds=0, stop_when_idle=True)
+
+            self.assertEqual(loop["status"], "completed")
+            self.assertEqual(loop["tick_count"], 1)
+            self.assertGreaterEqual(len(loop["task_status_paths"]), 3)
+            task_statuses = _run_assets_by_type(storage, "task_status")
+            self.assertIn("workflow-scheduler-loop", {item["content"]["step"] for item in task_statuses})
+            self.assertIn("completed", {item["content"]["status"] for item in task_statuses})
+
+            from novel_forge.workers.tasks import workflow_scheduler_loop_task
+
+            worker = workflow_scheduler_loop_task(tmp, iterations=1, interval_seconds=0, request_id="scheduler-worker-test")
+            self.assertEqual(worker["status"], "completed")
+            self.assertTrue(worker["task_status_paths"])
+
+    def test_service_processor_registry_runs_quality_originality_and_continuity_services(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}),
+            )
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Draft",
+                    source=storage.read_asset(plan_path).id,
+                    content={"chapter": 1, "text": "林乔推开档案室的门，发现旧钟声和失踪名单有关。她决定先救人，再追查幕后。", "copyright_boundary": "unit test original draft"},
+                    references=[storage.read_asset(plan_path).id, str(plan_path.relative_to(storage.root))],
+                ),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Service Registry Gates",
+                entry_node_id="preflight",
+                nodes=[
+                    {
+                        "node_id": "preflight",
+                        "node_type": "continuity",
+                        "operation": "chapter_stability_preflight",
+                        "input_assets": [str(plan_path.relative_to(storage.root))],
+                        "output_types": ["chapter_continuity_report"],
+                        "processor": {"kind": "service"},
+                    },
+                    {
+                        "node_id": "quality",
+                        "node_type": "quality",
+                        "operation": "quality_score_report",
+                        "depends_on": ["preflight"],
+                        "input_assets": [str(draft_path.relative_to(storage.root))],
+                        "output_types": ["quality_score_report"],
+                        "processor": {"kind": "service"},
+                    },
+                    {
+                        "node_id": "originality",
+                        "node_type": "quality",
+                        "operation": "originality_report",
+                        "depends_on": ["quality"],
+                        "input_assets": [str(draft_path.relative_to(storage.root))],
+                        "output_types": ["originality_report"],
+                        "processor": {"kind": "service"},
+                    },
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"])
+
+            self.assertEqual(result["status"], "completed")
+            output_types = {storage.read_asset(path).type for path in result["workflow_run"]["asset"]["content"]["outputs"]}
+            self.assertIn("chapter_continuity_report", output_types)
+            self.assertIn("quality_score_report", output_types)
+            self.assertIn("originality_report", output_types)
+            registry_operations = [storage.read_asset(row["path"]).content["processor"]["registry_operation"] for row in list_node_runs(storage, run_id=result["run_id"])]
+            self.assertIn("chapter_stability_preflight", registry_operations)
+            self.assertIn("quality_score_report", registry_operations)
+            self.assertIn("originality_report", registry_operations)
+
 
 def _run_asset_types(storage: LocalStorage) -> set[str]:
     types: set[str] = set()
@@ -442,6 +526,15 @@ def _run_asset_types(storage: LocalStorage) -> set[str]:
         if isinstance(data, dict):
             types.add(str(data.get("type", "")))
     return types
+
+
+def _run_assets_by_type(storage: LocalStorage, asset_type: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in storage.list_json("runs"):
+        data = storage.read_json(path)
+        if isinstance(data, dict) and data.get("type") == asset_type:
+            rows.append(data)
+    return rows
 
 
 if __name__ == "__main__":

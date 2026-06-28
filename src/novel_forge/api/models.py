@@ -381,7 +381,11 @@ class WorkflowSchedulerRequest(BaseModel):
     limit: int = 20
     max_nodes_per_resume: int = 5
     dry_run: bool = False
+    async_task: bool = False
+    iterations: int = 1
+    interval_seconds: float = 0.0
     apply_invalidation: bool = True
+    stop_when_idle: bool = True
 
 
 class ChangeImpactRequest(BaseModel):

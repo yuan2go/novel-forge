@@ -6,6 +6,7 @@ from typing import Any, Callable
 from novel_forge.api.product import enqueue_batch_deconstruct, process_batch_item_step, retry_task
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.chapter_production_bus import recover_chapter_production, resume_chapter_production
+from novel_forge.modules.workflow_nodes import run_workflow_scheduler_loop
 from novel_forge.storage.local import LocalStorage
 from novel_forge.workflows import pipeline
 
@@ -151,6 +152,35 @@ def chapter_production_run_task(
         else:
             result = resume_chapter_production(storage, run_path, from_step=from_step, run_to=run_to, force=force, clear_pause=clear_pause)
         run.succeed()
+        return result
+
+
+@_task(name="novel_forge.workflow_scheduler_loop")
+def workflow_scheduler_loop_task(
+    root: str,
+    project_id: str | None = None,
+    limit: int = 20,
+    max_nodes_per_resume: int = 5,
+    iterations: int = 1,
+    interval_seconds: float = 0.0,
+    apply_invalidation: bool = True,
+    stop_when_idle: bool = True,
+    request_id: str = "",
+) -> dict:
+    with _worker_context(root, "workflow-scheduler-loop", workspace_path=None) as run:
+        run.guard("run_worker_task")
+        result = run_workflow_scheduler_loop(
+            LocalStorage(root),
+            project_id=project_id,
+            limit=limit,
+            max_nodes_per_resume=max_nodes_per_resume,
+            iterations=iterations,
+            interval_seconds=interval_seconds,
+            apply_invalidation=apply_invalidation,
+            stop_when_idle=stop_when_idle,
+            run_id=request_id or None,
+        )
+        run.succeed(output_assets=result.get("task_status_paths", []), token_used=int(result.get("candidate_count", 0) or 0))
         return result
 
 

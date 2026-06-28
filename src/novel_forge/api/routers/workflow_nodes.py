@@ -4,6 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
+from novel_forge.core.ids import utc_now
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.workflow_nodes import (
     create_workflow_definition,
@@ -13,6 +14,7 @@ from novel_forge.modules.workflow_nodes import (
     record_node_run,
     resume_workflow,
     run_workflow_scheduler,
+    run_workflow_scheduler_loop,
 )
 from novel_forge.storage.local import LocalStorage
 
@@ -136,16 +138,75 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
 
     @router.post("/product/workflow/scheduler/tick")
     def workflow_scheduler_tick_endpoint(request: WorkflowSchedulerRequest) -> dict[str, Any]:
+        if request.async_task:
+            if request.dry_run:
+                raise HTTPException(status_code=400, detail="dry_run scheduler requests cannot be enqueued")
+            try:
+                task = _enqueue_workflow_scheduler_task(
+                    app_settings,
+                    project_id=request.project_id,
+                    limit=request.limit,
+                    max_nodes_per_resume=request.max_nodes_per_resume,
+                    iterations=request.iterations,
+                    interval_seconds=request.interval_seconds,
+                    apply_invalidation=request.apply_invalidation,
+                    stop_when_idle=request.stop_when_idle,
+                )
+                return {"mode": "async", "task_id": task.id, "task_name": "novel_forge.workflow_scheduler_loop", "queue": app_settings.celery_default_queue}
+            except Exception as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
         try:
-            return run_workflow_scheduler(
-                LocalStorage(app_settings.root),
+            storage = LocalStorage(app_settings.root)
+            if request.dry_run:
+                return run_workflow_scheduler(
+                    storage,
+                    project_id=request.project_id,
+                    limit=request.limit,
+                    max_nodes_per_resume=request.max_nodes_per_resume,
+                    dry_run=True,
+                    apply_invalidation=request.apply_invalidation,
+                )
+            return run_workflow_scheduler_loop(
+                storage,
                 project_id=request.project_id,
                 limit=request.limit,
                 max_nodes_per_resume=request.max_nodes_per_resume,
-                dry_run=request.dry_run,
+                iterations=request.iterations,
+                interval_seconds=request.interval_seconds,
                 apply_invalidation=request.apply_invalidation,
+                stop_when_idle=request.stop_when_idle,
             )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return router
+
+
+def _enqueue_workflow_scheduler_task(
+    app_settings: Any,
+    *,
+    project_id: str | None,
+    limit: int,
+    max_nodes_per_resume: int,
+    iterations: int,
+    interval_seconds: float,
+    apply_invalidation: bool,
+    stop_when_idle: bool,
+):
+    try:
+        from novel_forge.workers.dispatch import enqueue_task
+    except Exception as exc:
+        raise RuntimeError(f"Celery dispatch import failed: {exc}") from exc
+    return enqueue_task(
+        "workflow_scheduler_loop_task",
+        str(app_settings.root),
+        project_id,
+        limit,
+        max_nodes_per_resume,
+        iterations,
+        interval_seconds,
+        apply_invalidation,
+        stop_when_idle,
+        settings=app_settings,
+        task_kwargs={"request_id": utc_now()},
+    )
