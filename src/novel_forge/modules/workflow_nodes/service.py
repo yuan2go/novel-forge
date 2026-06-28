@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
-from novel_forge.modules.agent_runs import ensure_agent_contract, execute_agent_run_once, record_agent_checkpoint, start_agent_run
+from novel_forge.modules.agent_runs import ensure_agent_contract, execute_agent_run_once, record_agent_checkpoint, start_agent_run, update_agent_run_status
 from novel_forge.modules.change_impact import create_change_impact_report, mark_downstream_assets_stale
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
@@ -21,7 +21,8 @@ from novel_forge.storage.local import LocalStorage
 WORKFLOW_TERMINAL_NODE_STATUSES = {"succeeded", "failed", "dead_letter", "cancelled"}
 WORKFLOW_SUCCESS_NODE_STATUSES = {"succeeded", "recovered"}
 WORKFLOW_BLOCKING_NODE_STATUSES = {"failed", "dead_letter", "cancelled", "waiting_human", "needs_revision"}
-WORKFLOW_RUN_TERMINAL_STATUSES = {"completed", "failed", "superseded"}
+WORKFLOW_RUN_TERMINAL_STATUSES = {"completed", "failed", "cancelled", "superseded"}
+WORKFLOW_RUN_CONTROL_ACTIONS = {"pause", "resume", "retry", "cancel"}
 
 
 def create_workflow_definition(
@@ -275,6 +276,269 @@ def list_workflow_runs(storage: LocalStorage, *, project_id: str | None = None, 
     return rows
 
 
+def parse_workflow_dag(storage: LocalStorage, workflow_path_or_id: str | Path, *, start_node_id: str | None = None) -> dict[str, Any]:
+    """Parse a WorkflowDefinition into a deterministic DAG plan.
+
+    This is intentionally read-only: callers can use it for UI, scheduling, and
+    validation without creating NodeRun/GateResult side effects.
+    """
+
+    storage.ensure_layout()
+    workflow_path, workflow = _resolve_workflow_definition(storage, workflow_path_or_id)
+    content = workflow.get("content", {}) if isinstance(workflow.get("content", {}), dict) else {}
+    workflow_id = str(content.get("workflow_id") or workflow.get("id") or workflow_path_or_id)
+    nodes = _workflow_nodes(storage, workflow)
+    node_map = {str(node.get("node_id", "")): node for node in nodes if str(node.get("node_id", "")).strip()}
+    entry_node_id = start_node_id or str(content.get("entry_node_id", ""))
+    order = _topological_order(node_map, entry_node_id)
+    dependency_map = {node_id: _node_dependencies(node) for node_id, node in node_map.items()}
+    dependents: dict[str, list[str]] = {node_id: [] for node_id in node_map}
+    edges: list[dict[str, str]] = []
+    for node_id, dependencies in dependency_map.items():
+        for dependency_id in dependencies:
+            if dependency_id in dependents:
+                dependents[dependency_id].append(node_id)
+            edges.append({"from": dependency_id, "to": node_id})
+    reachable = set(order)
+    return {
+        "workflow_id": workflow_id,
+        "workflow_path": _display_path(storage.root, workflow_path),
+        "entry_node_id": entry_node_id,
+        "order": order,
+        "nodes": [_node_plan_row(node_map[node_id]) for node_id in order],
+        "edges": [edge for edge in edges if edge["from"] in reachable and edge["to"] in reachable],
+        "dependencies": {node_id: dependency_map.get(node_id, []) for node_id in order},
+        "dependents": {node_id: [item for item in dependents.get(node_id, []) if item in reachable] for node_id in order},
+        "unreachable_node_ids": sorted(set(node_map) - reachable),
+        "node_count": len(order),
+        "edge_count": sum(1 for edge in edges if edge["from"] in reachable and edge["to"] in reachable),
+    }
+
+
+def resolve_workflow_dependencies(
+    storage: LocalStorage,
+    workflow_path_or_id: str | Path,
+    *,
+    input_assets: list[str | Path] | None = None,
+    workflow_run_path_or_id: str | Path | None = None,
+    start_node_id: str | None = None,
+) -> dict[str, Any]:
+    """Resolve node readiness and input assets for a workflow run plan.
+
+    The resolver does not execute gates or processors. It only projects current
+    run_log/output state onto the parsed DAG.
+    """
+
+    storage.ensure_layout()
+    dag = parse_workflow_dag(storage, workflow_path_or_id, start_node_id=start_node_id)
+    workflow_path, workflow = _resolve_workflow_definition(storage, workflow_path_or_id)
+    nodes = _workflow_nodes(storage, workflow)
+    node_map = {str(node.get("node_id", "")): node for node in nodes if str(node.get("node_id", "")).strip()}
+    initial_inputs = [str(_display_path(storage.root, resolve_path(storage.root, item))) if _path_exists(storage, item) else str(item) for item in input_assets or []]
+    previous_log: list[dict[str, Any]] = []
+    run_status = ""
+    run_path = ""
+    if workflow_run_path_or_id:
+        resolved_run_path, workflow_run = _resolve_workflow_run(storage, workflow_run_path_or_id)
+        run_path = _display_path(storage.root, resolved_run_path)
+        content = workflow_run.get("content", {}) if isinstance(workflow_run.get("content", {}), dict) else {}
+        run_status = str(content.get("status", ""))
+        previous_log = content.get("run_log", []) if isinstance(content.get("run_log", []), list) else []
+    outputs_by_node = _outputs_by_node_from_run_log(previous_log)
+    rows: list[dict[str, Any]] = []
+    for node_id in dag["order"]:
+        node = node_map[node_id]
+        dependencies = _node_dependencies(node)
+        dependency_statuses = {dependency_id: _last_status_for_node(previous_log, dependency_id) for dependency_id in dependencies}
+        node_inputs = _node_inputs(storage, node, dependencies, outputs_by_node, initial_inputs)
+        missing_types = _missing_required_input_types(storage, node, node_inputs)
+        latest_status = _last_status_for_node(previous_log, node_id)
+        dependency_ready = all(status in WORKFLOW_SUCCESS_NODE_STATUSES for status in dependency_statuses.values())
+        completed = latest_status in WORKFLOW_SUCCESS_NODE_STATUSES
+        ready = dependency_ready and not missing_types and not completed
+        blocked_reason = ""
+        if completed:
+            blocked_reason = "already completed"
+        elif not dependency_ready:
+            blocked_reason = "dependency not satisfied"
+        elif missing_types:
+            blocked_reason = f"missing required input asset types: {', '.join(missing_types)}"
+        rows.append(
+            {
+                **_node_plan_row(node),
+                "dependencies": dependencies,
+                "dependency_statuses": dependency_statuses,
+                "input_assets": node_inputs,
+                "missing_input_types": missing_types,
+                "latest_status": latest_status,
+                "ready": ready,
+                "blocked_reason": blocked_reason,
+            }
+        )
+    ready_nodes = [row["node_id"] for row in rows if row["ready"]]
+    blocked_nodes = [row for row in rows if row["blocked_reason"] and row["latest_status"] not in WORKFLOW_SUCCESS_NODE_STATUSES]
+    return {
+        "workflow_id": dag["workflow_id"],
+        "workflow_path": dag["workflow_path"],
+        "workflow_run_path": run_path,
+        "workflow_run_status": run_status,
+        "entry_node_id": dag["entry_node_id"],
+        "order": dag["order"],
+        "nodes": rows,
+        "ready_nodes": ready_nodes,
+        "blocked_nodes": blocked_nodes,
+        "summary": {
+            "node_count": len(rows),
+            "ready_count": len(ready_nodes),
+            "blocked_count": len(blocked_nodes),
+            "completed_count": sum(1 for row in rows if row["latest_status"] in WORKFLOW_SUCCESS_NODE_STATUSES),
+        },
+    }
+
+
+def pause_workflow_run(storage: LocalStorage, workflow_run_path_or_id: str | Path, *, reason: str = "", operator: str = "workflow_control") -> dict[str, Any]:
+    storage.ensure_layout()
+    path, data = _resolve_workflow_run(storage, workflow_run_path_or_id)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    status = str(content.get("status", ""))
+    if status in WORKFLOW_RUN_TERMINAL_STATUSES:
+        raise ValueError(f"terminal workflow_run cannot be paused: {status}")
+    blocked = content.get("blocked", {}) if isinstance(content.get("blocked", {}), dict) else {}
+    if not blocked.get("node_id"):
+        blocked = {"node_id": _next_resume_node_from_run(storage, data), "status": "paused", "reason": reason or "workflow paused"}
+    else:
+        blocked = {**blocked, "status": "paused", "reason": reason or blocked.get("reason") or "workflow paused"}
+    return _update_workflow_run_control(
+        storage,
+        path,
+        data,
+        status="paused",
+        blocked=blocked,
+        control={"action": "pause", "operator": operator, "reason": reason},
+    )
+
+
+def cancel_workflow_run(storage: LocalStorage, workflow_run_path_or_id: str | Path, *, reason: str = "", operator: str = "workflow_control") -> dict[str, Any]:
+    storage.ensure_layout()
+    path, data = _resolve_workflow_run(storage, workflow_run_path_or_id)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    status = str(content.get("status", ""))
+    if status in {"completed", "superseded"}:
+        raise ValueError(f"workflow_run cannot be cancelled from status: {status}")
+    blocked = content.get("blocked", {}) if isinstance(content.get("blocked", {}), dict) else {}
+    blocked = {**blocked, "status": "cancelled", "reason": reason or "workflow cancelled"}
+    cancelled = _update_workflow_run_control(
+        storage,
+        path,
+        data,
+        status="cancelled",
+        blocked=blocked,
+        control={"action": "cancel", "operator": operator, "reason": reason},
+        finish=True,
+    )
+    cancelled_agents: list[dict[str, str]] = []
+    for agent_path in content.get("agent_runs", []) if isinstance(content.get("agent_runs", []), list) else []:
+        try:
+            update_agent_run_status(
+                storage,
+                str(agent_path),
+                status="cancelled",
+                error=reason or "workflow cancelled",
+                event_type="agent_run.cancelled",
+                message=reason or "workflow cancelled",
+            )
+            cancelled_agents.append({"path": str(agent_path), "status": "cancelled"})
+        except Exception as exc:
+            cancelled_agents.append({"path": str(agent_path), "status": "error", "error": str(exc)})
+    cancelled["cancelled_agents"] = cancelled_agents
+    return cancelled
+
+
+def retry_workflow_run(
+    storage: LocalStorage,
+    workflow_run_path_or_id: str | Path,
+    *,
+    resume_node_id: str | None = None,
+    output_assets: list[str | Path] | None = None,
+    token_used: int = 0,
+    cost_estimate: float = 0.0,
+    checkpoint: dict[str, Any] | None = None,
+    evidence: dict[str, Any] | None = None,
+    human_gate: dict[str, Any] | None = None,
+    tool_name: str | None = None,
+    output_type: str | None = None,
+    max_nodes: int | None = None,
+    apply_invalidation: bool = True,
+    workspace_path: str | None = None,
+    archive_previous: bool = True,
+) -> dict[str, Any]:
+    retry_evidence = {"workflow_control_action": "retry", **(evidence or {})}
+    return resume_workflow(
+        storage,
+        workflow_run_path_or_id,
+        resume_node_id=resume_node_id,
+        output_assets=output_assets or [],
+        token_used=token_used,
+        cost_estimate=cost_estimate,
+        checkpoint=checkpoint or {"status": "workflow_retry"},
+        evidence=retry_evidence,
+        human_gate=human_gate,
+        tool_name=tool_name,
+        output_type=output_type,
+        max_nodes=max_nodes,
+        apply_invalidation=apply_invalidation,
+        workspace_path=workspace_path,
+        archive_previous=archive_previous,
+    )
+
+
+def control_workflow_run(
+    storage: LocalStorage,
+    workflow_run_path_or_id: str | Path,
+    *,
+    action: str,
+    reason: str = "",
+    resume_node_id: str | None = None,
+    output_assets: list[str | Path] | None = None,
+    token_used: int = 0,
+    cost_estimate: float = 0.0,
+    checkpoint: dict[str, Any] | None = None,
+    evidence: dict[str, Any] | None = None,
+    human_gate: dict[str, Any] | None = None,
+    tool_name: str | None = None,
+    output_type: str | None = None,
+    max_nodes: int | None = None,
+    apply_invalidation: bool = True,
+    workspace_path: str | None = None,
+    archive_previous: bool = True,
+) -> dict[str, Any]:
+    normalized = str(action or "").strip().lower()
+    if normalized not in WORKFLOW_RUN_CONTROL_ACTIONS:
+        raise ValueError(f"workflow control action must be one of: {', '.join(sorted(WORKFLOW_RUN_CONTROL_ACTIONS))}")
+    if normalized == "pause":
+        return pause_workflow_run(storage, workflow_run_path_or_id, reason=reason)
+    if normalized == "cancel":
+        return cancel_workflow_run(storage, workflow_run_path_or_id, reason=reason)
+    retry_evidence = {"workflow_control_action": normalized, "reason": reason, **(evidence or {})}
+    return retry_workflow_run(
+        storage,
+        workflow_run_path_or_id,
+        resume_node_id=resume_node_id,
+        output_assets=output_assets or [],
+        token_used=token_used,
+        cost_estimate=cost_estimate,
+        checkpoint=checkpoint or {"status": f"workflow_{normalized}"},
+        evidence=retry_evidence,
+        human_gate=human_gate,
+        tool_name=tool_name,
+        output_type=output_type,
+        max_nodes=max_nodes,
+        apply_invalidation=apply_invalidation,
+        workspace_path=workspace_path,
+        archive_previous=archive_previous,
+    )
+
+
 def execute_workflow(
     storage: LocalStorage,
     workflow_path_or_id: str | Path,
@@ -380,6 +644,13 @@ def execute_workflow(
                 input_assets=node_inputs,
                 dispatch_agents=dispatch_agents,
                 execute_agents=execute_agents,
+                apply_invalidation=apply_invalidation,
+                workspace_path=workspace_path,
+            )
+            result = _apply_configured_downstream_invalidation(
+                storage,
+                node=node,
+                result=result,
                 apply_invalidation=apply_invalidation,
                 workspace_path=workspace_path,
             )
@@ -531,14 +802,24 @@ def resume_workflow(
         human_gate=human_gate,
         tool_name=tool_name,
         output_type=output_type,
+        apply_invalidation=apply_invalidation,
+        workspace_path=workspace_path,
+    )
+    resume_result = _apply_configured_downstream_invalidation(
+        storage,
+        node=resume_node,
+        result=resume_result,
+        apply_invalidation=apply_invalidation,
         workspace_path=workspace_path,
     )
     node_runs.append(resume_result["node_run"])
     if resume_result.get("agent_run"):
         agent_runs.append(resume_result["agent_run"])
+    if resume_result.get("invalidation"):
+        invalidations.append(resume_result["invalidation"])
     outputs_by_node[node_id] = [str(item) for item in resume_result.get("output_assets", []) if str(item).strip()]
     new_outputs.extend(outputs_by_node[node_id])
-    run_log.append(_node_run_log_entry(resume_result["node_run"], agent_run=resume_result.get("agent_run"), invalidation=None))
+    run_log.append(_node_run_log_entry(resume_result["node_run"], agent_run=resume_result.get("agent_run"), invalidation=resume_result.get("invalidation")))
     if resume_result["status"] not in WORKFLOW_SUCCESS_NODE_STATUSES:
         status = "failed"
         current_blocked = {"node_id": node_id, "status": resume_result["status"], "reason": resume_result.get("message", "")}
@@ -592,6 +873,13 @@ def resume_workflow(
                     input_assets=node_inputs,
                     dispatch_agents=True,
                     execute_agents=True,
+                    apply_invalidation=apply_invalidation,
+                    workspace_path=workspace_path,
+                )
+                result = _apply_configured_downstream_invalidation(
+                    storage,
+                    node=next_node,
+                    result=result,
                     apply_invalidation=apply_invalidation,
                     workspace_path=workspace_path,
                 )
@@ -918,12 +1206,31 @@ def _resume_blocked_node(
     human_gate: dict[str, Any] | None,
     tool_name: str | None,
     output_type: str | None,
+    apply_invalidation: bool,
     workspace_path: str | None,
 ) -> dict[str, Any]:
     processor = _node_processor(node)
     kind = str(processor.get("kind") or processor.get("type") or "record_only").strip().lower()
     input_assets = _input_assets_for_node(previous_log, str(node.get("node_id", "")))
+    if not input_assets:
+        input_assets = _node_inputs(storage, node, _node_dependencies(node), _outputs_by_node_from_run_log(previous_log), [])
     if kind not in {"agent", "agent_dispatch"}:
+        gate = _evaluate_node_gate(storage, node, input_assets, run_id=run_id)
+        if gate["status"] != "passed":
+            return _record_executed_node(
+                storage,
+                run_id=run_id,
+                node=node,
+                status=gate["node_status"],
+                input_assets=input_assets,
+                output_assets=[],
+                processor=processor,
+                started_at=utc_now(),
+                error=gate["message"],
+                quality_gate=gate["quality_gate"],
+                human_gate=gate["human_gate"],
+                message=gate["message"],
+            )
         return _execute_node(
             storage,
             run_id=run_id,
@@ -931,7 +1238,7 @@ def _resume_blocked_node(
             input_assets=input_assets,
             dispatch_agents=True,
             execute_agents=True,
-            apply_invalidation=True,
+            apply_invalidation=apply_invalidation,
             workspace_path=workspace_path,
         )
     node_id = str(node.get("node_id", ""))
@@ -1082,6 +1389,104 @@ def _normalize_node(node: dict[str, Any], *, workflow_id: str) -> dict[str, Any]
         "quality_gate": quality_gate or {"required": False},
         "human_gate": human_gate or {"required": False},
     }
+
+
+def _node_plan_row(node: dict[str, Any]) -> dict[str, Any]:
+    processor = _node_processor(node)
+    return {
+        "node_id": str(node.get("node_id", "")),
+        "workflow_id": str(node.get("workflow_id", "")),
+        "node_type": str(node.get("node_type", "")),
+        "operation": str(node.get("operation", "")),
+        "input_types": [str(item) for item in node.get("input_types", [])] if isinstance(node.get("input_types", []), list) else [],
+        "output_types": [str(item) for item in node.get("output_types", [])] if isinstance(node.get("output_types", []), list) else [],
+        "processor_kind": str(processor.get("kind") or processor.get("type") or "record_only"),
+        "processor_operation": str(processor.get("operation") or node.get("operation", "")),
+        "quality_gate": node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {},
+        "human_gate": node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {},
+    }
+
+
+def _update_workflow_run_control(
+    storage: LocalStorage,
+    path: Path,
+    data: dict[str, Any],
+    *,
+    status: str,
+    blocked: dict[str, Any],
+    control: dict[str, Any],
+    finish: bool = False,
+) -> dict[str, Any]:
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    control_event = {
+        "action": control.get("action", ""),
+        "operator": control.get("operator", "workflow_control"),
+        "reason": control.get("reason", ""),
+        "status": status,
+        "created_at": utc_now(),
+    }
+    history = content.get("control_history", []) if isinstance(content.get("control_history", []), list) else []
+    history.append(control_event)
+    content["status"] = status
+    content["blocked"] = blocked
+    content["control"] = control_event
+    content["control_history"] = history
+    if finish:
+        content["finished_at"] = utc_now()
+    data["content"] = content
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    metadata["asset_status"] = status
+    metadata["last_control_action"] = control_event["action"]
+    metadata["last_control_at"] = control_event["created_at"]
+    data["metadata"] = metadata
+    data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], status, str(control_event["action"])])
+    data["updated_at"] = utc_now()
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    storage.write_json(path, data)
+    result = {"path": _display_path(storage.root, path), "asset": data, "validation": {"ok": True, "errors": []}}
+    try:
+        trace = content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}
+        trace_id = str(trace.get("trace_id") or content.get("run_id") or data.get("id", ""))
+        record_trace_span(
+            storage,
+            trace_id=trace_id,
+            span_type="workflow_control",
+            name=str(control_event["action"]),
+            status=_trace_span_status(status),
+            parent_span_id=str(trace.get("span_id") or trace_id),
+            attributes={"workflow_run_path": result["path"], "control": control_event, "blocked": blocked},
+            references=[result["path"]],
+            project_id=str(metadata.get("project_id", "")),
+            workspace_path=str(metadata.get("workspace_path", "")),
+        )
+    except Exception:
+        pass
+    return result
+
+
+def _next_resume_node_from_run(storage: LocalStorage, workflow_run: dict[str, Any]) -> str:
+    content = workflow_run.get("content", {}) if isinstance(workflow_run.get("content", {}), dict) else {}
+    blocked = content.get("blocked", {}) if isinstance(content.get("blocked", {}), dict) else {}
+    if blocked.get("node_id"):
+        return str(blocked.get("node_id", ""))
+    run_log = content.get("run_log", []) if isinstance(content.get("run_log", []), list) else []
+    last_non_success = _last_non_success_node(run_log)
+    if last_non_success:
+        return last_non_success
+    workflow_ref = str(content.get("workflow_definition_path") or content.get("workflow_id") or workflow_run.get("source", ""))
+    try:
+        _, workflow = _resolve_workflow_definition(storage, workflow_ref)
+        nodes = _workflow_nodes(storage, workflow)
+        node_map = {str(node.get("node_id", "")): node for node in nodes if str(node.get("node_id", "")).strip()}
+        order = _topological_order(node_map, str((workflow.get("content", {}) if isinstance(workflow.get("content", {}), dict) else {}).get("entry_node_id", "")))
+    except Exception:
+        return ""
+    for node_id in order:
+        if _last_status_for_node(run_log, node_id) not in WORKFLOW_SUCCESS_NODE_STATUSES:
+            return node_id
+    return order[-1] if order else ""
 
 
 def _topological_order(node_map: dict[str, dict[str, Any]], entry_node_id: str) -> list[str]:
@@ -1567,6 +1972,68 @@ def _record_executed_node(
     return {"status": status, "node_run": node_run, "output_assets": output_assets, "message": message or error}
 
 
+def _apply_configured_downstream_invalidation(
+    storage: LocalStorage,
+    *,
+    node: dict[str, Any],
+    result: dict[str, Any],
+    apply_invalidation: bool,
+    workspace_path: str | None,
+) -> dict[str, Any]:
+    if result.get("invalidation") or str(result.get("status", "")) not in WORKFLOW_SUCCESS_NODE_STATUSES:
+        return result
+    processor = _node_processor(node)
+    raw_spec = node.get("downstream_invalidation", {}) if isinstance(node.get("downstream_invalidation", {}), dict) else {}
+    processor_spec = processor.get("downstream_invalidation", {}) if isinstance(processor.get("downstream_invalidation", {}), dict) else {}
+    spec = {**raw_spec, **processor_spec}
+    enabled = bool(spec.get("enabled", False) or node.get("invalidate_downstream_on_success") or processor.get("invalidate_downstream_on_success"))
+    if not enabled:
+        return result
+    output_assets = [str(item) for item in result.get("output_assets", []) if str(item).strip()] if isinstance(result.get("output_assets", []), list) else []
+    node_run = result.get("node_run", {}) if isinstance(result.get("node_run", {}), dict) else {}
+    node_asset = node_run.get("asset", {}) if isinstance(node_run.get("asset", {}), dict) else {}
+    node_content = node_asset.get("content", {}) if isinstance(node_asset.get("content", {}), dict) else {}
+    input_assets = _asset_paths_from_rows(node_content.get("input_assets", []))
+    target_paths = [str(item) for item in spec.get("target_paths", []) if str(item).strip()] if isinstance(spec.get("target_paths", []), list) else []
+    if not target_paths:
+        target_mode = str(spec.get("target_mode") or "outputs").lower()
+        target_paths = input_assets if target_mode == "inputs" else output_assets or input_assets
+    if not target_paths:
+        return result
+    reports: list[dict[str, Any]] = []
+    updated_assets: list[str] = []
+    errors: list[str] = []
+    for target_path in _dedupe(target_paths):
+        try:
+            invalidation = mark_downstream_assets_stale(
+                storage,
+                target_path,
+                max_depth=int(spec.get("max_depth", 4) or 4),
+                project_id=str(spec.get("project_id") or _project_id_for_paths(storage, [target_path]) or "") or None,
+                reason=str(spec.get("reason") or f"workflow node {node.get('node_id', '')} completed"),
+                apply=bool(apply_invalidation and spec.get("apply", True)),
+            )
+            reports.append(invalidation)
+            if isinstance(invalidation.get("updated_assets", []), list):
+                updated_assets.extend(str(item) for item in invalidation.get("updated_assets", []) if str(item).strip())
+            if isinstance(invalidation.get("errors", []), list):
+                errors.extend(str(item) for item in invalidation.get("errors", []) if str(item).strip())
+        except Exception as exc:
+            errors.append(f"{target_path}: {type(exc).__name__}: {exc}")
+    first_report = reports[0].get("impact_report", {}) if reports and isinstance(reports[0].get("impact_report", {}), dict) else {}
+    result["invalidation"] = {
+        "configured": True,
+        "applied": bool(apply_invalidation and spec.get("apply", True)),
+        "target_paths": _dedupe(target_paths),
+        "updated_assets": _dedupe(updated_assets),
+        "errors": errors,
+        "impact_report": first_report,
+        "reports": reports,
+        "workspace_path": workspace_path or "",
+    }
+    return result
+
+
 def _write_workflow_run(
     storage: LocalStorage,
     *,
@@ -2007,6 +2474,10 @@ def _tool_name_for_output(output_types: list[str]) -> str:
 def _workflow_recovery_instruction(status: str, blocked: dict[str, Any], errors: list[str]) -> str:
     if status == "completed":
         return ""
+    if status == "cancelled":
+        return "Workflow was cancelled. Retry only after confirming the previous outputs should not be accepted."
+    if status == "paused":
+        return f"Resume the workflow from node {blocked.get('node_id')} when the pause reason is cleared."
     if blocked.get("status") == "waiting_human":
         return f"Complete the human gate for node {blocked.get('node_id')} and resume the workflow."
     if blocked.get("status") in {"prepared", "planned", "paused"}:

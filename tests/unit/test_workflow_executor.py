@@ -8,7 +8,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.agent_runs import list_agent_runs
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, create_budget_policy, scheduler_lease_status
-from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs, resume_workflow, run_workflow_scheduler, run_workflow_scheduler_loop
+from novel_forge.modules.workflow_nodes import (
+    cancel_workflow_run,
+    create_workflow_definition,
+    execute_workflow,
+    list_node_runs,
+    parse_workflow_dag,
+    pause_workflow_run,
+    resolve_workflow_dependencies,
+    resume_workflow,
+    retry_workflow_run,
+    run_workflow_scheduler,
+    run_workflow_scheduler_loop,
+)
 from novel_forge.schemas import ChapterPlan, CleanedText, DraftChapter, Outline, SourceDocument
 from novel_forge.storage.local import LocalStorage
 
@@ -77,6 +89,55 @@ class WorkflowExecutorTests(unittest.TestCase):
             node_run = storage.read_asset(runs[-1]["path"])
             self.assertEqual(node_run.content["trace"]["trace_id"], result["run_id"])
             self.assertTrue(node_run.content["trace"]["span_id"])
+
+    def test_dag_parser_and_dependency_resolver_are_read_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            source_path = storage.write_asset(
+                "raw",
+                SourceDocument(
+                    title="Raw",
+                    source="fixture",
+                    content={"text": "fixture"},
+                    metadata={"rights": {"authorization": "test_fixture", "copyright_boundary": "fixture"}},
+                ),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="DAG Plan",
+                entry_node_id="clean",
+                nodes=[
+                    {
+                        "node_id": "clean",
+                        "node_type": "cleaning",
+                        "operation": "clean",
+                        "input_types": ["source_document"],
+                        "output_types": ["cleaned_text"],
+                        "processor": {"kind": "deterministic"},
+                    },
+                    {
+                        "node_id": "draft",
+                        "node_type": "draft",
+                        "operation": "draft",
+                        "depends_on": ["clean"],
+                        "input_types": ["cleaned_text"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "deterministic"},
+                    },
+                ],
+            )
+
+            dag = parse_workflow_dag(storage, workflow["path"])
+            plan = resolve_workflow_dependencies(storage, workflow["path"], input_assets=[source_path])
+
+            self.assertEqual(dag["order"], ["clean", "draft"])
+            self.assertEqual(dag["edges"], [{"from": "clean", "to": "draft"}])
+            self.assertEqual(plan["ready_nodes"], ["clean"])
+            draft_row = next(row for row in plan["nodes"] if row["node_id"] == "draft")
+            self.assertEqual(draft_row["dependency_statuses"], {"clean": "planned"})
+            self.assertEqual(_run_assets_by_type(storage, "node_run"), [])
+            self.assertEqual(_run_assets_by_type(storage, "gate_result"), [])
 
     def test_executor_blocks_failed_quality_gate_before_downstream_node(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -301,6 +362,64 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertIn("cost_alert", run_types)
             self.assertIn("agent_failure_report", run_types)
 
+    def test_pause_retry_and_cancel_workflow_run_controls(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            source_path = storage.write_asset(
+                "raw",
+                SourceDocument(
+                    title="Raw",
+                    source="fixture",
+                    content={"text": "fixture"},
+                    metadata={"rights": {"authorization": "test_fixture", "copyright_boundary": "fixture"}},
+                ),
+            )
+            cleaned_path = storage.write_asset("cleaned", CleanedText(title="Cleaned", content={"text": "clean"}))
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(title="Draft", content={"chapter": 1, "text": "原创测试章节。", "copyright_boundary": "unit test"}),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Workflow Controls",
+                entry_node_id="clean",
+                nodes=[
+                    {
+                        "node_id": "clean",
+                        "node_type": "cleaning",
+                        "operation": "clean",
+                        "input_types": ["source_document"],
+                        "output_types": ["cleaned_text"],
+                        "processor": {"kind": "deterministic", "expected_output_assets": [str(cleaned_path.relative_to(storage.root))]},
+                    },
+                    {
+                        "node_id": "draft",
+                        "node_type": "draft",
+                        "operation": "draft",
+                        "depends_on": ["clean"],
+                        "input_types": ["cleaned_text"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "deterministic", "expected_output_assets": [str(draft_path.relative_to(storage.root))]},
+                    },
+                ],
+            )
+            initial = execute_workflow(storage, workflow["path"], input_assets=[source_path], max_nodes=1)
+            self.assertEqual(initial["status"], "running")
+            self.assertEqual(initial["blocked"]["status"], "paused")
+
+            paused = pause_workflow_run(storage, initial["workflow_run"]["path"], reason="operator hold")
+            self.assertEqual(paused["asset"]["content"]["status"], "paused")
+            self.assertEqual(paused["asset"]["content"]["control"]["action"], "pause")
+            retried = retry_workflow_run(storage, paused["path"])
+            self.assertEqual(retried["status"], "completed")
+            self.assertEqual(storage.read_asset(paused["path"]).content["status"], "superseded")
+
+            cancellable = execute_workflow(storage, workflow["path"], input_assets=[source_path], max_nodes=1)
+            cancelled = cancel_workflow_run(storage, cancellable["workflow_run"]["path"], reason="operator cancel")
+            self.assertEqual(cancelled["asset"]["content"]["status"], "cancelled")
+            self.assertEqual(cancelled["asset"]["content"]["blocked"]["status"], "cancelled")
+
     def test_executor_can_apply_downstream_invalidation(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -341,6 +460,107 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(storage.read_json(plan_path)["metadata"]["asset_status"], "stale")
             self.assertTrue(result["invalidations"][0]["updated_assets"])
             self.assertEqual(list_node_runs(storage, run_id=result["run_id"])[0]["status"], "succeeded")
+
+    def test_configured_downstream_invalidation_runs_after_successful_node(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            outline_path = storage.write_asset(
+                "outlines",
+                Outline(title="Outline", content={"acts": [{"act": 1, "goal": "open"}]}),
+            )
+            outline = storage.read_asset(outline_path)
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Plan",
+                    source=outline.id,
+                    content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"},
+                    references=[outline.id, str(outline_path.relative_to(storage.root))],
+                ),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Configured Invalidation",
+                entry_node_id="touch-outline",
+                nodes=[
+                    {
+                        "node_id": "touch-outline",
+                        "node_type": "outline",
+                        "operation": "touch",
+                        "input_types": ["outline"],
+                        "output_types": ["outline"],
+                        "processor": {
+                            "kind": "deterministic",
+                            "expected_output_assets": [str(outline_path.relative_to(storage.root))],
+                            "downstream_invalidation": {"enabled": True, "target_mode": "inputs", "max_depth": 2, "reason": "configured test"},
+                        },
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[outline_path], apply_invalidation=True)
+
+            self.assertEqual(result["status"], "completed")
+            self.assertEqual(storage.read_json(plan_path)["metadata"]["asset_status"], "stale")
+            self.assertTrue(result["invalidations"][0]["configured"])
+            self.assertTrue(result["invalidations"][0]["updated_assets"])
+
+    def test_resume_node_records_configured_downstream_invalidation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            outline_path = storage.write_asset(
+                "outlines",
+                Outline(title="Outline", content={"acts": [{"act": 1, "goal": "open"}]}),
+            )
+            outline = storage.read_asset(outline_path)
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Plan",
+                    source=outline.id,
+                    content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"},
+                    references=[outline.id, str(outline_path.relative_to(storage.root))],
+                ),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Resume Configured Invalidation",
+                entry_node_id="prepare",
+                nodes=[
+                    {
+                        "node_id": "prepare",
+                        "node_type": "outline",
+                        "operation": "prepare",
+                        "input_types": ["outline"],
+                        "output_types": ["outline"],
+                        "processor": {"kind": "deterministic", "expected_output_assets": [str(outline_path.relative_to(storage.root))]},
+                    },
+                    {
+                        "node_id": "touch-outline",
+                        "node_type": "outline",
+                        "operation": "touch",
+                        "depends_on": ["prepare"],
+                        "input_types": ["outline"],
+                        "output_types": ["outline"],
+                        "processor": {
+                            "kind": "deterministic",
+                            "expected_output_assets": [str(outline_path.relative_to(storage.root))],
+                            "downstream_invalidation": {"enabled": True, "target_mode": "inputs", "max_depth": 2, "reason": "resume configured test"},
+                        },
+                    },
+                ],
+            )
+
+            initial = execute_workflow(storage, workflow["path"], input_assets=[outline_path], max_nodes=1)
+            resumed = retry_workflow_run(storage, initial["workflow_run"]["path"])
+            run_log = resumed["workflow_run"]["asset"]["content"]["run_log"]
+
+            self.assertEqual(resumed["status"], "completed")
+            self.assertEqual(storage.read_json(plan_path)["metadata"]["asset_status"], "stale")
+            self.assertTrue(resumed["invalidations"][0]["configured"])
+            self.assertTrue(run_log[-1]["change_impact_report_path"])
 
     def test_scheduler_tick_resumes_prepared_agent_and_supersedes_old_run(self):
         with tempfile.TemporaryDirectory() as tmp:

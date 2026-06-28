@@ -7,13 +7,16 @@ from fastapi import APIRouter, HTTPException, Query
 from novel_forge.core.ids import utc_now
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.workflow_nodes import (
+    control_workflow_run,
     create_workflow_definition,
     create_workflow_node,
     execute_workflow,
     list_node_runs,
     list_workflow_definitions,
     list_workflow_runs,
+    parse_workflow_dag,
     record_node_run,
+    resolve_workflow_dependencies,
     resume_workflow,
     run_workflow_scheduler,
     run_workflow_scheduler_loop,
@@ -32,6 +35,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     WorkflowExecuteRequest = models["WorkflowExecuteRequest"]
     WorkflowResumeRequest = models["WorkflowResumeRequest"]
     WorkflowSchedulerRequest = models["WorkflowSchedulerRequest"]
+    WorkflowRunControlRequest = models["WorkflowRunControlRequest"]
 
     @router.get("/product/workflow/node-runs")
     def node_runs(
@@ -59,6 +63,35 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ) -> list[dict[str, Any]]:
         try:
             return list_workflow_runs(LocalStorage(app_settings.root), project_id=project_id, status=status, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/workflow/dag")
+    def workflow_dag(workflow_path_or_id: str, start_node_id: str | None = None) -> dict[str, Any]:
+        try:
+            return parse_workflow_dag(LocalStorage(app_settings.root), workflow_path_or_id, start_node_id=start_node_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/workflow/dependencies")
+    def workflow_dependencies(
+        workflow_path_or_id: str,
+        workflow_run_path_or_id: str | None = None,
+        start_node_id: str | None = None,
+        input_assets: list[str] = Query(default=[]),
+    ) -> dict[str, Any]:
+        try:
+            return resolve_workflow_dependencies(
+                LocalStorage(app_settings.root),
+                workflow_path_or_id,
+                input_assets=input_assets,
+                workflow_run_path_or_id=workflow_run_path_or_id,
+                start_node_id=start_node_id,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -139,6 +172,33 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 request.workflow_run_path_or_id,
                 resume_node_id=request.resume_node_id,
                 agent_run_path=request.agent_run_path,
+                output_assets=request.output_assets,
+                token_used=request.token_used,
+                cost_estimate=request.cost_estimate,
+                checkpoint=request.checkpoint or None,
+                evidence=request.evidence,
+                human_gate=request.human_gate or None,
+                tool_name=request.tool_name,
+                output_type=request.output_type,
+                max_nodes=request.max_nodes,
+                apply_invalidation=request.apply_invalidation,
+                workspace_path=request.workspace_path,
+                archive_previous=request.archive_previous,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/workflow/runs/control")
+    def workflow_run_control_endpoint(request: WorkflowRunControlRequest) -> dict[str, Any]:
+        try:
+            return control_workflow_run(
+                LocalStorage(app_settings.root),
+                request.workflow_run_path_or_id,
+                action=request.action,
+                reason=request.reason,
+                resume_node_id=request.resume_node_id,
                 output_assets=request.output_assets,
                 token_used=request.token_used,
                 cost_estimate=request.cost_estimate,
