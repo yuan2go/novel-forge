@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import sys
 import tempfile
 import unittest
@@ -7,6 +8,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 
 class ProductApiRouterTests(unittest.TestCase):
+    def setUp(self):
+        self._previous_model_provider = os.environ.get("NOVEL_FORGE_MODEL_PROVIDER")
+        os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = "mock"
+
+    def tearDown(self):
+        if self._previous_model_provider is None:
+            os.environ.pop("NOVEL_FORGE_MODEL_PROVIDER", None)
+        else:
+            os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = self._previous_model_provider
+
     def test_product_routers_register_paths_and_openapi(self):
         try:
             from fastapi.testclient import TestClient

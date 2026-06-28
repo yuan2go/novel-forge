@@ -61,7 +61,7 @@ Batch deconstruction records one `BatchTaskItem` per discovered source file. Syn
 
 ## Model Providers
 
-Mock models remain the default for tests and deterministic local demos. Real provider calls are opt-in through `NOVEL_FORGE_MODEL_PROVIDER` or operation-specific overrides such as `NOVEL_FORGE_DRAFT_PROVIDER`, `NOVEL_FORGE_REVIEW_PROVIDER`, and `NOVEL_FORGE_REVISION_PROVIDER`.
+Agent model calls default to the local Claude Code Codex worker through `CODEX_HOME=~/.codex-claude codex exec`. Tests and deterministic demos must explicitly select `NOVEL_FORGE_MODEL_PROVIDER=mock`. Other provider calls remain configurable through `NOVEL_FORGE_MODEL_PROVIDER` or operation-specific overrides such as `NOVEL_FORGE_DRAFT_PROVIDER`, `NOVEL_FORGE_REVIEW_PROVIDER`, and `NOVEL_FORGE_REVISION_PROVIDER`.
 
 `chatgpt` and `deepseek` use OpenAI-compatible chat-completions JSON responses. Prompt builders require strict JSON outputs, and model responses are validated before any asset is written.
 

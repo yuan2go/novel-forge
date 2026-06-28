@@ -68,15 +68,16 @@ class ProviderAdapter:
 
 
 class LocalCodexCliWorkerMixin:
-    """Opt-in local Codex CLI worker.
+    """Local Codex CLI worker.
 
     The worker uses `codex exec` in non-interactive mode, constrains the final
     response with a JSON schema, and validates the parsed output before returning.
-    It stays disabled by default so provider skeletons remain fail-closed.
+    Providers can choose whether this worker is enabled by default.
     """
 
     cli_env_prefix = "NOVEL_FORGE_CODEX"
     default_codex_home = ""
+    local_cli_enabled_by_default = False
 
     def generate(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         return self._run_local_codex_operation("generate", prompt, context)
@@ -96,6 +97,12 @@ class LocalCodexCliWorkerMixin:
     def _run_local_codex_operation(self, operation: str, payload: str, context: dict[str, Any] | None) -> dict[str, Any]:
         if not self._local_cli_enabled():
             raise self._not_configured(operation)
+        command_base = self._codex_command_base()
+        executable = command_base[0] if command_base else ""
+        if not _which_executable(executable):
+            raise AdapterNotConfiguredError(
+                f"{self.config.provider} adapter cannot run {operation}: local Codex CLI executable not found: {executable}"
+            )
         canonical = _canonical_local_operation(operation)
         context_payload = context or {}
         with tempfile.TemporaryDirectory(prefix="novel-forge-codex-") as tmp:
@@ -150,7 +157,12 @@ class LocalCodexCliWorkerMixin:
         }
 
     def _local_cli_enabled(self) -> bool:
-        return _truthy(os.environ.get(f"{self.cli_env_prefix}_CLI_ENABLED", "")) or _truthy(os.environ.get("NOVEL_FORGE_LOCAL_CODEX_CLI_ENABLED", ""))
+        local_value = os.environ.get(f"{self.cli_env_prefix}_CLI_ENABLED")
+        global_value = os.environ.get("NOVEL_FORGE_LOCAL_CODEX_CLI_ENABLED")
+        for value in [local_value, global_value]:
+            if value is not None and str(value).strip():
+                return _truthy(value)
+        return self.local_cli_enabled_by_default
 
     def _codex_command(self, *, schema_path: Path, output_path: Path, context: dict[str, Any]) -> list[str]:
         command = [*self._codex_command_base(), "exec"]
@@ -219,7 +231,8 @@ class OpenAICompatibleChatAdapter(ProviderAdapter):
     """Real JSON-chat provider for OpenAI-compatible APIs.
 
     Network calls only happen when required secrets are present and a caller explicitly
-    selects this adapter. Tests and local demo paths still default to MockModelAdapter.
+    selects this adapter. Deterministic tests can still force MockModelAdapter through
+    NOVEL_FORGE_MODEL_PROVIDER=mock.
     """
 
     api_key_env = ""
@@ -319,6 +332,7 @@ class ClaudeCodeAdapter(LocalCodexCliWorkerMixin, ProviderAdapter):
     )
     cli_env_prefix = "NOVEL_FORGE_CLAUDE_CODE"
     default_codex_home = "~/.codex-claude"
+    local_cli_enabled_by_default = True
 
     def create_handoff_packet(
         self,

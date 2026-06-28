@@ -761,12 +761,18 @@ AGENTS.md 和 `agents/runtime.py` 共同定义 Agent 边界。
 
 ## 19. 模型 Provider 和输出校验
 
-默认测试和本地演示使用 `MockModelAdapter`，真实 provider 需要显式配置。
+Agent 模型调用默认使用本地 Claude Code Codex worker：
+
+```bash
+CODEX_HOME=~/.codex-claude codex exec ...
+```
+
+测试和确定性本地演示需要显式设置 `NOVEL_FORGE_MODEL_PROVIDER=mock`。
 
 已实现 provider：
 
-- `claude-code`：manual handoff only。
-- `codex`：manual runtime marker。
+- `claude-code`：默认本地 Agent runtime，通过 `CODEX_HOME=~/.codex-claude codex exec` 执行。
+- `codex`：显式启用的通用本地 Codex worker。
 - `chatgpt`：OpenAI-compatible JSON chat。
 - `deepseek`：OpenAI-compatible JSON chat。
 
@@ -798,8 +804,9 @@ export DEEPSEEK_API_KEY=...
 
 边界：
 
-- 真实模型调用依赖网络和 API key。
-- Claude Code 当前不是后端 API 调用，而是人工执行包。
+- `claude-code` 是本地 CLI worker，不是外部 API。
+- `chatgpt` / `deepseek` 真实模型调用依赖网络和 API key。
+- 需要完全离线确定性结果时显式选择 `mock`。
 
 ## 20. 本地生产环境
 

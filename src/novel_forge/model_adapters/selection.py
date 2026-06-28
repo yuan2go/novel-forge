@@ -24,12 +24,14 @@ OPERATION_ENV_KEYS = {
     "topic": "NOVEL_FORGE_TOPIC_PROVIDER",
 }
 
+DEFAULT_MODEL_PROVIDER = "claude-code"
+
 
 def model_from_env(operation: str = "", env: Mapping[str, str] | None = None) -> ModelAdapter:
     values = env or os.environ
     explicit_provider = _explicit_provider_name(operation, values)
     route = {} if explicit_provider else _policy_route(operation, values)
-    provider = explicit_provider or str(route.get("provider", "")).strip().lower() or "mock"
+    provider = explicit_provider or str(route.get("provider", "")).strip().lower() or DEFAULT_MODEL_PROVIDER
     if provider in {"", "mock", "local", "offline"}:
         return MockModelAdapter()
     adapter_cls = PROVIDER_ADAPTERS.get(provider)
@@ -62,7 +64,7 @@ def provider_health(env: Mapping[str, str] | None = None) -> dict[str, dict]:
 
 
 def _provider_name(operation: str, values: Mapping[str, str]) -> str:
-    return _explicit_provider_name(operation, values) or "mock"
+    return _explicit_provider_name(operation, values) or DEFAULT_MODEL_PROVIDER
 
 
 def _explicit_provider_name(operation: str, values: Mapping[str, str]) -> str:

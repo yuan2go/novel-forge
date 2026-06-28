@@ -142,7 +142,7 @@ project strategy
 
 ## Model Adapter Boundary
 
-`MockModelAdapter` and `LocalRuleEngine` are executable locally. ChatGPT and DeepSeek are opt-in OpenAI-compatible JSON chat providers with strict output validation. Codex and Claude Code default to manual/operator handoff, but can be explicitly enabled as local `codex exec` workers through `NOVEL_FORGE_CODEX_CLI_ENABLED=1` or `NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED=1`. The Claude Code worker uses an isolated `CODEX_HOME=~/.codex-claude` boundary.
+`LocalRuleEngine` is executable locally, and Agent model calls default to the Claude Code local Codex worker using the isolated `CODEX_HOME=~/.codex-claude` boundary. `MockModelAdapter` is still available through explicit `NOVEL_FORGE_MODEL_PROVIDER=mock` for tests and deterministic demos. ChatGPT and DeepSeek are opt-in OpenAI-compatible JSON chat providers with strict output validation. The generic Codex worker remains explicit through `NOVEL_FORGE_CODEX_CLI_ENABLED=1`.
 
 Do not call external providers in tests. Do not write malformed or unvalidated provider output into assets.
 

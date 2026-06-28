@@ -48,7 +48,7 @@ class MockModelTests(unittest.TestCase):
                     "DEEPSEEK_API_KEY": "",
                     "NOVEL_FORGE_LOCAL_CODEX_CLI_ENABLED": "",
                     "NOVEL_FORGE_CODEX_CLI_ENABLED": "",
-                    "NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED": "",
+                    "NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED": "0",
                 },
                 clear=False,
             ):
@@ -81,8 +81,9 @@ class MockModelTests(unittest.TestCase):
         self.assertIn("DEEPSEEK_API_KEY", deepseek_health["required_env_vars"])
         self.assertTrue(deepseek_health["implemented"])
 
-    def test_model_selection_defaults_to_mock_and_can_select_provider(self):
-        self.assertIsInstance(model_from_env("draft", {}), MockModelAdapter)
+    def test_model_selection_defaults_to_claude_code_and_can_select_provider(self):
+        self.assertIsInstance(model_from_env("draft", {}), ClaudeCodeAdapter)
+        self.assertIsInstance(model_from_env("draft", {"NOVEL_FORGE_MODEL_PROVIDER": "mock"}), MockModelAdapter)
         self.assertIsInstance(model_from_env("review", {"NOVEL_FORGE_REVIEW_PROVIDER": "chatgpt"}), ChatGPTAdapter)
 
     def test_codex_cli_worker_runs_when_explicitly_enabled(self):
@@ -114,7 +115,8 @@ class MockModelTests(unittest.TestCase):
             with patch.dict(
                 "os.environ",
                 {
-                    "NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED": "1",
+                    "NOVEL_FORGE_LOCAL_CODEX_CLI_ENABLED": "",
+                    "NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED": "",
                     "NOVEL_FORGE_CLAUDE_CODE_COMMAND": f"{sys.executable} {script}",
                     "NOVEL_FORGE_CLAUDE_CODE_WORKDIR": tmp,
                     "NOVEL_FORGE_CLAUDE_CODE_TIMEOUT_SECONDS": "5",

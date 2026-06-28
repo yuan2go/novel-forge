@@ -77,7 +77,13 @@ make local-down
 
 ## Real Model Providers
 
-The default local path uses `MockModelAdapter`. To call a real OpenAI-compatible provider, set a provider and API key before running API, worker, or CLI commands:
+Agent model calls default to the local Claude Code runtime backed by Codex CLI:
+
+```bash
+CODEX_HOME=~/.codex-claude codex exec ...
+```
+
+To call a real OpenAI-compatible provider instead, set a provider and API key before running API, worker, or CLI commands:
 
 ```bash
 export NOVEL_FORGE_MODEL_PROVIDER=chatgpt
@@ -94,20 +100,23 @@ export DEEPSEEK_API_KEY=...
 
 Model calls use strict JSON prompts and output validation. Invalid model output fails the step instead of writing malformed assets.
 
-Local Codex CLI can also be used as an opt-in local worker. It remains disabled by default. Enable ordinary Codex with:
+The deterministic offline adapter is still available for tests and demos:
+
+```bash
+export NOVEL_FORGE_MODEL_PROVIDER=mock
+```
+
+Ordinary Codex can also be used as an explicit local worker:
 
 ```bash
 export NOVEL_FORGE_MODEL_PROVIDER=codex
 export NOVEL_FORGE_CODEX_CLI_ENABLED=1
 ```
 
-Enable the Claude Code runtime backed by the local Codex CLI with an isolated Codex home:
+The default Claude Code runtime can be reselected explicitly with:
 
 ```bash
 export NOVEL_FORGE_MODEL_PROVIDER=claude-code
-export NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED=1
-# internally launches equivalent to:
-# CODEX_HOME=~/.codex-claude codex exec ...
 ```
 
 Both local workers run `codex exec` non-interactively with JSON output schema validation, `read-only` sandbox by default, and `--ask-for-approval never`.

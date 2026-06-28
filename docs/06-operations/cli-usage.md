@@ -205,7 +205,13 @@ Draft export writes generated files under `data/exports/`. DOCX and EPUB exports
 
 ## Model Adapter Operations
 
-Current tests and local demos use `MockModelAdapter` by default. Real provider calls are opt-in through environment variables:
+Agent model calls default to the local Claude Code Codex worker:
+
+```bash
+CODEX_HOME=~/.codex-claude codex exec ...
+```
+
+Use explicit provider environment variables only when a different route is required:
 
 ```bash
 export NOVEL_FORGE_MODEL_PROVIDER=chatgpt
@@ -220,22 +226,20 @@ Operation-specific overrides are available:
 - `NOVEL_FORGE_REVIEW_PROVIDER`
 - `NOVEL_FORGE_REVISION_PROVIDER`
 
-Supported automated providers are OpenAI-compatible JSON chat adapters:
+Supported providers:
 
 - `chatgpt`: uses `OPENAI_API_KEY`, optional `OPENAI_MODEL`, optional `OPENAI_CHAT_COMPLETIONS_URL`.
 - `deepseek`: uses `DEEPSEEK_API_KEY`, optional `DEEPSEEK_MODEL`, optional `DEEPSEEK_CHAT_COMPLETIONS_URL`.
 - `codex`: disabled by default; set `NOVEL_FORGE_CODEX_CLI_ENABLED=1` to run local `codex exec`.
-- `claude-code`: disabled by default for automated calls; set `NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED=1` to run local `codex exec` with `CODEX_HOME=~/.codex-claude`.
+- `claude-code`: default agent runtime; runs local `codex exec` with `CODEX_HOME=~/.codex-claude`.
+- `mock`: explicit deterministic offline adapter for tests and demos.
 
 Every provider call uses a strict JSON prompt contract and validates output before writing assets. Draft/topic generation requires `text`; decomposition requires `summary`, `word_count`, and `patterns`; review requires score, strengths, weaknesses, issues, risk level, revision suggestions, and next action; revision requires an ordered `plan`.
 
-Claude Code still supports manual handoff through `ClaudeCodeAdapter.create_handoff_packet()`. For automated local execution, enable the explicit local worker:
+Claude Code still supports manual handoff through `ClaudeCodeAdapter.create_handoff_packet()`. For deterministic offline test or demo runs, override the runtime explicitly:
 
 ```bash
-export NOVEL_FORGE_MODEL_PROVIDER=claude-code
-export NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED=1
-# equivalent launch boundary:
-# CODEX_HOME=~/.codex-claude codex exec ...
+export NOVEL_FORGE_MODEL_PROVIDER=mock
 ```
 
 For high-judgment analysis, prefer handoff packets unless the local worker has been validated for the target schema:
