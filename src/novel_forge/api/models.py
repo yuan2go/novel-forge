@@ -789,6 +789,15 @@ class RevisionApplyRequest(BaseModel):
     review_after: bool = True
 
 
+class RevisionReworkLoopRequest(BaseModel):
+    review_path: str
+    draft_path: str | None = None
+    issue_indexes: list[int] | None = None
+    context_bundle_path: str | None = None
+    workspace_path: str | None = None
+    human_override: bool = False
+
+
 class HandoffDeconstructRequest(BaseModel):
     input_path: str
     genre: str = ""
@@ -987,6 +996,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "DraftExportRequest": DraftExportRequest,
         "ReviewIssueStatusRequest": ReviewIssueStatusRequest,
         "RevisionApplyRequest": RevisionApplyRequest,
+        "RevisionReworkLoopRequest": RevisionReworkLoopRequest,
         "HandoffDeconstructRequest": HandoffDeconstructRequest,
         "HandoffKnowledgeRequest": HandoffKnowledgeRequest,
         "GitHubKnowledgeHandoffRequest": GitHubKnowledgeHandoffRequest,

@@ -119,7 +119,7 @@ The default Claude Code runtime can be reselected explicitly with:
 export NOVEL_FORGE_MODEL_PROVIDER=claude-code
 ```
 
-Both local workers run `codex exec` non-interactively with JSON output schema validation, `read-only` sandbox by default, and `--ask-for-approval never`.
+Both local workers run `codex exec` non-interactively with JSON output schema validation and `read-only` sandbox by default.
 
 ## Core Commands
 

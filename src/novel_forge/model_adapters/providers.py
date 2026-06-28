@@ -173,7 +173,7 @@ class LocalCodexCliWorkerMixin:
             command.extend(["--model", model])
         if profile:
             command.extend(["--profile", profile])
-        command.extend(["--sandbox", sandbox, "--ask-for-approval", "never", "--skip-git-repo-check", "--json", "--output-schema", str(schema_path), "--output-last-message", str(output_path), "--color", "never"])
+        command.extend(["--sandbox", sandbox, "--skip-git-repo-check", "--json", "--output-schema", str(schema_path), "--output-last-message", str(output_path), "--color", "never"])
         if _truthy(os.environ.get(f"{self.cli_env_prefix}_EPHEMERAL", "1")):
             command.append("--ephemeral")
         command.extend(["--cd", str(self._codex_workdir(context)), "-"])

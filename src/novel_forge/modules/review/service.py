@@ -67,7 +67,11 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
         agent_run.guard("write_review_report", "review_report")
         quality_gate = evaluate_draft_quality(draft_asset.content.get("text", ""))
         standard_evaluation = evaluate_quality_standard(draft_asset, production_context, review_result=result)
-        issues = [*result["issues"], *gate_issues(quality_gate)]
+        issues = _normalize_review_issues(
+            [*result["issues"], *gate_issues(quality_gate)],
+            source_key=draft_asset.id,
+            stage="initial_review",
+        )
         asset = ReviewReport(
             title=f"Review for {draft_asset.title}",
             source=draft_asset.id,
@@ -307,7 +311,7 @@ def compare_reviews(storage: LocalStorage, input_path: str | None = None) -> Pat
         score=score_summary["average"],
         strengths=consensus["shared_strengths"],
         weaknesses=consensus["shared_weaknesses"],
-        issues=_flatten_issues(model_reviews),
+        issues=_normalize_review_issues(_flatten_issues(model_reviews), source_key=draft_asset.id, stage="comparison_review"),
         risk_level=risk_level,
         revision_suggestions=consensus["revision_priorities"],
         next_action="revise",
@@ -432,6 +436,24 @@ def _copy_issues(issues: Any, reviewer: str) -> list[dict[str, Any]]:
             copied_issue["reviewer"] = reviewer
             copied.append(copied_issue)
     return copied
+
+
+def _normalize_review_issues(issues: list[dict[str, Any]], *, source_key: str, stage: str) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for index, issue in enumerate(issues):
+        if not isinstance(issue, dict):
+            continue
+        issue_id = str(issue.get("issue_id") or f"{source_key}:review-issue:{index}")
+        normalized.append(
+            {
+                **issue,
+                "issue_id": issue_id,
+                "issue_index": index,
+                "status": str(issue.get("status") or "open"),
+                "source_review_stage": str(issue.get("source_review_stage") or stage),
+            }
+        )
+    return normalized
 
 
 def _dedupe(values: list[str]) -> list[str]:

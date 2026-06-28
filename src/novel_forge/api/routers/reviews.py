@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 from novel_forge.api import product as _product_services
 from novel_forge.api.routers._bindings import bind_product_symbols
 from novel_forge.api.routers.context import ProductRouterContext
+from novel_forge.modules.revision import run_review_rework_loop
 
 bind_product_symbols(globals(), _product_services)
 
@@ -24,6 +25,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     RevisionPlanRequest = models['RevisionPlanRequest']
     ReviewIssueStatusRequest = models['ReviewIssueStatusRequest']
     RevisionApplyRequest = models['RevisionApplyRequest']
+    RevisionReworkLoopRequest = models["RevisionReworkLoopRequest"]
 
     @router.post("/product/reviews/run")
     def run_review(request: ReviewRunRequest) -> dict[str, Any]:
@@ -81,6 +83,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/revisions/rework-loop")
+    def rework_loop_endpoint(request: RevisionReworkLoopRequest) -> dict[str, Any]:
+        try:
+            return run_review_rework_loop(
+                LocalStorage(app_settings.root),
+                request.review_path,
+                draft_path=request.draft_path,
+                issue_indexes=request.issue_indexes,
+                context_bundle_path=request.context_bundle_path,
+                workspace_path=request.workspace_path,
+                human_override=request.human_override,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
     return router

@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import sys
 import tempfile
 import unittest
@@ -18,6 +19,7 @@ from novel_forge.modules.materials import service as materials_service
 from novel_forge.modules.outline import service as outline_service
 from novel_forge.modules.review import service as review_service
 from novel_forge.modules.revision import service as revision_service
+from novel_forge.model_adapters.mock import MockModelAdapter
 from novel_forge.modules.topics import service as topics_service
 from novel_forge.modules.training import service as training_service
 from novel_forge.modules.workspace import service as workspace_service
@@ -29,6 +31,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ModuleServiceTests(unittest.TestCase):
+    def setUp(self):
+        self._previous_model_provider = os.environ.get("NOVEL_FORGE_MODEL_PROVIDER")
+        os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = "mock"
+
+    def tearDown(self):
+        if self._previous_model_provider is None:
+            os.environ.pop("NOVEL_FORGE_MODEL_PROVIDER", None)
+        else:
+            os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = self._previous_model_provider
+
     def test_services_run_main_asset_chain_without_pipeline_step_bodies(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -220,6 +232,67 @@ class ModuleServiceTests(unittest.TestCase):
             self.assertEqual(style_report.type, "style_review_report")
             self.assertEqual(originality_report.type, "originality_report")
             self.assertEqual(chapter_audit_report.type, "chapter_audit_report")
+
+    def test_review_rework_loop_binds_issue_to_patch_version_review_and_publish_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = pipeline.ensure_project(Path(tmp))
+            model = MockModelAdapter()
+            draft = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Rework loop draft",
+                    source="chapter-plan",
+                    tags=["draft"],
+                    content={
+                        "chapter": 1,
+                        "text": (
+                            "林乔推开旧钟楼的门，雨水顺着袖口落下。\n\n"
+                            "她发现档案上的时间被人改过，决定留下来找出原因。\n\n"
+                            "午夜钟声再次响起，墙后传来钥匙坠地的声音。"
+                        ),
+                        "copyright_boundary": "test fixture original draft",
+                    },
+                ),
+            )
+            review = review_service.review(storage, str(draft), model=model)
+            review_asset = storage.read_asset(review)
+            self.assertTrue(review_asset.issues)
+            self.assertIn("issue_id", review_asset.issues[0])
+
+            result = revision_service.run_review_rework_loop(
+                storage,
+                review,
+                draft_path=draft,
+                issue_indexes=[0],
+                revision_model=model,
+                editor_model=model,
+                review_model=model,
+                human_override=True,
+            )
+
+            task = storage.read_asset(result["revision_task_path"])
+            revision_plan = storage.read_asset(result["revision_plan_path"])
+            editor_patch = storage.read_asset(result["editor_patch_path"])
+            draft_version = storage.read_asset(result["draft_version_path"])
+            re_review = storage.read_asset(result["re_review_path"])
+            publish_gate = storage.read_asset(result["publish_gate_report_path"])
+            updated_review = storage.read_asset(review)
+
+            self.assertEqual(task.type, "revision_task")
+            self.assertIn(task.content["status"], {"publish_ready", "needs_revision", "blocked"})
+            self.assertEqual(task.content["outputs"]["editor_patch_path"], result["editor_patch_path"])
+            self.assertEqual(task.content["outputs"]["draft_version_path"], result["draft_version_path"])
+            self.assertEqual(revision_plan.type, "revision_plan")
+            self.assertEqual(revision_plan.content["revision_task_path"], result["revision_task_path"])
+            self.assertEqual(editor_patch.type, "editor_patch")
+            self.assertEqual(editor_patch.content["status"], "applied")
+            self.assertEqual(draft_version.type, "draft_version")
+            self.assertEqual(re_review.type, "review_report")
+            self.assertEqual(re_review.metadata["rework_loop"]["revision_task_path"], result["revision_task_path"])
+            self.assertEqual(publish_gate.type, "publish_gate_report")
+            self.assertEqual(publish_gate.metadata["rework_loop"]["revision_task_path"], result["revision_task_path"])
+            self.assertIn("rework_evidence", updated_review.issues[0])
+            self.assertEqual(updated_review.issues[0]["rework_evidence"]["draft_version_path"], result["draft_version_path"])
 
     def test_ingest_many_rejects_directory_without_supported_sources(self):
         with tempfile.TemporaryDirectory() as tmp:

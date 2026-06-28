@@ -138,6 +138,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/batch/deconstruct",
                 "/product/drafts",
                 "/product/reviews/run",
+                "/product/revisions/rework-loop",
                 "/product/audits/chapter",
                 "/product/audits/originality",
                 "/product/publishing/gate",

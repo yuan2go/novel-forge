@@ -57,6 +57,7 @@ WORKFLOW_SERVICE_OPERATIONS = {
     "chapter_audit_report": {"category": "audit", "checkpoint_strategy": "output_reuse", "aliases": ["create_chapter_audit_report"]},
     "publish_gate_report": {"category": "publishing", "checkpoint_strategy": "output_reuse", "aliases": ["create_publish_gate_report"]},
     "release_package": {"category": "publishing", "checkpoint_strategy": "output_reuse", "aliases": ["create_release_package"]},
+    "review_rework_loop": {"category": "revision", "checkpoint_strategy": "operation_state", "aliases": ["run_review_rework_loop"]},
     "outline_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_outline_version"]},
     "chapter_plan_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_chapter_plan_version"]},
     "draft_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_draft_version"]},
@@ -4140,6 +4141,19 @@ def _execute_registered_service_processor_impl(
         from novel_forge.modules.review.service import review
 
         result = review(storage, _processor_path(processor, input_assets, "draft_path", "target_path"))
+        return _service_success(storage, operation, result)
+    if operation in {"review_rework_loop", "run_review_rework_loop"}:
+        from novel_forge.modules.revision import run_review_rework_loop
+
+        result = run_review_rework_loop(
+            storage,
+            _processor_path(processor, input_assets, "review_path", "target_path"),
+            draft_path=str(processor.get("draft_path") or "") or None,
+            issue_indexes=[int(item) for item in processor.get("issue_indexes", [])] if isinstance(processor.get("issue_indexes", []), list) else None,
+            context_bundle_path=str(processor.get("context_bundle_path") or "") or None,
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+            human_override=bool(processor.get("human_override", False)),
+        )
         return _service_success(storage, operation, result)
     if operation in {"editor_patch", "create_editor_patch"}:
         from novel_forge.modules.editor import create_editor_patch

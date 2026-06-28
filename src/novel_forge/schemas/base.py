@@ -281,6 +281,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "editor_patch": ["target_draft_id", "target_draft_path", "operations", "status", "created_at"],
     "draft_diff_report": ["base_draft_id", "target_draft_id", "diff_summary", "operations", "created_at"],
     "review_report": ["rubric", "summary"],
+    "revision_task": ["task_id", "review_path", "source_draft_path", "issue_indexes", "issues", "status", "created_at"],
     "revision_plan": ["steps", "target_score", "must_preserve"],
     "reader_feedback": ["rows"],
     "feedback_import_batch": ["batch_id", "source", "rows", "row_count", "columns", "status", "imported_at"],
@@ -561,6 +562,8 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.extend(_validate_project_workspace_state_content(content))
     if asset_type == "review_report" and isinstance(content, dict):
         errors.extend(_validate_review_report_content(content))
+    if asset_type == "revision_task" and isinstance(content, dict):
+        errors.extend(_validate_revision_task_content(content))
     if asset_type == "platform_profile" and isinstance(content, dict):
         errors.extend(_validate_platform_profile_content(content))
     if asset_type == "topic_fit_report" and isinstance(content, dict):
@@ -997,6 +1000,20 @@ def _validate_review_report_content(content: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _validate_revision_task_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if content.get("status") not in {"open", "running", "applied", "reviewed", "publish_ready", "needs_revision", "blocked", "failed", "cancelled"}:
+        errors.append("revision_task status must be open, running, applied, reviewed, publish_ready, needs_revision, blocked, failed, or cancelled")
+    if not isinstance(content.get("issue_indexes"), list) or any(not isinstance(item, int) for item in content.get("issue_indexes", [])):
+        errors.append("revision_task issue_indexes must be a list of integers")
+    if not isinstance(content.get("issues"), list) or any(not isinstance(item, dict) for item in content.get("issues", [])):
+        errors.append("revision_task issues must be a list of objects")
+    outputs = content.get("outputs", {})
+    if outputs is not None and not isinstance(outputs, dict):
+        errors.append("revision_task outputs must be an object")
+    return errors
+
+
 def _validate_platform_profile_content(content: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     business_model = content.get("business_model")
@@ -1349,8 +1366,8 @@ def _validate_editor_asset_content(asset_type: str, content: dict[str, Any]) -> 
             errors.append("editor_patch operations must be a non-empty list")
         elif any(not isinstance(item, dict) for item in operations):
             errors.append("editor_patch operations must contain objects")
-        if content.get("status") not in {"proposed", "applied", "rejected", "rolled_back"}:
-            errors.append("editor_patch status must be proposed, applied, rejected, or rolled_back")
+        if content.get("status") not in {"proposed", "applied", "partially_applied", "rejected", "rolled_back"}:
+            errors.append("editor_patch status must be proposed, applied, partially_applied, rejected, or rolled_back")
     if asset_type == "draft_diff_report":
         operations = content.get("operations")
         if not isinstance(operations, list):
