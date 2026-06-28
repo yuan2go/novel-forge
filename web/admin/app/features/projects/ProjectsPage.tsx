@@ -3,13 +3,15 @@
 import { Boxes, Copy, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
-import type { ProjectHealthReport, ProjectRow } from "../../shared/types";
+import type { FeatureAssetRow, ProjectHealthReport, ProjectOperatingDashboard, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { createProject, duplicateProject, loadProjectsData, repairProjectScope, transitionProject } from "./api";
+import { createProject, duplicateProject, loadProjectsData, repairProjectScope, transitionProject, type ProjectWizardLibrary } from "./api";
 
 export function ProjectsPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [health, setHealth] = useState<ProjectHealthReport | null>(null);
+  const [libraries, setLibraries] = useState<ProjectWizardLibrary[]>([]);
+  const [operating, setOperating] = useState<ProjectOperatingDashboard | null>(null);
   const [title, setTitle] = useState("");
   const [seriesTitle, setSeriesTitle] = useState("");
   const [bookNumber, setBookNumber] = useState("");
@@ -23,9 +25,16 @@ export function ProjectsPage() {
   const [error, setError] = useState("");
 
   async function refresh() {
-    const [projectRows, healthReport] = await loadProjectsData();
+    const [projectRows, healthReport, libraryRows, operatingRows] = await loadProjectsData();
     setProjects(projectRows);
     setHealth(healthReport);
+    setLibraries(libraryRows);
+    setOperating(operatingRows);
+    setPlatformProfilePath((current) => current || firstAssetPath(libraryRows, "platform_profile"));
+    setGenreMarketProfilePath((current) => current || firstAssetPath(libraryRows, "genre_market_profile"));
+    setQualityStandardProfilePath((current) => current || firstAssetPath(libraryRows, "quality_standard_profile"));
+    setStyleProfilePath((current) => current || firstAssetPath(libraryRows, "style_profile"));
+    setContinuityBiblePath((current) => current || firstAssetPath(libraryRows, "continuity_bible"));
   }
 
   async function runAction(action: () => Promise<unknown>, message: string) {
@@ -55,22 +64,28 @@ export function ProjectsPage() {
       <section className="summaryBand manuscriptSummary">
         <Metric label="项目数" value={String(projects.length)} />
         <Metric label="资产" value={String(health?.summary.asset_count ?? 0)} />
-        <Metric label="范围问题" value={String(health?.summary.scope_issue_count ?? 0)} />
-        <Metric label="待 Handoff" value={String(health?.summary.pending_handoff_count ?? 0)} />
+        <Metric label="平均投资分" value={String(operating?.summary.average_investment_score ?? 0)} />
+        <Metric label="高风险项目" value={String(operating?.summary.high_risk_project_count ?? 0)} />
       </section>
 
       <section className="workspaceGrid">
         <div className="panel">
-          <PanelHeader title="创建项目" icon={<Boxes size={18} />} />
+          <PanelHeader title="创建项目向导" icon={<Boxes size={18} />} />
+          <div className="wizardSteps">
+            <span>1. 基本信息</span>
+            <span>2. 平台/题材</span>
+            <span>3. 精品/文风</span>
+            <span>4. 连续性设定</span>
+          </div>
           <div className="formGrid wide">
             <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="项目标题" />
             <input value={seriesTitle} onChange={(event) => setSeriesTitle(event.target.value)} placeholder="系列名" />
             <input value={bookNumber} onChange={(event) => setBookNumber(event.target.value)} placeholder="书号" />
-            <input value={platformProfilePath} onChange={(event) => setPlatformProfilePath(event.target.value)} placeholder="platform_profile path" />
-            <input value={genreMarketProfilePath} onChange={(event) => setGenreMarketProfilePath(event.target.value)} placeholder="genre_market_profile path" />
-            <input value={qualityStandardProfilePath} onChange={(event) => setQualityStandardProfilePath(event.target.value)} placeholder="quality_standard_profile path" />
-            <input value={styleProfilePath} onChange={(event) => setStyleProfilePath(event.target.value)} placeholder="style_profile path" />
-            <input value={continuityBiblePath} onChange={(event) => setContinuityBiblePath(event.target.value)} placeholder="continuity_bible path" />
+            <ProfileSelect label="平台画像" value={platformProfilePath} onChange={setPlatformProfilePath} options={assetsByType(libraries, "platform_profile")} />
+            <ProfileSelect label="题材画像" value={genreMarketProfilePath} onChange={setGenreMarketProfilePath} options={assetsByType(libraries, "genre_market_profile")} />
+            <ProfileSelect label="精品标准" value={qualityStandardProfilePath} onChange={setQualityStandardProfilePath} options={assetsByType(libraries, "quality_standard_profile")} />
+            <ProfileSelect label="文风目标" value={styleProfilePath} onChange={setStyleProfilePath} options={assetsByType(libraries, "style_profile")} />
+            <ProfileSelect label="连续性设定" value={continuityBiblePath} onChange={setContinuityBiblePath} options={assetsByType(libraries, "continuity_bible")} />
             <button className="primaryButton" disabled={busy || !title.trim()} onClick={() => runAction(() => createProject({
               title,
               seriesTitle,
@@ -85,6 +100,7 @@ export function ProjectsPage() {
               创建
             </button>
           </div>
+          <p className="muted">缺少可选 profile 时，先到创作资产工作台创建平台画像、题材画像、精品标准、文风目标或连续性设定。</p>
         </div>
 
         <div className="panel">
@@ -95,6 +111,23 @@ export function ProjectsPage() {
             审计并修复
           </button>
         </div>
+      </section>
+
+      <section className="panel">
+        <PanelHeader title="经营排序" icon={<ShieldCheck size={18} />} />
+        <DataTable
+          emptyText="暂无经营评分"
+          columns={["项目", "投资分", "风险分", "动量", "今日动作", "瓶颈", "Profile"]}
+          rows={(operating?.projects ?? []).map((project) => [
+            project.title,
+            String(project.investment_score),
+            String(project.risk_score),
+            String(project.momentum_score),
+            project.today_action.label,
+            project.bottleneck.label,
+            `${project.profile_binding_count}/${project.profile_binding_total}`
+          ])}
+        />
       </section>
 
       <section className="panel">
@@ -123,4 +156,26 @@ export function ProjectsPage() {
       </section>
     </FeatureShell>
   );
+}
+
+function ProfileSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: FeatureAssetRow[] }) {
+  return (
+    <label className="selectWrap">
+      <span>{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value="">自动创建/稍后绑定</option>
+        {options.map((asset) => (
+          <option value={asset.path} key={asset.path}>{asset.title || asset.id}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function assetsByType(libraries: ProjectWizardLibrary[], assetType: string): FeatureAssetRow[] {
+  return libraries.flatMap((library) => library.assets).filter((asset) => asset.type === assetType);
+}
+
+function firstAssetPath(libraries: ProjectWizardLibrary[], assetType: string): string {
+  return assetsByType(libraries, assetType)[0]?.path || "";
 }

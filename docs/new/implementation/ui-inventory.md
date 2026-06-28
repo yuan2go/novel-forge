@@ -148,6 +148,14 @@ The frontend is no longer a single-page-only implementation. V6 feature pages no
 | Asset Workbench | Asset detail now includes typed deep editor fields plus layered reference graph visualization from `/product/assets/graph`. |
 | Change Impact Analysis | Reports now display severity summary, impacted nodes, impact edges, and recommended actions, not only tabular counts. |
 | Frontend Tests | `web/admin/tests/feature-architecture.test.mjs` verifies the V6/V7 navigation groups, routed feature modules, publishing/graph/impact affordances, and API client endpoints. `web/admin/tests/playwright-smoke.test.mjs` provides optional browser-level smoke coverage when Playwright is installed. |
+| Workbench / Projects | Dashboard now consumes `/product/projects/operating-dashboard` to show daily priorities, project investment/risk sorting, and bottlenecks. Project creation is now a guided profile-binding flow rather than raw profile path input. |
+| Creative Asset Domains | Asset workbench now has domain panels for topic strategy, material operations, knowledge governance, and setting-bible continuity, backed by richer creative-library asset rows. |
+| Analysis Center | Reports now include semantic rubric score, provider/model evidence, per-mode panels, and visual payloads for web fiction, published fiction, and classic literary analysis. |
+| Chapter Factory | Production chain page now exposes chapter queue, strict preflight checklist, Celery async mode, pause/cancel/recover controls, and timeline history. |
+| Context Builder | UI now supports manual source toggles, priority path ordering, stale context warnings, final context preview, and final confirmation before bundle use. |
+| AI Editor | Editor now has related-source sidebar, rich text style draft area, version history sidebar, command presets, paragraph patch selection, apply all/selected, diff, and rollback-ready artifacts. |
+| Originality / Publishing | Quality page now displays originality risk explanations, structure similarity matrix, remediation plan, publishing metadata optimization, cover requirements, and platform feedback backwrite status. |
+| Model Evaluation / Agent Control | Evaluation page now displays provider batch runs and route-effect regression; Production Control can run Agent boundary audit and runtime guard probe. |
 | Documentation Status | `v6-v7-gap-analysis.md`, `v6-v7-implementation-plan.md`, and this inventory have been updated to reflect current implementation rather than Phase 0 state. |
 
-Remaining UI depth is mostly refinement, not missing existence: graph zoom/search/minimap and named external platform panels can be added after local workflows stabilize.
+Remaining UI depth is mostly refinement, not missing existence: graph zoom/search/minimap, named external platform panels, and full canvas editors for setting timeline/map can be added after local workflows stabilize.

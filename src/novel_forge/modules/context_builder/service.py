@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.constants import DATA_DIRS
+from novel_forge.core.ids import utc_now
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
-from novel_forge.schemas import BaseAsset, ContextBuildPlan, ContextBundle, RagQualityReport, validate_common_fields
+from novel_forge.schemas import BaseAsset, ContextBuildPlan, ContextBundle, ProjectMetricSnapshot, RagQualityReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import build_rag_context, retrieval_metadata
 
@@ -30,6 +31,7 @@ def create_context_build_plan(
     top_k: int = 8,
     token_budget: int = 4000,
     backend: str = "auto",
+    context_profile: str = "chapter_generation",
     workspace_path: str | None = None,
 ) -> dict[str, Any]:
     target_file = resolve_path(storage.root, target_path)
@@ -48,6 +50,7 @@ def create_context_build_plan(
     exclusions = _dedupe_exclusions([*_context_exclusions(storage, project), *_rag_copyright_exclusions(retrieved_context)])
     project_id = str(project.get("project_id", ""))
     workspace = str(project.get("workspace_path", "") or workspace_path or "")
+    profile_policy = _context_profile_policy(context_profile)
     asset = ContextBuildPlan(
         title=f"Context build plan for {target_asset.title or target_asset.id}",
         source=target_asset.id,
@@ -58,6 +61,8 @@ def create_context_build_plan(
             "target_path": _display_path(storage.root, target_file),
             "query": retrieved_context.get("query", context_query),
             "top_k": int(top_k),
+            "context_profile": context_profile,
+            "context_profile_policy": profile_policy,
             "ranker": retrieved_context.get("ranker", ""),
             "requested_backend": retrieved_context.get("requested_backend", backend),
             "retrieval_backend": retrieved_context.get("retrieval_backend", ""),
@@ -95,6 +100,7 @@ def create_context_build_plan(
             "retrieval_ranker": retrieved_context.get("ranker", ""),
             "retrieval_top_k": retrieved_context.get("top_k", top_k),
             "retrieval_query": retrieved_context.get("query", context_query),
+            "context_profile": context_profile,
             "source_asset_path": _display_path(storage.root, target_file),
             "copyright_boundary": "generation context plan uses project-scoped abstract and original assets; raw sources and analysis reports are excluded",
             "run_metadata": run_metadata("context_build_plan", target_asset),
@@ -111,11 +117,106 @@ def create_context_build_plan(
     return {"path": _display_path(storage.root, path), "asset": asset.to_dict(), "validation": {"ok": True, "errors": []}}
 
 
+def compare_context_bundles(
+    storage: LocalStorage,
+    left_path: str | Path,
+    right_path: str | Path,
+    *,
+    persist: bool = True,
+) -> dict[str, Any]:
+    left_file = resolve_path(storage.root, left_path)
+    right_file = resolve_path(storage.root, right_path)
+    left = storage.read_asset(left_file)
+    right = storage.read_asset(right_file)
+    if left.type != "context_bundle" or right.type != "context_bundle":
+        raise ValueError("left_path and right_path must both point to context_bundle assets")
+    left_content = left.content if isinstance(left.content, dict) else {}
+    right_content = right.content if isinstance(right.content, dict) else {}
+    left_ids = set(str(item) for item in left_content.get("source_asset_ids", []) if str(item).strip())
+    right_ids = set(str(item) for item in right_content.get("source_asset_ids", []) if str(item).strip())
+    left_paths = _selected_paths(left_content)
+    right_paths = _selected_paths(right_content)
+    added = sorted(right_paths - left_paths)
+    removed = sorted(left_paths - right_paths)
+    shared = sorted(left_paths & right_paths)
+    project_id = str(right.metadata.get("project_id") or left.metadata.get("project_id") or "local-system")
+    diff = {
+        "snapshot_kind": "context_bundle_diff",
+        "left_bundle_id": left.id,
+        "left_bundle_path": _display_path(storage.root, left_file),
+        "right_bundle_id": right.id,
+        "right_bundle_path": _display_path(storage.root, right_file),
+        "added_asset_paths": added,
+        "removed_asset_paths": removed,
+        "shared_asset_paths": shared,
+        "added_asset_ids": sorted(right_ids - left_ids),
+        "removed_asset_ids": sorted(left_ids - right_ids),
+        "token_delta": int(right_content.get("token_estimate", 0) or 0) - int(left_content.get("token_estimate", 0) or 0),
+        "budget_status_change": {
+            "from": _budget_status(left_content),
+            "to": _budget_status(right_content),
+        },
+        "stale_warning_delta": {
+            "from": len(left_content.get("stale_context_warnings", []) if isinstance(left_content.get("stale_context_warnings", []), list) else []),
+            "to": len(right_content.get("stale_context_warnings", []) if isinstance(right_content.get("stale_context_warnings", []), list) else []),
+        },
+        "recommendation": _context_diff_recommendation(added, removed, right_content),
+        "generated_at": utc_now(),
+    }
+    if not persist:
+        return diff
+    asset = ProjectMetricSnapshot(
+        title=f"Context bundle diff {left.id[-8:]} -> {right.id[-8:]}",
+        source=right.id,
+        tags=["context-diff", diff["recommendation"]],
+        content={
+            "project_id": project_id,
+            "snapshot_at": utc_now(),
+            "throughput": {
+                "snapshot_kind": "context_bundle_diff",
+                "added": len(added),
+                "removed": len(removed),
+                "shared": len(shared),
+                "token_delta": diff["token_delta"],
+            },
+            "quality": {
+                "context_budget_from": diff["budget_status_change"]["from"],
+                "context_budget_to": diff["budget_status_change"]["to"],
+                "stale_warnings_to": diff["stale_warning_delta"]["to"],
+            },
+            "task_health": {"failed": 0, "running": 0, "waiting_handoff": 0, "dead_letters": 0},
+            "agent_health": {"status": "not_applicable"},
+            "storage_health": {"context_diff": diff},
+            "recommendations": [diff["recommendation"]],
+            "details": diff,
+        },
+        metadata={
+            "project_id": project_id if project_id != "local-system" else "",
+            "workspace_path": str(right.metadata.get("workspace_path") or left.metadata.get("workspace_path") or ""),
+            "snapshot_kind": "context_bundle_diff",
+            "left_bundle_path": diff["left_bundle_path"],
+            "right_bundle_path": diff["right_bundle_path"],
+        },
+        references=filter_project_safe_references(
+            storage,
+            project_id,
+            _dedupe([left.id, diff["left_bundle_path"], right.id, diff["right_bundle_path"], *added, *removed]),
+        ),
+    )
+    _ensure_valid(asset)
+    path = storage.write_asset_auto(asset)
+    return {**diff, "path": _display_path(storage.root, path), "asset": asset.to_dict()}
+
+
 def create_context_bundle(
     storage: LocalStorage,
     build_plan_path: str | Path,
     *,
     max_items: int | None = None,
+    selected_asset_paths: list[str] | None = None,
+    disabled_asset_paths: list[str] | None = None,
+    priority_asset_paths: list[str] | None = None,
+    final_confirmed: bool = False,
 ) -> dict[str, Any]:
     plan_file = resolve_path(storage.root, build_plan_path)
     plan = storage.read_asset(plan_file)
@@ -123,7 +224,14 @@ def create_context_bundle(
         raise ValueError("build_plan_path must point to a context_build_plan asset")
     content = plan.content
     candidates = [item for item in content.get("candidate_assets", []) if isinstance(item, dict)]
-    selected = _select_candidates(candidates, max_items=max_items)
+    manual_selection = _manual_selection(selected_asset_paths or [], disabled_asset_paths or [], priority_asset_paths or [], final_confirmed=final_confirmed)
+    selected = _select_candidates(
+        candidates,
+        max_items=max_items,
+        selected_paths=manual_selection["selected_asset_paths"],
+        disabled_paths=manual_selection["disabled_asset_paths"],
+        priority_paths=manual_selection["priority_asset_paths"],
+    )
     selected_ids = _dedupe([str(item.get("asset_id", "")) for item in selected if item.get("asset_id")])
     bucketed = _bucket_selected(selected)
     actual_context = _actual_context_text(bucketed, int(content.get("token_budget", {}).get("max_tokens", 4000)))
@@ -145,6 +253,8 @@ def create_context_bundle(
             "ranker": content.get("ranker", ""),
             "retrieval_backend": content.get("retrieval_backend", ""),
             "selected_assets": selected,
+            "manual_selection": manual_selection,
+            "stale_context_warnings": _stale_context_warnings(selected),
             "compressed_context": bucketed,
             "token_budget": content.get("token_budget", _token_budget(4000)),
             "token_estimate": token_estimate,
@@ -168,6 +278,7 @@ def create_context_bundle(
             "retrieval_source_asset_ids": selected_ids,
             "token_estimate": token_estimate,
             "copyright_boundary": "context bundle includes compressed summaries and project-owned/abstract assets only; raw source text is not included",
+            "final_context_confirmed": bool(final_confirmed),
             "run_metadata": run_metadata("context_bundle", plan),
         },
         references=filter_project_safe_references(
@@ -210,9 +321,16 @@ def list_context_assets(storage: LocalStorage, *, project_id: str | None = None,
                 "target_path": content.get("target_path", ""),
                 "retrieval_backend": content.get("retrieval_backend", metadata.get("retrieval_backend", "")),
                 "ranker": content.get("ranker", metadata.get("retrieval_ranker", "")),
+                "context_profile": content.get("context_profile", metadata.get("context_profile", "")),
                 "token_estimate": content.get("token_estimate", metadata.get("token_estimate", 0)),
                 "source_count": len(content.get("source_asset_ids", []) if isinstance(content.get("source_asset_ids", []), list) else []),
                 "candidate_count": len(content.get("candidate_assets", []) if isinstance(content.get("candidate_assets", []), list) else []),
+                "candidate_assets": content.get("candidate_assets", []) if isinstance(content.get("candidate_assets", []), list) else [],
+                "selected_assets": content.get("selected_assets", []) if isinstance(content.get("selected_assets", []), list) else [],
+                "manual_selection": content.get("manual_selection", {}) if isinstance(content.get("manual_selection", {}), dict) else {},
+                "stale_context_warnings": content.get("stale_context_warnings", []) if isinstance(content.get("stale_context_warnings", []), list) else [],
+                "actual_context": content.get("actual_context", ""),
+                "context_budget_score": content.get("context_budget_score", {}) if isinstance(content.get("context_budget_score", {}), dict) else {},
                 "quality_recommendation": content.get("recommendation", content.get("context_budget_score", {}).get("status", "")) if isinstance(content.get("context_budget_score", {}), dict) else content.get("recommendation", ""),
                 "updated_at": data.get("updated_at", ""),
                 "summary": _compact(str(content.get("actual_context") or content.get("query") or ""), 180),
@@ -223,6 +341,55 @@ def list_context_assets(storage: LocalStorage, *, project_id: str | None = None,
 
 def _default_query(asset: BaseAsset) -> str:
     return f"{asset.type} {asset.title} {json.dumps(asset.content, ensure_ascii=False, sort_keys=True)[:900]}"
+
+
+def _context_profile_policy(profile: str) -> dict[str, Any]:
+    key = (profile or "chapter_generation").strip().lower().replace("-", "_")
+    policies = {
+        "chapter_generation": {
+            "required_buckets": ["characters", "worldbuilding", "previous_summaries", "knowledge", "foreshadowing", "materials"],
+            "default_top_k": 10,
+            "risk_gate": "block high copyright risk and raw analysis reports",
+        },
+        "review": {
+            "required_buckets": ["quality", "style", "previous_summaries", "drafts"],
+            "default_top_k": 8,
+            "risk_gate": "include rubric assets and final draft lineage",
+        },
+        "revision": {
+            "required_buckets": ["reviews", "style", "quality", "previous_summaries"],
+            "default_top_k": 8,
+            "risk_gate": "require review/revision lineage before applying edits",
+        },
+        "analysis_conversion": {
+            "required_buckets": ["knowledge", "materials", "templates"],
+            "default_top_k": 6,
+            "risk_gate": "analysis reports must stay abstract-only until human approved",
+        },
+    }
+    return {"profile": key, **policies.get(key, policies["chapter_generation"])}
+
+
+def _selected_paths(content: dict[str, Any]) -> set[str]:
+    rows = content.get("selected_assets", []) if isinstance(content.get("selected_assets", []), list) else []
+    return {str(item.get("path", "")) for item in rows if isinstance(item, dict) and str(item.get("path", "")).strip()}
+
+
+def _budget_status(content: dict[str, Any]) -> str:
+    score = content.get("context_budget_score", {}) if isinstance(content.get("context_budget_score", {}), dict) else {}
+    return str(score.get("status", "unknown"))
+
+
+def _context_diff_recommendation(added: list[str], removed: list[str], right_content: dict[str, Any]) -> str:
+    budget = _budget_status(right_content)
+    warnings = right_content.get("stale_context_warnings", []) if isinstance(right_content.get("stale_context_warnings", []), list) else []
+    if budget in {"over_budget", "empty"}:
+        return "block_until_context_fixed"
+    if removed or len(warnings) >= 3:
+        return "human_confirm_before_generation"
+    if added:
+        return "review_added_sources"
+    return "no_material_change"
 
 
 def _candidate_payload(item: dict[str, Any]) -> dict[str, Any]:
@@ -433,17 +600,52 @@ def _rag_recommendation(omission: dict[str, Any], copyright_filter: dict[str, An
     return "pass"
 
 
-def _select_candidates(candidates: list[dict[str, Any]], *, max_items: int | None) -> list[dict[str, Any]]:
+def _select_candidates(
+    candidates: list[dict[str, Any]],
+    *,
+    max_items: int | None,
+    selected_paths: list[str] | None = None,
+    disabled_paths: list[str] | None = None,
+    priority_paths: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    disabled = set(disabled_paths or [])
+    explicit_selected = set(selected_paths or [])
+    priority = list(priority_paths or [])
     selected = [
         candidate
         for candidate in candidates
-        if candidate.get("selected_by_default", True)
+        if str(candidate.get("path", "")) not in disabled
+        and (candidate.get("selected_by_default", True) or str(candidate.get("path", "")) in explicit_selected)
         and str(candidate.get("type", "")) not in RAW_OR_REPORT_TYPES
         and _candidate_allowed_by_copyright(candidate)
     ]
+    if priority:
+        order = {path: index for index, path in enumerate(priority)}
+        selected.sort(key=lambda item: (order.get(str(item.get("path", "")), len(order) + 1000), -float(item.get("score", 0) or 0)))
     if max_items is not None and max_items > 0:
         return selected[:max_items]
     return selected
+
+
+def _manual_selection(selected_paths: list[str], disabled_paths: list[str], priority_paths: list[str], *, final_confirmed: bool) -> dict[str, Any]:
+    return {
+        "selected_asset_paths": _dedupe(selected_paths),
+        "disabled_asset_paths": _dedupe(disabled_paths),
+        "priority_asset_paths": _dedupe(priority_paths),
+        "final_confirmed": bool(final_confirmed),
+        "policy": "manual selections override default inclusion only for eligible non-raw, non-high-risk context assets",
+    }
+
+
+def _stale_context_warnings(selected: list[dict[str, Any]]) -> list[dict[str, str]]:
+    warnings: list[dict[str, str]] = []
+    for item in selected:
+        score = float(item.get("score", 0) or 0)
+        if score <= 0:
+            warnings.append({"path": str(item.get("path", "")), "reason": "fallback scan item has no semantic retrieval score; verify relevance before generation"})
+        if str(item.get("type", "")) in {"draft_chapter", "chapter_plan", "outline"} and "previous_summaries" in item.get("categories", []):
+            warnings.append({"path": str(item.get("path", "")), "reason": "narrative context may be stale after recent edits; confirm before sending final context"})
+    return warnings[:40]
 
 
 def _candidate_allowed_by_copyright(candidate: dict[str, Any]) -> bool:

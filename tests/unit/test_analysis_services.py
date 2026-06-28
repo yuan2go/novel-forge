@@ -41,9 +41,15 @@ class AnalysisServiceTests(unittest.TestCase):
                 self.assertEqual(data["metadata"]["project_id"], project["project_id"])
                 self.assertFalse(data["metadata"]["use_in_generation_rag"])
                 self.assertIn("abstract", data["metadata"]["copyright_boundary"])
+                self.assertIn("semantic_depth", data["content"])
+                self.assertGreaterEqual(data["content"]["semantic_depth"]["overall_score"], 0)
+                self.assertIn("provider_review", data["content"])
+                self.assertTrue(data["content"]["mode_specific_panels"])
 
             rows = list_analysis_reports(storage, project_id=project["project_id"])
             self.assertEqual(len(rows), 4)
+            self.assertIn("semantic_depth", rows[0])
+            self.assertIn("visualization", rows[0])
 
     def test_analysis_conversion_creates_safe_abstract_assets(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -66,6 +72,20 @@ class AnalysisServiceTests(unittest.TestCase):
                 self.assertEqual(data["metadata"]["project_id"], project["project_id"])
                 self.assertIn("abstract", data["metadata"]["copyright_boundary"])
                 self.assertNotEqual(data["type"], "web_fiction_business_analysis_report")
+                self.assertEqual(data["metadata"]["asset_status"], "needs_human_gate")
+                self.assertFalse(data["metadata"]["use_in_generation_rag"])
+
+            approved = convert_analysis_report(
+                storage,
+                report["path"],
+                targets=["knowledge_card"],
+                workspace_path=project["path"],
+                human_approved=True,
+                approval_note="unit test approved abstraction",
+            )
+            approved_data = storage.read_json(approved["created_assets"][0]["path"])
+            self.assertEqual(approved_data["metadata"]["asset_status"], "active")
+            self.assertTrue(approved_data["metadata"]["use_in_generation_rag"])
 
     def test_analysis_handoff_uses_analysis_agent_and_expected_type(self):
         with tempfile.TemporaryDirectory() as tmp:

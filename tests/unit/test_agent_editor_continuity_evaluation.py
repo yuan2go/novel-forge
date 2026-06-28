@@ -8,8 +8,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.model_adapters import MockModelAdapter, model_from_env
 from novel_forge.modules.agent_runs import (
+    create_agent_boundary_audit,
     create_agent_rollback_report,
     create_agent_sla_report,
+    execute_agent_run_once,
     guard_agent_action,
     start_agent_run,
 )
@@ -24,6 +26,7 @@ from novel_forge.modules.continuity_graph import (
 from novel_forge.modules.editor import apply_editor_patch, create_draft_diff_report, create_editor_patch
 from novel_forge.modules.evaluation_center import (
     compare_model_runs,
+    create_benchmark_task_from_generation_run,
     create_model_benchmark_task,
     create_model_profile,
     create_model_routing_policy,
@@ -32,7 +35,8 @@ from novel_forge.modules.evaluation_center import (
     run_model_benchmark_batch,
 )
 from novel_forge.modules.workspace.service import init_workspace
-from novel_forge.schemas import ChapterPlan, CharacterCard, ContinuityBible, DraftChapter, ForeshadowingThread
+from novel_forge.modules.production_chain import create_generation_run
+from novel_forge.schemas import ChapterPlan, CharacterCard, ContextBundle, ContinuityBible, DraftChapter, ForeshadowingThread
 from novel_forge.storage.local import LocalStorage
 
 
@@ -53,6 +57,43 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
             rollback = create_agent_rollback_report(storage, agent_run_path=run["path"], apply=True, reason="unit test rollback")
             self.assertEqual(storage.read_asset(rollback["path"]).type, "agent_rollback_report")
             self.assertEqual(storage.read_json(draft_path)["metadata"]["rollback_status"], "rolled_back")
+
+    def test_agent_executor_enforces_allowlist_and_token_budget(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            run = start_agent_run(storage, agent_key="draft", operation="executor-test", token_budget=10)
+            result = execute_agent_run_once(
+                storage,
+                run["path"],
+                tool_name="call_model_adapter",
+                output_type="draft_chapter",
+                token_used=9,
+                evidence={"unit_test": True},
+            )
+            self.assertEqual(result["status"], "succeeded")
+
+            over = start_agent_run(storage, agent_key="draft", operation="executor-budget-test", token_budget=5)
+            blocked = execute_agent_run_once(
+                storage,
+                over["path"],
+                tool_name="call_model_adapter",
+                output_type="draft_chapter",
+                token_used=6,
+            )
+            self.assertEqual(blocked["status"], "failed")
+            self.assertEqual(storage.read_asset(blocked["budget"]["path"]).type, "agent_budget")
+
+    def test_agent_boundary_audit_records_static_and_runtime_guard_proof(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            audit = create_agent_boundary_audit(storage, apply_runtime_guard=True)
+            asset = storage.read_asset(audit["path"])
+            self.assertEqual(asset.type, "agent_metric")
+            self.assertIn("coverage", asset.content)
+            self.assertIn("runtime_guard_probe", asset.content)
+            self.assertEqual(asset.content["runtime_guard_probe"]["status"], "passed")
 
     def test_editor_patch_apply_and_diff_report_are_schema_backed(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -269,6 +310,19 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
             self.assertEqual(storage.read_asset(policy["path"]).type, "model_routing_policy")
             route = resolve_model_route(storage, task_type="generate")
             self.assertEqual(route["provider"], "mock")
+
+            bundle_path = storage.write_asset(
+                "contexts",
+                ContextBundle(
+                    title="Eval context bundle",
+                    content={"source_asset_ids": [], "selected_assets": [], "actual_context": "fixture"},
+                ),
+            )
+            generation = create_generation_run(storage, draft_path, bundle_path, output_path=draft_path)
+            production_task = create_benchmark_task_from_generation_run(storage, generation["path"])
+            task_asset = storage.read_asset(production_task["path"])
+            self.assertEqual(task_asset.type, "model_benchmark_task")
+            self.assertEqual(task_asset.content["source_generation_run_path"], generation["path"])
 
             previous_root = os.environ.get("NOVEL_FORGE_ROOT")
             previous_provider = os.environ.pop("NOVEL_FORGE_MODEL_PROVIDER", None)

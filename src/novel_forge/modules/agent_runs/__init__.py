@@ -1,9 +1,11 @@
 from novel_forge.modules.agent_runs.service import (
     AgentExecutionContext,
+    create_agent_boundary_audit,
     create_agent_rollback_report,
     create_agent_failure_report,
     create_agent_sla_report,
     ensure_agent_contract,
+    execute_agent_run_once,
     guard_agent_action,
     list_agent_events,
     list_agent_runs,
@@ -17,10 +19,12 @@ from novel_forge.modules.agent_runs.service import (
 
 __all__ = [
     "AgentExecutionContext",
+    "create_agent_boundary_audit",
     "create_agent_rollback_report",
     "create_agent_failure_report",
     "create_agent_sla_report",
     "ensure_agent_contract",
+    "execute_agent_run_once",
     "guard_agent_action",
     "list_agent_events",
     "list_agent_runs",

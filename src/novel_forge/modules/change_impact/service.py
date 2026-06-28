@@ -111,6 +111,62 @@ def list_change_impact_reports(storage: LocalStorage, *, project_id: str | None 
     return rows
 
 
+def mark_downstream_assets_stale(
+    storage: LocalStorage,
+    target_path: str | Path,
+    *,
+    max_depth: int = 4,
+    project_id: str | None = None,
+    reason: str = "upstream asset changed",
+    apply: bool = True,
+) -> dict[str, Any]:
+    report = create_change_impact_report(storage, target_path, max_depth=max_depth, project_id=project_id)
+    report_asset = report.get("asset", {}) if isinstance(report.get("asset", {}), dict) else {}
+    content = report_asset.get("content", {}) if isinstance(report_asset.get("content", {}), dict) else {}
+    impacted = content.get("impacted_assets", []) if isinstance(content.get("impacted_assets", []), list) else []
+    updated: list[dict[str, str]] = []
+    errors: list[str] = []
+    if apply:
+        for item in impacted:
+            if not isinstance(item, dict):
+                continue
+            severity = str(item.get("severity", ""))
+            if severity not in {"blocking", "high", "medium"}:
+                continue
+            path_ref = str(item.get("path", ""))
+            if not path_ref:
+                continue
+            try:
+                asset_file = resolve_path(storage.root, path_ref)
+                data = storage.read_json(asset_file)
+                if not isinstance(data, dict):
+                    raise ValueError("impacted asset is not a JSON object")
+                metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+                metadata["asset_status"] = "stale"
+                metadata["invalidated_by_path"] = str(content.get("target_path", target_path))
+                metadata["invalidated_by_report_path"] = str(report.get("path", ""))
+                metadata["invalidated_reason"] = reason
+                metadata["invalidated_severity"] = severity
+                metadata["invalidated_at"] = utc_now()
+                data["metadata"] = metadata
+                data["updated_at"] = utc_now()
+                validate_errors = validate_common_fields(data)
+                if validate_errors:
+                    raise ValueError("; ".join(validate_errors))
+                storage.write_json(asset_file, data)
+                updated.append({"path": path_ref, "severity": severity, "status": "stale"})
+            except Exception as exc:
+                errors.append(f"{path_ref}: {exc}")
+    return {
+        "impact_report": report,
+        "updated_assets": updated,
+        "errors": errors,
+        "apply": apply,
+        "reason": reason,
+        "status": "failed" if errors else "applied" if apply else "planned",
+    }
+
+
 def _project_records(storage: LocalStorage, project_id: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for category in DATA_DIRS:

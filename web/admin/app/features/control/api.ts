@@ -1,4 +1,4 @@
-import { fetchJson } from "../../shared/api";
+import { fetchJson, postJson } from "../../shared/api";
 import type { AgentRunRow, BatchItem, DeadLetter, HandoffRow, NodeRunRow, ProjectHealthReport, ProjectRow, TaskCenter, TaskControl } from "../../shared/types";
 
 export function loadProductionControlData(projectId?: string) {
@@ -14,4 +14,8 @@ export function loadProductionControlData(projectId?: string) {
     fetchJson<AgentRunRow[]>(`/product/agents/runs?${projectQuery}limit=120`),
     fetchJson<ProjectHealthReport>(projectId ? `/product/system/health?project_id=${encodeURIComponent(projectId)}` : "/product/system/health")
   ]);
+}
+
+export function runAgentBoundaryAudit(applyRuntimeGuard = true) {
+  return postJson(`/product/agents/boundary-audit?apply_runtime_guard=${applyRuntimeGuard ? "true" : "false"}`, {}) as Promise<{ path: string; asset: { content?: Record<string, unknown> } }>;
 }

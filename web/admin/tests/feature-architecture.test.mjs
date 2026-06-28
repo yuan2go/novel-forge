@@ -39,9 +39,12 @@ describe("Novel Forge admin feature architecture", () => {
     assert.match(assets, /loadAssetGraph/);
     assert.match(assets, /引用图谱/);
     assert.match(assets, /assetGraphCanvas layered/);
+    for (const token of ["题材策略", "素材运营", "知识治理", "设定书连续性"]) {
+      assert.match(assets, new RegExp(token));
+    }
 
     const quality = read("app/features/quality/QualityGatePage.tsx");
-    for (const token of ["发布日历", "发布版本库", "平台规则与发布日志", "preparePlatformRelease", "adapterDryRun"]) {
+    for (const token of ["发布日历", "发布版本库", "平台规则与发布日志", "preparePlatformRelease", "adapterDryRun", "原创性风险解释", "整改建议与结构相似", "标题/简介/标签优化"]) {
       assert.match(quality, new RegExp(token));
     }
 
@@ -55,9 +58,48 @@ describe("Novel Forge admin feature architecture", () => {
     const assetsApi = read("app/features/assets/api.ts");
     assert.match(assetsApi, /\/product\/assets\/graph/);
 
+    const dashboardApi = read("app/features/dashboard/api.ts");
+    assert.match(dashboardApi, /\/product\/projects\/operating-dashboard/);
+
+    const projectsPage = read("app/features/projects/ProjectsPage.tsx");
+    assert.match(projectsPage, /创建项目向导/);
+    assert.match(projectsPage, /经营排序/);
+
     const qualityApi = read("app/features/quality/api.ts");
     for (const endpoint of ["/product/publishing/plan", "/product/publishing/log", "/product/publishing/release-package", "/product/publishing/adapters", "/product/publishing/adapter-release"]) {
       assert.match(qualityApi, new RegExp(endpoint.replaceAll("/", "\\/")));
+    }
+  });
+
+  it("wires industrial deep workbench panels for analysis, context, editor, production, evaluation, and control", () => {
+    const analysis = read("app/features/analysis/AnalysisCenterPage.tsx");
+    for (const token of ["语义深度评分", "模式可视化", "semantic_depth"]) {
+      assert.match(analysis, new RegExp(token));
+    }
+
+    const context = read("app/features/context/ContextBuilderPage.tsx");
+    for (const token of ["人工精调来源", "发送前上下文确认", "finalConfirmed"]) {
+      assert.match(context, new RegExp(token));
+    }
+
+    const editor = read("app/features/editor/EditorPage.tsx");
+    for (const token of ["富文本编辑区", "相关资料侧栏", "版本历史侧栏", "EDITOR_COMMANDS"]) {
+      assert.match(editor, new RegExp(token));
+    }
+
+    const production = read("app/features/production/ProductionChainPage.tsx");
+    for (const token of ["章节队列", "Preflight Checklist", "进度历史", "pauseChapterProduction", "cancelChapterProduction"]) {
+      assert.match(production, new RegExp(token));
+    }
+
+    const evaluation = read("app/features/evaluation/EvaluationCenterPage.tsx");
+    for (const token of ["真实 Provider 批量评测", "路由生效回归", "runBenchmarkBatch"]) {
+      assert.match(evaluation, new RegExp(token));
+    }
+
+    const control = read("app/features/control/ProductionControlPage.tsx");
+    for (const token of ["Agent 全边界证明", "Runtime Guard Probe", "runAgentBoundaryAudit"]) {
+      assert.match(control, new RegExp(token));
     }
   });
 

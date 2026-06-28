@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from novel_forge.api.routers.context import ProductRouterContext
-from novel_forge.modules.context_builder import create_context_build_plan, create_context_bundle, list_context_assets
+from novel_forge.modules.context_builder import compare_context_bundles, create_context_build_plan, create_context_bundle, list_context_assets
 from novel_forge.storage.local import LocalStorage
 
 
@@ -16,6 +16,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(tags=["product-context"])
     ContextBuildPlanRequest = models["ContextBuildPlanRequest"]
     ContextBundleRequest = models["ContextBundleRequest"]
+    ContextBundleDiffRequest = models["ContextBundleDiffRequest"]
 
     @router.get("/product/context/assets")
     def context_assets(
@@ -37,6 +38,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 top_k=request.top_k,
                 token_budget=request.token_budget,
                 backend=request.backend,
+                context_profile=request.context_profile,
                 workspace_path=request.workspace_path,
             )
         except FileNotFoundError as exc:
@@ -51,6 +53,24 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 LocalStorage(app_settings.root),
                 request.build_plan_path,
                 max_items=request.max_items,
+                selected_asset_paths=request.selected_asset_paths,
+                disabled_asset_paths=request.disabled_asset_paths,
+                priority_asset_paths=request.priority_asset_paths,
+                final_confirmed=request.final_confirmed,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/context/diff")
+    def context_bundle_diff_endpoint(request: ContextBundleDiffRequest) -> dict[str, Any]:
+        try:
+            return compare_context_bundles(
+                LocalStorage(app_settings.root),
+                request.left_path,
+                request.right_path,
+                persist=request.persist,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

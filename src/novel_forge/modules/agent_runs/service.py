@@ -608,6 +608,87 @@ def guard_agent_action(
     )
 
 
+def execute_agent_run_once(
+    storage: LocalStorage,
+    agent_run_path: str,
+    *,
+    tool_name: str,
+    output_type: str | None = None,
+    token_used: int = 0,
+    cost_estimate: float = 0.0,
+    output_assets: list[str | Path] | None = None,
+    checkpoint: dict[str, Any] | None = None,
+    evidence: dict[str, Any] | None = None,
+    human_gate: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    run_path = _resolve_agent_run(storage, agent_run_path)
+    run = storage.read_json(run_path)
+    if not isinstance(run, dict) or run.get("type") != "agent_run":
+        raise ValueError(f"agent_run JSON must be an object: {run_path}")
+    content = run.get("content", {}) if isinstance(run.get("content", {}), dict) else {}
+    if str(content.get("status", "")) in TERMINAL_STATUSES:
+        raise ValueError("agent_run is already terminal and cannot be executed again")
+    guard = guard_agent_action(storage, _display_path(storage.root, run_path), tool_name=tool_name, output_type=output_type)
+    token_budget = int(content.get("token_budget", 0) or 0)
+    if token_budget > 0 and token_used > token_budget:
+        budget = record_agent_budget(
+            storage,
+            agent_run_path=_display_path(storage.root, run_path),
+            token_budget=token_budget,
+            token_used=token_used,
+            cost_estimate=cost_estimate,
+            status="exceeded",
+        )
+        record_agent_gate(
+            storage,
+            agent_run_path=_display_path(storage.root, run_path),
+            gate_type="token_budget",
+            status="failed",
+            result={"token_budget": token_budget, "token_used": token_used},
+        )
+        failure = create_agent_failure_report(
+            storage,
+            agent_run_path=_display_path(storage.root, run_path),
+            error_type="TokenBudgetExceeded",
+            error_message=f"agent token budget exceeded: used {token_used}, budget {token_budget}",
+            recovery_instruction="Resume with a smaller context, a larger explicit budget, or a different Agent contract.",
+        )
+        return {"status": "failed", "guard": guard, "budget": budget, "failure": failure}
+    checkpoint_result = None
+    if checkpoint:
+        checkpoint_result = record_agent_checkpoint(
+            storage,
+            agent_run_path=_display_path(storage.root, run_path),
+            status=str(checkpoint.get("status", "executor_checkpoint")),
+            state=checkpoint,
+        )
+    budget = record_agent_budget(
+        storage,
+        agent_run_path=_display_path(storage.root, run_path),
+        token_budget=token_budget,
+        token_used=token_used,
+        cost_estimate=cost_estimate,
+        status=_budget_status(token_budget, token_used),
+    )
+    status = update_agent_run_status(
+        storage,
+        _display_path(storage.root, run_path),
+        status="succeeded",
+        output_assets=output_assets or [],
+        evidence=evidence or {"executor_tool": tool_name, "output_type": output_type or ""},
+        human_gate=human_gate or None,
+        event_type="agent_run.executor.succeeded",
+        message=f"executor completed {tool_name}",
+    )
+    evidence_payload = content.get("evidence", {}) if isinstance(content.get("evidence", {}), dict) else {}
+    sla = create_agent_sla_report(
+        storage,
+        agent_run_path=_display_path(storage.root, run_path),
+        sla_seconds=int(evidence_payload.get("sla_seconds", 1800)),
+    )
+    return {"status": "succeeded", "guard": guard, "budget": budget, "checkpoint": checkpoint_result, "run": status, "sla": sla}
+
+
 def create_agent_sla_report(
     storage: LocalStorage,
     *,
@@ -783,6 +864,111 @@ def list_agent_events(
         if len(rows) >= limit:
             break
     return rows
+
+
+def create_agent_boundary_audit(storage: LocalStorage, *, apply_runtime_guard: bool = False) -> dict[str, Any]:
+    """Create a static/runtime proof report for Agent boundary coverage.
+
+    The audit intentionally stays local and deterministic: it scans known
+    service/worker/model boundary files for asset writes and model calls, then
+    flags files that do not mention AgentExecutionContext or guard wrappers.
+    """
+
+    root = Path(__file__).resolve().parents[2]
+    scan_roots = [root / "modules", root / "workers", root / "model_adapters"]
+    findings: list[dict[str, Any]] = []
+    coverage_rows: list[dict[str, Any]] = []
+    for scan_root in scan_roots:
+        if not scan_root.exists():
+            continue
+        for path in sorted(scan_root.rglob("*.py")):
+            if "__pycache__" in path.parts:
+                continue
+            text = path.read_text(encoding="utf-8")
+            write_hits = _count_boundary_hits(text, ["write_asset", "write_asset_auto", "write_json("])
+            model_hits = _count_boundary_hits(text, ["model_from_env", "GuardedModelAdapter", ".generate(", ".analyze(", ".review(", ".revise("])
+            if not write_hits and not model_hits:
+                continue
+            has_context = "AgentExecutionContext" in text or "guard_agent_action" in text or "GuardedModelAdapter" in text
+            has_guard = ".guard(" in text or "guard_agent_action" in text or "GuardedModelAdapter" in text
+            severity = "low"
+            if (write_hits or model_hits) and not has_context:
+                severity = "high"
+            elif (write_hits or model_hits) and not has_guard:
+                severity = "medium"
+            row = {
+                "path": str(path.relative_to(root.parent)),
+                "write_boundary_hits": write_hits,
+                "model_boundary_hits": model_hits,
+                "has_agent_context": has_context,
+                "has_guard": has_guard,
+                "severity": severity,
+                "recommendation": _boundary_recommendation(write_hits, model_hits, has_context, has_guard),
+            }
+            coverage_rows.append(row)
+            if severity in {"medium", "high"}:
+                findings.append(row)
+    runtime_guard_probe = _runtime_guard_probe(storage) if apply_runtime_guard else {"executed": False, "status": "not_requested"}
+    status = "failed" if any(item["severity"] == "high" for item in findings) else "warning" if findings else "passed"
+    asset = AgentMetric(
+        title=f"Agent boundary audit {status}",
+        tags=["agent-boundary-audit", status],
+        content={
+            "agent_run_id": "static-agent-boundary-audit",
+            "metric_name": "agent_boundary_findings",
+            "value": len(findings),
+            "audit_id": make_id("agent_boundary_audit", utc_now()),
+            "status": status,
+            "coverage": coverage_rows,
+            "findings": findings,
+            "summary": {
+                "scanned_files": len(coverage_rows),
+                "finding_count": len(findings),
+                "high_count": sum(1 for item in findings if item["severity"] == "high"),
+                "medium_count": sum(1 for item in findings if item["severity"] == "medium"),
+            },
+            "runtime_guard_probe": runtime_guard_probe,
+            "policy": "all worker/model/service write or model-call boundaries must use AgentExecutionContext and guard allowlist checks",
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": "local-system", "workspace_path": "local-system", "metric_kind": "agent_boundary_audit"},
+    )
+    return _write(storage, asset)
+
+
+def _count_boundary_hits(text: str, needles: list[str]) -> int:
+    return sum(text.count(needle) for needle in needles)
+
+
+def _boundary_recommendation(write_hits: int, model_hits: int, has_context: bool, has_guard: bool) -> str:
+    if not has_context:
+        return "wrap this boundary with AgentExecutionContext before writing assets or calling model adapters"
+    if not has_guard:
+        return "add explicit run.guard(...) checks for read/write/model actions"
+    if model_hits:
+        return "model calls are routed through a guarded boundary; keep provider output schema validation attached"
+    if write_hits:
+        return "asset writes are guarded; keep output type controls current"
+    return "no action"
+
+
+def _runtime_guard_probe(storage: LocalStorage) -> dict[str, Any]:
+    try:
+        with AgentExecutionContext(
+            storage,
+            agent_key="review",
+            operation="runtime-guard-negative-probe",
+            output_types=["review_report"],
+            workspace_path="local-system",
+            sla_seconds=60,
+        ) as run:
+            try:
+                run.guard("write_draft_chapter", "draft_chapter")
+            except PermissionError as exc:
+                return {"executed": True, "status": "passed", "blocked_action": "write_draft_chapter", "error": str(exc), "agent_run_path": run.path}
+            return {"executed": True, "status": "failed", "error": "guard allowed forbidden write_draft_chapter for review agent", "agent_run_path": run.path}
+    except Exception as exc:
+        return {"executed": True, "status": "error", "error": str(exc)}
 
 
 def _find_contract(

@@ -33,6 +33,7 @@ export function QualityGatePage() {
   const drafts = assets.filter((asset) => ["draft_chapter", "draft_version"].includes(asset.type));
   const qualityAssets = assets.filter((asset) => ["chapter_audit_report", "originality_report", "publish_gate_report", "release_package"].includes(asset.type));
   const audits = qualityAssets.filter((asset) => asset.type === "chapter_audit_report");
+  const originalityReports = qualityAssets.filter((asset) => asset.type === "originality_report");
   const gates = qualityAssets.filter((asset) => asset.type === "publish_gate_report");
   const releasePackages = publishingAssets.filter((asset) => asset.type === "release_package");
   const publishingPlans = publishingAssets.filter((asset) => asset.type === "publishing_plan");
@@ -82,6 +83,44 @@ export function QualityGatePage() {
         <Metric label="Publish Gate" value={String(gates.length)} />
         <Metric label="Release" value={String(releasePackages.length)} />
         <Metric label="发布计划" value={String(publishingPlans.length)} />
+      </section>
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="原创性风险解释" icon={<ShieldCheck size={18} />} />
+          <DataTable
+            emptyText="暂无原创性风险解释"
+            columns={["维度", "级别", "原因", "证据"]}
+            rows={(originalityReports[0]?.risk_explanations || []).map((item, index) => [
+              String(item.dimension || "-"),
+              <span className={statusClass(String(item.severity || ""))} key={`origin-severity-${index}`}>{String(item.severity || "-")}</span>,
+              String(item.reason || "-"),
+              String(item.evidence || "-")
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="整改建议与结构相似" icon={<FileSearch size={18} />} />
+          <DataTable
+            emptyText="暂无整改建议"
+            columns={["动作", "优先级", "说明"]}
+            rows={(originalityReports[0]?.remediation_plan || []).map((item, index) => [
+              String(item.action || "-"),
+              <span className={statusClass(String(item.priority || ""))} key={`remediation-${index}`}>{String(item.priority || "-")}</span>,
+              String(item.instruction || "-")
+            ])}
+          />
+          <DataTable
+            emptyText="暂无结构相似矩阵"
+            columns={["来源", "文本", "情节骨架", "角色配置", "风险"]}
+            rows={(originalityReports[0]?.structure_similarity_matrix || []).slice(0, 8).map((item, index) => [
+              String(item.source_title || item.source_asset_id || "-"),
+              String(item.text || 0),
+              String(item.plot_skeleton || 0),
+              String(item.role_configuration || 0),
+              <span className={statusClass(String(item.max_risk || ""))} key={`matrix-${index}`}>{String(item.max_risk || "-")}</span>
+            ])}
+          />
+        </div>
       </section>
       <section className="workspaceGrid">
         <div className="panel">
@@ -201,6 +240,13 @@ export function QualityGatePage() {
             ])}
           />
           <div className="publishingRuleList">
+            {releasePackages.slice(0, 3).map((asset) => (
+              <div className="ruleCard" key={`${asset.path}-optimization`}>
+                <strong>标题/简介/标签优化</strong>
+                <span>{asset.channel || "local"} / cover {String(asset.cover_asset?.status ?? "missing")}</span>
+                <small>{Object.entries(asset.metadata_optimization ?? {}).slice(0, 4).map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`).join(" / ")}</small>
+              </div>
+            ))}
             {publishingAdapters.map((adapter) => (
               <div className="ruleCard" key={adapter.key}>
                 <strong>{adapter.label}</strong>
@@ -213,6 +259,13 @@ export function QualityGatePage() {
                 <strong>{asset.type}</strong>
                 <span>{asset.channel || String(asset.platform_rules?.channel ?? "local")}</span>
                 <small>{Object.entries(asset.platform_rules ?? {}).map(([key, value]) => `${key}: ${String(value)}`).join(" / ")}</small>
+              </div>
+            ))}
+            {publishingLogs.slice(0, 4).map((asset) => (
+              <div className="ruleCard" key={`${asset.path}-feedback`}>
+                <strong>审核反馈回流</strong>
+                <span>{String(asset.platform_feedback?.status ?? asset.status ?? "pending")}</span>
+                <small>{String((asset.platform_feedback?.strategy_backwrite as Record<string, unknown> | undefined)?.chapter_plan ? "回写章节计划" : "观察")} / {String(asset.platform_feedback?.next_action ?? "")}</small>
               </div>
             ))}
           </div>

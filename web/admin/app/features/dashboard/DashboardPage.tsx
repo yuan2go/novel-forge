@@ -3,7 +3,7 @@
 import { Activity, BarChart3, CheckCircle2, FileSearch, ListChecks, MessageSquareText, PenLine, ShieldCheck, Workflow } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
-import type { Health, ProjectHealthReport, ProjectRow, TaskCenter } from "../../shared/types";
+import type { Health, ProjectHealthReport, ProjectOperatingDashboard, ProjectRow, TaskCenter } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import { loadDashboardData } from "./api";
 
@@ -19,14 +19,16 @@ const quickLinks = [
 export function DashboardPage() {
   const [health, setHealth] = useState<Health | null>(null);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [operating, setOperating] = useState<ProjectOperatingDashboard | null>(null);
   const [tasks, setTasks] = useState<TaskCenter | null>(null);
   const [projectHealth, setProjectHealth] = useState<ProjectHealthReport | null>(null);
   const [error, setError] = useState("");
 
   async function refresh() {
-    const [healthData, projectRows, taskData, projectHealthData] = await loadDashboardData();
+    const [healthData, projectRows, operatingData, taskData, projectHealthData] = await loadDashboardData();
     setHealth(healthData);
     setProjects(projectRows);
+    setOperating(operatingData);
     setTasks(taskData);
     setProjectHealth(projectHealthData);
   }
@@ -42,8 +44,9 @@ export function DashboardPage() {
       <section className="summaryBand factoryMetrics">
         <Metric label="项目" value={String(projects.length)} />
         <Metric label="资产" value={String(projectHealth?.summary.asset_count ?? Object.values(health?.local_counts ?? {}).reduce((sum, value) => sum + value, 0))} />
-        <Metric label="任务" value={String(tasks?.summary.task_count ?? 0)} />
-        <Metric label="风险" value={String((projectHealth?.summary.failed_task_count ?? 0) + (projectHealth?.summary.scope_issue_count ?? 0) + (projectHealth?.summary.dead_letter_count ?? 0))} />
+        <Metric label="平均投资分" value={String(operating?.summary.average_investment_score ?? 0)} />
+        <Metric label="高风险项目" value={String(operating?.summary.high_risk_project_count ?? 0)} />
+        <Metric label="阻塞项目" value={String(operating?.summary.blocked_project_count ?? 0)} />
       </section>
 
       <section className="workspaceGrid">
@@ -77,6 +80,55 @@ export function DashboardPage() {
             <a className="secondaryButton" href="/tasks">任务中心</a>
           </div>
         </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="今日优先级" icon={<CheckCircle2 size={18} />} />
+          <div className="priorityCardGrid">
+            {(operating?.today_priorities ?? []).map((priority) => (
+              <a className="decisionCard" href={priority.href} key={`${priority.project_id}-${priority.action}`}>
+                <span className="badge muted">{priority.label}</span>
+                <strong>{priority.title}</strong>
+                <small>{priority.reason}</small>
+                <span>投资 {priority.investment_score} / 风险 {priority.risk_score}</span>
+              </a>
+            ))}
+            {!(operating?.today_priorities ?? []).length ? <p className="muted">暂无需要立即处理的项目。</p> : null}
+          </div>
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="阶段瓶颈" icon={<Activity size={18} />} />
+          <DataTable
+            emptyText="暂无瓶颈"
+            columns={["项目", "严重度", "瓶颈", "建议"]}
+            rows={(operating?.bottlenecks ?? []).map((item) => [
+              item.title,
+              <span className={statusClass(item.severity)} key={`${item.project_id}-severity`}>{item.severity}</span>,
+              item.label,
+              item.suggestion
+            ])}
+          />
+        </div>
+      </section>
+
+      <section className="panel">
+        <PanelHeader title="项目投资 / 风险排序" icon={<BarChart3 size={18} />} />
+        <DataTable
+          emptyText="暂无项目评分"
+          columns={["项目", "状态", "投资分", "风险分", "动量", "Profile", "今日动作", "瓶颈"]}
+          rows={(operating?.projects ?? []).map((project) => [
+            project.title,
+            <span className={statusClass(project.status)} key={`${project.project_id}-status`}>{project.status}</span>,
+            String(project.investment_score),
+            String(project.risk_score),
+            String(project.momentum_score),
+            `${project.profile_binding_count}/${project.profile_binding_total}`,
+            <a className="linkButton" href={project.today_action.href} key={`${project.project_id}-action`}>{project.today_action.label}</a>,
+            project.bottleneck.label
+          ])}
+        />
       </section>
 
       <section className="workspaceGrid">

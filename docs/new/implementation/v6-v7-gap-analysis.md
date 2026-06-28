@@ -4,6 +4,16 @@ Phase 0 audit date: 2026-06-26.
 
 Implementation status update: 2026-06-27.
 
+Implementation status update: 2026-06-28.
+
+- Added `/product/system/module-completion` and `/product/system/module-completion/snapshot` to expose a V6/V7 module completion matrix. The report combines code evidence, runtime asset evidence, remaining gaps, and acceptance status for Analysis Center, Context Builder, Versioned Production Chain, AI Editor, Long-form Stability, Agent Industrialization, Feedback Center, and Model Evaluation Center.
+- Analysis conversion now has an explicit human gate. Converted assets are created as abstract assets, but default to `asset_status=needs_human_gate` and `use_in_generation_rag=false` until a human approves the abstraction boundary. Review-rule and production-RAG use is therefore blocked by default.
+- Context Builder now records a `context_profile` on build plans and supports `/product/context/diff`, producing a schema-backed context bundle diff snapshot with added/removed sources, token delta, stale warning delta, and recommendation.
+- Production chain now has `/product/production/invalidate-downstream`, which creates a change-impact report and can mark high/medium/blocking downstream assets as `stale` with invalidation metadata.
+- Agent runtime now exposes `/product/agents/executor/run-once`. It enforces tool allowlist, output type, checkpoint recording, hard token budget, budget assets, SLA assets, and fail-closed failure reports.
+- Model Evaluation Center now supports `/product/evaluation/benchmark-from-generation-run`, binding benchmark tasks directly to real `generation_run` production traces.
+- Web Admin Health Center now displays the V6/V7 module completion matrix. Analysis, Context Builder, and Model Evaluation pages expose the new human gate, context profile/diff, and generation-run benchmark workflow.
+
 The Phase 1-3 baseline has moved beyond the original audit:
 
 - Product API route registration has been split under `src/novel_forge/api/routers/`, with `product.py` kept as a compatibility facade for workers and tests.
@@ -398,9 +408,31 @@ Remaining P2 work is no longer basic existence, but depth:
 - Migration downgrade exists as a dry-run-first CLI/library path. Destructive downgrade requires explicit `--execute`.
 - Asset graph layout now returns deterministic BFS-layered coordinates and UI renders layered graph nodes.
 - Publishing platform adapters now exist for `local_file`, `manual_web`, and guarded `external_webhook`. External execution remains fail-closed unless the local operator explicitly configures endpoint and permission environment variables.
+- Workbench and project management now have an operating dashboard model: `/product/projects/operating-dashboard` ranks projects by investment score, risk score, momentum, daily priority, and bottleneck. The Dashboard page surfaces daily production priorities and project investment/risk ordering; the Projects page uses a guided creation flow with selectable platform, genre, quality, style, and continuity profile bindings.
+- Creative asset libraries now expose richer row content and the Web Admin asset workbench has domain panels for topic strategy, material operations, knowledge governance, and setting-bible continuity. These panels show scoring, classification tags, credibility/staleness, foreshadowing status, and setting impact entry points.
 
 Remaining optional depth:
 
 - Install and run Playwright in CI/local production smoke when browser automation dependencies are available.
 - Add advanced graph interaction such as zoom, node search, and large-project minimap.
 - Add adapter implementations for named external platforms only after their platform rules and copyright gates are explicitly approved.
+- Continue deepening domain editors into full canvases: topic market trend import, material relation editor, knowledge citation taxonomy editor, and setting timeline/map editors.
+
+## Industrial Depth Update 2026-06-28
+
+The latest implementation closes another layer of V6/V7 depth gaps:
+
+1. Analysis Center: local analysis reports now include provider-backed or provider-attempted semantic rubric scoring, per-mode visualization payloads, evidence, and provider/model status. Web Admin shows semantic score, mode panels, provider summary, and rubric rows for web fiction, published fiction, and classic literary analysis.
+2. Chapter Factory UI: the production chain page now exposes chapter queue, generation mode, Celery async toggle, strict preflight checklist, progress timeline, pause/cancel/recover controls, and failed-step recovery affordances over the existing chapter production bus.
+3. Context Builder: bundle creation now accepts manual selected/disabled/priority source paths and final confirmation. Bundles record manual selection, stale context warnings, actual context, and budget score; the UI shows source toggles, priority controls, warnings, and final send preview.
+4. AI Editor: the editor is now a three-panel workbench with related-source sidebar, rich text style draft textarea, version/patch sidebar, and command presets for continue, expand, shorten, polish, and risk revision. Patch/diff/rollback remains schema-backed.
+5. Originality Protection: reports now include structure similarity matrix, risk explanations, and remediation plan. Quality UI surfaces risk reasons, matched structure dimensions, and rewrite instructions.
+6. Model Evaluation: Web Admin now separates real provider batch benchmark runs, A/B comparison, routing policy, cost, latency, and route-effect regression visibility. Non-mock providers still fail closed unless configured through local env/model adapters.
+7. Agent Industrialization: `/product/agents/boundary-audit` creates a schema-backed `agent_metric` report scanning worker/model/service boundaries for unguarded writes/model calls and can run a negative runtime guard probe. Production Control displays boundary findings and guard proof.
+8. Publishing Center: release packages now include title/synopsis/tag optimization, cover asset requirements, and platform review feedback placeholders. Publishing logs record platform feedback strategy backwrite targets.
+
+Remaining depth after this update:
+
+- Run the local production failure matrix with real Docker services and installed Playwright on the operator machine.
+- Add named external platform rule packs only after explicit platform/API approval.
+- Continue turning domain pages into specialized canvases where useful, especially setting timeline/map and large graph navigation.

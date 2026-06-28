@@ -115,6 +115,64 @@ def create_model_benchmark_task(
         return result
 
 
+def create_benchmark_task_from_generation_run(
+    storage: LocalStorage,
+    generation_run_path: str | Path,
+    *,
+    task_type: str = "generation",
+    expected_output_type: str = "generate",
+    prompt_template: str = "",
+) -> dict[str, Any]:
+    path = resolve_path(storage.root, generation_run_path)
+    generation = storage.read_asset(path)
+    if generation.type != "generation_run":
+        raise ValueError("generation_run_path must point to a generation_run asset")
+    content = generation.content if isinstance(generation.content, dict) else {}
+    input_assets = _dedupe(
+        [
+            str(content.get("input_asset_path", "")),
+            str(content.get("context_bundle_path", "")),
+            str(content.get("output_asset_path", "")),
+        ]
+    )
+    rubric = {
+        "task_type": task_type,
+        "source_generation_run_id": generation.id,
+        "dimensions": ["schema_validity", "context_adherence", "quality_signal", "latency", "cost"],
+        "weights": {"schema_validity": 0.3, "context_adherence": 0.25, "quality_signal": 0.25, "latency": 0.1, "cost": 0.1},
+        "target_chars": 1200,
+    }
+    project = project_scope_from_asset(storage, generation, input_path=path)
+    result = create_model_benchmark_task(
+        storage,
+        task_type=task_type,
+        input_assets=input_assets,
+        rubric=rubric,
+        expected_output_type=expected_output_type,
+        prompt_template=prompt_template
+        or "Replay this production generation run as a benchmark. Respect the recorded context bundle and output schema.",
+        workspace_path=str(project.get("workspace_path", "")),
+    )
+    task_asset = result.get("asset", {}) if isinstance(result.get("asset", {}), dict) else {}
+    task_content = task_asset.get("content", {}) if isinstance(task_asset.get("content", {}), dict) else {}
+    task_metadata = task_asset.get("metadata", {}) if isinstance(task_asset.get("metadata", {}), dict) else {}
+    task_content["source_generation_run_id"] = generation.id
+    task_content["source_generation_run_path"] = _display_path(storage.root, path)
+    task_content["production_trace"] = {
+        "provider": content.get("provider", ""),
+        "model": content.get("model", ""),
+        "prompt_version": content.get("prompt_version", ""),
+        "context_bundle_path": content.get("context_bundle_path", ""),
+        "output_asset_path": content.get("output_asset_path", ""),
+    }
+    task_metadata["source_generation_run_path"] = _display_path(storage.root, path)
+    task_asset["content"] = task_content
+    task_asset["metadata"] = task_metadata
+    task_path = resolve_path(storage.root, result["path"])
+    storage.write_json(task_path, task_asset)
+    return {"path": result["path"], "asset": task_asset, "validation": result.get("validation", {"ok": True, "errors": []})}
+
+
 def run_model_benchmark(
     storage: LocalStorage,
     task_path: str | Path,
@@ -718,3 +776,14 @@ def _display_path(root: Path, path: Path) -> str:
         return str(path.relative_to(root))
     except ValueError:
         return str(path)
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AssetRow, FeatureAssetRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { compareRuns, createBenchmarkTask, createModelProfile, createPromptRegression, createPromptVersion, createRoutingPolicy, loadEvaluationData, runBenchmark, runBenchmarkBatch } from "./api";
+import { compareRuns, createBenchmarkFromGenerationRun, createBenchmarkTask, createModelProfile, createPromptRegression, createPromptVersion, createRoutingPolicy, loadEvaluationData, runBenchmark, runBenchmarkBatch } from "./api";
 
 const taskTypes = ["outline_generation", "chapter_plan", "draft_chapter", "review", "originality", "style_review"];
 
@@ -39,6 +39,7 @@ export function EvaluationCenterPage() {
   const totalEstimatedCost = assets
     .filter((asset) => asset.type === "model_benchmark_run")
     .reduce((sum, asset) => sum + Number((asset as FeatureAssetRow & { cost_estimate?: { cost?: number } }).cost_estimate?.cost ?? 0), 0);
+  const activeRoutes = grouped.model_routing_policy?.flatMap((asset) => Object.entries((asset as FeatureAssetRow & { task_routes?: Record<string, { provider?: string; model_name?: string; overall?: number }> }).task_routes ?? {}).map(([task, route]) => ({ task, ...route, path: asset.path }))) ?? [];
 
   async function refresh(nextProjectId = projectId) {
     const [projectRows, evaluationAssets, sourceAssets] = await loadEvaluationData(nextProjectId);
@@ -100,6 +101,7 @@ export function EvaluationCenterPage() {
           <div className="studioActions">
             <button className="primaryButton" disabled={busy} onClick={() => runAction(() => createModelProfile(provider, modelName, [taskType]), "模型 Profile 已创建")}>保存模型</button>
             <button className="secondaryButton" disabled={busy || !selectedInput} onClick={() => runAction(() => createBenchmarkTask(taskType, [selectedInput], selectedProject?.path), "评测任务已创建")}>创建评测任务</button>
+            <button className="secondaryButton" disabled={busy || !selectedInput.includes("runs/")} onClick={() => runAction(() => createBenchmarkFromGenerationRun(selectedInput, taskType), "生产链评测任务已创建")}>从 Generation Run 建任务</button>
           </div>
         </div>
 
@@ -121,6 +123,40 @@ export function EvaluationCenterPage() {
             <button className="secondaryButton" disabled={busy || !runPaths.trim()} onClick={() => runAction(() => compareRuns(runPaths.split(",").map((item) => item.trim()).filter(Boolean), taskType, selectedProject?.path), "对比报告已生成")}>A/B 对比</button>
             <button className="secondaryButton" disabled={busy || !(grouped.model_comparison_report?.length)} onClick={() => runAction(() => createRoutingPolicy((grouped.model_comparison_report || []).slice(0, 8).map((asset) => asset.path), selectedProject?.path), "模型路由策略已生效")}>生成路由策略</button>
           </div>
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="真实 Provider 批量评测" icon={<FlaskConical size={18} />} />
+          <p className="previewText">候选格式：provider/model。非 mock provider 会走本地环境变量和 model adapter，未配置时 fail-closed 并在 run 中记录错误。</p>
+          <DataTable
+            emptyText="暂无 benchmark run"
+            columns={["Provider", "Model", "任务", "状态", "分数", "成本", "延迟"]}
+            rows={(grouped.model_benchmark_run || []).slice(0, 20).map((asset) => [
+              (asset as FeatureAssetRow & { provider?: string }).provider || "-",
+              (asset as FeatureAssetRow & { model_name?: string }).model_name || "-",
+              (asset as FeatureAssetRow & { task_type?: string }).task_type || "-",
+              <span className={statusClass(asset.status || "")} key={`${asset.path}-eval-status`}>{asset.status || "-"}</span>,
+              String(asset.score ?? "-"),
+              `$${Number((asset as FeatureAssetRow & { cost_estimate?: { cost?: number } }).cost_estimate?.cost ?? 0).toFixed(4)}`,
+              String((asset as FeatureAssetRow & { latency_ms?: number }).latency_ms ?? "-")
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="路由生效回归" icon={<GitCompare size={18} />} />
+          <DataTable
+            emptyText="暂无模型路由策略"
+            columns={["任务", "Provider", "Model", "分数", "策略"]}
+            rows={activeRoutes.map((route) => [
+              route.task,
+              route.provider || "-",
+              route.model_name || "-",
+              String(route.overall ?? "-"),
+              <span className="pathText" key={`${route.path}-${route.task}`}>{route.path}</span>
+            ])}
+          />
         </div>
       </section>
 

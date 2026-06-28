@@ -112,6 +112,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "allowed_tools": [
             "read_asset",
             "read_skill",
+            "call_model_adapter",
             "write_analysis_report",
             "write_converted_creative_asset",
             "run_validation",

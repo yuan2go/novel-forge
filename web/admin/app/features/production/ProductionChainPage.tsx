@@ -12,7 +12,10 @@ import {
   createGenerationRun,
   createLongFormMacroPlan,
   createOutlineVersion,
+  cancelChapterProduction,
   loadProductionData,
+  pauseChapterProduction,
+  recoverChapterProduction,
   resumeChapterProduction,
   startChapterProduction,
   type ChapterProductionRun,
@@ -33,6 +36,9 @@ export function ProductionChainPage() {
   const [selectedRunPath, setSelectedRunPath] = useState("");
   const [fromStep, setFromStep] = useState("next_chapter_plan");
   const [runTo, setRunTo] = useState("next_chapter_plan");
+  const [asyncTask, setAsyncTask] = useState(false);
+  const [generatorMode, setGeneratorMode] = useState("strict_bus");
+  const [preflightRequired, setPreflightRequired] = useState(true);
   const [chapter, setChapter] = useState(1);
   const [contextBundlePath, setContextBundlePath] = useState("");
   const [outputPath, setOutputPath] = useState("");
@@ -170,11 +176,24 @@ export function ProductionChainPage() {
             <select value={runTo} onChange={(event) => setRunTo(event.target.value)}>
               {CHAPTER_BUS_STEPS.map((step) => <option value={step.key} key={step.key}>{step.label}</option>)}
             </select>
+            <select value={generatorMode} onChange={(event) => setGeneratorMode(event.target.value)}>
+              <option value="strict_bus">严格章节工厂</option>
+              <option value="draft_only">只到草稿</option>
+              <option value="review_gate">审稿门禁</option>
+            </select>
+            <label className="checkboxLine">
+              <input type="checkbox" checked={asyncTask} onChange={(event) => setAsyncTask(event.target.checked)} />
+              Celery 异步
+            </label>
+            <label className="checkboxLine">
+              <input type="checkbox" checked={preflightRequired} onChange={(event) => setPreflightRequired(event.target.checked)} />
+              强制 preflight
+            </label>
             <button
               className="primaryButton"
-              disabled={busy || !outlinePath || !selectedProject?.path}
+              disabled={busy || !outlinePath || !selectedProject?.path || !preflightRequired}
               onClick={() => runAction(
-                () => startChapterProduction(outlinePath, chapterPlanPath, selectedProject?.path || "", chapter, runTo),
+                () => startChapterProduction(outlinePath, chapterPlanPath, selectedProject?.path || "", chapter, runToForMode(generatorMode, runTo), asyncTask),
                 "章节生产总线已推进"
               )}
             >
@@ -199,13 +218,48 @@ export function ProductionChainPage() {
             <button
               className="secondaryButton"
               disabled={busy || !selectedRunPath}
-              onClick={() => runAction(() => resumeChapterProduction(selectedRunPath, fromStep, runTo), "章节生产总线已恢复")}
+              onClick={() => runAction(() => resumeChapterProduction(selectedRunPath, fromStep, runTo, true, asyncTask), "章节生产总线已恢复")}
             >
               <RotateCcw size={18} />
               从步骤恢复
             </button>
+            <button className="secondaryButton" disabled={busy || !selectedRunPath} onClick={() => runAction(() => recoverChapterProduction(selectedRunPath, runTo, asyncTask), "失败步骤已恢复")}>失败恢复</button>
+            <button className="secondaryButton" disabled={busy || !selectedRunPath} onClick={() => runAction(() => pauseChapterProduction(selectedRunPath), "章节生产已暂停")}>暂停</button>
+            <button className="dangerButton" disabled={busy || !selectedRunPath} onClick={() => runAction(() => cancelChapterProduction(selectedRunPath), "章节生产已取消")}>取消</button>
           </div>
           {selectedRun?.recovery_instruction ? <div className="errorLine">{selectedRun.recovery_instruction}</div> : null}
+        </div>
+      </section>
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="章节队列" icon={<Workflow size={18} />} />
+          <DataTable
+            emptyText="暂无章节队列"
+            columns={["章节", "状态", "执行", "Preflight", "Celery", "失败恢复"]}
+            rows={chapterRuns.map((run) => [
+              `Ch${run.chapter}`,
+              <span className={statusClass(run.status || "")} key={`${run.path}-queue-status`}>{run.status}</span>,
+              run.execution_mode || "sync",
+              run.stability_preflight_path ? "ready" : "missing",
+              run.celery_task_id || "-",
+              <button className="linkButton" key={`${run.path}-recover`} onClick={() => { setSelectedRunPath(run.path); setFromStep(run.current_step || "outline_checkpoint"); }}>{run.current_step}</button>
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="Preflight Checklist" icon={<GitPullRequest size={18} />} />
+          <div className="checklistGrid">
+            {CHAPTER_BUS_STEPS.slice(0, 6).map((step) => {
+              const state = selectedRun?.steps?.find((item) => item.step === step.key);
+              return (
+                <div className={`checkItem ${state?.status === "completed" ? "ok" : state?.status === "failed" ? "warn" : ""}`} key={step.key}>
+                  <strong>{step.label}</strong>
+                  <span>{state?.status || "planned"}</span>
+                  <small>{state?.output_paths?.[0] || state?.error || "等待执行"}</small>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
       <section className="panel">
@@ -231,6 +285,20 @@ export function ProductionChainPage() {
             run.final_draft_path || "-",
             run.next_chapter_plan_path || "-",
             <button className="linkButton" key={run.path} onClick={() => setSelectedRunPath(run.path)}>{run.path}</button>
+          ])}
+        />
+      </section>
+      <section className="panel">
+        <PanelHeader title="进度历史" icon={<Workflow size={18} />} />
+        <DataTable
+          emptyText="暂无 timeline"
+          columns={["时间", "步骤", "状态", "输出", "错误"]}
+          rows={(selectedRun?.timeline || []).slice(-40).reverse().map((event, index) => [
+            String(event.recorded_at || "-"),
+            String(event.label || event.step || "-"),
+            <span className={statusClass(String(event.status || ""))} key={`timeline-${index}`}>{String(event.status || "-")}</span>,
+            Array.isArray(event.output_paths) ? event.output_paths.join(", ") : "-",
+            String(event.error || "-")
           ])}
         />
       </section>
@@ -296,3 +364,9 @@ const CHAPTER_BUS_STEPS = [
   { key: "final_draft", label: "最终稿" },
   { key: "next_chapter_plan", label: "下一章细纲" }
 ];
+
+function runToForMode(mode: string, fallback: string) {
+  if (mode === "draft_only") return "draft_v0";
+  if (mode === "review_gate") return "review";
+  return fallback;
+}

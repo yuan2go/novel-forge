@@ -28,6 +28,11 @@ export type ChapterProductionRun = FeatureAssetRow & {
   completed_steps: number;
   total_steps: number;
   final_draft_path: string;
+  stability_preflight_path?: string;
+  execution_mode?: string;
+  celery_task_id?: string;
+  pause_requested?: boolean;
+  cancel_requested?: boolean;
   next_chapter_plan_path: string;
   steps?: ChapterProductionStep[];
   timeline?: Array<Record<string, unknown>>;
@@ -77,23 +82,37 @@ export function createGenerationRun(inputPath: string, contextBundlePath: string
   });
 }
 
-export function startChapterProduction(outlinePath: string, chapterPlanPath: string, workspacePath: string, chapter: number, runTo: string) {
+export function startChapterProduction(outlinePath: string, chapterPlanPath: string, workspacePath: string, chapter: number, runTo: string, asyncTask = false) {
   return postJson("/product/production/chapter-run/start", {
     outline_path: outlinePath,
     chapter_plan_path: chapterPlanPath || null,
     workspace_path: workspacePath || null,
     chapter,
-    run_to: runTo
+    run_to: runTo,
+    async_task: asyncTask
   });
 }
 
-export function resumeChapterProduction(runPath: string, fromStep: string, runTo: string, force = false) {
+export function resumeChapterProduction(runPath: string, fromStep: string, runTo: string, force = false, asyncTask = false) {
   return postJson("/product/production/chapter-run/resume", {
     run_path: runPath,
     from_step: fromStep || null,
     run_to: runTo || null,
-    force
+    force,
+    async_task: asyncTask
   });
+}
+
+export function pauseChapterProduction(runPath: string, reason = "paused from chapter factory") {
+  return postJson("/product/production/chapter-run/pause", { run_path: runPath, reason });
+}
+
+export function cancelChapterProduction(runPath: string, reason = "cancelled from chapter factory") {
+  return postJson("/product/production/chapter-run/cancel", { run_path: runPath, reason, terminate: true, signal: "SIGTERM" });
+}
+
+export function recoverChapterProduction(runPath: string, runTo: string, asyncTask = false) {
+  return postJson("/product/production/chapter-run/recover", { run_path: runPath, run_to: runTo || null, force: true, async_task: asyncTask });
 }
 
 export function createLongFormMacroPlan(workspacePath: string, sourcePath: string, targetWordCount: number, volumeCount: number, chaptersPerVolume: number) {

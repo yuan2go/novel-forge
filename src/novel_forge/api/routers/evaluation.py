@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.evaluation_center import (
     compare_model_runs,
+    create_benchmark_task_from_generation_run,
     create_model_routing_policy,
     create_model_benchmark_task,
     create_model_profile,
@@ -33,6 +34,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ModelRoutingPolicyRequest = models["ModelRoutingPolicyRequest"]
     PromptVersionRequest = models["PromptVersionRequest"]
     PromptRegressionRequest = models["PromptRegressionRequest"]
+    BenchmarkFromGenerationRunRequest = models["BenchmarkFromGenerationRunRequest"]
 
     @router.get("/product/evaluation/assets")
     def evaluation_assets(project_id: str | None = None, limit: int = Query(default=100, ge=1, le=500)) -> list[dict[str, Any]]:
@@ -68,6 +70,21 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 prompt_template=request.prompt_template,
                 workspace_path=request.workspace_path,
             )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/evaluation/benchmark-from-generation-run")
+    def benchmark_from_generation_run_endpoint(request: BenchmarkFromGenerationRunRequest) -> dict[str, Any]:
+        try:
+            return create_benchmark_task_from_generation_run(
+                LocalStorage(app_settings.root),
+                request.generation_run_path,
+                task_type=request.task_type,
+                expected_output_type=request.expected_output_type,
+                prompt_template=request.prompt_template,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

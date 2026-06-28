@@ -59,6 +59,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 targets=[str(item) for item in data.get("targets", [])],
                 workspace_path=data.get("workspace_path"),
                 reuse_scope=str(data.get("reuse_scope") or "project"),
+                human_approved=bool(data.get("human_approved", False)),
+                approval_note=str(data.get("approval_note") or ""),
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

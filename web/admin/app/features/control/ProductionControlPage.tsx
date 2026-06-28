@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AgentRunRow, BatchItem, DeadLetter, HandoffRow, NodeRunRow, ProjectHealthReport, ProjectRow, TaskCenter, TaskControl } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { loadProductionControlData } from "./api";
+import { loadProductionControlData, runAgentBoundaryAudit } from "./api";
 
 export function ProductionControlPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
@@ -18,6 +18,8 @@ export function ProductionControlPage() {
   const [agentRuns, setAgentRuns] = useState<AgentRunRow[]>([]);
   const [projectHealth, setProjectHealth] = useState<ProjectHealthReport | null>(null);
   const [projectId, setProjectId] = useState("");
+  const [boundaryAudit, setBoundaryAudit] = useState<Record<string, unknown> | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   const failedItems = batchItems.filter((item) => item.status === "failed");
@@ -43,6 +45,20 @@ export function ProductionControlPage() {
     refresh().catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)));
   }, []);
 
+  async function auditAgentBoundaries() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await runAgentBoundaryAudit(true);
+      setBoundaryAudit((result.asset?.content as Record<string, unknown>) || result);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <FeatureShell title="生产总控中心" subtitle="任务、工作流节点、Agent、批处理 item、Handoff、dead-letter 和 worker health 的统一观测台。">
       {error ? <div className="errorLine">{error}</div> : null}
@@ -63,6 +79,7 @@ export function ProductionControlPage() {
               {projects.map((project) => <option value={project.project_id} key={project.project_id}>{project.title}</option>)}
             </select>
             <button className="secondaryButton" onClick={() => refresh()}>刷新</button>
+            <button className="primaryButton" disabled={busy} onClick={auditAgentBoundaries}>Agent 边界审计</button>
           </div>
           <div className="summaryBand">
             <Metric label="Worker" value={taskControl?.celery.healthy ? "healthy" : "offline"} />
@@ -80,6 +97,33 @@ export function ProductionControlPage() {
             <Metric label="pending handoff" value={String(projectHealth?.summary.pending_handoff_count ?? 0)} />
             <Metric label="assets" value={String(projectHealth?.summary.asset_count ?? 0)} />
           </div>
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Agent 全边界证明" icon={<CheckCircle2 size={18} />} />
+          <div className="summaryBand">
+            <Metric label="状态" value={String(boundaryAudit?.status ?? "-")} />
+            <Metric label="扫描文件" value={String((boundaryAudit?.summary as Record<string, unknown> | undefined)?.scanned_files ?? "-")} />
+            <Metric label="高风险" value={String((boundaryAudit?.summary as Record<string, unknown> | undefined)?.high_count ?? "-")} />
+            <Metric label="中风险" value={String((boundaryAudit?.summary as Record<string, unknown> | undefined)?.medium_count ?? "-")} />
+          </div>
+          <DataTable
+            emptyText="点击 Agent 边界审计后显示 findings"
+            columns={["文件", "写边界", "模型边界", "级别", "建议"]}
+            rows={((boundaryAudit?.findings as Array<Record<string, unknown>> | undefined) || []).slice(0, 20).map((finding) => [
+              String(finding.path || "-"),
+              String(finding.write_boundary_hits ?? 0),
+              String(finding.model_boundary_hits ?? 0),
+              <span className={statusClass(String(finding.severity || ""))} key={`${finding.path}-severity`}>{String(finding.severity || "-")}</span>,
+              String(finding.recommendation || "-")
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="Runtime Guard Probe" icon={<Activity size={18} />} />
+          <pre className="jsonPreview">{JSON.stringify(boundaryAudit?.runtime_guard_probe || {}, null, 2)}</pre>
         </div>
       </section>
 

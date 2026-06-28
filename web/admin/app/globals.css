@@ -616,6 +616,126 @@ th {
   grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
 }
 
+.priorityCardGrid,
+.assetDomainGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.analysisPanelGrid,
+.checklistGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.editorWorkbenchGrid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(360px, 1.5fr) minmax(240px, 0.9fr);
+  gap: 14px;
+  align-items: stretch;
+  margin-bottom: 14px;
+}
+
+.richEditorPanel {
+  min-height: 520px;
+}
+
+.richDraftEditor,
+.contextPreview {
+  width: 100%;
+  min-height: 280px;
+  resize: vertical;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fafc;
+  color: var(--text);
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+.richDraftEditor {
+  min-height: 420px;
+}
+
+.jsonPreview {
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafc;
+  color: var(--text);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.checkItem {
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+  background: #f8fafc;
+}
+
+.checkItem.ok {
+  border-color: rgba(30, 120, 70, 0.35);
+}
+
+.checkItem.warn {
+  border-color: rgba(170, 80, 40, 0.45);
+}
+
+.checkItem strong,
+.checkItem span,
+.checkItem small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.decisionCard,
+.domainPanel {
+  min-width: 0;
+}
+
+.decisionCard {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.decisionCard strong,
+.decisionCard small,
+.decisionCard span {
+  overflow-wrap: anywhere;
+}
+
+.wizardSteps,
+.tagCloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wizardSteps span {
+  padding: 7px 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
 .splitGrid {
   grid-template-columns: minmax(0, 1.3fr) minmax(360px, 0.7fr);
 }
@@ -1682,6 +1802,11 @@ pre {
   }
 
   .summaryBand,
+  .priorityCardGrid,
+  .assetDomainGrid,
+  .analysisPanelGrid,
+  .checklistGrid,
+  .editorWorkbenchGrid,
   .manuscriptGrid,
   .manuscriptEvidenceGrid,
   .manuscriptSummary,

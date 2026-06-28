@@ -22,6 +22,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
             expected = {
                 "/product/projects",
+                "/product/projects/operating-dashboard",
                 "/product/tasks",
                 "/product/tasks/timeline",
                 "/product/workflow/node-runs",
@@ -30,8 +31,10 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/agents/runs",
                 "/product/agents/events",
                 "/product/agents/contracts",
+                "/product/agents/boundary-audit",
                 "/product/agents/sla",
                 "/product/agents/rollback",
+                "/product/agents/executor/run-once",
                 "/product/assets/detail",
                 "/product/manuscript/workbench",
                 "/product/libraries/creative",
@@ -44,6 +47,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/context/assets",
                 "/product/context/build-plan",
                 "/product/context/bundle",
+                "/product/context/diff",
                 "/product/continuity/graph",
                 "/product/continuity/graph-snapshot",
                 "/product/continuity/canon-snapshot",
@@ -57,6 +61,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/evaluation/assets",
                 "/product/evaluation/model-profile",
                 "/product/evaluation/benchmark-task",
+                "/product/evaluation/benchmark-from-generation-run",
                 "/product/evaluation/benchmark-run",
                 "/product/evaluation/benchmark-batch",
                 "/product/evaluation/compare",
@@ -84,6 +89,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/production/chapter-run/pause",
                 "/product/production/chapter-run/cancel",
                 "/product/production/chapter-run/recover",
+                "/product/production/invalidate-downstream",
                 "/product/production/outline-version",
                 "/product/production/chapter-plan-version",
                 "/product/production/draft-version",
@@ -104,6 +110,8 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/publishing/adapters",
                 "/product/publishing/adapter-release",
                 "/product/system/health",
+                "/product/system/module-completion",
+                "/product/system/module-completion/snapshot",
                 "/product/system/operation-reports",
                 "/product/system/failure-drill",
                 "/product/system/long-chain-acceptance",
@@ -116,6 +124,9 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(client.get("/product/projects").status_code, 200)
             self.assertEqual(client.get("/product/tasks").status_code, 200)
             self.assertEqual(client.get("/product/system/health").status_code, 200)
+            completion = client.get("/product/system/module-completion")
+            self.assertEqual(completion.status_code, 200, completion.text)
+            self.assertGreaterEqual(completion.json()["summary"]["module_count"], 8)
             self.assertEqual(client.get("/product/libraries/creative").status_code, 200)
             self.assertEqual(client.get("/product/feedback/assets").status_code, 200)
             self.assertEqual(client.get("/product/metrics/snapshots").status_code, 200)
@@ -222,6 +233,16 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(context_plan.status_code, 200, context_plan.text)
             context_bundle = client.post("/product/context/bundle", json={"build_plan_path": context_plan.json()["path"]})
             self.assertEqual(context_bundle.status_code, 200, context_bundle.text)
+            context_bundle_2 = client.post(
+                "/product/context/bundle",
+                json={"build_plan_path": context_plan.json()["path"], "final_confirmed": True},
+            )
+            self.assertEqual(context_bundle_2.status_code, 200, context_bundle_2.text)
+            context_diff = client.post(
+                "/product/context/diff",
+                json={"left_path": context_bundle.json()["path"], "right_path": context_bundle_2.json()["path"]},
+            )
+            self.assertEqual(context_diff.status_code, 200, context_diff.text)
             self.assertEqual(client.get(f"/product/context/assets?project_id={project.json()['project_id']}").status_code, 200)
             outline_version = client.post("/product/production/outline-version", json={"outline_path": str(outline_path.relative_to(storage.root))})
             self.assertEqual(outline_version.status_code, 200, outline_version.text)
@@ -274,6 +295,11 @@ class ProductApiRouterTests(unittest.TestCase):
                 json={"input_path": chapter_plan_ref, "context_bundle_path": context_bundle.json()["path"], "output_path": draft_ref},
             )
             self.assertEqual(generation_run.status_code, 200, generation_run.text)
+            benchmark_from_generation = client.post(
+                "/product/evaluation/benchmark-from-generation-run",
+                json={"generation_run_path": generation_run.json()["path"]},
+            )
+            self.assertEqual(benchmark_from_generation.status_code, 200, benchmark_from_generation.text)
             manuscript = client.get(
                 f"/product/manuscript/workbench?project_id={project.json()['project_id']}&draft_path={draft_ref}"
             )

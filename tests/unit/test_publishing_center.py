@@ -57,6 +57,8 @@ class PublishingCenterTests(unittest.TestCase):
             self.assertEqual(package.type, "release_package")
             self.assertTrue(package.content["release_version"])
             self.assertEqual(package.content["platform_rules"]["target_platform"], "local_serial")
+            self.assertTrue(package.content["metadata_optimization"]["title_candidates"])
+            self.assertIn("cover_asset", package.content)
 
             plan = create_publishing_plan(
                 storage,
@@ -78,10 +80,12 @@ class PublishingCenterTests(unittest.TestCase):
                 external_url="https://local.example/chapter-1",
             )
             self.assertTrue(storage.read_asset(log["path"]).content["rollback_plan"]["available"])
+            self.assertIn("platform_feedback", storage.read_asset(log["path"]).content)
 
             rows = list_publishing_assets(storage, project_id="project_publish")
             by_type = {row["type"]: row for row in rows}
             self.assertEqual(by_type["release_package"]["release_version"], package.content["release_version"])
+            self.assertTrue(by_type["release_package"]["metadata_optimization"])
             self.assertEqual(by_type["publishing_plan"]["next_scheduled_at"], "2026-07-01")
             self.assertTrue(by_type["publishing_log"]["rollback_available"])
 

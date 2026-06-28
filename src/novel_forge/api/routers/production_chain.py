@@ -18,6 +18,7 @@ from novel_forge.modules.chapter_production_bus import (
     start_chapter_production,
 )
 from novel_forge.modules.long_planning import create_long_form_macro_plan, list_long_form_macro_plans
+from novel_forge.modules.change_impact import mark_downstream_assets_stale
 from novel_forge.modules.production_chain import (
     create_chapter_plan_version,
     create_draft_version,
@@ -41,6 +42,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ChapterProductionResumeRequest = models["ChapterProductionResumeRequest"]
     ChapterProductionControlRequest = models["ChapterProductionControlRequest"]
     ChapterProductionRecoverRequest = models["ChapterProductionRecoverRequest"]
+    ProductionInvalidateRequest = models["ProductionInvalidateRequest"]
     LongFormMacroPlanRequest = models["LongFormMacroPlanRequest"]
 
     @router.get("/product/production/versions")
@@ -202,6 +204,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 request.run_path,
                 run_to=request.run_to,
                 force=request.force,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/production/invalidate-downstream")
+    def invalidate_downstream_endpoint(request: ProductionInvalidateRequest) -> dict[str, Any]:
+        try:
+            return mark_downstream_assets_stale(
+                LocalStorage(app_settings.root),
+                request.target_path,
+                max_depth=request.max_depth,
+                project_id=request.project_id,
+                reason=request.reason,
+                apply=request.apply,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

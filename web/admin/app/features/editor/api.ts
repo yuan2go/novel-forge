@@ -7,6 +7,18 @@ export type EditorArtifactRow = FeatureAssetRow & {
   summary?: Record<string, unknown>;
 };
 
+export type DraftEditorState = {
+  path: string;
+  id: string;
+  title: string;
+  chapter?: number | string;
+  text: string;
+  version_index?: number;
+  root_draft_id?: string;
+  status?: string;
+  updated_at?: string;
+};
+
 export function loadEditorData(projectId?: string) {
   return Promise.all([
     fetchJson<ProjectRow[]>("/product/projects"),
@@ -35,4 +47,8 @@ export function applyEditorPatch(patchPath: string, operationIds: string[] = [])
 
 export function createDraftDiffReport(basePath: string, targetPath: string) {
   return postJson("/product/editor/diff-report", { base_path: basePath, target_path: targetPath });
+}
+
+export function loadDraftEditor(path: string) {
+  return fetchJson<DraftEditorState>(`/product/drafts/editor?path=${encodeURIComponent(path)}`);
 }

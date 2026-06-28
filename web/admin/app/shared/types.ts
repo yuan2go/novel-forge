@@ -17,6 +17,54 @@ export type ProjectRow = {
   project_config?: Record<string, unknown>;
 };
 
+export type ProjectOperatingRow = {
+  project_id: string;
+  path: string;
+  title: string;
+  status: string;
+  series_title?: string;
+  chapter_count: number;
+  asset_count: number;
+  draft_count: number;
+  review_count: number;
+  profile_binding_count: number;
+  profile_binding_total: number;
+  missing_profiles: string[];
+  risk_score: number;
+  momentum_score: number;
+  investment_score: number;
+  open_issue_count: number;
+  failed_task_count: number;
+  pending_handoff_count: number;
+  bottleneck: { severity: string; kind: string; label: string; suggestion: string };
+  today_action: { action: string; label: string; href: string; reason: string };
+  today_priority_rank: number;
+  updated_at?: string;
+};
+
+export type ProjectOperatingDashboard = {
+  summary: {
+    project_count: number;
+    active_project_count: number;
+    high_risk_project_count: number;
+    blocked_project_count: number;
+    average_investment_score: number;
+  };
+  projects: ProjectOperatingRow[];
+  today_priorities: Array<{
+    project_id: string;
+    title: string;
+    action: string;
+    label: string;
+    reason: string;
+    href: string;
+    risk_score: number;
+    investment_score: number;
+    bottleneck: string;
+  }>;
+  bottlenecks: Array<{ project_id: string; title: string; severity: string; kind: string; label: string; suggestion: string }>;
+};
+
 export type AssetRow = {
   path: string;
   id?: string;
@@ -43,6 +91,12 @@ export type AssetRow = {
   platform_targets?: Array<Record<string, unknown>>;
   platform_rules?: Record<string, unknown>;
   gate_policy?: Record<string, unknown>;
+  metadata_optimization?: Record<string, unknown>;
+  cover_asset?: Record<string, unknown>;
+  platform_feedback?: Record<string, unknown>;
+  risk_explanations?: Array<Record<string, unknown>>;
+  remediation_plan?: Array<Record<string, unknown>>;
+  structure_similarity_matrix?: Array<Record<string, unknown>>;
   rollback_available?: boolean;
   release_package_path?: string;
   scheduled_at?: string;
@@ -113,12 +167,39 @@ export type FeatureAssetRow = {
   score?: number;
   risk_level?: string;
   status?: string;
+  asset_status?: string;
   recommendation?: string;
   updated_at?: string;
   summary?: string;
   tags?: string[];
   content?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
+};
+
+export type ModuleCompletionReport = {
+  snapshot_kind: string;
+  project_id?: string;
+  summary: {
+    module_count: number;
+    completed_count: number;
+    partial_count: number;
+    average_completion: number;
+    blocking_count: number;
+  };
+  modules: Array<{
+    key: string;
+    name: string;
+    status: string;
+    completion_percent: number;
+    code_score: number;
+    runtime_asset_score: number;
+    runtime_asset_counts: Record<string, number>;
+    implemented: string[];
+    remaining: string[];
+    evidence_files: Array<{ path: string; exists: boolean }>;
+    acceptance: string;
+  }>;
+  generated_at: string;
 };
 
 export type TaskRow = {

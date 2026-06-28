@@ -6,6 +6,13 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import utc_now
+from novel_forge.model_adapters import (
+    GuardedModelAdapter,
+    ModelOutputValidationError,
+    model_from_env,
+    validate_model_output,
+)
+from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.creative_assets import create_creative_asset
 from novel_forge.modules.handoff.service import create_analysis_handoff as _create_analysis_handoff
@@ -67,26 +74,51 @@ def run_analysis(
     report_type = _normalize_analysis_type(analysis_type)
     project = project_scope_from_asset(storage, source_asset, input_path=source_path_obj, workspace_path=workspace_path)
     metrics = _source_metrics(source_asset)
-    content = _report_content(report_type, source_asset, metrics)
-    metadata = _analysis_metadata(storage, report_type, source_asset, project, source_path_obj)
-    references = _analysis_references(storage, source_path_obj, source_asset, project)
-    cls = _REPORT_CLASS_BY_TYPE[report_type]
-    asset = cls(
-        title=f"{source_asset.title or source_asset.name or source_asset.id} - {_REPORT_LABEL_BY_TYPE[report_type]}",
-        source=source_asset.id,
-        tags=["analysis", report_type.replace("_", "-"), "abstract-only"],
-        content=content,
-        metadata=metadata,
-        references=references,
-    )
-    _validate_asset(asset)
-    path = storage.write_asset_auto(asset)
-    return {
-        "path": _relative_path(storage, path),
-        "asset": asset.to_dict(),
-        "metrics": metrics,
-        "report_type": report_type,
-    }
+    model = model_from_env("analyze")
+    with AgentExecutionContext(
+        storage,
+        agent_key="analysis",
+        operation=f"run-{report_type}",
+        input_assets=[source_path_obj],
+        output_types=[report_type],
+        workspace_path=str(project.get("workspace_path", "")),
+        model_provider=getattr(model, "name", "local"),
+        model_name=getattr(model, "name", "local"),
+        prompt_version=f"{report_type}-rubric-v2",
+        token_budget=4000,
+        sla_seconds=900,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("call_model_adapter")
+        semantic_depth = _semantic_depth_assessment(storage, run.path, report_type, source_asset, metrics, model)
+        content = _report_content(report_type, source_asset, metrics)
+        content.update(semantic_depth)
+        metadata = _analysis_metadata(storage, report_type, source_asset, project, source_path_obj)
+        metadata["agent_run_path"] = run.path
+        metadata["semantic_depth_version"] = "analysis-rubric-v2"
+        metadata["semantic_provider"] = semantic_depth.get("provider_review", {}).get("provider", "")
+        metadata["semantic_model"] = semantic_depth.get("provider_review", {}).get("model", "")
+        references = _analysis_references(storage, source_path_obj, source_asset, project)
+        cls = _REPORT_CLASS_BY_TYPE[report_type]
+        asset = cls(
+            title=f"{source_asset.title or source_asset.name or source_asset.id} - {_REPORT_LABEL_BY_TYPE[report_type]}",
+            source=source_asset.id,
+            tags=["analysis", report_type.replace("_", "-"), "abstract-only", "semantic-rubric"],
+            content=content,
+            metadata=metadata,
+            references=references,
+        )
+        _validate_asset(asset)
+        run.guard("write_analysis_report", report_type)
+        path = storage.write_asset_auto(asset)
+        result = {
+            "path": _relative_path(storage, path),
+            "asset": asset.to_dict(),
+            "metrics": metrics,
+            "report_type": report_type,
+        }
+        run.succeed(output_assets=[result["path"]], token_used=len(_asset_text(source_asset)))
+        return result
 
 
 def convert_analysis_report(
@@ -96,6 +128,8 @@ def convert_analysis_report(
     targets: list[str] | None = None,
     workspace_path: str | None = None,
     reuse_scope: str = "project",
+    human_approved: bool = False,
+    approval_note: str = "",
 ) -> dict[str, Any]:
     report_file = resolve_path(storage.root, report_path)
     report_asset = storage.read_asset(report_file)
@@ -116,7 +150,16 @@ def convert_analysis_report(
                 }
             )
             continue
-        created = _create_converted_asset(storage, report_asset, report_file, project, target, reuse_scope=reuse_scope)
+        created = _create_converted_asset(
+            storage,
+            report_asset,
+            report_file,
+            project,
+            target,
+            reuse_scope=reuse_scope,
+            human_approved=human_approved,
+            approval_note=approval_note,
+        )
         created_assets.append(
             {
                 "type": target,
@@ -136,11 +179,17 @@ def convert_analysis_report(
         "copyright_risk": copyright_risk,
         "abstraction_level": "template" if created_assets else "abstract",
         "conversion_policy": "analysis reports are not inserted into generation RAG; only abstract converted assets may be selected later",
+        "human_gate": {
+            "required": True,
+            "status": "approved" if human_approved else "waiting_human",
+            "approval_note": approval_note,
+            "policy": "converted analysis assets cannot enter production RAG or review rule gates until a human approves the abstraction boundary",
+        },
     }
     metadata = {
         "project_id": str(project.get("project_id", "")),
         "workspace_path": str(project.get("workspace_path", "")),
-        "asset_status": "active" if created_assets else "needs_review",
+        "asset_status": "active" if created_assets and human_approved else "needs_human_gate",
         "created_by": "analysis_conversion_service",
         "created_at": utc_now(),
         "source_report_path": _relative_path(storage, report_file),
@@ -149,6 +198,9 @@ def convert_analysis_report(
         "risk_level": copyright_risk,
         "abstraction_level": content["abstraction_level"],
         "use_in_generation_rag": False,
+        "human_gate_required": True,
+        "human_gate_status": "approved" if human_approved else "waiting_human",
+        "approval_note": approval_note,
     }
     asset = AnalysisConversionReport(
         title=f"Analysis conversion - {report_asset.title or report_asset.name}",
@@ -222,7 +274,17 @@ def list_analysis_reports(
                 "copyright_risk": metadata.get("copyright_risk", content.get("copyright_risk", "unknown")),
                 "abstraction_level": metadata.get("abstraction_level", content.get("abstraction_level", "")),
                 "use_in_generation_rag": metadata.get("use_in_generation_rag", False),
+                "status": metadata.get("asset_status", ""),
+                "asset_status": metadata.get("asset_status", ""),
+                "human_gate_status": metadata.get(
+                    "human_gate_status",
+                    content.get("human_gate", {}).get("status", "") if isinstance(content.get("human_gate", {}), dict) else "",
+                ),
                 "created_assets": len(content.get("created_assets", []) if isinstance(content.get("created_assets"), list) else []),
+                "semantic_depth": content.get("semantic_depth", {}),
+                "provider_review": content.get("provider_review", {}),
+                "visualization": content.get("visualization", {}),
+                "mode_specific_panels": content.get("mode_specific_panels", []),
                 "updated_at": data.get("updated_at", ""),
                 "summary": _report_preview(content),
             }
@@ -387,6 +449,221 @@ def _report_content(report_type: str, asset: BaseAsset, metrics: dict[str, Any])
     raise ValueError(f"unsupported report_type: {report_type}")
 
 
+def _semantic_depth_assessment(
+    storage: LocalStorage,
+    agent_run_path: str,
+    report_type: str,
+    asset: BaseAsset,
+    metrics: dict[str, Any],
+    model: Any,
+) -> dict[str, Any]:
+    rubric = _mode_rubric(report_type)
+    source_text = _asset_text(asset)
+    prompt = (
+        "Score this reference work for Novel Forge abstract analysis. "
+        "Return a schema-valid analyze response; do not copy protected expression."
+    )
+    provider_review: dict[str, Any]
+    fallback_reason = ""
+    try:
+        guarded = GuardedModelAdapter(model, storage, agent_run_path)
+        raw = guarded.analyze(
+            prompt,
+            {
+                "analysis_type": report_type,
+                "rubric": rubric,
+                "source_metrics": metrics,
+                "source_excerpt_for_analysis_only": source_text[:4000],
+                "copyright_boundary": "abstract structures only; no source-specific prose, names, scenes, or event sequence may be reused",
+            },
+        )
+        validated = validate_model_output("analyze", raw)
+        provider_review = {
+            "provider": str(raw.get("provider") or raw.get("model") or getattr(model, "name", "local")),
+            "model": str(raw.get("model") or getattr(model, "name", "local")),
+            "status": "provider_validated",
+            "summary": validated.get("summary", ""),
+            "patterns": validated.get("patterns", []),
+            "word_count": validated.get("word_count", 0),
+        }
+    except (ModelOutputValidationError, RuntimeError, ValueError) as exc:
+        fallback_reason = str(exc)
+        provider_review = {
+            "provider": "local-rubric",
+            "model": "deterministic-analysis-rubric",
+            "status": "fallback",
+            "summary": _report_preview(_report_content(report_type, asset, metrics)),
+            "patterns": _common_findings(metrics),
+            "word_count": len(source_text.split()),
+            "fallback_reason": fallback_reason,
+        }
+    rubric_scores = _rubric_scores(report_type, metrics, provider_review)
+    visual = _mode_visualization(report_type, metrics, rubric_scores, provider_review)
+    return {
+        "semantic_depth": {
+            "rubric_version": "analysis-rubric-v2",
+            "overall_score": _weighted_score(rubric_scores),
+            "rubric_scores": rubric_scores,
+            "mode": report_type,
+            "evidence": _semantic_evidence(report_type, metrics, provider_review),
+            "provider_status": provider_review.get("status", ""),
+            "fallback_reason": fallback_reason,
+        },
+        "provider_review": provider_review,
+        "visualization": visual,
+        "mode_specific_panels": _mode_panels(report_type, visual, rubric_scores),
+    }
+
+
+def _mode_rubric(report_type: str) -> dict[str, float]:
+    if report_type == "web_fiction_business_analysis_report":
+        return {"reader_promise": 0.25, "hook_system": 0.25, "payoff_loop": 0.2, "serialization_fit": 0.2, "abstraction_safety": 0.1}
+    if report_type == "published_fiction_analysis_report":
+        return {"scene_craft": 0.25, "subtext": 0.2, "character_arc": 0.2, "narrative_distance": 0.2, "abstraction_safety": 0.15}
+    if report_type == "classic_literary_analysis_report":
+        return {"theme_depth": 0.25, "symbol_system": 0.2, "psychological_pressure": 0.2, "social_relation_graph": 0.2, "abstraction_safety": 0.15}
+    return {"structure": 0.25, "character_pressure": 0.2, "conflict_engine": 0.2, "theme": 0.2, "abstraction_safety": 0.15}
+
+
+def _rubric_scores(report_type: str, metrics: dict[str, Any], provider_review: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    rubric = _mode_rubric(report_type)
+    patterns = [str(item).lower() for item in provider_review.get("patterns", []) if str(item).strip()]
+    pattern_text = " ".join(patterns)
+    hook = min(100, 45 + int(metrics.get("hook_signal_count", 0)) * 5 + int(metrics.get("chapter_markers", 0)) * 3)
+    dialogue = min(100, 45 + int(metrics.get("dialogue_marker_count", 0)) * 4)
+    keyword = min(100, 50 + len(metrics.get("top_keywords", []) or []) * 4)
+    abstraction = 95 if _source_risk(provider_review if isinstance(provider_review, BaseAsset) else BaseAsset(id="provider", type="provider", content={}, metadata={"risk_level": "low"})) else 90
+    base_by_dimension = {
+        "reader_promise": hook,
+        "hook_system": hook,
+        "payoff_loop": 78 if "hook" in pattern_text or "conflict" in pattern_text else 66,
+        "serialization_fit": min(100, hook + 8),
+        "scene_craft": min(100, dialogue + 10),
+        "subtext": 76 if any(token in pattern_text for token in ["subtext", "hidden", "avoid"]) else 62,
+        "character_arc": 78 if any(token in pattern_text for token in ["character", "conflict", "pressure"]) else 66,
+        "narrative_distance": min(100, int(100 - min(abs(float(metrics.get("avg_sentence_length", 0)) - 80), 60) * 0.4)),
+        "theme_depth": keyword,
+        "symbol_system": 76 if any(token in pattern_text for token in ["symbol", "recurring", "threshold"]) else 62,
+        "psychological_pressure": 78 if any(token in pattern_text for token in ["pressure", "desire", "fear"]) else 64,
+        "social_relation_graph": 76 if any(token in pattern_text for token in ["social", "authority", "family", "community"]) else 63,
+        "structure": min(100, 55 + int(metrics.get("chapter_markers", 0)) * 8),
+        "character_pressure": 76 if any(token in pattern_text for token in ["character", "pressure"]) else 64,
+        "conflict_engine": 80 if any(token in pattern_text for token in ["conflict", "escalat"]) else 66,
+        "theme": keyword,
+        "abstraction_safety": abstraction,
+    }
+    results: dict[str, dict[str, Any]] = {}
+    for dimension, weight in rubric.items():
+        score = int(max(0, min(100, base_by_dimension.get(dimension, 70))))
+        results[dimension] = {
+            "score": score,
+            "weight": weight,
+            "evidence": _score_evidence(dimension, metrics, provider_review),
+            "recommendation": _score_recommendation(dimension, score),
+        }
+    return results
+
+
+def _mode_visualization(
+    report_type: str,
+    metrics: dict[str, Any],
+    rubric_scores: dict[str, dict[str, Any]],
+    provider_review: dict[str, Any],
+) -> dict[str, Any]:
+    score_points = [{"label": key, "score": value.get("score", 0), "weight": value.get("weight", 0)} for key, value in rubric_scores.items()]
+    if report_type == "web_fiction_business_analysis_report":
+        return {
+            "kind": "retention_pipeline",
+            "score_points": score_points,
+            "timeline": [
+                {"stage": "opening_promise", "signal": metrics.get("top_keywords", [])[:3], "score": rubric_scores.get("reader_promise", {}).get("score", 0)},
+                {"stage": "pressure_loop", "signal": metrics.get("hook_signal_count", 0), "score": rubric_scores.get("hook_system", {}).get("score", 0)},
+                {"stage": "payoff_reset", "signal": provider_review.get("patterns", [])[:3], "score": rubric_scores.get("payoff_loop", {}).get("score", 0)},
+            ],
+        }
+    if report_type == "published_fiction_analysis_report":
+        return {
+            "kind": "craft_radar",
+            "score_points": score_points,
+            "scene_units": ["objective", "obstacle", "turn", "after-effect"],
+            "diagnostics": {"avg_sentence_length": metrics.get("avg_sentence_length", 0), "dialogue_markers": metrics.get("dialogue_marker_count", 0)},
+        }
+    if report_type == "classic_literary_analysis_report":
+        return {
+            "kind": "theme_symbol_graph",
+            "score_points": score_points,
+            "nodes": [
+                {"id": "theme", "label": "主题", "weight": rubric_scores.get("theme_depth", {}).get("score", 0)},
+                {"id": "symbol", "label": "象征", "weight": rubric_scores.get("symbol_system", {}).get("score", 0)},
+                {"id": "psychology", "label": "心理压力", "weight": rubric_scores.get("psychological_pressure", {}).get("score", 0)},
+                {"id": "society", "label": "社会关系", "weight": rubric_scores.get("social_relation_graph", {}).get("score", 0)},
+            ],
+            "edges": [
+                {"from": "theme", "to": "symbol", "relation": "expressed_by"},
+                {"from": "psychology", "to": "society", "relation": "pressured_by"},
+                {"from": "theme", "to": "psychology", "relation": "internalized_as"},
+            ],
+        }
+    return {"kind": "narrative_map", "score_points": score_points, "keywords": metrics.get("top_keywords", [])}
+
+
+def _mode_panels(report_type: str, visual: dict[str, Any], rubric_scores: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    labels = {
+        "web_fiction_business_analysis_report": ["读者承诺", "爽点回路", "章节钩子", "平台节奏"],
+        "published_fiction_analysis_report": ["场景技法", "潜台词", "人物弧光", "叙事距离"],
+        "classic_literary_analysis_report": ["主题系统", "象征系统", "心理压力", "社会关系"],
+        "common_novel_analysis_report": ["结构", "人物压力", "冲突引擎", "主题"],
+    }.get(report_type, ["结构", "人物", "冲突", "主题"])
+    score_values = list(rubric_scores.values())
+    return [
+        {
+            "title": label,
+            "score": score_values[index % len(score_values)].get("score", 0) if score_values else 0,
+            "visual_kind": visual.get("kind", ""),
+            "recommendation": score_values[index % len(score_values)].get("recommendation", "") if score_values else "",
+        }
+        for index, label in enumerate(labels)
+    ]
+
+
+def _semantic_evidence(report_type: str, metrics: dict[str, Any], provider_review: dict[str, Any]) -> list[str]:
+    return _dedupe(
+        [
+            f"mode={report_type}",
+            f"hook_signals={metrics.get('hook_signal_count', 0)}",
+            f"chapter_markers={metrics.get('chapter_markers', 0)}",
+            f"keywords={', '.join([str(item) for item in metrics.get('top_keywords', [])[:5]])}",
+            f"provider_status={provider_review.get('status', '')}",
+        ]
+    )
+
+
+def _weighted_score(scores: dict[str, dict[str, Any]]) -> int:
+    total = 0.0
+    weight = 0.0
+    for item in scores.values():
+        total += float(item.get("score", 0)) * float(item.get("weight", 0))
+        weight += float(item.get("weight", 0))
+    return int(round(total / max(weight, 0.01)))
+
+
+def _score_evidence(dimension: str, metrics: dict[str, Any], provider_review: dict[str, Any]) -> list[str]:
+    return [
+        f"dimension={dimension}",
+        f"hook_signal_count={metrics.get('hook_signal_count', 0)}",
+        f"dialogue_marker_count={metrics.get('dialogue_marker_count', 0)}",
+        f"provider_patterns={', '.join([str(item) for item in provider_review.get('patterns', [])[:3]])}",
+    ]
+
+
+def _score_recommendation(dimension: str, score: int) -> str:
+    if score >= 85:
+        return f"{dimension} is strong enough to convert into reusable abstract assets."
+    if score >= 70:
+        return f"{dimension} is usable but should be reviewed before becoming a production template."
+    return f"{dimension} is weak; run Claude Code handoff or manual analysis before conversion."
+
+
 def _analysis_metadata(storage: LocalStorage, report_type: str, asset: BaseAsset, project: dict[str, Any], source_path: Path) -> dict[str, Any]:
     source_risk = _source_risk(asset)
     return {
@@ -428,11 +705,19 @@ def _create_converted_asset(
     target: str,
     *,
     reuse_scope: str,
+    human_approved: bool,
+    approval_note: str,
 ) -> dict[str, Any]:
     project_id = str(project.get("project_id", ""))
     workspace_path = str(project.get("workspace_path", ""))
     report_content = report.content if isinstance(report.content, dict) else {}
     title = f"{_converted_title_prefix(target)} from {report.title or report.name}"
+    copyright_risk = _risk_from_report(report)
+    generation_allowed = (
+        human_approved
+        and copyright_risk != "high"
+        and target in {"material_card", "knowledge_card", "writing_template", "craft_template", "review_rule_pack"}
+    )
     metadata = {
         "project_id": project_id,
         "workspace_path": workspace_path,
@@ -440,11 +725,16 @@ def _create_converted_asset(
         "source_analysis_report_type": report.type,
         "source_analysis_report_path": _relative_path(storage, report_file),
         "reuse_scope": reuse_scope,
-        "copyright_risk": _risk_from_report(report),
-        "risk_level": _risk_from_report(report),
+        "copyright_risk": copyright_risk,
+        "risk_level": copyright_risk,
         "abstraction_level": "template" if target in {"writing_template", "craft_template", "review_rule_pack"} else "mechanism",
         "copyright_boundary": "abstracted from analysis report; no protected text, names, settings, or plot sequence copied",
-        "use_in_generation_rag": target in {"material_card", "knowledge_card", "writing_template", "craft_template", "review_rule_pack"},
+        "use_in_generation_rag": generation_allowed,
+        "asset_status": "active" if human_approved else "needs_human_gate",
+        "human_gate_required": True,
+        "human_gate_status": "approved" if human_approved else "waiting_human",
+        "approval_note": approval_note,
+        "review_rule_gate_status": "approved" if human_approved else "waiting_human",
         "created_by": "analysis_conversion_service",
     }
     return create_creative_asset(

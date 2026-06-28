@@ -3,8 +3,8 @@
 import { Activity, Archive, Database, RefreshCw, RotateCcw, Search, UploadCloud, Workflow } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
-import type { BackupRow, FeatureAssetRow, MinioStatus, ProjectHealthReport, ProjectRow, QdrantSearchResult } from "../../shared/types";
-import { DataTable, Metric, PanelHeader } from "../../shared/ui";
+import type { BackupRow, FeatureAssetRow, MinioStatus, ModuleCompletionReport, ProjectHealthReport, ProjectRow, QdrantSearchResult } from "../../shared/types";
+import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import { archiveEvents, createBackup, loadHealthData, qdrantSearch, rebuildQdrantIndex, restoreBackup, runFailureDrill, runLongChainAcceptance, syncMinio } from "./api";
 
 export function HealthCenterPage() {
@@ -13,6 +13,7 @@ export function HealthCenterPage() {
   const [backups, setBackups] = useState<BackupRow[]>([]);
   const [minioStatus, setMinioStatus] = useState<MinioStatus | null>(null);
   const [operationReports, setOperationReports] = useState<FeatureAssetRow[]>([]);
+  const [moduleCompletion, setModuleCompletion] = useState<ModuleCompletionReport | null>(null);
   const [qdrantResult, setQdrantResult] = useState<QdrantSearchResult | null>(null);
   const [projectId, setProjectId] = useState("");
   const [restorePath, setRestorePath] = useState("");
@@ -22,12 +23,13 @@ export function HealthCenterPage() {
   const [error, setError] = useState("");
 
   async function refresh(nextProjectId = projectId) {
-    const [projectRows, healthReport, backupRows, objectStatus, opsRows] = await loadHealthData(nextProjectId);
+    const [projectRows, healthReport, backupRows, objectStatus, opsRows, completionReport] = await loadHealthData(nextProjectId);
     setProjects(projectRows);
     setReport(healthReport);
     setBackups(backupRows);
     setMinioStatus(objectStatus);
     setOperationReports(opsRows);
+    setModuleCompletion(completionReport);
     setProjectId(nextProjectId || projectRows[0]?.project_id || "");
   }
 
@@ -61,6 +63,7 @@ export function HealthCenterPage() {
         <Metric label="待处理 Handoff" value={String(report?.summary.pending_handoff_count ?? 0)} />
         <Metric label="资产" value={String(report?.summary.asset_count ?? 0)} />
         <Metric label="演练报告" value={String(operationReports.length)} />
+        <Metric label="模块完成度" value={`${moduleCompletion?.summary.average_completion ?? 0}%`} />
       </section>
 
       <section className="panel">
@@ -102,6 +105,29 @@ export function HealthCenterPage() {
             检索
           </button>
         </div>
+      </section>
+
+      <section className="panel">
+        <PanelHeader title="V6/V7 模块完成度" icon={<Activity size={18} />} />
+        <section className="summaryBand manuscriptSummary compactBand">
+          <Metric label="模块数" value={String(moduleCompletion?.summary.module_count ?? 0)} />
+          <Metric label="完整闭环" value={String(moduleCompletion?.summary.completed_count ?? 0)} />
+          <Metric label="部分闭环" value={String(moduleCompletion?.summary.partial_count ?? 0)} />
+          <Metric label="阻塞项" value={String(moduleCompletion?.summary.blocking_count ?? 0)} />
+        </section>
+        <DataTable
+          emptyText="暂无模块完成度报告"
+          columns={["模块", "状态", "完成度", "代码证据", "运行资产", "剩余缺口", "验收判断"]}
+          rows={(moduleCompletion?.modules ?? []).map((module) => [
+            module.name,
+            <span className={statusClass(module.status)} key={`${module.key}-status`}>{module.status}</span>,
+            `${module.completion_percent}%`,
+            `${module.code_score}%`,
+            `${module.runtime_asset_score}%`,
+            module.remaining.slice(0, 2).join(" / ") || "-",
+            module.acceptance
+          ])}
+        />
       </section>
 
       <section className="workspaceGrid">

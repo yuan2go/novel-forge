@@ -44,6 +44,8 @@ def create_originality_report(
             risk_scores["source_license_risk"],
         ]
     )
+    risk_explanations = _originality_risk_explanations(checks, skeleton_checks, role_checks, forbidden_hits, risk_scores, library_scan)
+    remediation_plan = _originality_remediation_plan(risk_level, risk_explanations)
     recommendation = "pass"
     if risk_level == "medium":
         recommendation = "revise_before_publish"
@@ -59,6 +61,7 @@ def create_originality_report(
             "similarity_checks": checks,
             "plot_skeleton_checks": skeleton_checks,
             "role_configuration_checks": role_checks,
+            "structure_similarity_matrix": _structure_similarity_matrix(checks, skeleton_checks, role_checks),
             "forbidden_element_hits": forbidden_hits,
             "reference_library_scan": {
                 "scanned_count": library_scan["scanned_count"],
@@ -72,6 +75,8 @@ def create_originality_report(
             "character_setup_risk": risk_scores["character_setup_risk"],
             "style_expression_risk": risk_scores["style_expression_risk"],
             "source_license_risk": risk_scores["source_license_risk"],
+            "risk_explanations": risk_explanations,
+            "remediation_plan": remediation_plan,
             "risk_level": risk_level,
             "recommendation": recommendation,
             "human_gate_required": risk_level in {"medium", "high"},
@@ -291,6 +296,14 @@ def create_release_package(
             "title_candidates": _title_candidates(target.title, context),
             "summary": _summary(text),
             "tags": _release_tags(context, target),
+            "metadata_optimization": _publishing_metadata_optimization(target.title, text, context),
+            "cover_asset": _cover_asset_requirements(context, channel or "local"),
+            "platform_review_feedback": {
+                "status": "not_submitted",
+                "feedback_source": "manual_or_webhook_adapter",
+                "feedback_items": [],
+                "回流说明": "平台审核反馈进入 publishing_log 后，再回流到审稿规则、章节计划和发布策略。",
+            },
             "channel": channel or "local",
             "status": status,
             "draft_path": _display_path(storage.root, path),
@@ -353,7 +366,7 @@ def _candidate_source_assets(storage: LocalStorage, target: dict[str, Any], cont
     return _dedupe_assets(results)
 
 
-def _reference_library_scan(storage: LocalStorage, target: dict[str, Any], context: dict[str, Any], *, limit: int = 120) -> dict[str, Any]:
+def _reference_library_scan(storage: LocalStorage, target: dict[str, Any], context: dict[str, Any], *, limit: int = 500) -> dict[str, Any]:
     project_id = str(context.get("project", {}).get("project_id", "") if isinstance(context.get("project", {}), dict) else "")
     target_id = str(target.get("id", ""))
     target_type = str(target.get("type", ""))
@@ -451,6 +464,100 @@ def _model_assisted_originality_review(
         ],
         "next_action": "rewrite and rerun originality gate" if recommendation == "block_publish" else "human review required before release" if recommendation == "human_review" else "safe to continue through publish gate",
     }
+
+
+def _structure_similarity_matrix(
+    checks: list[dict[str, Any]],
+    skeleton_checks: list[dict[str, Any]],
+    role_checks: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    by_source: dict[str, dict[str, Any]] = {}
+    for label, rows in [("text", checks), ("plot_skeleton", skeleton_checks), ("role_configuration", role_checks)]:
+        for item in rows:
+            source_id = str(item.get("source_asset_id", ""))
+            if not source_id:
+                continue
+            row = by_source.setdefault(
+                source_id,
+                {
+                    "source_asset_id": source_id,
+                    "source_asset_type": item.get("source_asset_type", ""),
+                    "source_title": item.get("source_title", ""),
+                    "text": 0.0,
+                    "plot_skeleton": 0.0,
+                    "role_configuration": 0.0,
+                    "max_risk": "low",
+                    "matched_terms": [],
+                },
+            )
+            row[label] = max(float(row.get(label, 0) or 0), float(item.get("similarity", 0) or 0))
+            row["max_risk"] = _max_risk([str(row.get("max_risk", "low")), str(item.get("risk", "low"))])
+            terms = item.get("matched_terms", []) if isinstance(item.get("matched_terms", []), list) else []
+            row["matched_terms"] = _dedupe([*row.get("matched_terms", []), *[str(term) for term in terms]])[:24]
+    rows = list(by_source.values())
+    rows.sort(key=lambda item: ({"high": 3, "medium": 2, "low": 1}.get(str(item.get("max_risk", "low")), 0), float(item.get("plot_skeleton", 0) or 0), float(item.get("role_configuration", 0) or 0)), reverse=True)
+    return rows[:50]
+
+
+def _originality_risk_explanations(
+    checks: list[dict[str, Any]],
+    skeleton_checks: list[dict[str, Any]],
+    role_checks: list[dict[str, Any]],
+    forbidden_hits: list[dict[str, Any]],
+    risk_scores: dict[str, str],
+    library_scan: dict[str, Any],
+) -> list[dict[str, str]]:
+    explanations: list[dict[str, str]] = []
+    for key, risk in risk_scores.items():
+        if risk in {"medium", "high"}:
+            explanations.append(
+                {
+                    "dimension": key,
+                    "severity": risk,
+                    "reason": _risk_reason(key, checks, skeleton_checks, role_checks, forbidden_hits),
+                    "evidence": f"scanned={library_scan.get('scanned_count', 0)}, included={len(library_scan.get('included_assets', []))}, excluded={len(library_scan.get('excluded', []))}",
+                }
+            )
+    if not explanations:
+        explanations.append({"dimension": "overall", "severity": "low", "reason": "no high-overlap text, plot skeleton, role setup, or source license signal crossed thresholds", "evidence": "reference library scan completed"})
+    return explanations
+
+
+def _risk_reason(
+    dimension: str,
+    checks: list[dict[str, Any]],
+    skeleton_checks: list[dict[str, Any]],
+    role_checks: list[dict[str, Any]],
+    forbidden_hits: list[dict[str, Any]],
+) -> str:
+    if dimension == "plot_skeleton_risk":
+        top = max([*checks, *skeleton_checks], key=lambda item: float(item.get("similarity", 0) or 0), default={})
+        return f"plot/text overlap near {top.get('source_title', top.get('source_asset_id', 'reference asset'))}: similarity={top.get('similarity', 0)}"
+    if dimension == "character_setup_risk":
+        top = max(role_checks, key=lambda item: float(item.get("similarity", 0) or 0), default={})
+        return f"role configuration overlap near {top.get('source_title', top.get('source_asset_id', 'reference asset'))}: similarity={top.get('similarity', 0)}"
+    if dimension == "style_expression_risk":
+        return "style profile or expression boundary requires human confirmation; avoid author imitation and signature phrase reuse"
+    if dimension == "source_license_risk":
+        return f"license/forbidden source signals present: {len(forbidden_hits)}"
+    return "risk threshold crossed"
+
+
+def _originality_remediation_plan(risk_level: str, explanations: list[dict[str, str]]) -> list[dict[str, str]]:
+    actions: list[dict[str, str]] = []
+    for item in explanations:
+        dimension = item.get("dimension", "")
+        if dimension == "plot_skeleton_risk":
+            actions.append({"action": "rebuild_plot_spine", "priority": item.get("severity", "medium"), "instruction": "change causal order, core dilemma, payoff timing, and scene function while preserving only abstract project goals"})
+        elif dimension == "character_setup_risk":
+            actions.append({"action": "reconfigure_roles", "priority": item.get("severity", "medium"), "instruction": "alter role triangle, motives, constraints, relationship polarity, and decision cost"})
+        elif dimension == "style_expression_risk":
+            actions.append({"action": "neutralize_style", "priority": item.get("severity", "medium"), "instruction": "rewrite with project style_profile parameters; remove any signature phrasing or author-specific rhythm"})
+        elif dimension == "source_license_risk":
+            actions.append({"action": "remove_restricted_source_dependency", "priority": "high", "instruction": "remove raw source dependency from generation context and convert only abstract notes if license allows"})
+    if not actions and risk_level == "low":
+        actions.append({"action": "keep_evidence", "priority": "low", "instruction": "keep report attached to publish gate as originality evidence"})
+    return actions
 
 
 def _similarity_check(target_text: str, source: dict[str, Any]) -> dict[str, Any]:
@@ -873,6 +980,44 @@ def _release_tags(context: dict[str, Any], target: Any) -> list[str]:
         if config.get(key):
             tags.append(str(config[key]))
     return _dedupe(tags)
+
+
+def _publishing_metadata_optimization(title: str, text: str, context: dict[str, Any]) -> dict[str, Any]:
+    config = context.get("project_config", {}) if isinstance(context.get("project_config", {}), dict) else {}
+    genre = str(config.get("genre") or "")
+    target_platform = str(config.get("target_platform") or "")
+    hook = _summary(text)[:80]
+    base = title or str(context.get("project", {}).get("title", "Untitled") if isinstance(context.get("project", {}), dict) else "Untitled")
+    title_candidates = _dedupe(
+        [
+            base,
+            f"{base}: {hook[:18]}",
+            f"{genre}新章 - {base}".strip(" -"),
+        ]
+    )
+    synopsis = _summary(text)
+    return {
+        "title_candidates": title_candidates[:5],
+        "synopsis_candidates": [synopsis, f"{synopsis} 下一章将兑现当前悬念。"],
+        "tag_candidates": _dedupe([genre, target_platform, "原创", "连载", "章节钩子"])[:12],
+        "hook_check": {"opening_signal": hook, "status": "needs_manual_review" if len(hook) < 12 else "ready"},
+        "platform_notes": [
+            "标题和简介只做本地建议，不自动提交外部平台。",
+            "平台审核反馈需通过 publishing_log 或 adapter payload 回填。",
+        ],
+    }
+
+
+def _cover_asset_requirements(context: dict[str, Any], channel: str) -> dict[str, Any]:
+    profiles = context.get("profiles", {}) if isinstance(context.get("profiles", {}), dict) else {}
+    platform = profiles.get("platform_profile", {}) if isinstance(profiles.get("platform_profile", {}), dict) else {}
+    content = platform.get("content", {}) if isinstance(platform.get("content", {}), dict) else {}
+    return {
+        "required": bool(content.get("cover_required", channel not in {"local", "manual"})),
+        "status": "missing",
+        "asset_path": "",
+        "requirements": content.get("cover_requirements", {"safe_text": True, "no_infringing_source_art": True}),
+    }
 
 
 def _dedupe(values: list[str]) -> list[str]:

@@ -6,11 +6,13 @@ from fastapi import APIRouter, HTTPException, Query
 
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.agent_runs import (
+    create_agent_boundary_audit,
     create_agent_rollback_report,
     ensure_agent_contract,
     create_agent_sla_report,
     list_agent_events,
     list_agent_runs,
+    execute_agent_run_once,
     record_agent_event,
     start_agent_run,
     update_agent_run_status,
@@ -29,6 +31,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     AgentRunStatusRequest = models["AgentRunStatusRequest"]
     AgentSlaRequest = models["AgentSlaRequest"]
     AgentRollbackRequest = models["AgentRollbackRequest"]
+    AgentExecutorRunRequest = models["AgentExecutorRunRequest"]
 
     @router.get("/product/agents/runs")
     def agent_runs(
@@ -65,6 +68,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 project_id=project_id,
                 limit=limit,
             )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/agents/boundary-audit")
+    def agent_boundary_audit(apply_runtime_guard: bool = False) -> dict[str, Any]:
+        try:
+            return create_agent_boundary_audit(LocalStorage(app_settings.root), apply_runtime_guard=apply_runtime_guard)
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -160,6 +170,26 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 rollback_strategy=request.rollback_strategy,
                 apply=request.apply,
                 reason=request.reason,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/agents/executor/run-once")
+    def agent_executor_run_once_endpoint(request: AgentExecutorRunRequest) -> dict[str, Any]:
+        try:
+            return execute_agent_run_once(
+                LocalStorage(app_settings.root),
+                request.agent_run_path,
+                tool_name=request.tool_name,
+                output_type=request.output_type,
+                token_used=request.token_used,
+                cost_estimate=request.cost_estimate,
+                output_assets=request.output_assets,
+                checkpoint=request.checkpoint or None,
+                evidence=request.evidence or None,
+                human_gate=request.human_gate or None,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

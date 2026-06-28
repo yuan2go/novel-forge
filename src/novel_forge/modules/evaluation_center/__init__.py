@@ -1,5 +1,6 @@
 from novel_forge.modules.evaluation_center.service import (
     compare_model_runs,
+    create_benchmark_task_from_generation_run,
     create_model_routing_policy,
     create_model_benchmark_task,
     create_model_profile,
@@ -13,6 +14,7 @@ from novel_forge.modules.evaluation_center.service import (
 
 __all__ = [
     "compare_model_runs",
+    "create_benchmark_task_from_generation_run",
     "create_model_routing_policy",
     "create_model_benchmark_task",
     "create_model_profile",

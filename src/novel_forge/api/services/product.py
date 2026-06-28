@@ -4113,6 +4113,11 @@ def _project_asset_row(
         "updated_at": data.get("updated_at", ""),
         "tags": data.get("tags", []),
         "index_source": index_source,
+        "content": content,
+        "metadata": metadata,
+        "risk_explanations": content.get("risk_explanations", []),
+        "remediation_plan": content.get("remediation_plan", []),
+        "structure_similarity_matrix": content.get("structure_similarity_matrix", []),
     }
 
 

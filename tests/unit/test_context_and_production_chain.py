@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.context_builder import create_context_build_plan, create_context_bundle, list_context_assets
+from novel_forge.modules.context_builder import compare_context_bundles, create_context_build_plan, create_context_bundle, list_context_assets
 from novel_forge.modules.continuity_graph import create_canon_graph_snapshot
 from novel_forge.modules.drafting import service as drafting_service
 from novel_forge.modules.outline import service as outline_service
@@ -18,6 +18,7 @@ from novel_forge.modules.chapter_production_bus import (
     resume_chapter_production,
     start_chapter_production,
 )
+from novel_forge.modules.change_impact import mark_downstream_assets_stale
 from novel_forge.modules.editor import apply_editor_patch
 from novel_forge.modules.long_planning import create_long_form_macro_plan
 from novel_forge.modules.operations import create_local_ops_drill_report, create_long_chain_acceptance_report
@@ -166,12 +167,20 @@ class ContextAndProductionChainTests(unittest.TestCase):
                 ),
             )
 
-            plan = create_context_build_plan(storage, chapter_plan, query="clock chapter hook conflict template", top_k=8, token_budget=2000)
+            plan = create_context_build_plan(
+                storage,
+                chapter_plan,
+                query="clock chapter hook conflict template",
+                top_k=8,
+                token_budget=2000,
+                context_profile="chapter_generation",
+            )
             bundle = create_context_bundle(storage, plan["path"])
             plan_asset = storage.read_asset(plan["path"])
             bundle_asset = storage.read_asset(bundle["path"])
 
             self.assertEqual(storage.read_asset(plan["path"]).type, "context_build_plan")
+            self.assertEqual(plan_asset.content["context_profile"], "chapter_generation")
             self.assertEqual(bundle_asset.type, "context_bundle")
             self.assertIn(storage.read_asset(knowledge).id, bundle_asset.content["source_asset_ids"])
             self.assertIn(storage.read_asset(material).id, bundle_asset.content["source_asset_ids"])
@@ -194,6 +203,23 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertGreaterEqual(quality_report.content["context_budget_score"]["score"], 0)
             self.assertEqual(len(list_context_assets(storage)), 3)
 
+            tuned_bundle = create_context_bundle(
+                storage,
+                plan["path"],
+                selected_asset_paths=[str(knowledge.relative_to(storage.root)), str(material.relative_to(storage.root))],
+                disabled_asset_paths=[str(material.relative_to(storage.root))],
+                priority_asset_paths=[str(knowledge.relative_to(storage.root))],
+                final_confirmed=True,
+            )
+            tuned_asset = storage.read_asset(tuned_bundle["path"])
+            self.assertTrue(tuned_asset.content["manual_selection"]["final_confirmed"])
+            self.assertIn(str(material.relative_to(storage.root)), tuned_asset.content["manual_selection"]["disabled_asset_paths"])
+            self.assertIn(storage.read_asset(knowledge).id, tuned_asset.content["source_asset_ids"])
+            self.assertNotIn(storage.read_asset(material).id, tuned_asset.content["source_asset_ids"])
+            diff = compare_context_bundles(storage, bundle["path"], tuned_bundle["path"])
+            self.assertEqual(storage.read_asset(diff["path"]).type, "project_metric_snapshot")
+            self.assertIn("recommendation", diff)
+
             outline_v0 = create_outline_version(storage, outline)
             outline_v1 = create_outline_version(storage, outline, change_summary="manual checkpoint")
             plan_v0 = create_chapter_plan_version(storage, chapter_plan)
@@ -215,6 +241,9 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertEqual(storage.read_asset(draft_v0["path"]).type, "draft_version")
             self.assertEqual(storage.read_asset(run["path"]).content["context_bundle_id"], bundle_asset.id)
             self.assertTrue(any(row["type"] == "generation_run" for row in versions))
+            invalidation = mark_downstream_assets_stale(storage, chapter_plan, reason="unit test upstream plan changed")
+            self.assertEqual(invalidation["status"], "applied")
+            self.assertEqual(storage.read_json(draft_path)["metadata"]["asset_status"], "stale")
 
     def test_draft_service_records_context_bundle_and_generation_run(self):
         with tempfile.TemporaryDirectory() as tmp:

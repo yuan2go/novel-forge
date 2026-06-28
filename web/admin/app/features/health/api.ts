@@ -1,5 +1,5 @@
 import { fetchJson, postJson } from "../../shared/api";
-import type { BackupRow, FeatureAssetRow, MinioStatus, ProjectHealthReport, ProjectRow, QdrantSearchResult } from "../../shared/types";
+import type { BackupRow, FeatureAssetRow, MinioStatus, ModuleCompletionReport, ProjectHealthReport, ProjectRow, QdrantSearchResult } from "../../shared/types";
 
 export function loadHealthData(projectId?: string) {
   return Promise.all([
@@ -7,7 +7,8 @@ export function loadHealthData(projectId?: string) {
     fetchJson<ProjectHealthReport>(projectId ? `/product/system/health?project_id=${encodeURIComponent(projectId)}` : "/product/system/health"),
     fetchJson<BackupRow[]>("/product/system/backups?limit=40"),
     fetchJson<MinioStatus>("/product/minio/objects?limit=80"),
-    fetchJson<FeatureAssetRow[]>("/product/system/operation-reports?limit=80")
+    fetchJson<FeatureAssetRow[]>("/product/system/operation-reports?limit=80"),
+    fetchJson<ModuleCompletionReport>(projectId ? `/product/system/module-completion?project_id=${encodeURIComponent(projectId)}` : "/product/system/module-completion")
   ]);
 }
 

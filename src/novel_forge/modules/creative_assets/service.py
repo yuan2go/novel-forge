@@ -234,6 +234,7 @@ def _library_definition_payload(definition: CreativeLibraryDefinition) -> dict[s
 
 def _creative_asset_row(storage: LocalStorage, path: Path, data: dict[str, Any], library_key: str) -> dict[str, Any]:
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
     return {
         "path": str(path.relative_to(storage.root)),
         "category": ASSET_DIR_BY_TYPE.get(str(data.get("type", "")), path.parent.name),
@@ -248,8 +249,12 @@ def _creative_asset_row(storage: LocalStorage, path: Path, data: dict[str, Any],
         "scope": metadata.get("library_scope", "project" if metadata.get("project_id") else "global"),
         "risk_level": metadata.get("risk_level") or metadata.get("copyright_risk") or "unknown",
         "asset_status": metadata.get("asset_status", "active"),
+        "score": content.get("score") or content.get("fit_score") or content.get("quality_score") or metadata.get("score"),
+        "content": content,
+        "metadata": metadata,
+        "summary": _preview_content(content),
         "updated_at": data.get("updated_at", ""),
-        "preview": _preview_content(data.get("content", {})),
+        "preview": _preview_content(content),
     }
 
 

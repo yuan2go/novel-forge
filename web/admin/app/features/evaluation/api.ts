@@ -31,6 +31,14 @@ export function createBenchmarkTask(taskType: string, inputAssets: string[], wor
   });
 }
 
+export function createBenchmarkFromGenerationRun(generationRunPath: string, taskType = "generation") {
+  return postJson("/product/evaluation/benchmark-from-generation-run", {
+    generation_run_path: generationRunPath,
+    task_type: taskType,
+    expected_output_type: "generate"
+  });
+}
+
 export function runBenchmark(taskPath: string, provider: string, modelName: string) {
   return postJson("/product/evaluation/benchmark-run", {
     task_path: taskPath,

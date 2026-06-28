@@ -48,6 +48,9 @@ def list_publishing_assets(storage: LocalStorage, *, project_id: str | None = No
                 "chapter_queue_count": len(chapter_queue),
                 "platform_targets": platform_targets,
                 "platform_rules": platform_rules,
+                "metadata_optimization": content.get("metadata_optimization", {}) if isinstance(content.get("metadata_optimization", {}), dict) else {},
+                "cover_asset": content.get("cover_asset", {}) if isinstance(content.get("cover_asset", {}), dict) else {},
+                "platform_feedback": content.get("platform_feedback", {}) if isinstance(content.get("platform_feedback", {}), dict) else {},
                 "gate_policy": content.get("gate_policy", {}) if isinstance(content.get("gate_policy", {}), dict) else {},
                 "rollback_available": bool(rollback_plan.get("available")),
                 "release_package_path": content.get("release_package_path", ""),
@@ -161,6 +164,7 @@ def create_publishing_log(
                 "status": status,
                 "published_at": utc_now() if status == "published" else "",
                 "external_url": external_url,
+                "platform_feedback": _platform_feedback(status=status, external_url=external_url),
                 "rollback_plan": {
                     "available": True,
                     "status": "not_required" if status == "published" else "pending",
@@ -262,6 +266,22 @@ def _publishing_platform_rules(channel: str, cadence: str) -> dict[str, Any]:
         "require_originality_pass": True,
         "rollback_record_required": True,
         "schedule_mode": "local_calendar",
+    }
+
+
+def _platform_feedback(*, status: str, external_url: str) -> dict[str, Any]:
+    normalized = str(status or "").lower()
+    feedback_status = "accepted" if normalized == "published" else "needs_followup" if normalized in {"failed", "rejected"} else "pending"
+    return {
+        "status": feedback_status,
+        "external_url": external_url,
+        "items": [],
+        "strategy_backwrite": {
+            "chapter_plan": normalized in {"failed", "rejected"},
+            "review_rules": normalized in {"failed", "rejected"},
+            "publishing_plan": True,
+        },
+        "next_action": "import platform feedback details when available" if feedback_status != "accepted" else "monitor reader feedback after release",
     }
 
 

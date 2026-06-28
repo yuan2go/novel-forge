@@ -213,6 +213,8 @@ class AnalysisConvertRequest(BaseModel):
     targets: list[str] = Field(default_factory=list)
     workspace_path: str | None = None
     reuse_scope: str = "project"
+    human_approved: bool = False
+    approval_note: str = ""
 
 
 class AnalysisHandoffRequest(BaseModel):
@@ -228,12 +230,23 @@ class ContextBuildPlanRequest(BaseModel):
     top_k: int = 8
     token_budget: int = 4000
     backend: str = "auto"
+    context_profile: str = "chapter_generation"
     workspace_path: str | None = None
 
 
 class ContextBundleRequest(BaseModel):
     build_plan_path: str
     max_items: int | None = None
+    selected_asset_paths: list[str] = Field(default_factory=list)
+    disabled_asset_paths: list[str] = Field(default_factory=list)
+    priority_asset_paths: list[str] = Field(default_factory=list)
+    final_confirmed: bool = False
+
+
+class ContextBundleDiffRequest(BaseModel):
+    left_path: str
+    right_path: str
+    persist: bool = True
 
 
 class OutlineVersionRequest(BaseModel):
@@ -293,6 +306,14 @@ class ChapterProductionRecoverRequest(BaseModel):
     run_to: str | None = None
     force: bool = True
     async_task: bool = False
+
+
+class ProductionInvalidateRequest(BaseModel):
+    target_path: str
+    max_depth: int = 4
+    project_id: str | None = None
+    reason: str = "upstream asset changed"
+    apply: bool = True
 
 
 class WorkflowDefinitionCreateRequest(BaseModel):
@@ -384,6 +405,18 @@ class AgentRollbackRequest(BaseModel):
     rollback_strategy: str = "mark_outputs_rolled_back"
     apply: bool = False
     reason: str = ""
+
+
+class AgentExecutorRunRequest(BaseModel):
+    agent_run_path: str
+    tool_name: str
+    output_type: str | None = None
+    token_used: int = 0
+    cost_estimate: float = 0.0
+    output_assets: list[str] = Field(default_factory=list)
+    checkpoint: dict[str, Any] = Field(default_factory=dict)
+    evidence: dict[str, Any] = Field(default_factory=dict)
+    human_gate: dict[str, Any] = Field(default_factory=dict)
 
 
 class EditorPatchRequest(BaseModel):
@@ -482,6 +515,13 @@ class PromptRegressionRequest(BaseModel):
     baseline_version: str
     candidate_version: str
     benchmark_runs: list[str] = Field(default_factory=list)
+
+
+class BenchmarkFromGenerationRunRequest(BaseModel):
+    generation_run_path: str
+    task_type: str = "generation"
+    expected_output_type: str = "generate"
+    prompt_template: str = ""
 
 
 class FeedbackImportBatchRequest(BaseModel):
@@ -757,6 +797,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AnalysisHandoffRequest": AnalysisHandoffRequest,
         "ContextBuildPlanRequest": ContextBuildPlanRequest,
         "ContextBundleRequest": ContextBundleRequest,
+        "ContextBundleDiffRequest": ContextBundleDiffRequest,
         "OutlineVersionRequest": OutlineVersionRequest,
         "ChapterPlanVersionRequest": ChapterPlanVersionRequest,
         "DraftVersionRequest": DraftVersionRequest,
@@ -765,6 +806,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "ChapterProductionResumeRequest": ChapterProductionResumeRequest,
         "ChapterProductionControlRequest": ChapterProductionControlRequest,
         "ChapterProductionRecoverRequest": ChapterProductionRecoverRequest,
+        "ProductionInvalidateRequest": ProductionInvalidateRequest,
         "WorkflowDefinitionCreateRequest": WorkflowDefinitionCreateRequest,
         "WorkflowNodeCreateRequest": WorkflowNodeCreateRequest,
         "NodeRunCreateRequest": NodeRunCreateRequest,
@@ -775,6 +817,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AgentRunStatusRequest": AgentRunStatusRequest,
         "AgentSlaRequest": AgentSlaRequest,
         "AgentRollbackRequest": AgentRollbackRequest,
+        "AgentExecutorRunRequest": AgentExecutorRunRequest,
         "EditorPatchRequest": EditorPatchRequest,
         "EditorPatchApplyRequest": EditorPatchApplyRequest,
         "DraftDiffReportRequest": DraftDiffReportRequest,
@@ -790,6 +833,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "ModelRoutingPolicyRequest": ModelRoutingPolicyRequest,
         "PromptVersionRequest": PromptVersionRequest,
         "PromptRegressionRequest": PromptRegressionRequest,
+        "BenchmarkFromGenerationRunRequest": BenchmarkFromGenerationRunRequest,
         "FeedbackImportBatchRequest": FeedbackImportBatchRequest,
         "ReaderSentimentReportRequest": ReaderSentimentReportRequest,
         "FeedbackInsightRequest": FeedbackInsightRequest,

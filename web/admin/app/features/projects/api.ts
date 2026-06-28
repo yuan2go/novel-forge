@@ -1,10 +1,20 @@
 import { fetchJson, postJson } from "../../shared/api";
-import type { ProjectHealthReport, ProjectRow } from "../../shared/types";
+import type { FeatureAssetRow, ProjectHealthReport, ProjectOperatingDashboard, ProjectRow } from "../../shared/types";
+
+export type ProjectWizardLibrary = {
+  key: string;
+  title: string;
+  title_zh?: string;
+  asset_types: string[];
+  assets: FeatureAssetRow[];
+};
 
 export function loadProjectsData() {
   return Promise.all([
     fetchJson<ProjectRow[]>("/product/projects"),
-    fetchJson<ProjectHealthReport>("/product/system/health")
+    fetchJson<ProjectHealthReport>("/product/system/health"),
+    fetchJson<ProjectWizardLibrary[]>("/product/libraries/creative?limit_per_library=100"),
+    fetchJson<ProjectOperatingDashboard>("/product/projects/operating-dashboard?limit=100")
   ]);
 }
 

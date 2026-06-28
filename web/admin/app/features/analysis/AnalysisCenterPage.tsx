@@ -4,8 +4,8 @@ import { FileSearch, Layers3, Workflow } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import type { AssetRow, FeatureAssetRow, ProjectRow } from "../../shared/types";
-import { convertAnalysis, createAnalysisHandoff, loadAnalysisData, runAnalysis } from "./api";
+import type { AssetRow, ProjectRow } from "../../shared/types";
+import { convertAnalysis, createAnalysisHandoff, loadAnalysisData, runAnalysis, type AnalysisReportRow } from "./api";
 
 const analysisTypes = [
   ["web_fiction_business", "网文商业结构"],
@@ -16,18 +16,22 @@ const analysisTypes = [
 export function AnalysisCenterPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [assets, setAssets] = useState<AssetRow[]>([]);
-  const [reports, setReports] = useState<FeatureAssetRow[]>([]);
+  const [reports, setReports] = useState<AnalysisReportRow[]>([]);
   const [projectId, setProjectId] = useState("");
   const [sourcePath, setSourcePath] = useState("");
   const [reportPath, setReportPath] = useState("");
   const [analysisType, setAnalysisType] = useState("web_fiction_business");
   const [targets, setTargets] = useState("writing_template, material_card, review_rule_pack");
+  const [humanApproved, setHumanApproved] = useState(false);
+  const [approvalNote, setApprovalNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
   const selectedProject = projects.find((project) => project.project_id === projectId);
   const sourceCandidates = useMemo(() => assets.filter((asset) => ["source_document", "cleaned_text", "draft_chapter", "decomposition_report"].includes(asset.type)).slice(0, 80), [assets]);
+  const selectedReport = reports.find((report) => report.path === reportPath) || reports[0];
+  const rubricRows = Object.entries(selectedReport?.semantic_depth?.rubric_scores ?? {});
 
   async function refresh(nextProjectId = projectId) {
     const [projectRows, assetRows, reportRows] = await loadAnalysisData(nextProjectId);
@@ -71,6 +75,45 @@ export function AnalysisCenterPage() {
         <Metric label="网文拆解" value={String(reports.filter((row) => row.type === "web_fiction_business_analysis_report").length)} />
         <Metric label="出版/名著" value={String(reports.filter((row) => row.type.includes("published") || row.type.includes("classic")).length)} />
         <Metric label="转换报告" value={String(reports.filter((row) => row.type === "analysis_conversion_report").length)} />
+        <Metric label="语义均分" value={String(averageScore(reports))} />
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="语义深度评分" icon={<FileSearch size={18} />} />
+          <div className="summaryBand">
+            <Metric label="总分" value={String(selectedReport?.semantic_depth?.overall_score ?? "-")} />
+            <Metric label="Provider" value={selectedReport?.provider_review?.provider || "-"} />
+            <Metric label="Model" value={selectedReport?.provider_review?.model || "-"} />
+            <Metric label="可视化" value={selectedReport?.visualization?.kind || "-"} />
+          </div>
+          <DataTable
+            emptyText="选择一个报告查看 rubric"
+            columns={["维度", "分数", "权重", "建议"]}
+            rows={rubricRows.map(([dimension, value]) => [
+              dimension,
+              String(value.score ?? "-"),
+              String(value.weight ?? "-"),
+              value.recommendation || "-"
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="模式可视化" icon={<Layers3 size={18} />} />
+          <div className="analysisPanelGrid">
+            {(selectedReport?.mode_specific_panels || []).map((panel) => (
+              <div className="decisionCard" key={panel.title}>
+                <span>{panel.title}</span>
+                <strong>{panel.score}</strong>
+                <small>{panel.recommendation || panel.visual_kind || "-"}</small>
+              </div>
+            ))}
+          </div>
+          <div className="tagCloud">
+            {(selectedReport?.provider_review?.patterns || []).slice(0, 8).map((pattern) => <span key={pattern}>{pattern}</span>)}
+          </div>
+          <p className="previewText">{selectedReport?.provider_review?.summary || selectedReport?.summary || "暂无 provider-backed 语义摘要"}</p>
+        </div>
       </section>
 
       <section className="workspaceGrid">
@@ -112,7 +155,12 @@ export function AnalysisCenterPage() {
             </select>
           </label>
           <input value={targets} onChange={(event) => setTargets(event.target.value)} aria-label="targets" />
-          <button className="primaryButton" disabled={busy || !reportPath} onClick={() => runAction(() => convertAnalysis(reportPath, targets.split(",").map((item) => item.trim()).filter(Boolean), selectedProject?.path), "转换完成")}>转换为资产</button>
+          <label className="checkboxLine">
+            <input type="checkbox" checked={humanApproved} onChange={(event) => setHumanApproved(event.target.checked)} />
+            人工确认抽象边界，可进入后续生产资产候选
+          </label>
+          <input value={approvalNote} onChange={(event) => setApprovalNote(event.target.value)} placeholder="审核备注" />
+          <button className="primaryButton" disabled={busy || !reportPath} onClick={() => runAction(() => convertAnalysis(reportPath, targets.split(",").map((item) => item.trim()).filter(Boolean), selectedProject?.path, humanApproved, approvalNote), "转换完成")}>转换为资产</button>
         </div>
       </section>
 
@@ -125,11 +173,17 @@ export function AnalysisCenterPage() {
             report.type,
             report.title,
             <span className={statusClass(report.status || "")} key={report.path}>{report.status || "-"}</span>,
-            report.risk_level || "-",
+            `${report.risk_level || "-"} / ${report.semantic_depth?.overall_score ?? "-"}`,
             report.path
           ])}
         />
       </section>
     </FeatureShell>
   );
+}
+
+function averageScore(reports: AnalysisReportRow[]) {
+  const scores = reports.map((report) => Number(report.semantic_depth?.overall_score ?? 0)).filter(Boolean);
+  if (!scores.length) return "-";
+  return Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length);
 }

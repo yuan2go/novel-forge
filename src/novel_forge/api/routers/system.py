@@ -11,6 +11,7 @@ from novel_forge.api import product as _product_services
 from novel_forge.api.routers._bindings import bind_product_symbols
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.operations import create_local_ops_drill_report, create_long_chain_acceptance_report, list_operation_reports
+from novel_forge.modules.module_completion import module_completion_report
 from novel_forge.storage.local import LocalStorage
 
 bind_product_symbols(globals(), _product_services)
@@ -48,6 +49,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def operation_reports_endpoint(limit: int = Query(default=100, ge=1, le=500)) -> list[dict[str, Any]]:
         try:
             return list_operation_reports(LocalStorage(app_settings.root), limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/system/module-completion")
+    def module_completion_endpoint(project_id: str | None = None) -> dict[str, Any]:
+        try:
+            return module_completion_report(LocalStorage(app_settings.root), project_id=project_id, persist=False)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/system/module-completion/snapshot")
+    def module_completion_snapshot_endpoint(project_id: str | None = None) -> dict[str, Any]:
+        try:
+            return module_completion_report(LocalStorage(app_settings.root), project_id=project_id, persist=True)
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

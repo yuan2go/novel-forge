@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 from novel_forge.api import product as _product_services
 from novel_forge.api.routers._bindings import bind_product_symbols
 from novel_forge.api.routers.context import ProductRouterContext
+from novel_forge.modules.project_operations import project_operating_dashboard
 
 bind_product_symbols(globals(), _product_services)
 
@@ -28,6 +29,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.get("/product/projects")
     def projects(include_deleted: bool = False) -> list[dict[str, Any]]:
         return indexed_list_projects(app_settings, LocalStorage(app_settings.root), include_deleted=include_deleted)
+
+    @router.get("/product/projects/operating-dashboard")
+    def project_operating_dashboard_endpoint(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
+        try:
+            return project_operating_dashboard(LocalStorage(app_settings.root), limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.get("/product/series")
     def series(include_deleted: bool = False) -> list[dict[str, Any]]:
