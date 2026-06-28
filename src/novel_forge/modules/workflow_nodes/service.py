@@ -9,6 +9,12 @@ from novel_forge.modules.agent_runs import ensure_agent_contract, execute_agent_
 from novel_forge.modules.change_impact import create_change_impact_report, mark_downstream_assets_stale
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.runtime_ledger import (
+    acquire_scheduler_lease,
+    record_gate_result,
+    record_trace_span,
+    release_scheduler_lease,
+)
 from novel_forge.schemas import NodeRun, WorkflowDefinition, WorkflowNode, WorkflowRun, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -131,7 +137,33 @@ def record_node_run(
             _dedupe([run_id, *[row.get("id", "") for row in input_rows], *[row.get("path", "") for row in input_rows], *[row.get("id", "") for row in output_rows], *[row.get("path", "") for row in output_rows]]),
         ),
     )
-    return _write(storage, asset)
+    result = _write(storage, asset)
+    try:
+        record_trace_span(
+            storage,
+            trace_id=str(trace_payload.get("trace_id", run_id)),
+            span_id=str(trace_payload.get("span_id", "")),
+            parent_span_id=str(trace_payload.get("parent_span_id", "")),
+            span_type="node_run",
+            name=f"{node_id}:{operation}",
+            status=_trace_span_status(status),
+            started_at=str(asset.content.get("started_at", "")),
+            finished_at=str(asset.content.get("finished_at", "")),
+            attributes={
+                "node_run_path": result.get("path", ""),
+                "node_id": node_id,
+                "node_type": node_type,
+                "operation": operation,
+                "status": status,
+                "error": error,
+            },
+            references=[result.get("path", ""), *[row.get("path", "") for row in input_rows], *[row.get("path", "") for row in output_rows]],
+            project_id=project_id,
+            workspace_path=workspace_path,
+        )
+    except Exception:
+        pass
+    return result
 
 
 def list_node_runs(storage: LocalStorage, *, project_id: str | None = None, run_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
@@ -165,6 +197,77 @@ def list_node_runs(storage: LocalStorage, *, project_id: str | None = None, run_
                 "started_at": content.get("started_at", ""),
                 "finished_at": content.get("finished_at", ""),
                 "error": content.get("error", ""),
+            }
+        )
+        if len(rows) >= limit:
+            break
+    return rows
+
+
+def list_workflow_definitions(storage: LocalStorage, *, limit: int = 100) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in reversed(storage.list_json("runs")):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "workflow_definition":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        rows.append(
+            {
+                "path": _display_path(storage.root, path),
+                "id": data.get("id", ""),
+                "workflow_id": content.get("workflow_id", ""),
+                "name": content.get("name", data.get("title", "")),
+                "version": content.get("version", ""),
+                "entry_node_id": content.get("entry_node_id", ""),
+                "status": content.get("status", ""),
+                "node_count": len(content.get("nodes", []) if isinstance(content.get("nodes", []), list) else []),
+                "updated_at": data.get("updated_at", ""),
+            }
+        )
+        if len(rows) >= limit:
+            break
+    return rows
+
+
+def list_workflow_runs(storage: LocalStorage, *, project_id: str | None = None, status: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in reversed(storage.list_json("runs")):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "workflow_run":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        if project_id and str(metadata.get("project_id", "")) != project_id:
+            continue
+        if status and str(content.get("status", "")) != status:
+            continue
+        blocked = content.get("blocked", {}) if isinstance(content.get("blocked", {}), dict) else {}
+        trace = content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}
+        rows.append(
+            {
+                "path": _display_path(storage.root, path),
+                "id": data.get("id", ""),
+                "run_id": content.get("run_id", ""),
+                "workflow_id": content.get("workflow_id", ""),
+                "status": content.get("status", ""),
+                "blocked_node_id": blocked.get("node_id", ""),
+                "blocked_status": blocked.get("status", ""),
+                "blocked_reason": blocked.get("reason", ""),
+                "node_run_count": len(content.get("node_runs", []) if isinstance(content.get("node_runs", []), list) else []),
+                "agent_run_count": len(content.get("agent_runs", []) if isinstance(content.get("agent_runs", []), list) else []),
+                "output_count": len(content.get("outputs", []) if isinstance(content.get("outputs", []), list) else []),
+                "trace_id": trace.get("trace_id", content.get("run_id", "")),
+                "project_id": metadata.get("project_id", ""),
+                "workspace_path": metadata.get("workspace_path", ""),
+                "started_at": content.get("started_at", ""),
+                "finished_at": content.get("finished_at", ""),
+                "updated_at": data.get("updated_at", ""),
             }
         )
         if len(rows) >= limit:
@@ -244,7 +347,7 @@ def execute_workflow(
             blocked = {"node_id": node_id, "status": "blocked", "reason": "dependency not satisfied", "dependencies": dict(zip(dependency_ids, dependency_statuses))}
             break
         node_inputs = _node_inputs(storage, node, dependency_ids, outputs_by_node, initial_inputs)
-        gate = _evaluate_node_gate(storage, node, node_inputs)
+        gate = _evaluate_node_gate(storage, node, node_inputs, run_id=run_id)
         if gate["status"] != "passed":
             node_run = record_node_run(
                 storage,
@@ -376,6 +479,7 @@ def resume_workflow(
     max_nodes: int | None = None,
     apply_invalidation: bool = True,
     workspace_path: str | None = None,
+    archive_previous: bool = True,
 ) -> dict[str, Any]:
     storage.ensure_layout()
     previous_run_path, previous_run = _resolve_workflow_run(storage, workflow_run_path_or_id)
@@ -456,7 +560,7 @@ def resume_workflow(
                     errors.append("dependency not satisfied")
                 break
             node_inputs = _node_inputs(storage, next_node, dependency_ids, outputs_by_node, [])
-            gate = _evaluate_node_gate(storage, next_node, node_inputs)
+            gate = _evaluate_node_gate(storage, next_node, node_inputs, run_id=run_id)
             if gate["status"] != "passed":
                 node_run = record_node_run(
                     storage,
@@ -565,6 +669,14 @@ def resume_workflow(
             "new_output_assets": _dedupe(new_outputs),
         },
     )
+    if archive_previous and status != "failed":
+        _mark_workflow_run_superseded(
+            storage,
+            previous_run_path,
+            superseded_by_run_id=run_id,
+            superseded_by_path=str(workflow_run.get("path", "")),
+            scheduler_tick_id=str((evidence or {}).get("scheduler_tick_id", "")),
+        )
     return {
         "status": status,
         "run_id": run_id,
@@ -631,13 +743,7 @@ def run_workflow_scheduler(
                 max_nodes=max_nodes_per_resume,
                 apply_invalidation=apply_invalidation,
                 workspace_path=candidate.get("workspace_path") or None,
-            )
-            _mark_workflow_run_superseded(
-                storage,
-                candidate["workflow_run_path"],
-                superseded_by_run_id=str(result.get("run_id", "")),
-                superseded_by_path=str(result.get("workflow_run", {}).get("path", "")) if isinstance(result.get("workflow_run", {}), dict) else "",
-                scheduler_tick_id=tick_id,
+                archive_previous=True,
             )
             resumed.append(
                 {
@@ -679,6 +785,9 @@ def run_workflow_scheduler_loop(
     apply_invalidation: bool = True,
     stop_when_idle: bool = True,
     run_id: str | None = None,
+    lease_ttl_seconds: int = 300,
+    lease_owner: str = "",
+    force_lease: bool = False,
 ) -> dict[str, Any]:
     storage.ensure_layout()
     from novel_forge.workflows.status import write_task_status
@@ -689,6 +798,35 @@ def run_workflow_scheduler_loop(
     status_paths.append(_display_path(storage.root, pending_path))
     running_path = write_task_status(storage, loop_id, "workflow-scheduler-loop", "running")
     status_paths.append(_display_path(storage.root, running_path))
+    owner = lease_owner or loop_id
+    lease = acquire_scheduler_lease(
+        storage,
+        lease_key="workflow_scheduler",
+        owner=owner,
+        ttl_seconds=lease_ttl_seconds,
+        force=force_lease,
+    )
+    if not lease.get("acquired"):
+        skipped_path = write_task_status(storage, loop_id, "workflow-scheduler-loop", "cancelled", error_message="workflow scheduler lease is active")
+        status_paths.append(_display_path(storage.root, skipped_path))
+        return {
+            "scheduler_loop_id": loop_id,
+            "status": "skipped",
+            "project_id": project_id or "",
+            "tick_count": 0,
+            "candidate_count": 0,
+            "resumed_count": 0,
+            "skipped_count": 0,
+            "error_count": 0,
+            "resumed": [],
+            "skipped": [],
+            "errors": [],
+            "ticks": [],
+            "latest_tick": {},
+            "task_status_paths": status_paths,
+            "lease": lease,
+            "recommendation": "scheduler_lease_active",
+        }
     ticks: list[dict[str, Any]] = []
     resumed: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
@@ -715,6 +853,7 @@ def run_workflow_scheduler_loop(
     except Exception as exc:
         failed_path = write_task_status(storage, loop_id, "workflow-scheduler-loop", "failed", error_message=f"{type(exc).__name__}: {exc}")
         status_paths.append(_display_path(storage.root, failed_path))
+        release_scheduler_lease(storage, lease_key="workflow_scheduler", owner=owner, last_tick=ticks[-1].get("scheduler_tick_id", "") if ticks else "")
         raise
 
     final_status = "failed" if errors else "completed"
@@ -734,6 +873,7 @@ def run_workflow_scheduler_loop(
         error_message="; ".join(str(item.get("error", "")) for item in errors if item.get("error")) if errors else "",
     )
     status_paths.append(_display_path(storage.root, final_path))
+    released_lease = release_scheduler_lease(storage, lease_key="workflow_scheduler", owner=owner, last_tick=ticks[-1].get("scheduler_tick_id", "") if ticks else "")
     return {
         "scheduler_loop_id": loop_id,
         "status": final_status,
@@ -749,6 +889,7 @@ def run_workflow_scheduler_loop(
         "ticks": ticks,
         "latest_tick": ticks[-1] if ticks else {},
         "task_status_paths": status_paths,
+        "lease": released_lease.get("lease", lease.get("lease", {})) if isinstance(released_lease, dict) else lease.get("lease", {}),
         "recommendation": _scheduler_recommendation(resumed, skipped, errors),
     }
 
@@ -1012,61 +1153,111 @@ def _node_inputs(
     return _dedupe([_display_path(storage.root, resolve_path(storage.root, item)) if _path_exists(storage, item) else str(item) for item in values])
 
 
-def _evaluate_node_gate(storage: LocalStorage, node: dict[str, Any], input_assets: list[str]) -> dict[str, Any]:
+def _evaluate_node_gate(storage: LocalStorage, node: dict[str, Any], input_assets: list[str], *, run_id: str = "") -> dict[str, Any]:
     quality_gate = dict(node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {})
     human_gate = dict(node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {})
+    trace = _gate_trace(run_id, str(node.get("node_id", "")), "static")
     human_required = bool(human_gate.get("required", False))
     human_status = str(human_gate.get("status", "") or "").lower()
     if human_required and human_status not in {"approved", "accepted", "passed"}:
         human_gate["status"] = human_status or "waiting"
-        return {
+        return _record_gate_decision(
+            storage,
+            node=node,
+            input_assets=input_assets,
+            gate_kind="human",
+            decision={
             "status": "blocked",
             "node_status": "waiting_human",
             "message": "human gate is required before this node can run",
             "quality_gate": quality_gate or {"required": False, "status": "not_evaluated"},
             "human_gate": human_gate,
-        }
+            },
+            trace=trace,
+        )
     gate_status = str(quality_gate.get("status", "") or "").lower()
     if gate_status in {"failed", "blocked", "rejected"}:
-        return {
+        return _record_gate_decision(
+            storage,
+            node=node,
+            input_assets=input_assets,
+            gate_kind="static_quality",
+            decision={
             "status": "blocked",
             "node_status": "failed",
             "message": str(quality_gate.get("message") or "quality gate failed"),
             "quality_gate": {**quality_gate, "status": gate_status},
             "human_gate": human_gate or {"required": False, "status": "not_required"},
-        }
+            },
+            trace=trace,
+        )
     min_input_count = int(quality_gate.get("min_input_count", 0) or 0)
     if min_input_count and len(input_assets) < min_input_count:
-        return {
+        return _record_gate_decision(
+            storage,
+            node=node,
+            input_assets=input_assets,
+            gate_kind="input_count",
+            decision={
             "status": "blocked",
             "node_status": "failed",
             "message": f"quality gate requires at least {min_input_count} input assets",
             "quality_gate": {**quality_gate, "status": "failed"},
             "human_gate": human_gate or {"required": False, "status": "not_required"},
-        }
+            },
+            trace=trace,
+        )
     missing_types = _missing_required_input_types(storage, node, input_assets)
     if missing_types:
-        return {
+        return _record_gate_decision(
+            storage,
+            node=node,
+            input_assets=input_assets,
+            gate_kind="input_type",
+            decision={
             "status": "blocked",
             "node_status": "failed",
             "message": f"missing required input asset types: {', '.join(missing_types)}",
             "quality_gate": {**quality_gate, "status": "failed"},
             "human_gate": human_gate or {"required": False, "status": "not_required"},
-        }
+            },
+            trace=trace,
+        )
     stale_inputs = _stale_inputs(storage, input_assets) if quality_gate.get("block_on_stale_inputs") else []
     if stale_inputs:
-        return {
+        return _record_gate_decision(
+            storage,
+            node=node,
+            input_assets=input_assets,
+            gate_kind="stale_input",
+            decision={
             "status": "blocked",
             "node_status": "failed",
             "message": f"stale input assets blocked execution: {', '.join(stale_inputs[:3])}",
             "quality_gate": {**quality_gate, "status": "failed", "stale_inputs": stale_inputs},
             "human_gate": human_gate or {"required": False, "status": "not_required"},
-        }
+            },
+            trace=trace,
+        )
+    registry = _evaluate_gate_registry(
+        storage,
+        node=node,
+        input_assets=input_assets,
+        run_id=run_id,
+        quality_gate=quality_gate,
+        human_gate=human_gate,
+    )
+    if registry["status"] != "passed":
+        return registry
     return {
         "status": "passed",
         "node_status": "running",
         "message": "",
-        "quality_gate": {**quality_gate, "status": "passed" if quality_gate.get("required") else quality_gate.get("status", "not_applicable")},
+        "quality_gate": {
+            **quality_gate,
+            "status": "passed" if quality_gate.get("required") else quality_gate.get("status", "not_applicable"),
+            "registry_results": registry.get("registry_results", []),
+        },
         "human_gate": human_gate or {"required": False, "status": "not_required"},
     }
 
@@ -1121,6 +1312,23 @@ def _execute_node(
         )
 
     if kind in {"service", "local_service"}:
+        checkpoint_state = _processor_checkpoint_state(storage, node=node, processor=processor, input_assets=input_assets, workspace_path=workspace_path)
+        checkpoint_hit = _checkpoint_resume_hit(storage, checkpoint_state)
+        if checkpoint_hit:
+            output_assets = _dedupe([*output_assets, *checkpoint_hit.get("output_assets", [])])
+            return _record_executed_node(
+                storage,
+                run_id=run_id,
+                node=node,
+                status="recovered",
+                input_assets=input_assets,
+                output_assets=output_assets,
+                processor={**processor, "checkpoint": checkpoint_state, "resumed_from_checkpoint": True},
+                started_at=started_at,
+                quality_gate={**quality_gate, "status": "passed"},
+                human_gate=human_gate or {"required": False, "status": "not_required"},
+                message="service processor resumed from checkpoint",
+            )
         service_result = _execute_registered_service_processor(
             storage,
             processor={**processor, "operation": processor.get("operation") or operation},
@@ -1128,6 +1336,8 @@ def _execute_node(
             workspace_path=workspace_path,
         )
         output_assets = _dedupe([*output_assets, *service_result.get("output_assets", [])])
+        checkpoint_state["output_assets"] = output_assets
+        service_result["checkpoint"] = checkpoint_state
         status = str(service_result.get("status", "succeeded"))
         return _record_executed_node(
             storage,
@@ -1136,7 +1346,7 @@ def _execute_node(
             status=status,
             input_assets=input_assets,
             output_assets=output_assets,
-            processor={**processor, "registry_operation": service_result.get("operation", ""), "registry_payload": service_result.get("payload", {})},
+            processor={**processor, "registry_operation": service_result.get("operation", ""), "registry_payload": service_result.get("payload", {}), "checkpoint": checkpoint_state},
             started_at=started_at,
             error=str(service_result.get("error", "")),
             quality_gate={**quality_gate, "status": "passed" if status == "succeeded" else "failed"},
@@ -1397,6 +1607,7 @@ def _write_workflow_run(
             "error_message": error_message,
             "recovery_instruction": recovery_instruction,
             "lineage": lineage or {},
+            "trace": {"trace_id": run_id, "span_id": make_id("span", f"{run_id}-workflow-{utc_now()}"), "parent_span_id": ""},
             "started_at": started_at,
             "finished_at": utc_now() if status in WORKFLOW_RUN_TERMINAL_STATUSES else "",
         },
@@ -1418,7 +1629,33 @@ def _write_workflow_run(
             ]),
         ),
     )
-    return _write(storage, asset)
+    result = _write(storage, asset)
+    try:
+        trace = asset.content.get("trace", {}) if isinstance(asset.content.get("trace", {}), dict) else {}
+        record_trace_span(
+            storage,
+            trace_id=run_id,
+            span_id=str(trace.get("span_id", "")),
+            parent_span_id="",
+            span_type="workflow_run",
+            name=str(content.get("name") or workflow.get("title") or "workflow"),
+            status=_trace_span_status(status),
+            started_at=started_at,
+            finished_at=str(asset.content.get("finished_at", "")),
+            attributes={
+                "workflow_run_path": result.get("path", ""),
+                "workflow_id": content.get("workflow_id") or workflow.get("id", ""),
+                "status": status,
+                "blocked": blocked or {},
+                "lineage": lineage or {},
+            },
+            references=[result.get("path", ""), _display_path(storage.root, workflow_path), *(node_run_paths or []), *(agent_run_paths or [])],
+            project_id=project_id,
+            workspace_path=str(project.get("workspace_path") or workspace_path or ""),
+        )
+    except Exception:
+        pass
+    return result
 
 
 def _node_run_log_entry(node_run: dict[str, Any], *, agent_run: dict[str, Any] | None, invalidation: dict[str, Any] | None) -> dict[str, Any]:
@@ -1466,6 +1703,40 @@ def _expected_output_assets(node: dict[str, Any], processor: dict[str, Any]) -> 
     return []
 
 
+def _processor_checkpoint_state(
+    storage: LocalStorage,
+    *,
+    node: dict[str, Any],
+    processor: dict[str, Any],
+    input_assets: list[str],
+    workspace_path: str | None,
+) -> dict[str, Any]:
+    operation = str(processor.get("operation") or node.get("operation") or processor.get("name") or node.get("node_id", ""))
+    expected_outputs = _expected_output_assets(node, processor)
+    idempotency_key = str(processor.get("idempotency_key") or make_id("processor_checkpoint", f"{node.get('workflow_id', '')}-{node.get('node_id', '')}-{operation}-{'|'.join(input_assets)}-{'|'.join(expected_outputs)}"))
+    return {
+        "checkpoint_schema": processor.get("checkpoint_schema") if isinstance(processor.get("checkpoint_schema"), dict) else {"version": "0.1.0", "operation": operation},
+        "resume_from_checkpoint": bool(processor.get("resume_from_checkpoint", False)),
+        "idempotency_key": idempotency_key,
+        "operation": operation,
+        "node_id": str(node.get("node_id", "")),
+        "input_assets": input_assets,
+        "expected_output_assets": expected_outputs,
+        "workspace_path": workspace_path or "",
+        "created_at": utc_now(),
+    }
+
+
+def _checkpoint_resume_hit(storage: LocalStorage, checkpoint_state: dict[str, Any]) -> dict[str, Any]:
+    if not bool(checkpoint_state.get("resume_from_checkpoint", False)):
+        return {}
+    expected = [str(item) for item in checkpoint_state.get("expected_output_assets", []) if str(item).strip()] if isinstance(checkpoint_state.get("expected_output_assets", []), list) else []
+    existing = [_display_path(storage.root, resolve_path(storage.root, item)) for item in expected if _path_exists(storage, item)]
+    if expected and len(existing) == len(expected):
+        return {"status": "recovered", "output_assets": existing, "reason": "expected outputs exist"}
+    return {}
+
+
 def _missing_required_input_types(storage: LocalStorage, node: dict[str, Any], input_assets: list[str]) -> list[str]:
     required = [str(item) for item in node.get("input_types", []) if str(item).strip()] if isinstance(node.get("input_types", []), list) else []
     if not required:
@@ -1490,6 +1761,241 @@ def _stale_inputs(storage: LocalStorage, input_assets: list[str]) -> list[str]:
         if metadata.get("asset_status") == "stale":
             stale.append(str(item))
     return stale
+
+
+def _evaluate_gate_registry(
+    storage: LocalStorage,
+    *,
+    node: dict[str, Any],
+    input_assets: list[str],
+    run_id: str,
+    quality_gate: dict[str, Any],
+    human_gate: dict[str, Any],
+) -> dict[str, Any]:
+    specs = _gate_specs(node)
+    if not specs:
+        return {"status": "passed", "registry_results": []}
+    results: list[dict[str, Any]] = []
+    for index, spec in enumerate(specs):
+        kind = str(spec.get("kind") or spec.get("gate") or "").strip().lower()
+        if not kind or not bool(spec.get("required", True)):
+            continue
+        trace = _gate_trace(run_id, str(node.get("node_id", "")), f"{kind}-{index + 1}")
+        try:
+            evaluation = _evaluate_gate_spec(storage, node=node, spec=spec, input_assets=input_assets, workspace_path=str(spec.get("workspace_path") or ""))
+        except Exception as exc:
+            evaluation = {"status": "failed", "message": f"{type(exc).__name__}: {exc}", "result": {"error": str(exc)}}
+        status = str(evaluation.get("status", "failed"))
+        target_paths = [str(item) for item in spec.get("target_paths", [])] if isinstance(spec.get("target_paths", []), list) else input_assets
+        gate_result = record_gate_result(
+            storage,
+            gate_kind=kind,
+            status=status,
+            target_paths=target_paths,
+            result=evaluation.get("result", {}) if isinstance(evaluation.get("result", {}), dict) else {"result": evaluation.get("result")},
+            trace=trace,
+            project_id=_project_id_for_paths(storage, target_paths),
+            workspace_path=str(spec.get("workspace_path") or ""),
+            message=str(evaluation.get("message", "")),
+            blocking=bool(spec.get("blocking", True)),
+        )
+        row = {
+            "kind": kind,
+            "status": status,
+            "message": str(evaluation.get("message", "")),
+            "gate_result_path": gate_result.get("path", ""),
+        }
+        results.append(row)
+        if status == "failed" and bool(spec.get("blocking", True)):
+            return {
+                "status": "blocked",
+                "node_status": "failed",
+                "message": row["message"] or f"{kind} gate failed",
+                "quality_gate": {**quality_gate, "status": "failed", "registry_results": results},
+                "human_gate": human_gate or {"required": False, "status": "not_required"},
+            }
+    return {"status": "passed", "registry_results": results}
+
+
+def _gate_specs(node: dict[str, Any]) -> list[dict[str, Any]]:
+    specs: list[dict[str, Any]] = []
+    quality_gate = node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {}
+    for value in quality_gate.get("gates", []) if isinstance(quality_gate.get("gates", []), list) else []:
+        if isinstance(value, dict):
+            specs.append(value)
+    for key in ["kind", "gate"]:
+        if str(quality_gate.get(key, "")).strip():
+            specs.append(quality_gate)
+            break
+    for value in node.get("gates", []) if isinstance(node.get("gates", []), list) else []:
+        if isinstance(value, dict):
+            specs.append(value)
+    return specs
+
+
+def _evaluate_gate_spec(
+    storage: LocalStorage,
+    *,
+    node: dict[str, Any],
+    spec: dict[str, Any],
+    input_assets: list[str],
+    workspace_path: str,
+) -> dict[str, Any]:
+    kind = str(spec.get("kind") or spec.get("gate") or "").strip().lower()
+    if kind == "schema":
+        return _schema_gate(storage, input_assets)
+    if kind == "review":
+        return _report_gate(storage, input_assets, report_types={"review_report", "quality_score_report", "chapter_audit_report"}, block_recommendations={"block", "needs_revision", "revise", "reject"}, service_operation="review", spec=spec, workspace_path=workspace_path)
+    if kind == "originality":
+        return _report_gate(storage, input_assets, report_types={"originality_report"}, block_recommendations={"block", "block_publish", "reject"}, service_operation="originality_report", spec=spec, workspace_path=workspace_path)
+    if kind == "publish":
+        return _report_gate(storage, input_assets, report_types={"publish_gate_report"}, block_recommendations={"block", "blocked", "reject", "needs_revision"}, service_operation="publish_gate_report", spec=spec, workspace_path=workspace_path)
+    if kind == "continuity":
+        return _report_gate(storage, input_assets, report_types={"chapter_continuity_report", "chapter_stability_preflight_report", "canon_graph_snapshot", "continuity_graph_snapshot"}, block_recommendations={"block", "blocked", "reject", "needs_revision"}, service_operation=str(spec.get("operation") or "chapter_stability_preflight"), spec=spec, workspace_path=workspace_path)
+    if kind == "custom_service":
+        processor = spec.get("processor", {}) if isinstance(spec.get("processor", {}), dict) else {}
+        operation = str(spec.get("operation") or processor.get("operation") or "").strip()
+        if not operation:
+            return {"status": "failed", "message": "custom_service gate requires operation", "result": {}}
+        result = _execute_registered_service_processor(
+            storage,
+            processor={**processor, **spec, "operation": operation},
+            input_assets=input_assets,
+            workspace_path=workspace_path or None,
+        )
+        status = "failed" if str(result.get("status", "")) == "failed" else "passed"
+        return {"status": status, "message": str(result.get("error") or result.get("message") or ""), "result": result}
+    return {"status": "failed", "message": f"unknown gate kind: {kind}", "result": {"kind": kind}}
+
+
+def _schema_gate(storage: LocalStorage, input_assets: list[str]) -> dict[str, Any]:
+    errors: list[str] = []
+    checked: list[str] = []
+    for item in input_assets:
+        try:
+            path = resolve_path(storage.root, item)
+            data = storage.read_json(path)
+            checked.append(_display_path(storage.root, path))
+            if isinstance(data, dict):
+                for error in validate_common_fields(data):
+                    errors.append(f"{_display_path(storage.root, path)}: {error}")
+            else:
+                errors.append(f"{item}: asset JSON must be an object")
+        except Exception as exc:
+            errors.append(f"{item}: {type(exc).__name__}: {exc}")
+    if errors:
+        return {"status": "failed", "message": "; ".join(errors[:3]), "result": {"errors": errors, "checked": checked}}
+    return {"status": "passed", "message": "", "result": {"checked": checked}}
+
+
+def _report_gate(
+    storage: LocalStorage,
+    input_assets: list[str],
+    *,
+    report_types: set[str],
+    block_recommendations: set[str],
+    service_operation: str,
+    spec: dict[str, Any],
+    workspace_path: str,
+) -> dict[str, Any]:
+    reports = [_read_report_asset(storage, item) for item in input_assets]
+    reports = [item for item in reports if item and str(item.get("type", "")) in report_types]
+    if not reports and bool(spec.get("run_service", spec.get("auto_run", False))):
+        result = _execute_registered_service_processor(
+            storage,
+            processor={**spec, "operation": str(spec.get("operation") or service_operation)},
+            input_assets=input_assets,
+            workspace_path=workspace_path or None,
+        )
+        reports = [_read_report_asset(storage, item) for item in result.get("output_assets", []) if str(item).strip()]
+        reports = [item for item in reports if item and str(item.get("type", "")) in report_types]
+        if not reports:
+            return {"status": "failed" if result.get("status") == "failed" else "passed", "message": str(result.get("error") or result.get("message") or ""), "result": result}
+    if not reports:
+        return {"status": "passed", "message": "no report asset required or available for gate", "result": {"checked": []}}
+    failures: list[str] = []
+    checked: list[dict[str, Any]] = []
+    for report in reports:
+        content = report.get("content", {}) if isinstance(report.get("content", {}), dict) else {}
+        recommendation = str(content.get("recommendation") or content.get("decision") or content.get("status") or "").lower()
+        risk_level = str(content.get("risk_level") or content.get("overall_risk") or "").lower()
+        high_count = _high_severity_count(content)
+        checked.append({"path": report.get("path", ""), "type": report.get("type", ""), "recommendation": recommendation, "risk_level": risk_level, "high_count": high_count})
+        if recommendation in block_recommendations or risk_level in {"high", "critical"} or high_count > 0:
+            failures.append(f"{report.get('path', '')}: {recommendation or risk_level or 'high severity finding'}")
+    if failures:
+        return {"status": "failed", "message": "; ".join(failures[:3]), "result": {"checked": checked, "failures": failures}}
+    return {"status": "passed", "message": "", "result": {"checked": checked}}
+
+
+def _read_report_asset(storage: LocalStorage, item: str | Path) -> dict[str, Any]:
+    try:
+        path = resolve_path(storage.root, item)
+        data = storage.read_json(path)
+    except Exception:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {**data, "path": _display_path(storage.root, path)}
+
+
+def _high_severity_count(content: dict[str, Any]) -> int:
+    count = 0
+    for key in ["issues", "findings", "violations", "gate_results"]:
+        value = content.get(key)
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict) and str(item.get("severity") or item.get("risk") or "").lower() in {"high", "critical"}:
+                    count += 1
+        elif isinstance(value, dict):
+            for item in value.values():
+                if isinstance(item, dict) and str(item.get("severity") or item.get("status") or "").lower() in {"high", "critical", "failed"}:
+                    count += 1
+    return count
+
+
+def _record_gate_decision(
+    storage: LocalStorage,
+    *,
+    node: dict[str, Any],
+    input_assets: list[str],
+    gate_kind: str,
+    decision: dict[str, Any],
+    trace: dict[str, Any],
+) -> dict[str, Any]:
+    try:
+        gate = record_gate_result(
+            storage,
+            gate_kind=gate_kind,
+            status="failed" if decision.get("status") != "passed" else "passed",
+            target_paths=input_assets,
+            result={"node_id": node.get("node_id", ""), "decision": decision},
+            trace=trace,
+            project_id=_project_id_for_paths(storage, input_assets),
+            message=str(decision.get("message", "")),
+            blocking=True,
+        )
+        quality_gate = decision.get("quality_gate", {}) if isinstance(decision.get("quality_gate", {}), dict) else {}
+        quality_gate["gate_result_path"] = gate.get("path", "")
+        decision["quality_gate"] = quality_gate
+    except Exception:
+        pass
+    return decision
+
+
+def _gate_trace(run_id: str, node_id: str, gate_kind: str) -> dict[str, str]:
+    trace_id = run_id or make_id("workflow_trace", utc_now())
+    return {
+        "trace_id": trace_id,
+        "span_id": make_id("span", f"{trace_id}-{node_id}-{gate_kind}-{utc_now()}"),
+        "parent_span_id": trace_id,
+    }
+
+
+def _project_id_for_paths(storage: LocalStorage, paths: list[str | Path]) -> str:
+    refs = [_asset_ref(storage, item) for item in paths]
+    project = _project_scope_from_refs(storage, refs)
+    return str(project.get("project_id", ""))
 
 
 def _tool_name_for_output(output_types: list[str]) -> str:
@@ -2033,6 +2539,19 @@ def _trace_payload(trace: dict[str, Any] | None, *, trace_id: str, node_id: str)
     parent_span_id = str(payload.get("parent_span_id") or resolved_trace_id)
     span_id = str(payload.get("span_id") or make_id("span", f"{resolved_trace_id}-{node_id}-{utc_now()}"))
     return {"trace_id": resolved_trace_id, "span_id": span_id, "parent_span_id": parent_span_id}
+
+
+def _trace_span_status(status: str) -> str:
+    value = str(status or "").lower()
+    if value in {"succeeded", "recovered", "completed", "within_sla"}:
+        return "succeeded"
+    if value in {"failed", "dead_letter", "needs_revision", "breached", "exceeded"}:
+        return "failed"
+    if value in {"cancelled", "skipped", "running"}:
+        return value
+    if value in {"prepared", "planned", "paused", "waiting_human"}:
+        return "skipped"
+    return "succeeded"
 
 
 def _asset_ref(storage: LocalStorage, value: str | Path) -> dict[str, str]:

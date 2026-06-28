@@ -255,6 +255,7 @@ export type TaskControl = {
   };
   config: Record<string, unknown>;
   queue_trend: Array<Record<string, unknown>>;
+  scheduler?: Record<string, unknown>;
   dead_letters?: { count: number };
 };
 
@@ -358,6 +359,38 @@ export type NodeRunRow = {
   started_at: string;
   finished_at: string;
   error: string;
+};
+
+export type WorkflowDefinitionRow = {
+  path: string;
+  id: string;
+  workflow_id: string;
+  name: string;
+  version: string;
+  entry_node_id: string;
+  status: string;
+  node_count: number;
+  updated_at?: string;
+};
+
+export type WorkflowRunRow = {
+  path: string;
+  id: string;
+  run_id: string;
+  workflow_id: string;
+  status: string;
+  blocked_node_id: string;
+  blocked_status: string;
+  blocked_reason: string;
+  node_run_count: number;
+  agent_run_count: number;
+  output_count: number;
+  trace_id: string;
+  project_id: string;
+  workspace_path: string;
+  started_at: string;
+  finished_at: string;
+  updated_at?: string;
 };
 
 export type AgentRunRow = {

@@ -1,11 +1,11 @@
 "use client";
 
-import { Activity, CheckCircle2, RotateCcw, Workflow } from "lucide-react";
+import { Activity, CheckCircle2, Play, RotateCcw, Workflow } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
-import type { AgentRunRow, BatchItem, DeadLetter, HandoffRow, NodeRunRow, ProjectHealthReport, ProjectRow, TaskCenter, TaskControl } from "../../shared/types";
+import type { AgentRunRow, BatchItem, DeadLetter, HandoffRow, NodeRunRow, ProjectHealthReport, ProjectRow, TaskCenter, TaskControl, WorkflowDefinitionRow, WorkflowRunRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { enqueueWorkflowSchedulerLoop, loadProductionControlData, runAgentBoundaryAudit, runWorkflowSchedulerTick } from "./api";
+import { enqueueWorkflowSchedulerLoop, executeWorkflow, loadProductionControlData, resumeWorkflow, runAgentBoundaryAudit, runWorkflowSchedulerTick } from "./api";
 
 export function ProductionControlPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
@@ -15,12 +15,19 @@ export function ProductionControlPage() {
   const [batchItems, setBatchItems] = useState<BatchItem[]>([]);
   const [handoffs, setHandoffs] = useState<HandoffRow[]>([]);
   const [nodeRuns, setNodeRuns] = useState<NodeRunRow[]>([]);
+  const [workflowDefinitions, setWorkflowDefinitions] = useState<WorkflowDefinitionRow[]>([]);
+  const [workflowRunRows, setWorkflowRunRows] = useState<WorkflowRunRow[]>([]);
   const [agentRuns, setAgentRuns] = useState<AgentRunRow[]>([]);
   const [projectHealth, setProjectHealth] = useState<ProjectHealthReport | null>(null);
   const [projectId, setProjectId] = useState("");
   const [boundaryAudit, setBoundaryAudit] = useState<Record<string, unknown> | null>(null);
   const [schedulerResult, setSchedulerResult] = useState<Record<string, unknown> | null>(null);
   const [schedulerQueue, setSchedulerQueue] = useState<Record<string, unknown> | null>(null);
+  const [workflowAction, setWorkflowAction] = useState<Record<string, unknown> | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState("");
+  const [selectedWorkflowRun, setSelectedWorkflowRun] = useState("");
+  const [workflowInputText, setWorkflowInputText] = useState("");
+  const [workflowOutputText, setWorkflowOutputText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -28,11 +35,11 @@ export function ProductionControlPage() {
   const waitingHandoffs = handoffs.filter((item) => item.status !== "completed" && item.status !== "superseded");
   const failedAgents = agentRuns.filter((run) => ["failed", "dead_letter", "needs_revision"].includes(run.status));
   const activeNodeRuns = nodeRuns.filter((run) => ["running", "waiting_human", "verifying"].includes(run.status));
-  const workflowRuns = taskCenter?.workflow_runs || [];
+  const workflowRuns = workflowRunRows.length ? workflowRunRows : (taskCenter?.workflow_runs || []);
   const activeWorkflowRuns = workflowRuns.filter((run) => ["running", "prepared", "paused"].includes(String(run.status || "")));
 
   async function refresh(nextProjectId = projectId) {
-    const [projectRows, tasks, control, deadLetterRows, itemRows, handoffRows, nodeRows, agentRows, healthReport] = await loadProductionControlData(nextProjectId);
+    const [projectRows, tasks, control, deadLetterRows, itemRows, handoffRows, nodeRows, workflowDefinitionRows, workflowRunsFromApi, agentRows, healthReport] = await loadProductionControlData(nextProjectId);
     setProjects(projectRows);
     setTaskCenter(tasks);
     setTaskControl(control);
@@ -40,9 +47,13 @@ export function ProductionControlPage() {
     setBatchItems(itemRows);
     setHandoffs(handoffRows);
     setNodeRuns(nodeRows);
+    setWorkflowDefinitions(workflowDefinitionRows);
+    setWorkflowRunRows(workflowRunsFromApi);
     setAgentRuns(agentRows);
     setProjectHealth(healthReport);
     setProjectId(nextProjectId || projectRows[0]?.project_id || "");
+    setSelectedWorkflow((current) => current || workflowDefinitionRows[0]?.path || "");
+    setSelectedWorkflowRun((current) => current || workflowRunsFromApi.find((run) => ["running", "failed"].includes(run.status))?.path || workflowRunsFromApi[0]?.path || "");
   }
 
   useEffect(() => {
@@ -91,6 +102,52 @@ export function ProductionControlPage() {
     }
   }
 
+  async function executeSelectedWorkflow() {
+    if (!selectedWorkflow) {
+      setError("请选择 workflow definition");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const result = await executeWorkflow({
+        workflow_path_or_id: selectedWorkflow,
+        input_assets: splitLines(workflowInputText),
+        max_nodes: 5,
+        execute_agents: false
+      });
+      setWorkflowAction(result);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resumeSelectedWorkflow() {
+    if (!selectedWorkflowRun) {
+      setError("请选择 workflow run");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const selectedRun = workflowRunRows.find((run) => run.path === selectedWorkflowRun);
+      const result = await resumeWorkflow({
+        workflow_run_path_or_id: selectedWorkflowRun,
+        resume_node_id: selectedRun?.blocked_node_id || undefined,
+        output_assets: splitLines(workflowOutputText)
+      });
+      setWorkflowAction(result);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <FeatureShell title="生产总控中心" subtitle="任务、工作流节点、Agent、批处理 item、Handoff、dead-letter 和 worker health 的统一观测台。">
       {error ? <div className="errorLine">{error}</div> : null}
@@ -122,6 +179,11 @@ export function ProductionControlPage() {
             <Metric label="等待 Handoff" value={String(waitingHandoffs.length)} />
             <Metric label="Dead Letter" value={String(deadLetters.length)} />
           </div>
+          <div className="summaryBand">
+            <Metric label="Scheduler" value={String(taskControl?.scheduler?.status ?? "missing")} />
+            <Metric label="Owner" value={String(taskControl?.scheduler?.owner ?? "-")} />
+            <Metric label="Last Tick" value={String(taskControl?.scheduler?.last_tick ?? "-")} />
+          </div>
         </div>
 
         <div className="panel">
@@ -136,6 +198,46 @@ export function ProductionControlPage() {
       </section>
 
       <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Workflow Console" icon={<Play size={18} />} />
+          <div className="formGrid">
+            <select value={selectedWorkflow} onChange={(event) => setSelectedWorkflow(event.target.value)}>
+              <option value="">选择 Definition</option>
+              {workflowDefinitions.map((definition) => (
+                <option value={definition.path} key={definition.path}>{definition.name || definition.workflow_id}</option>
+              ))}
+            </select>
+            <select value={selectedWorkflowRun} onChange={(event) => setSelectedWorkflowRun(event.target.value)}>
+              <option value="">选择 Run</option>
+              {workflowRunRows.map((run) => (
+                <option value={run.path} key={run.path}>{run.status} · {run.blocked_node_id || run.run_id}</option>
+              ))}
+            </select>
+            <textarea value={workflowInputText} onChange={(event) => setWorkflowInputText(event.target.value)} placeholder="输入资产路径，每行一个" rows={3} />
+            <textarea value={workflowOutputText} onChange={(event) => setWorkflowOutputText(event.target.value)} placeholder="resume 输出资产路径，每行一个" rows={3} />
+            <button className="primaryButton" disabled={busy || !selectedWorkflow} onClick={executeSelectedWorkflow}>执行 Workflow</button>
+            <button className="secondaryButton" disabled={busy || !selectedWorkflowRun} onClick={resumeSelectedWorkflow}>Resume Run</button>
+          </div>
+          <div className="summaryBand">
+            <Metric label="Definitions" value={String(workflowDefinitions.length)} />
+            <Metric label="Runs" value={String(workflowRunRows.length)} />
+            <Metric label="Blocked" value={String(workflowRunRows.filter((run) => run.blocked_node_id).length)} />
+            <Metric label="Action" value={String(workflowAction?.status ?? "-")} />
+          </div>
+          <DataTable
+            emptyText="暂无 workflow run"
+            columns={["Run", "状态", "Blocked", "节点/Agent", "Trace", "路径"]}
+            rows={workflowRunRows.slice(0, 12).map((run) => [
+              run.run_id,
+              <span className={statusClass(run.status)} key={`workflow-status-${run.path}`}>{run.status}</span>,
+              run.blocked_node_id ? `${run.blocked_node_id} · ${run.blocked_status}` : "-",
+              `${run.node_run_count}/${run.agent_run_count}`,
+              run.trace_id || "-",
+              <span className="pathText" key={run.path}>{run.path}</span>
+            ])}
+          />
+        </div>
+
         <div className="panel">
           <PanelHeader title="Workflow Scheduler" icon={<Workflow size={18} />} />
           <div className="summaryBand">
@@ -250,4 +352,11 @@ export function ProductionControlPage() {
       </section>
     </FeatureShell>
   );
+}
+
+function splitLines(value: string): string[] {
+  return value
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }

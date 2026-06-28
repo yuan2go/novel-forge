@@ -191,9 +191,21 @@ def _agent_metrics(agent_rows: list[dict[str, Any]]) -> dict[str, int]:
 def _model_cost_metrics(agent_rows: list[dict[str, Any]], benchmark_runs: list[dict[str, Any]]) -> dict[str, Any]:
     token_used = 0
     cost_estimate = 0.0
+    ledger_cost = 0.0
+    ledger_count = 0
     provider_counts: dict[str, int] = {}
     for item in agent_rows:
         content = item.get("content", {}) if isinstance(item.get("content", {}), dict) else {}
+        if item.get("type") == "cost_ledger":
+            ledger_count += 1
+            try:
+                ledger_cost += float(content.get("amount") or 0)
+            except (TypeError, ValueError):
+                pass
+            metadata = content.get("metadata", {}) if isinstance(content.get("metadata", {}), dict) else {}
+            provider = str(metadata.get("provider") or "ledger")
+            provider_counts[provider] = provider_counts.get(provider, 0) + 1
+            continue
         if item.get("type") != "agent_run":
             continue
         token_used += int(content.get("token_used") or 0)
@@ -210,7 +222,9 @@ def _model_cost_metrics(agent_rows: list[dict[str, Any]], benchmark_runs: list[d
         benchmark_cost += float(scores.get("cost_estimate", 0) or 0)
     return {
         "token_used": token_used,
-        "cost_estimate": round(cost_estimate + benchmark_cost, 6),
+        "cost_estimate": round((ledger_cost if ledger_count else cost_estimate) + benchmark_cost, 6),
+        "ledger_cost": round(ledger_cost, 6),
+        "ledger_count": ledger_count,
         "provider_counts": provider_counts,
         "benchmark_run_count": len(benchmark_runs),
     }

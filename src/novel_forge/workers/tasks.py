@@ -165,6 +165,9 @@ def workflow_scheduler_loop_task(
     interval_seconds: float = 0.0,
     apply_invalidation: bool = True,
     stop_when_idle: bool = True,
+    lease_ttl_seconds: int = 300,
+    lease_owner: str = "",
+    force_lease: bool = False,
     request_id: str = "",
 ) -> dict:
     with _worker_context(root, "workflow-scheduler-loop", workspace_path=None) as run:
@@ -179,6 +182,9 @@ def workflow_scheduler_loop_task(
             apply_invalidation=apply_invalidation,
             stop_when_idle=stop_when_idle,
             run_id=request_id or None,
+            lease_ttl_seconds=lease_ttl_seconds,
+            lease_owner=lease_owner,
+            force_lease=force_lease,
         )
         run.succeed(output_assets=result.get("task_status_paths", []), token_used=int(result.get("candidate_count", 0) or 0))
         return result

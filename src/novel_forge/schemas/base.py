@@ -376,6 +376,13 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "agent_failure_report": ["agent_run_id", "error_type", "error_message", "recovery_instruction", "created_at"],
     "agent_sla_report": ["agent_run_id", "status", "started_at", "deadline_at", "elapsed_seconds", "sla_seconds", "breach"],
     "agent_rollback_report": ["agent_run_id", "rollback_id", "target_asset_paths", "rollback_strategy", "status", "created_at"],
+    "scheduler_lease": ["lease_key", "owner", "status", "acquired_at", "expires_at"],
+    "trace_span": ["trace_id", "span_id", "parent_span_id", "span_type", "name", "status", "started_at"],
+    "gate_result": ["gate_id", "gate_kind", "status", "target_paths", "created_at"],
+    "model_call_log": ["call_id", "provider", "model", "operation", "status", "usage", "cost", "created_at"],
+    "cost_ledger": ["ledger_id", "scope", "amount", "currency", "source_type", "source_id", "created_at"],
+    "budget_policy": ["policy_id", "scope", "limits", "status"],
+    "cost_alert": ["alert_id", "scope", "severity", "message", "status", "created_at"],
     "chapter_continuity_report": ["target_asset_id", "chapter", "continuity_checks", "violations", "recommendation"],
     "continuity_graph_snapshot": ["project_id", "nodes", "edges", "summary", "created_at"],
     "canon_graph_snapshot": ["snapshot_id", "project_id", "entities", "relationships", "state_machines", "lifecycle_threads", "event_graph", "violations"],
@@ -560,6 +567,8 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.extend(_validate_change_impact_report_content(content))
     if asset_type.startswith("agent_") and isinstance(content, dict):
         errors.extend(_validate_agent_asset_content(asset_type, content))
+    if asset_type in {"scheduler_lease", "trace_span", "gate_result", "model_call_log", "cost_ledger", "budget_policy", "cost_alert"} and isinstance(content, dict):
+        errors.extend(_validate_runtime_observability_content(asset_type, content))
     if asset_type in {"chapter_continuity_report", "continuity_graph_snapshot", "canon_graph_snapshot", "canon_patch"} and isinstance(content, dict):
         errors.extend(_validate_deep_continuity_content(asset_type, content))
     if asset_type in {"model_profile", "model_benchmark_task", "model_benchmark_run", "model_comparison_report", "prompt_version", "prompt_regression_report", "model_routing_policy"} and isinstance(content, dict):
@@ -606,6 +615,42 @@ def _validate_workflow_run_content(content: dict[str, Any]) -> list[str]:
             errors.append("failed workflow_run must include recovery_instruction")
         if _is_missing(content.get("run_log")):
             errors.append("failed workflow_run must include run_log")
+    return errors
+
+
+def _validate_runtime_observability_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "scheduler_lease":
+        if content.get("status") not in {"active", "released", "expired", "stolen"}:
+            errors.append("scheduler_lease status must be active, released, expired, or stolen")
+    if asset_type == "trace_span":
+        if content.get("status") not in {"running", "succeeded", "failed", "cancelled", "skipped"}:
+            errors.append("trace_span status must be running, succeeded, failed, cancelled, or skipped")
+    if asset_type == "gate_result":
+        if content.get("status") not in {"passed", "failed", "warning", "skipped"}:
+            errors.append("gate_result status must be passed, failed, warning, or skipped")
+        if not isinstance(content.get("target_paths"), list):
+            errors.append("gate_result target_paths must be a list")
+    if asset_type == "model_call_log":
+        if content.get("status") not in {"succeeded", "failed", "skipped"}:
+            errors.append("model_call_log status must be succeeded, failed, or skipped")
+        if not isinstance(content.get("usage"), dict):
+            errors.append("model_call_log usage must be an object")
+        if not isinstance(content.get("cost"), dict):
+            errors.append("model_call_log cost must be an object")
+    if asset_type == "cost_ledger":
+        if not isinstance(content.get("amount"), (int, float)) or float(content.get("amount", 0)) < 0:
+            errors.append("cost_ledger amount must be a non-negative number")
+    if asset_type == "budget_policy":
+        if content.get("status") not in {"active", "disabled", "archived"}:
+            errors.append("budget_policy status must be active, disabled, or archived")
+        if not isinstance(content.get("limits"), dict):
+            errors.append("budget_policy limits must be an object")
+    if asset_type == "cost_alert":
+        if content.get("severity") not in {"info", "warning", "critical"}:
+            errors.append("cost_alert severity must be info, warning, or critical")
+        if content.get("status") not in {"open", "acknowledged", "resolved"}:
+            errors.append("cost_alert status must be open, acknowledged, or resolved")
     return errors
 
 

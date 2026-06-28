@@ -7,6 +7,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.agent_runs import list_agent_runs
+from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, create_budget_policy, scheduler_lease_status
 from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs, resume_workflow, run_workflow_scheduler, run_workflow_scheduler_loop
 from novel_forge.schemas import ChapterPlan, CleanedText, DraftChapter, Outline, SourceDocument
 from novel_forge.storage.local import LocalStorage
@@ -206,6 +207,7 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(resumed["status"], "completed")
             self.assertEqual(resumed["resume_node_id"], "draft-agent")
             self.assertEqual(storage.read_asset(resumed["workflow_run"]["path"]).content["lineage"]["resumed_from_run_id"], initial["run_id"])
+            self.assertEqual(storage.read_asset(initial["workflow_run"]["path"]).content["status"], "superseded")
             resume_node_runs = list_node_runs(storage, run_id=resumed["run_id"])
             self.assertEqual([row["node_id"] for row in reversed(resume_node_runs)], ["draft-agent", "review"])
             agent_run = storage.read_asset(resumed["agent_runs"][0]["path"])
@@ -215,6 +217,9 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertIn("agent_budget", run_types)
             self.assertIn("agent_checkpoint", run_types)
             self.assertIn("agent_sla_report", run_types)
+            self.assertIn("model_call_log", run_types)
+            self.assertIn("cost_ledger", run_types)
+            self.assertIn("trace_span", run_types)
 
     def test_resume_blocks_when_agent_budget_is_exceeded(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -257,6 +262,44 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertIn("agent_failure_report", run_types)
             resume_node_runs = list_node_runs(storage, run_id=resumed["run_id"])
             self.assertEqual(resume_node_runs[0]["status"], "failed")
+
+    def test_resume_blocks_when_budget_policy_is_exceeded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}),
+            )
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(title="Draft", content={"chapter": 1, "text": "原创测试章节。", "copyright_boundary": "unit test"}),
+            )
+            create_budget_policy(storage, scope="local-system", limits={"max_cost": 0.1, "max_tokens_per_run": 1000}, project_id="local-system")
+            workflow = create_workflow_definition(
+                storage,
+                name="Agent Budget Policy Block",
+                entry_node_id="draft-agent",
+                nodes=[
+                    {
+                        "node_id": "draft-agent",
+                        "node_type": "agent",
+                        "operation": "draft",
+                        "input_types": ["chapter_plan"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "agent", "agent_key": "draft", "agent_status": "prepared", "token_budget": 500},
+                    }
+                ],
+            )
+            initial = execute_workflow(storage, workflow["path"], input_assets=[plan_path], execute_agents=False)
+
+            resumed = resume_workflow(storage, initial["workflow_run"]["path"], output_assets=[draft_path], token_used=50, cost_estimate=0.42)
+
+            self.assertEqual(resumed["status"], "failed")
+            run_types = _run_asset_types(storage)
+            self.assertIn("budget_policy", run_types)
+            self.assertIn("cost_alert", run_types)
+            self.assertIn("agent_failure_report", run_types)
 
     def test_executor_can_apply_downstream_invalidation(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -372,6 +415,7 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertIn("agent_budget", run_types)
             self.assertIn("agent_checkpoint", run_types)
             self.assertIn("agent_sla_report", run_types)
+            self.assertIn("cost_ledger", run_types)
 
     def test_scheduler_tick_records_checkpoint_when_outputs_are_missing(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -408,6 +452,21 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(list_agent_runs(storage)[0]["status"], "prepared")
             self.assertIn("agent_checkpoint", _run_asset_types(storage))
 
+    def test_scheduler_loop_respects_active_lease(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            lease = acquire_scheduler_lease(storage, owner="worker-a", ttl_seconds=300)
+            self.assertTrue(lease["acquired"])
+
+            loop = run_workflow_scheduler_loop(storage, iterations=1, interval_seconds=0, lease_owner="worker-b")
+
+            self.assertEqual(loop["status"], "skipped")
+            self.assertEqual(loop["recommendation"], "scheduler_lease_active")
+            status = scheduler_lease_status(storage)
+            self.assertEqual(status["owner"], "worker-a")
+            self.assertEqual(status["status"], "active")
+
     def test_service_processor_registry_runs_module_completion_snapshot(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -434,6 +493,70 @@ class WorkflowExecutorTests(unittest.TestCase):
             node_run = list_node_runs(storage, run_id=result["run_id"])[0]
             processor = storage.read_asset(node_run["path"]).content["processor"]
             self.assertEqual(processor["registry_operation"], "module_completion_snapshot")
+
+    def test_service_processor_resumes_from_checkpoint_when_outputs_exist(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            output_path = storage.write_asset(
+                "drafts",
+                DraftChapter(title="Recovered Draft", content={"chapter": 1, "text": "已存在输出。", "copyright_boundary": "unit test"}),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Checkpoint Resume",
+                entry_node_id="recover",
+                nodes=[
+                    {
+                        "node_id": "recover",
+                        "node_type": "service",
+                        "operation": "unknown_service_that_should_not_run",
+                        "output_types": ["draft_chapter"],
+                        "processor": {
+                            "kind": "service",
+                            "resume_from_checkpoint": True,
+                            "expected_output_assets": [str(output_path.relative_to(storage.root))],
+                            "checkpoint_schema": {"version": "0.1.0", "state": "output_exists"},
+                        },
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"])
+
+            self.assertEqual(result["status"], "completed")
+            node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
+            self.assertEqual(node_run.content["status"], "recovered")
+            self.assertTrue(node_run.content["processor"]["resumed_from_checkpoint"])
+
+    def test_gate_registry_schema_gate_blocks_invalid_input(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            invalid_path = storage.data_dir("raw") / "invalid-source.json"
+            storage.write_json(invalid_path, {"type": "source_document", "id": "invalid-source", "content": {}})
+            workflow = create_workflow_definition(
+                storage,
+                name="Schema Gate Registry",
+                entry_node_id="schema",
+                nodes=[
+                    {
+                        "node_id": "schema",
+                        "node_type": "quality",
+                        "operation": "schema",
+                        "processor": {"kind": "deterministic"},
+                        "quality_gate": {"required": True, "kind": "schema"},
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[invalid_path])
+
+            self.assertEqual(result["status"], "failed")
+            self.assertIn("gate_result", _run_asset_types(storage))
+            node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
+            self.assertEqual(node_run.content["status"], "failed")
+            self.assertIn("registry_results", node_run.content["quality_gate"])
 
     def test_scheduler_loop_records_task_status_and_worker_contract(self):
         with tempfile.TemporaryDirectory() as tmp:

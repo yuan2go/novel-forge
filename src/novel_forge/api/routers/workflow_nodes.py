@@ -11,6 +11,8 @@ from novel_forge.modules.workflow_nodes import (
     create_workflow_node,
     execute_workflow,
     list_node_runs,
+    list_workflow_definitions,
+    list_workflow_runs,
     record_node_run,
     resume_workflow,
     run_workflow_scheduler,
@@ -39,6 +41,24 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ) -> list[dict[str, Any]]:
         try:
             return list_node_runs(LocalStorage(app_settings.root), project_id=project_id, run_id=run_id, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/workflow/definitions")
+    def workflow_definitions(limit: int = Query(default=100, ge=1, le=500)) -> list[dict[str, Any]]:
+        try:
+            return list_workflow_definitions(LocalStorage(app_settings.root), limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/workflow/runs")
+    def workflow_runs(
+        project_id: str | None = None,
+        status: str | None = None,
+        limit: int = Query(default=100, ge=1, le=500),
+    ) -> list[dict[str, Any]]:
+        try:
+            return list_workflow_runs(LocalStorage(app_settings.root), project_id=project_id, status=status, limit=limit)
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -130,6 +150,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 max_nodes=request.max_nodes,
                 apply_invalidation=request.apply_invalidation,
                 workspace_path=request.workspace_path,
+                archive_previous=request.archive_previous,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -151,6 +172,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     interval_seconds=request.interval_seconds,
                     apply_invalidation=request.apply_invalidation,
                     stop_when_idle=request.stop_when_idle,
+                    lease_ttl_seconds=request.lease_ttl_seconds,
+                    lease_owner=request.lease_owner,
+                    force_lease=request.force_lease,
                 )
                 return {"mode": "async", "task_id": task.id, "task_name": "novel_forge.workflow_scheduler_loop", "queue": app_settings.celery_default_queue}
             except Exception as exc:
@@ -175,6 +199,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 interval_seconds=request.interval_seconds,
                 apply_invalidation=request.apply_invalidation,
                 stop_when_idle=request.stop_when_idle,
+                lease_ttl_seconds=request.lease_ttl_seconds,
+                lease_owner=request.lease_owner,
+                force_lease=request.force_lease,
             )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -192,6 +219,9 @@ def _enqueue_workflow_scheduler_task(
     interval_seconds: float,
     apply_invalidation: bool,
     stop_when_idle: bool,
+    lease_ttl_seconds: int,
+    lease_owner: str,
+    force_lease: bool,
 ):
     try:
         from novel_forge.workers.dispatch import enqueue_task
@@ -207,6 +237,9 @@ def _enqueue_workflow_scheduler_task(
         interval_seconds,
         apply_invalidation,
         stop_when_idle,
+        lease_ttl_seconds,
+        lease_owner,
+        force_lease,
         settings=app_settings,
         task_kwargs={"request_id": utc_now()},
     )

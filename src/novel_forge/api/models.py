@@ -374,6 +374,7 @@ class WorkflowResumeRequest(BaseModel):
     max_nodes: int | None = None
     apply_invalidation: bool = True
     workspace_path: str | None = None
+    archive_previous: bool = True
 
 
 class WorkflowSchedulerRequest(BaseModel):
@@ -386,6 +387,9 @@ class WorkflowSchedulerRequest(BaseModel):
     interval_seconds: float = 0.0
     apply_invalidation: bool = True
     stop_when_idle: bool = True
+    lease_ttl_seconds: int = 300
+    lease_owner: str = ""
+    force_lease: bool = False
 
 
 class ChangeImpactRequest(BaseModel):

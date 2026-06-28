@@ -9,6 +9,7 @@ from novel_forge.agents import agent_runtime_profile, enforce_agent_action, runt
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.runtime_ledger import check_budget_policy, record_cost_ledger, record_model_call_log, record_trace_span
 from novel_forge.schemas import (
     AgentBudget,
     AgentCheckpoint,
@@ -231,6 +232,8 @@ def start_agent_run(
     )
     now = utc_now()
     run_id = make_id("agent_run", f"{profile.get('agent', agent_key)}-{operation}")
+    evidence_payload = evidence or {}
+    trace_payload = _agent_trace_payload(evidence_payload, fallback_trace_id=run_id, span_name=f"agent-run-{operation}")
     first_input = _first_existing_asset(storage, input_rows)
     metadata = {
         "project_id": project_id,
@@ -272,7 +275,8 @@ def start_agent_run(
             "status": status,
             "error": "",
             "checkpoint": {},
-            "evidence": evidence or {},
+            "evidence": evidence_payload,
+            "trace": trace_payload,
             "human_gate": human_gate or {"required": status == "waiting_human", "status": "waiting" if status == "waiting_human" else "not_required"},
             "retry_count": retry_count,
         },
@@ -294,6 +298,19 @@ def start_agent_run(
         ),
     )
     result = _write(storage, asset)
+    _record_agent_trace_span(
+        storage,
+        trace=trace_payload,
+        span_type="agent_run",
+        name=operation,
+        status=status,
+        started_at=now,
+        finished_at=now if status in TERMINAL_STATUSES else "",
+        project_id=project_id,
+        workspace_path=str(project.get("workspace_path", "")),
+        attributes={"agent_run_path": result.get("path", ""), "agent_type": profile.get("agent", agent_key), "operation": operation},
+        references=[result.get("path", "")],
+    )
     event = record_agent_event(
         storage,
         agent_run_path=result["path"],
@@ -359,6 +376,20 @@ def update_agent_run_status(
         ),
     )
     _write_json_validated(storage, path, data)
+    trace_payload = content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}
+    _record_agent_trace_span(
+        storage,
+        trace=trace_payload,
+        span_type="agent_status",
+        name=event_type,
+        status=status,
+        started_at=content.get("started_at", ""),
+        finished_at=content.get("finished_at", ""),
+        project_id=project_id,
+        workspace_path=str(metadata.get("workspace_path", "")),
+        attributes={"agent_run_path": _display_path(storage.root, path), "event_type": event_type, "status": status, "message": message, "error": error},
+        references=[_display_path(storage.root, path)],
+    )
     event = record_agent_event(
         storage,
         agent_run_path=_display_path(storage.root, path),
@@ -386,6 +417,7 @@ def record_agent_event(
     content = run.get("content", {}) if isinstance(run.get("content", {}), dict) else {}
     metadata = run.get("metadata", {}) if isinstance(run.get("metadata", {}), dict) else {}
     now = utc_now()
+    trace_payload = _agent_trace_payload(content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}, fallback_trace_id=str(content.get("run_id", "")), span_name=f"event-{event_type}")
     asset = AgentEvent(
         title=f"{event_type}: {content.get('operation', '')}",
         source=str(content.get("run_id", "")),
@@ -398,6 +430,7 @@ def record_agent_event(
             "message": message,
             "payload": payload or {},
             "created_at": now,
+            "trace": trace_payload,
         },
         metadata={
             "project_id": metadata.get("project_id", ""),
@@ -411,7 +444,21 @@ def record_agent_event(
             _dedupe([_display_path(storage.root, run_path)]),
         ),
     )
-    return _write(storage, asset)
+    result = _write(storage, asset)
+    _record_agent_trace_span(
+        storage,
+        trace=trace_payload,
+        span_type="agent_event",
+        name=event_type,
+        status=status,
+        started_at=now,
+        finished_at=now,
+        project_id=str(metadata.get("project_id", "")),
+        workspace_path=str(metadata.get("workspace_path", "")),
+        attributes={"agent_event_path": result.get("path", ""), "message": message, "payload": payload or {}},
+        references=[result.get("path", ""), _display_path(storage.root, run_path)],
+    )
+    return result
 
 
 def record_agent_checkpoint(
@@ -429,6 +476,7 @@ def record_agent_checkpoint(
     metadata = run.get("metadata", {}) if isinstance(run.get("metadata", {}), dict) else {}
     checkpoint_id = make_id("checkpoint", str(content.get("run_id", "")))
     now = utc_now()
+    trace_payload = _agent_trace_payload(content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}, fallback_trace_id=str(content.get("run_id", "")), span_name=f"checkpoint-{status}")
     asset = AgentCheckpoint(
         title=f"Checkpoint {status}: {content.get('operation', '')}",
         source=str(content.get("run_id", "")),
@@ -440,11 +488,25 @@ def record_agent_checkpoint(
             "status": status,
             "state": state,
             "created_at": now,
+            "trace": trace_payload,
         },
         metadata={"project_id": metadata.get("project_id", ""), "workspace_path": metadata.get("workspace_path", "")},
         references=filter_project_safe_references(storage, str(metadata.get("project_id", "")), [_display_path(storage.root, run_path)]),
     )
     result = _write(storage, asset)
+    _record_agent_trace_span(
+        storage,
+        trace=trace_payload,
+        span_type="agent_checkpoint",
+        name=status,
+        status="succeeded",
+        started_at=now,
+        finished_at=now,
+        project_id=str(metadata.get("project_id", "")),
+        workspace_path=str(metadata.get("workspace_path", "")),
+        attributes={"agent_checkpoint_path": result.get("path", ""), "state": state},
+        references=[result.get("path", ""), _display_path(storage.root, run_path)],
+    )
     update_agent_run_status(storage, _display_path(storage.root, run_path), status=str(content.get("status", "running")), checkpoint={"checkpoint_id": checkpoint_id, "path": result["path"]}, event_type="agent_run.checkpoint", message=f"checkpoint recorded: {status}")
     return result
 
@@ -457,6 +519,7 @@ def record_agent_budget(
     token_used: int = 0,
     cost_estimate: float = 0.0,
     status: str = "within_budget",
+    write_ledger: bool = True,
 ) -> dict[str, Any]:
     run_path = _resolve_agent_run(storage, agent_run_path)
     run = storage.read_json(run_path)
@@ -464,6 +527,7 @@ def record_agent_budget(
         raise ValueError(f"agent_run JSON must be an object: {run_path}")
     content = run.get("content", {}) if isinstance(run.get("content", {}), dict) else {}
     metadata = run.get("metadata", {}) if isinstance(run.get("metadata", {}), dict) else {}
+    trace_payload = _agent_trace_payload(content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}, fallback_trace_id=str(content.get("run_id", "")), span_name="budget")
     asset = AgentBudget(
         title=f"Budget {status}: {content.get('operation', '')}",
         source=str(content.get("run_id", "")),
@@ -475,11 +539,41 @@ def record_agent_budget(
             "token_used": token_used,
             "cost_estimate": cost_estimate,
             "status": status,
+            "trace": trace_payload,
         },
         metadata={"project_id": metadata.get("project_id", ""), "workspace_path": metadata.get("workspace_path", "")},
         references=filter_project_safe_references(storage, str(metadata.get("project_id", "")), [_display_path(storage.root, run_path)]),
     )
     result = _write(storage, asset)
+    project_id = str(metadata.get("project_id", ""))
+    workspace_path = str(metadata.get("workspace_path", ""))
+    _record_agent_trace_span(
+        storage,
+        trace=trace_payload,
+        span_type="agent_budget",
+        name=str(content.get("operation", "")),
+        status=status,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        attributes={"agent_budget_path": result.get("path", ""), "token_budget": token_budget, "token_used": token_used, "cost_estimate": cost_estimate},
+        references=[result.get("path", ""), _display_path(storage.root, run_path)],
+    )
+    if write_ledger and float(cost_estimate or 0) > 0:
+        try:
+            result["cost_ledger"] = record_cost_ledger(
+                storage,
+                scope=project_id or f"agent:{content.get('run_id', '')}",
+                amount=float(cost_estimate or 0),
+                currency="USD",
+                source_type="agent_budget",
+                source_id=result.get("path", ""),
+                trace=trace_payload,
+                project_id=project_id,
+                workspace_path=workspace_path,
+                metadata={"agent_run_path": _display_path(storage.root, run_path), "token_used": token_used, "operation": content.get("operation", "")},
+            )
+        except Exception:
+            pass
     data = storage.read_json(run_path)
     if isinstance(data, dict):
         run_content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
@@ -626,10 +720,14 @@ def execute_agent_run_once(
     if not isinstance(run, dict) or run.get("type") != "agent_run":
         raise ValueError(f"agent_run JSON must be an object: {run_path}")
     content = run.get("content", {}) if isinstance(run.get("content", {}), dict) else {}
+    metadata = run.get("metadata", {}) if isinstance(run.get("metadata", {}), dict) else {}
     if str(content.get("status", "")) in TERMINAL_STATUSES:
         raise ValueError("agent_run is already terminal and cannot be executed again")
     guard = guard_agent_action(storage, _display_path(storage.root, run_path), tool_name=tool_name, output_type=output_type)
     token_budget = int(content.get("token_budget", 0) or 0)
+    trace_payload = _agent_trace_payload(content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}, fallback_trace_id=str(content.get("run_id", "")), span_name=f"execute-{tool_name}")
+    project_id = str(metadata.get("project_id", ""))
+    workspace_path = str(metadata.get("workspace_path", ""))
     if token_budget > 0 and token_used > token_budget:
         budget = record_agent_budget(
             storage,
@@ -654,6 +752,54 @@ def execute_agent_run_once(
             recovery_instruction="Resume with a smaller context, a larger explicit budget, or a different Agent contract.",
         )
         return {"status": "failed", "guard": guard, "budget": budget, "failure": failure}
+    policy = check_budget_policy(
+        storage,
+        scope=project_id or "global",
+        amount=float(cost_estimate or 0.0),
+        token_used=int(token_used or 0),
+        currency="USD",
+        trace=trace_payload,
+        project_id=project_id,
+        workspace_path=workspace_path,
+    )
+    if policy.get("status") == "failed":
+        budget = record_agent_budget(
+            storage,
+            agent_run_path=_display_path(storage.root, run_path),
+            token_budget=token_budget,
+            token_used=token_used,
+            cost_estimate=cost_estimate,
+            status="exceeded",
+        )
+        record_agent_gate(
+            storage,
+            agent_run_path=_display_path(storage.root, run_path),
+            gate_type="budget_policy",
+            status="failed",
+            result=policy,
+        )
+        failure = create_agent_failure_report(
+            storage,
+            agent_run_path=_display_path(storage.root, run_path),
+            error_type="BudgetPolicyExceeded",
+            error_message=str(policy.get("message") or "agent budget policy exceeded"),
+            recovery_instruction="Reduce provider usage, change routing, or update the active budget_policy before resuming.",
+        )
+        return {"status": "failed", "guard": guard, "budget": budget, "budget_policy": policy, "failure": failure}
+    model_call = record_model_call_log(
+        storage,
+        provider=str(content.get("model_provider", metadata.get("model_provider", "local")) or "local"),
+        model=str(content.get("model_name", metadata.get("model_name", "local")) or "local"),
+        operation=str(content.get("operation", tool_name)),
+        status="succeeded",
+        usage={"total_tokens": int(token_used or 0), "token_source": "executor"},
+        cost={"amount": float(cost_estimate or 0.0), "currency": "USD", "source": "executor_estimate"},
+        trace=trace_payload,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        source_id=str(content.get("run_id", "")),
+        prompt_version=str(content.get("prompt_version", metadata.get("prompt_version", "")) or ""),
+    )
     checkpoint_result = None
     if checkpoint:
         checkpoint_result = record_agent_checkpoint(
@@ -669,6 +815,7 @@ def execute_agent_run_once(
         token_used=token_used,
         cost_estimate=cost_estimate,
         status=_budget_status(token_budget, token_used),
+        write_ledger=False,
     )
     status = update_agent_run_status(
         storage,
@@ -686,7 +833,7 @@ def execute_agent_run_once(
         agent_run_path=_display_path(storage.root, run_path),
         sla_seconds=int(evidence_payload.get("sla_seconds", 1800)),
     )
-    return {"status": "succeeded", "guard": guard, "budget": budget, "checkpoint": checkpoint_result, "run": status, "sla": sla}
+    return {"status": "succeeded", "guard": guard, "budget": budget, "budget_policy": policy, "model_call": model_call, "checkpoint": checkpoint_result, "run": status, "sla": sla}
 
 
 def create_agent_sla_report(
@@ -705,6 +852,7 @@ def create_agent_sla_report(
     finished_at = str(content.get("finished_at", "") or utc_now())
     elapsed = _elapsed_seconds(started_at, finished_at)
     breach = elapsed > max(0, sla_seconds)
+    trace_payload = _agent_trace_payload(content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}, fallback_trace_id=str(content.get("run_id", "")), span_name="sla")
     asset = AgentSlaReport(
         title=f"SLA {content.get('operation', '')}: {'breached' if breach else 'within_sla'}",
         source=str(content.get("run_id", "")),
@@ -719,11 +867,26 @@ def create_agent_sla_report(
             "elapsed_seconds": elapsed,
             "sla_seconds": sla_seconds,
             "breach": breach,
+            "trace": trace_payload,
         },
         metadata={"project_id": metadata.get("project_id", ""), "workspace_path": metadata.get("workspace_path", "")},
         references=filter_project_safe_references(storage, str(metadata.get("project_id", "")), [_display_path(storage.root, run_path)]),
     )
-    return _write(storage, asset)
+    result = _write(storage, asset)
+    _record_agent_trace_span(
+        storage,
+        trace=trace_payload,
+        span_type="agent_sla",
+        name=str(content.get("operation", "")),
+        status="failed" if breach else "succeeded",
+        started_at=started_at,
+        finished_at=finished_at,
+        project_id=str(metadata.get("project_id", "")),
+        workspace_path=str(metadata.get("workspace_path", "")),
+        attributes={"agent_sla_path": result.get("path", ""), "elapsed_seconds": elapsed, "sla_seconds": sla_seconds, "breach": breach},
+        references=[result.get("path", ""), _display_path(storage.root, run_path)],
+    )
+    return result
 
 
 def create_agent_rollback_report(
@@ -1143,6 +1306,60 @@ def _agent_run_row(storage: LocalStorage, path: Path, data: dict[str, Any]) -> d
         "finished_at": content.get("finished_at", ""),
         "updated_at": data.get("updated_at", ""),
     }
+
+
+def _agent_trace_payload(payload: dict[str, Any], *, fallback_trace_id: str, span_name: str) -> dict[str, str]:
+    source = payload if isinstance(payload, dict) else {}
+    nested = source.get("trace", {}) if isinstance(source.get("trace", {}), dict) else {}
+    trace_id = str(source.get("trace_id") or nested.get("trace_id") or source.get("workflow_run_id") or fallback_trace_id)
+    parent_span_id = str(source.get("parent_span_id") or nested.get("span_id") or nested.get("parent_span_id") or source.get("workflow_run_id") or trace_id)
+    span_id = str(source.get("span_id") or make_id("span", f"{trace_id}-{span_name}-{utc_now()}"))
+    return {"trace_id": trace_id, "span_id": span_id, "parent_span_id": parent_span_id}
+
+
+def _record_agent_trace_span(
+    storage: LocalStorage,
+    *,
+    trace: dict[str, Any],
+    span_type: str,
+    name: str,
+    status: str,
+    started_at: str = "",
+    finished_at: str = "",
+    project_id: str = "",
+    workspace_path: str = "",
+    attributes: dict[str, Any] | None = None,
+    references: list[str] | None = None,
+) -> None:
+    try:
+        record_trace_span(
+            storage,
+            trace_id=str(trace.get("trace_id", "")),
+            span_id=str(trace.get("span_id", "")),
+            parent_span_id=str(trace.get("parent_span_id", "")),
+            span_type=span_type,
+            name=name,
+            status=_agent_trace_status(status),
+            started_at=started_at or None,
+            finished_at=finished_at or None,
+            attributes=attributes or {},
+            references=references or [],
+            project_id=project_id,
+            workspace_path=workspace_path,
+        )
+    except Exception:
+        return
+
+
+def _agent_trace_status(status: str) -> str:
+    value = str(status or "").lower()
+    if value in {"succeeded", "within_budget", "within_sla", "passed", "info", "prepared"}:
+        return "succeeded"
+    if value in {"failed", "dead_letter", "exceeded", "breached"}:
+        return "failed"
+    if value in {"cancelled", "running", "skipped"}:
+        return value
+    return "succeeded"
 
 
 def _write(

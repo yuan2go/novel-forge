@@ -1075,10 +1075,17 @@ def task_control_status(settings: Any) -> dict[str, Any]:
     celery = _celery_inspection(settings)
     storage = LocalStorage(settings.root)
     trend = _record_queue_pressure(settings.root, celery)
+    try:
+        from novel_forge.modules.runtime_ledger import scheduler_lease_status
+
+        scheduler = scheduler_lease_status(storage)
+    except Exception as exc:
+        scheduler = {"status": "error", "error": str(exc)}
     return {
         "config": config,
         "celery": celery,
         "queue_trend": trend,
+        "scheduler": scheduler,
         "dead_letters": {"count": len(task_dead_letter_rows(settings.root, limit=1000))},
         "failed_batch_items": list_batch_items(storage, status="failed", limit=25),
         "waiting_handoffs": list_batch_items(storage, status="waiting_handoff", limit=25),

@@ -469,6 +469,41 @@ class AgentRollbackReport(BaseAsset):
 
 
 @dataclass
+class SchedulerLease(BaseAsset):
+    type: str = "scheduler_lease"
+
+
+@dataclass
+class TraceSpan(BaseAsset):
+    type: str = "trace_span"
+
+
+@dataclass
+class GateResult(BaseAsset):
+    type: str = "gate_result"
+
+
+@dataclass
+class ModelCallLog(BaseAsset):
+    type: str = "model_call_log"
+
+
+@dataclass
+class CostLedger(BaseAsset):
+    type: str = "cost_ledger"
+
+
+@dataclass
+class BudgetPolicy(BaseAsset):
+    type: str = "budget_policy"
+
+
+@dataclass
+class CostAlert(BaseAsset):
+    type: str = "cost_alert"
+
+
+@dataclass
 class ModelProfile(BaseAsset):
     type: str = "model_profile"
 
@@ -607,6 +642,13 @@ SCHEMA_CLASSES = {
         AgentFailureReport,
         AgentSlaReport,
         AgentRollbackReport,
+        SchedulerLease,
+        TraceSpan,
+        GateResult,
+        ModelCallLog,
+        CostLedger,
+        BudgetPolicy,
+        CostAlert,
         ModelProfile,
         ModelBenchmarkTask,
         ModelBenchmarkRun,
