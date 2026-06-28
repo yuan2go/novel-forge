@@ -376,6 +376,14 @@ class WorkflowResumeRequest(BaseModel):
     workspace_path: str | None = None
 
 
+class WorkflowSchedulerRequest(BaseModel):
+    project_id: str | None = None
+    limit: int = 20
+    max_nodes_per_resume: int = 5
+    dry_run: bool = False
+    apply_invalidation: bool = True
+
+
 class ChangeImpactRequest(BaseModel):
     target_path: str
     max_depth: int = 4
@@ -841,6 +849,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "NodeRunCreateRequest": NodeRunCreateRequest,
         "WorkflowExecuteRequest": WorkflowExecuteRequest,
         "WorkflowResumeRequest": WorkflowResumeRequest,
+        "WorkflowSchedulerRequest": WorkflowSchedulerRequest,
         "ChangeImpactRequest": ChangeImpactRequest,
         "AgentContractCreateRequest": AgentContractCreateRequest,
         "AgentRunCreateRequest": AgentRunCreateRequest,

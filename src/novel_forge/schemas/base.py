@@ -589,8 +589,8 @@ def _validate_workflow_run_content(content: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     status = content.get("status", "")
     outputs = content.get("outputs")
-    if status not in {"pending", "running", "completed", "failed"}:
-        errors.append("workflow_run status must be pending, running, completed, or failed")
+    if status not in {"pending", "running", "completed", "failed", "superseded"}:
+        errors.append("workflow_run status must be pending, running, completed, failed, or superseded")
     if "outputs" not in content:
         errors.append("workflow_run content missing required field: outputs")
     elif not isinstance(outputs, list):

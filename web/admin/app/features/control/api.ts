@@ -19,3 +19,13 @@ export function loadProductionControlData(projectId?: string) {
 export function runAgentBoundaryAudit(applyRuntimeGuard = true) {
   return postJson(`/product/agents/boundary-audit?apply_runtime_guard=${applyRuntimeGuard ? "true" : "false"}`, {}) as Promise<{ path: string; asset: { content?: Record<string, unknown> } }>;
 }
+
+export function runWorkflowSchedulerTick(projectId?: string) {
+  return postJson("/product/workflow/scheduler/tick", {
+    project_id: projectId || null,
+    limit: 20,
+    max_nodes_per_resume: 5,
+    dry_run: false,
+    apply_invalidation: true
+  }) as Promise<Record<string, unknown>>;
+}

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AgentRunRow, BatchItem, DeadLetter, HandoffRow, NodeRunRow, ProjectHealthReport, ProjectRow, TaskCenter, TaskControl } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { loadProductionControlData, runAgentBoundaryAudit } from "./api";
+import { loadProductionControlData, runAgentBoundaryAudit, runWorkflowSchedulerTick } from "./api";
 
 export function ProductionControlPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
@@ -19,6 +19,7 @@ export function ProductionControlPage() {
   const [projectHealth, setProjectHealth] = useState<ProjectHealthReport | null>(null);
   const [projectId, setProjectId] = useState("");
   const [boundaryAudit, setBoundaryAudit] = useState<Record<string, unknown> | null>(null);
+  const [schedulerResult, setSchedulerResult] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -26,6 +27,8 @@ export function ProductionControlPage() {
   const waitingHandoffs = handoffs.filter((item) => item.status !== "completed" && item.status !== "superseded");
   const failedAgents = agentRuns.filter((run) => ["failed", "dead_letter", "needs_revision"].includes(run.status));
   const activeNodeRuns = nodeRuns.filter((run) => ["running", "waiting_human", "verifying"].includes(run.status));
+  const workflowRuns = taskCenter?.workflow_runs || [];
+  const activeWorkflowRuns = workflowRuns.filter((run) => ["running", "prepared", "paused"].includes(String(run.status || "")));
 
   async function refresh(nextProjectId = projectId) {
     const [projectRows, tasks, control, deadLetterRows, itemRows, handoffRows, nodeRows, agentRows, healthReport] = await loadProductionControlData(nextProjectId);
@@ -59,6 +62,20 @@ export function ProductionControlPage() {
     }
   }
 
+  async function tickWorkflowScheduler() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await runWorkflowSchedulerTick(projectId);
+      setSchedulerResult(result);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <FeatureShell title="生产总控中心" subtitle="任务、工作流节点、Agent、批处理 item、Handoff、dead-letter 和 worker health 的统一观测台。">
       {error ? <div className="errorLine">{error}</div> : null}
@@ -79,10 +96,12 @@ export function ProductionControlPage() {
               {projects.map((project) => <option value={project.project_id} key={project.project_id}>{project.title}</option>)}
             </select>
             <button className="secondaryButton" onClick={() => refresh()}>刷新</button>
+            <button className="primaryButton" disabled={busy} onClick={tickWorkflowScheduler}>Workflow Scheduler</button>
             <button className="primaryButton" disabled={busy} onClick={auditAgentBoundaries}>Agent 边界审计</button>
           </div>
           <div className="summaryBand">
             <Metric label="Worker" value={taskControl?.celery.healthy ? "healthy" : "offline"} />
+            <Metric label="Workflow" value={String(activeWorkflowRuns.length)} />
             <Metric label="活跃节点" value={String(activeNodeRuns.length)} />
             <Metric label="等待 Handoff" value={String(waitingHandoffs.length)} />
             <Metric label="Dead Letter" value={String(deadLetters.length)} />
@@ -101,6 +120,27 @@ export function ProductionControlPage() {
       </section>
 
       <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Workflow Scheduler" icon={<Workflow size={18} />} />
+          <div className="summaryBand">
+            <Metric label="候选" value={String(schedulerResult?.candidate_count ?? "-")} />
+            <Metric label="恢复" value={String(schedulerResult?.resumed_count ?? "-")} />
+            <Metric label="跳过" value={String(schedulerResult?.skipped_count ?? "-")} />
+            <Metric label="错误" value={String(schedulerResult?.error_count ?? "-")} />
+          </div>
+          <DataTable
+            emptyText="点击 Workflow Scheduler 后显示自动恢复结果"
+            columns={["节点", "状态", "AgentRun", "ResumeRun", "输出"]}
+            rows={((schedulerResult?.resumed as Array<Record<string, unknown>> | undefined) || []).slice(0, 12).map((row) => [
+              String(row.node_id || "-"),
+              <span className={statusClass(String(row.status || ""))} key={`scheduler-status-${row.resume_run_id}`}>{String(row.status || "-")}</span>,
+              <span className="pathText" key={`scheduler-agent-${row.agent_run_path}`}>{String(row.agent_run_path || "-")}</span>,
+              <span className="pathText" key={`scheduler-resume-${row.resume_workflow_run_path}`}>{String(row.resume_workflow_run_path || "-")}</span>,
+              String((row.output_assets as unknown[] | undefined)?.length ?? 0)
+            ])}
+          />
+        </div>
+
         <div className="panel">
           <PanelHeader title="Agent 全边界证明" icon={<CheckCircle2 size={18} />} />
           <div className="summaryBand">
@@ -121,6 +161,7 @@ export function ProductionControlPage() {
             ])}
           />
         </div>
+
         <div className="panel">
           <PanelHeader title="Runtime Guard Probe" icon={<Activity size={18} />} />
           <pre className="jsonPreview">{JSON.stringify(boundaryAudit?.runtime_guard_probe || {}, null, 2)}</pre>

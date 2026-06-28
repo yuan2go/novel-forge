@@ -12,6 +12,7 @@ from novel_forge.modules.workflow_nodes import (
     list_node_runs,
     record_node_run,
     resume_workflow,
+    run_workflow_scheduler,
 )
 from novel_forge.storage.local import LocalStorage
 
@@ -26,6 +27,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     NodeRunCreateRequest = models["NodeRunCreateRequest"]
     WorkflowExecuteRequest = models["WorkflowExecuteRequest"]
     WorkflowResumeRequest = models["WorkflowResumeRequest"]
+    WorkflowSchedulerRequest = models["WorkflowSchedulerRequest"]
 
     @router.get("/product/workflow/node-runs")
     def node_runs(
@@ -129,6 +131,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/workflow/scheduler/tick")
+    def workflow_scheduler_tick_endpoint(request: WorkflowSchedulerRequest) -> dict[str, Any]:
+        try:
+            return run_workflow_scheduler(
+                LocalStorage(app_settings.root),
+                project_id=request.project_id,
+                limit=request.limit,
+                max_nodes_per_resume=request.max_nodes_per_resume,
+                dry_run=request.dry_run,
+                apply_invalidation=request.apply_invalidation,
+            )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

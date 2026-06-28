@@ -98,7 +98,7 @@ describe("Novel Forge admin feature architecture", () => {
     }
 
     const control = read("app/features/control/ProductionControlPage.tsx");
-    for (const token of ["Agent 全边界证明", "Runtime Guard Probe", "runAgentBoundaryAudit"]) {
+    for (const token of ["Agent 全边界证明", "Runtime Guard Probe", "Workflow Scheduler", "runWorkflowSchedulerTick", "runAgentBoundaryAudit"]) {
       assert.match(control, new RegExp(token));
     }
   });
