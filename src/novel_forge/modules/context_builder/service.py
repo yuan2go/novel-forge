@@ -9,6 +9,7 @@ from novel_forge.core.ids import utc_now
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.novel_kg import build_novel_kg_context
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.runtime_ledger import record_trace_span
 from novel_forge.schemas import BaseAsset, ContextBuildPlan, ContextBundle, ProjectMetricSnapshot, RagQualityReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import build_rag_context, retrieval_metadata
@@ -126,6 +127,16 @@ def create_context_build_plan(
     )
     _ensure_valid(asset)
     path = storage.write_asset_auto(asset)
+    _record_context_span(
+        storage,
+        trace_id=target_asset.id,
+        span_type="context_bundle",
+        name="create_context_build_plan",
+        path=_display_path(storage.root, path),
+        project_id=project_id,
+        workspace_path=workspace,
+        attributes={"target_path": _display_path(storage.root, target_file), "candidate_count": len(candidates), "kg_context_count": len(kg_context.get("items", [])) if isinstance(kg_context.get("items", []), list) else 0},
+    )
     return {"path": _display_path(storage.root, path), "asset": asset.to_dict(), "validation": {"ok": True, "errors": []}}
 
 
@@ -304,6 +315,16 @@ def create_context_bundle(
     report = _create_rag_quality_report(storage, plan, plan_file, path, asset.to_dict(), budget_score)
     _attach_quality_report_to_bundle(storage, path, report)
     bundle_data = storage.read_json(path)
+    _record_context_span(
+        storage,
+        trace_id=str(content.get("target_asset_id") or plan.id),
+        span_type="context_bundle",
+        name="create_context_bundle",
+        path=_display_path(storage.root, path),
+        project_id=project_id,
+        workspace_path=workspace_path,
+        attributes={"build_plan_path": _display_path(storage.root, plan_file), "selected_count": len(selected), "token_estimate": token_estimate, "budget_status": budget_score.get("status", "")},
+    )
     return {"path": _display_path(storage.root, path), "asset": bundle_data, "rag_quality_report": report, "validation": {"ok": True, "errors": []}}
 
 
@@ -402,6 +423,33 @@ def _context_diff_recommendation(added: list[str], removed: list[str], right_con
     if added:
         return "review_added_sources"
     return "no_material_change"
+
+
+def _record_context_span(
+    storage: LocalStorage,
+    *,
+    trace_id: str,
+    span_type: str,
+    name: str,
+    path: str,
+    project_id: str,
+    workspace_path: str,
+    attributes: dict[str, Any],
+) -> None:
+    try:
+        record_trace_span(
+            storage,
+            trace_id=trace_id or path,
+            span_type=span_type,
+            name=name,
+            status="succeeded",
+            attributes={**attributes, "path": path},
+            references=[path],
+            project_id=project_id,
+            workspace_path=workspace_path,
+        )
+    except Exception:
+        return
 
 
 def _candidate_payload(item: dict[str, Any]) -> dict[str, Any]:

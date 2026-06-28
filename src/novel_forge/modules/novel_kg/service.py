@@ -265,10 +265,12 @@ def analyze_novel_kg_conflicts(
         canonical_ids = sorted({str(item.get("canonical_id", item.get("id", ""))) for item in nodes if str(item.get("canonical_id", item.get("id", ""))).strip()})
         kinds = sorted({str(item.get("kind", "")) for item in nodes if str(item.get("kind", "")).strip()})
         if len(canonical_ids) > 1 and len(kinds) > 1:
+            blocking_kinds = {"entity", "faction", "location", "prop", "rule", "power_scale"}
+            severity = "high" if len(set(kinds) & blocking_kinds) >= 2 else "medium"
             conflicts.append(
                 {
                     "conflict_type": "alias_collision",
-                    "severity": "high",
+                    "severity": severity,
                     "alias": alias,
                     "node_ids": [str(item.get("id", "")) for item in nodes],
                     "message": f"Alias '{alias}' maps to multiple KG node kinds.",
@@ -522,6 +524,7 @@ def _project_assets(storage: LocalStorage, assets: list[dict[str, Any]], *, incl
     graph["relations"].extend(_semantic_relations(graph))
     graph["relations"].extend(_known_mention_relations(assets, alias_index, primary_by_asset))
     graph["relations"] = _dedupe_relation_rows(_normalize_relations(graph["relations"]))
+    graph["relations"] = _resolved_relations(graph)
     graph["summary"] = _summary(graph)
     return graph
 
@@ -1170,6 +1173,17 @@ def _dedupe_relation_rows(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         seen[key] = item
         rows.append(item)
+    return rows
+
+
+def _resolved_relations(graph: dict[str, Any]) -> list[dict[str, Any]]:
+    node_ids = set(_all_nodes_by_id(graph))
+    rows = []
+    for item in graph.get("relations", []) if isinstance(graph.get("relations", []), list) else []:
+        source = str(item.get("source", ""))
+        target = str(item.get("target", ""))
+        if source in node_ids and target in node_ids:
+            rows.append(item)
     return rows
 
 

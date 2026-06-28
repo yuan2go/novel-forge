@@ -8,11 +8,15 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.schemas import (
+    AgentCostSnapshot,
     BudgetPolicy,
+    ChapterCostSnapshot,
     CostAlert,
     CostLedger,
+    CostQualityDashboard,
     GateResult,
     ModelCallLog,
+    ProjectCostSnapshot,
     SchedulerLease,
     TraceSpan,
     validate_common_fields,
@@ -43,7 +47,7 @@ def record_trace_span(
     content = {
         "trace_id": trace_id,
         "span_id": resolved_span_id,
-        "parent_span_id": parent_span_id or "",
+        "parent_span_id": parent_span_id or trace_id,
         "span_type": span_type,
         "name": name,
         "status": _span_status(status),
@@ -454,6 +458,338 @@ def list_trace_timeline(storage: LocalStorage, *, trace_id: str | None = None, p
         if len(rows) >= limit:
             break
     return sorted(rows, key=lambda item: str(item.get("started_at", "")))
+
+
+def trace_timeline_payload(
+    storage: LocalStorage,
+    *,
+    trace_id: str | None = None,
+    project_id: str | None = None,
+    limit: int = 300,
+) -> dict[str, Any]:
+    spans = list_trace_timeline(storage, trace_id=trace_id, project_id=project_id, limit=limit)
+    return {
+        "trace_id": trace_id or "",
+        "project_id": project_id or "",
+        "spans": spans,
+        "summary": _trace_summary(spans),
+        "roots": [span for span in spans if not str(span.get("parent_span_id", "")).strip() or str(span.get("parent_span_id", "")) == str(span.get("trace_id", ""))],
+    }
+
+
+def list_cost_ledgers(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    scope: str | None = None,
+    source_type: str | None = None,
+    limit: int = 500,
+) -> list[dict[str, Any]]:
+    storage.ensure_layout()
+    rows: list[dict[str, Any]] = []
+    for path in reversed(storage.list_json("runs")):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "cost_ledger":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        if project_id and str(metadata.get("project_id", "")) != project_id and str(content.get("scope", "")) != project_id:
+            continue
+        if scope and str(content.get("scope", "")) != scope:
+            continue
+        if source_type and str(content.get("source_type", "")) != source_type:
+            continue
+        rows.append(_cost_ledger_row(storage, path, data))
+        if len(rows) >= max(1, int(limit or 500)):
+            break
+    return list(reversed(rows))
+
+
+def create_project_cost_snapshot(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+    scope: str | None = None,
+) -> dict[str, Any]:
+    resolved_scope = scope or project_id or "global"
+    ledgers = list_cost_ledgers(storage, project_id=project_id, scope=None if project_id else resolved_scope, limit=2000)
+    payload = _cost_snapshot_payload(kind="project", scope=resolved_scope, ledgers=ledgers, project_id=project_id or "", workspace_path=workspace_path or "")
+    asset = ProjectCostSnapshot(
+        title=f"Project cost snapshot: {resolved_scope}",
+        source=resolved_scope,
+        tags=["cost", "snapshot", "project"],
+        content=payload,
+        metadata={"project_id": project_id or "", "workspace_path": workspace_path or ""},
+        references=filter_project_safe_references(storage, project_id or "", [row["path"] for row in ledgers]),
+    )
+    return _write_asset(storage, asset)
+
+
+def create_agent_cost_snapshot(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+    agent_run_id: str | None = None,
+) -> dict[str, Any]:
+    ledgers = list_cost_ledgers(storage, project_id=project_id, limit=2000)
+    if agent_run_id:
+        ledgers = [row for row in ledgers if str(row.get("source_id", "")).endswith(agent_run_id) or str(row.get("metadata", {}).get("agent_run_id", "")) == agent_run_id]
+    by_agent: dict[str, dict[str, Any]] = {}
+    for row in ledgers:
+        agent_key = str(row.get("metadata", {}).get("agent_key") or row.get("metadata", {}).get("operation") or row.get("source_id") or "unknown")
+        bucket = by_agent.setdefault(agent_key, {"agent": agent_key, "total_cost": 0.0, "ledger_count": 0, "model_calls": 0})
+        bucket["total_cost"] = round(float(bucket["total_cost"]) + _float(row.get("amount")), 6)
+        bucket["ledger_count"] = int(bucket["ledger_count"]) + 1
+        if row.get("source_type") == "model_call_log":
+            bucket["model_calls"] = int(bucket["model_calls"]) + 1
+    payload = _cost_snapshot_payload(kind="agent", scope=agent_run_id or project_id or "global", ledgers=ledgers, project_id=project_id or "", workspace_path=workspace_path or "")
+    payload["by_agent"] = sorted(by_agent.values(), key=lambda item: float(item.get("total_cost", 0.0)), reverse=True)
+    asset = AgentCostSnapshot(
+        title=f"Agent cost snapshot: {payload['scope']}",
+        source=str(payload["scope"]),
+        tags=["cost", "snapshot", "agent"],
+        content=payload,
+        metadata={"project_id": project_id or "", "workspace_path": workspace_path or "", "agent_run_id": agent_run_id or ""},
+        references=filter_project_safe_references(storage, project_id or "", [row["path"] for row in ledgers]),
+    )
+    return _write_asset(storage, asset)
+
+
+def create_chapter_cost_snapshot(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+    chapter: int | None = None,
+) -> dict[str, Any]:
+    ledgers = list_cost_ledgers(storage, project_id=project_id, limit=2000)
+    if chapter is not None:
+        chapter_text = str(chapter)
+        ledgers = [
+            row
+            for row in ledgers
+            if str(row.get("metadata", {}).get("chapter", "")) == chapter_text
+            or f"chapter {chapter_text}" in str(row.get("metadata", {}).get("operation", "")).lower()
+            or f"chapter-{chapter_text}" in str(row.get("source_id", "")).lower()
+        ]
+    by_chapter: dict[str, dict[str, Any]] = {}
+    for row in ledgers:
+        chapter_key = str(row.get("metadata", {}).get("chapter") or chapter or "unknown")
+        bucket = by_chapter.setdefault(chapter_key, {"chapter": chapter_key, "total_cost": 0.0, "ledger_count": 0})
+        bucket["total_cost"] = round(float(bucket["total_cost"]) + _float(row.get("amount")), 6)
+        bucket["ledger_count"] = int(bucket["ledger_count"]) + 1
+    payload = _cost_snapshot_payload(kind="chapter", scope=f"{project_id or 'global'}:chapter:{chapter or 'all'}", ledgers=ledgers, project_id=project_id or "", workspace_path=workspace_path or "")
+    payload["chapter"] = chapter
+    payload["by_chapter"] = sorted(by_chapter.values(), key=lambda item: str(item.get("chapter", "")))
+    asset = ChapterCostSnapshot(
+        title=f"Chapter cost snapshot: {payload['scope']}",
+        source=str(payload["scope"]),
+        tags=["cost", "snapshot", "chapter"],
+        content=payload,
+        metadata={"project_id": project_id or "", "workspace_path": workspace_path or "", "chapter": chapter or ""},
+        references=filter_project_safe_references(storage, project_id or "", [row["path"] for row in ledgers]),
+    )
+    return _write_asset(storage, asset)
+
+
+def create_cost_quality_dashboard(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+    chapter: int | None = None,
+    persist_snapshots: bool = True,
+    persist_dashboard: bool = True,
+) -> dict[str, Any]:
+    project_snapshot = create_project_cost_snapshot(storage, project_id=project_id, workspace_path=workspace_path) if persist_snapshots else {"asset": {"content": _cost_snapshot_payload(kind="project", scope=project_id or "global", ledgers=list_cost_ledgers(storage, project_id=project_id, limit=2000), project_id=project_id or "", workspace_path=workspace_path or "")}, "path": ""}
+    agent_snapshot = create_agent_cost_snapshot(storage, project_id=project_id, workspace_path=workspace_path) if persist_snapshots else {"asset": {"content": {}}, "path": ""}
+    chapter_snapshot = create_chapter_cost_snapshot(storage, project_id=project_id, workspace_path=workspace_path, chapter=chapter) if persist_snapshots else {"asset": {"content": {}}, "path": ""}
+    quality = _quality_summary(storage, project_id=project_id)
+    project_content = project_snapshot.get("asset", {}).get("content", {}) if isinstance(project_snapshot.get("asset", {}), dict) else {}
+    total_cost = _float(project_content.get("total_cost", 0.0))
+    quality_score = _float(quality.get("average_score", 0.0))
+    dashboard_id = make_id("cost_quality_dashboard", f"{project_id or 'global'}-{utc_now()}")
+    summary = {
+        "total_cost": total_cost,
+        "currency": project_content.get("currency", "USD"),
+        "ledger_count": project_content.get("ledger_count", 0),
+        "model_call_count": project_content.get("model_call_count", 0),
+        "average_quality_score": quality_score,
+        "cost_per_quality_point": round(total_cost / quality_score, 6) if quality_score > 0 else 0.0,
+        "quality_report_count": quality.get("report_count", 0),
+    }
+    recommendations = _cost_recommendations(summary, project_content)
+    asset = CostQualityDashboard(
+        title=f"Cost quality dashboard: {project_id or 'global'}",
+        source=project_id or "global",
+        tags=["cost", "dashboard", "quality"],
+        content={
+            "dashboard_id": dashboard_id,
+            "scope": project_id or "global",
+            "summary": summary,
+            "snapshots": {
+                "project_cost_snapshot_path": project_snapshot.get("path", ""),
+                "agent_cost_snapshot_path": agent_snapshot.get("path", ""),
+                "chapter_cost_snapshot_path": chapter_snapshot.get("path", ""),
+                "project": project_content,
+                "agent": agent_snapshot.get("asset", {}).get("content", {}) if isinstance(agent_snapshot.get("asset", {}), dict) else {},
+                "chapter": chapter_snapshot.get("asset", {}).get("content", {}) if isinstance(chapter_snapshot.get("asset", {}), dict) else {},
+            },
+            "quality": quality,
+            "recommendations": recommendations,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id or "", "workspace_path": workspace_path or ""},
+        references=filter_project_safe_references(
+            storage,
+            project_id or "",
+            [str(project_snapshot.get("path", "")), str(agent_snapshot.get("path", "")), str(chapter_snapshot.get("path", ""))],
+        ),
+    )
+    if not persist_dashboard:
+        errors = validate_common_fields(asset.to_dict())
+        return {"path": "", "id": asset.id, "asset": asset.to_dict(), "validation": {"ok": not errors, "errors": errors}}
+    return _write_asset(storage, asset)
+
+
+def _trace_summary(spans: list[dict[str, Any]]) -> dict[str, Any]:
+    by_type: dict[str, int] = {}
+    by_status: dict[str, int] = {}
+    total_duration_ms = 0.0
+    for span in spans:
+        span_type = str(span.get("span_type") or "unknown")
+        status = str(span.get("status") or "unknown")
+        by_type[span_type] = by_type.get(span_type, 0) + 1
+        by_status[status] = by_status.get(status, 0) + 1
+        total_duration_ms += _duration_ms(str(span.get("started_at", "")), str(span.get("finished_at", "")))
+    return {
+        "span_count": len(spans),
+        "by_type": by_type,
+        "by_status": by_status,
+        "failed_count": by_status.get("failed", 0),
+        "total_duration_ms": round(total_duration_ms, 3),
+    }
+
+
+def _cost_ledger_row(storage: LocalStorage, path: Path, data: dict[str, Any]) -> dict[str, Any]:
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    ledger_metadata = content.get("metadata", {}) if isinstance(content.get("metadata", {}), dict) else {}
+    return {
+        "path": _display_path(storage.root, path),
+        "id": data.get("id", ""),
+        "ledger_id": content.get("ledger_id", ""),
+        "scope": content.get("scope", ""),
+        "amount": _float(content.get("amount", 0.0)),
+        "currency": content.get("currency", "USD"),
+        "source_type": content.get("source_type", ""),
+        "source_id": content.get("source_id", ""),
+        "metadata": ledger_metadata,
+        "project_id": metadata.get("project_id", ""),
+        "workspace_path": metadata.get("workspace_path", ""),
+        "created_at": content.get("created_at", ""),
+        "trace": content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {},
+    }
+
+
+def _cost_snapshot_payload(*, kind: str, scope: str, ledgers: list[dict[str, Any]], project_id: str, workspace_path: str) -> dict[str, Any]:
+    total = round(sum(_float(row.get("amount", 0.0)) for row in ledgers), 6)
+    currency = str(ledgers[0].get("currency", "USD")) if ledgers else "USD"
+    by_provider: dict[str, dict[str, Any]] = {}
+    by_model: dict[str, dict[str, Any]] = {}
+    by_operation: dict[str, dict[str, Any]] = {}
+    for row in ledgers:
+        meta = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        _cost_bucket_add(by_provider, str(meta.get("provider") or "unknown"), row)
+        _cost_bucket_add(by_model, str(meta.get("model") or "unknown"), row)
+        _cost_bucket_add(by_operation, str(meta.get("operation") or row.get("source_type") or "unknown"), row)
+    return {
+        "snapshot_id": make_id(f"{kind}_cost_snapshot", f"{scope}-{utc_now()}"),
+        "snapshot_kind": f"{kind}_cost_snapshot",
+        "scope": scope or "global",
+        "project_id": project_id,
+        "workspace_path": workspace_path,
+        "total_cost": total,
+        "currency": currency,
+        "ledger_count": len(ledgers),
+        "model_call_count": sum(1 for row in ledgers if row.get("source_type") == "model_call_log"),
+        "by_provider": _sorted_cost_buckets(by_provider),
+        "by_model": _sorted_cost_buckets(by_model),
+        "by_operation": _sorted_cost_buckets(by_operation),
+        "ledger_paths": [row.get("path", "") for row in ledgers],
+        "created_at": utc_now(),
+    }
+
+
+def _cost_bucket_add(buckets: dict[str, dict[str, Any]], key: str, row: dict[str, Any]) -> None:
+    clean = key or "unknown"
+    bucket = buckets.setdefault(clean, {"key": clean, "total_cost": 0.0, "ledger_count": 0})
+    bucket["total_cost"] = round(_float(bucket.get("total_cost", 0.0)) + _float(row.get("amount", 0.0)), 6)
+    bucket["ledger_count"] = int(bucket.get("ledger_count", 0) or 0) + 1
+
+
+def _sorted_cost_buckets(buckets: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    return {key: value for key, value in sorted(buckets.items(), key=lambda item: float(item[1].get("total_cost", 0.0)), reverse=True)}
+
+
+def _quality_summary(storage: LocalStorage, *, project_id: str | None) -> dict[str, Any]:
+    scores: list[float] = []
+    report_count = 0
+    for category in ["reports", "runs", "quality_standards"]:
+        for path in storage.list_json(category):
+            try:
+                data = storage.read_json(path)
+            except Exception:
+                continue
+            if not isinstance(data, dict) or data.get("type") not in {"quality_score_report", "chapter_audit_report", "review_report", "publish_gate_report"}:
+                continue
+            metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            if project_id and str(metadata.get("project_id", "")) != project_id:
+                continue
+            content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            score = _quality_score(content)
+            if score > 0:
+                scores.append(score)
+            report_count += 1
+    average = round(sum(scores) / len(scores), 3) if scores else 0.0
+    return {"average_score": average, "score_count": len(scores), "report_count": report_count}
+
+
+def _quality_score(content: dict[str, Any]) -> float:
+    for key in ["overall_score", "score", "quality_score", "average_score"]:
+        value = _float(content.get(key, 0.0))
+        if value > 0:
+            return value
+    scores = content.get("scores", {}) if isinstance(content.get("scores", {}), dict) else {}
+    numeric = [_float(value) for value in scores.values() if isinstance(value, (int, float, str)) and _float(value) > 0]
+    return sum(numeric) / len(numeric) if numeric else 0.0
+
+
+def _cost_recommendations(summary: dict[str, Any], project_snapshot: dict[str, Any]) -> list[str]:
+    recommendations: list[str] = []
+    if _float(summary.get("total_cost", 0.0)) == 0:
+        recommendations.append("cost ledger is empty; verify model adapters are recording provider usage")
+    if int(summary.get("model_call_count", 0) or 0) == 0:
+        recommendations.append("no model_call_log records are tied to this scope")
+    if _float(summary.get("average_quality_score", 0.0)) == 0 and _float(summary.get("total_cost", 0.0)) > 0:
+        recommendations.append("attach quality_score_report or review gates so cost-quality ratio can be evaluated")
+    operations = project_snapshot.get("by_operation", {}) if isinstance(project_snapshot.get("by_operation", {}), dict) else {}
+    if len(operations) > 5:
+        recommendations.append("review high-cost operations and add routing policies for repeated expensive steps")
+    return recommendations or ["cost and quality telemetry are within expected operating bounds"]
+
+
+def _duration_ms(started_at: str, finished_at: str) -> float:
+    start = _parse_datetime(started_at)
+    finish = _parse_datetime(finished_at)
+    if not start or not finish:
+        return 0.0
+    return max(0.0, (finish - start).total_seconds() * 1000)
 
 
 def _record_cost_alert(

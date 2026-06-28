@@ -671,6 +671,13 @@ class ProjectMetricSnapshotRequest(BaseModel):
     workspace_path: str | None = None
 
 
+class RuntimeCostSnapshotRequest(BaseModel):
+    project_id: str | None = None
+    workspace_path: str | None = None
+    chapter: int | None = None
+    persist_snapshots: bool = True
+
+
 class LocalSettingsProfileRequest(BaseModel):
     title: str = "Local production settings"
     profile_id: str | None = None
@@ -964,6 +971,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "FeedbackStrategyApplyRequest": FeedbackStrategyApplyRequest,
         "OperationalMetricSnapshotRequest": OperationalMetricSnapshotRequest,
         "ProjectMetricSnapshotRequest": ProjectMetricSnapshotRequest,
+        "RuntimeCostSnapshotRequest": RuntimeCostSnapshotRequest,
         "LocalSettingsProfileRequest": LocalSettingsProfileRequest,
         "ChapterAuditRequest": ChapterAuditRequest,
         "OriginalityReportRequest": OriginalityReportRequest,

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AgentEventRow, AgentRunRow, DeadLetter, ProjectRow, TaskCenter, TaskControl, TaskRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { loadTaskData, retryDeadLetter, retryTask } from "./api";
+import { loadTaskData, retryDeadLetter, retryTask, type RuntimeCostDashboard, type RuntimeTraceTimeline } from "./api";
 
 export function TasksCenterPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
@@ -14,6 +14,8 @@ export function TasksCenterPage() {
   const [deadLetters, setDeadLetters] = useState<DeadLetter[]>([]);
   const [agentRuns, setAgentRuns] = useState<AgentRunRow[]>([]);
   const [agentEvents, setAgentEvents] = useState<AgentEventRow[]>([]);
+  const [traceTimeline, setTraceTimeline] = useState<RuntimeTraceTimeline | null>(null);
+  const [costDashboard, setCostDashboard] = useState<RuntimeCostDashboard | null>(null);
   const [projectId, setProjectId] = useState("");
   const [status, setStatus] = useState("");
   const [taskType, setTaskType] = useState("");
@@ -24,15 +26,20 @@ export function TasksCenterPage() {
   const [error, setError] = useState("");
 
   const selectedProject = projects.find((project) => project.project_id === projectId);
+  const costSummary = costDashboard?.asset?.content?.summary || {};
+  const costSnapshots = costDashboard?.asset?.content?.snapshots || {};
+  const costRecommendations = costDashboard?.asset?.content?.recommendations || [];
 
   async function refresh(nextOffset = offset) {
-    const [projectRows, taskCenter, taskControl, deadLetterRows, runRows, eventRows] = await loadTaskData({ projectId, status, taskType, step, offset: nextOffset });
+    const [projectRows, taskCenter, taskControl, deadLetterRows, runRows, eventRows, runtimeTrace, runtimeCost] = await loadTaskData({ projectId, status, taskType, step, offset: nextOffset });
     setProjects(projectRows);
     setCenter(taskCenter);
     setControl(taskControl);
     setDeadLetters(deadLetterRows);
     setAgentRuns(runRows);
     setAgentEvents(eventRows);
+    setTraceTimeline(runtimeTrace);
+    setCostDashboard(runtimeCost);
     setOffset(nextOffset);
   }
 
@@ -80,6 +87,8 @@ export function TasksCenterPage() {
         <Metric label="Dead Letter" value={String(control?.dead_letters?.count ?? deadLetters.length)} />
         <Metric label="Worker" value={control?.celery.healthy ? "healthy" : "offline"} />
         <Metric label="Agent Runs" value={String(agentRuns.length)} />
+        <Metric label="Trace Spans" value={String(traceTimeline?.summary?.span_count ?? 0)} />
+        <Metric label="成本" value={`$${Number(costSummary.total_cost ?? 0).toFixed(4)}`} />
       </section>
 
       <section className="workspaceGrid">
@@ -147,6 +156,40 @@ export function TasksCenterPage() {
               <span className="pathText" key={event.path}>{event.agent_run_path}</span>
             ])}
           />
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Trace Timeline" icon={<Activity size={18} />} />
+          <DataTable
+            emptyText="暂无 Trace Span"
+            columns={["类型", "名称", "状态", "开始", "结束", "证据"]}
+            rows={(traceTimeline?.spans ?? []).slice(0, 80).map((span, index) => [
+              String(span.span_type || "-"),
+              String(span.name || "-"),
+              <span className={statusClass(String(span.status || ""))} key={`trace-${index}`}>{String(span.status || "-")}</span>,
+              String(span.started_at || "-"),
+              String(span.finished_at || "-"),
+              compactJson(span.attributes)
+            ])}
+          />
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="Cost Quality" icon={<Activity size={18} />} />
+          <div className="summaryBand">
+            <Metric label="Ledger" value={String(costSummary.ledger_count ?? 0)} />
+            <Metric label="Model Calls" value={String(costSummary.model_call_count ?? 0)} />
+            <Metric label="质量均分" value={String(costSummary.average_quality_score ?? 0)} />
+            <Metric label="成本/质量点" value={String(costSummary.cost_per_quality_point ?? 0)} />
+          </div>
+          <DataTable
+            emptyText="暂无成本建议"
+            columns={["建议"]}
+            rows={costRecommendations.map((item) => [item])}
+          />
+          <p className="pathText">Project snapshot: {String(costSnapshots.project_cost_snapshot_path || "-")}</p>
         </div>
       </section>
 

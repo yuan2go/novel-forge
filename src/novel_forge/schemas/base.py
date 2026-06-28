@@ -384,6 +384,10 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "cost_ledger": ["ledger_id", "scope", "amount", "currency", "source_type", "source_id", "created_at"],
     "budget_policy": ["policy_id", "scope", "limits", "status"],
     "cost_alert": ["alert_id", "scope", "severity", "message", "status", "created_at"],
+    "project_cost_snapshot": ["snapshot_id", "scope", "total_cost", "currency", "created_at"],
+    "agent_cost_snapshot": ["snapshot_id", "scope", "total_cost", "currency", "created_at"],
+    "chapter_cost_snapshot": ["snapshot_id", "scope", "total_cost", "currency", "created_at"],
+    "cost_quality_dashboard": ["dashboard_id", "scope", "summary", "snapshots", "recommendations", "created_at"],
     "chapter_continuity_report": ["target_asset_id", "chapter", "continuity_checks", "violations", "recommendation"],
     "continuity_graph_snapshot": ["project_id", "nodes", "edges", "summary", "created_at"],
     "canon_graph_snapshot": ["snapshot_id", "project_id", "entities", "relationships", "state_machines", "lifecycle_threads", "event_graph", "violations"],
@@ -587,7 +591,7 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.extend(_validate_change_impact_report_content(content))
     if asset_type.startswith("agent_") and isinstance(content, dict):
         errors.extend(_validate_agent_asset_content(asset_type, content))
-    if asset_type in {"scheduler_lease", "trace_span", "gate_result", "model_call_log", "cost_ledger", "budget_policy", "cost_alert"} and isinstance(content, dict):
+    if asset_type in {"scheduler_lease", "trace_span", "gate_result", "model_call_log", "cost_ledger", "budget_policy", "cost_alert", "project_cost_snapshot", "agent_cost_snapshot", "chapter_cost_snapshot", "cost_quality_dashboard"} and isinstance(content, dict):
         errors.extend(_validate_runtime_observability_content(asset_type, content))
     if asset_type in {"chapter_continuity_report", "continuity_graph_snapshot", "canon_graph_snapshot", "canon_patch"} and isinstance(content, dict):
         errors.extend(_validate_deep_continuity_content(asset_type, content))
@@ -671,6 +675,20 @@ def _validate_runtime_observability_content(asset_type: str, content: dict[str, 
             errors.append("cost_alert severity must be info, warning, or critical")
         if content.get("status") not in {"open", "acknowledged", "resolved"}:
             errors.append("cost_alert status must be open, acknowledged, or resolved")
+    if asset_type in {"project_cost_snapshot", "agent_cost_snapshot", "chapter_cost_snapshot"}:
+        if not isinstance(content.get("total_cost"), (int, float)) or float(content.get("total_cost", 0)) < 0:
+            errors.append(f"{asset_type} total_cost must be a non-negative number")
+        if not isinstance(content.get("ledger_paths"), list):
+            errors.append(f"{asset_type} ledger_paths must be a list")
+        if not isinstance(content.get("by_provider"), dict):
+            errors.append(f"{asset_type} by_provider must be an object")
+    if asset_type == "cost_quality_dashboard":
+        if not isinstance(content.get("summary"), dict):
+            errors.append("cost_quality_dashboard summary must be an object")
+        if not isinstance(content.get("snapshots"), dict):
+            errors.append("cost_quality_dashboard snapshots must be an object")
+        if not isinstance(content.get("recommendations"), list):
+            errors.append("cost_quality_dashboard recommendations must be a list")
     return errors
 
 

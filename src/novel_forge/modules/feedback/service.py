@@ -8,6 +8,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.runtime_ledger import record_trace_span
 from novel_forge.schemas import FeedbackImportBatch, FeedbackInsight, OperationalMetricSnapshot, ReaderFeedback, ReaderSentimentReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -285,6 +286,15 @@ def create_reader_sentiment_report(
         )
         run.guard("write_reader_sentiment_report", "reader_sentiment_report")
         result = _write(storage, asset)
+        _record_feedback_span(
+            storage,
+            trace_id=resolved_project_id or str(result.get("asset", {}).get("id", "")),
+            name="create_reader_sentiment_report",
+            path=result["path"],
+            project_id=resolved_project_id,
+            workspace_path=workspace,
+            attributes={"row_count": len(rows), "feedback_asset_count": len(feedback_assets), "risk_level": retention_risk.get("level", "unknown")},
+        )
         run.succeed(output_assets=[result["path"]])
         return result
 
@@ -356,6 +366,15 @@ def create_operational_metric_snapshot(
             references=filter_project_safe_references(storage, resolved_project_id, [*refs, workspace]),
         )
         result = _write(storage, asset)
+        _record_feedback_span(
+            storage,
+            trace_id=resolved_project_id or str(result.get("asset", {}).get("id", "")),
+            name="create_operational_metric_snapshot",
+            path=result["path"],
+            project_id=resolved_project_id,
+            workspace_path=workspace,
+            attributes={"row_count": len(rows), "feedback_asset_count": len(feedback_assets), "risk_level": follow_risk.get("level", "unknown")},
+        )
         run.succeed(output_assets=[result["path"]])
         return result
 
@@ -951,6 +970,32 @@ def _write(storage: LocalStorage, asset: Any) -> dict[str, Any]:
         raise ValueError("; ".join(errors))
     path = storage.write_asset_auto(asset)
     return {"path": _display_path(storage.root, path), "asset": data, "validation": {"ok": True, "errors": []}}
+
+
+def _record_feedback_span(
+    storage: LocalStorage,
+    *,
+    trace_id: str,
+    name: str,
+    path: str,
+    project_id: str,
+    workspace_path: str,
+    attributes: dict[str, Any],
+) -> None:
+    try:
+        record_trace_span(
+            storage,
+            trace_id=trace_id or path,
+            span_type="feedback",
+            name=name,
+            status="succeeded",
+            attributes={**attributes, "path": path},
+            references=[path],
+            project_id=project_id,
+            workspace_path=workspace_path,
+        )
+    except Exception:
+        return
 
 
 def _display_path(root: Path, path: Path) -> str:

@@ -514,6 +514,26 @@ class CostAlert(BaseAsset):
 
 
 @dataclass
+class ProjectCostSnapshot(BaseAsset):
+    type: str = "project_cost_snapshot"
+
+
+@dataclass
+class AgentCostSnapshot(BaseAsset):
+    type: str = "agent_cost_snapshot"
+
+
+@dataclass
+class ChapterCostSnapshot(BaseAsset):
+    type: str = "chapter_cost_snapshot"
+
+
+@dataclass
+class CostQualityDashboard(BaseAsset):
+    type: str = "cost_quality_dashboard"
+
+
+@dataclass
 class ModelProfile(BaseAsset):
     type: str = "model_profile"
 
@@ -661,6 +681,10 @@ SCHEMA_CLASSES = {
         CostLedger,
         BudgetPolicy,
         CostAlert,
+        ProjectCostSnapshot,
+        AgentCostSnapshot,
+        ChapterCostSnapshot,
+        CostQualityDashboard,
         ModelProfile,
         ModelBenchmarkTask,
         ModelBenchmarkRun,
