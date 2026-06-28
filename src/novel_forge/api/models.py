@@ -347,6 +347,18 @@ class NodeRunCreateRequest(BaseModel):
     error: str = ""
 
 
+class WorkflowExecuteRequest(BaseModel):
+    workflow_path_or_id: str
+    input_assets: list[str] = Field(default_factory=list)
+    run_id: str | None = None
+    start_node_id: str | None = None
+    max_nodes: int | None = None
+    dispatch_agents: bool = True
+    execute_agents: bool = False
+    apply_invalidation: bool = True
+    workspace_path: str | None = None
+
+
 class ChangeImpactRequest(BaseModel):
     target_path: str
     max_depth: int = 4
@@ -810,6 +822,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "WorkflowDefinitionCreateRequest": WorkflowDefinitionCreateRequest,
         "WorkflowNodeCreateRequest": WorkflowNodeCreateRequest,
         "NodeRunCreateRequest": NodeRunCreateRequest,
+        "WorkflowExecuteRequest": WorkflowExecuteRequest,
         "ChangeImpactRequest": ChangeImpactRequest,
         "AgentContractCreateRequest": AgentContractCreateRequest,
         "AgentRunCreateRequest": AgentRunCreateRequest,
