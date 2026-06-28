@@ -11,6 +11,7 @@ from novel_forge.modules.workflow_nodes import (
     execute_workflow,
     list_node_runs,
     record_node_run,
+    resume_workflow,
 )
 from novel_forge.storage.local import LocalStorage
 
@@ -24,6 +25,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     WorkflowNodeCreateRequest = models["WorkflowNodeCreateRequest"]
     NodeRunCreateRequest = models["NodeRunCreateRequest"]
     WorkflowExecuteRequest = models["WorkflowExecuteRequest"]
+    WorkflowResumeRequest = models["WorkflowResumeRequest"]
 
     @router.get("/product/workflow/node-runs")
     def node_runs(
@@ -97,6 +99,31 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 max_nodes=request.max_nodes,
                 dispatch_agents=request.dispatch_agents,
                 execute_agents=request.execute_agents,
+                apply_invalidation=request.apply_invalidation,
+                workspace_path=request.workspace_path,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/workflow/resume")
+    def workflow_resume_endpoint(request: WorkflowResumeRequest) -> dict[str, Any]:
+        try:
+            return resume_workflow(
+                LocalStorage(app_settings.root),
+                request.workflow_run_path_or_id,
+                resume_node_id=request.resume_node_id,
+                agent_run_path=request.agent_run_path,
+                output_assets=request.output_assets,
+                token_used=request.token_used,
+                cost_estimate=request.cost_estimate,
+                checkpoint=request.checkpoint or None,
+                evidence=request.evidence,
+                human_gate=request.human_gate or None,
+                tool_name=request.tool_name,
+                output_type=request.output_type,
+                max_nodes=request.max_nodes,
                 apply_invalidation=request.apply_invalidation,
                 workspace_path=request.workspace_path,
             )

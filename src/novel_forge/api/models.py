@@ -359,6 +359,23 @@ class WorkflowExecuteRequest(BaseModel):
     workspace_path: str | None = None
 
 
+class WorkflowResumeRequest(BaseModel):
+    workflow_run_path_or_id: str
+    resume_node_id: str | None = None
+    agent_run_path: str | None = None
+    output_assets: list[str] = Field(default_factory=list)
+    token_used: int = 0
+    cost_estimate: float = 0.0
+    checkpoint: dict[str, Any] = Field(default_factory=dict)
+    evidence: dict[str, Any] = Field(default_factory=dict)
+    human_gate: dict[str, Any] = Field(default_factory=dict)
+    tool_name: str | None = None
+    output_type: str | None = None
+    max_nodes: int | None = None
+    apply_invalidation: bool = True
+    workspace_path: str | None = None
+
+
 class ChangeImpactRequest(BaseModel):
     target_path: str
     max_depth: int = 4
@@ -823,6 +840,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "WorkflowNodeCreateRequest": WorkflowNodeCreateRequest,
         "NodeRunCreateRequest": NodeRunCreateRequest,
         "WorkflowExecuteRequest": WorkflowExecuteRequest,
+        "WorkflowResumeRequest": WorkflowResumeRequest,
         "ChangeImpactRequest": ChangeImpactRequest,
         "AgentContractCreateRequest": AgentContractCreateRequest,
         "AgentRunCreateRequest": AgentRunCreateRequest,

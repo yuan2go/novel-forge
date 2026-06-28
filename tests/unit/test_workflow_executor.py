@@ -6,7 +6,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.agent_runs import list_agent_runs
-from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs
+from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs, resume_workflow
 from novel_forge.schemas import ChapterPlan, CleanedText, DraftChapter, Outline, SourceDocument
 from novel_forge.storage.local import LocalStorage
 
@@ -146,6 +146,114 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(list_agent_runs(storage)[0]["status"], "prepared")
             self.assertEqual(list_node_runs(storage, run_id=result["run_id"])[0]["status"], "prepared")
 
+    def test_resume_executes_prepared_agent_and_continues_downstream(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}),
+            )
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Draft",
+                    source=storage.read_asset(plan_path).id,
+                    content={"chapter": 1, "text": "原创测试章节。", "copyright_boundary": "unit test"},
+                    references=[storage.read_asset(plan_path).id, str(plan_path.relative_to(storage.root))],
+                ),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Agent Resume",
+                entry_node_id="draft-agent",
+                nodes=[
+                    {
+                        "node_id": "draft-agent",
+                        "node_type": "agent",
+                        "operation": "draft",
+                        "input_types": ["chapter_plan"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "agent", "agent_key": "draft", "agent_status": "prepared", "token_budget": 500},
+                    },
+                    {
+                        "node_id": "review",
+                        "node_type": "review",
+                        "operation": "review",
+                        "depends_on": ["draft-agent"],
+                        "input_types": ["draft_chapter"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "deterministic", "expected_output_assets": [str(draft_path.relative_to(storage.root))]},
+                    },
+                ],
+            )
+            initial = execute_workflow(storage, workflow["path"], input_assets=[plan_path], execute_agents=False)
+            self.assertEqual(initial["status"], "running")
+
+            resumed = resume_workflow(
+                storage,
+                initial["workflow_run"]["path"],
+                output_assets=[draft_path],
+                token_used=120,
+                cost_estimate=0.42,
+                checkpoint={"status": "draft_completed", "chapter": 1},
+            )
+
+            self.assertEqual(resumed["status"], "completed")
+            self.assertEqual(resumed["resume_node_id"], "draft-agent")
+            self.assertEqual(storage.read_asset(resumed["workflow_run"]["path"]).content["lineage"]["resumed_from_run_id"], initial["run_id"])
+            resume_node_runs = list_node_runs(storage, run_id=resumed["run_id"])
+            self.assertEqual([row["node_id"] for row in reversed(resume_node_runs)], ["draft-agent", "review"])
+            agent_run = storage.read_asset(resumed["agent_runs"][0]["path"])
+            self.assertEqual(agent_run.content["status"], "succeeded")
+            self.assertEqual(agent_run.content["token_used"], 120)
+            run_types = _run_asset_types(storage)
+            self.assertIn("agent_budget", run_types)
+            self.assertIn("agent_checkpoint", run_types)
+            self.assertIn("agent_sla_report", run_types)
+
+    def test_resume_blocks_when_agent_budget_is_exceeded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}),
+            )
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(title="Draft", content={"chapter": 1, "text": "原创测试章节。", "copyright_boundary": "unit test"}),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Agent Budget Block",
+                entry_node_id="draft-agent",
+                nodes=[
+                    {
+                        "node_id": "draft-agent",
+                        "node_type": "agent",
+                        "operation": "draft",
+                        "input_types": ["chapter_plan"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "agent", "agent_key": "draft", "agent_status": "prepared", "token_budget": 5},
+                    }
+                ],
+            )
+            initial = execute_workflow(storage, workflow["path"], input_assets=[plan_path], execute_agents=False)
+
+            resumed = resume_workflow(storage, initial["workflow_run"]["path"], output_assets=[draft_path], token_used=50)
+
+            self.assertEqual(resumed["status"], "failed")
+            self.assertEqual(resumed["blocked"]["node_id"], "draft-agent")
+            agent_runs = list_agent_runs(storage)
+            self.assertEqual(agent_runs[0]["status"], "failed")
+            run_types = _run_asset_types(storage)
+            self.assertIn("agent_budget", run_types)
+            self.assertIn("agent_gate", run_types)
+            self.assertIn("agent_failure_report", run_types)
+            resume_node_runs = list_node_runs(storage, run_id=resumed["run_id"])
+            self.assertEqual(resume_node_runs[0]["status"], "failed")
+
     def test_executor_can_apply_downstream_invalidation(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -186,6 +294,15 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(storage.read_json(plan_path)["metadata"]["asset_status"], "stale")
             self.assertTrue(result["invalidations"][0]["updated_assets"])
             self.assertEqual(list_node_runs(storage, run_id=result["run_id"])[0]["status"], "succeeded")
+
+
+def _run_asset_types(storage: LocalStorage) -> set[str]:
+    types: set[str] = set()
+    for path in storage.list_json("runs"):
+        data = storage.read_json(path)
+        if isinstance(data, dict):
+            types.add(str(data.get("type", "")))
+    return types
 
 
 if __name__ == "__main__":

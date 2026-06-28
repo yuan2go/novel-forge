@@ -4,6 +4,7 @@ from novel_forge.modules.workflow_nodes.service import (
     execute_workflow,
     list_node_runs,
     record_node_run,
+    resume_workflow,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "execute_workflow",
     "record_node_run",
     "list_node_runs",
+    "resume_workflow",
 ]

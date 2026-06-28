@@ -29,6 +29,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/workflow/definitions",
                 "/product/workflow/nodes",
                 "/product/workflow/execute",
+                "/product/workflow/resume",
                 "/product/agents/runs",
                 "/product/agents/events",
                 "/product/agents/contracts",

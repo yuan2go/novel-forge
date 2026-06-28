@@ -354,12 +354,347 @@ def execute_workflow(
     }
 
 
+def resume_workflow(
+    storage: LocalStorage,
+    workflow_run_path_or_id: str | Path,
+    *,
+    resume_node_id: str | None = None,
+    agent_run_path: str | Path | None = None,
+    output_assets: list[str | Path] | None = None,
+    token_used: int = 0,
+    cost_estimate: float = 0.0,
+    checkpoint: dict[str, Any] | None = None,
+    evidence: dict[str, Any] | None = None,
+    human_gate: dict[str, Any] | None = None,
+    tool_name: str | None = None,
+    output_type: str | None = None,
+    max_nodes: int | None = None,
+    apply_invalidation: bool = True,
+    workspace_path: str | None = None,
+) -> dict[str, Any]:
+    storage.ensure_layout()
+    previous_run_path, previous_run = _resolve_workflow_run(storage, workflow_run_path_or_id)
+    previous_content = previous_run.get("content", {}) if isinstance(previous_run.get("content", {}), dict) else {}
+    previous_run_id = str(previous_content.get("run_id") or previous_run.get("id") or previous_run_path.stem)
+    workflow_ref = str(previous_content.get("workflow_definition_path") or previous_content.get("workflow_id") or previous_run.get("source", ""))
+    workflow_path, workflow = _resolve_workflow_definition(storage, workflow_ref)
+    content = workflow.get("content", {}) if isinstance(workflow.get("content", {}), dict) else {}
+    workflow_id = str(content.get("workflow_id") or workflow.get("id") or workflow_ref)
+    nodes = _workflow_nodes(storage, workflow)
+    node_map = {str(node.get("node_id", "")): node for node in nodes if str(node.get("node_id", "")).strip()}
+    order = _topological_order(node_map, str(content.get("entry_node_id", "")))
+    previous_log = previous_content.get("run_log", []) if isinstance(previous_content.get("run_log", []), list) else []
+    blocked = previous_content.get("blocked", {}) if isinstance(previous_content.get("blocked", {}), dict) else {}
+    node_id = resume_node_id or str(blocked.get("node_id") or _last_non_success_node(previous_log) or "")
+    if not node_id:
+        raise ValueError("workflow_run has no blocked node to resume")
+    if node_id not in node_map:
+        raise ValueError(f"resume node does not exist in workflow definition: {node_id}")
+    if node_id not in order:
+        raise ValueError(f"resume node is not reachable from workflow entry: {node_id}")
+
+    run_id = make_id("workflow_run", f"{previous_run_id}-{node_id}-resume")
+    now = utc_now()
+    run_log = [dict(item) for item in previous_log if isinstance(item, dict)]
+    outputs_by_node = _outputs_by_node_from_run_log(run_log)
+    node_runs: list[dict[str, Any]] = []
+    agent_runs: list[dict[str, Any]] = []
+    invalidations: list[dict[str, Any]] = []
+    errors: list[str] = []
+    new_outputs: list[str] = []
+    status = "completed"
+    current_blocked: dict[str, Any] = {}
+    resume_index = order.index(node_id)
+
+    resume_node = node_map[node_id]
+    resume_result = _resume_blocked_node(
+        storage,
+        run_id=run_id,
+        node=resume_node,
+        previous_run_id=previous_run_id,
+        previous_log=run_log,
+        explicit_agent_run_path=agent_run_path,
+        output_assets=output_assets or [],
+        token_used=token_used,
+        cost_estimate=cost_estimate,
+        checkpoint=checkpoint,
+        evidence=evidence or {},
+        human_gate=human_gate,
+        tool_name=tool_name,
+        output_type=output_type,
+        workspace_path=workspace_path,
+    )
+    node_runs.append(resume_result["node_run"])
+    if resume_result.get("agent_run"):
+        agent_runs.append(resume_result["agent_run"])
+    outputs_by_node[node_id] = [str(item) for item in resume_result.get("output_assets", []) if str(item).strip()]
+    new_outputs.extend(outputs_by_node[node_id])
+    run_log.append(_node_run_log_entry(resume_result["node_run"], agent_run=resume_result.get("agent_run"), invalidation=None))
+    if resume_result["status"] not in WORKFLOW_SUCCESS_NODE_STATUSES:
+        status = "failed"
+        current_blocked = {"node_id": node_id, "status": resume_result["status"], "reason": resume_result.get("message", "")}
+        errors.append(str(resume_result.get("message", "resume node failed")))
+    else:
+        executed_count = 1
+        for next_node_id in order[resume_index + 1 :]:
+            if max_nodes is not None and max_nodes > 0 and executed_count >= max_nodes:
+                status = "running"
+                current_blocked = {"node_id": next_node_id, "status": "paused", "reason": "max_nodes reached"}
+                break
+            next_node = node_map[next_node_id]
+            dependency_ids = _node_dependencies(next_node)
+            dependency_statuses = [_last_status_for_node(run_log, dependency_id) for dependency_id in dependency_ids]
+            if any(item not in WORKFLOW_SUCCESS_NODE_STATUSES for item in dependency_statuses):
+                status = "running" if any(item in {"prepared", "waiting_human"} for item in dependency_statuses) else "failed"
+                current_blocked = {"node_id": next_node_id, "status": "blocked", "reason": "dependency not satisfied", "dependencies": dict(zip(dependency_ids, dependency_statuses))}
+                if status == "failed":
+                    errors.append("dependency not satisfied")
+                break
+            node_inputs = _node_inputs(storage, next_node, dependency_ids, outputs_by_node, [])
+            gate = _evaluate_node_gate(storage, next_node, node_inputs)
+            if gate["status"] != "passed":
+                node_run = record_node_run(
+                    storage,
+                    run_id=run_id,
+                    node_id=next_node_id,
+                    node_type=str(next_node.get("node_type", "workflow_node")),
+                    operation=str(next_node.get("operation", next_node_id)),
+                    status=gate["node_status"],
+                    input_assets=node_inputs,
+                    output_assets=[],
+                    processor=_node_processor(next_node),
+                    started_at=utc_now(),
+                    finished_at=utc_now(),
+                    error=gate["message"],
+                    quality_gate=gate["quality_gate"],
+                    human_gate=gate["human_gate"],
+                )
+                node_runs.append(node_run)
+                run_log.append(_node_run_log_entry(node_run, agent_run=None, invalidation=None))
+                status = "running" if gate["node_status"] == "waiting_human" else "failed"
+                current_blocked = {"node_id": next_node_id, "status": gate["node_status"], "reason": gate["message"]}
+                errors.append(gate["message"])
+                break
+            try:
+                result = _execute_node(
+                    storage,
+                    run_id=run_id,
+                    node=next_node,
+                    input_assets=node_inputs,
+                    dispatch_agents=True,
+                    execute_agents=True,
+                    apply_invalidation=apply_invalidation,
+                    workspace_path=workspace_path,
+                )
+            except Exception as exc:
+                error_message = f"{type(exc).__name__}: {exc}"
+                node_run = record_node_run(
+                    storage,
+                    run_id=run_id,
+                    node_id=next_node_id,
+                    node_type=str(next_node.get("node_type", "workflow_node")),
+                    operation=str(next_node.get("operation", next_node_id)),
+                    status="failed",
+                    input_assets=node_inputs,
+                    output_assets=[],
+                    processor=_node_processor(next_node),
+                    started_at=utc_now(),
+                    finished_at=utc_now(),
+                    error=error_message,
+                    quality_gate={"required": False, "status": "failed"},
+                    human_gate={"required": False, "status": "not_required"},
+                )
+                node_runs.append(node_run)
+                run_log.append(_node_run_log_entry(node_run, agent_run=None, invalidation=None))
+                status = "failed"
+                current_blocked = {"node_id": next_node_id, "status": "failed", "reason": error_message}
+                errors.append(error_message)
+                break
+            node_runs.append(result["node_run"])
+            if result.get("agent_run"):
+                agent_runs.append(result["agent_run"])
+            if result.get("invalidation"):
+                invalidations.append(result["invalidation"])
+            outputs_by_node[next_node_id] = [str(item) for item in result.get("output_assets", []) if str(item).strip()]
+            new_outputs.extend(outputs_by_node[next_node_id])
+            run_log.append(_node_run_log_entry(result["node_run"], agent_run=result.get("agent_run"), invalidation=result.get("invalidation")))
+            executed_count += 1
+            node_status = str(result.get("status", ""))
+            if node_status in WORKFLOW_BLOCKING_NODE_STATUSES:
+                status = "running" if node_status in {"prepared", "waiting_human"} else "failed"
+                current_blocked = {"node_id": next_node_id, "status": node_status, "reason": result.get("message", "")}
+                if status == "failed":
+                    errors.append(str(result.get("message", "workflow node failed")))
+                break
+            if node_status not in WORKFLOW_SUCCESS_NODE_STATUSES:
+                status = "running"
+                current_blocked = {"node_id": next_node_id, "status": node_status, "reason": result.get("message", "")}
+                break
+
+    all_outputs = _dedupe([path for paths in outputs_by_node.values() for path in paths])
+    previous_node_run_paths = previous_content.get("node_runs", []) if isinstance(previous_content.get("node_runs", []), list) else []
+    previous_agent_run_paths = previous_content.get("agent_runs", []) if isinstance(previous_content.get("agent_runs", []), list) else []
+    node_run_paths = _dedupe([*[str(item) for item in previous_node_run_paths], *[str(item.get("path", "")) for item in node_runs if item.get("path")]])
+    agent_run_paths = _dedupe([*[str(item) for item in previous_agent_run_paths], *[str(item.get("path", "")) for item in agent_runs if item.get("path")]])
+    if status == "completed" and not all_outputs:
+        all_outputs = node_run_paths
+    workflow_run = _write_workflow_run(
+        storage,
+        workflow=workflow,
+        workflow_path=workflow_path,
+        run_id=run_id,
+        status=status,
+        started_at=now,
+        outputs=all_outputs,
+        node_run_paths=node_run_paths,
+        agent_run_paths=agent_run_paths,
+        run_log=run_log,
+        blocked=current_blocked,
+        error_message="; ".join(errors),
+        recovery_instruction=_workflow_recovery_instruction(status, current_blocked, errors),
+        workspace_path=workspace_path,
+        lineage={
+            "resumed_from_run_id": previous_run_id,
+            "resumed_from_run_path": _display_path(storage.root, previous_run_path),
+            "resume_node_id": node_id,
+            "new_output_assets": _dedupe(new_outputs),
+        },
+    )
+    return {
+        "status": status,
+        "run_id": run_id,
+        "workflow_id": workflow_id,
+        "workflow_path": _display_path(storage.root, workflow_path),
+        "resumed_from_run_id": previous_run_id,
+        "resumed_from_run_path": _display_path(storage.root, previous_run_path),
+        "resume_node_id": node_id,
+        "workflow_run": workflow_run,
+        "node_runs": node_runs,
+        "agent_runs": agent_runs,
+        "invalidations": invalidations,
+        "order": order,
+        "blocked": current_blocked,
+        "errors": errors,
+    }
+
+
 def _write(storage: LocalStorage, asset: WorkflowDefinition | WorkflowNode | NodeRun | WorkflowRun) -> dict[str, Any]:
     errors = validate_common_fields(asset.to_dict())
     if errors:
         raise ValueError("; ".join(errors))
     path = storage.write_asset_auto(asset)
     return {"path": _display_path(storage.root, path), "asset": asset.to_dict(), "validation": {"ok": True, "errors": []}}
+
+
+def _resume_blocked_node(
+    storage: LocalStorage,
+    *,
+    run_id: str,
+    node: dict[str, Any],
+    previous_run_id: str,
+    previous_log: list[dict[str, Any]],
+    explicit_agent_run_path: str | Path | None,
+    output_assets: list[str | Path],
+    token_used: int,
+    cost_estimate: float,
+    checkpoint: dict[str, Any] | None,
+    evidence: dict[str, Any],
+    human_gate: dict[str, Any] | None,
+    tool_name: str | None,
+    output_type: str | None,
+    workspace_path: str | None,
+) -> dict[str, Any]:
+    processor = _node_processor(node)
+    kind = str(processor.get("kind") or processor.get("type") or "record_only").strip().lower()
+    input_assets = _input_assets_for_node(previous_log, str(node.get("node_id", "")))
+    if kind not in {"agent", "agent_dispatch"}:
+        return _execute_node(
+            storage,
+            run_id=run_id,
+            node=node,
+            input_assets=input_assets,
+            dispatch_agents=True,
+            execute_agents=True,
+            apply_invalidation=True,
+            workspace_path=workspace_path,
+        )
+    node_id = str(node.get("node_id", ""))
+    agent_path = str(explicit_agent_run_path or _agent_run_path_for_node(previous_log, node_id) or "")
+    if not agent_path:
+        raise ValueError(f"workflow resume could not find prepared agent_run for node {node_id}")
+    output_types = [str(item) for item in node.get("output_types", []) if str(item).strip()] if isinstance(node.get("output_types", []), list) else []
+    planned_outputs = _dedupe([str(item) for item in output_assets if str(item).strip()] or _expected_output_assets(node, processor))
+    resume_evidence = {
+        "workflow_run_id": run_id,
+        "resumed_from_run_id": previous_run_id,
+        "workflow_node_id": node_id,
+        **evidence,
+    }
+    execution = execute_agent_run_once(
+        storage,
+        agent_path,
+        tool_name=tool_name or str(processor.get("tool_name") or _tool_name_for_output(output_types)),
+        output_type=output_type or (output_types[0] if output_types else None),
+        token_used=token_used,
+        cost_estimate=cost_estimate,
+        output_assets=planned_outputs,
+        checkpoint=checkpoint,
+        evidence=resume_evidence,
+        human_gate=human_gate,
+    )
+    status = "succeeded" if execution.get("status") == "succeeded" else "failed"
+    processor_payload = {
+        **processor,
+        "agent_run_path": _execution_agent_run_path(execution, agent_path),
+        "agent_budget_path": _result_path(execution.get("budget")),
+        "agent_checkpoint_path": _result_path(execution.get("checkpoint")),
+        "agent_sla_path": _result_path(execution.get("sla")),
+        "agent_failure_path": _result_path(execution.get("failure")),
+        "resumed_from_run_id": previous_run_id,
+    }
+    message = "prepared agent run resumed"
+    error = ""
+    if status != "succeeded":
+        message = _execution_error_message(execution)
+        error = message
+        planned_outputs = []
+    result = _record_executed_node(
+        storage,
+        run_id=run_id,
+        node=node,
+        status=status,
+        input_assets=input_assets,
+        output_assets=planned_outputs,
+        processor=processor_payload,
+        started_at=utc_now(),
+        error=error,
+        quality_gate={**(node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {}), "status": "passed" if status == "succeeded" else "failed"},
+        human_gate=human_gate or (node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {"required": False, "status": "not_required"}),
+        message=message,
+    )
+    result["agent_run"] = execution.get("run") if isinstance(execution.get("run"), dict) else {"path": processor_payload["agent_run_path"]}
+    return result
+
+
+def _resolve_workflow_run(storage: LocalStorage, value: str | Path) -> tuple[Path, dict[str, Any]]:
+    candidate = resolve_path(storage.root, value)
+    if candidate.exists() and candidate.is_file():
+        data = storage.read_json(candidate)
+        if isinstance(data, dict) and data.get("type") == "workflow_run":
+            return candidate, data
+        raise ValueError(f"workflow_run JSON expected: {candidate}")
+    lookup = str(value)
+    for path in storage.list_json("runs"):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "workflow_run":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if lookup in {str(data.get("id", "")), str(content.get("run_id", "")), str(path.stem)}:
+            return path, data
+    raise FileNotFoundError(f"workflow_run not found: {value}")
 
 
 def _resolve_workflow_definition(storage: LocalStorage, value: str | Path) -> tuple[Path, dict[str, Any]]:
@@ -839,6 +1174,7 @@ def _write_workflow_run(
     error_message: str = "",
     recovery_instruction: str = "",
     workspace_path: str | None = None,
+    lineage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     content = workflow.get("content", {}) if isinstance(workflow.get("content", {}), dict) else {}
     output_refs = [_asset_ref(storage, item) for item in outputs]
@@ -850,6 +1186,7 @@ def _write_workflow_run(
         source=str(content.get("workflow_id") or workflow.get("id", "")),
         tags=["workflow-executor", status],
         content={
+            "run_id": run_id,
             "workflow_id": content.get("workflow_id") or workflow.get("id", ""),
             "workflow_definition_path": _display_path(storage.root, workflow_path),
             "status": status,
@@ -860,6 +1197,7 @@ def _write_workflow_run(
             "blocked": blocked or {},
             "error_message": error_message,
             "recovery_instruction": recovery_instruction,
+            "lineage": lineage or {},
             "started_at": started_at,
             "finished_at": utc_now() if status in {"completed", "failed"} else "",
         },
@@ -978,6 +1316,82 @@ def _path_exists(storage: LocalStorage, value: str | Path) -> bool:
         return resolve_path(storage.root, value).exists()
     except Exception:
         return False
+
+
+def _outputs_by_node_from_run_log(run_log: list[dict[str, Any]]) -> dict[str, list[str]]:
+    outputs: dict[str, list[str]] = {}
+    for entry in run_log:
+        if not isinstance(entry, dict):
+            continue
+        node_id = str(entry.get("node_id", ""))
+        status = str(entry.get("status", ""))
+        if not node_id or status not in WORKFLOW_SUCCESS_NODE_STATUSES:
+            continue
+        paths = _asset_paths_from_rows(entry.get("output_assets", []))
+        if paths:
+            outputs[node_id] = paths
+    return outputs
+
+
+def _input_assets_for_node(run_log: list[dict[str, Any]], node_id: str) -> list[str]:
+    for entry in reversed(run_log):
+        if not isinstance(entry, dict) or str(entry.get("node_id", "")) != node_id:
+            continue
+        return _asset_paths_from_rows(entry.get("input_assets", []))
+    return []
+
+
+def _asset_paths_from_rows(rows: Any) -> list[str]:
+    result: list[str] = []
+    if not isinstance(rows, list):
+        return result
+    for item in rows:
+        if isinstance(item, dict):
+            value = str(item.get("path") or item.get("id") or "")
+        else:
+            value = str(item or "")
+        if value.strip():
+            result.append(value)
+    return _dedupe(result)
+
+
+def _agent_run_path_for_node(run_log: list[dict[str, Any]], node_id: str) -> str:
+    for entry in reversed(run_log):
+        if isinstance(entry, dict) and str(entry.get("node_id", "")) == node_id and str(entry.get("agent_run_path", "")).strip():
+            return str(entry.get("agent_run_path", ""))
+    return ""
+
+
+def _last_non_success_node(run_log: list[dict[str, Any]]) -> str:
+    for entry in reversed(run_log):
+        if not isinstance(entry, dict):
+            continue
+        status = str(entry.get("status", ""))
+        if status and status not in WORKFLOW_SUCCESS_NODE_STATUSES:
+            return str(entry.get("node_id", ""))
+    return ""
+
+
+def _execution_agent_run_path(execution: dict[str, Any], fallback: str | Path) -> str:
+    run = execution.get("run", {}) if isinstance(execution.get("run", {}), dict) else {}
+    if run.get("path"):
+        return str(run.get("path", ""))
+    return str(fallback)
+
+
+def _result_path(result: Any) -> str:
+    if isinstance(result, dict):
+        return str(result.get("path", ""))
+    return ""
+
+
+def _execution_error_message(execution: dict[str, Any]) -> str:
+    failure = execution.get("failure", {}) if isinstance(execution.get("failure", {}), dict) else {}
+    failure_asset = failure.get("asset", {}) if isinstance(failure.get("asset", {}), dict) else {}
+    failure_content = failure_asset.get("content", {}) if isinstance(failure_asset.get("content", {}), dict) else {}
+    if failure_content.get("error_message"):
+        return str(failure_content.get("error_message"))
+    return "agent scheduler failed to resume prepared run"
 
 
 def _asset_ref(storage: LocalStorage, value: str | Path) -> dict[str, str]:
