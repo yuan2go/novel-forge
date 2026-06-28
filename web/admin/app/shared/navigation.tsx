@@ -34,6 +34,7 @@ export type NavItemKey =
   | "topic_library"
   | "material_library"
   | "knowledge_library"
+  | "novel_kg"
   | "setting_bible"
   | "style_center"
   | "writing_templates"
@@ -92,6 +93,7 @@ export const navGroups: NavGroup[] = [
       { key: "topic_library", label: "题材库", description: "平台、题材、选题资产", href: "/assets?library=topics", icon: <BookMarked size={17} /> },
       { key: "material_library", label: "素材库", description: "可复用素材卡", href: "/assets?library=materials", icon: <Library size={17} /> },
       { key: "knowledge_library", label: "知识库", description: "多学科知识卡", href: "/assets?library=knowledge", icon: <Database size={17} /> },
+      { key: "novel_kg", label: "Novel KG", description: "实体、关系、时间线和伏笔图谱", href: "/kg", icon: <Network size={17} /> },
       { key: "setting_bible", label: "设定书", description: "世界观、连续性和长篇设定", href: "/assets?library=bible", icon: <BookOpen size={17} /> },
       { key: "style_center", label: "文风中心", description: "参数化 style profile", href: "/assets?library=style", icon: <Wand2 size={17} /> },
       { key: "writing_templates", label: "写作模板", description: "冲突、节奏、钩子和修辞模板", href: "/templates", icon: <PenLine size={17} /> },

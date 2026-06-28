@@ -36,7 +36,7 @@ from novel_forge.modules.evaluation_center import (
 )
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.modules.production_chain import create_generation_run
-from novel_forge.schemas import ChapterPlan, CharacterCard, ContextBundle, ContinuityBible, DraftChapter, ForeshadowingThread
+from novel_forge.schemas import ChapterPlan, CharacterCard, ContextBundle, ContinuityBible, DraftChapter, ForeshadowingThread, WorldBible
 from novel_forge.storage.local import LocalStorage
 
 
@@ -288,6 +288,57 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
             self.assertIn("timeline_regression", blocking_dimensions)
             self.assertIn("future_timeline_leak", blocking_dimensions)
             self.assertIn("setting_rule_conflict", blocking_dimensions)
+
+    def test_stability_preflight_hard_blocks_novel_kg_conflict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = init_workspace(storage, "KG Preflight Project")
+            workspace_asset = storage.read_asset(workspace)
+            project_id = workspace_asset.content["project_id"]
+            workspace_ref = str(workspace.relative_to(storage.root))
+            metadata = {"project_id": project_id, "workspace_path": workspace_ref}
+            storage.write_asset(
+                "worlds",
+                WorldBible(
+                    title="Alias collision world",
+                    content={"factions": [{"name": "Shadow Court", "goal": "control the archive"}]},
+                    metadata=metadata,
+                    references=[workspace_ref],
+                ),
+            )
+            storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="Shadow Court",
+                    content={"name": "Shadow Court", "role": "protagonist", "status": "active"},
+                    metadata=metadata,
+                    references=[workspace_ref],
+                ),
+            )
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="KG alias collision plan",
+                    content={
+                        "chapter": 1,
+                        "objective": "Shadow Court enters the archive.",
+                        "beats": ["Shadow Court receives a warning."],
+                        "hook": "archive opens",
+                    },
+                    metadata=metadata,
+                    references=[workspace_ref],
+                ),
+            )
+
+            report = create_chapter_stability_preflight_report(storage, plan_path, workspace_path=workspace_ref)
+            asset = storage.read_asset(report["path"])
+            blocking_types = {item["conflict_type"] for item in asset.content["blocking_violations"]}
+
+            self.assertEqual(asset.content["recommendation"], "block")
+            self.assertEqual(asset.content["dimensions"]["novel_kg"]["status"], "blocked")
+            self.assertEqual(asset.content["novel_kg_gate"]["recommendation"], "block")
+            self.assertIn("alias_collision", blocking_types)
 
     def test_model_evaluation_assets_can_run_and_compare(self):
         with tempfile.TemporaryDirectory() as tmp:

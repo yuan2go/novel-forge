@@ -545,6 +545,19 @@ class NovelKGSnapshotRequest(BaseModel):
     include_content_snapshot: bool = False
 
 
+class NovelKGRefreshRequest(BaseModel):
+    project_id: str | None = None
+    workspace_path: str | None = None
+    changed_asset_path: str | None = None
+    apply_invalidation: bool = True
+
+
+class NovelKGGateRequest(BaseModel):
+    target_path: str | None = None
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
 class ChapterContinuityReportRequest(BaseModel):
     draft_path: str
     workspace_path: str | None = None
@@ -931,6 +944,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "DraftDiffReportRequest": DraftDiffReportRequest,
         "ContinuityGraphSnapshotRequest": ContinuityGraphSnapshotRequest,
         "NovelKGSnapshotRequest": NovelKGSnapshotRequest,
+        "NovelKGRefreshRequest": NovelKGRefreshRequest,
+        "NovelKGGateRequest": NovelKGGateRequest,
         "ChapterContinuityReportRequest": ChapterContinuityReportRequest,
         "CanonPatchRequest": CanonPatchRequest,
         "CanonPatchApplyRequest": CanonPatchApplyRequest,

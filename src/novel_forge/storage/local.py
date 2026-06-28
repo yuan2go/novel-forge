@@ -11,6 +11,32 @@ from novel_forge.core.ids import utc_now
 from novel_forge.schemas import BaseAsset, asset_from_dict
 from novel_forge.storage.locks import StorageLock
 
+NOVEL_KG_SOURCE_TYPES = {
+    "character_card",
+    "world_bible",
+    "continuity_bible",
+    "foreshadowing_thread",
+    "power_scale_rule",
+    "review_rule_pack",
+    "quality_standard_profile",
+    "writing_template",
+    "craft_template",
+    "material_card",
+    "knowledge_card",
+    "outline",
+    "outline_version",
+    "long_form_macro_plan",
+    "chapter_plan",
+    "chapter_plan_version",
+    "draft_chapter",
+    "draft_version",
+    "chapter_audit_report",
+    "review_report",
+    "revision_plan",
+    "canon_graph_snapshot",
+    "canon_patch",
+}
+
 
 class LocalStorage:
     def __init__(self, root: str | Path = ".") -> None:
@@ -34,6 +60,7 @@ class LocalStorage:
         with StorageLock(self.root, str(resolved.relative_to(self.root)) if resolved.is_relative_to(self.root) else resolved.name):
             self._write_json_atomic(resolved, data, backup_existing=True)
         self._sync_postgres_write_through(resolved)
+        self._mark_novel_kg_dirty(resolved, data)
         return resolved
 
     def read_json(self, path: str | Path) -> Any:
@@ -48,6 +75,7 @@ class LocalStorage:
         with StorageLock(self.root, f"{category}-{asset.id}"):
             self._write_json_atomic(path, data, backup_existing=True)
         self._sync_postgres_write_through(path)
+        self._mark_novel_kg_dirty(path, data)
         return path
 
     def write_asset_auto(self, asset: BaseAsset) -> Path:
@@ -133,6 +161,49 @@ class LocalStorage:
                 raise ValueError(
                     f"cross-project write rejected for {relative}: reference {ref} belongs to {linked_project_id}, not {project_id}"
                 )
+
+    def _mark_novel_kg_dirty(self, path: Path, data: Any) -> None:
+        if not _is_data_asset_path(self, path) or not isinstance(data, dict):
+            return
+        asset_type = str(data.get("type", ""))
+        if asset_type not in NOVEL_KG_SOURCE_TYPES:
+            return
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        project_id = str(metadata.get("project_id") or content.get("project_id") or "")
+        workspace_path = str(metadata.get("workspace_path") or content.get("workspace_path") or "")
+        dirty_path = self.data_root / "indexes" / "novel_kg_dirty.json"
+        dirty_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            dirty = self.read_json(dirty_path) if dirty_path.exists() else {}
+        except Exception:
+            dirty = {}
+        entries = dirty.get("entries", []) if isinstance(dirty, dict) and isinstance(dirty.get("entries", []), list) else []
+        relative = str(path.relative_to(self.root)) if path.is_relative_to(self.root) else str(path)
+        entry_key = (project_id, workspace_path, relative)
+        merged: list[dict[str, Any]] = []
+        replaced = False
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            key = (str(entry.get("project_id", "")), str(entry.get("workspace_path", "")), str(entry.get("path", "")))
+            if key == entry_key:
+                entry = {**entry, "asset_type": asset_type, "asset_id": str(data.get("id", "")), "updated_at": utc_now()}
+                replaced = True
+            merged.append(entry)
+        if not replaced:
+            merged.append(
+                {
+                    "project_id": project_id,
+                    "workspace_path": workspace_path,
+                    "path": relative,
+                    "asset_id": str(data.get("id", "")),
+                    "asset_type": asset_type,
+                    "updated_at": utc_now(),
+                }
+            )
+        payload = {"type": "novel_kg_dirty_index", "updated_at": utc_now(), "entries": merged[-500:]}
+        self._write_json_atomic(dirty_path, payload, backup_existing=False)
 
 
 def _is_data_asset_path(storage: LocalStorage, path: Path) -> bool:

@@ -26,7 +26,7 @@ from novel_forge.modules.workflow_nodes import (
     validate_workflow_run_transition,
     workflow_state_machine,
 )
-from novel_forge.schemas import ChapterPlan, CleanedText, DraftChapter, Outline, SourceDocument
+from novel_forge.schemas import CharacterCard, ChapterPlan, CleanedText, DraftChapter, Outline, SourceDocument, WorldBible
 from novel_forge.storage.local import LocalStorage
 
 
@@ -988,6 +988,75 @@ class WorkflowExecutorTests(unittest.TestCase):
             node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
             self.assertEqual(node_run.content["status"], "failed")
             self.assertIn("registry_results", node_run.content["quality_gate"])
+
+    def test_gate_registry_novel_kg_gate_blocks_graph_conflict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "workflow-kg-block"
+            workspace_path = "data/workspaces/workflow-kg-block.json"
+            metadata = {"project_id": project_id, "workspace_path": workspace_path}
+            storage.write_asset(
+                "worlds",
+                WorldBible(
+                    title="KG world",
+                    content={"factions": [{"name": "Shadow Court", "goal": "control the archive"}]},
+                    metadata=metadata,
+                ),
+            )
+            storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="Shadow Court",
+                    content={"name": "Shadow Court", "role": "protagonist"},
+                    metadata=metadata,
+                ),
+            )
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="KG blocked plan",
+                    content={"chapter": 1, "objective": "Shadow Court enters the archive", "beats": ["open"], "hook": "archive opens"},
+                    metadata=metadata,
+                ),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Novel KG Gate",
+                entry_node_id="kg-gate",
+                nodes=[
+                    {
+                        "node_id": "kg-gate",
+                        "node_type": "quality",
+                        "operation": "novel_kg_gate",
+                        "input_assets": [str(plan_path.relative_to(storage.root))],
+                        "processor": {"kind": "deterministic"},
+                        "quality_gate": {
+                            "required": True,
+                            "gates": [
+                                {
+                                    "kind": "novel_kg",
+                                    "required": True,
+                                    "blocking": True,
+                                    "project_id": project_id,
+                                    "workspace_path": workspace_path,
+                                }
+                            ],
+                        },
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"])
+
+            self.assertEqual(result["status"], "failed")
+            node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
+            self.assertEqual(node_run.content["status"], "failed")
+            registry = node_run.content["quality_gate"]["registry_results"]
+            self.assertEqual(registry[0]["kind"], "novel_kg")
+            self.assertEqual(registry[0]["status"], "failed")
+            gate_results = _run_assets_by_type(storage, "gate_result")
+            self.assertTrue(any(item["content"]["gate_kind"] == "novel_kg" and item["content"]["status"] == "failed" for item in gate_results))
 
     def test_post_gate_blocks_invalid_output_asset(self):
         with tempfile.TemporaryDirectory() as tmp:

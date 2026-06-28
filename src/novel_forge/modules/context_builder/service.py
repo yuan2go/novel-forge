@@ -7,6 +7,7 @@ from typing import Any
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.novel_kg import build_novel_kg_context
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.schemas import BaseAsset, ContextBuildPlan, ContextBundle, ProjectMetricSnapshot, RagQualityReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
@@ -46,10 +47,20 @@ def create_context_build_plan(
         top_k=top_k,
         backend=backend,
     )
-    candidates = [_candidate_payload(item) for item in retrieved_context.get("items", []) if isinstance(item, dict)]
-    exclusions = _dedupe_exclusions([*_context_exclusions(storage, project), *_rag_copyright_exclusions(retrieved_context)])
     project_id = str(project.get("project_id", ""))
     workspace = str(project.get("workspace_path", "") or workspace_path or "")
+    kg_context = _kg_context_for_plan(
+        storage,
+        target_path=target_file,
+        query=context_query,
+        project_id=project_id or None,
+        workspace_path=workspace or None,
+        limit=max(4, int(top_k)),
+    )
+    candidates = _merge_context_candidates(
+        [*_candidate_payloads(retrieved_context.get("items", [])), *kg_context.get("items", [])],
+    )
+    exclusions = _dedupe_exclusions([*_context_exclusions(storage, project), *_rag_copyright_exclusions(retrieved_context)])
     profile_policy = _context_profile_policy(context_profile)
     asset = ContextBuildPlan(
         title=f"Context build plan for {target_asset.title or target_asset.id}",
@@ -92,6 +103,7 @@ def create_context_build_plan(
             "omission_check": retrieved_context.get("omission_check", {}),
             "copyright_filter": retrieved_context.get("copyright_filter", {}),
             "retrieved_context": retrieved_context,
+            "kg_context": kg_context,
         },
         metadata={
             "project_id": project_id,
@@ -109,7 +121,7 @@ def create_context_build_plan(
         references=filter_project_safe_references(
             storage,
             project_id,
-            _dedupe([target_asset.id, _display_path(storage.root, target_file), *retrieved_context.get("source_asset_ids", [])]),
+            _dedupe([target_asset.id, _display_path(storage.root, target_file), *retrieved_context.get("source_asset_ids", []), *kg_context.get("source_asset_ids", [])]),
         ),
     )
     _ensure_valid(asset)
@@ -410,6 +422,54 @@ def _candidate_payload(item: dict[str, Any]) -> dict[str, Any]:
         "recall_explanation": item.get("recall_explanation", {}) if isinstance(item.get("recall_explanation", {}), dict) else {},
         "selected_by_default": str(item.get("type", "")) not in RAW_OR_REPORT_TYPES,
     }
+
+
+def _candidate_payloads(items: Any) -> list[dict[str, Any]]:
+    return [_candidate_payload(item) for item in items if isinstance(item, dict)] if isinstance(items, list) else []
+
+
+def _kg_context_for_plan(
+    storage: LocalStorage,
+    *,
+    target_path: str | Path,
+    query: str,
+    project_id: str | None,
+    workspace_path: str | None,
+    limit: int,
+) -> dict[str, Any]:
+    try:
+        return build_novel_kg_context(
+            storage,
+            target_path=target_path,
+            query=query,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            limit=limit,
+        )
+    except Exception as exc:
+        return {"items": [], "source_asset_ids": [], "recommendation": "kg_context_unavailable", "error": f"{type(exc).__name__}: {exc}"}
+
+
+def _merge_context_candidates(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_path: dict[str, dict[str, Any]] = {}
+    for item in items:
+        path = str(item.get("path", ""))
+        if not path:
+            continue
+        existing = by_path.get(path)
+        if not existing or float(item.get("score", 0) or 0) > float(existing.get("score", 0) or 0):
+            if existing:
+                item = {**item, "categories": _merged_candidate_categories(existing, item)}
+            by_path[path] = item
+        elif existing:
+            existing["categories"] = _merged_candidate_categories(existing, item)
+    return sorted(by_path.values(), key=lambda row: -float(row.get("score", 0) or 0))
+
+
+def _merged_candidate_categories(left: dict[str, Any], right: dict[str, Any]) -> list[str]:
+    categories = left.get("categories", []) if isinstance(left.get("categories", []), list) else []
+    more = right.get("categories", []) if isinstance(right.get("categories", []), list) else []
+    return _dedupe([*[str(value) for value in categories], *[str(value) for value in more]])
 
 
 def _rag_copyright_exclusions(retrieved_context: dict[str, Any]) -> list[dict[str, str]]:

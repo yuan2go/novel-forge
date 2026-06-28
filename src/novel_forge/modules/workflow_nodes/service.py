@@ -45,6 +45,7 @@ WORKFLOW_SERVICE_OPERATIONS = {
     "continuity_graph_snapshot": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_continuity_graph_snapshot"]},
     "canon_graph_snapshot": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_canon_graph_snapshot"]},
     "novel_kg_snapshot": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_novel_kg_snapshot"]},
+    "novel_kg_gate": {"category": "continuity", "checkpoint_strategy": "operation_state", "aliases": ["evaluate_novel_kg_gate"]},
     "chapter_continuity_report": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_chapter_continuity_report"]},
     "canon_patch_from_draft": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_canon_patch_from_draft"]},
     "apply_canon_patch": {"category": "continuity", "checkpoint_strategy": "operation_state", "aliases": ["canon_patch_apply"]},
@@ -3297,6 +3298,8 @@ def _evaluate_gate_spec(
         return _report_gate(storage, input_assets, report_types={"publish_gate_report"}, block_recommendations={"block", "blocked", "reject", "needs_revision"}, service_operation="publish_gate_report", spec=spec, workspace_path=workspace_path)
     if kind == "continuity":
         return _report_gate(storage, input_assets, report_types={"chapter_continuity_report", "chapter_stability_preflight_report", "canon_graph_snapshot", "continuity_graph_snapshot"}, block_recommendations={"block", "blocked", "reject", "needs_revision"}, service_operation=str(spec.get("operation") or "chapter_stability_preflight"), spec=spec, workspace_path=workspace_path)
+    if kind in {"novel_kg", "kg", "knowledge_graph"}:
+        return _novel_kg_gate(storage, input_assets, spec=spec, workspace_path=workspace_path)
     if kind == "custom_service":
         processor = spec.get("processor", {}) if isinstance(spec.get("processor", {}), dict) else {}
         operation = str(spec.get("operation") or processor.get("operation") or "").strip()
@@ -3311,6 +3314,33 @@ def _evaluate_gate_spec(
         status = "failed" if str(result.get("status", "")) == "failed" else "passed"
         return {"status": status, "message": str(result.get("error") or result.get("message") or ""), "result": result}
     return {"status": "failed", "message": f"unknown gate kind: {kind}", "result": {"kind": kind}}
+
+
+def _novel_kg_gate(storage: LocalStorage, input_assets: list[str], *, spec: dict[str, Any], workspace_path: str) -> dict[str, Any]:
+    from novel_forge.modules.novel_kg import evaluate_novel_kg_gate
+
+    target_path = str(spec.get("target_path") or spec.get("draft_path") or spec.get("chapter_plan_path") or "").strip()
+    if not target_path and input_assets:
+        target_path = str(input_assets[0])
+    project_id = str(spec.get("project_id") or "").strip() or _project_id_for_paths(storage, [target_path] if target_path else input_assets) or None
+    gate = evaluate_novel_kg_gate(
+        storage,
+        snapshot_path=str(spec.get("snapshot_path") or "") or None,
+        target_path=target_path or None,
+        project_id=project_id,
+        workspace_path=str(spec.get("workspace_path") or workspace_path or "") or None,
+    )
+    gate_status = str(gate.get("status") or gate.get("gate_status") or "").lower()
+    recommendation = str(gate.get("recommendation") or "").lower()
+    runtime_status = "failed" if gate_status == "blocked" or recommendation == "block" else "warning" if gate_status in {"passed_with_warnings", "warning"} else "passed"
+    blocking_count = len(gate.get("blocking_issues", [])) if isinstance(gate.get("blocking_issues", []), list) else 0
+    warning_count = len(gate.get("warnings", [])) if isinstance(gate.get("warnings", []), list) else 0
+    message = ""
+    if runtime_status == "failed":
+        message = f"Novel KG gate blocked target: {blocking_count} blocking issue(s)"
+    elif runtime_status == "warning":
+        message = f"Novel KG gate passed with warnings: {warning_count} warning(s)"
+    return {"status": runtime_status, "message": message, "result": gate}
 
 
 def _schema_gate(storage: LocalStorage, input_assets: list[str]) -> dict[str, Any]:
@@ -3970,6 +4000,18 @@ def _execute_registered_service_processor_impl(
             include_content_snapshot=bool(processor.get("include_content_snapshot", False)),
         )
         return _service_success(storage, operation, result)
+    if operation in {"novel_kg_gate", "evaluate_novel_kg_gate"}:
+        from novel_forge.modules.novel_kg import evaluate_novel_kg_gate
+
+        gate = evaluate_novel_kg_gate(
+            storage,
+            snapshot_path=str(processor.get("snapshot_path") or "") or None,
+            target_path=_processor_path(processor, input_assets, "target_path", "draft_path", "chapter_plan_path"),
+            project_id=str(processor.get("project_id") or "") or None,
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        status = "failed" if str(gate.get("status") or "").lower() == "blocked" or str(gate.get("recommendation") or "").lower() == "block" else "succeeded"
+        return {"status": status, "operation": operation, "contract": _service_processor_contract(operation), "output_assets": [], "payload": gate}
     if operation in {"chapter_continuity_report", "create_chapter_continuity_report"}:
         from novel_forge.modules.continuity_graph import create_chapter_continuity_report
 

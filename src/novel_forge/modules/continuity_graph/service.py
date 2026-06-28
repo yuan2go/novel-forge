@@ -370,6 +370,15 @@ def create_chapter_stability_preflight_report(
         }
     )
     violations.extend(canon_violations)
+    kg_gate = _novel_kg_preflight_gate(
+        storage,
+        target_path=path,
+        project_id=project_id or None,
+        workspace_path=workspace or None,
+    )
+    dimensions["novel_kg"] = kg_gate["dimension"]
+    checks.append(kg_gate["check"])
+    violations.extend(kg_gate["violations"])
     recommendation = "block" if any(item["severity"] == "high" for item in violations) else "revise" if violations else "pass"
     with AgentExecutionContext(
         storage,
@@ -397,6 +406,7 @@ def create_chapter_stability_preflight_report(
                 "gate_status": "blocked" if recommendation == "block" else "passed_with_warnings" if recommendation == "revise" else "passed",
                 "dimensions": dimensions,
                 "canon_graph": canon_graph,
+                "novel_kg_gate": kg_gate["gate"],
                 "continuity_checks": checks,
                 "violations": violations,
                 "blocking_violations": [item for item in violations if item.get("severity") == "high"],
@@ -1351,6 +1361,70 @@ def _state_conflict(states: set[str]) -> bool:
     dead = {"dead", "死亡", "已死", "阵亡", "removed"}
     active = {"active", "alive", "行动", "出场", "injured", "missing", "transformed"}
     return bool(states & dead and states & active)
+
+
+def _novel_kg_preflight_gate(
+    storage: LocalStorage,
+    *,
+    target_path: Path,
+    project_id: str | None,
+    workspace_path: str | None,
+) -> dict[str, Any]:
+    try:
+        from novel_forge.modules.novel_kg import evaluate_novel_kg_gate
+
+        gate = evaluate_novel_kg_gate(storage, target_path=target_path, project_id=project_id, workspace_path=workspace_path)
+    except Exception as exc:
+        gate = {
+            "gate": "novel_kg_gate",
+            "status": "blocked",
+            "gate_status": "blocked",
+            "recommendation": "block",
+            "blocking_issues": [
+                {
+                    "severity": "high",
+                    "conflict_type": "novel_kg_gate_error",
+                    "message": f"Novel KG gate failed during continuity preflight: {type(exc).__name__}: {exc}",
+                    "recommendation": "Repair KG build/query before chapter generation.",
+                }
+            ],
+            "warnings": [],
+            "conflict_summary": {"count": 1, "blocking_count": 1, "recommendation": "block"},
+        }
+    blocking = gate.get("blocking_issues", []) if isinstance(gate.get("blocking_issues", []), list) else []
+    warnings = gate.get("warnings", []) if isinstance(gate.get("warnings", []), list) else []
+    status = str(gate.get("status") or gate.get("gate_status") or "").lower()
+    dimension_status = "blocked" if status == "blocked" or str(gate.get("recommendation") or "").lower() == "block" else "warning" if status in {"passed_with_warnings", "warning"} or warnings else "passed"
+    violations = [
+        {
+            "dimension": "novel_kg",
+            "severity": "high",
+            "conflict_type": str(item.get("conflict_type") or "novel_kg_conflict"),
+            "message": str(item.get("message") or "Novel KG gate reported a blocking issue."),
+            "recommendation": str(item.get("recommendation") or "Repair KG conflict before chapter generation."),
+            "evidence": item,
+        }
+        for item in blocking
+        if isinstance(item, dict)
+    ]
+    return {
+        "gate": gate,
+        "dimension": {
+            "status": dimension_status,
+            "blocking_count": len(violations),
+            "warning_count": len(warnings),
+            "summary": "checks unified Novel KG conflicts, entity aliases, evidence-backed context, and graph consistency",
+            "recommendation": gate.get("recommendation", ""),
+        },
+        "check": {
+            "check": "novel_kg_gate",
+            "status": dimension_status,
+            "asset_count": len(gate.get("kg_context", {}).get("items", [])) if isinstance(gate.get("kg_context", {}), dict) else 0,
+            "matched_count": len(warnings) + len(violations),
+            "summary": "hard-blocks chapter production when unified Novel KG reports blocking conflicts",
+        },
+        "violations": violations,
+    }
 
 
 def _write(storage: LocalStorage, asset: ContinuityGraphSnapshot | CanonGraphSnapshot | CanonPatch | ChapterContinuityReport) -> dict[str, Any]:
