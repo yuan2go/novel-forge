@@ -4,6 +4,8 @@ This design upgrades Novel Forge Agents from prompt roles into persisted, permis
 
 It preserves the AGENTS.md boundary: reference works are used for abstract structural learning, not copying.
 
+The next scheduler-specific design is maintained in `docs/new/implementation/agent-scheduler-design.md`.
+
 ## Current Agent Baseline
 
 Current files:

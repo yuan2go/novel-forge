@@ -14,6 +14,8 @@ export function loadProductionControlData(projectId?: string) {
     fetchJson<WorkflowDefinitionRow[]>("/product/workflow/definitions?limit=120"),
     fetchJson<WorkflowRunRow[]>(`/product/workflow/runs?${projectQuery}limit=120`),
     fetchJson<AgentRunRow[]>(`/product/agents/runs?${projectQuery}limit=120`),
+    fetchJson<Record<string, unknown>>("/product/agents/scheduler/status"),
+    fetchJson<Array<Record<string, unknown>>>(`/product/agents/scheduler/queue?${projectQuery}limit=120`),
     fetchJson<ProjectHealthReport>(projectId ? `/product/system/health?project_id=${encodeURIComponent(projectId)}` : "/product/system/health")
   ]);
 }
@@ -49,6 +51,26 @@ export function enqueueWorkflowSchedulerLoop(projectId?: string) {
     apply_invalidation: true,
     stop_when_idle: true,
     lease_ttl_seconds: 300
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function runAgentSchedulerTick(projectId?: string) {
+  return postJson("/product/agents/scheduler/tick", {
+    project_id: projectId || null,
+    limit: 20,
+    dry_run: false,
+    iterations: 1,
+    interval_seconds: 0,
+    stop_when_idle: true,
+    lease_ttl_seconds: 300,
+    retry_delay_seconds: 0
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function recoverAgentDispatch(queuePath: string) {
+  return postJson("/product/agents/recover", {
+    queue_path: queuePath,
+    reason: "workflow console recovery"
   }) as Promise<Record<string, unknown>>;
 }
 

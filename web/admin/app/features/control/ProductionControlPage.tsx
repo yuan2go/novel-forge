@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AgentRunRow, BatchItem, DeadLetter, HandoffRow, NodeRunRow, ProjectHealthReport, ProjectRow, TaskCenter, TaskControl, WorkflowDefinitionRow, WorkflowRunRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { controlWorkflowRun, enqueueWorkflowSchedulerLoop, executeWorkflow, loadProductionControlData, loadWorkflowRuntimeConsole, resumeWorkflow, runAgentBoundaryAudit, runWorkflowSchedulerTick } from "./api";
+import { controlWorkflowRun, enqueueWorkflowSchedulerLoop, executeWorkflow, loadProductionControlData, loadWorkflowRuntimeConsole, recoverAgentDispatch, resumeWorkflow, runAgentBoundaryAudit, runAgentSchedulerTick, runWorkflowSchedulerTick } from "./api";
 
 export function ProductionControlPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
@@ -25,6 +25,9 @@ export function ProductionControlPage() {
   const [schedulerQueue, setSchedulerQueue] = useState<Record<string, unknown> | null>(null);
   const [workflowAction, setWorkflowAction] = useState<Record<string, unknown> | null>(null);
   const [workflowRuntime, setWorkflowRuntime] = useState<Record<string, unknown> | null>(null);
+  const [agentSchedulerStatus, setAgentSchedulerStatus] = useState<Record<string, unknown> | null>(null);
+  const [agentDispatchQueue, setAgentDispatchQueue] = useState<Array<Record<string, unknown>>>([]);
+  const [agentSchedulerResult, setAgentSchedulerResult] = useState<Record<string, unknown> | null>(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState("");
   const [selectedWorkflowRun, setSelectedWorkflowRun] = useState("");
   const [workflowInputText, setWorkflowInputText] = useState("");
@@ -40,7 +43,7 @@ export function ProductionControlPage() {
   const activeWorkflowRuns = workflowRuns.filter((run) => ["running", "prepared", "paused"].includes(String(run.status || "")));
 
   async function refresh(nextProjectId = projectId) {
-    const [projectRows, tasks, control, deadLetterRows, itemRows, handoffRows, nodeRows, workflowDefinitionRows, workflowRunsFromApi, agentRows, healthReport] = await loadProductionControlData(nextProjectId);
+    const [projectRows, tasks, control, deadLetterRows, itemRows, handoffRows, nodeRows, workflowDefinitionRows, workflowRunsFromApi, agentRows, agentSchedulerState, dispatchRows, healthReport] = await loadProductionControlData(nextProjectId);
     setProjects(projectRows);
     setTaskCenter(tasks);
     setTaskControl(control);
@@ -51,6 +54,8 @@ export function ProductionControlPage() {
     setWorkflowDefinitions(workflowDefinitionRows);
     setWorkflowRunRows(workflowRunsFromApi);
     setAgentRuns(agentRows);
+    setAgentSchedulerStatus(agentSchedulerState);
+    setAgentDispatchQueue(dispatchRows);
     setProjectHealth(healthReport);
     setProjectId(nextProjectId || projectRows[0]?.project_id || "");
     setSelectedWorkflow((current) => current || workflowDefinitionRows[0]?.path || "");
@@ -95,6 +100,34 @@ export function ProductionControlPage() {
     try {
       const result = await enqueueWorkflowSchedulerLoop(projectId);
       setSchedulerQueue(result);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function tickAgentScheduler() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await runAgentSchedulerTick(projectId);
+      setAgentSchedulerResult(result);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function recoverDispatch(queuePath: string) {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await recoverAgentDispatch(queuePath);
+      setAgentSchedulerResult(result);
       await refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -192,6 +225,8 @@ export function ProductionControlPage() {
   const dagNodes = (((workflowRuntime?.dag as Record<string, unknown> | undefined)?.nodes as Array<Record<string, unknown>> | undefined) || []);
   const readyQueue = (((workflowRuntime?.ready_queue as Record<string, unknown> | undefined)?.queue as Array<Record<string, unknown>> | undefined) || []);
   const processorContracts = ((workflowRuntime?.processor_contracts as Array<Record<string, unknown>> | undefined) || []);
+  const agentSchedulerLease = ((agentSchedulerStatus?.lease as Record<string, unknown> | undefined) || {});
+  const agentSchedulerByStatus = ((agentSchedulerStatus?.by_status as Record<string, unknown> | undefined) || {});
 
   return (
     <FeatureShell title="生产总控中心" subtitle="任务、工作流节点、Agent、批处理 item、Handoff、dead-letter 和 worker health 的统一观测台。">
@@ -215,6 +250,7 @@ export function ProductionControlPage() {
             <button className="secondaryButton" onClick={() => refresh()}>刷新</button>
             <button className="primaryButton" disabled={busy} onClick={tickWorkflowScheduler}>Workflow Scheduler</button>
             <button className="secondaryButton" disabled={busy} onClick={queueWorkflowScheduler}>入队 Scheduler Loop</button>
+            <button className="primaryButton" disabled={busy} onClick={tickAgentScheduler}>Agent Scheduler</button>
             <button className="primaryButton" disabled={busy} onClick={auditAgentBoundaries}>Agent 边界审计</button>
           </div>
           <div className="summaryBand">
@@ -342,6 +378,34 @@ export function ProductionControlPage() {
               <span className="pathText" key={`scheduler-agent-${row.agent_run_path}`}>{String(row.agent_run_path || "-")}</span>,
               <span className="pathText" key={`scheduler-resume-${row.resume_workflow_run_path}`}>{String(row.resume_workflow_run_path || "-")}</span>,
               String((row.output_assets as unknown[] | undefined)?.length ?? 0)
+            ])}
+          />
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="Agent Scheduler" icon={<Activity size={18} />} />
+          <div className="summaryBand">
+            <Metric label="Lease" value={String(agentSchedulerLease.status ?? "missing")} />
+            <Metric label="Owner" value={String(agentSchedulerLease.owner ?? "-")} />
+            <Metric label="Queued" value={String(agentSchedulerByStatus.queued ?? 0)} />
+            <Metric label="Acked" value={String(agentSchedulerByStatus.acked ?? 0)} />
+            <Metric label="Waiting" value={String(agentSchedulerByStatus.waiting_human ?? 0)} />
+            <Metric label="Tick" value={String(agentSchedulerResult?.status ?? "-")} />
+          </div>
+          <DataTable
+            emptyText="暂无 Agent dispatch queue"
+            columns={["状态", "Agent", "Workflow", "尝试", "Lease", "错误/恢复"]}
+            rows={agentDispatchQueue.slice(0, 18).map((row) => [
+              <span className={statusClass(String(row.status || ""))} key={`dispatch-status-${row.path}`}>{String(row.status || "-")}</span>,
+              <span className="pathText" key={`dispatch-agent-${row.path}`}>{String(row.agent_run_path || "-")}</span>,
+              `${String(row.workflow_node_id || "-")} · ${String(row.workflow_run_id || "-")}`,
+              `${String(row.attempt_count ?? 0)}/${String(row.max_attempts ?? 0)}`,
+              String(row.lease_owner || "-"),
+              ["dead_letter", "waiting_human", "retry_scheduled"].includes(String(row.status || "")) ? (
+                <button className="secondaryButton" disabled={busy} onClick={() => recoverDispatch(String(row.path || ""))} key={`recover-${row.path}`}>
+                  Recover
+                </button>
+              ) : String(row.last_error || "-")
             ])}
           />
         </div>

@@ -483,6 +483,36 @@ class AgentExecutorRunRequest(BaseModel):
     human_gate: dict[str, Any] = Field(default_factory=dict)
 
 
+class AgentSchedulerRequest(BaseModel):
+    project_id: str | None = None
+    limit: int = 20
+    dry_run: bool = False
+    iterations: int = 1
+    interval_seconds: float = 0.0
+    stop_when_idle: bool = True
+    lease_ttl_seconds: int = 300
+    lease_owner: str = ""
+    force_lease: bool = False
+    retry_delay_seconds: int = 0
+
+
+class AgentDispatchRequest(BaseModel):
+    agent_run_path: str
+    workflow_run_id: str = ""
+    workflow_run_path: str = ""
+    workflow_node_id: str = ""
+    expected_output_assets: list[str] = Field(default_factory=list)
+    token_used: int = 0
+    cost_estimate: float = 0.0
+    max_attempts: int = 3
+    priority: int = 100
+
+
+class AgentDispatchRecoverRequest(BaseModel):
+    queue_path: str
+    reason: str = "manual recovery"
+
+
 class EditorPatchRequest(BaseModel):
     draft_path: str
     instructions: str = ""
@@ -886,6 +916,9 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AgentSlaRequest": AgentSlaRequest,
         "AgentRollbackRequest": AgentRollbackRequest,
         "AgentExecutorRunRequest": AgentExecutorRunRequest,
+        "AgentSchedulerRequest": AgentSchedulerRequest,
+        "AgentDispatchRequest": AgentDispatchRequest,
+        "AgentDispatchRecoverRequest": AgentDispatchRecoverRequest,
         "EditorPatchRequest": EditorPatchRequest,
         "EditorPatchApplyRequest": EditorPatchApplyRequest,
         "DraftDiffReportRequest": DraftDiffReportRequest,

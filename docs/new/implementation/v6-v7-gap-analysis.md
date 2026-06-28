@@ -11,6 +11,7 @@ Implementation status update: 2026-06-28.
 - Context Builder now records a `context_profile` on build plans and supports `/product/context/diff`, producing a schema-backed context bundle diff snapshot with added/removed sources, token delta, stale warning delta, and recommendation.
 - Production chain now has `/product/production/invalidate-downstream`, which creates a change-impact report and can mark high/medium/blocking downstream assets as `stale` with invalidation metadata.
 - Agent runtime now exposes `/product/agents/executor/run-once`. It enforces tool allowlist, output type, checkpoint recording, hard token budget, budget assets, SLA assets, and fail-closed failure reports.
+- Agent Scheduler first slice now exists: Workflow agent nodes create `agent_dispatch_queue`; `/product/agents/scheduler/*` can lease, claim, ack, retry, dead-letter, recover, and complete prepared Agent runs when verified output assets exist; successful Agent runs resume the blocked workflow through the same Workflow Resume path.
 - Model Evaluation Center now supports `/product/evaluation/benchmark-from-generation-run`, binding benchmark tasks directly to real `generation_run` production traces.
 - Web Admin Health Center now displays the V6/V7 module completion matrix. Analysis, Context Builder, and Model Evaluation pages expose the new human gate, context profile/diff, and generation-run benchmark workflow.
 

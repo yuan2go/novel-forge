@@ -29,6 +29,7 @@ AGENT_RUN_STATUSES = {
     "planned",
     "prepared",
     "running",
+    "checkpointed",
     "waiting_human",
     "verifying",
     "succeeded",
@@ -39,6 +40,66 @@ AGENT_RUN_STATUSES = {
     "cancelled",
 }
 TERMINAL_STATUSES = {"succeeded", "failed", "dead_letter", "cancelled"}
+
+
+class AgentRunStateMachine:
+    ALLOWED_TRANSITIONS: dict[str, set[str]] = {
+        "planned": {"prepared", "running", "cancelled", "failed"},
+        "prepared": {"running", "waiting_human", "verifying", "succeeded", "failed", "cancelled"},
+        "running": {"checkpointed", "verifying", "waiting_human", "succeeded", "needs_revision", "failed", "cancelled"},
+        "checkpointed": {"running", "verifying", "succeeded", "failed", "cancelled"},
+        "waiting_human": {"prepared", "running", "verifying", "succeeded", "failed", "cancelled"},
+        "verifying": {"succeeded", "needs_revision", "failed", "waiting_human", "cancelled"},
+        "needs_revision": {"prepared", "running", "failed", "cancelled"},
+        "failed": {"prepared", "recovered", "dead_letter", "cancelled"},
+        "dead_letter": {"prepared", "recovered", "cancelled"},
+        "recovered": {"prepared", "running", "succeeded"},
+        "succeeded": set(),
+        "cancelled": set(),
+    }
+
+    @classmethod
+    def apply_transition(
+        cls,
+        data: dict[str, Any],
+        target_status: str,
+        *,
+        action: str = "",
+        actor: str = "agent-runtime",
+        message: str = "",
+    ) -> dict[str, Any]:
+        if target_status not in AGENT_RUN_STATUSES and target_status != "checkpointed":
+            raise ValueError(f"agent_run status must be one of: {', '.join(sorted(AGENT_RUN_STATUSES))}")
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        current_status = str(content.get("status") or "planned")
+        if current_status == target_status:
+            allowed = True
+        else:
+            allowed = target_status in cls.ALLOWED_TRANSITIONS.get(current_status, set())
+        if not allowed:
+            raise ValueError(f"invalid agent_run transition: {current_status} -> {target_status}")
+        now = utc_now()
+        status_history = content.get("status_history", []) if isinstance(content.get("status_history", []), list) else []
+        status_history.append(
+            {
+                "from_status": current_status,
+                "to_status": target_status,
+                "action": action,
+                "actor": actor,
+                "message": message,
+                "transitioned_at": now,
+            }
+        )
+        content["status_history"] = status_history[-100:]
+        content["status"] = target_status
+        if target_status in TERMINAL_STATUSES:
+            content["finished_at"] = now
+        elif target_status in {"running", "prepared", "waiting_human", "verifying", "needs_revision", "recovered"}:
+            content["finished_at"] = ""
+        data["content"] = content
+        data["updated_at"] = now
+        data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], target_status])
+        return {"from_status": current_status, "to_status": target_status, "allowed": True, "asset": data}
 
 
 @dataclass
@@ -273,6 +334,16 @@ def start_agent_run(
             "started_at": now,
             "finished_at": now if status in TERMINAL_STATUSES else "",
             "status": status,
+            "status_history": [
+                {
+                    "from_status": "",
+                    "to_status": status,
+                    "action": "start",
+                    "actor": "agent-runtime",
+                    "message": f"agent run created in {status}",
+                    "transitioned_at": now,
+                }
+            ],
             "error": "",
             "checkpoint": {},
             "evidence": evidence_payload,
@@ -349,7 +420,6 @@ def update_agent_run_status(
     for item in output_assets or []:
         output_rows.append(_asset_ref(storage, item))
     content["output_assets"] = _dedupe_asset_rows(output_rows)
-    content["status"] = status
     content["error"] = error
     if checkpoint is not None:
         content["checkpoint"] = checkpoint
@@ -359,11 +429,9 @@ def update_agent_run_status(
         content["evidence"] = merged_evidence
     if human_gate is not None:
         content["human_gate"] = human_gate
-    if status in TERMINAL_STATUSES or not content.get("finished_at"):
-        content["finished_at"] = utc_now() if status in TERMINAL_STATUSES else content.get("finished_at", "")
     data["content"] = content
-    data["updated_at"] = utc_now()
-    data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], status])
+    AgentRunStateMachine.apply_transition(data, status, action=event_type, message=message)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
     data["references"] = filter_project_safe_references(
         storage,
         project_id,

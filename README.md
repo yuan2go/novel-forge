@@ -181,7 +181,7 @@ Current P0 direction:
 4. Analysis Center upgrade: first schema/service/UI/handoff slice exists for web fiction, published fiction, classic literature, common analysis core, and analysis-to-asset conversion; next work is semantic scoring and richer conversion gates.
 5. Long-form stability: `change_impact_report` first slice exists; next work is timeline, foreshadowing placement/payoff, relationship/faction/map/prop systems, and invalidation visualization.
 6. AI Editor: paragraph suggestions, `editor_patch`, apply/rollback, diff replay.
-7. Agent industrialization: `agent_contract`, `agent_run`, event/checkpoint/budget/gate/metric/failure assets and Production Control visibility exist; next work is full executor enforcement, rollback, SLA, and deeper Agent Center UI.
+7. Agent industrialization: `agent_contract`, `agent_run`, `agent_dispatch_queue`, event/checkpoint/budget/gate/metric/failure assets, Agent Scheduler tick/loop, Workflow resume handoff, and Production Control visibility exist; next work is broader real-service operation registry, rollback, and deeper Agent Center UI.
 8. Reader feedback, publishing operations, and model evaluation centers.
 
 ## Key Docs

@@ -6,6 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.schemas import (
     AgentContract,
+    AgentDispatchQueue,
     AgentRun,
     AnalysisConversionReport,
     CanonGraphSnapshot,
@@ -41,7 +42,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 100)
+        self.assertEqual(len(SCHEMA_CLASSES), 108)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
         self.assertIn("review_report", SCHEMA_CLASSES)
@@ -86,6 +87,7 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("agent_failure_report", SCHEMA_CLASSES)
         self.assertIn("agent_sla_report", SCHEMA_CLASSES)
         self.assertIn("agent_rollback_report", SCHEMA_CLASSES)
+        self.assertIn("agent_dispatch_queue", SCHEMA_CLASSES)
         self.assertIn("editor_patch", SCHEMA_CLASSES)
         self.assertIn("draft_diff_report", SCHEMA_CLASSES)
         self.assertIn("long_form_macro_plan", SCHEMA_CLASSES)
@@ -428,10 +430,27 @@ class SchemaTests(unittest.TestCase):
                 "started_at": "2026-01-01T00:00:00Z",
             },
         )
+        dispatch_queue = AgentDispatchQueue(
+            title="dispatch",
+            content={
+                "dispatch_id": "dispatch-1",
+                "idempotency_key": "workflow:node:agent:contract",
+                "status": "queued",
+                "agent_run_id": "agent-run-1",
+                "agent_run_path": "data/runs/agent-run-1.json",
+                "operation": "draft",
+                "attempt_count": 0,
+                "max_attempts": 3,
+                "priority": 100,
+                "result": {},
+                "trace": {},
+            },
+        )
         self.assertEqual(validate_common_fields(node_run.to_dict()), [])
         self.assertEqual(validate_common_fields(impact.to_dict()), [])
         self.assertEqual(validate_common_fields(contract.to_dict()), [])
         self.assertEqual(validate_common_fields(agent_run.to_dict()), [])
+        self.assertEqual(validate_common_fields(dispatch_queue.to_dict()), [])
 
         bad_run = agent_run.to_dict()
         bad_run["content"]["status"] = "done"

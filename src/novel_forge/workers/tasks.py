@@ -5,6 +5,7 @@ from typing import Any, Callable
 
 from novel_forge.api.product import enqueue_batch_deconstruct, process_batch_item_step, retry_task
 from novel_forge.modules.agent_runs import AgentExecutionContext
+from novel_forge.modules.agent_scheduler import run_agent_scheduler_loop
 from novel_forge.modules.chapter_production_bus import recover_chapter_production, resume_chapter_production
 from novel_forge.modules.workflow_nodes import run_workflow_scheduler_loop
 from novel_forge.storage.local import LocalStorage
@@ -187,6 +188,38 @@ def workflow_scheduler_loop_task(
             force_lease=force_lease,
         )
         run.succeed(output_assets=result.get("task_status_paths", []), token_used=int(result.get("candidate_count", 0) or 0))
+        return result
+
+
+@_task(name="novel_forge.agent_scheduler_loop")
+def agent_scheduler_loop_task(
+    root: str,
+    project_id: str | None = None,
+    limit: int = 20,
+    iterations: int = 1,
+    interval_seconds: float = 0.0,
+    stop_when_idle: bool = True,
+    lease_ttl_seconds: int = 300,
+    lease_owner: str = "",
+    force_lease: bool = False,
+    retry_delay_seconds: int = 0,
+    request_id: str = "",
+) -> dict:
+    with _worker_context(root, "agent-scheduler-loop", workspace_path=None) as run:
+        run.guard("run_worker_task")
+        result = run_agent_scheduler_loop(
+            LocalStorage(root),
+            project_id=project_id,
+            limit=limit,
+            iterations=iterations,
+            interval_seconds=interval_seconds,
+            stop_when_idle=stop_when_idle,
+            lease_ttl_seconds=lease_ttl_seconds,
+            lease_owner=lease_owner or request_id,
+            force_lease=force_lease,
+            retry_delay_seconds=retry_delay_seconds,
+        )
+        run.succeed(token_used=int(result.get("tick_count", 0) or 0))
         return result
 
 

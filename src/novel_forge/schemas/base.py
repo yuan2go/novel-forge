@@ -376,6 +376,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "agent_failure_report": ["agent_run_id", "error_type", "error_message", "recovery_instruction", "created_at"],
     "agent_sla_report": ["agent_run_id", "status", "started_at", "deadline_at", "elapsed_seconds", "sla_seconds", "breach"],
     "agent_rollback_report": ["agent_run_id", "rollback_id", "target_asset_paths", "rollback_strategy", "status", "created_at"],
+    "agent_dispatch_queue": ["dispatch_id", "idempotency_key", "status", "agent_run_id", "agent_run_path", "operation", "attempt_count"],
     "scheduler_lease": ["lease_key", "owner", "status", "acquired_at", "expires_at"],
     "trace_span": ["trace_id", "span_id", "parent_span_id", "span_type", "name", "status", "started_at"],
     "gate_result": ["gate_id", "gate_kind", "status", "target_paths", "created_at"],
@@ -677,6 +678,7 @@ def _validate_workflow_contract_content(asset_type: str, content: dict[str, Any]
             "planned",
             "prepared",
             "running",
+            "checkpointed",
             "waiting_human",
             "verifying",
             "succeeded",
@@ -1361,6 +1363,7 @@ def _validate_agent_asset_content(asset_type: str, content: dict[str, Any]) -> l
             "planned",
             "prepared",
             "running",
+            "checkpointed",
             "waiting_human",
             "verifying",
             "succeeded",
@@ -1384,6 +1387,7 @@ def _validate_agent_asset_content(asset_type: str, content: dict[str, Any]) -> l
         "planned",
         "prepared",
         "running",
+        "checkpointed",
         "waiting_human",
         "verifying",
         "succeeded",
@@ -1423,6 +1427,17 @@ def _validate_agent_asset_content(asset_type: str, content: dict[str, Any]) -> l
             errors.append("agent_rollback_report target_asset_paths must be a list")
         if content.get("status") not in {"planned", "applied", "failed", "not_required"}:
             errors.append("agent_rollback_report status must be planned, applied, failed, or not_required")
+    if asset_type == "agent_dispatch_queue":
+        if content.get("status") not in {"queued", "claimed", "running", "waiting_human", "acked", "retry_scheduled", "dead_letter", "cancelled"}:
+            errors.append("agent_dispatch_queue status is invalid")
+        for key in ["attempt_count", "max_attempts", "priority"]:
+            value = content.get(key)
+            if value is not None and (not isinstance(value, int) or value < 0):
+                errors.append(f"agent_dispatch_queue {key} must be a non-negative integer")
+        if not isinstance(content.get("result", {}), dict):
+            errors.append("agent_dispatch_queue result must be an object")
+        if not isinstance(content.get("trace", {}), dict):
+            errors.append("agent_dispatch_queue trace must be an object")
     return errors
 
 

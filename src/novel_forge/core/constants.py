@@ -181,6 +181,7 @@ ASSET_DIR_BY_TYPE = {
     "agent_failure_report": "runs",
     "agent_sla_report": "runs",
     "agent_rollback_report": "runs",
+    "agent_dispatch_queue": "runs",
     "scheduler_lease": "runs",
     "ready_node_queue": "runs",
     "processor_rollback": "runs",

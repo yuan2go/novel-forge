@@ -17,6 +17,15 @@ from novel_forge.modules.agent_runs import (
     start_agent_run,
     update_agent_run_status,
 )
+from novel_forge.modules.agent_scheduler import (
+    dispatch_agent_run,
+    list_agent_dispatch_queue,
+    list_agent_operation_contracts,
+    recover_agent_dispatch,
+    run_agent_scheduler_loop,
+    run_agent_scheduler_tick,
+    scheduler_status,
+)
 from novel_forge.storage.local import LocalStorage
 
 
@@ -32,6 +41,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     AgentSlaRequest = models["AgentSlaRequest"]
     AgentRollbackRequest = models["AgentRollbackRequest"]
     AgentExecutorRunRequest = models["AgentExecutorRunRequest"]
+    AgentSchedulerRequest = models["AgentSchedulerRequest"]
+    AgentDispatchRequest = models["AgentDispatchRequest"]
+    AgentDispatchRecoverRequest = models["AgentDispatchRecoverRequest"]
 
     @router.get("/product/agents/runs")
     def agent_runs(
@@ -193,6 +205,86 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/agents/scheduler/status")
+    def agent_scheduler_status_endpoint() -> dict[str, Any]:
+        try:
+            return scheduler_status(LocalStorage(app_settings.root))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/agents/scheduler/queue")
+    def agent_scheduler_queue_endpoint(
+        project_id: str | None = None,
+        status: str | None = None,
+        limit: int = Query(default=100, ge=1, le=500),
+    ) -> list[dict[str, Any]]:
+        try:
+            return list_agent_dispatch_queue(LocalStorage(app_settings.root), project_id=project_id, status=status, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/agents/operation-contracts")
+    def agent_operation_contracts_endpoint() -> dict[str, Any]:
+        return {"contracts": list_agent_operation_contracts()}
+
+    @router.post("/product/agents/dispatch")
+    def agent_dispatch_endpoint(request: AgentDispatchRequest) -> dict[str, Any]:
+        try:
+            return dispatch_agent_run(
+                LocalStorage(app_settings.root),
+                agent_run_path=request.agent_run_path,
+                workflow_run_id=request.workflow_run_id,
+                workflow_run_path=request.workflow_run_path,
+                workflow_node_id=request.workflow_node_id,
+                expected_output_assets=request.expected_output_assets,
+                token_used=request.token_used,
+                cost_estimate=request.cost_estimate,
+                max_attempts=request.max_attempts,
+                priority=request.priority,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/agents/recover")
+    def agent_dispatch_recover_endpoint(request: AgentDispatchRecoverRequest) -> dict[str, Any]:
+        try:
+            return recover_agent_dispatch(LocalStorage(app_settings.root), queue_path=request.queue_path, reason=request.reason)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/agents/scheduler/tick")
+    def agent_scheduler_tick_endpoint(request: AgentSchedulerRequest) -> dict[str, Any]:
+        try:
+            if request.iterations > 1:
+                return run_agent_scheduler_loop(
+                    LocalStorage(app_settings.root),
+                    project_id=request.project_id,
+                    limit=request.limit,
+                    iterations=request.iterations,
+                    interval_seconds=request.interval_seconds,
+                    stop_when_idle=request.stop_when_idle,
+                    lease_ttl_seconds=request.lease_ttl_seconds,
+                    lease_owner=request.lease_owner,
+                    force_lease=request.force_lease,
+                    retry_delay_seconds=request.retry_delay_seconds,
+                )
+            return run_agent_scheduler_tick(
+                LocalStorage(app_settings.root),
+                project_id=request.project_id,
+                limit=request.limit,
+                lease_ttl_seconds=request.lease_ttl_seconds,
+                lease_owner=request.lease_owner,
+                force_lease=request.force_lease,
+                retry_delay_seconds=request.retry_delay_seconds,
+                dry_run=request.dry_run,
+            )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

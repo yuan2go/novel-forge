@@ -469,6 +469,11 @@ class AgentRollbackReport(BaseAsset):
 
 
 @dataclass
+class AgentDispatchQueue(BaseAsset):
+    type: str = "agent_dispatch_queue"
+
+
+@dataclass
 class SchedulerLease(BaseAsset):
     type: str = "scheduler_lease"
 
@@ -642,6 +647,7 @@ SCHEMA_CLASSES = {
         AgentFailureReport,
         AgentSlaReport,
         AgentRollbackReport,
+        AgentDispatchQueue,
         SchedulerLease,
         TraceSpan,
         GateResult,

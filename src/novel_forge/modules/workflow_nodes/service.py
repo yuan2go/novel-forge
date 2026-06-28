@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.modules.agent_scheduler import ensure_agent_dispatch_queue
 from novel_forge.modules.agent_runs import ensure_agent_contract, execute_agent_run_once, record_agent_checkpoint, start_agent_run, update_agent_run_status
 from novel_forge.modules.change_impact import create_change_impact_report, mark_downstream_assets_stale
 from novel_forge.modules.common import resolve_path
@@ -1601,18 +1602,32 @@ def _resume_blocked_node(
         "workflow_node_id": node_id,
         **evidence,
     }
-    execution = execute_agent_run_once(
-        storage,
-        agent_path,
-        tool_name=tool_name or str(processor.get("tool_name") or _tool_name_for_output(output_types)),
-        output_type=output_type or (output_types[0] if output_types else None),
-        token_used=token_used,
-        cost_estimate=cost_estimate,
-        output_assets=planned_outputs,
-        checkpoint=checkpoint,
-        evidence=resume_evidence,
-        human_gate=human_gate,
-    )
+    agent_data = storage.read_json(resolve_path(storage.root, agent_path))
+    agent_content = agent_data.get("content", {}) if isinstance(agent_data, dict) and isinstance(agent_data.get("content", {}), dict) else {}
+    if str(agent_content.get("status", "")) == "succeeded":
+        planned_outputs = _dedupe([*planned_outputs, *_asset_paths_from_rows(agent_content.get("output_assets", []))])
+        execution = {
+            "status": "succeeded",
+            "run": {"path": _display_path(storage.root, resolve_path(storage.root, agent_path)), "asset": agent_data},
+            "budget": {},
+            "checkpoint": {"path": str((agent_content.get("checkpoint", {}) or {}).get("path", ""))} if isinstance(agent_content.get("checkpoint", {}), dict) else {},
+            "sla": {},
+        }
+        token_used = int(agent_content.get("token_used", token_used) or token_used or 0)
+        cost_estimate = float(agent_content.get("cost_estimate", cost_estimate) or cost_estimate or 0)
+    else:
+        execution = execute_agent_run_once(
+            storage,
+            agent_path,
+            tool_name=tool_name or str(processor.get("tool_name") or _tool_name_for_output(output_types)),
+            output_type=output_type or (output_types[0] if output_types else None),
+            token_used=token_used,
+            cost_estimate=cost_estimate,
+            output_assets=planned_outputs,
+            checkpoint=checkpoint,
+            evidence=resume_evidence,
+            human_gate=human_gate,
+        )
     status = "succeeded" if execution.get("status") == "succeeded" else "failed"
     processor_payload = {
         **processor,
@@ -1624,6 +1639,8 @@ def _resume_blocked_node(
         "resumed_from_run_id": previous_run_id,
     }
     message = "prepared agent run resumed"
+    if str(agent_content.get("status", "")) == "succeeded":
+        message = "succeeded agent run consumed by workflow resume"
     error = ""
     if status != "succeeded":
         message = _execution_error_message(execution)
@@ -2727,6 +2744,16 @@ def _dispatch_agent_node(
         workspace_path=workspace_path,
     )
     agent_status = "running" if execute_agents else str(processor.get("agent_status") or "prepared")
+    agent_evidence = {
+        "workflow_run_id": run_id,
+        "workflow_node_id": node.get("node_id", ""),
+        "expected_output_assets": output_assets,
+        "processor": processor,
+        "token_used": int(processor.get("token_used", 0) or 0),
+        "cost_estimate": float(processor.get("cost_estimate", 0) or 0),
+        "provider_runtime_guard": processor.get("provider_runtime_guard", processor.get("runtime_guard", {})) if isinstance(processor.get("provider_runtime_guard", processor.get("runtime_guard", {})), dict) else {},
+        "provider_usage": processor.get("provider_usage", {}) if isinstance(processor.get("provider_usage", {}), dict) else {},
+    }
     agent_run = start_agent_run(
         storage,
         agent_key=agent_key,
@@ -2741,8 +2768,9 @@ def _dispatch_agent_node(
         model_name=str(processor.get("model_name") or "local"),
         prompt_version=str(processor.get("prompt_version") or "prompt-v1"),
         token_budget=int(processor.get("token_budget", 0) or 0),
-        evidence={"workflow_run_id": run_id, "workflow_node_id": node.get("node_id", "")},
+        evidence=agent_evidence,
     )
+    dispatch_queue = None
     node_status = "prepared"
     message = "agent run dispatched"
     if execute_agents:
@@ -2759,6 +2787,17 @@ def _dispatch_agent_node(
         agent_run = execution.get("run", agent_run) if isinstance(execution, dict) else agent_run
         node_status = "succeeded" if isinstance(execution, dict) and execution.get("status") == "succeeded" else "failed"
         message = "agent run executed once" if node_status == "succeeded" else "agent run failed"
+    elif agent_status == "prepared":
+        dispatch_queue = ensure_agent_dispatch_queue(
+            storage,
+            agent_run_path=agent_run["path"],
+            workflow_run_id=run_id,
+            workflow_node_id=str(node.get("node_id", "")),
+            expected_output_assets=output_assets,
+            token_used=int(processor.get("token_used", 0) or 0),
+            cost_estimate=float(processor.get("cost_estimate", 0) or 0),
+        )
+        message = "agent run dispatched and queued"
     if node_status == "succeeded":
         post_runtime_failure = _runtime_guard_failure(
             storage,
@@ -2792,13 +2831,15 @@ def _dispatch_agent_node(
         status=node_status,
         input_assets=input_assets,
         output_assets=output_assets if node_status == "succeeded" else [],
-        processor={**processor, "agent_run_path": agent_run.get("path", "")},
+        processor={**processor, "agent_run_path": agent_run.get("path", ""), "agent_dispatch_queue_path": dispatch_queue.get("path", "") if isinstance(dispatch_queue, dict) else ""},
         started_at=started_at,
         quality_gate={**(node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {}), "status": "passed" if node_status != "failed" else "failed"},
         human_gate=node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {"required": False, "status": "not_required"},
         message=message,
     )
     result["agent_run"] = agent_run
+    if dispatch_queue:
+        result["agent_dispatch_queue"] = dispatch_queue
     return result
 
 
