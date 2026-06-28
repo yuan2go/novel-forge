@@ -157,6 +157,11 @@ class CanonGraphSnapshot(BaseAsset):
 
 
 @dataclass
+class NovelKGSnapshot(BaseAsset):
+    type: str = "novel_kg_snapshot"
+
+
+@dataclass
 class CanonPatch(BaseAsset):
     type: str = "canon_patch"
 
@@ -586,6 +591,7 @@ SCHEMA_CLASSES = {
         ChapterContinuityReport,
         ContinuityGraphSnapshot,
         CanonGraphSnapshot,
+        NovelKGSnapshot,
         CanonPatch,
         StyleProfile,
         StyleDecompositionReport,

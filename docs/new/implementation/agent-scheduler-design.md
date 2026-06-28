@@ -16,13 +16,13 @@ The Agent Registry is already strong enough to become a schedulable runtime boun
 - Workflow scheduling already exists as `run_workflow_scheduler()` and `run_workflow_scheduler_loop()`. It scans blocked workflow runs, persists `ready_node_queue`, claims leases, and can resume prepared Agent runs when output assets are already available.
 - Celery can run `novel_forge.workflow_scheduler_loop` and `novel_forge.agent_scheduler_loop`; the Web Admin Production Control page exposes Workflow Scheduler and Agent Scheduler controls.
 
-This means the remaining architectural step is no longer "create Agent Scheduler" or "prove local-service dispatch". It is to deepen operation-level checkpoint resume/rollback and continue expanding provider-backed operations where adapters expose live usage/cancel data.
+This means the remaining architectural step is no longer "create Agent Scheduler", "prove local-service dispatch", or "prove generic checkpoint/rollback". It is to deepen operation-specific mid-step resume for long-running model/provider operations and continue expanding provider-backed operations where adapters expose live usage/cancel data.
 
 ## Current Gaps
 
 1. `AgentOperationRegistry` now wraps the first production services across decomposition, materials, outline, chapter plan, drafting, review/revision, analysis conversion, editor, continuity, quality/style/audit/publishing, versioning, and feedback metrics. Some specialized production modules and model-evaluation operations still need registry contracts.
 2. Prepared `agent_run` execution no longer requires declared expected outputs for registered operations. Unregistered operations still fall back to verified output reuse and otherwise move to `waiting_human`.
-3. Operation-level `checkpoint_schema`, `resume_from_checkpoint()`, and rollback are present as protocol shape but not yet implemented deeply for every service operation.
+3. Operation-level `checkpoint_schema`, completed-output `resume_from_checkpoint`, and rollback/quarantine are implemented generically for every registered local-service operation. Deep mid-step resume inside each service is still future work for long-running provider calls.
 4. Provider streaming cutoff depends on adapters surfacing usage/cancel data consistently.
 5. Agent Scheduler UI shows queue state and recover actions, but a deeper Agent Center evidence timeline is still needed.
 
@@ -238,20 +238,19 @@ Budget/SLA/gates must be active runtime controls, not end-of-run reports:
 
 ## Checkpoint Resume
 
-Every registered operation must define:
+Every registered operation defines:
 
 - `checkpoint_schema`
 - `idempotency_key`
-- `checkpoint_interval`
-- `resume_from_checkpoint(storage, agent_run, checkpoint)`
-- `rollback(storage, agent_run, outputs)`
+- completed-output `resume_from_checkpoint(storage, agent_run, checkpoint)`
+- rollback strategy for generated outputs
 
 Checkpoint recovery order:
 
 1. Use explicit latest `agent_checkpoint` for the run.
-2. Reuse existing output assets if idempotency key and output schema match.
-3. Resume operation-specific state.
-4. If resume is unsupported, schedule a clean rerun with the original failed run recorded in lineage.
+2. Reuse existing output assets when operation and output paths match, and the outputs are not rolled back or quarantined.
+3. If completed outputs are invalidated, schedule a clean rerun with the failed run and checkpoint recorded in lineage.
+4. Future deep resume can add operation-specific mid-step state for long-running provider work.
 
 ## API Surface
 
@@ -299,7 +298,7 @@ Minimum P0 acceptance:
 - Agent scheduler tick claims exactly one queue item and does not duplicate work under a second tick with an active lease.
 - A successful registered operation writes output assets, checkpoint, budget, SLA, model/cost logs, gates, trace spans, and marks AgentRun `succeeded`.
 - The succeeded AgentRun automatically resumes the blocked workflow node and supersedes the previous workflow run.
-- A budget failure writes `agent_budget(exceeded)`, `agent_gate(failed)`, `agent_failure_report`, queue retry/dead-letter evidence, and keeps the workflow blocked.
+- A budget failure after service output writes `agent_budget(exceeded)`, `agent_gate(failed)`, `agent_failure_report`, `agent_rollback_report`, queue retry/dead-letter evidence, rolls back generated outputs, and keeps the workflow blocked.
 - An SLA or provider token cutoff cancels/fails the AgentRun and does not attach unvalidated outputs to the workflow.
 - A checkpointed failed run can be recovered without rerunning completed steps when the operation declares resume support.
 - Web Admin can display queue status, lease, AgentRun, workflow binding, budget/SLA/gate/checkpoint evidence, and trigger tick/recover actions.

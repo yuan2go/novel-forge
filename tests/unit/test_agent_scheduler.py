@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.agent_runs import list_agent_runs
+from novel_forge.modules.agent_runs import list_agent_runs, record_agent_checkpoint
 from novel_forge.modules.agent_scheduler import (
     list_agent_dispatch_queue,
     list_agent_operation_contracts,
@@ -13,6 +13,7 @@ from novel_forge.modules.agent_scheduler import (
     run_agent_scheduler_tick,
     scheduler_status,
 )
+from novel_forge.modules.continuity_graph import create_continuity_graph_snapshot
 from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs
 from novel_forge.schemas import ChapterPlan, DraftChapter
 from novel_forge.storage.local import LocalStorage
@@ -172,6 +173,89 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(resume["status"], "completed")
             scheduler_agent = [row for row in list_agent_runs(storage) if row["operation"] == "create-continuity-graph-snapshot" and row["status"] == "succeeded"]
             self.assertGreaterEqual(len(scheduler_agent), 1)
+
+    def test_scheduler_resumes_registered_operation_from_completed_checkpoint(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workflow = create_workflow_definition(
+                storage,
+                name="Agent Scheduler Checkpoint Resume",
+                entry_node_id="continuity",
+                nodes=[
+                    {
+                        "node_id": "continuity",
+                        "node_type": "agent",
+                        "operation": "create-continuity-graph-snapshot",
+                        "output_types": ["continuity_graph_snapshot"],
+                        "processor": {"kind": "agent", "agent_key": "continuity", "agent_status": "prepared", "token_budget": 500},
+                    }
+                ],
+            )
+            execute_workflow(storage, workflow["path"], execute_agents=False)
+            queue = list_agent_dispatch_queue(storage)[0]
+            prepared = [row for row in list_agent_runs(storage) if row["status"] == "prepared"][0]
+            produced = create_continuity_graph_snapshot(storage)
+            record_agent_checkpoint(
+                storage,
+                agent_run_path=prepared["path"],
+                status="agent_scheduler_service_completed",
+                state={
+                    "status": "agent_scheduler_service_completed",
+                    "operation": "create-continuity-graph-snapshot",
+                    "idempotency_key": queue["idempotency_key"],
+                    "input_assets": [],
+                    "output_assets": [produced["path"]],
+                    "service_result": produced,
+                },
+            )
+            before_count = len([path for path in storage.list_json("continuity") if storage.read_json(path).get("type") == "continuity_graph_snapshot"])
+
+            tick = run_agent_scheduler_tick(storage)
+
+            after_count = len([path for path in storage.list_json("continuity") if storage.read_json(path).get("type") == "continuity_graph_snapshot"])
+            self.assertEqual(after_count, before_count)
+            self.assertEqual(tick["acked_count"], 1)
+            self.assertEqual(tick["acked"][0]["output_assets"], [produced["path"]])
+            queue_data = storage.read_json(storage.root / list_agent_dispatch_queue(storage)[0]["path"])
+            result = queue_data["content"]["result"]
+            self.assertEqual(result["evidence"]["agent_scheduler"], "checkpoint_resume")
+            self.assertTrue(result["checkpoint"]["resumed_from_checkpoint"])
+
+    def test_scheduler_rolls_back_service_outputs_when_agent_execution_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workflow = create_workflow_definition(
+                storage,
+                name="Agent Scheduler Rollback",
+                entry_node_id="continuity",
+                nodes=[
+                    {
+                        "node_id": "continuity",
+                        "node_type": "agent",
+                        "operation": "create-continuity-graph-snapshot",
+                        "output_types": ["continuity_graph_snapshot"],
+                        "processor": {"kind": "agent", "agent_key": "continuity", "agent_status": "prepared", "token_budget": 1},
+                    }
+                ],
+            )
+            execute_workflow(storage, workflow["path"], execute_agents=False)
+
+            tick = run_agent_scheduler_tick(storage)
+
+            self.assertEqual(tick["acked_count"], 0)
+            self.assertEqual(tick["retry_count"], 1)
+            queue = list_agent_dispatch_queue(storage)[0]
+            queue_data = storage.read_json(storage.root / queue["path"])
+            rollback = queue_data["content"]["result"]["rollback"]
+            self.assertEqual(rollback["status"], "applied")
+            self.assertEqual(rollback["rollback_strategy"], "mark_outputs_rolled_back")
+            rolled_back_path = rollback["applied_asset_paths"][0]
+            asset = storage.read_json(storage.root / rolled_back_path)
+            self.assertEqual(asset["metadata"]["rollback_status"], "rolled_back")
+            self.assertEqual(asset["metadata"]["asset_status"], "rolled_back")
+            self.assertIn("rolled-back", asset["tags"])
 
 
 if __name__ == "__main__":

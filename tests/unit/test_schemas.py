@@ -23,6 +23,7 @@ from novel_forge.schemas import (
     GenerationRun,
     ChangeImpactReport,
     LocalSettingsProfile,
+    NovelKGSnapshot,
     NodeRun,
     OriginalityReport,
     OutlineVersion,
@@ -42,7 +43,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 108)
+        self.assertEqual(len(SCHEMA_CLASSES), 109)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
         self.assertIn("review_report", SCHEMA_CLASSES)
@@ -101,6 +102,7 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("chapter_continuity_report", SCHEMA_CLASSES)
         self.assertIn("continuity_graph_snapshot", SCHEMA_CLASSES)
         self.assertIn("canon_graph_snapshot", SCHEMA_CLASSES)
+        self.assertIn("novel_kg_snapshot", SCHEMA_CLASSES)
         self.assertIn("model_profile", SCHEMA_CLASSES)
         self.assertIn("model_benchmark_task", SCHEMA_CLASSES)
         self.assertIn("model_benchmark_run", SCHEMA_CLASSES)
@@ -158,6 +160,30 @@ class SchemaTests(unittest.TestCase):
         )
         self.assertEqual(validate_common_fields(strategy.to_dict()), [])
         self.assertEqual(validate_common_fields(canon.to_dict()), [])
+
+        kg = NovelKGSnapshot(
+            title="Novel KG",
+            content={
+                "kg_id": "kg_1",
+                "ontology_version": "novel-kg-0.1.0",
+                "project_id": "project_1",
+                "entities": [],
+                "relations": [],
+                "events": [],
+                "rules": [],
+                "timelines": [],
+                "foreshadowing": [],
+                "factions": [],
+                "locations": [],
+                "props": [],
+                "power_scales": [],
+                "review_rules": [],
+                "templates": [],
+                "summary": {"counts": {}},
+                "built_at": "2026-01-01T00:00:00Z",
+            },
+        )
+        self.assertEqual(validate_common_fields(kg.to_dict()), [])
 
     def test_type_level_content_validation(self):
         asset = SourceDocument(title="Sample", source="input.txt", content={})

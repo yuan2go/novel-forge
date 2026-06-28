@@ -220,8 +220,10 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "allowed_tools": [
             "read_asset",
             "build_continuity_graph",
+            "build_novel_kg",
             "write_continuity_graph_snapshot",
             "write_canon_graph_snapshot",
+            "write_novel_kg_snapshot",
             "write_canon_patch",
             "write_chapter_continuity_report",
             "write_continuity_bible",
@@ -230,6 +232,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "allowed_write_types": [
             "continuity_graph_snapshot",
             "canon_graph_snapshot",
+            "novel_kg_snapshot",
             "canon_patch",
             "chapter_continuity_report",
             "continuity_bible",

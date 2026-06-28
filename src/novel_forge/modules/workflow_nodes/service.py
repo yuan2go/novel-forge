@@ -44,6 +44,7 @@ WORKFLOW_SERVICE_OPERATIONS = {
     "module_completion_snapshot": {"category": "metrics", "checkpoint_strategy": "output_reuse", "aliases": []},
     "continuity_graph_snapshot": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_continuity_graph_snapshot"]},
     "canon_graph_snapshot": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_canon_graph_snapshot"]},
+    "novel_kg_snapshot": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_novel_kg_snapshot"]},
     "chapter_continuity_report": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_chapter_continuity_report"]},
     "canon_patch_from_draft": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_canon_patch_from_draft"]},
     "apply_canon_patch": {"category": "continuity", "checkpoint_strategy": "operation_state", "aliases": ["canon_patch_apply"]},
@@ -3956,6 +3957,17 @@ def _execute_registered_service_processor_impl(
             storage,
             project_id=str(processor.get("project_id") or "") or None,
             workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"novel_kg_snapshot", "create_novel_kg_snapshot"}:
+        from novel_forge.modules.novel_kg import create_novel_kg_snapshot
+
+        result = create_novel_kg_snapshot(
+            storage,
+            project_id=str(processor.get("project_id") or "") or None,
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+            limit=int(processor.get("limit", 1000) or 1000),
+            include_content_snapshot=bool(processor.get("include_content_snapshot", False)),
         )
         return _service_success(storage, operation, result)
     if operation in {"chapter_continuity_report", "create_chapter_continuity_report"}:

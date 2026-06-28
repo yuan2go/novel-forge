@@ -538,6 +538,13 @@ class ContinuityGraphSnapshotRequest(BaseModel):
     workspace_path: str | None = None
 
 
+class NovelKGSnapshotRequest(BaseModel):
+    project_id: str | None = None
+    workspace_path: str | None = None
+    limit: int = 1000
+    include_content_snapshot: bool = False
+
+
 class ChapterContinuityReportRequest(BaseModel):
     draft_path: str
     workspace_path: str | None = None
@@ -923,6 +930,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "EditorPatchApplyRequest": EditorPatchApplyRequest,
         "DraftDiffReportRequest": DraftDiffReportRequest,
         "ContinuityGraphSnapshotRequest": ContinuityGraphSnapshotRequest,
+        "NovelKGSnapshotRequest": NovelKGSnapshotRequest,
         "ChapterContinuityReportRequest": ChapterContinuityReportRequest,
         "CanonPatchRequest": CanonPatchRequest,
         "CanonPatchApplyRequest": CanonPatchApplyRequest,

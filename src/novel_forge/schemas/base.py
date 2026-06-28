@@ -387,6 +387,25 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "chapter_continuity_report": ["target_asset_id", "chapter", "continuity_checks", "violations", "recommendation"],
     "continuity_graph_snapshot": ["project_id", "nodes", "edges", "summary", "created_at"],
     "canon_graph_snapshot": ["snapshot_id", "project_id", "entities", "relationships", "state_machines", "lifecycle_threads", "event_graph", "violations"],
+    "novel_kg_snapshot": [
+        "kg_id",
+        "ontology_version",
+        "project_id",
+        "entities",
+        "relations",
+        "events",
+        "rules",
+        "timelines",
+        "foreshadowing",
+        "factions",
+        "locations",
+        "props",
+        "power_scales",
+        "review_rules",
+        "templates",
+        "summary",
+        "built_at",
+    ],
     "canon_patch": ["patch_id", "target_draft_id", "status", "proposed_events", "entity_updates", "thread_updates", "relationship_updates", "apply_plan", "human_gate"],
     "model_profile": ["provider", "model_name", "capabilities", "cost_profile", "status"],
     "model_benchmark_task": ["task_id", "task_type", "input_assets", "rubric", "expected_output_type"],
@@ -1460,6 +1479,15 @@ def _validate_deep_continuity_content(asset_type: str, content: dict[str, Any]) 
         for key in ["entities", "relationships", "state_machines", "lifecycle_threads", "event_graph", "violations"]:
             if not isinstance(content.get(key), (dict, list)):
                 errors.append(f"canon_graph_snapshot {key} must be an object or list")
+    if asset_type == "novel_kg_snapshot":
+        for key in ["entities", "relations", "events", "rules", "timelines", "foreshadowing", "factions", "locations", "props", "power_scales", "review_rules", "templates"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"novel_kg_snapshot {key} must be a list")
+        if not isinstance(content.get("summary"), dict):
+            errors.append("novel_kg_snapshot summary must be an object")
+        ontology_version = str(content.get("ontology_version", ""))
+        if ontology_version and not ontology_version.startswith("novel-kg-"):
+            errors.append("novel_kg_snapshot ontology_version must start with novel-kg-")
     if asset_type == "canon_patch":
         for key in ["proposed_events", "entity_updates", "thread_updates", "relationship_updates"]:
             if not isinstance(content.get(key), list):

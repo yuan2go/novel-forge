@@ -117,6 +117,7 @@ ASSET_DIR_BY_TYPE = {
     "chapter_continuity_report": "continuity",
     "continuity_graph_snapshot": "continuity",
     "canon_graph_snapshot": "continuity",
+    "novel_kg_snapshot": "continuity",
     "style_profile": "styles",
     "style_decomposition_report": "styles",
     "style_blend_preset": "styles",

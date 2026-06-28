@@ -18,7 +18,7 @@ from novel_forge.modules.agent_runs import (
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, release_scheduler_lease, scheduler_lease_status
-from novel_forge.schemas import AgentDispatchQueue, validate_common_fields
+from novel_forge.schemas import AgentDispatchQueue, AgentRollbackReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 QUEUE_STATUSES = {"queued", "claimed", "running", "waiting_human", "acked", "retry_scheduled", "dead_letter", "cancelled"}
@@ -37,7 +37,19 @@ class AgentOperationSpec:
     output_types: tuple[str, ...]
     required_tool: str
     checkpoint_strategy: str = "service_result"
+    rollback_strategy: str = "mark_outputs_rolled_back"
     sla_seconds: int = 1800
+
+    def checkpoint_schema(self) -> dict[str, Any]:
+        return {
+            "version": "0.2.0",
+            "strategy": self.checkpoint_strategy,
+            "required": ["status", "operation", "idempotency_key", "input_assets", "output_assets"],
+            "states": ["operation_started", "agent_scheduler_service_completed", "agent_scheduler_service_failed", "agent_scheduler_rollback_applied"],
+            "resume_from_checkpoint": "reuse completed output_assets when assets still exist and are not rolled back or quarantined",
+            "idempotency_key": "agent_dispatch_queue.content.idempotency_key",
+            "rollback_strategy": self.rollback_strategy,
+        }
 
 
 @dataclass(frozen=True)
@@ -96,9 +108,9 @@ class AgentOperationRegistry:
                 input_types=list(spec.input_types),
                 output_types=list(spec.output_types),
                 required_tools=[spec.required_tool],
-                checkpoint_schema={"version": "0.1.0", "strategy": spec.checkpoint_strategy},
+                checkpoint_schema=spec.checkpoint_schema(),
                 resume_supported=True,
-                rollback_strategy="service_checkpoint_or_agent_rollback_report",
+                rollback_strategy=spec.rollback_strategy,
                 sla_seconds=spec.sla_seconds,
             ).to_dict()
             for spec in sorted({item.operation: item for item in self.specs.values()}.values(), key=lambda item: item.operation)
@@ -132,7 +144,8 @@ class AgentOperationRegistry:
             input_types=[str(item) for item in contract_content.get("input_types", []) if str(item).strip()] if isinstance(contract_content.get("input_types", []), list) else [],
             output_types=resolved_output_types,
             required_tools=required_tools,
-            checkpoint_schema={"version": "0.1.0", "strategy": runner_kind},
+            checkpoint_schema=spec.checkpoint_schema() if spec else {"version": "0.1.0", "strategy": runner_kind},
+            rollback_strategy=spec.rollback_strategy if spec else "agent_rollback_report",
             sla_seconds=spec.sla_seconds if spec else 1800,
         )
 
@@ -173,29 +186,71 @@ class AgentOperationRegistry:
             }
         canonical = _canonical_operation(str(run_content.get("operation", queue_content.get("operation", ""))))
         runner = self.runners.get(canonical)
+        spec = self.specs.get(canonical)
         if runner:
-            service_result = runner(storage, queue_item, agent_run)
+            checkpoint_resume = _resume_from_checkpoint(storage, queue_item, agent_run, canonical)
+            if checkpoint_resume:
+                return checkpoint_resume
+            _record_operation_checkpoint(
+                storage,
+                queue_item,
+                agent_run,
+                status="operation_started",
+                state={
+                    **checkpoint,
+                    "status": "operation_started",
+                    "operation": canonical,
+                    "runner_kind": "local_service",
+                    "input_assets": _input_paths(agent_run),
+                    "checkpoint_schema": spec.checkpoint_schema() if spec else {"version": "0.1.0", "strategy": "local_service"},
+                },
+            )
+            try:
+                service_result = runner(storage, queue_item, agent_run)
+            except Exception as exc:
+                _record_operation_checkpoint(
+                    storage,
+                    queue_item,
+                    agent_run,
+                    status="agent_scheduler_service_failed",
+                    state={
+                        **checkpoint,
+                        "status": "agent_scheduler_service_failed",
+                        "operation": canonical,
+                        "runner_kind": "local_service",
+                        "input_assets": _input_paths(agent_run),
+                        "error": f"{type(exc).__name__}: {exc}",
+                    },
+                )
+                raise
             output_assets = _dedupe(_paths_from_result(storage, service_result))
             if not output_assets:
                 raise RuntimeError(f"agent operation {canonical} completed without output assets")
             token_used = int(service_result.get("token_used", 0) or sum(len(str(item)) for item in output_assets))
+            checkpoint_state = {
+                **checkpoint,
+                "status": "agent_scheduler_service_completed",
+                "operation": canonical,
+                "runner_kind": "local_service",
+                "idempotency_key": queue_content.get("idempotency_key", ""),
+                "input_assets": _input_paths(agent_run),
+                "service_result": _json_safe_result(service_result),
+                "output_assets": output_assets,
+                "checkpoint_schema": spec.checkpoint_schema() if spec else {"version": "0.1.0", "strategy": "local_service"},
+            }
+            checkpoint_asset = _record_operation_checkpoint(storage, queue_item, agent_run, status="agent_scheduler_service_completed", state=checkpoint_state)
+            checkpoint_state["checkpoint_path"] = checkpoint_asset.get("path", "")
             return {
                 "status": "succeeded",
                 "output_assets": output_assets,
                 "token_used": token_used,
                 "cost_estimate": float(service_result.get("cost_estimate", 0.0) or 0.0),
-                "checkpoint": {
-                    **checkpoint,
-                    "status": "agent_scheduler_service_completed",
-                    "operation": canonical,
-                    "runner_kind": "local_service",
-                    "service_result": _json_safe_result(service_result),
-                    "output_assets": output_assets,
-                },
+                "checkpoint": checkpoint_state,
                 "evidence": {
                     "agent_scheduler": "local_service",
                     "agent_operation": canonical,
                     "dispatch_queue_path": _display_path(storage.root, _queue_path(storage, str(queue_content.get("dispatch_id", "")))),
+                    "checkpoint_path": checkpoint_asset.get("path", ""),
                     "service_result": _json_safe_result(service_result),
                     "provider_usage": evidence.get("provider_usage", {}) if isinstance(evidence.get("provider_usage", {}), dict) else {},
                     "provider_runtime_guard": evidence.get("provider_runtime_guard", {}) if isinstance(evidence.get("provider_runtime_guard", {}), dict) else {},
@@ -206,6 +261,38 @@ class AgentOperationRegistry:
             "message": "agent scheduler has no verified output assets for this prepared AgentRun",
             "checkpoint": checkpoint,
         }
+
+    def rollback(
+        self,
+        storage: LocalStorage,
+        queue_item: dict[str, Any],
+        agent_run: dict[str, Any],
+        operation_result: dict[str, Any],
+        *,
+        reason: str,
+    ) -> dict[str, Any]:
+        queue_content = queue_item.get("content", {}) if isinstance(queue_item.get("content", {}), dict) else {}
+        run_content = agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}
+        canonical = _canonical_operation(str(run_content.get("operation", queue_content.get("operation", ""))))
+        spec = self.specs.get(canonical)
+        output_assets = [str(item) for item in operation_result.get("output_assets", []) if str(item).strip()] if isinstance(operation_result.get("output_assets", []), list) else []
+        strategy = spec.rollback_strategy if spec else "mark_outputs_rolled_back"
+        result = _rollback_operation_outputs(storage, queue_item, agent_run, operation=canonical, output_assets=output_assets, strategy=strategy, reason=reason)
+        _record_operation_checkpoint(
+            storage,
+            queue_item,
+            agent_run,
+            status="agent_scheduler_rollback_applied",
+            state={
+                "status": "agent_scheduler_rollback_applied",
+                "operation": canonical,
+                "idempotency_key": queue_content.get("idempotency_key", ""),
+                "output_assets": output_assets,
+                "rollback": result,
+                "reason": reason,
+            },
+        )
+        return result
 
 
 OPERATION_REGISTRY = AgentOperationRegistry()
@@ -654,8 +741,16 @@ def _run_claimed_dispatch(storage: LocalStorage, queue_row: dict[str, Any], *, r
             "workflow_resume": workflow_resume,
             "output_assets": operation_result.get("output_assets", []),
         }
-    failure = _fail_queue_item(storage, queue_path, reason=_execution_error_message(execution), retry_delay_seconds=retry_delay_seconds)
-    return {"queue_status": failure.get("status", ""), "queue": failure, "agent_run_path": _display_path(storage.root, run_path), "execution": execution}
+    failure_reason = _execution_error_message(execution)
+    rollback = OPERATION_REGISTRY.rollback(storage, queue_data, run, operation_result, reason=failure_reason)
+    failure = _fail_queue_item(
+        storage,
+        queue_path,
+        reason=failure_reason,
+        retry_delay_seconds=retry_delay_seconds,
+        result={**operation_result, "execution": execution, "rollback": rollback},
+    )
+    return {"queue_status": failure.get("status", ""), "queue": failure, "agent_run_path": _display_path(storage.root, run_path), "execution": execution, "rollback": rollback}
 
 
 def _resume_workflow_from_agent(storage: LocalStorage, queue_data: dict[str, Any], execution: dict[str, Any], operation_result: dict[str, Any]) -> dict[str, Any]:
@@ -683,7 +778,7 @@ def _resume_workflow_from_agent(storage: LocalStorage, queue_data: dict[str, Any
     )
 
 
-def _fail_queue_item(storage: LocalStorage, queue_path: str | Path, *, reason: str, retry_delay_seconds: int = 0) -> dict[str, Any]:
+def _fail_queue_item(storage: LocalStorage, queue_path: str | Path, *, reason: str, retry_delay_seconds: int = 0, result: dict[str, Any] | None = None) -> dict[str, Any]:
     path = _resolve_queue(storage, queue_path)
     data = _read_json_safe(storage, path)
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
@@ -694,7 +789,10 @@ def _fail_queue_item(storage: LocalStorage, queue_path: str | Path, *, reason: s
             update_agent_run_status(storage, str(content.get("agent_run_path", "")), status="dead_letter", error=reason, event_type="agent_dispatch.dead_letter", message=reason)
         except Exception:
             pass
-        return _update_queue_item(storage, path, status="dead_letter", updates={"dead_lettered_at": utc_now(), "last_error": reason})
+        updates = {"dead_lettered_at": utc_now(), "last_error": reason}
+        if result is not None:
+            updates["result"] = result
+        return _update_queue_item(storage, path, status="dead_letter", updates=updates)
     try:
         create_agent_failure_report(
             storage,
@@ -705,7 +803,10 @@ def _fail_queue_item(storage: LocalStorage, queue_path: str | Path, *, reason: s
         )
     except Exception:
         pass
-    return _update_queue_item(storage, path, status="retry_scheduled", updates={"available_at": _utc_datetime_after(max(0, retry_delay_seconds)), "last_error": reason})
+    updates = {"available_at": _utc_datetime_after(max(0, retry_delay_seconds)), "last_error": reason}
+    if result is not None:
+        updates["result"] = result
+    return _update_queue_item(storage, path, status="retry_scheduled", updates=updates)
 
 
 def _update_queue_item(storage: LocalStorage, queue_path: str | Path, *, status: str, updates: dict[str, Any]) -> dict[str, Any]:
@@ -821,6 +922,179 @@ def _execution_error_message(execution: dict[str, Any]) -> str:
             content = failure.get("asset", {}).get("content", {}) if isinstance(failure.get("asset", {}).get("content", {}), dict) else {}
             return str(content.get("error_message", "agent execution failed"))
     return str(execution.get("message", "agent execution failed"))
+
+
+def _record_operation_checkpoint(
+    storage: LocalStorage,
+    queue_item: dict[str, Any],
+    agent_run: dict[str, Any],
+    *,
+    status: str,
+    state: dict[str, Any],
+) -> dict[str, Any]:
+    queue_content = queue_item.get("content", {}) if isinstance(queue_item.get("content", {}), dict) else {}
+    agent_run_path = str(queue_content.get("agent_run_path", ""))
+    if not agent_run_path:
+        return {}
+    return record_agent_checkpoint(
+        storage,
+        agent_run_path=agent_run_path,
+        status=status,
+        state={
+            **state,
+            "dispatch_id": queue_content.get("dispatch_id", ""),
+            "idempotency_key": queue_content.get("idempotency_key", state.get("idempotency_key", "")),
+            "recorded_by": "agent_operation_registry",
+        },
+    )
+
+
+def _resume_from_checkpoint(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any], operation: str) -> dict[str, Any] | None:
+    queue_content = queue_item.get("content", {}) if isinstance(queue_item.get("content", {}), dict) else {}
+    state = _checkpoint_state(storage, agent_run)
+    if not state:
+        return None
+    if str(state.get("status", "")) != "agent_scheduler_service_completed":
+        return None
+    state_operation = _canonical_operation(str(state.get("operation", "")))
+    if state_operation and state_operation != operation:
+        return None
+    output_assets = _dedupe([str(item) for item in state.get("output_assets", []) if str(item).strip()] if isinstance(state.get("output_assets", []), list) else [])
+    reusable_outputs = [item for item in output_assets if _output_asset_reusable(storage, item)]
+    if len(reusable_outputs) != len(output_assets) or not reusable_outputs:
+        return None
+    token_used = int(state.get("token_used", 0) or sum(len(str(item)) for item in reusable_outputs))
+    return {
+        "status": "succeeded",
+        "output_assets": reusable_outputs,
+        "token_used": token_used,
+        "cost_estimate": float(state.get("cost_estimate", 0.0) or 0.0),
+        "checkpoint": {
+            **state,
+            "status": "agent_scheduler_service_completed",
+            "resumed_from_checkpoint": True,
+            "checkpoint_path": _checkpoint_path(agent_run),
+        },
+        "evidence": {
+            "agent_scheduler": "checkpoint_resume",
+            "agent_operation": operation,
+            "dispatch_queue_path": _display_path(storage.root, _queue_path(storage, str(queue_content.get("dispatch_id", "")))),
+            "checkpoint_path": _checkpoint_path(agent_run),
+            "resume_from_checkpoint": True,
+        },
+    }
+
+
+def _checkpoint_state(storage: LocalStorage, agent_run: dict[str, Any]) -> dict[str, Any]:
+    content = agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}
+    checkpoint = content.get("checkpoint", {}) if isinstance(content.get("checkpoint", {}), dict) else {}
+    if "state" in checkpoint and isinstance(checkpoint.get("state"), dict):
+        return checkpoint.get("state", {})
+    if str(checkpoint.get("status", "")):
+        return checkpoint
+    path_value = str(checkpoint.get("path", ""))
+    if path_value:
+        data = _read_json_safe(storage, resolve_path(storage.root, path_value))
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        state = content.get("state", {}) if isinstance(content.get("state", {}), dict) else {}
+        return state
+    return {}
+
+
+def _checkpoint_path(agent_run: dict[str, Any]) -> str:
+    content = agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}
+    checkpoint = content.get("checkpoint", {}) if isinstance(content.get("checkpoint", {}), dict) else {}
+    return str(checkpoint.get("path", ""))
+
+
+def _output_asset_reusable(storage: LocalStorage, value: str) -> bool:
+    if not _path_exists(storage, value):
+        return False
+    data = _read_json_safe(storage, resolve_path(storage.root, value))
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    asset_status = str(metadata.get("asset_status", "")).lower()
+    rollback_status = str(metadata.get("rollback_status", "")).lower()
+    return asset_status not in {"quarantined", "rolled_back"} and rollback_status not in {"rolled_back", "rollback_required"}
+
+
+def _rollback_operation_outputs(
+    storage: LocalStorage,
+    queue_item: dict[str, Any],
+    agent_run: dict[str, Any],
+    *,
+    operation: str,
+    output_assets: list[str],
+    strategy: str,
+    reason: str,
+) -> dict[str, Any]:
+    queue_content = queue_item.get("content", {}) if isinstance(queue_item.get("content", {}), dict) else {}
+    run_content = agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}
+    metadata = agent_run.get("metadata", {}) if isinstance(agent_run.get("metadata", {}), dict) else {}
+    target_paths = _dedupe(output_assets)
+    applied_paths: list[str] = []
+    errors: list[str] = []
+    manual_required = strategy in {"manual_reconciliation_required", "rollback_patch_available"}
+    for target in target_paths:
+        try:
+            path = resolve_path(storage.root, target)
+            data = storage.read_json(path)
+            if not isinstance(data, dict):
+                raise ValueError("target asset is not a JSON object")
+            target_metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            target_metadata["rollback_status"] = "rollback_required" if manual_required else "rolled_back"
+            target_metadata["rollback_strategy"] = strategy
+            target_metadata["rollback_reason"] = reason
+            target_metadata["rolled_back_by_agent_run_id"] = run_content.get("run_id", "")
+            target_metadata["rolled_back_by_dispatch_id"] = queue_content.get("dispatch_id", "")
+            target_metadata["rollback_at"] = utc_now()
+            if manual_required:
+                target_metadata["asset_status"] = "rollback_required"
+            else:
+                target_metadata["asset_status"] = "rolled_back"
+            data["metadata"] = target_metadata
+            data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], "rollback-required" if manual_required else "rolled-back"])
+            data["updated_at"] = utc_now()
+            _write_json_validated(storage, path, data)
+            applied_paths.append(_display_path(storage.root, path))
+        except Exception as exc:
+            errors.append(f"{target}: {type(exc).__name__}: {exc}")
+    status = "failed" if errors else "applied" if target_paths else "not_required"
+    asset = AgentRollbackReport(
+        title=f"Agent operation rollback: {operation or run_content.get('operation', '')}",
+        source=str(run_content.get("run_id", "")),
+        tags=["agent-rollback", "agent-operation-rollback", status, operation],
+        content={
+            "agent_run_id": run_content.get("run_id", ""),
+            "agent_run_path": str(queue_content.get("agent_run_path", "")),
+            "rollback_id": make_id("rollback", f"{run_content.get('run_id', '')}:{queue_content.get('dispatch_id', '')}:{operation}"),
+            "target_asset_paths": target_paths,
+            "applied_asset_paths": applied_paths,
+            "rollback_strategy": strategy,
+            "status": status,
+            "reason": reason,
+            "operation": operation,
+            "dispatch_id": queue_content.get("dispatch_id", ""),
+            "idempotency_key": queue_content.get("idempotency_key", ""),
+            "errors": errors,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": metadata.get("project_id", ""), "workspace_path": metadata.get("workspace_path", "")},
+        references=filter_project_safe_references(storage, str(metadata.get("project_id", "")), _dedupe([str(queue_content.get("agent_run_path", "")), *target_paths, *applied_paths])),
+    )
+    report_path = storage.write_asset("runs", asset)
+    result = {"status": status, "path": _display_path(storage.root, report_path), "target_asset_paths": target_paths, "applied_asset_paths": applied_paths, "errors": errors, "rollback_strategy": strategy}
+    try:
+        record_agent_event(
+            storage,
+            agent_run_path=str(queue_content.get("agent_run_path", "")),
+            event_type="agent_operation.rollback",
+            status="failed" if errors else "recovered",
+            message=reason,
+            payload=result,
+        )
+    except Exception:
+        pass
+    return result
 
 
 def _canonical_operation(value: str) -> str:
@@ -952,6 +1226,7 @@ def _operation_specs() -> list[AgentOperationSpec]:
             input_types=("editor_patch",),
             output_types=("editor_patch", "draft_chapter", "draft_version", "draft_diff_report", "generation_run"),
             required_tool="write_editor_patch",
+            rollback_strategy="rollback_patch_available",
             sla_seconds=1200,
         ),
         AgentOperationSpec(
@@ -973,6 +1248,16 @@ def _operation_specs() -> list[AgentOperationSpec]:
             output_types=("canon_graph_snapshot",),
             required_tool="write_canon_graph_snapshot",
             sla_seconds=600,
+        ),
+        AgentOperationSpec(
+            operation="create-novel-kg-snapshot",
+            aliases=("novel-kg-snapshot", "novel_kg_snapshot"),
+            runner=_run_novel_kg_snapshot,
+            agent_key="continuity",
+            input_types=(),
+            output_types=("novel_kg_snapshot",),
+            required_tool="write_novel_kg_snapshot",
+            sla_seconds=900,
         ),
         AgentOperationSpec(
             operation="create-chapter-continuity-report",
@@ -1002,6 +1287,7 @@ def _operation_specs() -> list[AgentOperationSpec]:
             input_types=("canon_patch",),
             output_types=("canon_patch", "continuity_bible"),
             required_tool="write_canon_patch",
+            rollback_strategy="manual_reconciliation_required",
             sla_seconds=600,
         ),
         AgentOperationSpec(
@@ -1257,6 +1543,19 @@ def _run_canon_graph_snapshot(storage: LocalStorage, queue_item: dict[str, Any],
     from novel_forge.modules.continuity_graph import create_canon_graph_snapshot
 
     return create_canon_graph_snapshot(storage, project_id=_project_id(agent_run) or None, workspace_path=_workspace_path(agent_run) or None)
+
+
+def _run_novel_kg_snapshot(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.novel_kg import create_novel_kg_snapshot
+
+    evidence = _evidence(agent_run)
+    return create_novel_kg_snapshot(
+        storage,
+        project_id=_project_id(agent_run) or None,
+        workspace_path=_workspace_path(agent_run) or None,
+        limit=int(evidence.get("limit", 1000) or 1000),
+        include_content_snapshot=bool(evidence.get("include_content_snapshot", False)),
+    )
 
 
 def _run_chapter_continuity_report(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
