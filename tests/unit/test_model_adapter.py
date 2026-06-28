@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -10,17 +11,22 @@ from novel_forge.model_adapters import (
     AdapterNotConfiguredError,
     ChatGPTAdapter,
     ClaudeCodeAdapter,
+    CodexAdapter,
     DeepSeekAdapter,
+    GuardedModelAdapter,
     HashEmbeddingAdapter,
     ModelOutputValidationError,
     MockModelAdapter,
     OpenAICompatibleEmbeddingAdapter,
+    ProviderRuntimeGuardError,
     cosine_similarity,
     embedding_adapter_from_env,
     model_from_env,
     parse_json_object,
     validate_model_output,
 )
+from novel_forge.modules.agent_runs import list_agent_runs, start_agent_run
+from novel_forge.storage.local import LocalStorage
 
 
 class MockModelTests(unittest.TestCase):
@@ -35,7 +41,17 @@ class MockModelTests(unittest.TestCase):
     def test_provider_contract_skeletons_fail_closed(self):
         self.assertEqual(sorted(PROVIDER_ADAPTERS), ["chatgpt", "claude-code", "codex", "deepseek"])
         for adapter_cls in PROVIDER_ADAPTERS.values():
-            with patch.dict("os.environ", {"OPENAI_API_KEY": "", "DEEPSEEK_API_KEY": ""}, clear=False):
+            with patch.dict(
+                "os.environ",
+                {
+                    "OPENAI_API_KEY": "",
+                    "DEEPSEEK_API_KEY": "",
+                    "NOVEL_FORGE_LOCAL_CODEX_CLI_ENABLED": "",
+                    "NOVEL_FORGE_CODEX_CLI_ENABLED": "",
+                    "NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED": "",
+                },
+                clear=False,
+            ):
                 adapter = adapter_cls()
                 health = adapter.health_check()
                 self.assertIn("provider", health)
@@ -69,6 +85,51 @@ class MockModelTests(unittest.TestCase):
         self.assertIsInstance(model_from_env("draft", {}), MockModelAdapter)
         self.assertIsInstance(model_from_env("review", {"NOVEL_FORGE_REVIEW_PROVIDER": "chatgpt"}), ChatGPTAdapter)
 
+    def test_codex_cli_worker_runs_when_explicitly_enabled(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            script = _write_fake_codex_script(Path(tmp), include_codex_home=False)
+            with patch.dict(
+                "os.environ",
+                {
+                    "NOVEL_FORGE_CODEX_CLI_ENABLED": "1",
+                    "NOVEL_FORGE_CODEX_COMMAND": f"{sys.executable} {script}",
+                    "NOVEL_FORGE_CODEX_WORKDIR": tmp,
+                    "NOVEL_FORGE_CODEX_TIMEOUT_SECONDS": "5",
+                },
+                clear=False,
+            ):
+                adapter = CodexAdapter()
+                health = adapter.health_check()
+                result = adapter.generate("write a bounded test response")
+
+            self.assertEqual(health["implemented"], "local_cli_worker")
+            self.assertTrue(health["configured"])
+            self.assertEqual(result["provider"], "codex")
+            self.assertEqual(result["text"], "usable generated prose from local codex")
+            self.assertEqual(result["usage"]["total_tokens"], 11)
+
+    def test_claude_code_cli_worker_uses_codex_home_profile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            script = _write_fake_codex_script(Path(tmp), include_codex_home=True)
+            with patch.dict(
+                "os.environ",
+                {
+                    "NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED": "1",
+                    "NOVEL_FORGE_CLAUDE_CODE_COMMAND": f"{sys.executable} {script}",
+                    "NOVEL_FORGE_CLAUDE_CODE_WORKDIR": tmp,
+                    "NOVEL_FORGE_CLAUDE_CODE_TIMEOUT_SECONDS": "5",
+                },
+                clear=False,
+            ):
+                adapter = ClaudeCodeAdapter()
+                health = adapter.health_check()
+                result = adapter.generate("write a bounded test response")
+
+            self.assertEqual(health["implemented"], "local_cli_worker")
+            self.assertEqual(health["codex_home"], "~/.codex-claude")
+            self.assertEqual(result["provider"], "claude-code")
+            self.assertTrue(result["codex_home"].endswith(".codex-claude"))
+
     def test_model_output_contract_validation(self):
         parsed = parse_json_object('```json\n{"text":"usable generated prose"}\n```')
         self.assertEqual(validate_model_output("generate", parsed)["text"], "usable generated prose")
@@ -87,6 +148,25 @@ class MockModelTests(unittest.TestCase):
         self.assertEqual(review["score"], 82.0)
         with self.assertRaises(ModelOutputValidationError):
             validate_model_output("review", {"score": 200})
+
+    def test_guarded_adapter_enforces_provider_runtime_guard(self):
+        class UsageModel(MockModelAdapter):
+            def generate(self, prompt: str, context: dict | None = None) -> dict:
+                return {"model": self.name, "text": "usable generated prose", "usage": {"total_tokens": 120}}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            run = start_agent_run(storage, agent_key="draft", operation="draft", status="running")
+            guarded = GuardedModelAdapter(UsageModel(), storage, run["path"])
+
+            with self.assertRaises(ProviderRuntimeGuardError):
+                guarded.generate("draft", {"provider_runtime_guard": {"max_tokens": 50}})
+
+            self.assertEqual(list_agent_runs(storage)[0]["status"], "failed")
+            run_types = {storage.read_json(path).get("type") for path in storage.list_json("runs")}
+            self.assertIn("agent_gate", run_types)
+            self.assertIn("agent_failure_report", run_types)
 
     def test_claude_code_adapter_creates_manual_handoff_packet(self):
         packet = ClaudeCodeAdapter().create_handoff_packet(
@@ -122,6 +202,35 @@ class MockModelTests(unittest.TestCase):
             health = adapter.health_check()
             self.assertTrue(health["semantic_model"])
             self.assertFalse(health["ok"])
+
+def _write_fake_codex_script(folder: Path, *, include_codex_home: bool) -> Path:
+    script = folder / "fake_codex.py"
+    codex_home_fragment = '"codex_home": os.environ.get("CODEX_HOME", ""),' if include_codex_home else ""
+    script.write_text(
+        f"""
+import json
+import os
+import sys
+
+output_path = ""
+for index, value in enumerate(sys.argv):
+    if value == "--output-last-message" and index + 1 < len(sys.argv):
+        output_path = sys.argv[index + 1]
+payload = {{
+    "text": "usable generated prose from local codex",
+    {codex_home_fragment}
+    "usage": {{"total_tokens": 11}}
+}}
+if not output_path:
+    raise SystemExit(2)
+with open(output_path, "w", encoding="utf-8") as handle:
+    handle.write(json.dumps(payload, ensure_ascii=False))
+print(json.dumps({{"usage": {{"total_tokens": 11}}}}))
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    return script
 
 
 if __name__ == "__main__":

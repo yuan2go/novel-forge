@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
+import shutil
+import subprocess
+import tempfile
 import urllib.error
 import urllib.request
+from pathlib import Path
 from typing import Any
 
 from novel_forge.model_adapters.base import AdapterNotConfiguredError, ModelAdapterConfig
@@ -59,6 +64,154 @@ class ProviderAdapter:
         return AdapterNotConfiguredError(
             f"{self.config.provider} adapter cannot run {operation}: "
             "this adapter does not implement in-process model calls"
+        )
+
+
+class LocalCodexCliWorkerMixin:
+    """Opt-in local Codex CLI worker.
+
+    The worker uses `codex exec` in non-interactive mode, constrains the final
+    response with a JSON schema, and validates the parsed output before returning.
+    It stays disabled by default so provider skeletons remain fail-closed.
+    """
+
+    cli_env_prefix = "NOVEL_FORGE_CODEX"
+    default_codex_home = ""
+
+    def generate(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._run_local_codex_operation("generate", prompt, context)
+
+    def analyze(self, text: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._run_local_codex_operation("analyze", text, context)
+
+    def review(self, content: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._run_local_codex_operation("review", content, context)
+
+    def revise(self, content: str, review: dict[str, Any], context: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._run_local_codex_operation("revise", content, {**(context or {}), "review": review})
+
+    def batch(self, prompts: list[str], context: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        return [self.generate(prompt, context) for prompt in prompts]
+
+    def _run_local_codex_operation(self, operation: str, payload: str, context: dict[str, Any] | None) -> dict[str, Any]:
+        if not self._local_cli_enabled():
+            raise self._not_configured(operation)
+        canonical = _canonical_local_operation(operation)
+        context_payload = context or {}
+        with tempfile.TemporaryDirectory(prefix="novel-forge-codex-") as tmp:
+            tmpdir = Path(tmp)
+            schema_path = tmpdir / "output.schema.json"
+            output_path = tmpdir / "last-message.json"
+            schema_path.write_text(json.dumps(_codex_output_schema(canonical), ensure_ascii=False, indent=2), encoding="utf-8")
+            prompt = _codex_prompt(canonical, payload, context_payload)
+            command = self._codex_command(schema_path=schema_path, output_path=output_path, context=context_payload)
+            env = self._codex_env()
+            timeout = self._codex_timeout_seconds()
+            try:
+                completed = subprocess.run(
+                    command,
+                    input=prompt,
+                    text=True,
+                    capture_output=True,
+                    timeout=timeout,
+                    check=False,
+                    cwd=str(self._codex_workdir(context_payload)),
+                    env=env,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise RuntimeError(f"{self.config.provider} local Codex CLI timed out after {timeout}s") from exc
+            if completed.returncode != 0:
+                detail = (completed.stderr or completed.stdout or "").strip()
+                raise RuntimeError(f"{self.config.provider} local Codex CLI failed with exit {completed.returncode}: {detail[:1000]}")
+            raw = output_path.read_text(encoding="utf-8") if output_path.exists() else _extract_last_json_text(completed.stdout)
+            parsed = parse_json_object(raw)
+            parsed.setdefault("model", self._codex_model() or self.config.default_model)
+            parsed.setdefault("provider", self.config.provider)
+            usage = _codex_usage_from_stdout(completed.stdout)
+            if usage and "usage" not in parsed:
+                parsed["usage"] = usage
+            return validate_model_output(canonical, parsed)
+
+    def _local_cli_health(self, base: dict[str, Any]) -> dict[str, Any]:
+        enabled = self._local_cli_enabled()
+        command = self._codex_command_base()
+        executable = command[0] if command else ""
+        configured = enabled and bool(_which_executable(executable))
+        return {
+            **base,
+            "implemented": "local_cli_worker" if enabled else base.get("implemented", False),
+            "configured": configured,
+            "ok": configured,
+            "external_api": False,
+            "command": command,
+            "codex_home": self._codex_home_display(),
+            "launch_command": self._launch_command_display(),
+            "message": "ready for local Codex CLI worker" if configured else self._local_cli_disabled_message(enabled, executable),
+        }
+
+    def _local_cli_enabled(self) -> bool:
+        return _truthy(os.environ.get(f"{self.cli_env_prefix}_CLI_ENABLED", "")) or _truthy(os.environ.get("NOVEL_FORGE_LOCAL_CODEX_CLI_ENABLED", ""))
+
+    def _codex_command(self, *, schema_path: Path, output_path: Path, context: dict[str, Any]) -> list[str]:
+        command = [*self._codex_command_base(), "exec"]
+        model = self._codex_model()
+        profile = os.environ.get(f"{self.cli_env_prefix}_PROFILE", "").strip()
+        sandbox = os.environ.get(f"{self.cli_env_prefix}_SANDBOX", "read-only").strip() or "read-only"
+        if model:
+            command.extend(["--model", model])
+        if profile:
+            command.extend(["--profile", profile])
+        command.extend(["--sandbox", sandbox, "--ask-for-approval", "never", "--skip-git-repo-check", "--json", "--output-schema", str(schema_path), "--output-last-message", str(output_path), "--color", "never"])
+        if _truthy(os.environ.get(f"{self.cli_env_prefix}_EPHEMERAL", "1")):
+            command.append("--ephemeral")
+        command.extend(["--cd", str(self._codex_workdir(context)), "-"])
+        return command
+
+    def _codex_command_base(self) -> list[str]:
+        raw = os.environ.get(f"{self.cli_env_prefix}_COMMAND", "codex").strip() or "codex"
+        return shlex.split(raw)
+
+    def _codex_env(self) -> dict[str, str]:
+        env = dict(os.environ)
+        codex_home = self._codex_home()
+        if codex_home:
+            env["CODEX_HOME"] = codex_home
+        return env
+
+    def _codex_home(self) -> str:
+        value = os.environ.get(f"{self.cli_env_prefix}_CODEX_HOME", self.default_codex_home).strip()
+        return str(Path(value).expanduser()) if value else ""
+
+    def _codex_home_display(self) -> str:
+        return os.environ.get(f"{self.cli_env_prefix}_CODEX_HOME", self.default_codex_home).strip()
+
+    def _codex_model(self) -> str:
+        return os.environ.get(f"{self.cli_env_prefix}_MODEL", "").strip()
+
+    def _codex_timeout_seconds(self) -> int:
+        try:
+            return max(1, int(os.environ.get(f"{self.cli_env_prefix}_TIMEOUT_SECONDS", "300")))
+        except Exception:
+            return 300
+
+    def _codex_workdir(self, context: dict[str, Any]) -> Path:
+        raw = str(context.get("codex_workdir") or context.get("workspace_path") or os.environ.get(f"{self.cli_env_prefix}_WORKDIR", ".") or ".").strip()
+        path = Path(raw).expanduser().resolve()
+        return path if path.exists() and path.is_dir() else Path(".").resolve()
+
+    def _launch_command_display(self) -> str:
+        prefix = f"CODEX_HOME={self._codex_home_display()} " if self._codex_home_display() else ""
+        return f"{prefix}{' '.join(self._codex_command_base())}".strip()
+
+    def _local_cli_disabled_message(self, enabled: bool, executable: str) -> str:
+        if not enabled:
+            return f"local Codex CLI worker disabled; set {self.cli_env_prefix}_CLI_ENABLED=1 to enable"
+        return f"local Codex CLI executable not found: {executable}"
+
+    def _not_configured(self, operation: str) -> AdapterNotConfiguredError:
+        return AdapterNotConfiguredError(
+            f"{self.config.provider} adapter cannot run {operation}: local Codex CLI worker is disabled. "
+            f"Set {self.cli_env_prefix}_CLI_ENABLED=1 to opt in."
         )
 
 
@@ -156,7 +309,7 @@ class OpenAICompatibleChatAdapter(ProviderAdapter):
         )
 
 
-class ClaudeCodeAdapter(ProviderAdapter):
+class ClaudeCodeAdapter(LocalCodexCliWorkerMixin, ProviderAdapter):
     config = ModelAdapterConfig(
         provider="claude-code",
         role="chief editor / workflow controller / audit owner",
@@ -164,6 +317,8 @@ class ClaudeCodeAdapter(ProviderAdapter):
         required_env_vars=[],
         external_api=False,
     )
+    cli_env_prefix = "NOVEL_FORGE_CLAUDE_CODE"
+    default_codex_home = "~/.codex-claude"
 
     def create_handoff_packet(
         self,
@@ -201,14 +356,15 @@ class ClaudeCodeAdapter(ProviderAdapter):
 
     def health_check(self) -> dict[str, Any]:
         status = super().health_check()
-        return {
+        manual = {
             **status,
             "implemented": "manual_handoff_only",
             "message": "Claude Code is available as an operator workflow, not as an in-process LLM API",
         }
+        return self._local_cli_health(manual) if self._local_cli_enabled() else manual
 
 
-class CodexAdapter(ProviderAdapter):
+class CodexAdapter(LocalCodexCliWorkerMixin, ProviderAdapter):
     config = ModelAdapterConfig(
         provider="codex",
         role="engineering editor / code implementation reviewer",
@@ -216,6 +372,9 @@ class CodexAdapter(ProviderAdapter):
         required_env_vars=[],
         external_api=False,
     )
+
+    def health_check(self) -> dict[str, Any]:
+        return self._local_cli_health(super().health_check())
 
 
 class ChatGPTAdapter(OpenAICompatibleChatAdapter):
@@ -252,3 +411,127 @@ PROVIDER_ADAPTERS = {
     "chatgpt": ChatGPTAdapter,
     "deepseek": DeepSeekAdapter,
 }
+
+
+def _canonical_local_operation(operation: str) -> str:
+    value = operation.strip().lower()
+    if value in {"draft", "topic", "generate", "outline", "chapter_plan"}:
+        return "generate"
+    if value in {"decompose", "analysis", "analyze"}:
+        return "analyze"
+    if value in {"review", "revise"}:
+        return value
+    raise ValueError(f"unsupported local Codex operation: {operation}")
+
+
+def _codex_prompt(operation: str, payload: str, context: dict[str, Any]) -> str:
+    messages = build_messages(operation, payload, context)
+    return "\n\n".join(f"{message['role'].upper()}:\n{message['content']}" for message in messages)
+
+
+def _codex_output_schema(operation: str) -> dict[str, Any]:
+    schemas = {
+        "generate": {
+            "type": "object",
+            "required": ["text"],
+            "properties": {
+                "text": {"type": "string", "minLength": 8},
+                "notes": {"type": "array", "items": {"type": "string"}},
+                "copyright_boundary": {"type": "string"},
+                "provider": {"type": "string"},
+                "model": {"type": "string"},
+                "usage": {"type": "object"},
+            },
+            "additionalProperties": True,
+        },
+        "analyze": {
+            "type": "object",
+            "required": ["summary", "word_count", "patterns"],
+            "properties": {
+                "summary": {"type": "string", "minLength": 1},
+                "word_count": {"type": "integer", "minimum": 0},
+                "patterns": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                "provider": {"type": "string"},
+                "model": {"type": "string"},
+                "usage": {"type": "object"},
+            },
+            "additionalProperties": True,
+        },
+        "review": {
+            "type": "object",
+            "required": ["score", "strengths", "weaknesses", "issues", "risk_level", "revision_suggestions", "next_action"],
+            "properties": {
+                "score": {"type": "number", "minimum": 0, "maximum": 100},
+                "strengths": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                "weaknesses": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                "issues": {"type": "array", "items": {"type": "object"}},
+                "risk_level": {"type": "string", "enum": ["low", "medium", "high"]},
+                "revision_suggestions": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                "next_action": {"type": "string", "enum": ["approve", "revise", "rewrite", "block"]},
+                "provider": {"type": "string"},
+                "model": {"type": "string"},
+                "usage": {"type": "object"},
+            },
+            "additionalProperties": True,
+        },
+        "revise": {
+            "type": "object",
+            "required": ["plan"],
+            "properties": {
+                "plan": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                "target_score": {"type": "number"},
+                "provider": {"type": "string"},
+                "model": {"type": "string"},
+                "usage": {"type": "object"},
+            },
+            "additionalProperties": True,
+        },
+    }
+    return {"$schema": "https://json-schema.org/draft/2020-12/schema", **schemas[operation]}
+
+
+def _extract_last_json_text(stdout: str) -> str:
+    text = stdout.strip()
+    if not text:
+        raise RuntimeError("local Codex CLI produced no output")
+    for line in reversed(text.splitlines()):
+        candidate = line.strip()
+        if candidate.startswith("{") and candidate.endswith("}"):
+            try:
+                event = json.loads(candidate)
+            except Exception:
+                return candidate
+            if isinstance(event, dict):
+                message = event.get("message") or event.get("content") or event.get("text") or event.get("last_message")
+                if isinstance(message, str) and message.strip():
+                    return message
+                if any(key in event for key in ["text", "summary", "score", "plan"]):
+                    return json.dumps(event, ensure_ascii=False)
+    return text
+
+
+def _codex_usage_from_stdout(stdout: str) -> dict[str, Any]:
+    usage: dict[str, Any] = {}
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except Exception:
+            continue
+        if not isinstance(event, dict):
+            continue
+        candidate = event.get("usage") if isinstance(event.get("usage"), dict) else {}
+        if candidate:
+            usage.update(candidate)
+    return usage
+
+
+def _truthy(value: str) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on", "enabled"}
+
+
+def _which_executable(executable: str) -> str:
+    if not executable:
+        return ""
+    if Path(executable).expanduser().exists():
+        return str(Path(executable).expanduser())
+    return shutil.which(executable) or ""

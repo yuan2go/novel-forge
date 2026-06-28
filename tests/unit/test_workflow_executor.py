@@ -9,9 +9,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.modules.agent_runs import list_agent_runs
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, create_budget_policy, scheduler_lease_status
 from novel_forge.modules.workflow_nodes import (
+    build_ready_node_queue,
+    build_workflow_runtime_console,
     cancel_workflow_run,
     create_workflow_definition,
     execute_workflow,
+    list_processor_contracts,
     list_node_runs,
     parse_workflow_dag,
     pause_workflow_run,
@@ -20,6 +23,8 @@ from novel_forge.modules.workflow_nodes import (
     retry_workflow_run,
     run_workflow_scheduler,
     run_workflow_scheduler_loop,
+    validate_workflow_run_transition,
+    workflow_state_machine,
 )
 from novel_forge.schemas import ChapterPlan, CleanedText, DraftChapter, Outline, SourceDocument
 from novel_forge.storage.local import LocalStorage
@@ -83,7 +88,11 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(result["status"], "completed")
             self.assertEqual(result["order"], ["clean", "draft"])
             self.assertEqual(storage.read_asset(result["workflow_run"]["path"]).type, "workflow_run")
-            self.assertEqual(storage.read_asset(result["workflow_run"]["path"]).content["status"], "completed")
+            workflow_run_asset = storage.read_asset(result["workflow_run"]["path"])
+            self.assertEqual(workflow_run_asset.content["status"], "completed")
+            self.assertEqual(workflow_run_asset.content["state_machine"]["version"], "0.2.0")
+            self.assertEqual(workflow_run_asset.content["state_transitions"][-1]["from"], "pending")
+            self.assertEqual(workflow_run_asset.content["state_transitions"][-1]["to"], "completed")
             runs = list_node_runs(storage, run_id=result["run_id"])
             self.assertEqual([row["node_id"] for row in reversed(runs)], ["clean", "draft"])
             node_run = storage.read_asset(runs[-1]["path"])
@@ -138,6 +147,51 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(draft_row["dependency_statuses"], {"clean": "planned"})
             self.assertEqual(_run_assets_by_type(storage, "node_run"), [])
             self.assertEqual(_run_assets_by_type(storage, "gate_result"), [])
+
+    def test_runtime_console_exposes_state_machine_ready_queue_and_contracts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            source_path = storage.write_asset(
+                "raw",
+                SourceDocument(
+                    title="Raw",
+                    source="fixture",
+                    content={"text": "fixture"},
+                    metadata={"rights": {"authorization": "test_fixture", "copyright_boundary": "fixture"}},
+                ),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Runtime Console",
+                entry_node_id="clean",
+                nodes=[
+                    {
+                        "node_id": "clean",
+                        "node_type": "cleaning",
+                        "operation": "clean",
+                        "input_types": ["source_document"],
+                        "output_types": ["cleaned_text"],
+                        "processor": {"kind": "deterministic"},
+                    }
+                ],
+            )
+
+            queue = build_ready_node_queue(storage, workflow_path_or_id=workflow["path"], input_assets=[source_path])
+            console = build_workflow_runtime_console(storage, workflow_path_or_id=workflow["path"], input_assets=[source_path])
+            contract_rows = list_processor_contracts()
+            contracts = {item["operation"] for item in contract_rows}
+            contract_map = {item["operation"]: item for item in contract_rows}
+            transition = validate_workflow_run_transition("running", "paused", action="pause")
+
+            self.assertTrue(transition["ok"])
+            self.assertIn("running", workflow_state_machine()["allowed_transitions"])
+            self.assertEqual(queue["ready_count"], 1)
+            self.assertEqual(console["ready_queue"]["queue"][0]["node_id"], "clean")
+            self.assertIn("publish_gate_report", contracts)
+            self.assertEqual(contract_map["publish_gate_report"]["rollback_strategy"], "quarantine_outputs")
+            self.assertEqual(contract_map["publish_gate_report"]["input_schema"], {"type": "asset_paths"})
+            self.assertTrue(contract_map["publish_gate_report"]["resume_supported"])
 
     def test_executor_blocks_failed_quality_gate_before_downstream_node(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -362,6 +416,59 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertIn("cost_alert", run_types)
             self.assertIn("agent_failure_report", run_types)
 
+    def test_resume_blocks_when_provider_runtime_guard_cuts_off_tokens(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}),
+            )
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(title="Draft", content={"chapter": 1, "text": "原创测试章节。", "copyright_boundary": "unit test"}),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Provider Guard Block",
+                entry_node_id="draft-agent",
+                nodes=[
+                    {
+                        "node_id": "draft-agent",
+                        "node_type": "agent",
+                        "operation": "draft",
+                        "input_types": ["chapter_plan"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "agent", "agent_key": "draft", "agent_status": "prepared", "token_budget": 500},
+                    }
+                ],
+            )
+            initial = execute_workflow(storage, workflow["path"], input_assets=[plan_path], execute_agents=False)
+
+            resumed = resume_workflow(
+                storage,
+                initial["workflow_run"]["path"],
+                output_assets=[draft_path],
+                token_used=120,
+                evidence={
+                    "provider_runtime_guard": {"max_tokens": 50},
+                    "provider_usage": {"total_tokens": 120, "elapsed_ms": 25},
+                },
+            )
+
+            self.assertEqual(resumed["status"], "failed")
+            self.assertEqual(resumed["blocked"]["node_id"], "draft-agent")
+            self.assertIn("provider token cutoff exceeded", resumed["errors"][0])
+            self.assertEqual(list_agent_runs(storage)[0]["status"], "failed")
+            run_types = _run_asset_types(storage)
+            self.assertIn("agent_gate", run_types)
+            self.assertIn("agent_failure_report", run_types)
+            self.assertIn("model_call_log", run_types)
+            self.assertIn("trace_span", run_types)
+            model_call = _run_assets_by_type(storage, "model_call_log")[0]
+            self.assertEqual(model_call["content"]["status"], "failed")
+            self.assertEqual(model_call["content"]["usage"]["total_tokens"], 120)
+
     def test_pause_retry_and_cancel_workflow_run_controls(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -411,9 +518,12 @@ class WorkflowExecutorTests(unittest.TestCase):
             paused = pause_workflow_run(storage, initial["workflow_run"]["path"], reason="operator hold")
             self.assertEqual(paused["asset"]["content"]["status"], "paused")
             self.assertEqual(paused["asset"]["content"]["control"]["action"], "pause")
+            self.assertEqual(paused["asset"]["content"]["state_transitions"][-1]["action"], "pause")
             retried = retry_workflow_run(storage, paused["path"])
             self.assertEqual(retried["status"], "completed")
-            self.assertEqual(storage.read_asset(paused["path"]).content["status"], "superseded")
+            superseded_run = storage.read_asset(paused["path"])
+            self.assertEqual(superseded_run.content["status"], "superseded")
+            self.assertEqual(superseded_run.content["state_transitions"][-1]["to"], "superseded")
 
             cancellable = execute_workflow(storage, workflow["path"], input_assets=[source_path], max_nodes=1)
             cancelled = cancel_workflow_run(storage, cancellable["workflow_run"]["path"], reason="operator cancel")
@@ -631,7 +741,12 @@ class WorkflowExecutorTests(unittest.TestCase):
             agent_run = storage.read_asset(tick["resumed"][0]["agent_run_path"])
             self.assertEqual(agent_run.content["status"], "succeeded")
             self.assertEqual(agent_run.content["token_used"], 120)
+            queue_item = storage.read_asset(tick["resumed"][0]["ready_node_queue_path"])
+            self.assertEqual(queue_item.content["status"], "acked")
+            self.assertEqual(queue_item.content["attempt_count"], 1)
+            self.assertEqual(queue_item.content["resume_workflow_run_path"], resumed_path)
             run_types = _run_asset_types(storage)
+            self.assertIn("ready_node_queue", run_types)
             self.assertIn("agent_budget", run_types)
             self.assertIn("agent_checkpoint", run_types)
             self.assertIn("agent_sla_report", run_types)
@@ -668,9 +783,77 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(tick["skipped_count"], 1)
             self.assertEqual(tick["skipped"][0]["reason"], "missing_output_assets")
             self.assertIn("checkpoint_path", tick["skipped"][0])
+            queue_item = storage.read_asset(tick["skipped"][0]["ready_node_queue_path"])
+            self.assertEqual(queue_item.content["status"], "dead_letter")
+            self.assertEqual(queue_item.content["last_error"], "missing_output_assets")
+            self.assertEqual(queue_item.content["attempt_count"], 1)
             self.assertEqual(storage.read_asset(initial["workflow_run"]["path"]).content["status"], "running")
             self.assertEqual(list_agent_runs(storage)[0]["status"], "prepared")
             self.assertIn("agent_checkpoint", _run_asset_types(storage))
+            self.assertEqual(len(_run_assets_by_type(storage, "ready_node_queue")), 1)
+
+            second_tick = run_workflow_scheduler(storage)
+
+            self.assertEqual(second_tick["resumed_count"], 0)
+            self.assertEqual(second_tick["skipped_count"], 1)
+            self.assertEqual(second_tick["skipped"][0]["reason"], "queue_claim_unavailable")
+            self.assertEqual(second_tick["skipped"][0]["queue_status"], "dead_letter")
+            self.assertEqual(len(_run_assets_by_type(storage, "ready_node_queue")), 1)
+
+    def test_scheduler_tick_resumes_ready_non_agent_node(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            source_path = storage.write_asset(
+                "raw",
+                SourceDocument(
+                    title="Raw",
+                    source="fixture",
+                    content={"text": "fixture"},
+                    metadata={"rights": {"authorization": "test_fixture", "copyright_boundary": "fixture"}},
+                ),
+            )
+            cleaned_path = storage.write_asset("cleaned", CleanedText(title="Cleaned", content={"text": "clean"}))
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(title="Draft", content={"chapter": 1, "text": "原创测试章节。", "copyright_boundary": "unit test"}),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Ready Node Scheduler",
+                entry_node_id="clean",
+                nodes=[
+                    {
+                        "node_id": "clean",
+                        "node_type": "cleaning",
+                        "operation": "clean",
+                        "input_types": ["source_document"],
+                        "output_types": ["cleaned_text"],
+                        "processor": {"kind": "deterministic", "expected_output_assets": [str(cleaned_path.relative_to(storage.root))]},
+                    },
+                    {
+                        "node_id": "draft",
+                        "node_type": "draft",
+                        "operation": "draft",
+                        "depends_on": ["clean"],
+                        "input_types": ["cleaned_text"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "deterministic", "expected_output_assets": [str(draft_path.relative_to(storage.root))]},
+                    },
+                ],
+            )
+            initial = execute_workflow(storage, workflow["path"], input_assets=[source_path], max_nodes=1)
+
+            tick = run_workflow_scheduler(storage)
+
+            self.assertEqual(tick["resumed_count"], 1)
+            self.assertEqual(tick["resumed"][0]["candidate_type"], "ready_node")
+            resumed = storage.read_asset(tick["resumed"][0]["resume_workflow_run_path"])
+            self.assertEqual(resumed.content["status"], "completed")
+            self.assertEqual(storage.read_asset(initial["workflow_run"]["path"]).content["status"], "superseded")
+            queue_item = storage.read_asset(tick["resumed"][0]["ready_node_queue_path"])
+            self.assertEqual(queue_item.content["status"], "acked")
+            self.assertEqual(queue_item.content["attempt_count"], 1)
 
     def test_scheduler_loop_respects_active_lease(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -749,6 +932,34 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(node_run.content["status"], "recovered")
             self.assertTrue(node_run.content["processor"]["resumed_from_checkpoint"])
 
+    def test_service_processor_resumes_from_operation_checkpoint_node_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workflow = create_workflow_definition(
+                storage,
+                name="Operation Checkpoint",
+                entry_node_id="snapshot",
+                nodes=[
+                    {
+                        "node_id": "snapshot",
+                        "node_type": "metric",
+                        "operation": "module_completion_snapshot",
+                        "output_types": ["project_metric_snapshot"],
+                        "processor": {"kind": "service", "resume_from_checkpoint": True},
+                    }
+                ],
+            )
+
+            first = execute_workflow(storage, workflow["path"])
+            second = execute_workflow(storage, workflow["path"])
+
+            self.assertEqual(first["status"], "completed")
+            self.assertEqual(second["status"], "completed")
+            second_node = storage.read_asset(list_node_runs(storage, run_id=second["run_id"])[0]["path"])
+            self.assertEqual(second_node.content["status"], "recovered")
+            self.assertEqual(second_node.content["processor"]["checkpoint"]["contract"]["operation"], "module_completion_snapshot")
+
     def test_gate_registry_schema_gate_blocks_invalid_input(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -777,6 +988,73 @@ class WorkflowExecutorTests(unittest.TestCase):
             node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
             self.assertEqual(node_run.content["status"], "failed")
             self.assertIn("registry_results", node_run.content["quality_gate"])
+
+    def test_post_gate_blocks_invalid_output_asset(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            invalid_output = storage.data_dir("cleaned") / "invalid-cleaned.json"
+            storage.write_json(invalid_output, {"type": "cleaned_text", "id": "invalid-cleaned", "content": {}})
+            workflow = create_workflow_definition(
+                storage,
+                name="Post Gate",
+                entry_node_id="post-schema",
+                nodes=[
+                    {
+                        "node_id": "post-schema",
+                        "node_type": "quality",
+                        "operation": "post-schema",
+                        "output_types": ["cleaned_text"],
+                        "processor": {"kind": "deterministic", "expected_output_assets": [str(invalid_output.relative_to(storage.root))]},
+                        "quality_gate": {"post_gates": [{"kind": "schema", "required": True, "phase": "post"}]},
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"])
+
+            self.assertEqual(result["status"], "failed")
+            node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
+            self.assertEqual(node_run.content["status"], "failed")
+            self.assertIn("post_gate", node_run.content["processor"])
+            rollback = node_run.content["processor"]["rollback"]
+            self.assertEqual(rollback["asset"]["type"], "processor_rollback")
+            self.assertEqual(rollback["asset"]["content"]["status"], "applied")
+            self.assertEqual(storage.read_json(invalid_output)["metadata"]["asset_status"], "quarantined")
+            run_types = _run_asset_types(storage)
+            self.assertIn("processor_rollback", run_types)
+            self.assertIn("workflow_output_quarantine", run_types)
+
+    def test_runtime_guard_blocks_expired_deadline_before_execution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            output_path = storage.data_dir("cleaned") / "should-not-matter.json"
+            workflow = create_workflow_definition(
+                storage,
+                name="Runtime Guard",
+                entry_node_id="guarded",
+                nodes=[
+                    {
+                        "node_id": "guarded",
+                        "node_type": "quality",
+                        "operation": "guarded",
+                        "output_types": ["cleaned_text"],
+                        "processor": {
+                            "kind": "deterministic",
+                            "expected_output_assets": [str(output_path.relative_to(storage.root))],
+                            "runtime_guard": {"enabled": True, "deadline_at": "2000-01-01T00:00:00Z"},
+                        },
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"])
+
+            self.assertEqual(result["status"], "failed")
+            node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
+            self.assertEqual(node_run.content["status"], "failed")
+            self.assertIn("runtime_guard", node_run.content["processor"])
 
     def test_scheduler_loop_records_task_status_and_worker_contract(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -728,6 +728,7 @@ def execute_agent_run_once(
     trace_payload = _agent_trace_payload(content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}, fallback_trace_id=str(content.get("run_id", "")), span_name=f"execute-{tool_name}")
     project_id = str(metadata.get("project_id", ""))
     workspace_path = str(metadata.get("workspace_path", ""))
+    evidence_payload = evidence or {}
     if token_budget > 0 and token_used > token_budget:
         budget = record_agent_budget(
             storage,
@@ -786,6 +787,39 @@ def execute_agent_run_once(
             recovery_instruction="Reduce provider usage, change routing, or update the active budget_policy before resuming.",
         )
         return {"status": "failed", "guard": guard, "budget": budget, "budget_policy": policy, "failure": failure}
+    provider_guard = _provider_runtime_guard(
+        storage,
+        agent_run_path=_display_path(storage.root, run_path),
+        trace=trace_payload,
+        token_used=token_used,
+        cost_estimate=cost_estimate,
+        evidence=evidence_payload,
+        project_id=project_id,
+        workspace_path=workspace_path,
+    )
+    if provider_guard.get("status") == "failed":
+        model_call = record_model_call_log(
+            storage,
+            provider=str(content.get("model_provider", metadata.get("model_provider", "local")) or "local"),
+            model=str(content.get("model_name", metadata.get("model_name", "local")) or "local"),
+            operation=str(content.get("operation", tool_name)),
+            status="failed",
+            usage=provider_guard.get("usage", {}) if isinstance(provider_guard.get("usage", {}), dict) else {},
+            cost={"amount": float(cost_estimate or 0.0), "currency": "USD", "source": "provider_runtime_guard"},
+            trace=trace_payload,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            source_id=str(content.get("run_id", "")),
+            prompt_version=str(content.get("prompt_version", metadata.get("prompt_version", "")) or ""),
+        )
+        failure = create_agent_failure_report(
+            storage,
+            agent_run_path=_display_path(storage.root, run_path),
+            error_type=str(provider_guard.get("error_type", "ProviderRuntimeGuardFailed")),
+            error_message=str(provider_guard.get("message", "provider runtime guard failed")),
+            recovery_instruction="Reduce provider usage, retry with a smaller context, or cancel/route the workflow before resuming.",
+        )
+        return {"status": "failed", "guard": guard, "provider_guard": provider_guard, "model_call": model_call, "failure": failure}
     model_call = record_model_call_log(
         storage,
         provider=str(content.get("model_provider", metadata.get("model_provider", "local")) or "local"),
@@ -885,6 +919,63 @@ def create_agent_sla_report(
         workspace_path=str(metadata.get("workspace_path", "")),
         attributes={"agent_sla_path": result.get("path", ""), "elapsed_seconds": elapsed, "sla_seconds": sla_seconds, "breach": breach},
         references=[result.get("path", ""), _display_path(storage.root, run_path)],
+    )
+    return result
+
+
+def _provider_runtime_guard(
+    storage: LocalStorage,
+    *,
+    agent_run_path: str,
+    trace: dict[str, Any],
+    token_used: int,
+    cost_estimate: float,
+    evidence: dict[str, Any],
+    project_id: str,
+    workspace_path: str,
+) -> dict[str, Any]:
+    guard_spec = evidence.get("provider_runtime_guard", evidence.get("runtime_guard", {})) if isinstance(evidence, dict) else {}
+    if not isinstance(guard_spec, dict):
+        guard_spec = {}
+    usage = evidence.get("provider_usage", {}) if isinstance(evidence.get("provider_usage", {}), dict) else {}
+    usage = {"total_tokens": int(token_used or 0), **usage}
+    failures: list[str] = []
+    error_type = "ProviderRuntimeGuardFailed"
+    if bool(guard_spec.get("cancel_requested", False) or usage.get("cancel_requested", False)):
+        failures.append("provider execution cancellation requested")
+        error_type = "ProviderExecutionCancelled"
+    max_tokens = int(guard_spec.get("max_tokens", guard_spec.get("token_cutoff", 0)) or 0)
+    total_tokens = int(usage.get("total_tokens", token_used or 0) or 0)
+    if max_tokens > 0 and total_tokens > max_tokens:
+        failures.append(f"provider token cutoff exceeded: used {total_tokens}, limit {max_tokens}")
+        error_type = "ProviderTokenCutoffExceeded"
+    timeout_ms = int(guard_spec.get("timeout_ms", guard_spec.get("max_elapsed_ms", 0)) or 0)
+    elapsed_ms = int(usage.get("elapsed_ms", 0) or 0)
+    if timeout_ms > 0 and elapsed_ms > timeout_ms:
+        failures.append(f"provider timeout exceeded: elapsed {elapsed_ms}ms, limit {timeout_ms}ms")
+        error_type = "ProviderTimeoutExceeded"
+    if not failures:
+        return {"status": "passed", "usage": usage, "guard": guard_spec}
+    result = {"status": "failed", "message": "; ".join(failures), "usage": usage, "guard": guard_spec, "error_type": error_type, "cost_estimate": cost_estimate}
+    record_agent_gate(
+        storage,
+        agent_run_path=agent_run_path,
+        gate_type="provider_runtime_guard",
+        status="failed",
+        result=result,
+    )
+    record_trace_span(
+        storage,
+        trace_id=str(trace.get("trace_id", "")),
+        span_id=str(trace.get("span_id", "")),
+        parent_span_id=str(trace.get("parent_span_id", "")),
+        span_type="provider_runtime_guard",
+        name=error_type,
+        status="failed",
+        attributes=result,
+        references=[agent_run_path],
+        project_id=project_id,
+        workspace_path=workspace_path,
     )
     return result
 

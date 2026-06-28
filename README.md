@@ -94,6 +94,24 @@ export DEEPSEEK_API_KEY=...
 
 Model calls use strict JSON prompts and output validation. Invalid model output fails the step instead of writing malformed assets.
 
+Local Codex CLI can also be used as an opt-in local worker. It remains disabled by default. Enable ordinary Codex with:
+
+```bash
+export NOVEL_FORGE_MODEL_PROVIDER=codex
+export NOVEL_FORGE_CODEX_CLI_ENABLED=1
+```
+
+Enable the Claude Code runtime backed by the local Codex CLI with an isolated Codex home:
+
+```bash
+export NOVEL_FORGE_MODEL_PROVIDER=claude-code
+export NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED=1
+# internally launches equivalent to:
+# CODEX_HOME=~/.codex-claude codex exec ...
+```
+
+Both local workers run `codex exec` non-interactively with JSON output schema validation, `read-only` sandbox by default, and `--ask-for-approval never`.
+
 ## Core Commands
 
 ```bash

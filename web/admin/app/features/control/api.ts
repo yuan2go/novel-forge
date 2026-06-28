@@ -90,3 +90,42 @@ export function resumeWorkflow(payload: {
     archive_previous: true
   }) as Promise<Record<string, unknown>>;
 }
+
+export function controlWorkflowRun(payload: {
+  workflow_run_path_or_id: string;
+  action: "pause" | "retry" | "cancel" | "resume";
+  reason?: string;
+  resume_node_id?: string;
+  output_assets?: string[];
+}) {
+  return postJson("/product/workflow/runs/control", {
+    workflow_run_path_or_id: payload.workflow_run_path_or_id,
+    action: payload.action,
+    reason: payload.reason || "workflow console",
+    resume_node_id: payload.resume_node_id || null,
+    output_assets: payload.output_assets || [],
+    checkpoint: { status: `ui_${payload.action}`, source: "workflow_console" },
+    evidence: { controlled_by: "workflow_console" },
+    max_nodes: 5,
+    apply_invalidation: true,
+    archive_previous: true
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function loadWorkflowRuntimeConsole(payload: {
+  workflow_path_or_id?: string;
+  workflow_run_path_or_id?: string;
+  input_assets?: string[];
+}) {
+  const params = new URLSearchParams();
+  if (payload.workflow_path_or_id) {
+    params.set("workflow_path_or_id", payload.workflow_path_or_id);
+  }
+  if (payload.workflow_run_path_or_id) {
+    params.set("workflow_run_path_or_id", payload.workflow_run_path_or_id);
+  }
+  for (const path of payload.input_assets || []) {
+    params.append("input_assets", path);
+  }
+  return fetchJson<Record<string, unknown>>(`/product/workflow/runtime-console?${params.toString()}`);
+}

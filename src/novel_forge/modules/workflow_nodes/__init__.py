@@ -1,9 +1,12 @@
 from novel_forge.modules.workflow_nodes.service import (
+    build_ready_node_queue,
+    build_workflow_runtime_console,
     create_workflow_definition,
     create_workflow_node,
     cancel_workflow_run,
     control_workflow_run,
     execute_workflow,
+    list_processor_contracts,
     list_node_runs,
     list_workflow_definitions,
     list_workflow_runs,
@@ -15,14 +18,19 @@ from novel_forge.modules.workflow_nodes.service import (
     retry_workflow_run,
     run_workflow_scheduler,
     run_workflow_scheduler_loop,
+    validate_workflow_run_transition,
+    workflow_state_machine,
 )
 
 __all__ = [
+    "build_ready_node_queue",
+    "build_workflow_runtime_console",
     "create_workflow_definition",
     "create_workflow_node",
     "cancel_workflow_run",
     "control_workflow_run",
     "execute_workflow",
+    "list_processor_contracts",
     "record_node_run",
     "list_node_runs",
     "list_workflow_definitions",
@@ -34,4 +42,6 @@ __all__ = [
     "retry_workflow_run",
     "run_workflow_scheduler",
     "run_workflow_scheduler_loop",
+    "validate_workflow_run_transition",
+    "workflow_state_machine",
 ]

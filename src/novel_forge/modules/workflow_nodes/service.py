@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+import hashlib
 import time
 from pathlib import Path
 from typing import Any
@@ -11,11 +13,12 @@ from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import (
     acquire_scheduler_lease,
+    check_budget_policy,
     record_gate_result,
     record_trace_span,
     release_scheduler_lease,
 )
-from novel_forge.schemas import NodeRun, WorkflowDefinition, WorkflowNode, WorkflowRun, validate_common_fields
+from novel_forge.schemas import BaseAsset, NodeRun, WorkflowDefinition, WorkflowNode, WorkflowRun, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 WORKFLOW_TERMINAL_NODE_STATUSES = {"succeeded", "failed", "dead_letter", "cancelled"}
@@ -23,6 +26,167 @@ WORKFLOW_SUCCESS_NODE_STATUSES = {"succeeded", "recovered"}
 WORKFLOW_BLOCKING_NODE_STATUSES = {"failed", "dead_letter", "cancelled", "waiting_human", "needs_revision"}
 WORKFLOW_RUN_TERMINAL_STATUSES = {"completed", "failed", "cancelled", "superseded"}
 WORKFLOW_RUN_CONTROL_ACTIONS = {"pause", "resume", "retry", "cancel"}
+WORKFLOW_RUN_ALLOWED_TRANSITIONS = {
+    "pending": {"running", "completed", "failed", "cancelled"},
+    "running": {"paused", "completed", "failed", "cancelled", "superseded"},
+    "paused": {"running", "completed", "failed", "cancelled", "superseded"},
+    "failed": {"running", "superseded", "cancelled"},
+    "completed": {"superseded"},
+    "cancelled": set(),
+    "superseded": set(),
+}
+WORKFLOW_STATE_MACHINE_VERSION = "0.2.0"
+WORKFLOW_SERVICE_OPERATIONS = {
+    "change_impact_report": {"category": "impact", "checkpoint_strategy": "output_reuse", "aliases": ["create_change_impact_report"]},
+    "invalidate_downstream": {"category": "impact", "checkpoint_strategy": "output_reuse", "aliases": ["mark_downstream_assets_stale"]},
+    "project_metric_snapshot": {"category": "metrics", "checkpoint_strategy": "output_reuse", "aliases": []},
+    "module_completion_snapshot": {"category": "metrics", "checkpoint_strategy": "output_reuse", "aliases": []},
+    "continuity_graph_snapshot": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_continuity_graph_snapshot"]},
+    "canon_graph_snapshot": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_canon_graph_snapshot"]},
+    "chapter_continuity_report": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_chapter_continuity_report"]},
+    "canon_patch_from_draft": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_canon_patch_from_draft"]},
+    "apply_canon_patch": {"category": "continuity", "checkpoint_strategy": "operation_state", "aliases": ["canon_patch_apply"]},
+    "chapter_stability_preflight": {"category": "continuity", "checkpoint_strategy": "output_reuse", "aliases": ["create_chapter_stability_preflight_report"]},
+    "quality_score_report": {"category": "quality", "checkpoint_strategy": "output_reuse", "aliases": ["create_quality_score_report"]},
+    "style_decomposition_report": {"category": "style", "checkpoint_strategy": "output_reuse", "aliases": ["create_style_decomposition_report"]},
+    "style_review_report": {"category": "style", "checkpoint_strategy": "output_reuse", "aliases": ["create_style_review_report"]},
+    "originality_report": {"category": "audit", "checkpoint_strategy": "output_reuse", "aliases": ["create_originality_report"]},
+    "chapter_audit_report": {"category": "audit", "checkpoint_strategy": "output_reuse", "aliases": ["create_chapter_audit_report"]},
+    "publish_gate_report": {"category": "publishing", "checkpoint_strategy": "output_reuse", "aliases": ["create_publish_gate_report"]},
+    "release_package": {"category": "publishing", "checkpoint_strategy": "output_reuse", "aliases": ["create_release_package"]},
+    "outline_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_outline_version"]},
+    "chapter_plan_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_chapter_plan_version"]},
+    "draft_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_draft_version"]},
+}
+
+
+class WorkflowRunStateMachine:
+    version = WORKFLOW_STATE_MACHINE_VERSION
+    allowed_transitions = WORKFLOW_RUN_ALLOWED_TRANSITIONS
+
+    @classmethod
+    def apply_transition(
+        cls,
+        workflow_run: dict[str, Any],
+        target_status: str,
+        *,
+        action: str,
+        reason: str = "",
+        actor: str = "workflow-runtime",
+    ) -> dict[str, Any]:
+        content = workflow_run.get("content", {}) if isinstance(workflow_run.get("content", {}), dict) else {}
+        current = str(content.get("status", "pending") or "pending").strip().lower()
+        target = str(target_status or "").strip().lower()
+        allowed = cls.allowed_transitions.get(current, set())
+        ok = target == current or target in allowed
+        transition = {
+            "ok": ok,
+            "version": cls.version,
+            "from": current,
+            "to": target,
+            "action": action,
+            "actor": actor,
+            "reason": reason,
+            "allowed": sorted(allowed),
+            "created_at": utc_now(),
+        }
+        if not ok:
+            transition["message"] = f"workflow_run transition denied: {current} -> {target}"
+            return transition
+        history = content.get("state_transitions", []) if isinstance(content.get("state_transitions", []), list) else []
+        history.append(transition)
+        content["status"] = target
+        content["state_transitions"] = history
+        content["state_machine"] = {
+            "version": cls.version,
+            "status": target,
+            "terminal": target in WORKFLOW_RUN_TERMINAL_STATUSES,
+            "last_transition": transition,
+        }
+        if target in WORKFLOW_RUN_TERMINAL_STATUSES:
+            content["finished_at"] = content.get("finished_at") or utc_now()
+        workflow_run["content"] = content
+        metadata = workflow_run.get("metadata", {}) if isinstance(workflow_run.get("metadata", {}), dict) else {}
+        metadata["asset_status"] = target
+        metadata["last_state_transition_at"] = transition["created_at"]
+        metadata["last_state_transition_action"] = action
+        workflow_run["metadata"] = metadata
+        workflow_run["tags"] = _dedupe([*[str(tag) for tag in workflow_run.get("tags", [])], target, action])
+        workflow_run["updated_at"] = utc_now()
+        return transition
+
+
+class ProcessorRegistry:
+    def __init__(self, contracts: dict[str, dict[str, Any]]) -> None:
+        self.contracts = contracts
+
+    def canonical_operation(self, operation: str) -> str:
+        value = str(operation or "").strip()
+        if value in self.contracts:
+            return value
+        for canonical, spec in self.contracts.items():
+            aliases = spec.get("aliases", []) if isinstance(spec.get("aliases", []), list) else []
+            if value in aliases:
+                return canonical
+        return ""
+
+    def contract(self, operation: str) -> dict[str, Any]:
+        canonical = self.canonical_operation(operation)
+        spec = self.contracts.get(canonical, {})
+        return {
+            "kind": "service",
+            "operation": canonical or operation,
+            "category": spec.get("category", "service" if canonical else "unknown"),
+            "aliases": spec.get("aliases", []),
+            "checkpoint_strategy": spec.get("checkpoint_strategy", "output_reuse" if canonical else "unsupported"),
+            "resume_supported": bool(canonical),
+            "runtime_guard": True,
+            "pre_gates": True,
+            "post_gates": True,
+            "rollback_strategy": spec.get("rollback_strategy", "quarantine_outputs"),
+            "input_schema": spec.get("input_schema", {"type": "asset_paths"}),
+            "output_schema": spec.get("output_schema", {"type": "asset_paths"}),
+            "registered": bool(canonical),
+        }
+
+    def execute(self, storage: LocalStorage, *, processor: dict[str, Any], input_assets: list[str], workspace_path: str | None) -> dict[str, Any]:
+        operation = self.canonical_operation(str(processor.get("operation") or processor.get("service") or processor.get("name") or "")) or str(processor.get("operation") or processor.get("service") or processor.get("name") or "")
+        return _execute_registered_service_processor_impl(storage, processor={**processor, "operation": operation}, input_assets=input_assets, workspace_path=workspace_path)
+
+    def rollback(
+        self,
+        storage: LocalStorage,
+        *,
+        run_id: str,
+        node: dict[str, Any],
+        processor: dict[str, Any],
+        output_assets: list[str],
+        reason: str,
+    ) -> dict[str, Any]:
+        quarantine = _quarantine_output_assets(storage, run_id=run_id, node=node, output_assets=output_assets, reason=reason, gate={"status": "failed", "message": reason})
+        asset = BaseAsset(
+            type="processor_rollback",
+            title=f"Processor rollback: {node.get('node_id', '')}",
+            source=run_id,
+            tags=["processor-rollback", str(processor.get("operation") or node.get("operation") or "")],
+            content={
+                "workflow_run_id": run_id,
+                "node_id": str(node.get("node_id", "")),
+                "operation": str(processor.get("operation") or node.get("operation") or ""),
+                "status": "applied",
+                "strategy": self.contract(str(processor.get("operation") or node.get("operation") or "")).get("rollback_strategy", "quarantine_outputs"),
+                "reason": reason,
+                "output_assets": output_assets,
+                "quarantine": quarantine,
+                "created_at": utc_now(),
+            },
+            metadata={"project_id": _project_id_for_paths(storage, output_assets)},
+            references=filter_project_safe_references(storage, _project_id_for_paths(storage, output_assets), _dedupe([run_id, *output_assets])),
+        )
+        return _write(storage, asset)
+
+
+PROCESSOR_REGISTRY = ProcessorRegistry(WORKFLOW_SERVICE_OPERATIONS)
 
 
 def create_workflow_definition(
@@ -274,6 +438,178 @@ def list_workflow_runs(storage: LocalStorage, *, project_id: str | None = None, 
         if len(rows) >= limit:
             break
     return rows
+
+
+def workflow_state_machine() -> dict[str, Any]:
+    return {
+        "version": WORKFLOW_STATE_MACHINE_VERSION,
+        "terminal_statuses": sorted(WORKFLOW_RUN_TERMINAL_STATUSES),
+        "blocking_node_statuses": sorted(WORKFLOW_BLOCKING_NODE_STATUSES),
+        "success_node_statuses": sorted(WORKFLOW_SUCCESS_NODE_STATUSES),
+        "allowed_transitions": {status: sorted(targets) for status, targets in WORKFLOW_RUN_ALLOWED_TRANSITIONS.items()},
+    }
+
+
+def validate_workflow_run_transition(current_status: str, target_status: str, *, action: str = "") -> dict[str, Any]:
+    return WorkflowRunStateMachine.apply_transition({"content": {"status": current_status}, "metadata": {}, "tags": []}, target_status, action=action)
+
+
+def list_processor_contracts() -> list[dict[str, Any]]:
+    contracts = [
+        {
+            "kind": "deterministic",
+            "operation": "deterministic",
+            "category": "local",
+            "checkpoint_strategy": "none",
+            "resume_supported": False,
+            "runtime_guard": True,
+            "pre_gates": True,
+            "post_gates": True,
+            "rollback_strategy": "quarantine_outputs",
+            "input_schema": {"type": "asset_paths"},
+            "output_schema": {"type": "asset_paths"},
+            "registered": True,
+        },
+        {
+            "kind": "agent",
+            "operation": "agent_dispatch",
+            "category": "agent",
+            "checkpoint_strategy": "agent_checkpoint",
+            "resume_supported": True,
+            "runtime_guard": True,
+            "pre_gates": True,
+            "post_gates": True,
+            "rollback_strategy": "agent_rollback_report",
+            "input_schema": {"type": "asset_paths"},
+            "output_schema": {"type": "asset_paths"},
+            "registered": True,
+        },
+        {
+            "kind": "manual",
+            "operation": "human_gate",
+            "category": "human",
+            "checkpoint_strategy": "operator_checkpoint",
+            "resume_supported": True,
+            "runtime_guard": False,
+            "pre_gates": True,
+            "post_gates": False,
+            "rollback_strategy": "operator_checkpoint",
+            "input_schema": {"type": "asset_paths"},
+            "output_schema": {"type": "operator_decision"},
+            "registered": True,
+        },
+    ]
+    for operation in sorted(WORKFLOW_SERVICE_OPERATIONS):
+        contracts.append(PROCESSOR_REGISTRY.contract(operation))
+    return contracts
+
+
+def build_ready_node_queue(
+    storage: LocalStorage,
+    *,
+    workflow_path_or_id: str | Path | None = None,
+    workflow_run_path_or_id: str | Path | None = None,
+    input_assets: list[str | Path] | None = None,
+    start_node_id: str | None = None,
+    limit: int = 100,
+) -> dict[str, Any]:
+    storage.ensure_layout()
+    workflow_ref = str(workflow_path_or_id or "")
+    run_path = ""
+    run_status = ""
+    blocked: dict[str, Any] = {}
+    if workflow_run_path_or_id:
+        resolved_run_path, workflow_run = _resolve_workflow_run(storage, workflow_run_path_or_id)
+        run_path = _display_path(storage.root, resolved_run_path)
+        content = workflow_run.get("content", {}) if isinstance(workflow_run.get("content", {}), dict) else {}
+        run_status = str(content.get("status", ""))
+        blocked = content.get("blocked", {}) if isinstance(content.get("blocked", {}), dict) else {}
+        workflow_ref = str(content.get("workflow_definition_path") or content.get("workflow_id") or workflow_run.get("source", ""))
+    if not workflow_ref:
+        raise ValueError("workflow_path_or_id or workflow_run_path_or_id is required")
+    plan = resolve_workflow_dependencies(
+        storage,
+        workflow_ref,
+        input_assets=input_assets,
+        workflow_run_path_or_id=workflow_run_path_or_id,
+        start_node_id=start_node_id,
+    )
+    rows: list[dict[str, Any]] = []
+    for index, node in enumerate(plan.get("nodes", []) if isinstance(plan.get("nodes", []), list) else []):
+        if not isinstance(node, dict):
+            continue
+        node_id = str(node.get("node_id", ""))
+        blocked_match = bool(blocked.get("node_id") and str(blocked.get("node_id")) == node_id and str(blocked.get("status", "")) in {"paused", "planned", "prepared"})
+        if not bool(node.get("ready")) and not blocked_match:
+            continue
+        contract = _processor_contract_for_node(node)
+        rows.append(
+            {
+                "queue_id": make_id("ready_node", f"{plan.get('workflow_id', '')}-{run_path}-{node_id}-{index}"),
+                "workflow_id": str(plan.get("workflow_id", "")),
+                "workflow_path": str(plan.get("workflow_path", "")),
+                "workflow_run_path": run_path,
+                "workflow_run_status": run_status,
+                "node_id": node_id,
+                "operation": str(node.get("operation", "")),
+                "processor_kind": str(node.get("processor_kind", "")),
+                "processor_operation": str(node.get("processor_operation", "")),
+                "input_assets": node.get("input_assets", []),
+                "dependencies": node.get("dependencies", []),
+                "priority": int(node.get("priority", index + 1) or index + 1),
+                "blocked_status": str(blocked.get("status", "")) if blocked_match else "",
+                "contract": contract,
+                "resume_supported": bool(contract.get("resume_supported", False)),
+            }
+        )
+        if len(rows) >= max(1, int(limit or 100)):
+            break
+    return {
+        "workflow_id": str(plan.get("workflow_id", "")),
+        "workflow_path": str(plan.get("workflow_path", "")),
+        "workflow_run_path": run_path,
+        "workflow_run_status": run_status,
+        "queue": sorted(rows, key=lambda item: (int(item.get("priority", 0) or 0), str(item.get("node_id", "")))),
+        "ready_count": len(rows),
+        "state_machine": workflow_state_machine(),
+    }
+
+
+def build_workflow_runtime_console(
+    storage: LocalStorage,
+    *,
+    workflow_path_or_id: str | Path | None = None,
+    workflow_run_path_or_id: str | Path | None = None,
+    input_assets: list[str | Path] | None = None,
+    start_node_id: str | None = None,
+) -> dict[str, Any]:
+    storage.ensure_layout()
+    workflow_ref = workflow_path_or_id
+    if workflow_run_path_or_id and not workflow_ref:
+        _, workflow_run = _resolve_workflow_run(storage, workflow_run_path_or_id)
+        content = workflow_run.get("content", {}) if isinstance(workflow_run.get("content", {}), dict) else {}
+        workflow_ref = str(content.get("workflow_definition_path") or content.get("workflow_id") or workflow_run.get("source", ""))
+    if not workflow_ref:
+        raise ValueError("workflow_path_or_id or workflow_run_path_or_id is required")
+    return {
+        "dag": parse_workflow_dag(storage, workflow_ref, start_node_id=start_node_id),
+        "dependencies": resolve_workflow_dependencies(
+            storage,
+            workflow_ref,
+            input_assets=input_assets,
+            workflow_run_path_or_id=workflow_run_path_or_id,
+            start_node_id=start_node_id,
+        ),
+        "ready_queue": build_ready_node_queue(
+            storage,
+            workflow_path_or_id=workflow_ref,
+            workflow_run_path_or_id=workflow_run_path_or_id,
+            input_assets=input_assets,
+            start_node_id=start_node_id,
+        ),
+        "processor_contracts": list_processor_contracts(),
+        "state_machine": workflow_state_machine(),
+    }
 
 
 def parse_workflow_dag(storage: LocalStorage, workflow_path_or_id: str | Path, *, start_node_id: str | None = None) -> dict[str, Any]:
@@ -1002,9 +1338,16 @@ def run_workflow_scheduler(
         if dry_run:
             skipped.append({**candidate, "reason": "dry_run"})
             continue
+        queue_item = _record_ready_node_queue_item(storage, candidate, scheduler_tick_id=tick_id)
+        candidate["ready_node_queue_path"] = queue_item.get("path", "")
         try:
-            output_assets = _scheduler_output_assets(storage, candidate)
-            if not output_assets:
+            claim = _claim_ready_node_queue_item(storage, queue_item.get("path", ""), owner=tick_id)
+            if not claim.get("claimed", False):
+                skipped.append({**candidate, "reason": "queue_claim_unavailable", "queue_status": claim.get("status", ""), "queue_lease_owner": claim.get("lease_owner", "")})
+                continue
+            candidate_type = str(candidate.get("candidate_type") or "prepared_agent")
+            output_assets = [] if candidate_type == "ready_node" else _scheduler_output_assets(storage, candidate)
+            if candidate_type == "prepared_agent" and not output_assets:
                 checkpoint = record_agent_checkpoint(
                     storage,
                     agent_run_path=candidate["agent_run_path"],
@@ -1016,17 +1359,18 @@ def run_workflow_scheduler(
                         "reason": "prepared agent has no concrete output assets to attach",
                     },
                 )
+                _dead_letter_ready_node_queue_item(storage, queue_item.get("path", ""), reason="missing_output_assets")
                 skipped.append({**candidate, "reason": "missing_output_assets", "checkpoint_path": checkpoint.get("path", "")})
                 continue
             result = resume_workflow(
                 storage,
                 candidate["workflow_run_path"],
                 resume_node_id=candidate["node_id"],
-                agent_run_path=candidate["agent_run_path"],
+                agent_run_path=candidate["agent_run_path"] or None,
                 output_assets=output_assets,
                 token_used=int(candidate.get("token_used", 0) or 0),
                 cost_estimate=float(candidate.get("cost_estimate", 0) or 0),
-                checkpoint={"status": "scheduler_resume", "scheduler_tick_id": tick_id, "node_id": candidate["node_id"]},
+                checkpoint={"status": f"scheduler_resume_{candidate_type}", "scheduler_tick_id": tick_id, "node_id": candidate["node_id"]},
                 evidence={"scheduler_tick_id": tick_id, "scheduled_by": "workflow_scheduler"},
                 max_nodes=max_nodes_per_resume,
                 apply_invalidation=apply_invalidation,
@@ -1035,6 +1379,8 @@ def run_workflow_scheduler(
             )
             resumed.append(
                 {
+                    "candidate_type": candidate_type,
+                    "ready_node_queue_path": queue_item.get("path", ""),
                     "workflow_run_path": candidate["workflow_run_path"],
                     "agent_run_path": candidate["agent_run_path"],
                     "node_id": candidate["node_id"],
@@ -1044,8 +1390,10 @@ def run_workflow_scheduler(
                     "output_assets": output_assets,
                 }
             )
+            _ack_ready_node_queue_item(storage, queue_item.get("path", ""), resume_workflow_run_path=str(result.get("workflow_run", {}).get("path", "") if isinstance(result.get("workflow_run", {}), dict) else ""))
         except Exception as exc:
-            errors.append({"workflow_run_path": candidate.get("workflow_run_path", ""), "node_id": candidate.get("node_id", ""), "error": f"{type(exc).__name__}: {exc}"})
+            _dead_letter_ready_node_queue_item(storage, queue_item.get("path", ""), reason=f"{type(exc).__name__}: {exc}")
+            errors.append({"workflow_run_path": candidate.get("workflow_run_path", ""), "node_id": candidate.get("node_id", ""), "ready_node_queue_path": queue_item.get("path", ""), "error": f"{type(exc).__name__}: {exc}"})
     return {
         "scheduler_tick_id": tick_id,
         "status": "failed" if errors else "completed",
@@ -1281,6 +1629,32 @@ def _resume_blocked_node(
         message = _execution_error_message(execution)
         error = message
         planned_outputs = []
+    if status == "succeeded":
+        post_runtime_failure = _runtime_guard_failure(
+            storage,
+            run_id=run_id,
+            node=node,
+            input_assets=input_assets,
+            output_assets=planned_outputs,
+            processor=processor_payload,
+            started_at=utc_now(),
+            phase="post",
+        )
+        if post_runtime_failure:
+            post_runtime_failure["agent_run"] = execution.get("run") if isinstance(execution.get("run"), dict) else {"path": processor_payload["agent_run_path"]}
+            return post_runtime_failure
+        post_gate_failure = _post_gate_failure(
+            storage,
+            run_id=run_id,
+            node=node,
+            input_assets=input_assets,
+            output_assets=planned_outputs,
+            processor=processor_payload,
+            started_at=utc_now(),
+        )
+        if post_gate_failure:
+            post_gate_failure["agent_run"] = execution.get("run") if isinstance(execution.get("run"), dict) else {"path": processor_payload["agent_run_path"]}
+            return post_gate_failure
     result = _record_executed_node(
         storage,
         run_id=run_id,
@@ -1393,6 +1767,7 @@ def _normalize_node(node: dict[str, Any], *, workflow_id: str) -> dict[str, Any]
 
 def _node_plan_row(node: dict[str, Any]) -> dict[str, Any]:
     processor = _node_processor(node)
+    contract = _processor_contract_for_node(node)
     return {
         "node_id": str(node.get("node_id", "")),
         "workflow_id": str(node.get("workflow_id", "")),
@@ -1402,9 +1777,58 @@ def _node_plan_row(node: dict[str, Any]) -> dict[str, Any]:
         "output_types": [str(item) for item in node.get("output_types", [])] if isinstance(node.get("output_types", []), list) else [],
         "processor_kind": str(processor.get("kind") or processor.get("type") or "record_only"),
         "processor_operation": str(processor.get("operation") or node.get("operation", "")),
+        "processor_contract": contract,
         "quality_gate": node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {},
         "human_gate": node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {},
     }
+
+
+def _processor_contract_for_node(node: dict[str, Any]) -> dict[str, Any]:
+    processor = _node_processor(node)
+    kind = str(processor.get("kind") or processor.get("type") or "record_only").strip().lower()
+    operation = str(processor.get("operation") or node.get("operation") or processor.get("name") or node.get("node_id", "")).strip()
+    if kind in {"service", "local_service"}:
+        return _service_processor_contract(operation)
+    if kind in {"agent", "agent_dispatch"}:
+        return {
+            "kind": "agent",
+            "operation": operation or "agent_dispatch",
+            "category": "agent",
+            "checkpoint_strategy": "agent_checkpoint",
+            "resume_supported": True,
+            "runtime_guard": True,
+            "pre_gates": True,
+            "post_gates": True,
+        }
+    if kind in {"manual", "human"}:
+        return {
+            "kind": "manual",
+            "operation": operation or "human_gate",
+            "category": "human",
+            "checkpoint_strategy": "operator_checkpoint",
+            "resume_supported": True,
+            "runtime_guard": False,
+            "pre_gates": True,
+            "post_gates": False,
+        }
+    return {
+        "kind": kind or "deterministic",
+        "operation": operation or "deterministic",
+        "category": "local",
+        "checkpoint_strategy": "none",
+        "resume_supported": False,
+        "runtime_guard": True,
+        "pre_gates": True,
+        "post_gates": True,
+    }
+
+
+def _service_processor_contract(operation: str) -> dict[str, Any]:
+    return PROCESSOR_REGISTRY.contract(operation)
+
+
+def _canonical_service_operation(operation: str) -> str:
+    return PROCESSOR_REGISTRY.canonical_operation(operation)
 
 
 def _update_workflow_run_control(
@@ -1418,16 +1842,26 @@ def _update_workflow_run_control(
     finish: bool = False,
 ) -> dict[str, Any]:
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    transition = WorkflowRunStateMachine.apply_transition(
+        data,
+        status,
+        action=str(control.get("action", "")),
+        reason=str(control.get("reason", "")),
+        actor=str(control.get("operator", "workflow_control")),
+    )
+    if not transition.get("ok"):
+        raise ValueError(str(transition.get("message", "workflow_run transition denied")))
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
     control_event = {
         "action": control.get("action", ""),
         "operator": control.get("operator", "workflow_control"),
         "reason": control.get("reason", ""),
         "status": status,
         "created_at": utc_now(),
+        "transition": transition,
     }
     history = content.get("control_history", []) if isinstance(content.get("control_history", []), list) else []
     history.append(control_event)
-    content["status"] = status
     content["blocked"] = blocked
     content["control"] = control_event
     content["control_history"] = history
@@ -1435,7 +1869,6 @@ def _update_workflow_run_control(
         content["finished_at"] = utc_now()
     data["content"] = content
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
-    metadata["asset_status"] = status
     metadata["last_control_action"] = control_event["action"]
     metadata["last_control_at"] = control_event["created_at"]
     data["metadata"] = metadata
@@ -1651,6 +2084,7 @@ def _evaluate_node_gate(storage: LocalStorage, node: dict[str, Any], input_asset
         run_id=run_id,
         quality_gate=quality_gate,
         human_gate=human_gate,
+        phase="pre",
     )
     if registry["status"] != "passed":
         return registry
@@ -1665,6 +2099,277 @@ def _evaluate_node_gate(storage: LocalStorage, node: dict[str, Any], input_asset
         },
         "human_gate": human_gate or {"required": False, "status": "not_required"},
     }
+
+
+def _evaluate_post_node_gate(storage: LocalStorage, node: dict[str, Any], input_assets: list[str], output_assets: list[str], *, run_id: str = "") -> dict[str, Any]:
+    quality_gate = dict(node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {})
+    human_gate = dict(node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {})
+    registry = _evaluate_gate_registry(
+        storage,
+        node=node,
+        input_assets=output_assets or input_assets,
+        run_id=run_id,
+        quality_gate=quality_gate,
+        human_gate=human_gate,
+        phase="post",
+    )
+    if registry["status"] != "passed":
+        return registry
+    return {
+        "status": "passed",
+        "node_status": "running",
+        "message": "",
+        "quality_gate": {
+            **quality_gate,
+            "status": "passed" if registry.get("registry_results") else quality_gate.get("status", "not_applicable"),
+            "post_registry_results": registry.get("registry_results", []),
+        },
+        "human_gate": human_gate or {"required": False, "status": "not_required"},
+    }
+
+
+def _runtime_guard_failure(
+    storage: LocalStorage,
+    *,
+    run_id: str,
+    node: dict[str, Any],
+    input_assets: list[str],
+    output_assets: list[str],
+    processor: dict[str, Any],
+    started_at: str,
+    phase: str,
+) -> dict[str, Any] | None:
+    guard = _evaluate_runtime_guard(storage, node=node, processor=processor, run_id=run_id, phase=phase, started_at=started_at)
+    if guard.get("status") == "passed":
+        return None
+    return _record_executed_node(
+        storage,
+        run_id=run_id,
+        node=node,
+        status="failed",
+        input_assets=input_assets,
+        output_assets=output_assets,
+        processor={**processor, "runtime_guard": guard},
+        started_at=started_at,
+        error=str(guard.get("message", "runtime guard failed")),
+        quality_gate={"required": True, "status": "failed", "runtime_guard": guard},
+        human_gate=node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {"required": False, "status": "not_required"},
+        message=str(guard.get("message", "runtime guard failed")),
+    )
+
+
+def _post_gate_failure(
+    storage: LocalStorage,
+    *,
+    run_id: str,
+    node: dict[str, Any],
+    input_assets: list[str],
+    output_assets: list[str],
+    processor: dict[str, Any],
+    started_at: str,
+) -> dict[str, Any] | None:
+    gate = _evaluate_post_node_gate(storage, node, input_assets, output_assets, run_id=run_id)
+    if gate.get("status") == "passed":
+        return None
+    rollback = _rollback_processor_outputs(
+        storage,
+        run_id=run_id,
+        node=node,
+        processor=processor,
+        output_assets=output_assets,
+        reason=str(gate.get("message", "post gate failed")),
+    )
+    return _record_executed_node(
+        storage,
+        run_id=run_id,
+        node=node,
+        status=str(gate.get("node_status") or "failed"),
+        input_assets=input_assets,
+        output_assets=output_assets,
+        processor={**processor, "post_gate": gate, "rollback": rollback},
+        started_at=started_at,
+        error=str(gate.get("message", "post gate failed")),
+        quality_gate=gate.get("quality_gate", {}) if isinstance(gate.get("quality_gate", {}), dict) else {"required": True, "status": "failed"},
+        human_gate=gate.get("human_gate", {}) if isinstance(gate.get("human_gate", {}), dict) else {"required": False, "status": "not_required"},
+        message=str(gate.get("message", "post gate failed")),
+    )
+
+
+def _quarantine_output_assets(
+    storage: LocalStorage,
+    *,
+    run_id: str,
+    node: dict[str, Any],
+    output_assets: list[str],
+    reason: str,
+    gate: dict[str, Any],
+) -> dict[str, Any]:
+    quarantined: list[str] = []
+    errors: list[str] = []
+    for item in output_assets:
+        try:
+            path = resolve_path(storage.root, item)
+            data = storage.read_json(path)
+            if not isinstance(data, dict):
+                continue
+            metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            metadata["asset_status"] = "quarantined"
+            metadata["quarantine_reason"] = reason
+            metadata["quarantined_by_workflow_run_id"] = run_id
+            metadata["quarantined_by_node_id"] = str(node.get("node_id", ""))
+            metadata["quarantined_at"] = utc_now()
+            data["metadata"] = metadata
+            data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], "quarantined"])
+            data["updated_at"] = utc_now()
+            storage.write_json(path, data)
+            quarantined.append(_display_path(storage.root, path))
+        except Exception as exc:
+            errors.append(f"{item}: {type(exc).__name__}: {exc}")
+    asset = BaseAsset(
+        type="workflow_output_quarantine",
+        title=f"Workflow output quarantine: {node.get('node_id', '')}",
+        source=run_id,
+        tags=["workflow-output-quarantine", "post-gate"],
+        content={
+            "workflow_run_id": run_id,
+            "node_id": str(node.get("node_id", "")),
+            "reason": reason,
+            "output_assets": output_assets,
+            "quarantined_assets": quarantined,
+            "errors": errors,
+            "gate": gate,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": _project_id_for_paths(storage, output_assets)},
+        references=filter_project_safe_references(storage, _project_id_for_paths(storage, output_assets), _dedupe([run_id, *output_assets, *quarantined])),
+    )
+    try:
+        written = _write(storage, asset)
+    except Exception as exc:
+        return {"status": "failed", "quarantined_assets": quarantined, "errors": [*errors, str(exc)]}
+    return {"status": "quarantined" if quarantined else "empty", "path": written.get("path", ""), "quarantined_assets": quarantined, "errors": errors}
+
+
+def _rollback_processor_outputs(
+    storage: LocalStorage,
+    *,
+    run_id: str,
+    node: dict[str, Any],
+    processor: dict[str, Any],
+    output_assets: list[str],
+    reason: str,
+) -> dict[str, Any]:
+    try:
+        return PROCESSOR_REGISTRY.rollback(storage, run_id=run_id, node=node, processor=processor, output_assets=output_assets, reason=reason)
+    except Exception as exc:
+        quarantine = _quarantine_output_assets(storage, run_id=run_id, node=node, output_assets=output_assets, reason=reason, gate={"status": "failed", "message": reason})
+        return {"status": "failed", "error": f"{type(exc).__name__}: {exc}", "quarantine": quarantine}
+
+
+def _evaluate_runtime_guard(
+    storage: LocalStorage,
+    *,
+    node: dict[str, Any],
+    processor: dict[str, Any],
+    run_id: str,
+    phase: str,
+    started_at: str,
+) -> dict[str, Any]:
+    spec = _runtime_guard_spec(node, processor)
+    if not spec.get("enabled", False):
+        return {"status": "passed", "phase": phase, "enabled": False}
+    failures: list[str] = []
+    deadline_at = str(spec.get("deadline_at") or "").strip()
+    if deadline_at and _utc_now_dt() > _parse_utc_datetime(deadline_at):
+        failures.append(f"workflow runtime deadline passed at {deadline_at}")
+    max_runtime_seconds = float(spec.get("max_runtime_seconds", spec.get("sla_seconds", 0.0)) or 0.0)
+    elapsed_seconds = 0.0
+    if phase == "post" and max_runtime_seconds > 0:
+        elapsed_seconds = max(0.0, (_utc_now_dt() - _parse_utc_datetime(started_at)).total_seconds())
+        if elapsed_seconds > max_runtime_seconds:
+            failures.append(f"workflow SLA exceeded: elapsed {elapsed_seconds:.3f}s, limit {max_runtime_seconds:.3f}s")
+    token_budget = int(spec.get("token_budget", spec.get("max_tokens", 0)) or 0)
+    token_estimate = int(spec.get("token_estimate", processor.get("token_used", 0)) or 0)
+    if token_budget > 0 and token_estimate > token_budget:
+        failures.append(f"workflow token budget exceeded: estimated {token_estimate}, limit {token_budget}")
+    max_cost = float(spec.get("max_cost", 0.0) or 0.0)
+    cost_estimate = float(spec.get("cost_estimate", processor.get("cost_estimate", 0.0)) or 0.0)
+    if max_cost > 0 and cost_estimate > max_cost:
+        failures.append(f"workflow cost budget exceeded: estimated {cost_estimate:.6f}, limit {max_cost:.6f}")
+    budget_scope = str(spec.get("budget_scope") or spec.get("scope") or "").strip()
+    policy_result: dict[str, Any] = {}
+    if budget_scope:
+        policy_result = check_budget_policy(
+            storage,
+            scope=budget_scope,
+            amount=cost_estimate,
+            token_used=token_estimate,
+            trace=_gate_trace(run_id, str(node.get("node_id", "")), f"runtime-budget-{phase}"),
+            project_id=str(spec.get("project_id") or ""),
+            workspace_path=str(spec.get("workspace_path") or ""),
+        )
+        if policy_result.get("status") == "failed":
+            failures.append(str(policy_result.get("message") or "workflow budget policy exceeded"))
+    status = "failed" if failures else "passed"
+    result = {
+        "status": status,
+        "phase": phase,
+        "enabled": True,
+        "message": "; ".join(failures),
+        "policy": policy_result,
+        "limits": {
+            "deadline_at": deadline_at,
+            "token_budget": token_budget,
+            "token_estimate": token_estimate,
+            "max_cost": max_cost,
+            "cost_estimate": cost_estimate,
+            "budget_scope": budget_scope,
+            "max_runtime_seconds": max_runtime_seconds,
+            "elapsed_seconds": elapsed_seconds,
+        },
+    }
+    if failures:
+        try:
+            record_gate_result(
+                storage,
+                gate_kind="runtime_guard",
+                status="failed",
+                target_paths=[],
+                result=result,
+                trace=_gate_trace(run_id, str(node.get("node_id", "")), f"runtime-{phase}"),
+                message=result["message"],
+                blocking=True,
+            )
+        except Exception:
+            pass
+    return result
+
+
+def _runtime_guard_spec(node: dict[str, Any], processor: dict[str, Any]) -> dict[str, Any]:
+    node_spec = node.get("runtime_guard", {}) if isinstance(node.get("runtime_guard", {}), dict) else {}
+    processor_spec = processor.get("runtime_guard", {}) if isinstance(processor.get("runtime_guard", {}), dict) else {}
+    spec = {**node_spec, **processor_spec}
+    if not spec:
+        for key in ["deadline_at", "token_budget", "max_tokens", "token_estimate", "max_cost", "cost_estimate", "budget_scope", "scope"]:
+            if key in processor:
+                spec[key] = processor[key]
+    spec["enabled"] = bool(spec.get("enabled", bool(spec)))
+    return spec
+
+
+def _parse_utc_datetime(value: str) -> datetime:
+    normalized = value.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return datetime.min.replace(tzinfo=timezone.utc)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _utc_now_dt() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def _execute_node(
@@ -1685,6 +2390,20 @@ def _execute_node(
     output_assets = _expected_output_assets(node, processor)
     quality_gate = dict(node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {})
     human_gate = dict(node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {})
+    contract = _processor_contract_for_node(node)
+    processor = {**processor, "contract": contract}
+    runtime_failure = _runtime_guard_failure(
+        storage,
+        run_id=run_id,
+        node=node,
+        input_assets=input_assets,
+        output_assets=[],
+        processor=processor,
+        started_at=started_at,
+        phase="pre",
+    )
+    if runtime_failure:
+        return runtime_failure
 
     if kind in {"manual", "human"}:
         return _record_executed_node(
@@ -1721,6 +2440,29 @@ def _execute_node(
         checkpoint_hit = _checkpoint_resume_hit(storage, checkpoint_state)
         if checkpoint_hit:
             output_assets = _dedupe([*output_assets, *checkpoint_hit.get("output_assets", [])])
+            post_runtime_failure = _runtime_guard_failure(
+                storage,
+                run_id=run_id,
+                node=node,
+                input_assets=input_assets,
+                output_assets=output_assets,
+                processor={**processor, "checkpoint": checkpoint_state, "resumed_from_checkpoint": True},
+                started_at=started_at,
+                phase="post",
+            )
+            if post_runtime_failure:
+                return post_runtime_failure
+            post_gate_failure = _post_gate_failure(
+                storage,
+                run_id=run_id,
+                node=node,
+                input_assets=input_assets,
+                output_assets=output_assets,
+                processor={**processor, "checkpoint": checkpoint_state, "resumed_from_checkpoint": True},
+                started_at=started_at,
+            )
+            if post_gate_failure:
+                return post_gate_failure
             return _record_executed_node(
                 storage,
                 run_id=run_id,
@@ -1744,6 +2486,31 @@ def _execute_node(
         checkpoint_state["output_assets"] = output_assets
         service_result["checkpoint"] = checkpoint_state
         status = str(service_result.get("status", "succeeded"))
+        processor_payload = {**processor, "registry_operation": service_result.get("operation", ""), "registry_payload": service_result.get("payload", {}), "checkpoint": checkpoint_state}
+        if status in WORKFLOW_SUCCESS_NODE_STATUSES or status == "succeeded":
+            post_runtime_failure = _runtime_guard_failure(
+                storage,
+                run_id=run_id,
+                node=node,
+                input_assets=input_assets,
+                output_assets=output_assets,
+                processor=processor_payload,
+                started_at=started_at,
+                phase="post",
+            )
+            if post_runtime_failure:
+                return post_runtime_failure
+            post_gate_failure = _post_gate_failure(
+                storage,
+                run_id=run_id,
+                node=node,
+                input_assets=input_assets,
+                output_assets=output_assets,
+                processor=processor_payload,
+                started_at=started_at,
+            )
+            if post_gate_failure:
+                return post_gate_failure
         return _record_executed_node(
             storage,
             run_id=run_id,
@@ -1751,7 +2518,7 @@ def _execute_node(
             status=status,
             input_assets=input_assets,
             output_assets=output_assets,
-            processor={**processor, "registry_operation": service_result.get("operation", ""), "registry_payload": service_result.get("payload", {}), "checkpoint": checkpoint_state},
+            processor=processor_payload,
             started_at=started_at,
             error=str(service_result.get("error", "")),
             quality_gate={**quality_gate, "status": "passed" if status == "succeeded" else "failed"},
@@ -1770,6 +2537,29 @@ def _execute_node(
             project_id=str(processor.get("project_id") or "") or None,
         )
         output_assets = [str(impact["path"])]
+        post_runtime_failure = _runtime_guard_failure(
+            storage,
+            run_id=run_id,
+            node=node,
+            input_assets=input_assets,
+            output_assets=output_assets,
+            processor=processor,
+            started_at=started_at,
+            phase="post",
+        )
+        if post_runtime_failure:
+            return post_runtime_failure
+        post_gate_failure = _post_gate_failure(
+            storage,
+            run_id=run_id,
+            node=node,
+            input_assets=input_assets,
+            output_assets=output_assets,
+            processor=processor,
+            started_at=started_at,
+        )
+        if post_gate_failure:
+            return post_gate_failure
         result = _record_executed_node(
             storage,
             run_id=run_id,
@@ -1800,6 +2590,30 @@ def _execute_node(
         impact_report = invalidation.get("impact_report", {}) if isinstance(invalidation.get("impact_report", {}), dict) else {}
         output_assets = [str(impact_report.get("path", ""))] if impact_report.get("path") else []
         status = "failed" if invalidation.get("status") == "failed" else "succeeded"
+        if status == "succeeded":
+            post_runtime_failure = _runtime_guard_failure(
+                storage,
+                run_id=run_id,
+                node=node,
+                input_assets=input_assets,
+                output_assets=output_assets,
+                processor=processor,
+                started_at=started_at,
+                phase="post",
+            )
+            if post_runtime_failure:
+                return post_runtime_failure
+            post_gate_failure = _post_gate_failure(
+                storage,
+                run_id=run_id,
+                node=node,
+                input_assets=input_assets,
+                output_assets=output_assets,
+                processor=processor,
+                started_at=started_at,
+            )
+            if post_gate_failure:
+                return post_gate_failure
         result = _record_executed_node(
             storage,
             run_id=run_id,
@@ -1818,6 +2632,30 @@ def _execute_node(
 
     if kind in {"noop", "local_noop", "record_only", "deterministic"}:
         status = str(processor.get("status") or "succeeded")
+        if status == "succeeded":
+            post_runtime_failure = _runtime_guard_failure(
+                storage,
+                run_id=run_id,
+                node=node,
+                input_assets=input_assets,
+                output_assets=output_assets,
+                processor=processor,
+                started_at=started_at,
+                phase="post",
+            )
+            if post_runtime_failure:
+                return post_runtime_failure
+            post_gate_failure = _post_gate_failure(
+                storage,
+                run_id=run_id,
+                node=node,
+                input_assets=input_assets,
+                output_assets=output_assets,
+                processor=processor,
+                started_at=started_at,
+            )
+            if post_gate_failure:
+                return post_gate_failure
         return _record_executed_node(
             storage,
             run_id=run_id,
@@ -1921,6 +2759,32 @@ def _dispatch_agent_node(
         agent_run = execution.get("run", agent_run) if isinstance(execution, dict) else agent_run
         node_status = "succeeded" if isinstance(execution, dict) and execution.get("status") == "succeeded" else "failed"
         message = "agent run executed once" if node_status == "succeeded" else "agent run failed"
+    if node_status == "succeeded":
+        post_runtime_failure = _runtime_guard_failure(
+            storage,
+            run_id=run_id,
+            node=node,
+            input_assets=input_assets,
+            output_assets=output_assets,
+            processor={**processor, "agent_run_path": agent_run.get("path", "")},
+            started_at=started_at,
+            phase="post",
+        )
+        if post_runtime_failure:
+            post_runtime_failure["agent_run"] = agent_run
+            return post_runtime_failure
+        post_gate_failure = _post_gate_failure(
+            storage,
+            run_id=run_id,
+            node=node,
+            input_assets=input_assets,
+            output_assets=output_assets,
+            processor={**processor, "agent_run_path": agent_run.get("path", "")},
+            started_at=started_at,
+        )
+        if post_gate_failure:
+            post_gate_failure["agent_run"] = agent_run
+            return post_gate_failure
     result = _record_executed_node(
         storage,
         run_id=run_id,
@@ -2060,12 +2924,12 @@ def _write_workflow_run(
         id=run_id,
         title=f"{content.get('name') or workflow.get('title') or 'workflow'} execution",
         source=str(content.get("workflow_id") or workflow.get("id", "")),
-        tags=["workflow-executor", status],
+        tags=["workflow-executor", "pending"],
         content={
             "run_id": run_id,
             "workflow_id": content.get("workflow_id") or workflow.get("id", ""),
             "workflow_definition_path": _display_path(storage.root, workflow_path),
-            "status": status,
+            "status": "pending",
             "outputs": outputs,
             "node_runs": node_run_paths or [],
             "agent_runs": agent_run_paths or [],
@@ -2076,7 +2940,7 @@ def _write_workflow_run(
             "lineage": lineage or {},
             "trace": {"trace_id": run_id, "span_id": make_id("span", f"{run_id}-workflow-{utc_now()}"), "parent_span_id": ""},
             "started_at": started_at,
-            "finished_at": utc_now() if status in WORKFLOW_RUN_TERMINAL_STATUSES else "",
+            "finished_at": "",
         },
         metadata={
             "project_id": project_id,
@@ -2096,6 +2960,17 @@ def _write_workflow_run(
             ]),
         ),
     )
+    data = asset.to_dict()
+    transition = WorkflowRunStateMachine.apply_transition(
+        data,
+        status,
+        action="execute" if not lineage else "resume",
+        reason=error_message or recovery_instruction,
+        actor="workflow-executor",
+    )
+    if not transition.get("ok"):
+        raise ValueError(str(transition.get("message", "workflow_run transition denied")))
+    asset = WorkflowRun.from_dict(data)
     result = _write(storage, asset)
     try:
         trace = asset.content.get("trace", {}) if isinstance(asset.content.get("trace", {}), dict) else {}
@@ -2180,18 +3055,33 @@ def _processor_checkpoint_state(
 ) -> dict[str, Any]:
     operation = str(processor.get("operation") or node.get("operation") or processor.get("name") or node.get("node_id", ""))
     expected_outputs = _expected_output_assets(node, processor)
-    idempotency_key = str(processor.get("idempotency_key") or make_id("processor_checkpoint", f"{node.get('workflow_id', '')}-{node.get('node_id', '')}-{operation}-{'|'.join(input_assets)}-{'|'.join(expected_outputs)}"))
+    idempotency_key = str(processor.get("idempotency_key") or _stable_processor_checkpoint_key(node, operation, input_assets, expected_outputs))
     return {
         "checkpoint_schema": processor.get("checkpoint_schema") if isinstance(processor.get("checkpoint_schema"), dict) else {"version": "0.1.0", "operation": operation},
         "resume_from_checkpoint": bool(processor.get("resume_from_checkpoint", False)),
         "idempotency_key": idempotency_key,
         "operation": operation,
+        "contract": _service_processor_contract(operation) if str(processor.get("kind") or processor.get("type") or "").strip().lower() in {"service", "local_service"} else {},
         "node_id": str(node.get("node_id", "")),
         "input_assets": input_assets,
         "expected_output_assets": expected_outputs,
         "workspace_path": workspace_path or "",
         "created_at": utc_now(),
     }
+
+
+def _stable_processor_checkpoint_key(node: dict[str, Any], operation: str, input_assets: list[str], expected_outputs: list[str]) -> str:
+    raw = "|".join(
+        [
+            str(node.get("workflow_id", "")),
+            str(node.get("node_id", "")),
+            str(operation),
+            *sorted(str(item) for item in input_assets),
+            *sorted(str(item) for item in expected_outputs),
+        ]
+    )
+    digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+    return f"processor-checkpoint-{digest}"
 
 
 def _checkpoint_resume_hit(storage: LocalStorage, checkpoint_state: dict[str, Any]) -> dict[str, Any]:
@@ -2201,6 +3091,38 @@ def _checkpoint_resume_hit(storage: LocalStorage, checkpoint_state: dict[str, An
     existing = [_display_path(storage.root, resolve_path(storage.root, item)) for item in expected if _path_exists(storage, item)]
     if expected and len(existing) == len(expected):
         return {"status": "recovered", "output_assets": existing, "reason": "expected outputs exist"}
+    previous = _checkpoint_node_run_hit(storage, checkpoint_state)
+    if previous:
+        return previous
+    return {}
+
+
+def _checkpoint_node_run_hit(storage: LocalStorage, checkpoint_state: dict[str, Any]) -> dict[str, Any]:
+    idempotency_key = str(checkpoint_state.get("idempotency_key") or "").strip()
+    if not idempotency_key:
+        return {}
+    for path in reversed(storage.list_json("runs")):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "node_run":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if str(content.get("status", "")) not in WORKFLOW_SUCCESS_NODE_STATUSES:
+            continue
+        processor = content.get("processor", {}) if isinstance(content.get("processor", {}), dict) else {}
+        checkpoint = processor.get("checkpoint", {}) if isinstance(processor.get("checkpoint", {}), dict) else {}
+        if str(checkpoint.get("idempotency_key", "")) != idempotency_key:
+            continue
+        outputs = [_display_path(storage.root, resolve_path(storage.root, item)) for item in _asset_paths_from_rows(content.get("output_assets", [])) if _path_exists(storage, item)]
+        if outputs:
+            return {
+                "status": "recovered",
+                "output_assets": outputs,
+                "reason": "matching checkpoint node_run outputs exist",
+                "node_run_path": _display_path(storage.root, path),
+            }
     return {}
 
 
@@ -2238,8 +3160,9 @@ def _evaluate_gate_registry(
     run_id: str,
     quality_gate: dict[str, Any],
     human_gate: dict[str, Any],
+    phase: str = "pre",
 ) -> dict[str, Any]:
-    specs = _gate_specs(node)
+    specs = _gate_specs(node, phase=phase)
     if not specs:
         return {"status": "passed", "registry_results": []}
     results: list[dict[str, Any]] = []
@@ -2247,7 +3170,7 @@ def _evaluate_gate_registry(
         kind = str(spec.get("kind") or spec.get("gate") or "").strip().lower()
         if not kind or not bool(spec.get("required", True)):
             continue
-        trace = _gate_trace(run_id, str(node.get("node_id", "")), f"{kind}-{index + 1}")
+        trace = _gate_trace(run_id, str(node.get("node_id", "")), f"{phase}-{kind}-{index + 1}")
         try:
             evaluation = _evaluate_gate_spec(storage, node=node, spec=spec, input_assets=input_assets, workspace_path=str(spec.get("workspace_path") or ""))
         except Exception as exc:
@@ -2268,6 +3191,7 @@ def _evaluate_gate_registry(
         )
         row = {
             "kind": kind,
+            "phase": phase,
             "status": status,
             "message": str(evaluation.get("message", "")),
             "gate_result_path": gate_result.get("path", ""),
@@ -2277,27 +3201,39 @@ def _evaluate_gate_registry(
             return {
                 "status": "blocked",
                 "node_status": "failed",
-                "message": row["message"] or f"{kind} gate failed",
+                "message": row["message"] or f"{phase} {kind} gate failed",
                 "quality_gate": {**quality_gate, "status": "failed", "registry_results": results},
                 "human_gate": human_gate or {"required": False, "status": "not_required"},
             }
     return {"status": "passed", "registry_results": results}
 
 
-def _gate_specs(node: dict[str, Any]) -> list[dict[str, Any]]:
+def _gate_specs(node: dict[str, Any], *, phase: str = "pre") -> list[dict[str, Any]]:
     specs: list[dict[str, Any]] = []
     quality_gate = node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {}
+    if phase == "post":
+        for value in quality_gate.get("post_gates", []) if isinstance(quality_gate.get("post_gates", []), list) else []:
+            if isinstance(value, dict):
+                specs.append({**value, "phase": "post"})
+        for value in node.get("post_gates", []) if isinstance(node.get("post_gates", []), list) else []:
+            if isinstance(value, dict):
+                specs.append({**value, "phase": "post"})
     for value in quality_gate.get("gates", []) if isinstance(quality_gate.get("gates", []), list) else []:
-        if isinstance(value, dict):
+        if isinstance(value, dict) and _gate_phase(value) == phase:
             specs.append(value)
     for key in ["kind", "gate"]:
-        if str(quality_gate.get(key, "")).strip():
+        if str(quality_gate.get(key, "")).strip() and _gate_phase(quality_gate) == phase:
             specs.append(quality_gate)
             break
     for value in node.get("gates", []) if isinstance(node.get("gates", []), list) else []:
-        if isinstance(value, dict):
+        if isinstance(value, dict) and _gate_phase(value) == phase:
             specs.append(value)
     return specs
+
+
+def _gate_phase(spec: dict[str, Any]) -> str:
+    phase = str(spec.get("phase") or spec.get("when") or "").strip().lower()
+    return phase or "pre"
 
 
 def _evaluate_gate_spec(
@@ -2592,6 +3528,27 @@ def _scheduler_candidates(storage: LocalStorage, *, project_id: str | None, limi
         if not node_id or str(blocked.get("status", "")) not in {"prepared", "planned", "paused"}:
             continue
         run_log = content.get("run_log", []) if isinstance(content.get("run_log", []), list) else []
+        workflow_node = _workflow_node_for_run(storage, data, node_id)
+        processor = _node_processor(workflow_node or {})
+        processor_kind = str(processor.get("kind") or processor.get("type") or "record_only").strip().lower()
+        if processor_kind not in {"agent", "agent_dispatch"} and str(blocked.get("status", "")) in {"planned", "paused"}:
+            candidates.append(
+                {
+                    "candidate_type": "ready_node",
+                    "workflow_run_path": _display_path(storage.root, path),
+                    "workflow_run_id": str(content.get("run_id") or data.get("id", "")),
+                    "agent_run_path": "",
+                    "agent_run_id": "",
+                    "node_id": node_id,
+                    "project_id": str(metadata.get("project_id", "")),
+                    "workspace_path": str(metadata.get("workspace_path", "")),
+                    "expected_output_assets": _expected_output_assets(workflow_node or {}, processor) if workflow_node else [],
+                    "token_used": _processor_number(workflow_node, "token_used"),
+                    "cost_estimate": _processor_number(workflow_node, "cost_estimate"),
+                    "contract": _processor_contract_for_node(workflow_node or {}),
+                }
+            )
+            continue
         agent_run_path = _agent_run_path_for_node(run_log, node_id)
         if not agent_run_path:
             continue
@@ -2604,9 +3561,9 @@ def _scheduler_candidates(storage: LocalStorage, *, project_id: str | None, limi
         agent_content = agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}
         if str(agent_content.get("status", "")) != "prepared":
             continue
-        workflow_node = _workflow_node_for_run(storage, data, node_id)
         candidates.append(
             {
+                "candidate_type": "prepared_agent",
                 "workflow_run_path": _display_path(storage.root, path),
                 "workflow_run_id": str(content.get("run_id") or data.get("id", "")),
                 "agent_run_path": agent_run_path,
@@ -2617,9 +3574,183 @@ def _scheduler_candidates(storage: LocalStorage, *, project_id: str | None, limi
                 "expected_output_assets": _expected_output_assets(workflow_node or {}, _node_processor(workflow_node or {})) if workflow_node else [],
                 "token_used": _processor_number(workflow_node, "token_used"),
                 "cost_estimate": _processor_number(workflow_node, "cost_estimate"),
+                "contract": _processor_contract_for_node(workflow_node or {}),
             }
         )
     return candidates
+
+
+def _record_ready_node_queue_item(storage: LocalStorage, candidate: dict[str, Any], *, scheduler_tick_id: str) -> dict[str, Any]:
+    now = utc_now()
+    queue_id = _ready_node_queue_id(candidate)
+    existing_path = storage.data_dir("runs") / f"{queue_id}.json"
+    if existing_path.exists():
+        existing = storage.read_json(existing_path)
+        if isinstance(existing, dict) and existing.get("type") == "ready_node_queue":
+            content = existing.get("content", {}) if isinstance(existing.get("content", {}), dict) else {}
+            status = str(content.get("status", "ready") or "ready")
+            if status == "claimed" and not _ready_node_queue_lease_expired(content):
+                return {"path": _display_path(storage.root, existing_path), "asset": existing, "validation": {"ok": True, "errors": []}}
+            if status in {"acked", "dead_letter"} and not (status == "dead_letter" and _candidate_outputs_available(storage, candidate)):
+                return {"path": _display_path(storage.root, existing_path), "asset": existing, "validation": {"ok": True, "errors": []}}
+            content.update(
+                {
+                    "scheduler_tick_id": scheduler_tick_id,
+                    "candidate_type": candidate.get("candidate_type", content.get("candidate_type", "ready_node")),
+                    "workflow_run_id": candidate.get("workflow_run_id", content.get("workflow_run_id", "")),
+                    "workflow_run_path": candidate.get("workflow_run_path", content.get("workflow_run_path", "")),
+                    "agent_run_id": candidate.get("agent_run_id", content.get("agent_run_id", "")),
+                    "agent_run_path": candidate.get("agent_run_path", content.get("agent_run_path", "")),
+                    "node_id": candidate.get("node_id", content.get("node_id", "")),
+                    "status": "ready",
+                    "lease_owner": "",
+                    "lease_expires_at": "",
+                    "contract": candidate.get("contract", content.get("contract", {})),
+                    "updated_at": now,
+                    "requeue_count": int(content.get("requeue_count", 0) or 0) + 1,
+                }
+            )
+            existing["content"] = content
+            metadata = existing.get("metadata", {}) if isinstance(existing.get("metadata", {}), dict) else {}
+            metadata["asset_status"] = "ready"
+            existing["metadata"] = metadata
+            existing["tags"] = _dedupe([*[str(tag) for tag in existing.get("tags", [])], "ready", "requeued"])
+            existing["updated_at"] = now
+            errors = validate_common_fields(existing)
+            if errors:
+                raise ValueError("; ".join(errors))
+            storage.write_json(existing_path, existing)
+            return {"path": _display_path(storage.root, existing_path), "asset": existing, "validation": {"ok": True, "errors": []}}
+    asset = BaseAsset(
+        id=queue_id,
+        type="ready_node_queue",
+        title=f"Ready node: {candidate.get('node_id', '')}",
+        source=str(candidate.get("workflow_run_id", "")),
+        tags=["ready-node-queue", "ready", str(candidate.get("candidate_type", "ready_node"))],
+        content={
+            "queue_id": queue_id,
+            "scheduler_tick_id": scheduler_tick_id,
+            "candidate_type": candidate.get("candidate_type", "ready_node"),
+            "workflow_run_id": candidate.get("workflow_run_id", ""),
+            "workflow_run_path": candidate.get("workflow_run_path", ""),
+            "agent_run_id": candidate.get("agent_run_id", ""),
+            "agent_run_path": candidate.get("agent_run_path", ""),
+            "node_id": candidate.get("node_id", ""),
+            "status": "ready",
+            "lease_owner": "",
+            "lease_expires_at": "",
+            "attempt_count": 0,
+            "last_error": "",
+            "contract": candidate.get("contract", {}),
+            "created_at": now,
+            "updated_at": now,
+        },
+        metadata={"project_id": str(candidate.get("project_id", "")), "workspace_path": str(candidate.get("workspace_path", ""))},
+        references=filter_project_safe_references(storage, str(candidate.get("project_id", "")), [str(candidate.get("workflow_run_path", "")), str(candidate.get("agent_run_path", ""))]),
+    )
+    return _write(storage, asset)
+
+
+def _claim_ready_node_queue_item(storage: LocalStorage, queue_path: str, *, owner: str, ttl_seconds: int = 300) -> dict[str, Any]:
+    if not queue_path:
+        return {"claimed": False, "status": "missing_queue_path"}
+    path = resolve_path(storage.root, queue_path)
+    data = storage.read_json(path)
+    if not isinstance(data, dict) or data.get("type") != "ready_node_queue":
+        return {"claimed": False, "status": "invalid_queue"}
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    status = str(content.get("status", "ready") or "ready")
+    lease_owner = str(content.get("lease_owner", "") or "")
+    if status == "claimed" and not _ready_node_queue_lease_expired(content) and lease_owner != owner:
+        return {"claimed": False, "status": status, "lease_owner": lease_owner, "lease_expires_at": str(content.get("lease_expires_at", ""))}
+    if status in {"acked", "dead_letter"}:
+        return {"claimed": False, "status": status, "lease_owner": lease_owner, "lease_expires_at": str(content.get("lease_expires_at", ""))}
+    if status not in {"ready", "claimed"}:
+        return {"claimed": False, "status": status, "lease_owner": lease_owner, "lease_expires_at": str(content.get("lease_expires_at", ""))}
+    return _update_ready_node_queue_item(
+        storage,
+        queue_path,
+        status="claimed",
+        updates={
+            "lease_owner": owner,
+            "lease_expires_at": _utc_datetime_after(ttl_seconds),
+            "claimed_at": utc_now(),
+            "attempt_increment": 1,
+        },
+        extra={"claimed": True},
+    )
+
+
+def _ack_ready_node_queue_item(storage: LocalStorage, queue_path: str, *, resume_workflow_run_path: str) -> dict[str, Any]:
+    return _update_ready_node_queue_item(
+        storage,
+        queue_path,
+        status="acked",
+        updates={"acked_at": utc_now(), "resume_workflow_run_path": resume_workflow_run_path},
+    )
+
+
+def _dead_letter_ready_node_queue_item(storage: LocalStorage, queue_path: str, *, reason: str) -> dict[str, Any]:
+    return _update_ready_node_queue_item(
+        storage,
+        queue_path,
+        status="dead_letter",
+        updates={"dead_lettered_at": utc_now(), "last_error": reason},
+    )
+
+
+def _update_ready_node_queue_item(storage: LocalStorage, queue_path: str, *, status: str, updates: dict[str, Any], extra: dict[str, Any] | None = None) -> dict[str, Any]:
+    if not queue_path:
+        return {}
+    path = resolve_path(storage.root, queue_path)
+    data = storage.read_json(path)
+    if not isinstance(data, dict) or data.get("type") != "ready_node_queue":
+        return {}
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    content["status"] = status
+    content["updated_at"] = utc_now()
+    increment = int(updates.pop("attempt_increment", 0) or 0)
+    if increment:
+        content["attempt_count"] = int(content.get("attempt_count", 0) or 0) + increment
+    content.update(updates)
+    data["content"] = content
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    metadata["asset_status"] = status
+    data["metadata"] = metadata
+    data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], status])
+    data["updated_at"] = utc_now()
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    storage.write_json(path, data)
+    return {"path": _display_path(storage.root, path), "asset": data, **(extra or {})}
+
+
+def _utc_datetime_after(seconds: int) -> str:
+    return datetime.fromtimestamp(_utc_now_dt().timestamp() + max(0, int(seconds or 0)), tz=timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _ready_node_queue_id(candidate: dict[str, Any]) -> str:
+    raw = "|".join(
+        [
+            str(candidate.get("workflow_run_id", "")),
+            str(candidate.get("node_id", "")),
+            str(candidate.get("candidate_type", "ready_node")),
+        ]
+    )
+    return f"ready-node-{hashlib.sha256(raw.encode('utf-8')).hexdigest()[:16]}"
+
+
+def _ready_node_queue_lease_expired(content: dict[str, Any]) -> bool:
+    expires_at = str(content.get("lease_expires_at", "") or "")
+    if not expires_at:
+        return True
+    return _utc_now_dt() >= _parse_utc_datetime(expires_at)
+
+
+def _candidate_outputs_available(storage: LocalStorage, candidate: dict[str, Any]) -> bool:
+    expected = [str(item) for item in candidate.get("expected_output_assets", []) if str(item).strip()] if isinstance(candidate.get("expected_output_assets", []), list) else []
+    return bool(expected) and all(_path_exists(storage, item) for item in expected)
 
 
 def _workflow_node_for_run(storage: LocalStorage, workflow_run: dict[str, Any], node_id: str) -> dict[str, Any] | None:
@@ -2669,15 +3800,21 @@ def _mark_workflow_run_superseded(
     data = storage.read_json(path)
     if not isinstance(data, dict) or data.get("type") != "workflow_run":
         return
+    transition = WorkflowRunStateMachine.apply_transition(
+        data,
+        "superseded",
+        action="supersede",
+        reason=f"superseded by {superseded_by_run_id}",
+        actor="workflow-resume",
+    )
+    if not transition.get("ok"):
+        raise ValueError(str(transition.get("message", "workflow_run transition denied")))
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-    content["status"] = "superseded"
     content["superseded_by_run_id"] = superseded_by_run_id
     content["superseded_by_path"] = superseded_by_path
     content["scheduler_tick_id"] = scheduler_tick_id
-    content["finished_at"] = utc_now()
     data["content"] = content
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
-    metadata["asset_status"] = "superseded"
     metadata["superseded_by_run_id"] = superseded_by_run_id
     metadata["superseded_by_path"] = superseded_by_path
     metadata["scheduler_tick_id"] = scheduler_tick_id
@@ -2707,7 +3844,18 @@ def _execute_registered_service_processor(
     input_assets: list[str],
     workspace_path: str | None,
 ) -> dict[str, Any]:
+    return PROCESSOR_REGISTRY.execute(storage, processor=processor, input_assets=input_assets, workspace_path=workspace_path)
+
+
+def _execute_registered_service_processor_impl(
+    storage: LocalStorage,
+    *,
+    processor: dict[str, Any],
+    input_assets: list[str],
+    workspace_path: str | None,
+) -> dict[str, Any]:
     operation = str(processor.get("operation") or processor.get("service") or processor.get("name") or "").strip()
+    operation = _canonical_service_operation(operation) or operation
     if operation in {"change_impact_report", "create_change_impact_report"}:
         target_path = str(processor.get("target_path") or (input_assets[0] if input_assets else ""))
         if not target_path:
@@ -2718,7 +3866,7 @@ def _execute_registered_service_processor(
             max_depth=int(processor.get("max_depth", 4) or 4),
             project_id=str(processor.get("project_id") or "") or None,
         )
-        return {"status": "succeeded", "operation": operation, "output_assets": [result["path"]], "payload": {"path": result["path"]}}
+        return {"status": "succeeded", "operation": operation, "contract": _service_processor_contract(operation), "output_assets": [result["path"]], "payload": {"path": result["path"]}}
     if operation in {"invalidate_downstream", "mark_downstream_assets_stale"}:
         target_path = str(processor.get("target_path") or (input_assets[0] if input_assets else ""))
         if not target_path:
@@ -2732,7 +3880,7 @@ def _execute_registered_service_processor(
             apply=bool(processor.get("apply", True)),
         )
         report = result.get("impact_report", {}) if isinstance(result.get("impact_report", {}), dict) else {}
-        return {"status": "failed" if result.get("status") == "failed" else "succeeded", "operation": operation, "output_assets": [str(report.get("path", ""))] if report.get("path") else [], "payload": result}
+        return {"status": "failed" if result.get("status") == "failed" else "succeeded", "operation": operation, "contract": _service_processor_contract(operation), "output_assets": [str(report.get("path", ""))] if report.get("path") else [], "payload": result}
     if operation == "project_metric_snapshot":
         from novel_forge.modules.metrics import create_project_metric_snapshot
 
@@ -2741,7 +3889,7 @@ def _execute_registered_service_processor(
             project_id=str(processor.get("project_id") or "") or None,
             workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
         )
-        return {"status": "succeeded", "operation": operation, "output_assets": [result["path"]], "payload": {"path": result["path"]}}
+        return {"status": "succeeded", "operation": operation, "contract": _service_processor_contract(operation), "output_assets": [result["path"]], "payload": {"path": result["path"]}}
     if operation == "module_completion_snapshot":
         from novel_forge.modules.module_completion import module_completion_report
 
@@ -2750,7 +3898,7 @@ def _execute_registered_service_processor(
             project_id=str(processor.get("project_id") or "") or None,
             persist=True,
         )
-        return {"status": "succeeded", "operation": operation, "output_assets": [str(result.get("path", ""))] if result.get("path") else [], "payload": {"path": result.get("path", "")}}
+        return {"status": "succeeded", "operation": operation, "contract": _service_processor_contract(operation), "output_assets": [str(result.get("path", ""))] if result.get("path") else [], "payload": {"path": result.get("path", "")}}
     if operation in {"continuity_graph_snapshot", "create_continuity_graph_snapshot"}:
         from novel_forge.modules.continuity_graph import create_continuity_graph_snapshot
 
@@ -2962,7 +4110,13 @@ def _execute_registered_service_processor(
 
 
 def _service_success(storage: LocalStorage, operation: str, result: Any) -> dict[str, Any]:
-    return {"status": "succeeded", "operation": operation, "output_assets": _service_output_assets(storage, result), "payload": _json_safe_service_payload(result)}
+    return {
+        "status": "succeeded",
+        "operation": _canonical_service_operation(operation) or operation,
+        "contract": _service_processor_contract(operation),
+        "output_assets": _service_output_assets(storage, result),
+        "payload": _json_safe_service_payload(result),
+    }
 
 
 def _processor_path(processor: dict[str, Any], input_assets: list[str], *keys: str) -> str:

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AgentRunRow, BatchItem, DeadLetter, HandoffRow, NodeRunRow, ProjectHealthReport, ProjectRow, TaskCenter, TaskControl, WorkflowDefinitionRow, WorkflowRunRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { enqueueWorkflowSchedulerLoop, executeWorkflow, loadProductionControlData, resumeWorkflow, runAgentBoundaryAudit, runWorkflowSchedulerTick } from "./api";
+import { controlWorkflowRun, enqueueWorkflowSchedulerLoop, executeWorkflow, loadProductionControlData, loadWorkflowRuntimeConsole, resumeWorkflow, runAgentBoundaryAudit, runWorkflowSchedulerTick } from "./api";
 
 export function ProductionControlPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
@@ -24,6 +24,7 @@ export function ProductionControlPage() {
   const [schedulerResult, setSchedulerResult] = useState<Record<string, unknown> | null>(null);
   const [schedulerQueue, setSchedulerQueue] = useState<Record<string, unknown> | null>(null);
   const [workflowAction, setWorkflowAction] = useState<Record<string, unknown> | null>(null);
+  const [workflowRuntime, setWorkflowRuntime] = useState<Record<string, unknown> | null>(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState("");
   const [selectedWorkflowRun, setSelectedWorkflowRun] = useState("");
   const [workflowInputText, setWorkflowInputText] = useState("");
@@ -118,6 +119,7 @@ export function ProductionControlPage() {
       });
       setWorkflowAction(result);
       await refresh();
+      await loadSelectedWorkflowRuntime(selectedWorkflow, selectedWorkflowRun);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -141,12 +143,55 @@ export function ProductionControlPage() {
       });
       setWorkflowAction(result);
       await refresh();
+      await loadSelectedWorkflowRuntime(selectedWorkflow, selectedWorkflowRun);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setBusy(false);
     }
   }
+
+  async function loadSelectedWorkflowRuntime(workflowPath = selectedWorkflow, workflowRunPath = selectedWorkflowRun) {
+    if (!workflowPath && !workflowRunPath) {
+      return;
+    }
+    const result = await loadWorkflowRuntimeConsole({
+      workflow_path_or_id: workflowPath || undefined,
+      workflow_run_path_or_id: workflowRunPath || undefined,
+      input_assets: splitLines(workflowInputText)
+    });
+    setWorkflowRuntime(result);
+  }
+
+  async function controlSelectedWorkflow(action: "pause" | "retry" | "cancel" | "resume") {
+    if (!selectedWorkflowRun) {
+      setError("请选择 workflow run");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const selectedRun = workflowRunRows.find((run) => run.path === selectedWorkflowRun);
+      const result = await controlWorkflowRun({
+        workflow_run_path_or_id: selectedWorkflowRun,
+        action,
+        reason: `ui ${action}`,
+        resume_node_id: selectedRun?.blocked_node_id || undefined,
+        output_assets: splitLines(workflowOutputText)
+      });
+      setWorkflowAction(result);
+      await refresh();
+      await loadSelectedWorkflowRuntime(selectedWorkflow, selectedWorkflowRun);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const dagNodes = (((workflowRuntime?.dag as Record<string, unknown> | undefined)?.nodes as Array<Record<string, unknown>> | undefined) || []);
+  const readyQueue = (((workflowRuntime?.ready_queue as Record<string, unknown> | undefined)?.queue as Array<Record<string, unknown>> | undefined) || []);
+  const processorContracts = ((workflowRuntime?.processor_contracts as Array<Record<string, unknown>> | undefined) || []);
 
   return (
     <FeatureShell title="生产总控中心" subtitle="任务、工作流节点、Agent、批处理 item、Handoff、dead-letter 和 worker health 的统一观测台。">
@@ -217,13 +262,54 @@ export function ProductionControlPage() {
             <textarea value={workflowOutputText} onChange={(event) => setWorkflowOutputText(event.target.value)} placeholder="resume 输出资产路径，每行一个" rows={3} />
             <button className="primaryButton" disabled={busy || !selectedWorkflow} onClick={executeSelectedWorkflow}>执行 Workflow</button>
             <button className="secondaryButton" disabled={busy || !selectedWorkflowRun} onClick={resumeSelectedWorkflow}>Resume Run</button>
+            <button className="secondaryButton" disabled={busy || (!selectedWorkflow && !selectedWorkflowRun)} onClick={() => loadSelectedWorkflowRuntime().catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)))}>刷新 DAG</button>
+            <button className="secondaryButton" disabled={busy || !selectedWorkflowRun} onClick={() => controlSelectedWorkflow("pause")}>Pause</button>
+            <button className="secondaryButton" disabled={busy || !selectedWorkflowRun} onClick={() => controlSelectedWorkflow("retry")}>Retry</button>
+            <button className="secondaryButton" disabled={busy || !selectedWorkflowRun} onClick={() => controlSelectedWorkflow("cancel")}>Cancel</button>
           </div>
           <div className="summaryBand">
             <Metric label="Definitions" value={String(workflowDefinitions.length)} />
             <Metric label="Runs" value={String(workflowRunRows.length)} />
             <Metric label="Blocked" value={String(workflowRunRows.filter((run) => run.blocked_node_id).length)} />
             <Metric label="Action" value={String(workflowAction?.status ?? "-")} />
+            <Metric label="Ready" value={String(readyQueue.length)} />
           </div>
+          <DataTable
+            emptyText="选择 definition 后刷新 DAG"
+            columns={["节点", "处理器", "输入", "输出", "Contract"]}
+            rows={dagNodes.slice(0, 12).map((node) => {
+              const contract = node.processor_contract as Record<string, unknown> | undefined;
+              return [
+                String(node.node_id || "-"),
+                `${String(node.processor_kind || "-")} · ${String(node.processor_operation || node.operation || "-")}`,
+                String((node.input_types as unknown[] | undefined)?.join(", ") || "-"),
+                String((node.output_types as unknown[] | undefined)?.join(", ") || "-"),
+                `${String(contract?.category || "-")} · ${String(contract?.checkpoint_strategy || "-")}`
+              ];
+            })}
+          />
+          <DataTable
+            emptyText="暂无 ready node"
+            columns={["Ready 节点", "状态", "处理器", "输入", "恢复"]}
+            rows={readyQueue.slice(0, 12).map((row) => [
+              String(row.node_id || "-"),
+              String(row.blocked_status || row.workflow_run_status || "-"),
+              `${String(row.processor_kind || "-")} · ${String(row.processor_operation || row.operation || "-")}`,
+              String((row.input_assets as unknown[] | undefined)?.length ?? 0),
+              String(row.resume_supported ? "yes" : "no")
+            ])}
+          />
+          <DataTable
+            emptyText="暂无 processor contract"
+            columns={["Operation", "Kind", "类别", "Checkpoint", "Gate"]}
+            rows={processorContracts.slice(0, 10).map((contract) => [
+              String(contract.operation || "-"),
+              String(contract.kind || "-"),
+              String(contract.category || "-"),
+              String(contract.checkpoint_strategy || "-"),
+              `${contract.pre_gates ? "pre" : "-"} / ${contract.post_gates ? "post" : "-"}`
+            ])}
+          />
           <DataTable
             emptyText="暂无 workflow run"
             columns={["Run", "状态", "Blocked", "节点/Agent", "Trace", "路径"]}

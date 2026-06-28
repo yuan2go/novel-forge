@@ -7,10 +7,13 @@ from fastapi import APIRouter, HTTPException, Query
 from novel_forge.core.ids import utc_now
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.workflow_nodes import (
+    build_ready_node_queue,
+    build_workflow_runtime_console,
     control_workflow_run,
     create_workflow_definition,
     create_workflow_node,
     execute_workflow,
+    list_processor_contracts,
     list_node_runs,
     list_workflow_definitions,
     list_workflow_runs,
@@ -20,6 +23,7 @@ from novel_forge.modules.workflow_nodes import (
     resume_workflow,
     run_workflow_scheduler,
     run_workflow_scheduler_loop,
+    workflow_state_machine,
 )
 from novel_forge.storage.local import LocalStorage
 
@@ -94,6 +98,52 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/workflow/ready-queue")
+    def workflow_ready_queue(
+        workflow_path_or_id: str | None = None,
+        workflow_run_path_or_id: str | None = None,
+        start_node_id: str | None = None,
+        input_assets: list[str] = Query(default=[]),
+        limit: int = Query(default=100, ge=1, le=500),
+    ) -> dict[str, Any]:
+        try:
+            return build_ready_node_queue(
+                LocalStorage(app_settings.root),
+                workflow_path_or_id=workflow_path_or_id,
+                workflow_run_path_or_id=workflow_run_path_or_id,
+                input_assets=input_assets,
+                start_node_id=start_node_id,
+                limit=limit,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/workflow/runtime-console")
+    def workflow_runtime_console(
+        workflow_path_or_id: str | None = None,
+        workflow_run_path_or_id: str | None = None,
+        start_node_id: str | None = None,
+        input_assets: list[str] = Query(default=[]),
+    ) -> dict[str, Any]:
+        try:
+            return build_workflow_runtime_console(
+                LocalStorage(app_settings.root),
+                workflow_path_or_id=workflow_path_or_id,
+                workflow_run_path_or_id=workflow_run_path_or_id,
+                input_assets=input_assets,
+                start_node_id=start_node_id,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/workflow/processor-contracts")
+    def workflow_processor_contracts() -> dict[str, Any]:
+        return {"contracts": list_processor_contracts(), "state_machine": workflow_state_machine()}
 
     @router.post("/product/workflow/definitions")
     def workflow_definition_endpoint(request: WorkflowDefinitionCreateRequest) -> dict[str, Any]:
