@@ -82,6 +82,53 @@ class CliTests(unittest.TestCase):
             self.assertEqual(data["metadata"]["rights"]["authorization"], "owned")
             self.assertTrue(data["metadata"]["rights"]["allow_downstream_generation"])
 
+    def test_ingest_detects_gb18030_text_without_replacement_loss(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "gb18030.txt"
+            source.write_bytes("第一章 话说钟楼\n诸位看官，好家伙，线索来了。".encode("gb18030"))
+
+            result = self.run_cli("ingest", str(source), "--root", tmp, "--rights", "test_fixture")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(Path(result.stdout.strip()).read_text(encoding="utf-8"))
+            self.assertIn("诸位看官", data["content"]["text"])
+            self.assertIn(data["metadata"]["detected_encoding"], {"gb18030", "gbk"})
+            self.assertNotIn("�", data["content"]["text"])
+
+    def test_analyze_reference_creates_abstract_oral_style_report(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "oral-style.txt"
+            source.write_text(
+                "第一章 话说钟楼\n"
+                "诸位看官，您猜怎么着？好家伙，主角刚进门，偏偏线索自己响了。\n"
+                "这一来，笑归笑，选择和代价全压到眼前。\n",
+                encoding="utf-8",
+            )
+
+            raw = self.run_cli("ingest", str(source), "--root", tmp, "--rights", "test_fixture")
+            self.assertEqual(raw.returncode, 0, raw.stderr)
+            clean = self.run_cli("clean", "--root", tmp)
+            self.assertEqual(clean.returncode, 0, clean.stderr)
+            report = self.run_cli(
+                "analyze-reference",
+                "--root",
+                tmp,
+                "--input",
+                clean.stdout.strip(),
+                "--analysis-type",
+                "web_fiction_business",
+            )
+
+            self.assertEqual(report.returncode, 0, report.stderr)
+            data = json.loads(Path(report.stdout.strip()).read_text(encoding="utf-8"))
+            self.assertEqual(data["type"], "web_fiction_business_analysis_report")
+            oral = data["content"]["analysis_metrics"]["oral_performance"]
+            self.assertGreaterEqual(oral["marker_count"], 3)
+            self.assertIn(data["content"]["oral_performance_style"]["style_family"], {"pingshu_storytelling", "xiangsheng_banter_release", "audience_addressed_narration"})
+            self.assertIn("no protected expression", data["metadata"]["copyright_boundary"])
+
     def test_search_lists_and_filters_assets(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

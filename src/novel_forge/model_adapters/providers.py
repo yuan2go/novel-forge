@@ -177,6 +177,7 @@ class LocalCodexCliWorkerMixin:
             "command": command,
             "codex_home": self._codex_home_display(),
             "launch_command": self._launch_command_display(),
+            "automation_isolation": self._codex_automation_isolation(),
             "message": "ready for local Codex CLI worker" if configured else self._local_cli_disabled_message(enabled, executable),
         }
 
@@ -198,10 +199,23 @@ class LocalCodexCliWorkerMixin:
         if profile:
             command.extend(["--profile", profile])
         command.extend(["--sandbox", sandbox, "--skip-git-repo-check", "--json", "--output-schema", str(schema_path), "--output-last-message", str(output_path), "--color", "never"])
+        isolation = self._codex_automation_isolation()
+        if isolation["ignore_user_config"]:
+            command.append("--ignore-user-config")
+        if isolation["ignore_rules"]:
+            command.append("--ignore-rules")
         if _truthy(os.environ.get(f"{self.cli_env_prefix}_EPHEMERAL", "1")):
             command.append("--ephemeral")
         command.extend(["--cd", str(self._codex_workdir(context)), "-"])
         return command
+
+    def _codex_automation_isolation(self) -> dict[str, Any]:
+        return {
+            "ignore_user_config": _truthy(os.environ.get(f"{self.cli_env_prefix}_IGNORE_USER_CONFIG", os.environ.get("NOVEL_FORGE_CODEX_IGNORE_USER_CONFIG", "1"))),
+            "ignore_rules": _truthy(os.environ.get(f"{self.cli_env_prefix}_IGNORE_RULES", os.environ.get("NOVEL_FORGE_CODEX_IGNORE_RULES", "1"))),
+            "ephemeral": _truthy(os.environ.get(f"{self.cli_env_prefix}_EPHEMERAL", "1")),
+            "sandbox": os.environ.get(f"{self.cli_env_prefix}_SANDBOX", "read-only").strip() or "read-only",
+        }
 
     def _codex_command_base(self) -> list[str]:
         raw = os.environ.get(f"{self.cli_env_prefix}_COMMAND", "codex").strip() or "codex"

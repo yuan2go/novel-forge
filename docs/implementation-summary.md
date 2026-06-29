@@ -28,6 +28,7 @@ Execution tracking documents:
 | Runtime Performance Hardening | Completed targeted fixes | KG gate avoids repeated graph builds; project reference filtering avoids full scans for non-asset trace references |
 | Test Provider Isolation | Completed | Unit/integration tests force deterministic `mock` provider where needed; default production provider remains Claude Code Codex |
 | P1/P2 Novel OS Capabilities | Completed local-first first production slice | ModelRouter/ModelGateway, PromptRegistry, ToolGateway/MCP registry, StateBus, AgentMessageBus, L0-L5 memory, pgvector schema plan, deterministic local embedding projection, hybrid retrieval, `/product/os/*` APIs, Workflow ProcessorRegistry operations, AgentOperationRegistry operations, `tests/unit/test_os_new_capabilities.py` |
+| Protected Reference Intake | Hardened first production slice | TXT/MD encoding detection for UTF-8/GB18030/GBK/Big5, `analyze-reference` CLI, oral-performance style metrics for pingshu/xiangsheng-like narration, abstract-only analysis assets, `tests/unit/test_cli.py` |
 
 ## Remaining Items
 
@@ -40,6 +41,7 @@ These are not blocked for the current deliverable, but remain future hardening w
 | Provider-backed KG extraction | Model-assisted extraction candidates are locally validated and merged into reports; provider-backed extraction must use the same GuardedModelAdapter/ModelGateway runtime evidence boundary. |
 | Deep service-internal checkpoint for non-standard long tasks | GuardedModelAdapter and ModelGateway now record prompt/provider/output stages; any future custom long task that bypasses those boundaries must explicitly use the same checkpoint contract. |
 | Full business transaction rollback | Logical rollback, version restore, verification, compensation, and UI preview/apply/verify exist; physical multi-asset transaction semantics remain a later hardening layer. |
+| Local Codex CLI host permissions | The adapter now runs with `--ignore-user-config --ignore-rules --ephemeral --sandbox read-only`; this project records provider failure and falls back safely if the installed Codex CLI still cannot initialize in the current OS sandbox. |
 
 ## New Modules
 
@@ -64,6 +66,7 @@ These are not blocked for the current deliverable, but remain future hardening w
 - Runtime and scheduling: `agent_runs`, `agent_scheduler`, `workflow_nodes`, `runtime_ledger`
 - Model adapters: `providers`, `guarded`, adapter exports, ModelGateway runtime evidence
 - KG and continuity: `novel_kg`, `continuity_graph`, `production_context`, `context_builder` KG-backed bundle propagation
+- Intake and analysis: `ingestion` encoding detection, `analysis` oral-performance abstraction, CLI `analyze-reference`
 - Feedback and review: `feedback`, `audit`, review rework related services
 - Schemas/constants: new asset mappings and dataclasses for rollback, checkpoints, feedback backflow, KG identity
 - Web Admin: OS console route set and navigation

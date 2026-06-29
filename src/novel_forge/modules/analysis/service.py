@@ -311,6 +311,7 @@ def _source_metrics(asset: BaseAsset) -> dict[str, Any]:
     chapters = re.findall(r"(第[一二三四五六七八九十百千万0-9]+章|Chapter\s+\d+)", text, flags=re.IGNORECASE)
     hook_hits = _count_tokens(normalized, ["忽然", "秘密", "发现", "危机", "代价", "选择", "死亡", "背叛", "真相", "?", "？", "must", "secret"])
     dialogue_marks = normalized.count("“") + normalized.count('"')
+    oral_performance = _oral_performance_metrics(normalized)
     words = re.findall(r"[\w\u4e00-\u9fff]+", normalized)
     keyword_counter = Counter(word for word in words if len(word) >= 2)
     keywords = [word for word, _ in keyword_counter.most_common(12)]
@@ -321,6 +322,7 @@ def _source_metrics(asset: BaseAsset) -> dict[str, Any]:
         "chapter_markers": len(chapters),
         "hook_signal_count": hook_hits,
         "dialogue_marker_count": dialogue_marks,
+        "oral_performance": oral_performance,
         "avg_sentence_length": round(length / max(len(sentences), 1), 2),
         "top_keywords": keywords,
         "source_content_fields": sorted(asset.content.keys()),
@@ -376,6 +378,7 @@ def _report_content(report_type: str, asset: BaseAsset, metrics: dict[str, Any])
                 "hook_density_signal": metrics["hook_signal_count"],
                 "hook_types": ["anomaly", "choice pressure", "hidden information", "cost reveal"],
             },
+            "oral_performance_style": _oral_performance_profile(metrics),
             "payoff_loop": ["setup promise", "raise cost", "partial payoff", "new unresolved pressure"],
             "pacing_model": {
                 "chapter_marker_count": metrics["chapter_markers"],
@@ -471,6 +474,7 @@ def _semantic_depth_assessment(
             prompt,
             {
                 "analysis_type": report_type,
+                "runtime_operation": "analysis_run",
                 "rubric": rubric,
                 "source_metrics": metrics,
                 "source_excerpt_for_analysis_only": source_text[:4000],
@@ -531,13 +535,15 @@ def _rubric_scores(report_type: str, metrics: dict[str, Any], provider_review: d
     pattern_text = " ".join(patterns)
     hook = min(100, 45 + int(metrics.get("hook_signal_count", 0)) * 5 + int(metrics.get("chapter_markers", 0)) * 3)
     dialogue = min(100, 45 + int(metrics.get("dialogue_marker_count", 0)) * 4)
+    oral = metrics.get("oral_performance", {}) if isinstance(metrics.get("oral_performance", {}), dict) else {}
+    oral_score = min(100, 45 + int(oral.get("marker_count", 0)) * 3 + int(oral.get("banter_marker_count", 0)) * 4)
     keyword = min(100, 50 + len(metrics.get("top_keywords", []) or []) * 4)
     abstraction = 95 if _source_risk(provider_review if isinstance(provider_review, BaseAsset) else BaseAsset(id="provider", type="provider", content={}, metadata={"risk_level": "low"})) else 90
     base_by_dimension = {
         "reader_promise": hook,
         "hook_system": hook,
         "payoff_loop": 78 if "hook" in pattern_text or "conflict" in pattern_text else 66,
-        "serialization_fit": min(100, hook + 8),
+        "serialization_fit": min(100, max(hook, oral_score) + 8),
         "scene_craft": min(100, dialogue + 10),
         "subtext": 76 if any(token in pattern_text for token in ["subtext", "hidden", "avoid"]) else 62,
         "character_arc": 78 if any(token in pattern_text for token in ["character", "conflict", "pressure"]) else 66,
@@ -579,6 +585,7 @@ def _mode_visualization(
                 {"stage": "opening_promise", "signal": metrics.get("top_keywords", [])[:3], "score": rubric_scores.get("reader_promise", {}).get("score", 0)},
                 {"stage": "pressure_loop", "signal": metrics.get("hook_signal_count", 0), "score": rubric_scores.get("hook_system", {}).get("score", 0)},
                 {"stage": "payoff_reset", "signal": provider_review.get("patterns", [])[:3], "score": rubric_scores.get("payoff_loop", {}).get("score", 0)},
+                {"stage": "oral_banter_release", "signal": metrics.get("oral_performance", {}), "score": rubric_scores.get("serialization_fit", {}).get("score", 0)},
             ],
         }
     if report_type == "published_fiction_analysis_report":
@@ -632,6 +639,7 @@ def _semantic_evidence(report_type: str, metrics: dict[str, Any], provider_revie
             f"mode={report_type}",
             f"hook_signals={metrics.get('hook_signal_count', 0)}",
             f"chapter_markers={metrics.get('chapter_markers', 0)}",
+            f"oral_performance={metrics.get('oral_performance', {})}",
             f"keywords={', '.join([str(item) for item in metrics.get('top_keywords', [])[:5]])}",
             f"provider_status={provider_review.get('status', '')}",
         ]
@@ -652,6 +660,7 @@ def _score_evidence(dimension: str, metrics: dict[str, Any], provider_review: di
         f"dimension={dimension}",
         f"hook_signal_count={metrics.get('hook_signal_count', 0)}",
         f"dialogue_marker_count={metrics.get('dialogue_marker_count', 0)}",
+        f"oral_performance={metrics.get('oral_performance', {})}",
         f"provider_patterns={', '.join([str(item) for item in provider_review.get('patterns', [])[:3]])}",
     ]
 
@@ -852,6 +861,60 @@ def _count_tokens(text: str, tokens: list[str]) -> int:
     return sum(lowered.count(token.lower()) for token in tokens)
 
 
+def _oral_performance_metrics(text: str) -> dict[str, Any]:
+    storytelling = ["且说", "话说", "却说", "诸位", "看官", "列位", "您瞧", "咱们", "书接上回", "上回说到"]
+    banter = ["不是", "好家伙", "嘿", "嚯", "您猜", "怎么着", "可不是", "说句", "吐槽", "打趣"]
+    punchline = ["没想到", "谁成想", "结果", "偏偏", "反倒", "这一来", "这下", "抖了", "包袱"]
+    audience = ["你说", "你看", "您说", "各位", "朋友", "听着", "别急", "且听"]
+    counts = {
+        "storytelling_marker_count": _count_tokens(text, storytelling),
+        "banter_marker_count": _count_tokens(text, banter),
+        "punchline_marker_count": _count_tokens(text, punchline),
+        "audience_address_count": _count_tokens(text, audience),
+    }
+    marker_count = sum(counts.values())
+    return {
+        **counts,
+        "marker_count": marker_count,
+        "style_family": _oral_style_family(counts),
+        "safe_transfer": [
+            "use audience-address rhythm as a narration control, not copied phrasing",
+            "use punchline-release placement as structure, not source jokes or scenes",
+            "use banter to modulate tension after a pressure beat",
+        ],
+    }
+
+
+def _oral_style_family(counts: dict[str, int]) -> str:
+    if counts.get("storytelling_marker_count", 0) >= max(2, counts.get("banter_marker_count", 0)):
+        return "pingshu_storytelling"
+    if counts.get("banter_marker_count", 0) + counts.get("punchline_marker_count", 0) >= 3:
+        return "xiangsheng_banter_release"
+    if counts.get("audience_address_count", 0) >= 2:
+        return "audience_addressed_narration"
+    return "low_oral_performance_signal"
+
+
+def _oral_performance_profile(metrics: dict[str, Any]) -> dict[str, Any]:
+    oral = metrics.get("oral_performance", {}) if isinstance(metrics.get("oral_performance", {}), dict) else {}
+    family = str(oral.get("style_family", "low_oral_performance_signal"))
+    return {
+        "style_family": family,
+        "marker_count": oral.get("marker_count", 0),
+        "mechanisms": [
+            "pressure beat -> narrator aside -> punchline or contrast -> renewed suspense",
+            "audience-addressed transition to keep serial reading momentum",
+            "banter release after uncanny or high-stakes setup",
+        ],
+        "safe_usage": "transfer oral-performance structure only; do not copy source jokes, phrasing, named scenes, or plot sequence",
+        "generation_controls": [
+            "limit narrator aside to one short beat per scene turn",
+            "tie every joke or aside to character pressure or world rule",
+            "end with renewed obligation rather than a loose gag",
+        ],
+    }
+
+
 def _theme_candidates(metrics: dict[str, Any]) -> list[str]:
     keywords = [str(item) for item in metrics.get("top_keywords", [])][:5]
     return keywords or ["choice under pressure", "identity and cost"]
@@ -862,6 +925,7 @@ def _common_findings(metrics: dict[str, Any]) -> list[str]:
         f"hook signal density: {metrics.get('hook_signal_count', 0)}",
         f"chapter marker signal: {metrics.get('chapter_markers', 0)}",
         f"dialogue marker signal: {metrics.get('dialogue_marker_count', 0)}",
+        f"oral performance signal: {metrics.get('oral_performance', {}).get('style_family', 'unknown') if isinstance(metrics.get('oral_performance', {}), dict) else 'unknown'}",
         f"average narrative unit length: {metrics.get('avg_sentence_length', 0)}",
     ]
     keywords = [str(item) for item in metrics.get("top_keywords", [])][:4]

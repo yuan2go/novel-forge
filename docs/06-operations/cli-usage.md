@@ -87,7 +87,7 @@ export NOVEL_FORGE_ROOT=.local/workspace
 - `.mobi`
 - `.azw3`
 
-EPUB extraction uses the Python standard library and prefers `META-INF/container.xml` plus OPF spine order before falling back to sorted text/html/xhtml entries. Source metadata records extraction method, EPUB spine items, EPUB metadata when available, and extraction warnings. MOBI and AZW3 support remains limited binary-readable-text extraction without external dependencies; full proprietary ebook parsing is deferred.
+TXT/MD extraction detects common Chinese encodings including UTF-8, GB18030, GBK, and Big5, then records `detected_encoding`, `encoding_confidence`, candidates, and warnings in source metadata. EPUB extraction uses the Python standard library and prefers `META-INF/container.xml` plus OPF spine order before falling back to sorted text/html/xhtml entries. Source metadata records extraction method, EPUB spine items, EPUB metadata when available, and extraction warnings. MOBI and AZW3 support remains limited binary-readable-text extraction without external dependencies; full proprietary ebook parsing is deferred.
 
 `clean` normalizes imported text before downstream decomposition. Current cleaning rules:
 
@@ -98,6 +98,18 @@ EPUB extraction uses the Python standard library and prefers `META-INF/container
 - Detect chapter headings like `第一章 标题`, `第2章 标题`, and `Chapter 1`.
 
 Detected chapters are stored in `CleanedText.content.chapters`; cleaning stats are stored in metadata.
+
+`analyze-reference` creates a schema-backed abstract analysis report from a source or cleaned asset:
+
+```bash
+CODEX_HOME=~/.codex-claude NOVEL_FORGE_MODEL_PROVIDER=claude-code \
+  novel-forge analyze-reference \
+  --root .local/workspace \
+  --input data/cleaned/example.json \
+  --analysis-type web_fiction_business
+```
+
+Reference analysis is for structural learning only. Reports include metrics such as chapter markers, hook signals, and oral-performance style signals for pingshu/xiangsheng-like narration, but they are marked `use_in_generation_rag=false` and must not copy protected prose, names, scenes, settings, jokes, or plot sequence.
 
 `search` lists and filters local JSON assets. Supported filters:
 
@@ -234,7 +246,9 @@ Supported providers:
 - `claude-code`: default agent runtime; runs local `codex exec` with `CODEX_HOME=~/.codex-claude`.
 - `mock`: explicit deterministic offline adapter for tests and demos.
 
-Every provider call uses a strict JSON prompt contract and validates output before writing assets. Draft/topic generation requires `text`; decomposition requires `summary`, `word_count`, and `patterns`; review requires score, strengths, weaknesses, issues, risk level, revision suggestions, and next action; revision requires an ordered `plan`.
+Local Codex workers run with automation isolation by default: `--ignore-user-config`, `--ignore-rules`, `--ephemeral`, and `--sandbox read-only`. Override only when deliberately validating a trusted local profile.
+
+Every provider call uses a strict JSON prompt contract and validates output before writing assets. Draft/topic generation requires `text`; decomposition/reference analysis requires `summary`, `word_count`, and `patterns`; review requires score, strengths, weaknesses, issues, risk level, revision suggestions, and next action; revision requires an ordered `plan`.
 
 Claude Code still supports manual handoff through `ClaudeCodeAdapter.create_handoff_packet()`. For deterministic offline test or demo runs, override the runtime explicitly:
 

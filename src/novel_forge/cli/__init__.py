@@ -62,6 +62,16 @@ def build_parser() -> argparse.ArgumentParser:
         command.add_argument("--input")
         add_root(command)
 
+    analyze_ref_p = sub.add_parser("analyze-reference", help="run abstract reference analysis for a cleaned/source asset")
+    analyze_ref_p.add_argument("--input", required=True)
+    analyze_ref_p.add_argument(
+        "--analysis-type",
+        default="web_fiction_business",
+        choices=["common", "common_novel", "web", "web_fiction", "web_fiction_business", "published", "published_fiction", "classic", "classic_literary"],
+    )
+    analyze_ref_p.add_argument("--workspace-path", default="")
+    add_root(analyze_ref_p)
+
     fb_p = sub.add_parser("import-feedback", help="import reader feedback CSV")
     fb_p.add_argument("input")
     add_root(fb_p)
@@ -236,6 +246,16 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.command == "build-materials":
             _print_path(pipeline.build_materials(args.root, args.input))
+            return 0
+        if args.command == "analyze-reference":
+            _print_path(
+                pipeline.analyze_reference(
+                    args.root,
+                    args.input,
+                    args.analysis_type,
+                    workspace_path=args.workspace_path or None,
+                )
+            )
             return 0
         if args.command == "generate-topic":
             _print_path(pipeline.generate_topic(args.root, args.input))

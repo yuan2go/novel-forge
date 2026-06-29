@@ -126,7 +126,7 @@ def extract_source(path: Path) -> ExtractedSource:
         formats = ", ".join(sorted(SUPPORTED_SOURCE_EXTENSIONS))
         raise ValueError(f"unsupported source format: {path.suffix}; supported formats: {formats}")
     if suffix in {".txt", ".md"}:
-        extracted = ExtractedSource(_read_text_file(path), {"extraction_method": "text-decode"})
+        extracted = _read_text_file(path)
     elif suffix == ".epub":
         extracted = _read_epub_source(path)
     else:
@@ -141,11 +141,19 @@ def source_format(path: Path) -> str:
     return path.suffix.lower().lstrip(".") or "unknown"
 
 
-def _read_text_file(path: Path) -> str:
-    try:
-        return path.read_text(encoding="utf-8-sig")
-    except UnicodeDecodeError:
-        return path.read_text(encoding="utf-8", errors="replace")
+def _read_text_file(path: Path) -> ExtractedSource:
+    data = path.read_bytes()
+    decoded = _decode_text_bytes(data)
+    return ExtractedSource(
+        decoded["text"],
+        {
+            "extraction_method": "text-decode",
+            "detected_encoding": decoded["encoding"],
+            "encoding_confidence": decoded["confidence"],
+            "encoding_candidates": decoded["candidates"],
+            "encoding_warnings": decoded["warnings"],
+        },
+    )
 
 
 def _read_epub_source(path: Path) -> ExtractedSource:
@@ -213,12 +221,66 @@ def _read_binary_fixture_source(path: Path) -> ExtractedSource:
 
 
 def _decode_bytes(data: bytes) -> str:
-    for encoding in ["utf-8-sig", "utf-8", "gb18030", "latin-1"]:
+    return _decode_text_bytes(data)["text"]
+
+
+def _decode_text_bytes(data: bytes) -> dict:
+    candidates: list[dict] = []
+    for encoding in ["utf-8-sig", "utf-8", "gb18030", "gbk", "big5", "latin-1"]:
         try:
-            return data.decode(encoding)
+            text = data.decode(encoding)
         except UnicodeDecodeError:
+            candidates.append({"encoding": encoding, "status": "decode_error", "score": 0})
             continue
-    return data.decode("utf-8", errors="replace")
+        score = _decode_quality_score(text)
+        candidates.append({"encoding": encoding, "status": "decoded", "score": score})
+    decoded_candidates = [item for item in candidates if item["status"] == "decoded"]
+    if decoded_candidates:
+        best = sorted(decoded_candidates, key=lambda item: (-float(item["score"]), str(item["encoding"])))[0]
+        text = data.decode(str(best["encoding"]))
+        warnings = []
+        if str(best["encoding"]) not in {"utf-8-sig", "utf-8"}:
+            warnings.append(f"source decoded with non-utf8 encoding: {best['encoding']}")
+        return {
+            "text": text,
+            "encoding": best["encoding"],
+            "confidence": _decode_confidence(best, decoded_candidates),
+            "candidates": candidates,
+            "warnings": warnings,
+        }
+    text = data.decode("utf-8", errors="replace")
+    return {
+        "text": text,
+        "encoding": "utf-8-replace",
+        "confidence": "low",
+        "candidates": candidates,
+        "warnings": ["all strict decoders failed; used utf-8 replacement decode"],
+    }
+
+
+def _decode_quality_score(text: str) -> float:
+    if not text:
+        return 0.0
+    length = max(len(text), 1)
+    replacement_penalty = text.count("�") * 8
+    control_penalty = sum(1 for char in text if not (char.isprintable() or char in "\n\r\t")) * 4
+    cjk_ratio = sum(1 for char in text if "\u4e00" <= char <= "\u9fff") / length
+    mojibake_hits = sum(text.count(marker) for marker in ["Ã", "Â", "¤", "¥", "Ð", "Ñ"])
+    punctuation_signal = sum(text.count(marker) for marker in ["。", "，", "！", "？", "“", "”", "第", "章"])
+    return (cjk_ratio * 100.0) + min(30.0, punctuation_signal / max(length / 1000.0, 1.0)) - replacement_penalty - control_penalty - mojibake_hits * 3
+
+
+def _decode_confidence(best: dict, decoded: list[dict]) -> str:
+    if not decoded:
+        return "low"
+    scores = sorted([float(item.get("score", 0.0)) for item in decoded], reverse=True)
+    best_score = float(best.get("score", 0.0))
+    gap = best_score - (scores[1] if len(scores) > 1 else 0.0)
+    if best_score >= 20 and gap >= 5:
+        return "high"
+    if best_score >= 10:
+        return "medium"
+    return "low"
 
 
 def _strip_html(text: str) -> str:

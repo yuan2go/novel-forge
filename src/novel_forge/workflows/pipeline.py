@@ -7,6 +7,7 @@ from pathlib import Path
 from novel_forge.core.constants import DATA_DIRS, DOC_FILES, SKILL_NAMES, SKILL_REQUIRED_SECTIONS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.model_adapters import ModelAdapter
+from novel_forge.modules.analysis.service import run_analysis as run_analysis_service
 from novel_forge.modules.chapter_plan.service import generate_chapter_plan as generate_chapter_plan_service
 from novel_forge.modules.characters.service import generate_characters as generate_characters_service
 from novel_forge.modules.cleaning.service import clean as clean_service
@@ -154,6 +155,23 @@ def extract_knowledge(root: str | Path, input_path: str | None = None) -> Path:
 def build_materials(root: str | Path, input_path: str | None = None) -> Path:
     storage = ensure_project(root)
     return build_materials_service(storage, input_path)
+
+
+def analyze_reference(
+    root: str | Path,
+    input_path: str,
+    analysis_type: str = "web_fiction_business",
+    *,
+    workspace_path: str | None = None,
+) -> Path:
+    storage = ensure_project(root)
+    result = run_analysis_service(
+        storage,
+        input_path,
+        analysis_type,
+        workspace_path=workspace_path,
+    )
+    return resolve_path(storage.root, result["path"])
 
 
 def generate_topic(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:

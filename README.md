@@ -219,6 +219,7 @@ Current P0/P1 closure status:
 4. Semantic quality now includes Novel KG evidence/confidence, model-assisted extraction validation, identity merge queues, KG-backed context propagation from context plan to bundle, continuity/KG gates, and feedback-to-plan backflow first slice.
 5. Web OS operations now expose workflow, agent, KG, trace, cost, invalidation, review-rework, runtime policy coverage, legacy bypass audit, rollback preview/apply/verify, KG identity queues, and opt-in long-chain 12/50 chapter pressure acceptance.
 6. P1/P2 OS capabilities now include ModelRouter/ModelGateway, PromptRegistry, ToolGateway/MCP registry, StateBus, AgentMessageBus, L0-L5 memory, pgvector schema planning, deterministic local embedding projection, hybrid retrieval, `/product/os/*` APIs, and Workflow/Agent operation contracts for these services.
+7. Reference intake now detects common Chinese text encodings such as GB18030/GBK, and `analyze-reference` creates abstract web-fiction analysis reports with oral-performance style signals while preserving the no-copy boundary.
 
 ## Key Docs
 

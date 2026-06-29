@@ -129,6 +129,8 @@ class MockModelTests(unittest.TestCase):
 
             self.assertEqual(health["implemented"], "local_cli_worker")
             self.assertEqual(health["codex_home"], "~/.codex-claude")
+            self.assertTrue(health["automation_isolation"]["ignore_user_config"])
+            self.assertTrue(health["automation_isolation"]["ignore_rules"])
             self.assertEqual(result["provider"], "claude-code")
             self.assertTrue(result["codex_home"].endswith(".codex-claude"))
 
