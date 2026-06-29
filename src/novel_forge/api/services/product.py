@@ -16,11 +16,12 @@ from typing import Any
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.evaluation.quality import QUALITY_DIMENSIONS
-from novel_forge.model_adapters import model_from_env, validate_model_output
+from novel_forge.model_adapters import estimate_usage_from_text, model_from_env, validate_model_output
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.agent_runs import create_agent_failure_report, update_agent_run_status
 from novel_forge.modules.creative_assets import create_creative_asset
 from novel_forge.modules.ingestion.service import discover_source_files
+from novel_forge.modules.runtime_policy import runtime_policy_envelope
 from novel_forge.modules.source_intake import (
     create_github_source_note,
     list_github_knowledge_sources,
@@ -2533,7 +2534,7 @@ def _validate_handoff_output_assets(
     semantic = _semantic_handoff_output_quality(storage, handoff, handoff_path, output)
     errors.extend(semantic["errors"])
     warnings.extend(semantic["warnings"])
-    semantic_review_result = _review_handoff_output_quality(handoff, output) if semantic_review else {"enabled": False, "ok": True}
+    semantic_review_result = _review_handoff_output_quality(storage, handoff, handoff_path, output) if semantic_review else {"enabled": False, "ok": True}
     if semantic_review and not semantic_review_result["ok"]:
         warnings.append(
             f"semantic review score {semantic_review_result.get('score', 0)} below {HANDOFF_REVIEW_MIN_SCORE}: "
@@ -2624,7 +2625,7 @@ def _semantic_handoff_output_quality(storage: LocalStorage, handoff: dict[str, A
     return {"ok": not errors, "errors": errors, "warnings": warnings, "checks": checks}
 
 
-def _review_handoff_output_quality(handoff: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+def _review_handoff_output_quality(storage: LocalStorage, handoff: dict[str, Any], handoff_path: Path, output: dict[str, Any]) -> dict[str, Any]:
     handoff_content = handoff.get("content", {}) if isinstance(handoff.get("content", {}), dict) else {}
     output_content = output.get("content", {}) if isinstance(output.get("content", {}), dict) else {}
     output_metadata = output.get("metadata", {}) if isinstance(output.get("metadata", {}), dict) else {}
@@ -2655,7 +2656,23 @@ def _review_handoff_output_quality(handoff: dict[str, Any], output: dict[str, An
     }
     try:
         adapter = model_from_env("review")
-        review = validate_model_output("review", adapter.review(json.dumps(payload, ensure_ascii=False, sort_keys=True), payload))
+        prompt = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+        trace = {"trace_id": str(handoff.get("id", "")) or "handoff-review", "parent_span_id": str(handoff.get("id", "")) or "handoff-review"}
+        with runtime_policy_envelope(
+            storage,
+            operation="handoff_review",
+            input_assets=[handoff_path],
+            trace=trace,
+        ) as envelope:
+            review = validate_model_output("review", adapter.review(prompt, {**payload, "runtime_operation": "handoff_review"}))
+            usage = review.get("usage") if isinstance(review.get("usage"), dict) else estimate_usage_from_text(prompt, json.dumps(review, ensure_ascii=False), usage_source="handoff_review_estimated")
+            envelope.record_model_result(
+                provider=str(review.get("provider") or getattr(adapter, "name", "")),
+                model=str(review.get("model") or getattr(adapter, "name", "")),
+                usage=usage,
+                cost=review.get("cost") if isinstance(review.get("cost"), dict) else {"amount": 0.0, "currency": "USD", "source": "handoff_review"},
+                source_id=str(handoff.get("id", "")),
+            )
         score = float(review.get("score", 0))
         issues = review.get("issues", []) if isinstance(review.get("issues", []), list) else []
         return {

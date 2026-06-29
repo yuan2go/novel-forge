@@ -15,7 +15,34 @@ from novel_forge.model_adapters.runtime import (
     provider_runtime_controller,
     provider_runtime_guard_from_context,
 )
+from novel_forge.model_adapters.guarded import GuardedModelAdapter, ProviderRuntimeGuardError
 from novel_forge.model_adapters.providers import _read_openai_compatible_stream
+from novel_forge.modules.agent_runs import AgentExecutionContext
+from novel_forge.storage.local import LocalStorage
+
+
+class UsageReportingAdapter:
+    name = "usage-adapter"
+
+    def generate(self, prompt, context=None):
+        return {
+            "text": f"generated: {prompt}",
+            "provider": "usage-provider",
+            "model": "usage-model",
+            "usage": {"input_tokens": 10, "output_tokens": 20, "total_tokens": 30, "usage_source": "unit_provider"},
+        }
+
+
+class OverBudgetUsageAdapter:
+    name = "over-budget-adapter"
+
+    def generate(self, prompt, context=None):
+        return {
+            "text": f"generated: {prompt}",
+            "provider": "usage-provider",
+            "model": "usage-model",
+            "usage": {"input_tokens": 10, "output_tokens": 200, "total_tokens": 210, "usage_source": "unit_provider"},
+        }
 
 
 class ProviderRuntimeGuardTests(unittest.TestCase):
@@ -117,6 +144,77 @@ class ProviderRuntimeGuardTests(unittest.TestCase):
         self.assertEqual(result["usage"]["total_tokens"], 20)
         self.assertTrue(result["stream"]["enabled"])
         self.assertIn("provider_stream_guard_ok", {event["event_type"] for event in controller.to_dict()["events"]})
+
+    def test_guarded_adapter_persists_provider_gate_checkpoint_model_call_and_cost(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            with AgentExecutionContext(
+                storage,
+                agent_key="draft",
+                operation="draft",
+                output_types=["draft_chapter"],
+                model_provider="usage-provider",
+                model_name="usage-model",
+            ) as run:
+                adapter = GuardedModelAdapter(UsageReportingAdapter(), storage, run.path)
+                result = adapter.generate(
+                    "chapter prompt",
+                    {
+                        "runtime_operation": "draft",
+                        "provider_runtime_guard": {
+                            "max_total_tokens": 1000,
+                            "cost_profile": {"input_per_1k": 0.01, "output_per_1k": 0.02, "currency": "USD"},
+                        },
+                    },
+                )
+
+            self.assertIn("/runs/", result["model_call_log_path"])
+            self.assertIn("/runs/", result["cost_ledger_path"])
+            rows = [storage.read_json(path) for path in storage.list_json("runs")]
+            checkpoints = [row for row in rows if row.get("type") == "agent_checkpoint"]
+            stages = {row["content"]["stage"] for row in checkpoints if row.get("content", {}).get("operation") == "draft"}
+            self.assertTrue({"prompt_built", "provider_started", "provider_completed", "output_validated"}.issubset(stages))
+            provider_gates = [row for row in rows if row.get("type") == "gate_result" and row.get("content", {}).get("gate_kind") == "provider_runtime_guard"]
+            self.assertTrue(provider_gates)
+            model_calls = [row for row in rows if row.get("type") == "model_call_log" and row.get("content", {}).get("operation") == "draft"]
+            self.assertEqual(model_calls[-1]["content"]["status"], "succeeded")
+
+    def test_guarded_adapter_records_failed_model_call_when_postflight_guard_blocks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            with AgentExecutionContext(
+                storage,
+                agent_key="draft",
+                operation="draft",
+                output_types=["draft_chapter"],
+                model_provider="usage-provider",
+                model_name="usage-model",
+            ) as run:
+                adapter = GuardedModelAdapter(OverBudgetUsageAdapter(), storage, run.path)
+                with self.assertRaises(ProviderRuntimeGuardError):
+                    adapter.generate(
+                        "chapter prompt",
+                        {
+                            "runtime_operation": "draft",
+                            "provider_runtime_guard": {"max_total_tokens": 100},
+                        },
+                    )
+
+            rows = [storage.read_json(path) for path in storage.list_json("runs")]
+            failed_gates = [
+                row
+                for row in rows
+                if row.get("type") == "gate_result"
+                and row.get("content", {}).get("gate_kind") == "provider_runtime_guard"
+                and row.get("content", {}).get("status") == "failed"
+            ]
+            failed_calls = [row for row in rows if row.get("type") == "model_call_log" and row.get("content", {}).get("status") == "failed"]
+            self.assertTrue(failed_gates)
+            self.assertTrue(failed_calls)
 
 
 if __name__ == "__main__":

@@ -18,11 +18,11 @@ Execution tracking documents:
 
 | Area | Status | Evidence |
 |---|---|---|
-| Universal Runtime Policy | Hardened first production slice | Runtime policy registry, strict/compat mode, `RuntimePolicyEnvelope`, KG-context requirement, enforcement report API, legacy-entrypoint bypass audit, GuardedModelAdapter model-call ledger capture, `tests/unit/test_runtime_policy.py` |
-| Provider Runtime Guard | Hardened first production slice | `ProviderRuntimeController`, OpenAI-compatible SSE streaming usage, streaming delta cutoff, cancel/timeout/postflight guard, local Codex/Claude Code polling cancel, runtime events, `tests/unit/test_provider_runtime_guard.py` |
-| Deep Checkpoint Resume | Hardened first production slice | Stage schema, idempotency, resume plan, durable stage checkpoints persisted as `agent_checkpoint`, checkpoint chain view, `tests/unit/test_operation_checkpoint.py` |
+| Universal Runtime Policy | Hardened runtime boundary | Runtime policy registry, strict/compat mode, `RuntimePolicyEnvelope`, KG-context requirement, enforcement report API, zero review-required legacy entrypoint audit, GuardedModelAdapter and ModelGateway model-call ledger capture, `tests/unit/test_runtime_policy.py` |
+| Provider Runtime Guard | Hardened runtime boundary | `ProviderRuntimeController`, OpenAI-compatible SSE streaming usage, streaming delta cutoff, cancel/timeout/postflight guard, local Codex/Claude Code polling cancel, provider guard gate results, failed model-call logs, runtime events, `tests/unit/test_provider_runtime_guard.py` |
+| Deep Checkpoint Resume | Hardened adapter/gateway boundary | Stage schema, idempotency, resume plan, durable stage checkpoints persisted as `agent_checkpoint`, GuardedModelAdapter and ModelGateway prompt/provider/output stage checkpoints, checkpoint chain view, `tests/unit/test_operation_checkpoint.py` |
 | Business Rollback | Hardened first production slice | `operation_transaction`, `rollback_plan`, `rollback_result`, version-restore rollback action, ledger compensation, KG/index dirty marker, preview/apply/verify APIs, `tests/unit/test_operation_transactions.py` |
-| KG Semantic Depth | Hardened first production slice | Semantic extraction report asset/API, model-assisted entity/relation/event validation, identity resolution and merge queue, evidence/confidence, KG gate/preflight integration, KG-backed context enforcement, workbench action |
+| KG Semantic Depth | Hardened first production slice | Semantic extraction report asset/API, model-assisted entity/relation/event validation, identity resolution and merge queue, evidence/confidence, KG gate/preflight integration, KG-backed context enforcement, context build plan -> context bundle KG propagation, workbench action |
 | Feedback Backflow | Completed first production slice | `src/novel_forge/modules/feedback_backflow/`, feedback backflow API endpoints, Feedback Agent permissions, `tests/unit/test_feedback_backflow.py` |
 | Long-chain Scale Acceptance | Completed smoke plus opt-in pressure profile | `tests/integration/test_novel_os_long_chain_smoke.py`, `tests/integration/test_novel_os_long_chain_pressure.py`, long-chain scale metrics in `modules/operations` |
 | Runtime Performance Hardening | Completed targeted fixes | KG gate avoids repeated graph builds; project reference filtering avoids full scans for non-asset trace references |
@@ -35,10 +35,10 @@ These are not blocked for the current deliverable, but remain future hardening w
 
 | Item | Reason |
 |---|---|
-| Provider-specific streaming interruption | OpenAI-compatible SSE and local process polling are implemented; each additional provider SDK still needs its own streaming/cancel binding. |
+| Provider-specific streaming interruption | OpenAI-compatible SSE, ModelGateway guard evidence, and local process polling are implemented; each additional provider SDK still needs its own streaming/cancel binding. |
 | Full browser Playwright smoke | The test harness is present, but Playwright is optional and skipped when not installed. |
-| Provider-backed KG extraction | Model-assisted extraction candidates are locally validated and merged into reports; production provider calls still need to run behind runtime policy and budget guards. |
-| Deep service-internal checkpoint for every long model task | Stage checkpoint primitives and chain view exist; every long task implementation still needs to call them at each internal phase. |
+| Provider-backed KG extraction | Model-assisted extraction candidates are locally validated and merged into reports; provider-backed extraction must use the same GuardedModelAdapter/ModelGateway runtime evidence boundary. |
+| Deep service-internal checkpoint for non-standard long tasks | GuardedModelAdapter and ModelGateway now record prompt/provider/output stages; any future custom long task that bypasses those boundaries must explicitly use the same checkpoint contract. |
 | Full business transaction rollback | Logical rollback, version restore, verification, compensation, and UI preview/apply/verify exist; physical multi-asset transaction semantics remain a later hardening layer. |
 
 ## New Modules
@@ -62,8 +62,8 @@ These are not blocked for the current deliverable, but remain future hardening w
 ## Modified Modules
 
 - Runtime and scheduling: `agent_runs`, `agent_scheduler`, `workflow_nodes`, `runtime_ledger`
-- Model adapters: `providers`, `guarded`, adapter exports
-- KG and continuity: `novel_kg`, `continuity_graph`, `production_context`
+- Model adapters: `providers`, `guarded`, adapter exports, ModelGateway runtime evidence
+- KG and continuity: `novel_kg`, `continuity_graph`, `production_context`, `context_builder` KG-backed bundle propagation
 - Feedback and review: `feedback`, `audit`, review rework related services
 - Schemas/constants: new asset mappings and dataclasses for rollback, checkpoints, feedback backflow, KG identity
 - Web Admin: OS console route set and navigation

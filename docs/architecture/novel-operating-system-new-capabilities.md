@@ -1433,5 +1433,7 @@ make test
 
 1. 真实 PostgreSQL `pgvector` online index 写入和 SQL 查询可以在本地 projection 稳定后接入。
 2. MCP server registry 已有资产和 API，真实远程 MCP 调用仍需按工具安全策略逐个 adapter 接入。
-3. ModelGateway 已把路由、Prompt、runtime policy、ModelCallLog、CostLedger 串起来；真实 provider streaming cutoff 继续由 provider adapter 深化。
-4. MemorySelector 已按任务类型选择 L0-L5 记忆，后续可把选择结果进一步强制注入所有长篇正文生产节点。
+3. ModelGateway 已把路由、Prompt、provider runtime guard、stage checkpoint、runtime policy、ModelCallLog、CostLedger 串起来；真实 provider streaming cutoff 继续由 provider adapter 深化。
+4. GuardedModelAdapter 已在真实 Agent 模型调用边界记录 provider guard gate、失败 model_call_log、prompt/provider/output stage checkpoint；未来新增长任务必须复用该边界或显式调用同一 checkpoint contract。
+5. Context Builder 已把 Novel KG context 从 build plan 传递到 context bundle，使 OS mode 的 draft/review KG-context preflight 能基于真实 bundle evidence 阻断。
+6. MemorySelector 已按任务类型选择 L0-L5 记忆，后续可把选择结果进一步强制注入所有长篇正文生产节点。

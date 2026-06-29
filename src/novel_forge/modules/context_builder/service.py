@@ -256,6 +256,8 @@ def create_context_bundle(
         priority_paths=manual_selection["priority_asset_paths"],
     )
     selected_ids = _dedupe([str(item.get("asset_id", "")) for item in selected if item.get("asset_id")])
+    kg_context = content.get("kg_context", {}) if isinstance(content.get("kg_context", {}), dict) else {"items": [], "source_asset_ids": [], "recommendation": "kg_context_missing_from_plan"}
+    kg_source_ids = [str(item) for item in kg_context.get("source_asset_ids", []) if str(item).strip()] if isinstance(kg_context.get("source_asset_ids", []), list) else []
     bucketed = _bucket_selected(selected)
     actual_context = _actual_context_text(bucketed, int(content.get("token_budget", {}).get("max_tokens", 4000)))
     token_estimate = _estimate_tokens(actual_context)
@@ -289,6 +291,8 @@ def create_context_bundle(
             "omission_check": content.get("omission_check", {}),
             "copyright_filter": content.get("copyright_filter", {}),
             "retrieved_context": content.get("retrieved_context", {}),
+            "kg_context": kg_context,
+            "kg_context_item_count": len(kg_context.get("items", []) if isinstance(kg_context.get("items", []), list) else []),
         },
         metadata={
             "project_id": project_id,
@@ -299,6 +303,8 @@ def create_context_bundle(
             "retrieval_query": content.get("query", ""),
             "retrieval_top_k": content.get("top_k", 0),
             "retrieval_source_asset_ids": selected_ids,
+            "kg_context_source_asset_ids": kg_source_ids,
+            "kg_context_item_count": len(kg_context.get("items", []) if isinstance(kg_context.get("items", []), list) else []),
             "token_estimate": token_estimate,
             "copyright_boundary": "context bundle includes compressed summaries and project-owned/abstract assets only; raw source text is not included",
             "final_context_confirmed": bool(final_confirmed),
@@ -307,7 +313,7 @@ def create_context_bundle(
         references=filter_project_safe_references(
             storage,
             project_id,
-            _dedupe([plan.id, _display_path(storage.root, plan_file), str(content.get("target_asset_id", "")), *selected_ids]),
+            _dedupe([plan.id, _display_path(storage.root, plan_file), str(content.get("target_asset_id", "")), *selected_ids, *kg_source_ids]),
         ),
     )
     _ensure_valid(asset)

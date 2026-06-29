@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from novel_forge.model_adapters import ModelAdapter, model_from_env, validate_model_output
+from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous
 from novel_forge.schemas import TopicSeed
@@ -24,10 +24,17 @@ def develop_topic(storage: LocalStorage, input_path: str | None = None, model: M
         sla_seconds=600,
     ) as run:
         run.guard("read_asset")
-        run.guard("call_model_adapter")
+        guarded_model = GuardedModelAdapter(model, storage, run.path)
         generated = validate_model_output(
             "generate",
-            model.generate("Develop a differentiated suspense topic seed.", {"material": material.content}),
+            guarded_model.generate(
+                "Develop a differentiated suspense topic seed.",
+                {
+                    "material": material.content,
+                    "runtime_operation": "develop_topic",
+                    "copyright_boundary": "Use materials as abstract reusable mechanisms only. Do not copy protected expression, scenes, names, or plot combinations.",
+                },
+            ),
         )
         run.guard("write_topic_seed", "topic_seed")
         path = _write_topic(storage, material, generated, model)

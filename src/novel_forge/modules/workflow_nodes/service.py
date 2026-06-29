@@ -4468,6 +4468,7 @@ def _execute_registered_service_processor_impl(
             input_assets=input_assets,
             output_assets=[str(item) for item in processor.get("output_assets", [])] if isinstance(processor.get("output_assets", []), list) else [],
             context_bundle_path=str(processor.get("context_bundle_path") or ""),
+            provider_runtime_guard=processor.get("provider_runtime_guard", processor.get("runtime_guard", {})) if isinstance(processor.get("provider_runtime_guard", processor.get("runtime_guard", {})), dict) else {},
             usage=processor.get("usage", {}) if isinstance(processor.get("usage", {}), dict) else {},
             cost=processor.get("cost", {}) if isinstance(processor.get("cost", {}), dict) else {},
             status=str(processor.get("status") or "succeeded"),

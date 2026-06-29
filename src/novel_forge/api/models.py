@@ -680,6 +680,7 @@ class ModelGatewayCallRequest(BaseModel):
     input_assets: list[str] = Field(default_factory=list)
     output_assets: list[str] = Field(default_factory=list)
     context_bundle_path: str = ""
+    provider_runtime_guard: dict[str, Any] = Field(default_factory=dict)
     usage: dict[str, Any] = Field(default_factory=dict)
     cost: dict[str, Any] = Field(default_factory=dict)
     status: str = "succeeded"

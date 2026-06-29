@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.agent_messages import acknowledge_agent_message, create_agent_conversation_trace, replay_agent_messages, send_agent_message
 from novel_forge.modules.long_memory import create_memory_record, retrieve_memory, select_memory_for_node
-from novel_forge.modules.model_router import create_model_route, resolve_model_route
+from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, resolve_model_route
 from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve
 from novel_forge.modules.prompt_registry import bind_prompt_to_node, create_prompt_version_asset, release_prompt_version, resolve_prompt
 from novel_forge.modules.state_bus import create_state_snapshot, detect_state_conflicts, record_state_event, replay_state_events
@@ -48,6 +48,58 @@ class NovelOSNewCapabilitiesTests(unittest.TestCase):
             self.assertEqual(resolved_prompt["prompt_path"], prompt["path"])
             self.assertEqual(resolved_route["resolution"]["provider"], "mock")
             self.assertEqual(resolved_route["asset"]["type"], "model_route_resolution")
+
+    def test_model_gateway_records_provider_guard_checkpoint_and_cost_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "os-project"
+            trace = {"trace_id": "trace-gateway", "span_id": "span-gateway", "parent_span_id": "trace-gateway"}
+            create_model_route(storage, task_type="benchmark", provider="mock", model_name="mock-benchmark", project_id=project_id)
+
+            result = execute_model_gateway_call(
+                storage,
+                task_type="benchmark",
+                operation="model_benchmark",
+                project_id=project_id,
+                usage={"input_tokens": 100, "output_tokens": 50, "total_tokens": 150, "usage_source": "unit_provider"},
+                provider_runtime_guard={"max_total_tokens": 200, "cost_profile": {"input_per_1k": 0.01, "output_per_1k": 0.02, "currency": "USD"}},
+                trace=trace,
+            )
+
+            self.assertEqual(result["status"], "succeeded")
+            self.assertEqual(result["model_call"]["asset"]["type"], "model_call_log")
+            self.assertEqual(result["model_call"]["asset"]["content"]["operation"], "model_benchmark")
+            self.assertIn("cost_ledger", result["model_call"])
+            rows = [storage.read_json(path) for path in storage.list_json("runs")]
+            checkpoints = [row for row in rows if row.get("type") == "agent_checkpoint" and row.get("content", {}).get("operation") == "model_benchmark"]
+            stages = {row["content"]["stage"] for row in checkpoints}
+            self.assertTrue({"prompt_built", "provider_started", "provider_completed", "output_validated"}.issubset(stages))
+            provider_gates = [row for row in rows if row.get("type") == "gate_result" and row.get("content", {}).get("gate_kind") == "provider_runtime_guard"]
+            self.assertTrue(provider_gates)
+
+    def test_model_gateway_records_failed_call_when_provider_guard_blocks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            create_model_route(storage, task_type="benchmark", provider="mock", model_name="mock-benchmark", project_id="os-project")
+
+            with self.assertRaises(RuntimeError):
+                execute_model_gateway_call(
+                    storage,
+                    task_type="benchmark",
+                    operation="model_benchmark",
+                    project_id="os-project",
+                    usage={"input_tokens": 100, "output_tokens": 50, "total_tokens": 150},
+                    provider_runtime_guard={"max_total_tokens": 100},
+                    trace={"trace_id": "trace-gateway-fail"},
+                )
+
+            rows = [storage.read_json(path) for path in storage.list_json("runs")]
+            failed_calls = [row for row in rows if row.get("type") == "model_call_log" and row.get("content", {}).get("status") == "failed"]
+            failed_gates = [row for row in rows if row.get("type") == "gate_result" and row.get("content", {}).get("gate_kind") == "provider_runtime_guard" and row.get("content", {}).get("status") == "failed"]
+            self.assertTrue(failed_calls)
+            self.assertTrue(failed_gates)
 
     def test_tool_gateway_state_bus_and_agent_messages(self):
         with tempfile.TemporaryDirectory() as tmp:

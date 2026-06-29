@@ -31,6 +31,7 @@ from novel_forge.modules.production_chain import (
     create_outline_version,
     list_production_versions,
 )
+from novel_forge.modules.runtime_policy import check_runtime_policy
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.schemas import ChapterPlan, CharacterCard, ContinuityBible, CraftTemplate, DraftChapter, FeedbackInsight, ForeshadowingThread, KnowledgeCard, MaterialCard, Outline, ReleasePackage, WritingTemplate, WorldBible
 from novel_forge.storage.local import LocalStorage
@@ -200,6 +201,18 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertIn(storage.read_asset(craft_template).id, bundle_asset.content["source_asset_ids"])
             self.assertIn("writing_templates", bundle_asset.content["compressed_context"])
             self.assertIn("actual_context", bundle_asset.content)
+            self.assertIn("kg_context", bundle_asset.content)
+            self.assertEqual(bundle_asset.content["kg_context"], plan_asset.content["kg_context"])
+            kg_preflight = check_runtime_policy(
+                storage,
+                operation="draft",
+                context_bundle_path=bundle["path"],
+                trace={"trace_id": "context-kg-policy"},
+                mode="operating_system",
+                require_budget_policy=False,
+                persist_gate_result=False,
+            )
+            self.assertNotEqual(kg_preflight["evidence"]["kg_context"]["status"], "missing")
             high_risk_ref = str(high_risk_material.relative_to(storage.root))
             self.assertTrue(any(item["path"] == high_risk_ref for item in plan_asset.content["copyright_filter"]["filtered_assets"]))
             self.assertTrue(any(item["path"] == high_risk_ref for item in plan_asset.content["exclusions"]))

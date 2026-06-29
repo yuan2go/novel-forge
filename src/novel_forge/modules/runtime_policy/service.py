@@ -98,6 +98,33 @@ OPERATION_POLICIES: dict[str, OperationPolicy] = {
         required_gates=("runtime_policy", "kg", "review"),
         description="Generate a draft candidate.",
     ),
+    "develop_topic": _policy(
+        "develop_topic",
+        required_input_types=("material_card", "knowledge_card", "source_document"),
+        allowed_output_types=("topic_seed",),
+        require_context_bundle=False,
+        require_kg_context=False,
+        required_gates=("runtime_policy", "originality"),
+        description="Develop a differentiated topic seed from abstracted source or material assets.",
+    ),
+    "generate_outline": _policy(
+        "generate_outline",
+        required_input_types=("character_card", "world_bible", "topic_seed"),
+        allowed_output_types=("outline", "outline_version"),
+        require_context_bundle=False,
+        require_kg_context=False,
+        required_gates=("runtime_policy", "kg", "originality"),
+        description="Generate a versioned long-form outline from project planning context.",
+    ),
+    "generate_chapter_plan": _policy(
+        "generate_chapter_plan",
+        required_input_types=("outline", "outline_version"),
+        allowed_output_types=("chapter_plan", "chapter_plan_version"),
+        require_context_bundle=False,
+        require_kg_context=False,
+        required_gates=("runtime_policy", "kg"),
+        description="Generate a chapter plan from outline, carry-forward context, and long-form continuity.",
+    ),
     "review": _policy(
         "review",
         required_input_types=("draft_chapter", "draft_version"),
@@ -175,6 +202,15 @@ OPERATION_POLICIES: dict[str, OperationPolicy] = {
         required_gates=("runtime_policy", "feedback"),
         description="Cluster reader feedback into planning and review signals.",
     ),
+    "handoff_review": _policy(
+        "handoff_review",
+        required_input_types=("agent_handoff", "handoff_packet"),
+        allowed_output_types=("review_report", "gate_result"),
+        require_context_bundle=False,
+        require_kg_context=False,
+        required_gates=("runtime_policy",),
+        description="Review a handoff output against acceptance criteria and copyright boundary.",
+    ),
 }
 
 for _alias, _target in {
@@ -183,6 +219,10 @@ for _alias, _target in {
     "rework": "review_rework_loop",
     "benchmark": "model_benchmark",
     "kg_extract": "semantic_kg_extract",
+    "generate-outline": "generate_outline",
+    "generate-chapter-plan": "generate_chapter_plan",
+    "develop-topic": "develop_topic",
+    "topic": "develop_topic",
 }.items():
     OPERATION_POLICIES[_alias] = OPERATION_POLICIES[_target]
 
@@ -508,7 +548,7 @@ def runtime_policy_legacy_entrypoint_audit(*, repo_root: str | Path | None = Non
             rel = _display_path(root, path)
             matched_calls = [pattern for pattern in call_patterns if pattern in text]
             matched_markers = [marker for marker in coverage_markers if marker in text]
-            status = "covered" if matched_markers else "review_required"
+            status = _legacy_entrypoint_status(rel, text, matched_calls, matched_markers)
             if "tests/" in rel:
                 status = "test_fixture" if not matched_markers else "covered_test"
             rows.append(
@@ -1053,9 +1093,32 @@ def _enforcement_recommendations(uncovered: list[str], mode: str) -> list[str]:
 def _legacy_entrypoint_recommendation(status: str) -> str:
     if status == "review_required":
         return "route this direct model-producing path through RuntimePolicyEnvelope, GuardedModelAdapter, or Agent Scheduler"
+    if status == "provider_adapter_runtime":
+        return "provider adapter implementation; ensure callers use GuardedModelAdapter, RuntimePolicyEnvelope, or ModelGateway"
+    if status == "orchestrated_runtime":
+        return "orchestration entrypoint delegates to pipeline/service functions that own runtime policy evidence"
     if status == "test_fixture":
         return "keep as deterministic test-only path and force mock provider"
     return "runtime policy marker found; verify end-to-end evidence in OS acceptance"
+
+
+def _legacy_entrypoint_status(rel: str, text: str, matched_calls: list[str], matched_markers: list[str]) -> str:
+    if matched_markers:
+        return "covered"
+    if rel.startswith("src/novel_forge/model_adapters/"):
+        return "provider_adapter_runtime"
+    orchestration_markers = [
+        "pipeline.",
+        "review_service.",
+        "revision_service.",
+        "drafting_service.",
+        "chapter_plan_service.",
+        "outline_service.",
+    ]
+    direct_model_markers = ["model_from_env", "get_model_adapter", "get_adapter("]
+    if any(marker in text for marker in orchestration_markers) and not any(marker in text for marker in direct_model_markers):
+        return "orchestrated_runtime"
+    return "review_required"
 
 
 def _active_budget_policies(storage: LocalStorage, *, project_id: str | None, workspace_path: str | None) -> list[dict[str, Any]]:

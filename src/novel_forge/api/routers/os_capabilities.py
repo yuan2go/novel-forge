@@ -130,6 +130,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 input_assets=request.input_assets,
                 output_assets=request.output_assets,
                 context_bundle_path=request.context_bundle_path,
+                provider_runtime_guard=request.provider_runtime_guard,
                 usage=request.usage,
                 cost=request.cost,
                 status=request.status,

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 from typing import Any
 
+from novel_forge.model_adapters.runtime import estimate_provider_cost, evaluate_provider_runtime_guard, normalize_provider_usage, provider_runtime_guard_from_context
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.evaluation_center import resolve_model_route as resolve_evaluation_route
+from novel_forge.modules.operation_checkpoint import record_operation_stage_checkpoint
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.prompt_registry import resolve_prompt
-from novel_forge.modules.runtime_ledger import check_budget_policy, record_model_call_log, record_trace_span
+from novel_forge.modules.runtime_ledger import check_budget_policy, record_gate_result, record_model_call_log, record_trace_span
 from novel_forge.modules.runtime_policy import runtime_policy_envelope
 from novel_forge.schemas import ModelRoute, ModelRouteResolution, validate_common_fields
 from novel_forge.storage.local import LocalStorage
@@ -146,6 +150,7 @@ def execute_model_gateway_call(
     input_assets: list[str] | None = None,
     output_assets: list[str] | None = None,
     context_bundle_path: str = "",
+    provider_runtime_guard: dict[str, Any] | None = None,
     usage: dict[str, Any] | None = None,
     cost: dict[str, Any] | None = None,
     status: str = "succeeded",
@@ -163,6 +168,64 @@ def execute_model_gateway_call(
     )
     resolution = route.get("resolution", {}) if isinstance(route.get("resolution", {}), dict) else route.get("asset", {}).get("content", {})
     trace_payload = _trace_payload(trace, task_type=task_type)
+    provider = str(resolution.get("provider", "mock"))
+    model = str(resolution.get("model_name", "mock-model"))
+    checkpoint_common = _gateway_checkpoint_common(
+        operation=operation,
+        input_assets=input_assets or [],
+        output_assets=output_assets or [],
+        context_bundle_path=context_bundle_path,
+        prompt_version=prompt_version or str(resolution.get("prompt", {}).get("version", "")),
+        model=model,
+        prompt_payload=resolution.get("prompt", {}),
+        project_id=project_id,
+        workspace_path=workspace_path,
+    )
+    _record_gateway_checkpoint(storage, "prompt_built", checkpoint_common, stage_payload={"route_path": route.get("path", ""), "resolution": _compact_resolution(resolution)})
+    guard_payload = provider_runtime_guard if isinstance(provider_runtime_guard, dict) else {}
+    guard_context = {"provider_runtime_guard": guard_payload}
+    preflight = evaluate_provider_runtime_guard(operation=operation, provider=provider, usage={}, guard=provider_runtime_guard_from_context(guard_context), phase="preflight")
+    _record_provider_guard_gate(storage, operation=operation, provider=provider, result=preflight, trace=trace_payload, project_id=project_id, workspace_path=workspace_path, target_paths=[*(input_assets or []), *(output_assets or [])])
+    if preflight.get("status") == "failed":
+        _record_gateway_checkpoint(storage, "provider_started", checkpoint_common, error=str(preflight.get("message", "")), stage_payload={"guard": preflight})
+        failed_call = record_model_call_log(
+            storage,
+            provider=provider,
+            model=model,
+            operation=operation,
+            status="failed",
+            usage=preflight.get("usage", {}),
+            cost={"amount": 0.0, "currency": "USD", "source": "model_gateway_guard"},
+            trace=trace_payload,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            source_id=str(route.get("path", "")),
+            prompt_version=prompt_version or str(resolution.get("prompt", {}).get("version", "")),
+        )
+        raise RuntimeError(f"provider runtime guard blocked model gateway call: {preflight.get('message')} ({failed_call.get('path', '')})")
+    _record_gateway_checkpoint(storage, "provider_started", checkpoint_common, stage_payload={"guard": preflight})
+    normalized_usage = normalize_provider_usage(usage or {}, usage_source=str((usage or {}).get("usage_source", "model_gateway") if isinstance(usage, dict) else "model_gateway"))
+    cost_payload = cost if isinstance(cost, dict) and cost else _gateway_cost_from_usage(normalized_usage, guard_payload)
+    postflight = evaluate_provider_runtime_guard(operation=operation, provider=provider, usage=normalized_usage, guard=provider_runtime_guard_from_context(guard_context), phase="postflight")
+    _record_provider_guard_gate(storage, operation=operation, provider=provider, result=postflight, trace=trace_payload, project_id=project_id, workspace_path=workspace_path, target_paths=[*(input_assets or []), *(output_assets or [])])
+    if postflight.get("status") == "failed":
+        _record_gateway_checkpoint(storage, "provider_completed", checkpoint_common, error=str(postflight.get("message", "")), stage_payload={"guard": postflight, "usage": normalized_usage})
+        failed_call = record_model_call_log(
+            storage,
+            provider=provider,
+            model=model,
+            operation=operation,
+            status="failed",
+            usage=normalized_usage,
+            cost=cost_payload,
+            trace=trace_payload,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            source_id=str(route.get("path", "")),
+            prompt_version=prompt_version or str(resolution.get("prompt", {}).get("version", "")),
+        )
+        raise RuntimeError(f"provider runtime guard blocked model gateway call: {postflight.get('message')} ({failed_call.get('path', '')})")
+    _record_gateway_checkpoint(storage, "provider_completed", checkpoint_common, stage_payload={"guard": postflight, "usage": normalized_usage, "cost": cost_payload})
     with runtime_policy_envelope(
         storage,
         operation=operation,
@@ -175,14 +238,20 @@ def execute_model_gateway_call(
         mode=mode,
     ) as envelope:
         model_call = envelope.record_model_result(
-            provider=str(resolution.get("provider", "mock")),
-            model=str(resolution.get("model_name", "mock-model")),
-            usage=usage or {"total_tokens": 0, "source": "model_gateway"},
-            cost=cost or {"amount": 0.0, "currency": "USD", "source": "model_gateway"},
+            provider=provider,
+            model=model,
+            usage=normalized_usage,
+            cost=cost_payload,
             status=status,
             source_id=str(route.get("path", "")),
             prompt_version=prompt_version or str(resolution.get("prompt", {}).get("version", "")),
         )
+    _record_gateway_checkpoint(
+        storage,
+        "output_validated",
+        checkpoint_common,
+        stage_payload={"model_call_log_path": model_call.get("path", ""), "runtime_policy_status": envelope.commit_result.get("status", "")},
+    )
     return {
         "status": "succeeded" if status in {"succeeded", "success", "ok"} else status,
         "route": route,
@@ -226,6 +295,78 @@ def _trace_payload(trace: dict[str, Any] | None, *, task_type: str) -> dict[str,
     if data.get("trace_id") and not data.get("parent_span_id"):
         data["parent_span_id"] = data["trace_id"]
     return data
+
+
+def _gateway_checkpoint_common(
+    *,
+    operation: str,
+    input_assets: list[str],
+    output_assets: list[str],
+    context_bundle_path: str,
+    prompt_version: str,
+    model: str,
+    prompt_payload: Any,
+    project_id: str,
+    workspace_path: str,
+) -> dict[str, Any]:
+    prompt_hash = hashlib.sha256(json.dumps(prompt_payload, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
+    return {
+        "operation": operation,
+        "input_assets": input_assets,
+        "output_assets": output_assets,
+        "context_bundle_path": context_bundle_path,
+        "prompt_version": prompt_version,
+        "prompt_hash": prompt_hash,
+        "model": model,
+        "project_id": project_id,
+        "workspace_path": workspace_path,
+    }
+
+
+def _record_gateway_checkpoint(storage: LocalStorage, stage: str, common: dict[str, Any], *, error: str = "", stage_payload: dict[str, Any] | None = None) -> None:
+    try:
+        record_operation_stage_checkpoint(storage, stage=stage, error=error, stage_payload=stage_payload or {}, **common)
+    except Exception:
+        return
+
+
+def _record_provider_guard_gate(
+    storage: LocalStorage,
+    *,
+    operation: str,
+    provider: str,
+    result: dict[str, Any],
+    trace: dict[str, Any],
+    project_id: str,
+    workspace_path: str,
+    target_paths: list[str],
+) -> None:
+    try:
+        record_gate_result(
+            storage,
+            gate_kind="provider_runtime_guard",
+            status="passed" if result.get("status") != "failed" else "failed",
+            target_paths=target_paths,
+            result={"operation": operation, "provider": provider, **result},
+            trace=trace,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            message=str(result.get("message", "")),
+            blocking=True,
+        )
+    except Exception:
+        return
+
+
+def _gateway_cost_from_usage(usage: dict[str, Any], guard_payload: dict[str, Any]) -> dict[str, Any]:
+    cost_profile = guard_payload.get("cost_profile", {}) if isinstance(guard_payload.get("cost_profile", {}), dict) else {}
+    if cost_profile:
+        return estimate_provider_cost(usage, cost_profile)
+    return {"amount": 0.0, "currency": "USD", "source": "model_gateway"}
+
+
+def _compact_resolution(resolution: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in resolution.items() if key not in {"prompt", "budget"}}
 
 
 def _selection_rule(value: str) -> str:
