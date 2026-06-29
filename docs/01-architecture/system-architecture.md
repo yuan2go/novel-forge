@@ -177,10 +177,10 @@ Do not call external providers in tests. Do not write malformed or unvalidated p
 ## Architecture Priority
 
 1. Universal Runtime Policy across model-producing paths: budget policy, provider timeout/cancel, model usage capture, trace spans, model call logs, cost ledger writes, context bundle evidence, and gate results.
-2. Provider-level runtime guard and deep checkpoint resume: normalized usage, realtime or postflight token cutoff, exact cost capture, cancellable local/provider calls, and resume from internal operation stages.
-3. Business rollback: operation transactions, rollback preview/apply, version restoration, quarantine, rollback-required handling, and compensating ledger records.
+2. Provider-level runtime guard and deep checkpoint resume: normalized usage, realtime or postflight token cutoff, exact cost capture, cancellable local/provider calls, OpenAI-compatible SSE/SDK streaming, and resume from internal operation stages.
+3. Business rollback: operation transactions, rollback preview/apply, version restoration, physical multi-asset quarantine/restore, rollback-required handling, dirty-index evidence, verification, and compensating ledger records.
 4. Semantic quality layer: KG-backed context building, stronger entity/relation extraction, evidence spans, alias merge, continuity conflicts, originality/review gates, and feedback-to-plan learning.
-5. Web OS operations and long-chain scale acceptance: browser-smoked OS console routes, DAG/Agent/KG/Trace/Cost operational views, and multi-chapter continuity/cost/quality/recovery acceptance.
+5. Web OS operations and long-chain scale acceptance: fixture-backed browser-smoked OS console routes, DAG/Agent/KG/Trace/Cost operational views, and multi-chapter continuity/cost/quality/recovery acceptance.
 
 Detailed closure plan: [Novel OS Remaining Closure Plan](../08-roadmap/novel-os-remaining-closure-plan.md).
 

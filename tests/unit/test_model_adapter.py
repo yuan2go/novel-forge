@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 import tempfile
+import types
 import unittest
 from unittest.mock import patch
 
@@ -80,6 +81,41 @@ class MockModelTests(unittest.TestCase):
         self.assertEqual(deepseek_health["provider"], "deepseek")
         self.assertIn("DEEPSEEK_API_KEY", deepseek_health["required_env_vars"])
         self.assertTrue(deepseek_health["implemented"])
+
+    def test_openai_compatible_adapter_can_use_sdk_streaming_guard(self):
+        fake_openai = _fake_openai_sdk_module(
+            [
+                {"choices": [{"delta": {"content": "{\"text\":\"sdk "}, "finish_reason": None}]},
+                {
+                    "choices": [{"delta": {"content": "stream result\"}"}, "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 9, "completion_tokens": 7, "total_tokens": 16},
+                },
+            ]
+        )
+        with patch.dict(
+            "os.environ",
+            {
+                "OPENAI_API_KEY": "unit-key",
+                "NOVEL_FORGE_PROVIDER_SDK_STREAMING": "1",
+            },
+            clear=False,
+        ), patch.dict("sys.modules", {"openai": fake_openai}):
+            result = ChatGPTAdapter().generate(
+                "write json",
+                {
+                    "stream": True,
+                    "provider_runtime_guard": {
+                        "max_total_tokens": 200,
+                        "cost_profile": {"input_per_1k": 0.01, "output_per_1k": 0.02},
+                    },
+                },
+            )
+
+        self.assertEqual(result["text"], "sdk stream result")
+        self.assertEqual(result["usage"]["usage_source"], "provider_sdk_stream")
+        self.assertEqual(result["usage"]["total_tokens"], 16)
+        self.assertEqual(result["cost"]["source"], "provider_usage")
+        self.assertIn("provider_call_finished", {event["event_type"] for event in result["runtime_events"]})
 
     def test_model_selection_defaults_to_claude_code_and_can_select_provider(self):
         self.assertIsInstance(model_from_env("draft", {}), ClaudeCodeAdapter)
@@ -264,6 +300,24 @@ print(json.dumps({{"usage": {{"total_tokens": 11}}}}))
         encoding="utf-8",
     )
     return script
+
+
+def _fake_openai_sdk_module(chunks):
+    class FakeCompletions:
+        def create(self, **kwargs):
+            assert kwargs["stream"] is True
+            return iter(chunks)
+
+    class FakeChat:
+        def __init__(self):
+            self.completions = FakeCompletions()
+
+    class FakeOpenAI:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+            self.chat = FakeChat()
+
+    return types.SimpleNamespace(OpenAI=FakeOpenAI)
 
 
 if __name__ == "__main__":

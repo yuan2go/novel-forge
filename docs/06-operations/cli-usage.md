@@ -142,6 +142,15 @@ Reference analysis is for structural learning only. Reports include metrics such
 
 `serve-api` starts the FastAPI backend. `worker` starts the Celery worker. Both require optional dependencies from `.[industrial]` and the services in `docker-compose.yml`.
 
+Online PostgreSQL/pgvector retrieval is opt-in. Local hash-vector retrieval remains the default deterministic path. To sync/query the online pgvector table, install PostgreSQL with the `vector` extension and the optional `psycopg` dependency, then set:
+
+```bash
+export NOVEL_FORGE_DATABASE_URL=postgresql://...
+export NOVEL_FORGE_PGVECTOR_ONLINE=1
+```
+
+Set `NOVEL_FORGE_PGVECTOR_STRICT=1` only when pgvector write/query failures should fail the operation instead of falling back to local retrieval. The online backend maintains `nf_pgvector_chunks` with `vector(64)` embeddings and an ivfflat cosine index.
+
 Neo4j is intentionally not part of the default runtime. `neo4j-status` explains whether graph projection is disabled, unconfigured, or explicitly enabled.
 
 ## Web Product Console
@@ -248,6 +257,14 @@ Supported providers:
 
 Local Codex workers run with automation isolation by default: `--ignore-user-config`, `--ignore-rules`, `--ephemeral`, and `--sandbox read-only`. Override only when deliberately validating a trusted local profile.
 
+OpenAI-compatible providers support raw HTTP SSE streaming and optional SDK streaming. Enable SDK streaming only when the `openai` Python package is installed and you want provider-native stream iteration/cancel behavior:
+
+```bash
+export NOVEL_FORGE_PROVIDER_SDK_STREAMING=1
+```
+
+Provider-specific toggles are also supported, for example `NOVEL_FORGE_CHATGPT_SDK_STREAMING=1` or `NOVEL_FORGE_DEEPSEEK_SDK_STREAMING=1`.
+
 Every provider call uses a strict JSON prompt contract and validates output before writing assets. Draft/topic generation requires `text`; decomposition/reference analysis requires `summary`, `word_count`, and `patterns`; review requires score, strengths, weaknesses, issues, risk level, revision suggestions, and next action; revision requires an ordered `plan`.
 
 Claude Code still supports manual handoff through `ClaudeCodeAdapter.create_handoff_packet()`. For deterministic offline test or demo runs, override the runtime explicitly:
@@ -262,3 +279,18 @@ For high-judgment analysis, prefer handoff packets unless the local worker has b
 ./novel-forge claude-deconstruct --input data/cleaned/example.json --genre "urban suspense"
 ./novel-forge claude-knowledge --input data/raw/domain-note.json --discipline "forensic accounting"
 ```
+
+## Remote Tool And Cockpit Smoke Operations
+
+ToolGateway can register HTTP JSON-RPC MCP servers through the OS tools API. Registered servers can materialize remote `tool_definition` assets, discover remote tools with `mcp.discover_tools`, and invoke remote tools through MCP `tools/call`. Set `NOVEL_FORGE_MCP_TIMEOUT_SECONDS` to bound remote tool calls; the default is 30 seconds.
+
+The browser cockpit smoke is optional in default tests and strict only when explicitly requested:
+
+```bash
+NOVEL_FORGE_WEB_BASE_URL=http://127.0.0.1:3000 \
+NOVEL_FORGE_API_BASE_URL=http://127.0.0.1:8000 \
+NOVEL_FORGE_REQUIRE_PLAYWRIGHT=1 \
+npm --prefix web/admin run smoke:browser
+```
+
+Strict smoke checks a live backend fixture for Workflow, Agent, KG, Trace, Cost, Runtime Policy, and Publishing JSON endpoints before opening the cockpit routes.

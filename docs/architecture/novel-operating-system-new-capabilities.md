@@ -1410,8 +1410,9 @@ ToolGateway -> ToolInvocation
 StateBus -> Snapshot/Replay/Conflict
 AgentMessageBus -> Ack/Replay/ConversationTrace
 L0-L5 Memory -> MemorySelector
-pgvector schema plan -> embedding job -> hybrid retrieval
+pgvector schema plan -> embedding job -> local/online hybrid retrieval
 Context Builder backend=hybrid
+HTTP JSON-RPC MCP registry -> tools/list discovery -> tools/call invocation
 ```
 
 全量验证：
@@ -1425,15 +1426,16 @@ make test
 ```text
 222 Python tests passed, 1 skipped
 7 Node tests passed, 1 browser smoke skipped because Playwright is optional/not installed
+focused 2026-06-30 tests passed for provider SDK streaming, physical rollback, online pgvector, MCP remote invocation, and backend fixture cockpit smoke contract
 ```
 
 ### 19.7 当前边界
 
 本轮实现完成了文档要求的本地可运行 OS 能力闭环。以下仍作为后续增强方向，而不是本轮阻塞项：
 
-1. 真实 PostgreSQL `pgvector` online index 写入和 SQL 查询可以在本地 projection 稳定后接入。
-2. MCP server registry 已有资产和 API，真实远程 MCP 调用仍需按工具安全策略逐个 adapter 接入。
-3. ModelGateway 已把路由、Prompt、provider runtime guard、stage checkpoint、runtime policy、ModelCallLog、CostLedger 串起来；真实 provider streaming cutoff 继续由 provider adapter 深化。
+1. PostgreSQL `pgvector` online index 写入和 SQL 查询已可选接入；后续重点是生产数据迁移、索引调参、连接池和长篇压力测试。
+2. MCP server registry 已支持 HTTP JSON-RPC `tools/list` 和 `tools/call`；后续新增本地 stdio / streamable transport 时仍需按工具安全策略逐个 adapter 接入。
+3. ModelGateway 已把路由、Prompt、provider runtime guard、stage checkpoint、runtime policy、ModelCallLog、CostLedger 串起来；OpenAI-compatible SSE/SDK streaming cutoff 已接入，未来非 OpenAI SDK 继续由 provider adapter 深化。
 4. GuardedModelAdapter 已在真实 Agent 模型调用边界记录 provider guard gate、失败 model_call_log、prompt/provider/output stage checkpoint；未来新增长任务必须复用该边界或显式调用同一 checkpoint contract。
 5. Context Builder 已把 Novel KG context 从 build plan 传递到 context bundle，使 OS mode 的 draft/review KG-context preflight 能基于真实 bundle evidence 阻断。
 6. MemorySelector 已按任务类型选择 L0-L5 记忆，后续可把选择结果进一步强制注入所有长篇正文生产节点。

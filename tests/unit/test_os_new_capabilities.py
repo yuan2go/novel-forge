@@ -1,7 +1,9 @@
 from pathlib import Path
 import sys
 import tempfile
+import types
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -11,7 +13,7 @@ from novel_forge.modules.model_router import create_model_route, execute_model_g
 from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve
 from novel_forge.modules.prompt_registry import bind_prompt_to_node, create_prompt_version_asset, release_prompt_version, resolve_prompt
 from novel_forge.modules.state_bus import create_state_snapshot, detect_state_conflicts, record_state_event, replay_state_events
-from novel_forge.modules.tool_gateway import create_tool_permission_policy, invoke_tool, register_internal_tools
+from novel_forge.modules.tool_gateway import create_tool_permission_policy, invoke_tool, register_internal_tools, register_mcp_server
 from novel_forge.schemas import ChapterPlan
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import build_rag_context
@@ -148,6 +150,46 @@ class NovelOSNewCapabilitiesTests(unittest.TestCase):
             self.assertEqual(replay_messages["message_count"], 1)
             self.assertEqual(trace["asset"]["type"], "agent_conversation_trace")
 
+    def test_tool_gateway_invokes_remote_mcp_http_jsonrpc_tools(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "mcp-project"
+            registered = register_mcp_server(
+                storage,
+                name="unit-mcp",
+                transport="http",
+                endpoint="http://mcp.local/rpc",
+                tools=[{"name": "remote.echo", "description": "Echo tool", "input_schema": {"type": "object"}}],
+                project_id=project_id,
+            )
+            self.assertEqual(registered["asset"]["type"], "mcp_server_registry")
+            self.assertEqual(len(registered["tool_definitions"]), 1)
+
+            with patch("urllib.request.urlopen", side_effect=_fake_mcp_urlopen):
+                called = invoke_tool(
+                    storage,
+                    tool_name="remote.echo",
+                    input_payload={"text": "hello"},
+                    agent_type="workflow",
+                    operation="tool_test",
+                    project_id=project_id,
+                    trace={"trace_id": "trace-mcp"},
+                )
+                discovered = invoke_tool(
+                    storage,
+                    tool_name="mcp.discover_tools",
+                    input_payload={"server_name": "unit-mcp"},
+                    project_id=project_id,
+                )
+
+            self.assertEqual(called["status"], "succeeded")
+            self.assertEqual(called["output"]["result"]["content"][0]["text"], "hello")
+            self.assertEqual(discovered["status"], "succeeded")
+            self.assertEqual(discovered["output"]["tools"][0]["name"], "remote.echo")
+            trace_invocations = [storage.read_json(path) for path in storage.list_json("runs") if storage.read_json(path).get("type") == "trace_span"]
+            self.assertTrue(trace_invocations)
+
     def test_long_memory_pgvector_and_context_hybrid_backend(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -194,6 +236,119 @@ class NovelOSNewCapabilitiesTests(unittest.TestCase):
             )
             self.assertEqual(context["requested_backend"], "hybrid")
             self.assertIn(context["retrieval_backend"], {"hybrid", "local", "scan"})
+
+    def test_pgvector_online_backend_upserts_and_queries_when_configured(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "os-pgvector-online"
+            memory = create_memory_record(
+                storage,
+                project_id=project_id,
+                level="L3",
+                memory_type="rule",
+                title="Blue Seal Rule",
+                summary="Blue seals open the buried gate.",
+                content={"rule": "buried gate requires blue seals"},
+                priority=8,
+            )
+            fake_conn = _FakePgVectorConnection()
+            fake_psycopg = types.SimpleNamespace(connect=lambda *args, **kwargs: fake_conn)
+            with patch.dict(
+                "os.environ",
+                {
+                    "NOVEL_FORGE_DATABASE_URL": "postgresql://unit-test",
+                    "NOVEL_FORGE_PGVECTOR_ONLINE": "1",
+                },
+                clear=False,
+            ), patch.dict("sys.modules", {"psycopg": fake_psycopg}):
+                embedding = build_embedding_job(storage, source_paths=[memory["path"]], backend="pgvector", project_id=project_id)
+                hybrid = hybrid_retrieve(storage, query="blue buried gate", project_id=project_id, retrieval_backend="pgvector", limit=3)
+
+            self.assertEqual(embedding["asset"]["content"]["online_pgvector"]["status"], "succeeded")
+            self.assertGreaterEqual(fake_conn.upsert_count, 1)
+            self.assertEqual(hybrid["vector_backend"], "pgvector_online")
+            self.assertEqual(hybrid["online_pgvector"]["status"], "succeeded")
+            self.assertTrue(hybrid["results"])
+
+class _FakePgVectorConnection:
+    def __init__(self):
+        self.rows = []
+        self.upsert_count = 0
+        self.query_count = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def cursor(self):
+        return _FakePgVectorCursor(self)
+
+    def commit(self):
+        return None
+
+
+class _FakePgVectorCursor:
+    def __init__(self, conn):
+        self.conn = conn
+        self._results = []
+
+    def execute(self, sql, params=()):
+        lowered = " ".join(str(sql).lower().split())
+        if "insert into nf_pgvector_chunks" in lowered:
+            self.conn.upsert_count += 1
+            row = {
+                "id": params[0],
+                "project_id": params[1],
+                "chunk_type": "memory_chunk",
+                "source_path": params[3],
+                "source_asset_id": params[4],
+                "content": params[5],
+                "metadata": params[7],
+                "vector_score": 0.97,
+            }
+            self.conn.rows.append(row)
+        elif "select id, project_id" in lowered:
+            self.conn.query_count += 1
+            project_id = params[1]
+            self._results = [row for row in self.conn.rows if not project_id or row["project_id"] == project_id]
+        return self
+
+    def fetchall(self):
+        return list(self._results)
+
+    def close(self):
+        return None
+
+
+class _FakeHttpResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self):
+        import json
+
+        return json.dumps(self.payload).encode("utf-8")
+
+
+def _fake_mcp_urlopen(request, timeout=30):
+    import json
+
+    payload = json.loads(request.data.decode("utf-8"))
+    if payload["method"] == "tools/list":
+        return _FakeHttpResponse({"jsonrpc": "2.0", "id": payload["id"], "result": {"tools": [{"name": "remote.echo", "description": "Echo tool"}]}})
+    if payload["method"] == "tools/call":
+        text = payload["params"]["arguments"]["text"]
+        return _FakeHttpResponse({"jsonrpc": "2.0", "id": payload["id"], "result": {"content": [{"type": "text", "text": text}]}})
+    return _FakeHttpResponse({"jsonrpc": "2.0", "id": payload["id"], "error": {"message": "unknown method"}})
 
 
 if __name__ == "__main__":

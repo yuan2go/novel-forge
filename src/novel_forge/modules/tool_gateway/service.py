@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import json
+import os
 from pathlib import Path
 from typing import Any, Callable
+import urllib.error
+import urllib.request
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.production_context import filter_project_safe_references
@@ -21,6 +25,7 @@ INTERNAL_TOOL_DEFINITIONS: dict[str, dict[str, Any]] = {
     "revision.apply_patch": {"tool_kind": "internal", "description": "Apply an editor patch to a draft."},
     "trace.timeline": {"tool_kind": "internal", "description": "Return trace timeline payload."},
     "cost.create_dashboard": {"tool_kind": "internal", "description": "Build runtime cost/quality dashboard."},
+    "mcp.discover_tools": {"tool_kind": "mcp_control", "description": "Discover remote MCP tools from a registered HTTP JSON-RPC server."},
 }
 
 TOOL_ASSET_TYPES = {"tool_definition", "tool_invocation", "tool_permission_policy", "mcp_server_registry"}
@@ -128,7 +133,19 @@ def register_mcp_server(
         content=content,
         metadata={"project_id": project_id, "workspace_path": workspace_path, "status": status},
     )
-    return _write(storage, asset)
+    written = _write(storage, asset)
+    tool_definitions = [
+        _create_mcp_tool_definition(
+            storage,
+            server=written["asset"],
+            tool=item,
+            project_id=project_id,
+            workspace_path=workspace_path,
+        )
+        for item in tools or []
+        if isinstance(item, dict) and str(item.get("name", "")).strip()
+    ]
+    return {**written, "tool_definitions": tool_definitions}
 
 
 def invoke_tool(
@@ -173,7 +190,7 @@ def invoke_tool(
             trace=trace,
         )
     try:
-        output = _dispatch_internal_tool(storage, tool_name, payload, project_id=project_id, workspace_path=workspace_path)
+        output = _dispatch_tool(storage, tool, tool_name, payload, project_id=project_id, workspace_path=workspace_path)
         status = "succeeded"
     except Exception as exc:
         output = {"error": f"{type(exc).__name__}: {exc}"}
@@ -208,7 +225,58 @@ def list_tool_gateway_assets(storage: LocalStorage, *, project_id: str | None = 
     return sorted(rows, key=lambda row: str(row.get("updated_at", "")), reverse=True)[:limit]
 
 
+def _create_mcp_tool_definition(
+    storage: LocalStorage,
+    *,
+    server: dict[str, Any],
+    tool: dict[str, Any],
+    project_id: str,
+    workspace_path: str,
+) -> dict[str, Any]:
+    server_content = server.get("content", {}) if isinstance(server.get("content", {}), dict) else {}
+    created = create_tool_definition(
+        storage,
+        name=str(tool.get("name", "")),
+        tool_kind="mcp",
+        description=str(tool.get("description", "")),
+        input_schema=tool.get("input_schema", tool.get("inputSchema", {})) if isinstance(tool.get("input_schema", tool.get("inputSchema", {})), dict) else {},
+        output_schema=tool.get("output_schema", tool.get("outputSchema", {})) if isinstance(tool.get("output_schema", tool.get("outputSchema", {})), dict) else {},
+        status="active",
+        project_id=project_id,
+        workspace_path=workspace_path,
+    )
+    path = storage.root / created["path"]
+    data = storage.read_json(path)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    content["mcp_server_id"] = str(server_content.get("server_id", ""))
+    content["mcp_server_name"] = str(server_content.get("name", ""))
+    content["mcp_endpoint"] = str(server_content.get("endpoint", ""))
+    content["remote_name"] = str(tool.get("remote_name") or tool.get("name", ""))
+    data["content"] = content
+    storage.write_json(path, data)
+    return {"path": created["path"], "id": created["id"], "asset": data, "validation": created["validation"]}
+
+
+def _dispatch_tool(storage: LocalStorage, tool: dict[str, Any], tool_name: str, payload: dict[str, Any], *, project_id: str, workspace_path: str) -> dict[str, Any]:
+    content = tool.get("content", {}) if isinstance(tool.get("content", {}), dict) else {}
+    if str(content.get("tool_kind", "")) == "mcp":
+        return _dispatch_mcp_tool(storage, tool, tool_name, payload)
+    return _dispatch_internal_tool(storage, tool_name, payload, project_id=project_id, workspace_path=workspace_path)
+
+
 def _dispatch_internal_tool(storage: LocalStorage, tool_name: str, payload: dict[str, Any], *, project_id: str, workspace_path: str) -> dict[str, Any]:
+    if tool_name == "mcp.discover_tools":
+        server = _find_mcp_server(storage, str(payload.get("server_name") or payload.get("server_id") or ""))
+        if not server:
+            raise ValueError("mcp.discover_tools requires server_name or server_id for a registered MCP server")
+        result = _mcp_json_rpc(server, "tools/list", {})
+        tools = _mcp_tools_from_result(result)
+        created = [
+            _create_mcp_tool_definition(storage, server=server, tool=item, project_id=project_id, workspace_path=workspace_path)
+            for item in tools
+            if isinstance(item, dict) and str(item.get("name", "")).strip()
+        ]
+        return {"status": "discovered", "server": _mcp_server_summary(server), "tools": tools, "tool_definitions": created, "raw": result}
     if tool_name == "trace.timeline":
         from novel_forge.modules.runtime_ledger import trace_timeline_payload
 
@@ -256,6 +324,105 @@ def _dispatch_internal_tool(storage: LocalStorage, tool_name: str, payload: dict
 
         return apply_editor_patch(storage, patch_path=str(payload.get("patch_path", "")), apply=bool(payload.get("apply", payload.get("confirmed", False))))
     return {"status": "unsupported", "message": f"tool {tool_name} is registered but has no local dispatcher"}
+
+
+def _dispatch_mcp_tool(storage: LocalStorage, tool: dict[str, Any], tool_name: str, payload: dict[str, Any]) -> dict[str, Any]:
+    content = tool.get("content", {}) if isinstance(tool.get("content", {}), dict) else {}
+    server = _find_mcp_server(storage, str(content.get("mcp_server_id") or content.get("mcp_server_name") or content.get("server_name") or ""))
+    if not server:
+        server = _find_mcp_server_for_tool(storage, tool_name)
+    if not server:
+        raise ValueError(f"no registered MCP server found for tool: {tool_name}")
+    result = _mcp_json_rpc(server, "tools/call", {"name": str(content.get("remote_name") or tool_name), "arguments": payload})
+    if "error" in result:
+        raise RuntimeError(str(result["error"]))
+    return {"status": "succeeded", "server": _mcp_server_summary(server), "tool_name": tool_name, "result": result.get("result", result), "raw": result}
+
+
+def _find_mcp_server(storage: LocalStorage, name_or_id: str) -> dict[str, Any] | None:
+    needle = str(name_or_id or "").strip()
+    if not needle:
+        return None
+    for row in list_tool_gateway_assets(storage, limit=1000):
+        if row.get("type") != "mcp_server_registry":
+            continue
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if needle in {str(content.get("server_id", "")), str(content.get("name", "")), str(row.get("id", ""))}:
+            return row
+    return None
+
+
+def _find_mcp_server_for_tool(storage: LocalStorage, tool_name: str) -> dict[str, Any] | None:
+    for row in list_tool_gateway_assets(storage, limit=1000):
+        if row.get("type") != "mcp_server_registry":
+            continue
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        tools = content.get("tools", []) if isinstance(content.get("tools", []), list) else []
+        if any(isinstance(item, dict) and str(item.get("name", "")) == tool_name for item in tools):
+            return row
+    return None
+
+
+def _mcp_json_rpc(server: dict[str, Any], method: str, params: dict[str, Any]) -> dict[str, Any]:
+    content = server.get("content", {}) if isinstance(server.get("content", {}), dict) else {}
+    transport = str(content.get("transport", "")).strip().lower()
+    endpoint = str(content.get("endpoint", "")).strip()
+    if transport not in {"http", "https", "jsonrpc", "streamable-http"}:
+        raise ValueError(f"MCP remote adapter currently supports HTTP JSON-RPC transports only, got: {transport or 'missing'}")
+    if not endpoint:
+        raise ValueError("MCP HTTP transport requires endpoint")
+    body = {
+        "jsonrpc": "2.0",
+        "id": make_id("mcp_rpc", f"{method}-{utc_now()}"),
+        "method": method,
+        "params": params,
+    }
+    request = urllib.request.Request(
+        endpoint,
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        method="POST",
+    )
+    timeout = _mcp_timeout_seconds()
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"MCP server returned HTTP {exc.code}: {detail[:500]}") from exc
+    except Exception as exc:
+        raise RuntimeError(f"MCP JSON-RPC call failed: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("MCP JSON-RPC response must be a JSON object")
+    return payload
+
+
+def _mcp_tools_from_result(result: dict[str, Any]) -> list[dict[str, Any]]:
+    payload = result.get("result", result)
+    if isinstance(payload, dict):
+        tools = payload.get("tools", [])
+        if isinstance(tools, list):
+            return [item for item in tools if isinstance(item, dict)]
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    return []
+
+
+def _mcp_server_summary(server: dict[str, Any]) -> dict[str, str]:
+    content = server.get("content", {}) if isinstance(server.get("content", {}), dict) else {}
+    return {
+        "server_id": str(content.get("server_id", "")),
+        "name": str(content.get("name", "")),
+        "transport": str(content.get("transport", "")),
+        "endpoint": str(content.get("endpoint", "")),
+    }
+
+
+def _mcp_timeout_seconds() -> int:
+    try:
+        return max(1, int(os.environ.get("NOVEL_FORGE_MCP_TIMEOUT_SECONDS", "30")))
+    except Exception:
+        return 30
 
 
 def _record_invocation(

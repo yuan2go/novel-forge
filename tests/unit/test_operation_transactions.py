@@ -131,6 +131,60 @@ class OperationTransactionTests(unittest.TestCase):
             self.assertEqual(previous_after["content"]["status"], "active")
             self.assertEqual(created_after["metadata"]["asset_status"], "superseded")
 
+    def test_physical_restore_quarantines_created_assets_and_restores_updated_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "rollback-physical-project"
+            previous = storage.write_asset_auto(
+                DraftVersion(
+                    title="Draft previous",
+                    content={"draft_id": "draft-physical", "version_index": 1, "chapter": 1, "text": "known good", "source_draft_id": "draft-physical", "change_summary": "base", "status": "active"},
+                    metadata={"project_id": project_id},
+                )
+            )
+            updated = storage.write_asset_auto(
+                DraftVersion(
+                    title="Draft updated",
+                    content={"draft_id": "draft-physical", "version_index": 2, "chapter": 1, "text": "bad edit", "source_draft_id": "draft-physical", "change_summary": "bad", "status": "active"},
+                    metadata={"project_id": project_id},
+                )
+            )
+            created = storage.write_asset_auto(
+                DraftVersion(
+                    title="Created side output",
+                    content={"draft_id": "draft-side", "version_index": 1, "chapter": 1, "text": "side effect", "source_draft_id": "draft-side", "change_summary": "side", "status": "active"},
+                    metadata={"project_id": project_id},
+                )
+            )
+            transaction = create_operation_transaction(
+                storage,
+                operation="multi_asset_revision",
+                created_assets=[str(created.relative_to(storage.root))],
+                updated_assets=[str(updated.relative_to(storage.root))],
+                previous_versions=[str(previous.relative_to(storage.root))],
+                indexes_touched=["novel_kg", "pgvector"],
+                project_id=project_id,
+                trace={"trace_id": "trace-physical-rollback"},
+            )
+
+            plan = preview_operation_rollback(storage, transaction["path"], strategy="physical_restore")
+            self.assertEqual(plan["asset"]["content"]["rollback_status"], "available")
+            self.assertIn("quarantine_asset_file", {item["action"] for item in plan["asset"]["content"]["actions"]})
+            self.assertIn("restore_asset_file", {item["action"] for item in plan["asset"]["content"]["actions"]})
+            result = apply_rollback_plan(storage, plan["path"], confirm=True, actor="unit-test")
+
+            self.assertEqual(result["asset"]["content"]["verification"]["status"], "passed")
+            self.assertFalse(created.exists())
+            quarantine_actions = [item for item in result["asset"]["content"]["applied_actions"] if item["action"] == "quarantine_asset_file"]
+            restore_actions = [item for item in result["asset"]["content"]["applied_actions"] if item["action"] == "restore_asset_file"]
+            self.assertTrue(resolve := quarantine_actions[0]["quarantine_path"])
+            self.assertTrue((storage.root / resolve).exists())
+            self.assertTrue((storage.root / restore_actions[0]["backup_path"]).exists())
+            restored = storage.read_json(updated)
+            self.assertEqual(restored["content"]["text"], "known good")
+            self.assertEqual(restored["metadata"]["rollback_status"], "physically_restored")
+
 
 if __name__ == "__main__":
     unittest.main()

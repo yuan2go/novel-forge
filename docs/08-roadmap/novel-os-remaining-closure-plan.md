@@ -58,6 +58,18 @@ The first closure implementation batch is now complete as a hardened first produ
 
 Remaining work is now mostly provider-specific, scale, and cockpit polish: native streaming bindings for future providers, making every long operation call stage checkpoints internally, cross-node rollback consistency checks, production provider KG extraction behind runtime policy, richer browser-backed UI smoke, and recurring 12/50+ chapter pressure acceptance.
 
+## Implementation Update 2026-06-30
+
+The second closure hardening batch moves several items from planned to implemented:
+
+- Provider-native guard now includes OpenAI-compatible SDK streaming in addition to raw HTTP SSE. The stream reader observes provider usage chunks, estimates live deltas between usage events, enforces token/cost/timeout/cancel checks during iteration, and closes the SDK stream on guard failure.
+- Business rollback now supports `physical_restore` plans. Created assets are moved into a rollback archive, updated assets are restored from matched previous versions, current files are backed up before restore, ledger compensation remains immutable, dirty indexes are marked, and verification proves quarantine/restore effects.
+- Pgvector support now has an online PostgreSQL/pgvector path. `embedding_job` can upsert chunk vectors into `nf_pgvector_chunks`; `hybrid_retrieve` can query online vector similarity with local fallback unless strict mode is enabled.
+- ToolGateway/MCP now supports HTTP JSON-RPC remote servers. Registering a server can materialize remote tool definitions, `mcp.discover_tools` calls `tools/list`, and MCP tool invocations call `tools/call` while preserving tool invocation and trace evidence.
+- Web OS cockpit smoke now optionally verifies both browser routes and a running backend fixture. In strict mode it checks Workflow, Agent, KG, Trace, Cost, Runtime Policy, and Publishing API endpoints for JSON responses before route navigation.
+
+Remaining hardening is narrower: additional provider SDKs beyond OpenAI-compatible APIs, service-internal mid-token resume for very long custom operations, production-scale pgvector migration/index tuning, and mandatory Playwright execution in CI environments with browser dependencies installed.
+
 ## Priority Order
 
 The eight remaining gaps should not be implemented independently. They form a dependency chain:

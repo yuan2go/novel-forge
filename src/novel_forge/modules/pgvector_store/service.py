@@ -3,10 +3,12 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.long_memory import retrieve_memory
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
@@ -82,14 +84,16 @@ def build_embedding_job(
             chunks.extend(_chunk_asset(storage, source_path, backend=backend, chunk_size=chunk_size, project_id=project_id, workspace_path=workspace_path))
         except Exception as exc:
             errors.append({"source_path": source_path, "error": f"{type(exc).__name__}: {exc}"})
+    online_sync = _sync_pgvector_online(storage, chunks, project_id=project_id, backend=backend) if _pgvector_online_enabled(backend) else {"status": "disabled"}
     content = {
         "job_id": make_id("embedding_job", f"{backend}-{utc_now()}"),
         "source_paths": source_paths,
         "backend": backend,
-        "status": "completed_with_errors" if errors else "completed",
+        "status": "completed_with_errors" if errors or online_sync.get("status") == "failed" else "completed",
         "chunk_count": len(chunks),
         "chunks": chunks,
         "errors": errors,
+        "online_pgvector": online_sync,
         "created_at": utc_now(),
     }
     asset = EmbeddingJob(
@@ -114,10 +118,13 @@ def hybrid_retrieve(
     persist: bool = True,
 ) -> dict[str, Any]:
     query_vector = _embed(query)
-    vector_rows = _vector_rows(storage, project_id=project_id)
+    online = _pgvector_online_rows(storage, query_vector=query_vector, project_id=project_id, limit=limit) if _pgvector_online_enabled(retrieval_backend) else {"status": "disabled", "rows": []}
+    vector_rows = online.get("rows", []) if online.get("status") == "succeeded" else _vector_rows(storage, project_id=project_id)
+    if retrieval_backend == "pgvector" and online.get("status") == "failed" and _pgvector_strict():
+        raise RuntimeError(str(online.get("error", "pgvector online query failed")))
     scored = []
     for row in vector_rows:
-        score = _cosine(query_vector, row["embedding"])
+        score = float(row["vector_score"]) if "vector_score" in row else _cosine(query_vector, row["embedding"])
         lexical = _lexical_score(query, row.get("text", ""))
         scored.append({**row, "vector_score": round(score, 4), "lexical_score": round(lexical, 4), "score": round((score * 0.65) + (lexical * 0.35), 4)})
     memory = retrieve_memory(storage, query=query, project_id=project_id, levels=levels or [], limit=limit, persist_report=False)
@@ -128,7 +135,8 @@ def hybrid_retrieve(
         "report_id": make_id("hybrid_retrieval", f"{project_id}-{query}-{utc_now()}"),
         "query": query,
         "retrieval_backend": retrieval_backend,
-        "vector_backend": "local_hash_embedding",
+        "vector_backend": "pgvector_online" if online.get("status") == "succeeded" else "local_hash_embedding",
+        "online_pgvector": {key: value for key, value in online.items() if key != "rows"},
         "results": results,
         "created_at": utc_now(),
     }
@@ -226,6 +234,213 @@ def _vector_rows(storage: LocalStorage, *, project_id: str) -> list[dict[str, An
                 }
             )
     return rows
+
+
+def _sync_pgvector_online(storage: LocalStorage, chunks: list[dict[str, Any]], *, project_id: str, backend: str) -> dict[str, Any]:
+    if not chunks:
+        return {"status": "skipped", "reason": "no chunks"}
+    try:
+        with _pgvector_connect(storage) as conn:
+            _ensure_pgvector_online_schema(conn)
+            count = 0
+            for chunk in chunks:
+                row = _chunk_row_for_online(storage, chunk)
+                if not row:
+                    continue
+                _execute(
+                    conn,
+                    """
+                    insert into nf_pgvector_chunks
+                    (id, project_id, chunk_type, source_path, source_asset_id, content, embedding, metadata, updated_at)
+                    values (%s, %s, %s, %s, %s, %s, %s::vector, %s, now())
+                    on conflict (id) do update set
+                      project_id = excluded.project_id,
+                      chunk_type = excluded.chunk_type,
+                      source_path = excluded.source_path,
+                      source_asset_id = excluded.source_asset_id,
+                      content = excluded.content,
+                      embedding = excluded.embedding,
+                      metadata = excluded.metadata,
+                      updated_at = now()
+                    """,
+                    (
+                        row["id"],
+                        row["project_id"] or project_id,
+                        row["type"],
+                        row["path"],
+                        row["source_asset_id"],
+                        row["text"],
+                        _vector_literal(row["embedding"]),
+                        json.dumps(row["metadata"], ensure_ascii=False),
+                    ),
+                )
+                count += 1
+            _commit(conn)
+        return {"status": "succeeded", "backend": backend, "upserted": count, "table": "nf_pgvector_chunks"}
+    except Exception as exc:
+        if _pgvector_strict():
+            raise
+        return {"status": "failed", "backend": backend, "error": f"{type(exc).__name__}: {exc}", "table": "nf_pgvector_chunks"}
+
+
+def _pgvector_online_rows(storage: LocalStorage, *, query_vector: list[float], project_id: str, limit: int) -> dict[str, Any]:
+    try:
+        with _pgvector_connect(storage) as conn:
+            _ensure_pgvector_online_schema(conn)
+            rows = _fetchall(
+                conn,
+                """
+                select id, project_id, chunk_type, source_path, source_asset_id, content, metadata,
+                       1 - (embedding <=> %s::vector) as vector_score
+                from nf_pgvector_chunks
+                where (%s = '' or project_id = %s)
+                order by embedding <=> %s::vector
+                limit %s
+                """,
+                (_vector_literal(query_vector), project_id, project_id, _vector_literal(query_vector), int(limit or 12)),
+            )
+        return {"status": "succeeded", "row_count": len(rows), "rows": [_online_row_payload(row) for row in rows]}
+    except Exception as exc:
+        if _pgvector_strict():
+            raise
+        return {"status": "failed", "error": f"{type(exc).__name__}: {exc}", "rows": []}
+
+
+def _chunk_row_for_online(storage: LocalStorage, chunk: dict[str, Any]) -> dict[str, Any] | None:
+    path_value = str(chunk.get("path", ""))
+    if not path_value:
+        return None
+    try:
+        data = storage.read_json(resolve_path(storage.root, path_value))
+    except Exception:
+        return None
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    embedding = content.get("embedding", [])
+    if not isinstance(embedding, list):
+        return None
+    return {
+        "id": str(content.get("chunk_id") or content.get("embedding_id") or data.get("id", "")),
+        "path": path_value,
+        "type": str(data.get("type", "")),
+        "project_id": str(metadata.get("project_id", "")),
+        "source_asset_id": str(content.get("source_asset_id") or content.get("memory_id") or content.get("entity_id") or ""),
+        "text": str(content.get("text", "")),
+        "embedding": [float(value) for value in embedding],
+        "metadata": {**metadata, "asset_type": metadata.get("asset_type", ""), "local_chunk_path": path_value},
+    }
+
+
+def _online_row_payload(row: Any) -> dict[str, Any]:
+    if isinstance(row, dict):
+        values = row
+    else:
+        try:
+            values = dict(row)
+        except Exception:
+            values = {
+                "id": row[0],
+                "project_id": row[1],
+                "chunk_type": row[2],
+                "source_path": row[3],
+                "source_asset_id": row[4],
+                "content": row[5],
+                "metadata": row[6],
+                "vector_score": row[7],
+            }
+    metadata = values.get("metadata", {})
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except Exception:
+            metadata = {"raw": metadata}
+    return {
+        "path": str(values.get("source_path", "")),
+        "id": str(values.get("id", "")),
+        "type": str(values.get("chunk_type", "")),
+        "backend": "pgvector_online",
+        "text": str(values.get("content", "")),
+        "embedding": [],
+        "source_asset_id": str(values.get("source_asset_id", "")),
+        "project_id": str(values.get("project_id", "")),
+        "metadata": metadata if isinstance(metadata, dict) else {},
+        "vector_score": float(values.get("vector_score", 0.0) or 0.0),
+    }
+
+
+def _ensure_pgvector_online_schema(conn: Any) -> None:
+    for statement in [
+        "create extension if not exists vector",
+        """
+        create table if not exists nf_pgvector_chunks (
+          id text primary key,
+          project_id text not null default '',
+          chunk_type text not null,
+          source_path text not null,
+          source_asset_id text not null default '',
+          content text not null,
+          embedding vector(64) not null,
+          metadata jsonb not null default '{}'::jsonb,
+          updated_at timestamptz not null default now()
+        )
+        """,
+        "create index if not exists nf_pgvector_chunks_project_idx on nf_pgvector_chunks(project_id)",
+        "create index if not exists nf_pgvector_chunks_embedding_idx on nf_pgvector_chunks using ivfflat (embedding vector_cosine_ops)",
+    ]:
+        _execute(conn, statement, ())
+
+
+def _pgvector_connect(storage: LocalStorage) -> Any:
+    settings = IndustrialSettings.from_env(root=storage.root)
+    if not settings.database_url:
+        raise RuntimeError("NOVEL_FORGE_DATABASE_URL is required for pgvector online backend")
+    try:
+        import psycopg
+    except Exception as exc:
+        raise RuntimeError("pgvector online backend requires optional dependency: psycopg[binary]") from exc
+    return psycopg.connect(settings.database_url, connect_timeout=2)
+
+
+def _execute(conn: Any, sql: str, params: tuple[Any, ...]) -> Any:
+    cursor = conn.cursor()
+    try:
+        return cursor.execute(sql, params)
+    finally:
+        close = getattr(cursor, "close", None)
+        if callable(close):
+            close()
+
+
+def _fetchall(conn: Any, sql: str, params: tuple[Any, ...]) -> list[Any]:
+    cursor = conn.cursor()
+    try:
+        cursor.execute(sql, params)
+        return list(cursor.fetchall())
+    finally:
+        close = getattr(cursor, "close", None)
+        if callable(close):
+            close()
+
+
+def _commit(conn: Any) -> None:
+    commit = getattr(conn, "commit", None)
+    if callable(commit):
+        commit()
+
+
+def _vector_literal(vector: list[float]) -> str:
+    return "[" + ",".join(f"{float(value):.8f}" for value in vector) + "]"
+
+
+def _pgvector_online_enabled(backend: str) -> bool:
+    value = os.environ.get("NOVEL_FORGE_PGVECTOR_ONLINE", "")
+    if value == "":
+        return str(backend).lower() in {"pgvector_online", "postgres_pgvector"}
+    return value.strip().lower() in {"1", "true", "yes", "on", "enabled"}
+
+
+def _pgvector_strict() -> bool:
+    return os.environ.get("NOVEL_FORGE_PGVECTOR_STRICT", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _asset_text(data: dict[str, Any]) -> str:

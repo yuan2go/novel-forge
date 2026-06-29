@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import os
 import shlex
 import shutil
@@ -304,6 +305,8 @@ class OpenAICompatibleChatAdapter(ProviderAdapter):
             "ok": bool(self._api_key()),
             "base_url": self._base_url(),
             "model": self._model(),
+            "sdk_streaming_supported": _openai_sdk_available(),
+            "sdk_streaming_enabled": _provider_sdk_streaming_enabled({}, self),
             "message": "ready for JSON chat completions" if self._api_key() else "missing API key",
         }
 
@@ -326,29 +329,38 @@ class OpenAICompatibleChatAdapter(ProviderAdapter):
         if streaming:
             request_payload["stream"] = True
             request_payload["stream_options"] = {"include_usage": True}
-        request = urllib.request.Request(
-            self._base_url(),
-            data=json.dumps(request_payload, ensure_ascii=False).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
         started = time.monotonic()
         try:
             timeout = max(1, int(guard.timeout_ms / 1000)) if guard.timeout_ms > 0 else self.timeout_seconds
             controller.cancel_if_requested()
-            with urllib.request.urlopen(request, timeout=timeout) as response:
-                if streaming:
-                    response_data = _read_openai_compatible_stream(
-                        response,
-                        controller=controller,
-                        operation=operation,
-                        provider=self.config.provider,
-                    )
-                else:
-                    response_data = json.loads(response.read().decode("utf-8"))
+            if streaming and _provider_sdk_streaming_enabled(context_payload, self):
+                response_data = _run_openai_compatible_sdk_stream(
+                    adapter=self,
+                    api_key=api_key,
+                    request_payload=request_payload,
+                    controller=controller,
+                    operation=operation,
+                )
+            else:
+                request = urllib.request.Request(
+                    self._base_url(),
+                    data=json.dumps(request_payload, ensure_ascii=False).encode("utf-8"),
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    method="POST",
+                )
+                with urllib.request.urlopen(request, timeout=timeout) as response:
+                    if streaming:
+                        response_data = _read_openai_compatible_stream(
+                            response,
+                            controller=controller,
+                            operation=operation,
+                            provider=self.config.provider,
+                        )
+                    else:
+                        response_data = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
             controller.fail(f"{self.config.provider} API returned HTTP {exc.code}: {detail[:500]}")
@@ -672,6 +684,122 @@ def _streaming_enabled(context: dict[str, Any]) -> bool:
     if value is None:
         value = os.environ.get("NOVEL_FORGE_PROVIDER_STREAMING", "")
     return _truthy(str(value)) if value is not None else False
+
+
+def _provider_sdk_streaming_enabled(context: dict[str, Any], adapter: OpenAICompatibleChatAdapter) -> bool:
+    value = context.get("provider_sdk_stream") if isinstance(context, dict) else None
+    if value is None:
+        value = context.get("sdk_stream") if isinstance(context, dict) else None
+    env_names = [
+        f"NOVEL_FORGE_{adapter.config.provider.upper().replace('-', '_')}_SDK_STREAMING",
+        f"{adapter.config.provider.upper().replace('-', '_')}_SDK_STREAMING",
+        "NOVEL_FORGE_PROVIDER_SDK_STREAMING",
+    ]
+    for env_name in env_names:
+        if value is None and os.environ.get(env_name, "") != "":
+            value = os.environ.get(env_name, "")
+    return _truthy(str(value)) if value is not None else False
+
+
+def _openai_sdk_available() -> bool:
+    try:
+        return importlib.util.find_spec("openai") is not None
+    except (ImportError, ValueError):
+        return False
+
+
+def _run_openai_compatible_sdk_stream(
+    *,
+    adapter: OpenAICompatibleChatAdapter,
+    api_key: str,
+    request_payload: dict[str, Any],
+    controller: Any,
+    operation: str,
+) -> dict[str, Any]:
+    try:
+        from openai import OpenAI
+    except Exception as exc:  # pragma: no cover - exercised by health when SDK is absent
+        raise RuntimeError("OpenAI-compatible SDK streaming requires optional dependency: openai") from exc
+    client = OpenAI(api_key=api_key, base_url=_openai_sdk_base_url(adapter._base_url()))
+    stream = client.chat.completions.create(**request_payload)
+    return _read_openai_sdk_stream(stream, controller=controller, operation=operation, provider=adapter.config.provider)
+
+
+def _openai_sdk_base_url(url: str) -> str:
+    value = str(url or "").rstrip("/")
+    if value.endswith("/chat/completions"):
+        return value[: -len("/chat/completions")]
+    return value
+
+
+def _read_openai_sdk_stream(stream: Any, *, controller: Any, operation: str, provider: str) -> dict[str, Any]:
+    content_parts: list[str] = []
+    usage: dict[str, Any] = {}
+    finish_reason = ""
+    chunk_count = 0
+    try:
+        for chunk in stream:
+            chunk_count += 1
+            event = _sdk_chunk_to_dict(chunk)
+            event_usage = event.get("usage") if isinstance(event.get("usage", {}), dict) else {}
+            if event_usage:
+                usage.update(event_usage)
+                controller.observe_usage_delta({**event_usage, "usage_source": "provider_sdk_stream"})
+            choices = event.get("choices", []) if isinstance(event.get("choices", []), list) else []
+            for choice in choices:
+                if not isinstance(choice, dict):
+                    continue
+                if choice.get("finish_reason"):
+                    finish_reason = str(choice.get("finish_reason") or "")
+                delta = choice.get("delta", {}) if isinstance(choice.get("delta", {}), dict) else {}
+                fragment = str(delta.get("content") or "")
+                if fragment:
+                    content_parts.append(fragment)
+                    controller.observe_usage_delta(estimate_usage_from_text("", fragment, usage_source="provider_sdk_stream_estimated"))
+            controller.cancel_if_requested()
+    except ProviderRuntimeGuardViolation:
+        _close_stream(stream)
+        raise
+    normalized_usage = normalize_provider_usage({**usage, "finish_reason": finish_reason}, usage_source="provider_sdk_stream")
+    return {
+        "choices": [{"message": {"content": "".join(content_parts)}, "finish_reason": finish_reason}],
+        "usage": normalized_usage,
+        "stream": {"enabled": True, "adapter": "openai_compatible_sdk", "chunk_count": chunk_count, "finish_reason": finish_reason},
+    }
+
+
+def _sdk_chunk_to_dict(chunk: Any) -> dict[str, Any]:
+    if isinstance(chunk, dict):
+        return chunk
+    if hasattr(chunk, "model_dump"):
+        try:
+            data = chunk.model_dump()
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            pass
+    choices = []
+    for choice in getattr(chunk, "choices", []) or []:
+        delta = getattr(choice, "delta", None)
+        choices.append(
+            {
+                "finish_reason": getattr(choice, "finish_reason", None),
+                "delta": {
+                    "content": getattr(delta, "content", "") if delta is not None else "",
+                },
+            }
+        )
+    usage = getattr(chunk, "usage", None)
+    usage_payload = usage if isinstance(usage, dict) else (usage.model_dump() if hasattr(usage, "model_dump") else {})
+    return {"choices": choices, "usage": usage_payload}
+
+
+def _close_stream(stream: Any) -> None:
+    close = getattr(stream, "close", None)
+    if callable(close):
+        try:
+            close()
+        except Exception:
+            return
 
 
 def _read_openai_compatible_stream(response: Any, *, controller: Any, operation: str, provider: str) -> dict[str, Any]:

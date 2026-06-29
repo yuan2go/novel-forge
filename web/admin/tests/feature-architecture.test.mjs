@@ -160,6 +160,9 @@ describe("Novel Forge admin feature architecture", () => {
     const smoke = read("tests/playwright-smoke.test.mjs");
     assert.match(smoke, /playwright/);
     assert.match(smoke, /NOVEL_FORGE_WEB_BASE_URL/);
+    assert.match(smoke, /NOVEL_FORGE_API_BASE_URL/);
+    assert.match(smoke, /assertBackendFixture/);
+    assert.match(smoke, /\/product\/workflow\/processor-contracts/);
     assert.match(smoke, /个人本地小说工厂/);
   });
 });

@@ -32,6 +32,7 @@ For local production-style stack changes, use the smallest relevant Docker verif
 - Local storage atomic overwrite backup and SQLite manifest.
 - Mock model adapter methods.
 - Provider adapter contract skeletons and fail-closed behavior.
+- Provider runtime guard streaming paths, including OpenAI-compatible SSE/SDK usage events, live token cutoff, timeout/cancel evidence, and failed model-call logs.
 - Claude Code manual handoff packet boundaries.
 - CLI help and validation.
 - Skills frontmatter and required sections.
@@ -47,10 +48,13 @@ For local production-style stack changes, use the smallest relevant Docker verif
 - Automatic sample workspace updates during pipeline execution.
 - Local asset search by category, type, tag, and keyword.
 - Hybrid local vector retrieval with BM25-style lexical score and Chinese token features.
+- Optional online pgvector sync/query using fake `psycopg` fixtures by default and real PostgreSQL/pgvector only in explicit local production smoke.
 - Stricter semantic validation for feedback insight and workspace state shapes.
 - Feedback trend metrics and multi-book workspace memory.
 - End-to-end pipeline.
 - Long-project fixture pressure test with six chapters and workspace memory.
+- ToolGateway internal and HTTP JSON-RPC MCP discovery/invocation paths.
+- Operation rollback preview/apply/verify, including logical rollback, previous-version restore, physical quarantine/restore, ledger compensation, and dirty-index markers.
 
 ## Novel OS Test Requirements
 
@@ -160,6 +164,27 @@ Runtime observability and cost work must test:
 - cost alerts on projected budget overrun;
 - project, agent, and chapter cost snapshots;
 - cost-quality dashboard aggregation.
+
+### Remote Tools And Retrieval
+
+Tool and retrieval runtime changes must continue testing:
+
+- MCP server registration without granting broad local execution privileges;
+- `tools/list` discovery through HTTP JSON-RPC;
+- `tools/call` invocation with `tool_invocation` and `trace_span` evidence;
+- remote-call failure capture without corrupting local assets;
+- pgvector online upsert/query when `NOVEL_FORGE_PGVECTOR_ONLINE=1`;
+- strict pgvector failure behavior when `NOVEL_FORGE_PGVECTOR_STRICT=1`;
+- local vector fallback when optional PostgreSQL/pgvector dependencies are absent.
+
+### Browser Cockpit Smoke
+
+Web OS cockpit changes must continue testing:
+
+- route/API contract coverage in `npm --prefix web/admin test`;
+- optional Playwright route smoke when Playwright is installed;
+- optional live backend fixture checks through `NOVEL_FORGE_API_BASE_URL`;
+- strict browser smoke with `NOVEL_FORGE_REQUIRE_PLAYWRIGHT=1` only when browser dependencies and a backend are available.
 
 ### Feedback, Publishing, Model Evaluation
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -171,6 +172,54 @@ def verify_rollback_result(storage: LocalStorage, result_path_or_id: str | Path)
 
 def _rollback_actions(storage: LocalStorage, transaction: dict[str, Any], *, strategy: str) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
+    transaction_id = str(transaction.get("transaction_id") or make_id("operation_transaction", utc_now()))
+    if strategy == "physical_restore":
+        previous_versions = transaction.get("previous_versions", []) if isinstance(transaction.get("previous_versions", []), list) else []
+        for path in transaction.get("created_assets", []) if isinstance(transaction.get("created_assets", []), list) else []:
+            if _path_exists(storage, path):
+                actions.append(
+                    {
+                        "action": "quarantine_asset_file",
+                        "path": path,
+                        "quarantine_path": _rollback_archive_path(storage, transaction_id, "quarantine", path),
+                        "asset_status": "physically_rolled_back",
+                        "rollback_status": "quarantined",
+                        "reason": "created output will be physically moved out of active asset storage",
+                    }
+                )
+            else:
+                actions.append({"action": "quarantine_asset_file", "path": path, "status": "unsafe", "reason": f"created asset missing: {path}"})
+        for path in transaction.get("updated_assets", []) if isinstance(transaction.get("updated_assets", []), list) else []:
+            if not _path_exists(storage, path):
+                actions.append({"action": "restore_asset_file", "path": path, "status": "unsafe", "reason": f"updated asset missing: {path}"})
+                continue
+            previous_path = _match_previous_version(storage, path, previous_versions)
+            if not previous_path:
+                actions.append({"action": "restore_asset_file", "path": path, "status": "unsafe", "reason": f"no previous version matched updated asset: {path}"})
+                continue
+            actions.append(
+                {
+                    "action": "restore_asset_file",
+                    "path": path,
+                    "previous_path": previous_path,
+                    "backup_path": _rollback_archive_path(storage, transaction_id, "pre_restore_backup", path),
+                    "asset_status": "active",
+                    "content_status": "active",
+                    "reason": "updated asset will be physically restored from a previous version with current file backed up first",
+                }
+            )
+    else:
+        actions.extend(_logical_rollback_actions(storage, transaction, strategy=strategy))
+    for ledger_path in transaction.get("ledger_paths", []) if isinstance(transaction.get("ledger_paths", []), list) else []:
+        if _path_exists(storage, ledger_path):
+            actions.append({"action": "ledger_compensation", "path": ledger_path, "reason": "write compensating ledger evidence; original ledger remains immutable"})
+    for index in transaction.get("indexes_touched", []) if isinstance(transaction.get("indexes_touched", []), list) else []:
+        actions.append({"action": "mark_index_dirty", "index": str(index), "reason": "rollback touched indexed story state"})
+    return actions
+
+
+def _logical_rollback_actions(storage: LocalStorage, transaction: dict[str, Any], *, strategy: str) -> list[dict[str, Any]]:
+    actions: list[dict[str, Any]] = []
     for path in transaction.get("created_assets", []) if isinstance(transaction.get("created_assets", []), list) else []:
         if _path_exists(storage, path):
             actions.append({"action": "mark_asset", "path": path, "asset_status": "superseded" if strategy in {"supersede_outputs", "restore_previous_versions"} else "rolled_back", "rollback_status": "rolled_back", "reason": "created output can be logically rolled back"})
@@ -187,16 +236,53 @@ def _rollback_actions(storage: LocalStorage, transaction: dict[str, Any], *, str
                 actions.append({"action": "restore_previous_version", "path": path, "asset_status": "active", "content_status": "active", "reason": "previous version will be restored as the active version"})
             else:
                 actions.append({"action": "restore_previous_version_marker", "path": path, "asset_status": "active_restore_candidate", "reason": "previous version available for manual or automated restore"})
-    for ledger_path in transaction.get("ledger_paths", []) if isinstance(transaction.get("ledger_paths", []), list) else []:
-        if _path_exists(storage, ledger_path):
-            actions.append({"action": "ledger_compensation", "path": ledger_path, "reason": "write compensating ledger evidence; original ledger remains immutable"})
-    for index in transaction.get("indexes_touched", []) if isinstance(transaction.get("indexes_touched", []), list) else []:
-        actions.append({"action": "mark_index_dirty", "index": str(index), "reason": "rollback touched indexed story state"})
     return actions
 
 
 def _apply_action(storage: LocalStorage, action: dict[str, Any], *, actor: str) -> dict[str, Any]:
     name = str(action.get("action", ""))
+    if name == "quarantine_asset_file":
+        path = resolve_path(storage.root, str(action.get("path", "")))
+        quarantine = resolve_path(storage.root, str(action.get("quarantine_path", "")))
+        quarantine.parent.mkdir(parents=True, exist_ok=True)
+        data = storage.read_json(path)
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        metadata["asset_status"] = action.get("asset_status", "physically_rolled_back")
+        metadata["rollback_status"] = action.get("rollback_status", "quarantined")
+        metadata["rollback_actor"] = actor
+        metadata["rollback_at"] = utc_now()
+        metadata["rollback_reason"] = action.get("reason", "")
+        data["metadata"] = metadata
+        data["updated_at"] = utc_now()
+        storage.write_json(path, data)
+        shutil.move(str(path), str(quarantine))
+        return {**action, "status": "applied", "quarantine_path": _display_path(storage.root, quarantine)}
+    if name == "restore_asset_file":
+        target = resolve_path(storage.root, str(action.get("path", "")))
+        previous = resolve_path(storage.root, str(action.get("previous_path", "")))
+        backup = resolve_path(storage.root, str(action.get("backup_path", "")))
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(target, backup)
+        data = storage.read_json(previous)
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        metadata["asset_status"] = action.get("asset_status", "active")
+        metadata["rollback_status"] = "physically_restored"
+        metadata["rollback_actor"] = actor
+        metadata["rollback_at"] = utc_now()
+        metadata["rollback_reason"] = action.get("reason", "")
+        metadata["rollback_backup_path"] = _display_path(storage.root, backup)
+        metadata["rollback_previous_path"] = _display_path(storage.root, previous)
+        data["metadata"] = metadata
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if action.get("content_status"):
+            content["status"] = str(action.get("content_status"))
+        content["restored_at"] = utc_now()
+        content["restored_by"] = actor
+        data["content"] = content
+        data["updated_at"] = utc_now()
+        data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], "physical-rollback", str(metadata.get("asset_status", ""))])
+        storage.write_json(target, data)
+        return {**action, "status": "applied", "backup_path": _display_path(storage.root, backup)}
     if name in {"mark_asset", "restore_previous_version_marker", "restore_previous_version"}:
         path = resolve_path(storage.root, str(action.get("path", "")))
         data = storage.read_json(path)
@@ -276,6 +362,10 @@ def _verify_applied_actions(storage: LocalStorage, applied: list[dict[str, Any]]
             continue
         if name in {"mark_asset", "restore_previous_version_marker", "restore_previous_version"}:
             checks.append(_verify_asset_marker(storage, action))
+        elif name == "quarantine_asset_file":
+            checks.append(_verify_quarantine_action(storage, action))
+        elif name == "restore_asset_file":
+            checks.append(_verify_physical_restore_action(storage, action))
         elif name == "ledger_compensation":
             checks.append(_verify_compensation_ledger(storage, action))
         elif name == "mark_index_dirty":
@@ -316,6 +406,50 @@ def _verify_asset_marker(storage: LocalStorage, action: dict[str, Any]) -> dict[
     return {**action, "verification_status": "passed", "message": "asset rollback marker verified"}
 
 
+def _verify_quarantine_action(storage: LocalStorage, action: dict[str, Any]) -> dict[str, Any]:
+    active_path = resolve_path(storage.root, str(action.get("path", "")))
+    quarantine_path = resolve_path(storage.root, str(action.get("quarantine_path", "")))
+    if active_path.exists():
+        return {**action, "verification_status": "failed", "message": "active asset still exists after physical quarantine"}
+    if not quarantine_path.exists():
+        return {**action, "verification_status": "failed", "message": "quarantined asset file missing"}
+    try:
+        data = storage.read_json(quarantine_path)
+    except Exception as exc:
+        return {**action, "verification_status": "failed", "message": f"quarantined asset unreadable: {exc}"}
+    metadata = data.get("metadata", {}) if isinstance(data, dict) and isinstance(data.get("metadata", {}), dict) else {}
+    if str(metadata.get("rollback_status", "")) != str(action.get("rollback_status", "quarantined")):
+        return {**action, "verification_status": "failed", "message": "quarantined asset rollback_status mismatch"}
+    return {**action, "verification_status": "passed", "message": "asset file physically quarantined"}
+
+
+def _verify_physical_restore_action(storage: LocalStorage, action: dict[str, Any]) -> dict[str, Any]:
+    target = resolve_path(storage.root, str(action.get("path", "")))
+    backup = resolve_path(storage.root, str(action.get("backup_path", "")))
+    previous = resolve_path(storage.root, str(action.get("previous_path", "")))
+    if not target.exists():
+        return {**action, "verification_status": "failed", "message": "restored target missing"}
+    if not backup.exists():
+        return {**action, "verification_status": "failed", "message": "pre-restore backup missing"}
+    try:
+        target_data = storage.read_json(target)
+        previous_data = storage.read_json(previous)
+    except Exception as exc:
+        return {**action, "verification_status": "failed", "message": f"restore files unreadable: {exc}"}
+    if _restore_comparable_content(target_data.get("content", {})) != _restore_comparable_content(previous_data.get("content", {})):
+        return {**action, "verification_status": "failed", "message": "target content does not match previous version content"}
+    metadata = target_data.get("metadata", {}) if isinstance(target_data.get("metadata", {}), dict) else {}
+    if str(metadata.get("rollback_status", "")) != "physically_restored":
+        return {**action, "verification_status": "failed", "message": "target rollback_status is not physically_restored"}
+    return {**action, "verification_status": "passed", "message": "asset file physically restored from previous version"}
+
+
+def _restore_comparable_content(value: Any) -> Any:
+    if not isinstance(value, dict):
+        return value
+    return {key: item for key, item in value.items() if key not in {"restored_at", "restored_by"}}
+
+
 def _verify_compensation_ledger(storage: LocalStorage, action: dict[str, Any]) -> dict[str, Any]:
     path_value = str(action.get("compensation_ledger_path", ""))
     if not path_value:
@@ -335,6 +469,56 @@ def _verify_dirty_index_marker(storage: LocalStorage, action: dict[str, Any]) ->
     if not path_value or not _path_exists(storage, path_value):
         return {**action, "verification_status": "failed", "message": "dirty index marker missing"}
     return {**action, "verification_status": "passed", "message": "dirty index marker verified"}
+
+
+def _match_previous_version(storage: LocalStorage, updated_path: str, previous_versions: list[str]) -> str:
+    if len(previous_versions) == 1 and _path_exists(storage, previous_versions[0]):
+        return previous_versions[0]
+    try:
+        updated = storage.read_json(resolve_path(storage.root, updated_path))
+    except Exception:
+        return ""
+    updated_keys = _asset_identity_keys(updated)
+    for previous_path in previous_versions:
+        if not _path_exists(storage, previous_path):
+            continue
+        try:
+            previous = storage.read_json(resolve_path(storage.root, previous_path))
+        except Exception:
+            continue
+        if updated_keys & _asset_identity_keys(previous):
+            return previous_path
+    return ""
+
+
+def _asset_identity_keys(data: dict[str, Any]) -> set[str]:
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    keys = {
+        str(data.get("source", "")),
+        str(content.get("source_draft_id", "")),
+        str(content.get("draft_id", "")),
+        str(content.get("source_outline_id", "")),
+        str(content.get("outline_id", "")),
+        str(content.get("chapter_plan_id", "")),
+    }
+    return {key for key in keys if key.strip()}
+
+
+def _rollback_archive_path(storage: LocalStorage, transaction_id: str, section: str, path_value: str) -> str:
+    relative = _safe_relative_for_archive(storage, path_value)
+    return _display_path(storage.root, storage.root / "data" / "rollback_archive" / _safe_name(transaction_id) / _safe_name(section) / relative)
+
+
+def _safe_relative_for_archive(storage: LocalStorage, path_value: str) -> Path:
+    try:
+        relative = resolve_path(storage.root, path_value).resolve().relative_to(storage.root.resolve())
+    except Exception:
+        relative = Path(_safe_name(path_value or "asset.json"))
+    return Path(*[_safe_name(part) for part in relative.parts])
+
+
+def _safe_name(value: str) -> str:
+    return "".join(ch if ch.isalnum() or ch in {"-", "_", "."} else "-" for ch in str(value or "").strip())[:160] or "item"
 
 
 def _resolve_asset(storage: LocalStorage, path_or_id: str | Path, expected_type: str) -> Path:

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 const REQUIRED = process.env.NOVEL_FORGE_REQUIRE_PLAYWRIGHT === "1";
 const BASE_URL = process.env.NOVEL_FORGE_WEB_BASE_URL || "http://127.0.0.1:3000";
+const API_BASE_URL = process.env.NOVEL_FORGE_API_BASE_URL || (REQUIRED ? "http://127.0.0.1:8000" : "");
 
 async function loadPlaywright(t) {
   try {
@@ -16,10 +17,42 @@ async function loadPlaywright(t) {
   }
 }
 
+async function assertBackendFixture(t) {
+  if (!API_BASE_URL) return;
+  const endpoints = [
+    ["/product/workflow/definitions?limit=1", "workflow definitions"],
+    ["/product/workflow/runs?limit=1", "workflow runs"],
+    ["/product/workflow/processor-contracts", "workflow processor contracts"],
+    ["/product/agents/scheduler/status", "agent scheduler status"],
+    ["/product/agents/scheduler/queue?limit=1", "agent dispatch queue"],
+    ["/product/agents/operation-contracts", "agent operation contracts"],
+    ["/product/novel-kg/graph?limit=1", "novel kg graph"],
+    ["/product/runtime/trace-timeline?limit=1", "trace timeline"],
+    ["/product/runtime/cost-ledger?limit=1", "cost ledger"],
+    ["/product/runtime/cost-dashboard", "cost dashboard"],
+    ["/product/runtime/policy/enforcement-report", "runtime policy enforcement"],
+    ["/product/publishing/assets?limit=1", "publishing assets"]
+  ];
+  for (const [endpoint, label] of endpoints) {
+    let response;
+    try {
+      response = await fetch(`${API_BASE_URL}${endpoint}`);
+    } catch (error) {
+      if (REQUIRED) throw new Error(`API fixture unavailable for ${label}: ${error.message}`);
+      t.diagnostic(`API fixture skipped for ${label}: ${error.message}`);
+      return;
+    }
+    assert.ok(response.status < 500, `${label} returned ${response.status}`);
+    const text = await response.text();
+    assert.ok(text.trim().startsWith("{") || text.trim().startsWith("["), `${label} should return JSON`);
+  }
+}
+
 describe("Novel Forge browser smoke", () => {
   it("opens key local factory pages with Playwright when available", async (t) => {
     const playwright = await loadPlaywright(t);
     if (!playwright) return;
+    await assertBackendFixture(t);
 
     const browser = await playwright.chromium.launch();
     const page = await browser.newPage();
