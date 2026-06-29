@@ -38,22 +38,25 @@ CHUNK_TYPES = {
 
 def create_pgvector_schema_plan(storage: LocalStorage, *, status: str = "planned", project_id: str = "", workspace_path: str = "") -> dict[str, Any]:
     tables = {
-        "memory_chunks": "L0-L5 memory chunks with vector embeddings",
-        "knowledge_chunks": "knowledge card chunks and reusable craft abstractions",
-        "artifact_embeddings": "generic artifact-level embedding rows",
-        "review_memory_chunks": "review issues, quality rubrics, and rework learnings",
-        "entity_memory_chunks": "entity, faction, location, prop, timeline, and KG chunks",
+        "nf_pgvector_chunks": "Unified OS knowledge/memory chunk table for local PostgreSQL + pgvector retrieval",
+        "memory_chunks": "Logical L0-L5 memory chunk projection",
+        "knowledge_chunks": "Logical knowledge card and reusable craft abstraction projection",
+        "artifact_embeddings": "Logical generic artifact-level embedding projection",
+        "review_memory_chunks": "Logical review issue, quality rubric, and rework learning projection",
+        "entity_memory_chunks": "Logical entity, faction, location, prop, timeline, and KG projection",
     }
     ddl = [
         "create extension if not exists vector;",
-        "create table if not exists memory_chunks (id text primary key, project_id text, level text, source_path text, content text, embedding vector(64), metadata jsonb);",
-        "create table if not exists knowledge_chunks (id text primary key, project_id text, source_path text, content text, embedding vector(64), metadata jsonb);",
-        "create table if not exists artifact_embeddings (id text primary key, project_id text, asset_type text, source_path text, embedding vector(64), metadata jsonb);",
-        "create table if not exists review_memory_chunks (id text primary key, project_id text, source_path text, content text, embedding vector(64), metadata jsonb);",
-        "create table if not exists entity_memory_chunks (id text primary key, project_id text, entity_id text, source_path text, content text, embedding vector(64), metadata jsonb);",
+        "create table if not exists nf_pgvector_chunks (id text primary key, project_id text not null default '', chunk_type text not null, source_path text not null, source_asset_id text not null default '', content text not null, embedding vector(64) not null, metadata jsonb not null default '{}'::jsonb, updated_at timestamptz not null default now());",
+        "create index if not exists nf_pgvector_chunks_project_idx on nf_pgvector_chunks(project_id);",
+        "create index if not exists nf_pgvector_chunks_type_idx on nf_pgvector_chunks(chunk_type);",
+        "create index if not exists nf_pgvector_chunks_embedding_idx on nf_pgvector_chunks using ivfflat (embedding vector_cosine_ops);",
     ]
     content = {
         "plan_id": make_id("pgvector_schema_plan", f"{project_id or 'global'}-{utc_now()}"),
+        "architecture_role": "os_internal_knowledge_memory_base",
+        "qdrant_role": "optional_high_performance_vector_service",
+        "vector_dimension": VECTOR_DIMENSION,
         "tables": tables,
         "ddl": ddl,
         "status": status,
@@ -66,6 +69,26 @@ def create_pgvector_schema_plan(storage: LocalStorage, *, status: str = "planned
         metadata={"project_id": project_id, "workspace_path": workspace_path, "status": status},
     )
     return _write(storage, asset)
+
+
+def pgvector_capabilities(storage: LocalStorage, *, project_id: str = "") -> dict[str, Any]:
+    online_enabled = _pgvector_online_enabled("pgvector_online")
+    local_rows = _vector_rows(storage, project_id=project_id)
+    settings = IndustrialSettings.from_env(root=storage.root)
+    return {
+        "role": "os_internal_knowledge_memory_retrieval_base",
+        "qdrant_role": "optional_high_performance_vector_service",
+        "default_context_builder_order": ["pgvector", "qdrant", "local"],
+        "vector_dimension": VECTOR_DIMENSION,
+        "online_enabled": online_enabled,
+        "strict": _pgvector_strict(),
+        "database_configured": bool(settings.database_url),
+        "online_table": "nf_pgvector_chunks",
+        "local_projection_chunk_count": len(local_rows),
+        "supported_asset_types": sorted(CHUNK_TYPES),
+        "fallbacks": ["local_hash_embedding_projection", "local_json_memory"],
+        "status": "online_ready" if online_enabled and settings.database_url else ("local_projection_ready" if local_rows else "configured_no_chunks"),
+    }
 
 
 def build_embedding_job(
@@ -130,7 +153,7 @@ def hybrid_retrieve(
     memory = retrieve_memory(storage, query=query, project_id=project_id, levels=levels or [], limit=limit, persist_report=False)
     for item in memory.get("results", []):
         scored.append({**item, "backend": "memory_record", "score": max(float(item.get("score", 0) or 0), 0.01)})
-    results = sorted(scored, key=lambda row: (-float(row.get("score", 0) or 0), str(row.get("path", ""))))[: int(limit or 12)]
+    results = _dedupe_ranked_rows(sorted(scored, key=lambda row: (-float(row.get("score", 0) or 0), str(row.get("path", "")))))[: int(limit or 12)]
     report = {
         "report_id": make_id("hybrid_retrieval", f"{project_id}-{query}-{utc_now()}"),
         "query": query,
@@ -224,7 +247,8 @@ def _vector_rows(storage: LocalStorage, *, project_id: str) -> list[dict[str, An
                 continue
             rows.append(
                 {
-                    "path": _display_path(storage.root, path),
+                    "path": str(content.get("source_path") or _display_path(storage.root, path)),
+                    "chunk_path": _display_path(storage.root, path),
                     "id": data.get("id", ""),
                     "type": data.get("type", ""),
                     "backend": "pgvector_local_projection",
@@ -319,15 +343,17 @@ def _chunk_row_for_online(storage: LocalStorage, chunk: dict[str, Any]) -> dict[
     embedding = content.get("embedding", [])
     if not isinstance(embedding, list):
         return None
+    source_path = str(content.get("source_path") or path_value)
     return {
         "id": str(content.get("chunk_id") or content.get("embedding_id") or data.get("id", "")),
-        "path": path_value,
+        "path": source_path,
+        "chunk_path": path_value,
         "type": str(data.get("type", "")),
         "project_id": str(metadata.get("project_id", "")),
         "source_asset_id": str(content.get("source_asset_id") or content.get("memory_id") or content.get("entity_id") or ""),
         "text": str(content.get("text", "")),
         "embedding": [float(value) for value in embedding],
-        "metadata": {**metadata, "asset_type": metadata.get("asset_type", ""), "local_chunk_path": path_value},
+        "metadata": {**metadata, "asset_type": metadata.get("asset_type", ""), "local_chunk_path": path_value, "source_path": source_path},
     }
 
 
@@ -368,6 +394,48 @@ def _online_row_payload(row: Any) -> dict[str, Any]:
     }
 
 
+def _dedupe_ranked_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_path: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        key = str(row.get("path", "") or row.get("source_asset_id", "") or row.get("id", ""))
+        if not key:
+            key = json.dumps(row, ensure_ascii=False, sort_keys=True)[:200]
+        existing = by_path.get(key)
+        if existing is None:
+            by_path[key] = row
+            continue
+        winner, loser = (row, existing) if _backend_priority(row) > _backend_priority(existing) else (existing, row)
+        winner = dict(winner)
+        winner["score"] = max(float(existing.get("score", 0) or 0), float(row.get("score", 0) or 0))
+        winner["merged_backends"] = _dedupe_strings([str(existing.get("backend", "")), str(row.get("backend", "")), *[str(item) for item in existing.get("merged_backends", []) if str(item).strip()], *[str(item) for item in row.get("merged_backends", []) if str(item).strip()]])
+        winner["merged_duplicate_count"] = int(existing.get("merged_duplicate_count", 1) or 1) + int(loser.get("merged_duplicate_count", 1) or 1)
+        by_path[key] = winner
+    return sorted(by_path.values(), key=lambda row: (-float(row.get("score", 0) or 0), -_backend_priority(row), str(row.get("path", ""))))
+
+
+def _backend_priority(row: dict[str, Any]) -> int:
+    backend = str(row.get("backend", ""))
+    if "pgvector_online" in backend:
+        return 40
+    if "pgvector" in backend:
+        return 30
+    if "memory_record" in backend:
+        return 20
+    return 10
+
+
+def _dedupe_strings(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for item in items:
+        value = str(item or "").strip()
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
+
+
 def _ensure_pgvector_online_schema(conn: Any) -> None:
     for statement in [
         "create extension if not exists vector",
@@ -385,6 +453,7 @@ def _ensure_pgvector_online_schema(conn: Any) -> None:
         )
         """,
         "create index if not exists nf_pgvector_chunks_project_idx on nf_pgvector_chunks(project_id)",
+        "create index if not exists nf_pgvector_chunks_type_idx on nf_pgvector_chunks(chunk_type)",
         "create index if not exists nf_pgvector_chunks_embedding_idx on nf_pgvector_chunks using ivfflat (embedding vector_cosine_ops)",
     ]:
         _execute(conn, statement, ())

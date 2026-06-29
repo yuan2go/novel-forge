@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -54,6 +55,12 @@ TYPE_BUCKETS = {
     "hook_pattern": ["foreshadowing", "material_cards"],
     "writing_template": ["writing_templates", "material_cards"],
     "craft_template": ["writing_templates", "material_cards"],
+    "memory_record": ["previous_summaries", "knowledge_cards"],
+    "memory_chunk": ["previous_summaries", "knowledge_cards"],
+    "knowledge_chunk": ["knowledge_cards"],
+    "review_memory_chunk": ["previous_summaries", "writing_templates"],
+    "entity_memory_chunk": ["characters", "worldbuilding"],
+    "artifact_embedding": ["knowledge_cards", "material_cards"],
 }
 
 FORESHADOWING_TERMS = ("伏笔", "foreshadow", "hook", "continuity_thread", "continuity_threads", "open_issue", "open_issues")
@@ -138,6 +145,49 @@ class RagContextBuilder:
 
     def _ranked_candidates(self, query: str, limit: int, backend: str) -> tuple[list[dict[str, Any]], str, list[dict[str, Any]]]:
         attempts: list[dict[str, Any]] = []
+        if backend == "auto":
+            for candidate in _auto_backend_order():
+                if candidate in {"pgvector", "hybrid"}:
+                    try:
+                        from novel_forge.modules.pgvector_store import hybrid_retrieve
+
+                        report = hybrid_retrieve(
+                            self.storage,
+                            query=query,
+                            project_id="",
+                            retrieval_backend="pgvector",
+                            limit=limit,
+                            persist=False,
+                        )
+                        results = [_rag_result_from_hybrid(item) for item in report.get("results", []) if isinstance(item, dict)]
+                        attempts.append({"backend": "pgvector", "ok": True, "result_count": len(results), "projection": report.get("vector_backend", "")})
+                        if results:
+                            return results, "pgvector", attempts
+                    except Exception as exc:
+                        attempts.append({"backend": "pgvector", "ok": False, "error": str(exc)})
+                    continue
+                if candidate == "qdrant":
+                    health = embedding_provider_health(require_semantic=True)
+                    if health.get("ok"):
+                        try:
+                            settings = self.settings or IndustrialSettings.from_env(root=self.storage.root)
+                            results = qdrant_search_assets(self.storage, settings, query=query, limit=limit)
+                            attempts.append({"backend": "qdrant", "ok": True, "result_count": len(results)})
+                            if results:
+                                return results, "qdrant", attempts
+                        except Exception as exc:
+                            attempts.append({"backend": "qdrant", "ok": False, "error": str(exc)})
+                    else:
+                        attempts.append({"backend": "qdrant", "ok": False, "error": health.get("error") or health.get("message") or "embedding provider unavailable"})
+                    continue
+                if candidate == "local":
+                    try:
+                        results = vector_search_assets(self.storage, query=query, limit=limit)
+                        attempts.append({"backend": "local", "ok": True, "result_count": len(results)})
+                        return results, "local", attempts
+                    except Exception as exc:
+                        attempts.append({"backend": "local", "ok": False, "error": str(exc)})
+            return [], "scan", attempts
         if backend in {"pgvector", "hybrid"}:
             try:
                 from novel_forge.modules.pgvector_store import hybrid_retrieve
@@ -641,9 +691,22 @@ def _ranker_name(items: list[dict[str, Any]]) -> str:
 def _rag_result_from_hybrid(item: dict[str, Any]) -> dict[str, Any]:
     return {
         "path": str(item.get("path", "")),
+        "chunk_path": str(item.get("chunk_path", "")),
+        "source_asset_id": str(item.get("source_asset_id", "")),
         "score": float(item.get("score", 0.0) or 0.0),
         "ranker": str(item.get("backend", "") or "hybrid-local-projection"),
     }
+
+
+def _auto_backend_order() -> list[str]:
+    raw = os.environ.get("NOVEL_FORGE_RAG_AUTO_ORDER", "")
+    values = [item.strip().lower() for item in raw.split(",") if item.strip()] if raw else ["pgvector", "qdrant", "local"]
+    order: list[str] = []
+    for value in values:
+        normalized = "pgvector" if value in {"postgres", "postgresql", "postgres_pgvector", "pgvector_online"} else value
+        if normalized in {"pgvector", "hybrid", "qdrant", "local"} and normalized not in order:
+            order.append(normalized)
+    return order or ["pgvector", "qdrant", "local"]
 
 
 def _normalize_backend(value: str) -> str:

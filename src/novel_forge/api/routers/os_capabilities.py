@@ -21,7 +21,7 @@ from novel_forge.modules.long_memory import (
     select_memory_for_node,
 )
 from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, list_model_router_assets, resolve_model_route
-from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve
+from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve, pgvector_capabilities
 from novel_forge.modules.prompt_registry import (
     bind_prompt_to_node,
     create_prompt_template,
@@ -342,6 +342,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def pgvector_schema_plan(request: PgVectorSchemaPlanRequest) -> dict[str, Any]:
         try:
             return create_pgvector_schema_plan(LocalStorage(app_settings.root), **_request_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/retrieval/pgvector-capabilities")
+    def pgvector_capability_report(project_id: str | None = None) -> dict[str, Any]:
+        try:
+            return pgvector_capabilities(LocalStorage(app_settings.root), project_id=project_id or "")
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

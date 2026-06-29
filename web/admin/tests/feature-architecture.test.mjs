@@ -163,6 +163,7 @@ describe("Novel Forge admin feature architecture", () => {
     assert.match(smoke, /NOVEL_FORGE_API_BASE_URL/);
     assert.match(smoke, /assertBackendFixture/);
     assert.match(smoke, /\/product\/workflow\/processor-contracts/);
+    assert.match(smoke, /\/product\/os\/retrieval\/pgvector-capabilities/);
     assert.match(smoke, /个人本地小说工厂/);
   });
 });

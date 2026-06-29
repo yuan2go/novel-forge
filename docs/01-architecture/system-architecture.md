@@ -180,7 +180,7 @@ Do not call external providers in tests. Do not write malformed or unvalidated p
 2. Provider-level runtime guard and deep checkpoint resume: normalized usage, realtime or postflight token cutoff, exact cost capture, cancellable local/provider calls, OpenAI-compatible SSE/SDK streaming, and resume from internal operation stages.
 3. Business rollback: operation transactions, rollback preview/apply, version restoration, physical multi-asset quarantine/restore, rollback-required handling, dirty-index evidence, verification, and compensating ledger records.
 4. Semantic quality layer: KG-backed context building, stronger entity/relation extraction, evidence spans, alias merge, continuity conflicts, originality/review gates, and feedback-to-plan learning.
-5. Web OS operations and long-chain scale acceptance: fixture-backed browser-smoked OS console routes, DAG/Agent/KG/Trace/Cost operational views, and multi-chapter continuity/cost/quality/recovery acceptance.
+5. Retrieval and Web OS operations: PostgreSQL/pgvector is the internal knowledge/memory retrieval base for Context Builder auto mode, Qdrant is an optional high-performance vector service, fixture-backed browser-smoked OS console routes expose DAG/Agent/KG/Trace/Cost operational views, and multi-chapter continuity/cost/quality/recovery acceptance remains the scale gate.
 
 Detailed closure plan: [Novel OS Remaining Closure Plan](../08-roadmap/novel-os-remaining-closure-plan.md).
 

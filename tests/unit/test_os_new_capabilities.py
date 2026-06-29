@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.modules.agent_messages import acknowledge_agent_message, create_agent_conversation_trace, replay_agent_messages, send_agent_message
 from novel_forge.modules.long_memory import create_memory_record, retrieve_memory, select_memory_for_node
 from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, resolve_model_route
-from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve
+from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve, pgvector_capabilities
 from novel_forge.modules.prompt_registry import bind_prompt_to_node, create_prompt_version_asset, release_prompt_version, resolve_prompt
 from novel_forge.modules.state_bus import create_state_snapshot, detect_state_conflicts, record_state_event, replay_state_events
 from novel_forge.modules.tool_gateway import create_tool_permission_policy, invoke_tool, register_internal_tools, register_mcp_server
@@ -216,8 +216,14 @@ class NovelOSNewCapabilitiesTests(unittest.TestCase):
             self.assertTrue(retrieval["results"])
             self.assertTrue(selection["results"])
             self.assertEqual(schema_plan["asset"]["type"], "pgvector_schema_plan")
+            self.assertEqual(schema_plan["asset"]["content"]["architecture_role"], "os_internal_knowledge_memory_base")
+            self.assertEqual(schema_plan["asset"]["content"]["qdrant_role"], "optional_high_performance_vector_service")
             self.assertEqual(embedding["asset"]["type"], "embedding_job")
             self.assertTrue(hybrid["results"])
+            capabilities = pgvector_capabilities(storage, project_id=project_id)
+            self.assertEqual(capabilities["role"], "os_internal_knowledge_memory_retrieval_base")
+            self.assertEqual(capabilities["qdrant_role"], "optional_high_performance_vector_service")
+            self.assertGreaterEqual(capabilities["local_projection_chunk_count"], 1)
 
             chapter_plan_path = storage.write_asset_auto(
                 ChapterPlan(

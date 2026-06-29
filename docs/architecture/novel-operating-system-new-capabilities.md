@@ -1392,7 +1392,20 @@ pgvector
 hybrid
 ```
 
-其中 `pgvector/hybrid` 在没有真实 PostgreSQL `vector` 扩展时，会使用本地 deterministic embedding projection 作为兼容实现，并写入 `embedding_job`、chunk assets 和 `hybrid_retrieval_report`。
+其中 `auto` 的默认顺序是：
+
+```text
+pgvector -> qdrant -> local
+```
+
+这对应新的运行边界：
+
+```text
+PostgreSQL + pgvector = OS 内部统一知识 / 记忆检索底座
+Qdrant = 可选高性能向量服务
+```
+
+`pgvector/hybrid` 在没有真实 PostgreSQL `vector` 扩展时，会使用本地 deterministic embedding projection 作为兼容实现，并写入 `embedding_job`、chunk assets 和 `hybrid_retrieval_report`。当 pgvector 已有可用 chunk 结果时，Context Builder 不会再进入 Qdrant；只有 pgvector 无结果或失败时才回退到 Qdrant 或 local。
 
 ### 19.6 验证结果
 
@@ -1426,14 +1439,14 @@ make test
 ```text
 222 Python tests passed, 1 skipped
 7 Node tests passed, 1 browser smoke skipped because Playwright is optional/not installed
-focused 2026-06-30 tests passed for provider SDK streaming, physical rollback, online pgvector, MCP remote invocation, and backend fixture cockpit smoke contract
+focused 2026-06-30 tests passed for provider SDK streaming, SDK stream close on token cutoff, physical rollback, pgvector-first Context Builder retrieval, online pgvector, MCP remote invocation, and backend fixture cockpit smoke contract
 ```
 
 ### 19.7 当前边界
 
 本轮实现完成了文档要求的本地可运行 OS 能力闭环。以下仍作为后续增强方向，而不是本轮阻塞项：
 
-1. PostgreSQL `pgvector` online index 写入和 SQL 查询已可选接入；后续重点是生产数据迁移、索引调参、连接池和长篇压力测试。
+1. PostgreSQL `pgvector` online index 写入和 SQL 查询已可选接入，并已成为 Context Builder `auto` 的第一召回层；后续重点是生产数据迁移、索引调参、连接池和长篇压力测试。
 2. MCP server registry 已支持 HTTP JSON-RPC `tools/list` 和 `tools/call`；后续新增本地 stdio / streamable transport 时仍需按工具安全策略逐个 adapter 接入。
 3. ModelGateway 已把路由、Prompt、provider runtime guard、stage checkpoint、runtime policy、ModelCallLog、CostLedger 串起来；OpenAI-compatible SSE/SDK streaming cutoff 已接入，未来非 OpenAI SDK 继续由 provider adapter 深化。
 4. GuardedModelAdapter 已在真实 Agent 模型调用边界记录 provider guard gate、失败 model_call_log、prompt/provider/output stage checkpoint；未来新增长任务必须复用该边界或显式调用同一 checkpoint contract。

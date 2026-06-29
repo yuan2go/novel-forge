@@ -31,6 +31,7 @@ Execution tracking documents:
 | Provider SDK Streaming | Hardened provider-native path | OpenAI-compatible SDK streaming guard with usage chunk normalization, live delta observation, token/cost cutoff, stream close on cancel/failure, and `tests/unit/test_model_adapter.py` |
 | Physical Multi-Asset Rollback | Hardened transactional rollback | `physical_restore` rollback strategy, rollback archive quarantine, pre-restore backup, previous-version restore, dirty-index verification, immutable ledger compensation, and `tests/unit/test_operation_transactions.py` |
 | Pgvector Online Query | Completed online first production slice | PostgreSQL/pgvector schema creation, chunk upsert, online similarity query, strict/fallback modes, hybrid retrieval evidence, and `tests/unit/test_os_new_capabilities.py` |
+| Pgvector-First Context Retrieval | Hardened OS retrieval boundary | Context Builder `backend=auto` now tries pgvector internal knowledge/memory retrieval before Qdrant, preserves source-asset paths from chunk results, deduplicates memory/vector hits by source, and treats Qdrant as optional high-performance service; `tests/unit/test_storage.py` |
 | MCP Remote Tool Adapter | Completed HTTP JSON-RPC first production slice | Remote MCP server registration, remote tool definition materialization, `tools/list` discovery, `tools/call` invocation, invocation trace evidence, and `tests/unit/test_os_new_capabilities.py` |
 | Playwright Cockpit Smoke | Hardened optional smoke | Browser route smoke now also probes a running backend fixture for Workflow, Agent, KG, Trace, Cost, Runtime Policy, and Publishing JSON endpoints when `NOVEL_FORGE_API_BASE_URL` or strict mode is set; `web/admin/tests/playwright-smoke.test.mjs` |
 | Protected Reference Intake | Hardened first production slice | TXT/MD encoding detection for UTF-8/GB18030/GBK/Big5, `analyze-reference` CLI, oral-performance style metrics for pingshu/xiangsheng-like narration, abstract-only analysis assets, `tests/unit/test_cli.py` |
@@ -179,13 +180,20 @@ Passed on 2026-06-30:
 ```bash
 python3 -m compileall -q src tests
 python3 -m unittest tests.unit.test_model_adapter tests.unit.test_provider_runtime_guard tests.unit.test_operation_transactions tests.unit.test_os_new_capabilities
+python3 -m unittest tests.unit.test_model_adapter tests.unit.test_provider_runtime_guard tests.unit.test_storage tests.unit.test_os_new_capabilities
+python3 -m unittest tests.unit.test_model_adapter tests.unit.test_provider_runtime_guard tests.unit.test_storage tests.unit.test_os_new_capabilities tests.unit.test_product_api_routes
+python3 -m unittest discover tests/unit
+python3 -m unittest tests.integration.test_novel_os_acceptance
 git diff --check
 npm --prefix web/admin test
 ```
 
 Observed counts:
 
-- Focused Python tests: 31 passed.
+- Focused Python tests: 31 passed for runtime integrations, then 39 passed for provider SDK cutoff, storage retrieval, and OS capabilities.
+- Route-focused Python tests: 40 passed.
+- Full Python unit discovery: 229 passed.
+- Core OS acceptance: 1 passed.
 - Web Admin tests: 7 passed, 1 browser smoke skipped because Playwright is not installed.
 
 ## Known Risks

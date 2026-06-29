@@ -8,7 +8,7 @@ Source optimization document: `docs/08-roadmap/novel-os-remaining-closure-plan.m
 
 This plan tracks the autonomous closure work required to move Novel Forge from an early Novel Operating System runtime to a deliverable local-first Novel Operating System implementation.
 
-The current project already has first production slices for Workflow Executor, Agent Scheduler, Novel KG, Trace Timeline, Cost Ledger, Review Rework Loop, OS acceptance tests, Web OS Console routes, provider streaming guard, physical rollback, online pgvector, and MCP remote tool invocation. The remaining work is not a new skeleton. It is provider breadth, deeper service-internal resumability, production-scale retrieval tuning, operational UX hardening, and recurring scale acceptance.
+The current project already has first production slices for Workflow Executor, Agent Scheduler, Novel KG, Trace Timeline, Cost Ledger, Review Rework Loop, OS acceptance tests, Web OS Console routes, provider streaming guard, physical rollback, pgvector-first Context Builder retrieval, online pgvector, and MCP remote tool invocation. The remaining work is not a new skeleton. It is provider breadth, deeper service-internal resumability, production-scale retrieval tuning, operational UX hardening, and recurring scale acceptance.
 
 ## Optimization Table
 
@@ -21,6 +21,7 @@ The current project already has first production slices for Workflow Executor, A
 | P0 | KG Semantic Depth | Novel KG and KG gate existed. | Identity resolution, merge queue, confidence/evidence handling, model-assisted candidate validation, semantic extraction report asset/API, KG-backed context enforcement, KG gate fast path. | `novel_kg`, `semantic_enhancement`, `continuity_graph`, Web KG Workbench | Hardened first production slice; production provider extraction remains future hardening. |
 | P1 | Web OS Console Hardening | Seven OS routes existed with route/API contract tests. | OS console includes runtime policy coverage, legacy bypass audit, rollback preview/apply/verify; KG workbench exposes semantic extraction and identity merge queue; optional Playwright route smoke covers OS pages and live backend fixtures. | `web/admin`, OS API routers | First cockpit slice verified; Playwright browser smoke remains optional when Playwright is installed. |
 | P1 | Online Retrieval / MCP Tools | Local projection and registry existed. | Online PostgreSQL/pgvector upsert/query with strict/fallback semantics; HTTP JSON-RPC MCP discovery and invocation through ToolGateway. | `pgvector_store`, `tool_gateway`, OS API routers | Completed first production slice with unit coverage. |
+| P1 | Context Retrieval Boundary | `auto` could prefer Qdrant when a semantic provider was available. | `auto` tries pgvector internal memory/knowledge retrieval first, falls back to Qdrant only when pgvector has no result or fails, then local. | `storage/rag_context`, `pgvector_store` | Hardened OS retrieval contract with unit coverage. |
 | P1 | Feedback-to-plan Backflow | Feedback assets and insights existed. | Human-gated clusters and plan/rule/KG proposals. | `feedback_backflow`, feedback API, agent permissions | Completed first production slice with unit coverage. |
 | P1 | Long-chain Scale Acceptance | One-chapter OS acceptance existed. | 3-chapter deterministic smoke plus opt-in 12/50 chapter pressure profile and scale metrics. | `operations`, integration tests | Completed smoke and opt-in pressure profile. |
 | P2 | Operational polish | First slices are functional but sparse. | Richer filters, trend charts, evidence drawers, exportable reports. | Web OS Console, docs | Improves operator usability without blocking core runtime. |
@@ -72,7 +73,8 @@ npm --prefix web/admin run smoke:browser
 | Business Rollback | Hardened first production slice with preview/apply/verify APIs, version restore, and Web OS rollback panel. |
 | Physical Multi-Asset Rollback | Hardened first production slice with rollback archive quarantine, pre-restore backup, previous-version restore, and verification. |
 | Pgvector Online / MCP Remote | Completed first production slice with fake-driver/unit coverage and local fallback semantics. |
+| Pgvector-First Context Builder | Hardened OS retrieval boundary; Qdrant is now optional high-performance fallback rather than the default internal memory base. |
 | KG Semantic Depth | Hardened first production slice with model-assisted extraction validation, identity merge queue, semantic extraction report/API/UI, and KG gate performance hardening. |
 | Feedback Backflow | Complete first production slice. |
 | Long-chain Scale Acceptance | Complete 3-chapter deterministic smoke and opt-in 12/50 chapter pressure test. |
-| Validation | Broad 2026-06-29 validation passed; focused 2026-06-30 validation covered provider SDK streaming, physical rollback, pgvector online, MCP remote adapter, compileall, diff check, and admin tests. |
+| Validation | Broad 2026-06-29 validation passed; focused 2026-06-30 validation covered provider SDK streaming/cutoff close, physical rollback, pgvector online, pgvector-first context retrieval, MCP remote adapter, compileall, diff check, and admin tests. |

@@ -117,6 +117,37 @@ class MockModelTests(unittest.TestCase):
         self.assertEqual(result["cost"]["source"], "provider_usage")
         self.assertIn("provider_call_finished", {event["event_type"] for event in result["runtime_events"]})
 
+    def test_openai_compatible_sdk_streaming_closes_stream_on_token_cutoff(self):
+        stream = _FakeSDKStream(
+            [
+                {"choices": [{"delta": {"content": "{\"text\":\"partial"}, "finish_reason": None}]},
+                {
+                    "choices": [{"delta": {"content": " output\"}"}, "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 20, "completion_tokens": 20, "total_tokens": 40},
+                },
+            ]
+        )
+        fake_openai = _fake_openai_sdk_module(stream)
+        with patch.dict(
+            "os.environ",
+            {
+                "OPENAI_API_KEY": "unit-key",
+                "NOVEL_FORGE_PROVIDER_SDK_STREAMING": "1",
+            },
+            clear=False,
+        ), patch.dict("sys.modules", {"openai": fake_openai}):
+            with self.assertRaises(RuntimeError) as raised:
+                ChatGPTAdapter().generate(
+                    "write json",
+                    {
+                        "stream": True,
+                        "provider_runtime_guard": {"max_total_tokens": 5},
+                    },
+                )
+
+        self.assertTrue(stream.closed)
+        self.assertIn("token cutoff", str(raised.exception))
+
     def test_model_selection_defaults_to_claude_code_and_can_select_provider(self):
         self.assertIsInstance(model_from_env("draft", {}), ClaudeCodeAdapter)
         self.assertIsInstance(model_from_env("draft", {"NOVEL_FORGE_MODEL_PROVIDER": "mock"}), MockModelAdapter)
@@ -306,7 +337,7 @@ def _fake_openai_sdk_module(chunks):
     class FakeCompletions:
         def create(self, **kwargs):
             assert kwargs["stream"] is True
-            return iter(chunks)
+            return chunks if hasattr(chunks, "close") else iter(chunks)
 
     class FakeChat:
         def __init__(self):
@@ -318,6 +349,18 @@ def _fake_openai_sdk_module(chunks):
             self.chat = FakeChat()
 
     return types.SimpleNamespace(OpenAI=FakeOpenAI)
+
+
+class _FakeSDKStream:
+    def __init__(self, chunks):
+        self.chunks = list(chunks)
+        self.closed = False
+
+    def __iter__(self):
+        return iter(self.chunks)
+
+    def close(self):
+        self.closed = True
 
 
 if __name__ == "__main__":

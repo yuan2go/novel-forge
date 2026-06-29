@@ -31,6 +31,7 @@ async function assertBackendFixture(t) {
     ["/product/runtime/cost-ledger?limit=1", "cost ledger"],
     ["/product/runtime/cost-dashboard", "cost dashboard"],
     ["/product/runtime/policy/enforcement-report", "runtime policy enforcement"],
+    ["/product/os/retrieval/pgvector-capabilities", "pgvector retrieval capabilities"],
     ["/product/publishing/assets?limit=1", "publishing assets"]
   ];
   for (const [endpoint, label] of endpoints) {

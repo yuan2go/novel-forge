@@ -142,14 +142,20 @@ Reference analysis is for structural learning only. Reports include metrics such
 
 `serve-api` starts the FastAPI backend. `worker` starts the Celery worker. Both require optional dependencies from `.[industrial]` and the services in `docker-compose.yml`.
 
-Online PostgreSQL/pgvector retrieval is opt-in. Local hash-vector retrieval remains the default deterministic path. To sync/query the online pgvector table, install PostgreSQL with the `vector` extension and the optional `psycopg` dependency, then set:
+Context Builder `backend=auto` now follows the Novel OS retrieval boundary:
+
+```text
+pgvector internal knowledge/memory base -> Qdrant optional high-performance service -> local fallback
+```
+
+Local pgvector projection remains deterministic and works without a database. Online PostgreSQL/pgvector retrieval is opt-in. To sync/query the online pgvector table, install PostgreSQL with the `vector` extension and the optional `psycopg` dependency, then set:
 
 ```bash
 export NOVEL_FORGE_DATABASE_URL=postgresql://...
 export NOVEL_FORGE_PGVECTOR_ONLINE=1
 ```
 
-Set `NOVEL_FORGE_PGVECTOR_STRICT=1` only when pgvector write/query failures should fail the operation instead of falling back to local retrieval. The online backend maintains `nf_pgvector_chunks` with `vector(64)` embeddings and an ivfflat cosine index.
+Set `NOVEL_FORGE_PGVECTOR_STRICT=1` only when pgvector write/query failures should fail the operation instead of falling back to local retrieval. The online backend maintains `nf_pgvector_chunks` with `vector(64)` embeddings and ivfflat cosine index. Qdrant remains available through `qdrant-index` / `qdrant-search` and explicit `backend=qdrant` when the project needs a separate high-performance vector service.
 
 Neo4j is intentionally not part of the default runtime. `neo4j-status` explains whether graph projection is disabled, unconfigured, or explicitly enabled.
 

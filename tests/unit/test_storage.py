@@ -7,6 +7,8 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.schemas import CharacterCard, ChapterPlan, ProjectWorkspaceState, SourceDocument, WorldBible
+from novel_forge.modules.long_memory import create_memory_record
+from novel_forge.modules.pgvector_store import build_embedding_job
 from novel_forge.storage.asset_manifest import rebuild_asset_manifest, manifest_counts
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.retrieval_index import build_retrieval_index
@@ -347,6 +349,42 @@ class StorageTests(unittest.TestCase):
             self.assertEqual(context["retrieval_backend"], "qdrant")
             self.assertEqual(context["items"][0]["title"], "Qdrant lead")
             self.assertEqual(context["items"][0]["ranker"], "qdrant-vector")
+
+    def test_rag_context_auto_prefers_pgvector_internal_memory_before_qdrant(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "pgvector-default-project"
+            memory = create_memory_record(
+                storage,
+                project_id=project_id,
+                level="L4",
+                memory_type="continuity_rule",
+                title="Internal Bell Memory",
+                summary="Blue bells consume memory debt before any gate opens.",
+                content={"rule": "blue bells require memory debt"},
+                priority=9,
+            )
+            build_embedding_job(storage, source_paths=[memory["path"]], backend="pgvector", project_id=project_id)
+            plan_path = storage.write_asset_auto(
+                ChapterPlan(
+                    title="Pgvector first plan",
+                    content={"chapter": 1, "objective": "open a blue bell gate", "beats": ["debt", "gate"], "hook": "bell toll"},
+                    metadata={"project_id": project_id},
+                )
+            )
+            plan = storage.read_asset(plan_path)
+
+            with patch("novel_forge.storage.rag_context.embedding_provider_health", return_value={"ok": True}), patch(
+                "novel_forge.storage.rag_context.qdrant_search_assets",
+                side_effect=AssertionError("Qdrant should not run when pgvector returns internal OS memory"),
+            ):
+                context = build_rag_context(storage, plan, input_path=plan_path, query="blue bell memory debt", top_k=1, backend="auto")
+
+            self.assertEqual(context["retrieval_backend"], "pgvector")
+            self.assertEqual(context["items"][0]["title"], "Internal Bell Memory")
+            self.assertIn("pgvector", context["items"][0]["ranker"])
+            self.assertEqual(context["backend_attempts"][0]["backend"], "pgvector")
 
 
 if __name__ == "__main__":
