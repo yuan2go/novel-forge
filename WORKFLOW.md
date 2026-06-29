@@ -4,7 +4,7 @@
 
 This document defines how Novel Forge should operate as a local-first AI novel production platform.
 
-The workflow model replaces ad-hoc prompt execution with traceable production nodes, artifact versions, context bundles, quality gates, and recovery paths.
+The workflow model replaces ad-hoc prompt execution with traceable production nodes, artifact versions, context bundles, quality gates, Agent dispatch, trace/cost ledgers, invalidation, and recovery paths.
 
 ## Current Executable Pipeline
 
@@ -81,10 +81,10 @@ Minimum node contract:
 | `node_type` | analysis, context, generation, review, revision, publishing, feedback, evaluation, agent |
 | `inputs` | artifact paths, project/workspace id, parameters |
 | `context_bundle` | exact context when model/retrieval is used |
-| `processor` | local service, model adapter, handoff, worker task, or future Agent |
+| `processor` | registered local service, model adapter, handoff, worker task, or Agent operation |
 | `outputs` | schema-backed artifact or artifact version |
-| `quality_gate` | pass/fail/needs_revision criteria |
-| `run_record` | status, timing, provider, prompt/Skill version, errors |
+| `quality_gate` | pre/post gate results, KG/continuity/review/publish checks, pass/fail/needs_revision criteria |
+| `run_record` | status, timing, provider, prompt/Skill version, trace id, cost evidence, errors |
 | `recovery` | retry, rollback, invalidation, or manual handoff instruction |
 
 ## Artifact Rules
@@ -164,9 +164,11 @@ Implemented first-slice artifacts:
 - `draft_version`
 - `generation_run`
 
-Remaining future artifact:
+Implemented first-slice invalidation artifact:
 
 - `change_impact_report`
+
+Workflow runtime also has first-slice support for DAG validation, dependency resolution, ready-node queue, processor registry, pre/post gate pipeline, scheduler tick/loop, pause/resume/cancel, invalidation, trace spans, and quarantine/rollback markers.
 
 ## Review Pipeline
 
@@ -210,9 +212,45 @@ review_report
   -> confirm apply
   -> new draft version
   -> post-revision review
+  -> publish gate
 ```
 
 Every manual or AI-assisted edit must be reversible through version history or patch record.
+
+The review rework backend first slice binds:
+
+```text
+review_issue
+  -> revision_task
+  -> editor_patch
+  -> draft_version
+  -> re-review
+  -> publish_gate
+```
+
+The remaining product gap is Review Rework Board depth: operators need an issue-to-patch-to-version-to-gate view, not just separate review and revision actions.
+
+## Novel OS Acceptance Workflow
+
+The OS end-to-end acceptance workflow is not a full-novel generation test. It is a minimal vertical slice proving runtime integrity:
+
+```text
+WorkflowDefinition
+  -> execute_workflow
+  -> workflow / agent scheduler tick or loop
+  -> context bundle
+  -> model call through the configured runtime boundary
+  -> node_run / agent_run
+  -> trace_span / gate_result / model_call_log / cost_ledger
+  -> Novel KG gate / continuity preflight
+  -> review_issue -> revision_task -> editor_patch -> draft_version
+  -> re-review -> publish_gate
+  -> downstream invalidation
+  -> resume_workflow
+  -> cost_quality_dashboard / acceptance report
+```
+
+Full-novel generation is a later long-chain acceptance scenario for scale, continuity drift, quality drift, and cost control.
 
 ## Analysis Center Workflow
 

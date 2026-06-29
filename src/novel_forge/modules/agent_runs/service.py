@@ -7,6 +7,7 @@ from typing import Any
 
 from novel_forge.agents import agent_runtime_profile, enforce_agent_action, runtime_profile_for_skill
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.model_adapters.runtime import evaluate_provider_runtime_guard, normalize_provider_usage, provider_runtime_guard_from_context
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import check_budget_policy, record_cost_ledger, record_model_call_log, record_trace_span
@@ -163,6 +164,29 @@ class AgentExecutionContext:
             event_type="agent_run.succeeded",
             message=f"{self.operation} completed",
         )
+        if int(token_used or 0) > 0 or float(cost_estimate or 0.0) > 0:
+            run_asset = result.get("asset", {}) if isinstance(result.get("asset", {}), dict) else {}
+            content = run_asset.get("content", {}) if isinstance(run_asset.get("content", {}), dict) else {}
+            metadata = run_asset.get("metadata", {}) if isinstance(run_asset.get("metadata", {}), dict) else {}
+            trace_payload = _agent_trace_payload(
+                content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {},
+                fallback_trace_id=str(content.get("run_id", "")),
+                span_name=f"model-call-{self.operation}",
+            )
+            result["model_call"] = record_model_call_log(
+                self.storage,
+                provider=self.model_provider or str(metadata.get("model_provider", "")) or "local",
+                model=self.model_name or str(metadata.get("model_name", "")) or "local",
+                operation=self.operation,
+                status="succeeded",
+                usage={"total_tokens": int(token_used or 0), "token_source": "agent_execution_context"},
+                cost={"amount": float(cost_estimate or 0.0), "currency": "USD", "source": "agent_execution_context"},
+                trace=trace_payload,
+                project_id=str(metadata.get("project_id", "")),
+                workspace_path=str(metadata.get("workspace_path", "")),
+                source_id=str(content.get("run_id", "")),
+                prompt_version=self.prompt_version or str(metadata.get("prompt_version", "")),
+            )
         record_agent_budget(
             self.storage,
             agent_run_path=self.path,
@@ -187,6 +211,14 @@ class AgentExecutionContext:
 
     def __exit__(self, exc_type: Any, exc: BaseException | None, tb: Any) -> bool:
         if exc is not None:
+            try:
+                if self.path:
+                    current = self.storage.read_json(resolve_path(self.storage.root, self.path))
+                    content = current.get("content", {}) if isinstance(current, dict) and isinstance(current.get("content", {}), dict) else {}
+                    if str(content.get("status", "")) in TERMINAL_STATUSES:
+                        return False
+            except Exception:
+                pass
             self.fail(exc)
         return False
 
@@ -796,7 +828,9 @@ def execute_agent_run_once(
     trace_payload = _agent_trace_payload(content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}, fallback_trace_id=str(content.get("run_id", "")), span_name=f"execute-{tool_name}")
     project_id = str(metadata.get("project_id", ""))
     workspace_path = str(metadata.get("workspace_path", ""))
+    run_evidence = content.get("evidence", {}) if isinstance(content.get("evidence", {}), dict) else {}
     evidence_payload = evidence or {}
+    runtime_policy = _merge_runtime_policy(run_evidence, evidence_payload)
     if token_budget > 0 and token_used > token_budget:
         budget = record_agent_budget(
             storage,
@@ -831,6 +865,30 @@ def execute_agent_run_once(
         project_id=project_id,
         workspace_path=workspace_path,
     )
+    if policy.get("status") == "skipped" and bool(runtime_policy.get("require_budget_policy", False)):
+        budget = record_agent_budget(
+            storage,
+            agent_run_path=_display_path(storage.root, run_path),
+            token_budget=token_budget,
+            token_used=token_used,
+            cost_estimate=cost_estimate,
+            status="exceeded",
+        )
+        record_agent_gate(
+            storage,
+            agent_run_path=_display_path(storage.root, run_path),
+            gate_type="budget_policy",
+            status="failed",
+            result={**policy, "required": True},
+        )
+        failure = create_agent_failure_report(
+            storage,
+            agent_run_path=_display_path(storage.root, run_path),
+            error_type="BudgetPolicyMissing",
+            error_message="agent runtime policy requires an active budget_policy",
+            recovery_instruction="Create an active budget_policy for the project or disable require_budget_policy before resuming.",
+        )
+        return {"status": "failed", "guard": guard, "budget": budget, "budget_policy": policy, "failure": failure}
     if policy.get("status") == "failed":
         budget = record_agent_budget(
             storage,
@@ -1006,25 +1064,17 @@ def _provider_runtime_guard(
     if not isinstance(guard_spec, dict):
         guard_spec = {}
     usage = evidence.get("provider_usage", {}) if isinstance(evidence.get("provider_usage", {}), dict) else {}
-    usage = {"total_tokens": int(token_used or 0), **usage}
-    failures: list[str] = []
-    error_type = "ProviderRuntimeGuardFailed"
-    if bool(guard_spec.get("cancel_requested", False) or usage.get("cancel_requested", False)):
-        failures.append("provider execution cancellation requested")
-        error_type = "ProviderExecutionCancelled"
-    max_tokens = int(guard_spec.get("max_tokens", guard_spec.get("token_cutoff", 0)) or 0)
-    total_tokens = int(usage.get("total_tokens", token_used or 0) or 0)
-    if max_tokens > 0 and total_tokens > max_tokens:
-        failures.append(f"provider token cutoff exceeded: used {total_tokens}, limit {max_tokens}")
-        error_type = "ProviderTokenCutoffExceeded"
-    timeout_ms = int(guard_spec.get("timeout_ms", guard_spec.get("max_elapsed_ms", 0)) or 0)
-    elapsed_ms = int(usage.get("elapsed_ms", 0) or 0)
-    if timeout_ms > 0 and elapsed_ms > timeout_ms:
-        failures.append(f"provider timeout exceeded: elapsed {elapsed_ms}ms, limit {timeout_ms}ms")
-        error_type = "ProviderTimeoutExceeded"
-    if not failures:
-        return {"status": "passed", "usage": usage, "guard": guard_spec}
-    result = {"status": "failed", "message": "; ".join(failures), "usage": usage, "guard": guard_spec, "error_type": error_type, "cost_estimate": cost_estimate}
+    normalized_usage = normalize_provider_usage({"total_tokens": int(token_used or 0), **usage}, usage_source="agent_executor")
+    result = evaluate_provider_runtime_guard(
+        operation="agent_execute",
+        provider="agent_executor",
+        usage=normalized_usage,
+        guard=provider_runtime_guard_from_context({"provider_runtime_guard": guard_spec}),
+        phase="postflight",
+    )
+    if result.get("status") != "failed":
+        return {"status": "passed", "usage": result.get("usage", normalized_usage), "guard": result.get("guard", guard_spec), "events": result.get("events", [])}
+    result = {**result, "cost_estimate": cost_estimate}
     record_agent_gate(
         storage,
         agent_run_path=agent_run_path,
@@ -1038,7 +1088,7 @@ def _provider_runtime_guard(
         span_id=str(trace.get("span_id", "")),
         parent_span_id=str(trace.get("parent_span_id", "")),
         span_type="provider_runtime_guard",
-        name=error_type,
+        name=str(result.get("error_type", "ProviderRuntimeGuardFailed")),
         status="failed",
         attributes=result,
         references=[agent_run_path],
@@ -1474,6 +1524,22 @@ def _agent_trace_payload(payload: dict[str, Any], *, fallback_trace_id: str, spa
     parent_span_id = str(source.get("parent_span_id") or nested.get("span_id") or nested.get("parent_span_id") or source.get("workflow_run_id") or trace_id)
     span_id = str(source.get("span_id") or make_id("span", f"{trace_id}-{span_name}-{utc_now()}"))
     return {"trace_id": trace_id, "span_id": span_id, "parent_span_id": parent_span_id}
+
+
+def _merge_runtime_policy(*payloads: dict[str, Any]) -> dict[str, Any]:
+    merged: dict[str, Any] = {}
+    for payload in payloads:
+        if not isinstance(payload, dict):
+            continue
+        for key in ["runtime_policy", "provider_runtime_guard"]:
+            value = payload.get(key)
+            if isinstance(value, dict):
+                merged.update(value)
+        if "require_budget_policy" in payload:
+            merged["require_budget_policy"] = bool(payload.get("require_budget_policy"))
+    if str(merged.get("mode", "")).lower() in {"operating_system", "strict", "enforced"}:
+        merged.setdefault("require_budget_policy", True)
+    return merged
 
 
 def _record_agent_trace_span(

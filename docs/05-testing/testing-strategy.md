@@ -8,7 +8,7 @@ A change is complete only when schema-backed assets, workflow/run records, copyr
 
 ## Current Runner
 
-V5 uses Python stdlib `unittest` because dependency installation is intentionally avoided during rebuild. Do not introduce pytest or other test dependencies without an ADR or explicit task.
+v6 uses Python stdlib `unittest` because dependency installation is intentionally avoided during rebuild. Do not introduce pytest or other test dependencies without an ADR or explicit task.
 
 ## Commands
 
@@ -52,11 +52,34 @@ For local production-style stack changes, use the smallest relevant Docker verif
 - End-to-end pipeline.
 - Long-project fixture pressure test with six chapters and workspace memory.
 
-## Platform Migration Test Requirements
+## Novel OS Test Requirements
+
+### Novel OS Acceptance Chain
+
+The Novel Operating System end-to-end acceptance chain is not a full-novel generation test. It is the smallest complete vertical slice that proves the runtime can coordinate production through durable artifacts.
+
+The P0 fixture should cover one project and one chapter-sized production target:
+
+- `WorkflowDefinition` creation and DAG validation;
+- workflow execution through the runtime state machine;
+- ready-node queue claim/ack or controlled blocking;
+- Agent dispatch queue materialization and scheduler tick/loop;
+- context bundle or explicit fixture context;
+- model call through the configured runtime boundary or deterministic mock adapter;
+- `node_run`, `agent_run`, checkpoint, and recovery records;
+- `trace_span`, `gate_result`, `model_call_log`, and `cost_ledger` evidence;
+- Novel KG gate and continuity preflight;
+- `review_issue -> revision_task -> editor_patch -> draft_version`;
+- re-review and publish gate;
+- downstream invalidation after an upstream change;
+- resume from blocked or failed state;
+- cost-quality dashboard or acceptance report.
+
+Full-novel generation belongs to later long-chain acceptance. It should test continuity over many chapters, cost drift, quality drift, and editorial throughput after the P0 runtime chain is stable.
 
 ### Context Builder
 
-Future `context_build_plan` and `context_bundle` work must test:
+Context Builder changes must continue testing:
 
 - schema validation;
 - selected asset list;
@@ -68,7 +91,7 @@ Future `context_build_plan` and `context_bundle` work must test:
 
 ### Versioned Production Chain
 
-Future outline/chapter/draft versioning must test:
+Versioned production chain changes must continue testing:
 
 - `outline_version` creation;
 - `chapter_plan_version` creation;
@@ -80,7 +103,7 @@ Future outline/chapter/draft versioning must test:
 
 ### Analysis Center
 
-Future Analysis Center work must test:
+Analysis Center changes must continue testing:
 
 - common novel analysis schema;
 - web fiction business analysis profile;
@@ -91,7 +114,7 @@ Future Analysis Center work must test:
 
 ### AI Editor
 
-Future editor work must test:
+AI Editor changes must continue testing:
 
 - `editor_patch` schema;
 - paragraph-level suggestions;
@@ -103,7 +126,7 @@ Future editor work must test:
 
 ### Long-Form Stability
 
-Future stability work must test:
+Long-form stability changes must continue testing:
 
 - timeline events;
 - foreshadowing placement and payoff;
@@ -111,12 +134,13 @@ Future stability work must test:
 - `change_impact_report`;
 - downstream invalidation when continuity changes.
 
-### Agent Industrialization
+### Agent Scheduler
 
-Future Agent work must test:
+Agent Scheduler work must test:
 
 - `agent_contract` validation;
-- `agent_run` state transitions;
+- `agent_run` state transitions through the scheduler;
+- dispatch queue claim, lease, ack, retry, and dead-letter behavior;
 - checkpoint creation;
 - budget limit enforcement;
 - gate result recording;
@@ -124,9 +148,21 @@ Future Agent work must test:
 - failure and recovery;
 - rerun creating a new record.
 
+### Trace And Cost Runtime
+
+Runtime observability and cost work must test:
+
+- parent/child trace span relationships across workflow, node, agent, gate, model, and cost spans;
+- model call logs with provider, model, operation, usage, status, and trace ids;
+- cost ledger writes from model calls and explicit cost events;
+- budget policy checks before or during runtime execution;
+- cost alerts on projected budget overrun;
+- project, agent, and chapter cost snapshots;
+- cost-quality dashboard aggregation.
+
 ### Feedback, Publishing, Model Evaluation
 
-Future product centers must test:
+Feedback, publishing, and model-evaluation changes must continue testing:
 
 - web feedback import;
 - sentiment distribution;

@@ -11,6 +11,7 @@ from novel_forge.modules.agent_scheduler import ensure_agent_dispatch_queue
 from novel_forge.modules.agent_runs import ensure_agent_contract, execute_agent_run_once, record_agent_checkpoint, start_agent_run, update_agent_run_status
 from novel_forge.modules.change_impact import create_change_impact_report, mark_downstream_assets_stale
 from novel_forge.modules.common import resolve_path
+from novel_forge.modules.operation_checkpoint import checkpoint_idempotency_key, operation_checkpoint_schema
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import (
     acquire_scheduler_lease,
@@ -150,6 +151,7 @@ class ProcessorRegistry:
             "rollback_strategy": spec.get("rollback_strategy", "quarantine_outputs"),
             "input_schema": spec.get("input_schema", {"type": "asset_paths"}),
             "output_schema": spec.get("output_schema", {"type": "asset_paths"}),
+            "checkpoint_schema": operation_checkpoint_schema(canonical or operation, checkpoint_strategy=spec.get("checkpoint_strategy", "output_reuse" if canonical else "unsupported")),
             "registered": bool(canonical),
         }
 
@@ -201,6 +203,7 @@ def create_workflow_definition(
     entry_node_id: str,
     status: str = "active",
     version: str = "0.1.0",
+    runtime_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     workflow_id = make_id("workflow", name)
     asset = WorkflowDefinition(
@@ -213,6 +216,7 @@ def create_workflow_definition(
             "nodes": nodes,
             "entry_node_id": entry_node_id,
             "status": status,
+            "runtime_policy": runtime_policy or {},
         },
         metadata={"created_by": "workflow_nodes"},
     )
@@ -1603,6 +1607,8 @@ def _resume_blocked_node(
         "workflow_run_id": run_id,
         "resumed_from_run_id": previous_run_id,
         "workflow_node_id": node_id,
+        "runtime_policy": _runtime_policy_spec(node, processor),
+        "context_bundle_path": _first_context_bundle_path(storage, [*input_assets, *planned_outputs], processor),
         **evidence,
     }
     agent_data = storage.read_json(resolve_path(storage.root, agent_path))
@@ -1650,6 +1656,19 @@ def _resume_blocked_node(
         error = message
         planned_outputs = []
     if status == "succeeded":
+        policy_failure = _mandatory_runtime_policy_failure(
+            storage,
+            run_id=run_id,
+            node=node,
+            input_assets=input_assets,
+            output_assets=planned_outputs,
+            processor=processor_payload,
+            started_at=utc_now(),
+            phase="post",
+        )
+        if policy_failure:
+            policy_failure["agent_run"] = execution.get("run") if isinstance(execution.get("run"), dict) else {"path": processor_payload["agent_run_path"]}
+            return policy_failure
         post_runtime_failure = _runtime_guard_failure(
             storage,
             run_id=run_id,
@@ -1738,6 +1757,7 @@ def _resolve_workflow_definition(storage: LocalStorage, value: str | Path) -> tu
 def _workflow_nodes(storage: LocalStorage, workflow: dict[str, Any]) -> list[dict[str, Any]]:
     content = workflow.get("content", {}) if isinstance(workflow.get("content", {}), dict) else {}
     workflow_id = str(content.get("workflow_id") or workflow.get("id") or "")
+    workflow_policy = content.get("runtime_policy", {}) if isinstance(content.get("runtime_policy", {}), dict) else {}
     rows: dict[str, dict[str, Any]] = {}
     for item in content.get("nodes", []) if isinstance(content.get("nodes", []), list) else []:
         if not isinstance(item, dict):
@@ -1745,7 +1765,7 @@ def _workflow_nodes(storage: LocalStorage, workflow: dict[str, Any]) -> list[dic
         node_id = str(item.get("node_id") or item.get("id") or "").strip()
         if not node_id:
             continue
-        rows[node_id] = _normalize_node(item, workflow_id=workflow_id)
+        rows[node_id] = _attach_workflow_runtime_policy(_normalize_node(item, workflow_id=workflow_id), workflow_policy)
     for path in storage.list_json("runs"):
         try:
             data = storage.read_json(path)
@@ -1760,7 +1780,7 @@ def _workflow_nodes(storage: LocalStorage, workflow: dict[str, Any]) -> list[dic
         if not node_id:
             continue
         merged = {**rows.get(node_id, {}), **node_content}
-        rows[node_id] = _normalize_node(merged, workflow_id=workflow_id)
+        rows[node_id] = _attach_workflow_runtime_policy(_normalize_node(merged, workflow_id=workflow_id), workflow_policy)
     if not rows:
         raise ValueError("workflow_definition has no executable nodes")
     return list(rows.values())
@@ -1770,6 +1790,7 @@ def _normalize_node(node: dict[str, Any], *, workflow_id: str) -> dict[str, Any]
     processor = node.get("processor", {}) if isinstance(node.get("processor", {}), dict) else {}
     quality_gate = node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {}
     human_gate = node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {}
+    runtime_policy = node.get("runtime_policy", {}) if isinstance(node.get("runtime_policy", {}), dict) else {}
     return {
         **node,
         "node_id": str(node.get("node_id") or node.get("id") or ""),
@@ -1782,7 +1803,18 @@ def _normalize_node(node: dict[str, Any], *, workflow_id: str) -> dict[str, Any]
         "processor": processor or {"kind": "record_only"},
         "quality_gate": quality_gate or {"required": False},
         "human_gate": human_gate or {"required": False},
+        "runtime_policy": runtime_policy,
     }
+
+
+def _attach_workflow_runtime_policy(node: dict[str, Any], workflow_policy: dict[str, Any]) -> dict[str, Any]:
+    if not workflow_policy:
+        return node
+    node_policy = node.get("runtime_policy", {}) if isinstance(node.get("runtime_policy", {}), dict) else {}
+    merged_policy = {**workflow_policy, **node_policy}
+    processor = node.get("processor", {}) if isinstance(node.get("processor", {}), dict) else {}
+    processor_policy = processor.get("runtime_policy", {}) if isinstance(processor.get("runtime_policy", {}), dict) else {}
+    return {**node, "runtime_policy": merged_policy, "processor": {**processor, "runtime_policy": {**merged_policy, **processor_policy}}}
 
 
 def _node_plan_row(node: dict[str, Any]) -> dict[str, Any]:
@@ -2178,6 +2210,127 @@ def _runtime_guard_failure(
     )
 
 
+def _mandatory_runtime_policy_failure(
+    storage: LocalStorage,
+    *,
+    run_id: str,
+    node: dict[str, Any],
+    input_assets: list[str],
+    output_assets: list[str],
+    processor: dict[str, Any],
+    started_at: str,
+    phase: str,
+) -> dict[str, Any] | None:
+    policy = _runtime_policy_spec(node, processor)
+    if not bool(policy.get("enforce_required_evidence", False)):
+        return None
+    operation = str(processor.get("operation") or node.get("operation") or node.get("node_id", "")).strip()
+    target_paths = _dedupe([*input_assets, *output_assets])
+    failures: list[str] = []
+    checks: dict[str, Any] = {"phase": phase, "operation": operation, "policy": policy}
+    if bool(policy.get("require_context_bundle", False)) and _operation_requires_context_bundle(node, processor, phase=phase):
+        context_bundle_path = _first_context_bundle_path(storage, target_paths, processor)
+        checks["context_bundle_path"] = context_bundle_path
+        if not context_bundle_path:
+            failures.append("runtime policy requires a context_bundle for generation/rework execution")
+    status = "failed" if failures else "passed"
+    gate_result = record_gate_result(
+        storage,
+        gate_kind="runtime_policy",
+        status=status,
+        target_paths=target_paths,
+        result={**checks, "failures": failures},
+        trace=_gate_trace(run_id, str(node.get("node_id", "")), f"runtime-policy-{phase}"),
+        project_id=str(policy.get("project_id") or "") or _project_id_for_paths(storage, target_paths),
+        workspace_path=str(policy.get("workspace_path") or ""),
+        message="; ".join(failures),
+        blocking=True,
+    )
+    if not failures:
+        processor.setdefault("runtime_policy_evidence", {})
+        if isinstance(processor.get("runtime_policy_evidence", {}), dict):
+            processor["runtime_policy_evidence"][f"{phase}_gate_result_path"] = gate_result.get("path", "")
+            if checks.get("context_bundle_path"):
+                processor["runtime_policy_evidence"]["context_bundle_path"] = checks["context_bundle_path"]
+        return None
+    return _record_executed_node(
+        storage,
+        run_id=run_id,
+        node=node,
+        status="failed",
+        input_assets=input_assets,
+        output_assets=output_assets,
+        processor={**processor, "runtime_policy": {**policy, "gate_result_path": gate_result.get("path", ""), "failures": failures}},
+        started_at=started_at,
+        error="; ".join(failures),
+        quality_gate={"required": True, "status": "failed", "runtime_policy": policy, "gate_result_path": gate_result.get("path", "")},
+        human_gate=node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {"required": False, "status": "not_required"},
+        message="; ".join(failures),
+    )
+
+
+def _runtime_policy_spec(node: dict[str, Any], processor: dict[str, Any]) -> dict[str, Any]:
+    node_spec = node.get("runtime_policy", {}) if isinstance(node.get("runtime_policy", {}), dict) else {}
+    processor_spec = processor.get("runtime_policy", {}) if isinstance(processor.get("runtime_policy", {}), dict) else {}
+    spec = {**node_spec, **processor_spec}
+    mode = str(spec.get("mode", "")).strip().lower()
+    if mode in {"operating_system", "strict", "enforced"}:
+        spec.setdefault("enforce_required_evidence", True)
+        spec.setdefault("require_context_bundle", True)
+        spec.setdefault("require_budget_policy", True)
+    if bool(spec.get("enforce_required_evidence", False)):
+        spec.setdefault("version", "runtime-policy-0.1.0")
+    return spec
+
+
+def _operation_requires_context_bundle(node: dict[str, Any], processor: dict[str, Any], *, phase: str) -> bool:
+    operation = str(processor.get("operation") or node.get("operation") or node.get("node_id", "")).strip().lower().replace("-", "_")
+    node_type = str(node.get("node_type", "")).strip().lower()
+    agent_key = str(processor.get("agent_key", "") or node.get("agent_key", "")).strip().lower()
+    if operation in {"draft", "prose_generation", "draft_chapter", "chapter_draft", "review_rework_loop", "run_review_rework_loop"}:
+        return True
+    if node_type in {"draft", "generation", "revision"}:
+        return True
+    return agent_key in {"draft", "editor"}
+
+
+def _first_context_bundle_path(storage: LocalStorage, asset_paths: list[str], processor: dict[str, Any] | None = None) -> str:
+    processor = processor or {}
+    explicit = str(processor.get("context_bundle_path") or "").strip()
+    if explicit and _asset_type(storage, explicit) == "context_bundle":
+        return _display_path(storage.root, resolve_path(storage.root, explicit))
+    payload = processor.get("registry_payload", {}) if isinstance(processor.get("registry_payload", {}), dict) else {}
+    for key in ["context_bundle_path"]:
+        value = str(payload.get(key) or "").strip()
+        if value and _asset_type(storage, value) == "context_bundle":
+            return _display_path(storage.root, resolve_path(storage.root, value))
+    outputs = payload.get("outputs", {}) if isinstance(payload.get("outputs", {}), dict) else {}
+    value = str(outputs.get("context_bundle_path") or "").strip()
+    if value and _asset_type(storage, value) == "context_bundle":
+        return _display_path(storage.root, resolve_path(storage.root, value))
+    for item in asset_paths:
+        if _asset_type(storage, item) == "context_bundle":
+            return _display_path(storage.root, resolve_path(storage.root, item))
+        if _asset_type(storage, item) == "revision_task":
+            try:
+                data = storage.read_json(resolve_path(storage.root, item))
+                content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+                task_outputs = content.get("outputs", {}) if isinstance(content.get("outputs", {}), dict) else {}
+                value = str(task_outputs.get("context_bundle_path") or "").strip()
+                if value and _asset_type(storage, value) == "context_bundle":
+                    return _display_path(storage.root, resolve_path(storage.root, value))
+            except Exception:
+                continue
+    return ""
+
+
+def _asset_type(storage: LocalStorage, path: str | Path) -> str:
+    try:
+        return storage.read_asset(resolve_path(storage.root, path)).type
+    except Exception:
+        return ""
+
+
 def _post_gate_failure(
     storage: LocalStorage,
     *,
@@ -2412,6 +2565,18 @@ def _execute_node(
     human_gate = dict(node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {})
     contract = _processor_contract_for_node(node)
     processor = {**processor, "contract": contract}
+    policy_failure = _mandatory_runtime_policy_failure(
+        storage,
+        run_id=run_id,
+        node=node,
+        input_assets=input_assets,
+        output_assets=[],
+        processor=processor,
+        started_at=started_at,
+        phase="pre",
+    )
+    if policy_failure:
+        return policy_failure
     runtime_failure = _runtime_guard_failure(
         storage,
         run_id=run_id,
@@ -2460,6 +2625,18 @@ def _execute_node(
         checkpoint_hit = _checkpoint_resume_hit(storage, checkpoint_state)
         if checkpoint_hit:
             output_assets = _dedupe([*output_assets, *checkpoint_hit.get("output_assets", [])])
+            policy_failure = _mandatory_runtime_policy_failure(
+                storage,
+                run_id=run_id,
+                node=node,
+                input_assets=input_assets,
+                output_assets=output_assets,
+                processor={**processor, "checkpoint": checkpoint_state, "resumed_from_checkpoint": True},
+                started_at=started_at,
+                phase="post",
+            )
+            if policy_failure:
+                return policy_failure
             post_runtime_failure = _runtime_guard_failure(
                 storage,
                 run_id=run_id,
@@ -2508,6 +2685,18 @@ def _execute_node(
         status = str(service_result.get("status", "succeeded"))
         processor_payload = {**processor, "registry_operation": service_result.get("operation", ""), "registry_payload": service_result.get("payload", {}), "checkpoint": checkpoint_state}
         if status in WORKFLOW_SUCCESS_NODE_STATUSES or status == "succeeded":
+            policy_failure = _mandatory_runtime_policy_failure(
+                storage,
+                run_id=run_id,
+                node=node,
+                input_assets=input_assets,
+                output_assets=output_assets,
+                processor=processor_payload,
+                started_at=started_at,
+                phase="post",
+            )
+            if policy_failure:
+                return policy_failure
             post_runtime_failure = _runtime_guard_failure(
                 storage,
                 run_id=run_id,
@@ -2752,6 +2941,8 @@ def _dispatch_agent_node(
         "workflow_node_id": node.get("node_id", ""),
         "expected_output_assets": output_assets,
         "processor": processor,
+        "runtime_policy": _runtime_policy_spec(node, processor),
+        "context_bundle_path": _first_context_bundle_path(storage, [*input_assets, *output_assets], processor),
         "token_used": int(processor.get("token_used", 0) or 0),
         "cost_estimate": float(processor.get("cost_estimate", 0) or 0),
         "provider_runtime_guard": processor.get("provider_runtime_guard", processor.get("runtime_guard", {})) if isinstance(processor.get("provider_runtime_guard", processor.get("runtime_guard", {})), dict) else {},
@@ -3099,9 +3290,20 @@ def _processor_checkpoint_state(
 ) -> dict[str, Any]:
     operation = str(processor.get("operation") or node.get("operation") or processor.get("name") or node.get("node_id", ""))
     expected_outputs = _expected_output_assets(node, processor)
-    idempotency_key = str(processor.get("idempotency_key") or _stable_processor_checkpoint_key(node, operation, input_assets, expected_outputs))
+    idempotency_key = str(
+        processor.get("idempotency_key")
+        or checkpoint_idempotency_key(
+            storage,
+            operation=operation,
+            input_assets=input_assets,
+            context_bundle_path=str(processor.get("context_bundle_path", "")),
+            prompt_version=str(processor.get("prompt_version", "")),
+            model=str(processor.get("model") or processor.get("model_name") or ""),
+        )
+        or _stable_processor_checkpoint_key(node, operation, input_assets, expected_outputs)
+    )
     return {
-        "checkpoint_schema": processor.get("checkpoint_schema") if isinstance(processor.get("checkpoint_schema"), dict) else {"version": "0.1.0", "operation": operation},
+        "checkpoint_schema": processor.get("checkpoint_schema") if isinstance(processor.get("checkpoint_schema"), dict) else operation_checkpoint_schema(operation, checkpoint_strategy=str(processor.get("checkpoint_strategy", "operation_state"))),
         "resume_from_checkpoint": bool(processor.get("resume_from_checkpoint", False)),
         "idempotency_key": idempotency_key,
         "operation": operation,
@@ -3228,7 +3430,7 @@ def _evaluate_gate_registry(
             target_paths=target_paths,
             result=evaluation.get("result", {}) if isinstance(evaluation.get("result", {}), dict) else {"result": evaluation.get("result")},
             trace=trace,
-            project_id=_project_id_for_paths(storage, target_paths),
+            project_id=str(spec.get("project_id") or "") or _project_id_for_paths(storage, target_paths),
             workspace_path=str(spec.get("workspace_path") or ""),
             message=str(evaluation.get("message", "")),
             blocking=bool(spec.get("blocking", True)),

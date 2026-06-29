@@ -6,6 +6,7 @@ from typing import Any
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.agent_runs import AgentExecutionContext
+from novel_forge.modules.common import resolve_path
 from novel_forge.schemas import LocalOpsDrillReport, LongChainAcceptanceReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -77,13 +78,31 @@ def create_long_chain_acceptance_report(
     *,
     project_id: str | None = None,
     chapter_count: int = 10,
+    acceptance_evidence: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     chapter_count = max(1, int(chapter_count or 10))
     checks = _long_chain_checks(storage, project_id=project_id, chapter_count=chapter_count)
+    evidence = acceptance_evidence if isinstance(acceptance_evidence, dict) else {}
+    os_checks = _operating_acceptance_checks(storage, evidence) if evidence else []
+    checks = [*checks, *os_checks]
     trends = _quality_trends(storage, project_id=project_id)
     canon_conflicts = _canon_conflicts(storage, project_id=project_id)
     publish_summary = _publish_gate_summary(storage, project_id=project_id)
-    recommendation = "block" if canon_conflicts or publish_summary.get("blocked", 0) else "revise" if any(item["status"] == "warning" for item in checks) else "pass"
+    scale_metrics = _scale_acceptance_metrics(storage, project_id=project_id, chapter_count=chapter_count)
+    if evidence:
+        require_publish_ready = bool(evidence.get("require_publish_ready", False))
+        require_no_canon_conflicts = bool(evidence.get("require_no_canon_conflicts", False))
+        recommendation = (
+            "block"
+            if any(item["status"] == "failed" for item in os_checks)
+            or (require_publish_ready and publish_summary.get("blocked", 0))
+            or (require_no_canon_conflicts and canon_conflicts)
+            else "revise"
+            if any(item["status"] == "warning" for item in os_checks)
+            else "pass"
+        )
+    else:
+        recommendation = "block" if canon_conflicts or publish_summary.get("blocked", 0) else "revise" if any(item["status"] == "warning" for item in checks) else "pass"
     with AgentExecutionContext(
         storage,
         agent_key="metrics",
@@ -102,8 +121,11 @@ def create_long_chain_acceptance_report(
                 "chapter_count": chapter_count,
                 "checks": checks,
                 "quality_trends": trends,
+                "scale_metrics": scale_metrics,
                 "canon_conflicts": canon_conflicts,
                 "publish_gate_summary": publish_summary,
+                "acceptance_mode": "operating_system" if evidence else "long_chain",
+                "acceptance_evidence": _json_safe(evidence),
                 "recommendation": recommendation,
                 "created_at": utc_now(),
             },
@@ -234,12 +256,103 @@ def _recovery_actions(results: list[dict[str, Any]]) -> list[str]:
 def _long_chain_checks(storage: LocalStorage, *, project_id: str | None, chapter_count: int) -> list[dict[str, Any]]:
     runs = _project_assets(storage, "chapter_production_run", "runs", project_id=project_id)
     drafts = _project_assets(storage, "draft_version", "drafts", project_id=project_id)
-    context = _project_assets(storage, "context_bundle", "runs", project_id=project_id)
+    context = _project_assets(storage, "context_bundle", "contexts", project_id=project_id)
+    reports = _project_assets(storage, "chapter_continuity_report", "continuity", project_id=project_id)
+    feedback = _project_assets(storage, "feedback_backflow_plan", "feedback", project_id=project_id)
     return [
         {"check": "chapter_production_runs", "status": "passed" if len(runs) >= min(chapter_count, 1) else "warning", "observed": len(runs), "expected": chapter_count},
-        {"check": "draft_versions", "status": "passed" if drafts else "warning", "observed": len(drafts), "expected": chapter_count},
-        {"check": "context_bundles", "status": "passed" if context else "warning", "observed": len(context), "expected": chapter_count},
+        {"check": "draft_versions", "status": "passed" if len(drafts) >= min(chapter_count, 1) else "warning", "observed": len(drafts), "expected": chapter_count},
+        {"check": "context_bundles", "status": "passed" if len(context) >= min(chapter_count, 1) else "warning", "observed": len(context), "expected": chapter_count},
+        {"check": "continuity_reports", "status": "passed" if len(reports) >= min(chapter_count, 1) else "warning", "observed": len(reports), "expected": chapter_count},
+        {"check": "feedback_backflow", "status": "passed" if feedback else "warning", "observed": len(feedback), "expected": 1},
     ]
+
+
+def _operating_acceptance_checks(storage: LocalStorage, evidence: dict[str, Any]) -> list[dict[str, Any]]:
+    required_paths = {
+        "workflow_run": ("workflow_run_path", "workflow_run"),
+        "context_bundle": ("context_bundle_path", "context_bundle"),
+        "kg_gate": ("kg_gate_path", "gate_result"),
+        "budget_policy": ("budget_policy_path", "budget_policy"),
+        "model_call_log": ("model_call_log_path", "model_call_log"),
+        "review_rework": ("revision_task_path", "revision_task"),
+        "cost_ledger": ("cost_ledger_path", "cost_ledger"),
+        "invalidation": ("invalidation_report_path", "change_impact_report"),
+        "resume": ("resume_workflow_run_path", "workflow_run"),
+        "publish_gate": ("publish_gate_report_path", "publish_gate_report"),
+        "cost_quality_dashboard": ("cost_quality_dashboard_path", "cost_quality_dashboard"),
+    }
+    checks: list[dict[str, Any]] = []
+    for check, (key, expected_type) in required_paths.items():
+        value = str(evidence.get(key, "") or "")
+        exists = _path_exists(storage, value)
+        actual_type = _path_asset_type(storage, value) if exists else ""
+        type_ok = exists and (not expected_type or actual_type == expected_type)
+        checks.append(
+            {
+                "check": check,
+                "status": "passed" if type_ok else "failed",
+                "evidence_key": key,
+                "path": value,
+                "observed": 1 if type_ok else 0,
+                "expected": 1,
+                "expected_type": expected_type,
+                "actual_type": actual_type,
+            }
+        )
+    scheduler = evidence.get("agent_scheduler_loop", {}) if isinstance(evidence.get("agent_scheduler_loop", {}), dict) else {}
+    checks.append(
+        {
+            "check": "agent_scheduler_loop",
+            "status": "passed" if int(scheduler.get("acked_count", 0) or 0) > 0 and int(scheduler.get("error_count", 0) or 0) == 0 else "failed",
+            "observed": int(scheduler.get("acked_count", 0) or 0),
+            "expected": 1,
+            "error_count": int(scheduler.get("error_count", 0) or 0),
+        }
+    )
+    timeline = evidence.get("trace_timeline_summary", {}) if isinstance(evidence.get("trace_timeline_summary", {}), dict) else {}
+    by_type = timeline.get("by_type", {}) if isinstance(timeline.get("by_type", {}), dict) else {}
+    required_span_types = {"node_run", "agent_run", "model_call", "cost", "gate"}
+    missing_span_types = sorted(required_span_types - {str(key) for key, count in by_type.items() if int(count or 0) > 0})
+    checks.append(
+        {
+            "check": "trace_span_coverage",
+            "status": "passed" if not missing_span_types else "failed",
+            "observed": len(required_span_types) - len(missing_span_types),
+            "expected": len(required_span_types),
+            "missing_span_types": missing_span_types,
+        }
+    )
+    return checks
+
+
+def _path_exists(storage: LocalStorage, value: str | Path) -> bool:
+    if not str(value).strip():
+        return False
+    path = Path(value)
+    resolved = path if path.is_absolute() else storage.root / path
+    return resolved.exists() and resolved.is_file()
+
+
+def _path_asset_type(storage: LocalStorage, value: str | Path) -> str:
+    if not str(value).strip():
+        return ""
+    try:
+        return storage.read_asset(resolve_path(storage.root, value)).type
+    except Exception:
+        return ""
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(key): _json_safe(child) for key, child in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, tuple):
+        return [_json_safe(item) for item in value]
+    return value
 
 
 def _quality_trends(storage: LocalStorage, *, project_id: str | None) -> dict[str, Any]:
@@ -253,14 +366,85 @@ def _quality_trends(storage: LocalStorage, *, project_id: str | None) -> dict[st
     return {"report_count": len(reports), "average_score": round(sum(scores) / len(scores), 2) if scores else 0, "trend": "insufficient_data" if len(scores) < 2 else ("improving" if scores[-1] >= scores[0] else "declining")}
 
 
+def _scale_acceptance_metrics(storage: LocalStorage, *, project_id: str | None, chapter_count: int) -> dict[str, Any]:
+    runs = _project_assets(storage, "chapter_production_run", "runs", project_id=project_id)
+    succeeded_runs = [item for item in runs if str((item.get("content", {}) if isinstance(item.get("content", {}), dict) else {}).get("status", "")) == "succeeded"]
+    drafts = _project_assets(storage, "draft_version", "drafts", project_id=project_id)
+    contexts = _project_assets(storage, "context_bundle", "contexts", project_id=project_id)
+    reviews = _project_assets(storage, "review_report", "reviews", project_id=project_id)
+    continuity_reports = _project_assets(storage, "chapter_continuity_report", "continuity", project_id=project_id)
+    model_calls = _project_assets(storage, "model_call_log", "runs", project_id=project_id)
+    cost_ledgers = _project_assets(storage, "cost_ledger", "runs", project_id=project_id)
+    rollbacks = _project_assets(storage, "rollback_result", "runs", project_id=project_id)
+    feedback_backflows = _project_assets(storage, "feedback_backflow_plan", "feedback", project_id=project_id)
+    review_scores = [
+        float(item.get("score", 0))
+        for item in reviews
+        if isinstance(item.get("score"), (int, float))
+    ]
+    continuity_conflicts = 0
+    unresolved_foreshadowing = 0
+    for item in continuity_reports:
+        content = item.get("content", {}) if isinstance(item.get("content", {}), dict) else {}
+        continuity_conflicts += len(content.get("blocking_violations", [])) if isinstance(content.get("blocking_violations", []), list) else 0
+        dimensions = content.get("dimensions", {}) if isinstance(content.get("dimensions", {}), dict) else {}
+        foreshadowing = dimensions.get("foreshadowing_lifecycle", {}) if isinstance(dimensions.get("foreshadowing_lifecycle", {}), dict) else {}
+        unresolved_foreshadowing += int(foreshadowing.get("open_count", 0) or 0) if isinstance(foreshadowing.get("open_count", 0), (int, float)) else 0
+    total_cost = 0.0
+    for item in cost_ledgers:
+        content = item.get("content", {}) if isinstance(item.get("content", {}), dict) else {}
+        amount = content.get("amount", 0)
+        if isinstance(amount, (int, float)):
+            total_cost += float(amount)
+    dirty_count = _novel_kg_dirty_count(storage, project_id=project_id)
+    observed_chapters = max(
+        len({str((item.get("content", {}) if isinstance(item.get("content", {}), dict) else {}).get("chapter", "")) for item in runs if (item.get("content", {}) if isinstance(item.get("content", {}), dict) else {}).get("chapter", "")}),
+        len(drafts),
+        len(contexts),
+    )
+    return {
+        "target_chapter_count": chapter_count,
+        "observed_chapter_count": observed_chapters,
+        "workflow_success_rate": round(len(succeeded_runs) / len(runs), 4) if runs else 0,
+        "chapter_production_run_count": len(runs),
+        "draft_version_count": len(drafts),
+        "context_bundle_count": len(contexts),
+        "review_report_count": len(reviews),
+        "average_review_score": round(sum(review_scores) / len(review_scores), 2) if review_scores else 0,
+        "quality_drift": "insufficient_data" if len(review_scores) < 2 else ("improving" if review_scores[-1] >= review_scores[0] else "declining"),
+        "continuity_conflict_count": continuity_conflicts,
+        "kg_dirty_count": dirty_count,
+        "unresolved_foreshadowing_count": unresolved_foreshadowing,
+        "cost_total": round(total_cost, 6),
+        "cost_per_chapter": round(total_cost / max(observed_chapters, 1), 6),
+        "model_call_count": len(model_calls),
+        "rollback_recovery_count": len(rollbacks),
+        "feedback_backflow_count": len(feedback_backflows),
+    }
+
+
 def _canon_conflicts(storage: LocalStorage, *, project_id: str | None) -> list[dict[str, Any]]:
-    reports = _project_assets(storage, "chapter_continuity_report", "reports", project_id=project_id) + _project_assets(storage, "chapter_continuity_report", "runs", project_id=project_id)
+    reports = _project_assets(storage, "chapter_continuity_report", "continuity", project_id=project_id)
     conflicts: list[dict[str, Any]] = []
     for item in reports:
         content = item.get("content", {}) if isinstance(item.get("content", {}), dict) else {}
         for violation in content.get("blocking_violations", []) if isinstance(content.get("blocking_violations", []), list) else []:
             conflicts.append({"report_id": item.get("id", ""), "severity": violation.get("severity", ""), "message": violation.get("message", "")})
     return conflicts[:50]
+
+
+def _novel_kg_dirty_count(storage: LocalStorage, *, project_id: str | None) -> int:
+    path = storage.data_root / "indexes" / "novel_kg_dirty.json"
+    if not path.exists():
+        return 0
+    try:
+        data = storage.read_json(path)
+    except Exception:
+        return 0
+    entries = data.get("entries", []) if isinstance(data, dict) and isinstance(data.get("entries", []), list) else []
+    if not project_id:
+        return len(entries)
+    return len([entry for entry in entries if isinstance(entry, dict) and str(entry.get("project_id", "")) == project_id])
 
 
 def _publish_gate_summary(storage: LocalStorage, *, project_id: str | None) -> dict[str, int]:

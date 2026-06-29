@@ -1242,6 +1242,9 @@ pre {
 
 .badge,
 .statPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   align-self: flex-start;
   border-radius: 999px;
   padding: 4px 8px;
@@ -1282,6 +1285,51 @@ pre {
 .detailStack {
   display: grid;
   gap: 12px;
+}
+
+.osConsoleGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.osConsoleLink {
+  min-height: 122px;
+  align-content: start;
+}
+
+.traceRail {
+  display: grid;
+  gap: 8px;
+  max-height: 620px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.traceRailItem {
+  display: grid;
+  grid-template-columns: minmax(86px, 0.26fr) minmax(0, 1fr);
+  gap: 6px 10px;
+  width: 100%;
+  min-height: 68px;
+  padding: 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--text);
+  text-align: left;
+}
+
+.traceRailItem strong,
+.traceRailItem small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.traceRailItem small {
+  grid-column: 2;
+  color: var(--muted);
 }
 
 .editGrid {
@@ -1802,6 +1850,7 @@ pre {
   }
 
   .summaryBand,
+  .osConsoleGrid,
   .priorityCardGrid,
   .assetDomainGrid,
   .analysisPanelGrid,
@@ -1833,6 +1882,14 @@ pre {
   .formGrid.compact,
   .formGrid.wide {
     grid-template-columns: 1fr;
+  }
+
+  .traceRailItem {
+    grid-template-columns: 1fr;
+  }
+
+  .traceRailItem small {
+    grid-column: auto;
   }
 
   .serviceGrid {

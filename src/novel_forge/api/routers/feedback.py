@@ -13,6 +13,7 @@ from novel_forge.modules.feedback import (
     create_reader_sentiment_report,
     list_feedback_assets,
 )
+from novel_forge.modules.feedback_backflow import apply_feedback_backflow_plan, create_feedback_backflow_plan
 from novel_forge.storage.local import LocalStorage
 
 
@@ -25,6 +26,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ReaderSentimentReportRequest = models["ReaderSentimentReportRequest"]
     FeedbackInsightRequest = models["FeedbackInsightRequest"]
     FeedbackStrategyApplyRequest = models["FeedbackStrategyApplyRequest"]
+    FeedbackBackflowPlanRequest = models["FeedbackBackflowPlanRequest"]
+    FeedbackBackflowApplyRequest = models["FeedbackBackflowApplyRequest"]
     OperationalMetricSnapshotRequest = models["OperationalMetricSnapshotRequest"]
 
     @router.get("/product/feedback/assets")
@@ -95,6 +98,35 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 LocalStorage(app_settings.root),
                 request.report_path,
                 workspace_path=request.workspace_path,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/feedback/backflow-plan")
+    def feedback_backflow_plan_endpoint(request: FeedbackBackflowPlanRequest) -> dict[str, Any]:
+        try:
+            return create_feedback_backflow_plan(
+                LocalStorage(app_settings.root),
+                feedback_paths=request.feedback_paths,
+                project_id=request.project_id,
+                workspace_path=request.workspace_path,
+                require_human_gate=request.require_human_gate,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/feedback/backflow-apply")
+    def feedback_backflow_apply_endpoint(request: FeedbackBackflowApplyRequest) -> dict[str, Any]:
+        try:
+            return apply_feedback_backflow_plan(
+                LocalStorage(app_settings.root),
+                plan_path=request.plan_path,
+                confirmed=request.confirmed,
+                note=request.note,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

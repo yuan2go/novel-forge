@@ -2,13 +2,13 @@
 
 ## Positioning
 
-Novel Forge V5 is a local-first AI novel production platform. It should not be treated as a one-off AI chapter generator.
+Novel Forge v6 is a local-first AI novel production platform and early Novel Operating System runtime. It should not be treated as a one-off AI chapter generator.
 
-The internal long-term architecture vision may be called a Novel Operating System, but the repository, package, CLI, and public product name remain Novel Forge / `novel-forge` in V5.
+The internal architecture target is Novel Operating System, but the repository, package, CLI, and public product name remain Novel Forge / `novel-forge` in v6 until a separate migration task approves any rename.
 
 ## Core Architecture
 
-V5 keeps a Python executable core and adds optional industrial services around it.
+v6 keeps a Python executable core and adds optional industrial services around it.
 
 ```text
 CLI / FastAPI / Celery / Next.js
@@ -55,6 +55,11 @@ Implemented or partially implemented:
 - Local search, local vector search, Qdrant retrieval, MinIO sync, PostgreSQL sync, Celery task execution, and gated Neo4j status.
 - Draft workbench, review/revision flow, publish gate, release package, originality report, style/chapter review reports in varying depth.
 - Skills system under root `skills/` with generated `.claude/skills/` runtime copies.
+- Workflow runtime first slice: DAG validation, dependency resolution, ready-node queue, processor registry, pre/post gates, runtime control, scheduler tick/loop, resume, invalidation, quarantine/rollback markers, and trace spans.
+- Agent Scheduler first slice: Agent contracts/runs, dispatch queue, leases, operation registry, checkpoints, budget/SLA/gate records, retries, dead letters, and Workflow handoff.
+- Novel Knowledge Graph first slice: typed ontology collections, snapshots, query/path/impact/conflict APIs, KG gate, continuity preflight integration, and workbench UI.
+- Runtime ledger first slice: trace spans, gate results, model call logs, cost ledger, budget policies, cost alerts, project/agent/chapter snapshots, and cost-quality dashboard assets.
+- Review rework backend first slice: `review_issue -> revision_task -> editor_patch -> draft_version -> re-review -> publish_gate` service path and workflow processor registration.
 
 ## Target Platform Layers
 
@@ -62,14 +67,15 @@ Implemented or partially implemented:
 |---|---|---|
 | Project / Workspace | project lifecycle, series, workspace state, project asset references | partially implemented |
 | Asset / Artifact | schema-backed assets, versions, lineage, object copies, index rows | partially implemented |
-| Workflow | runs, task status, retries, recovery, future node definitions and invalidation | partially implemented |
+| Workflow | definitions, DAG parsing, node runs, ready queue, gates, retries, pause/resume/cancel, invalidation, scheduler loop | first production slice implemented; distributed scale and broader processor coverage remain |
 | Knowledge / Analysis | deconstruction, craft analysis, classic analysis, conversion to knowledge/material/template/rules | first schema/service/UI/handoff slice implemented; semantic scoring and richer conversion gates remain |
 | Context | context build plan, context bundle, token budget, compression preview, actual-context replay | schema/service/API/UI slice implemented; manual curation and invalidation remain |
 | Production | topic/world/character/outline/chapter-plan/draft/review/revision chain | base chain plus outline/chapter-plan/draft versions and generation runs implemented |
-| Evaluation | quality, style, originality, continuity, platform fit, publish gate, model evaluation | first-generation reviews exist; deeper gates still P0/P1 |
-| Long-form Stability | continuity bible, timeline, foreshadowing, relationship graph, change impact | shallow schemas exist; workbench still P0 |
-| Agent | contracts, runs, checkpoints, budgets, gates, metrics, state machine | handoff exists; industrial runtime still P0 |
-| Analytics / Publishing | funnel, blockers, reader feedback, publishing plan/log, release operations | early publish/feedback exists; productized centers still P0/P1 |
+| Evaluation | quality, style, originality, continuity, KG, platform fit, publish gate, model evaluation | first production gate stack exists; semantic scoring and universal enforcement remain |
+| Long-form Stability | continuity bible, canon graph, Novel KG, timeline, foreshadowing, relationship graph, change impact | first production slice implemented; semantic extraction and visualization depth remain |
+| Agent | contracts, runs, dispatch queue, checkpoints, budgets, gates, metrics, scheduler loop, recovery | first production slice implemented; complete Agent Center and deeper rollback remain |
+| Trace / Cost | trace spans, gate results, model calls, cost ledger, budget policies, cost snapshots, dashboard assets | first production slice implemented; universal model-call coverage and UI depth remain |
+| Analytics / Publishing | funnel, blockers, reader feedback, publishing plan/log, release operations | early publish/feedback exists; OS-level operating dashboards remain P0/P1 |
 
 ## Runtime Flow
 
@@ -129,6 +135,28 @@ project strategy
   -> next chapter plan update
 ```
 
+## Novel OS Acceptance Chain
+
+The P0 operating-system acceptance chain is a minimal vertical slice, not a requirement to generate a full novel. The acceptance fixture should prove that one project and one chapter-sized production target can move through the operating layer without bypassing durable artifacts:
+
+```text
+WorkflowDefinition
+  -> execute_workflow
+  -> workflow / agent scheduler tick or loop
+  -> context bundle
+  -> model call through the configured runtime boundary
+  -> node_run / agent_run
+  -> trace_span / gate_result / model_call_log / cost_ledger
+  -> Novel KG gate / continuity preflight
+  -> review_issue -> revision_task -> editor_patch -> draft_version
+  -> re-review -> publish_gate
+  -> downstream invalidation
+  -> resume_workflow
+  -> cost_quality_dashboard / acceptance report
+```
+
+Full-novel generation is a later long-chain acceptance scenario. It tests scale, quality drift, and editorial stamina; it should not be used as the first OS runtime correctness test because it mixes runtime integrity with creative quality and cost variability.
+
 ## Extension Points
 
 - Model adapters for MockModel, LocalRuleEngine, ChatGPT-compatible providers, DeepSeek-compatible providers, and future providers.
@@ -148,13 +176,12 @@ Do not call external providers in tests. Do not write malformed or unvalidated p
 
 ## Architecture Priority
 
-1. Platform skeleton: workflow/node run, artifact version, context bundle, generation run, quality gate, revision task.
-2. Context Builder curation and invalidation.
-3. Versioned production chain dashboards and chapter queue.
-4. Analysis Center semantic scoring and conversion gates.
-5. Long-form stability workbench.
-6. AI Editor patch system.
-7. Agent industrialization.
-8. Reader feedback, publishing operations, and model evaluation centers.
+1. Universal Runtime Policy across model-producing paths: budget policy, provider timeout/cancel, model usage capture, trace spans, model call logs, cost ledger writes, context bundle evidence, and gate results.
+2. Provider-level runtime guard and deep checkpoint resume: normalized usage, realtime or postflight token cutoff, exact cost capture, cancellable local/provider calls, and resume from internal operation stages.
+3. Business rollback: operation transactions, rollback preview/apply, version restoration, quarantine, rollback-required handling, and compensating ledger records.
+4. Semantic quality layer: KG-backed context building, stronger entity/relation extraction, evidence spans, alias merge, continuity conflicts, originality/review gates, and feedback-to-plan learning.
+5. Web OS operations and long-chain scale acceptance: browser-smoked OS console routes, DAG/Agent/KG/Trace/Cost operational views, and multi-chapter continuity/cost/quality/recovery acceptance.
+
+Detailed closure plan: [Novel OS Remaining Closure Plan](../08-roadmap/novel-os-remaining-closure-plan.md).
 
 This sequence improves actual chapter quality and traceability before expanding automation breadth.

@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import sys
 import tempfile
 import unittest
@@ -16,6 +17,16 @@ from novel_forge.workflows import pipeline
 
 
 class CreativeAssetsTests(unittest.TestCase):
+    def setUp(self):
+        self._previous_model_provider = os.environ.get("NOVEL_FORGE_MODEL_PROVIDER")
+        os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = "mock"
+
+    def tearDown(self):
+        if self._previous_model_provider is None:
+            os.environ.pop("NOVEL_FORGE_MODEL_PROVIDER", None)
+        else:
+            os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = self._previous_model_provider
+
     def test_create_style_profile_is_schema_backed_and_project_scoped(self):
         with tempfile.TemporaryDirectory() as tmp:
             workspace_path = pipeline.init_workspace(tmp, "Creative Project")

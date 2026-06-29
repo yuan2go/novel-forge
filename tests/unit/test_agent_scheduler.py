@@ -15,11 +15,83 @@ from novel_forge.modules.agent_scheduler import (
 )
 from novel_forge.modules.continuity_graph import create_continuity_graph_snapshot
 from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs
-from novel_forge.schemas import ChapterPlan, DraftChapter
+from novel_forge.schemas import ChapterPlan, ContextBundle, DraftChapter
 from novel_forge.storage.local import LocalStorage
 
 
 class AgentSchedulerTests(unittest.TestCase):
+    def test_strict_scheduler_requires_active_budget_policy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}),
+            )
+            context_path = storage.write_asset(
+                "contexts",
+                ContextBundle(
+                    title="Context",
+                    source=storage.read_asset(plan_path).id,
+                    content={
+                        "build_plan_id": "unit-context-plan",
+                        "target_asset_id": storage.read_asset(plan_path).id,
+                        "selected_assets": [],
+                        "compressed_context": {},
+                        "token_budget": {"max_tokens": 1000},
+                        "token_estimate": 16,
+                        "actual_context": "unit context",
+                        "source_asset_ids": [],
+                    },
+                    references=[storage.read_asset(plan_path).id, str(plan_path.relative_to(storage.root))],
+                ),
+            )
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Draft",
+                    source=storage.read_asset(plan_path).id,
+                    content={"chapter": 1, "text": "原创测试章节。", "copyright_boundary": "unit test"},
+                    references=[storage.read_asset(plan_path).id, str(plan_path.relative_to(storage.root))],
+                ),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Strict Agent Scheduler Workflow",
+                entry_node_id="draft-agent",
+                runtime_policy={"mode": "operating_system", "require_context_bundle": True, "require_budget_policy": True},
+                nodes=[
+                    {
+                        "node_id": "draft-agent",
+                        "node_type": "agent",
+                        "operation": "draft",
+                        "input_assets": [str(plan_path.relative_to(storage.root)), str(context_path.relative_to(storage.root))],
+                        "input_types": ["chapter_plan", "context_bundle"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {
+                            "kind": "agent",
+                            "agent_key": "draft",
+                            "agent_status": "prepared",
+                            "context_bundle_path": str(context_path.relative_to(storage.root)),
+                            "expected_output_assets": [str(draft_path.relative_to(storage.root))],
+                            "token_budget": 500,
+                            "token_used": 120,
+                            "cost_estimate": 0.42,
+                        },
+                    }
+                ],
+            )
+            initial = execute_workflow(storage, workflow["path"], input_assets=[plan_path, context_path], execute_agents=False)
+            self.assertEqual(initial["status"], "running")
+
+            tick = run_agent_scheduler_tick(storage)
+
+            self.assertEqual(tick["acked_count"], 0)
+            self.assertEqual(tick["retry_count"], 1)
+            queue = list_agent_dispatch_queue(storage)[0]
+            self.assertEqual(queue["status"], "retry_scheduled")
+            self.assertIn("budget_policy", queue["last_error"].lower())
+
     def test_scheduler_completes_prepared_agent_and_resumes_workflow(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

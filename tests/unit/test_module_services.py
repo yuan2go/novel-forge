@@ -232,6 +232,8 @@ class ModuleServiceTests(unittest.TestCase):
             self.assertEqual(style_report.type, "style_review_report")
             self.assertEqual(originality_report.type, "originality_report")
             self.assertEqual(chapter_audit_report.type, "chapter_audit_report")
+            self.assertIn("semantic_review", chapter_audit_report.content)
+            self.assertIn("chapter_pleasure_toxicity", chapter_audit_report.content["semantic_review"])
 
     def test_review_rework_loop_binds_issue_to_patch_version_review_and_publish_gate(self):
         with tempfile.TemporaryDirectory() as tmp:

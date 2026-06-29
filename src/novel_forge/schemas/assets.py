@@ -162,6 +162,16 @@ class NovelKGSnapshot(BaseAsset):
 
 
 @dataclass
+class SemanticExtractionReport(BaseAsset):
+    type: str = "semantic_extraction_report"
+
+
+@dataclass
+class KgIdentityResolution(BaseAsset):
+    type: str = "kg_identity_resolution"
+
+
+@dataclass
 class CanonPatch(BaseAsset):
     type: str = "canon_patch"
 
@@ -339,6 +349,31 @@ class ReaderFeedback(BaseAsset):
 
 
 @dataclass
+class FeedbackCluster(BaseAsset):
+    type: str = "feedback_cluster"
+
+
+@dataclass
+class FeedbackBackflowPlan(BaseAsset):
+    type: str = "feedback_backflow_plan"
+
+
+@dataclass
+class PlanAdjustmentProposal(BaseAsset):
+    type: str = "plan_adjustment_proposal"
+
+
+@dataclass
+class ReviewRuleUpdateProposal(BaseAsset):
+    type: str = "review_rule_update_proposal"
+
+
+@dataclass
+class FeedbackKGPatch(BaseAsset):
+    type: str = "feedback_kg_patch"
+
+
+@dataclass
 class FeedbackImportBatch(BaseAsset):
     type: str = "feedback_import_batch"
 
@@ -484,6 +519,21 @@ class AgentDispatchQueue(BaseAsset):
 
 
 @dataclass
+class OperationTransaction(BaseAsset):
+    type: str = "operation_transaction"
+
+
+@dataclass
+class RollbackPlan(BaseAsset):
+    type: str = "rollback_plan"
+
+
+@dataclass
+class RollbackResult(BaseAsset):
+    type: str = "rollback_result"
+
+
+@dataclass
 class SchedulerLease(BaseAsset):
     type: str = "scheduler_lease"
 
@@ -617,6 +667,8 @@ SCHEMA_CLASSES = {
         ContinuityGraphSnapshot,
         CanonGraphSnapshot,
         NovelKGSnapshot,
+        SemanticExtractionReport,
+        KgIdentityResolution,
         CanonPatch,
         StyleProfile,
         StyleDecompositionReport,
@@ -651,6 +703,11 @@ SCHEMA_CLASSES = {
         PublishingPlan,
         PublishingLog,
         ReaderFeedback,
+        FeedbackCluster,
+        FeedbackBackflowPlan,
+        PlanAdjustmentProposal,
+        ReviewRuleUpdateProposal,
+        FeedbackKGPatch,
         FeedbackImportBatch,
         FeedbackInsight,
         ReaderSentimentReport,
@@ -680,6 +737,9 @@ SCHEMA_CLASSES = {
         AgentSlaReport,
         AgentRollbackReport,
         AgentDispatchQueue,
+        OperationTransaction,
+        RollbackPlan,
+        RollbackResult,
         SchedulerLease,
         TraceSpan,
         GateResult,

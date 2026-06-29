@@ -2,9 +2,9 @@
 
 ## Module Goal
 
-`skills/` stores stable, reusable, testable creative capabilities for Novel Forge V5.
+`skills/` stores stable, reusable, testable creative capabilities for Novel Forge v6 and the early Novel Operating System runtime.
 
-Skill is not an Agent, Knowledge asset, Template, Tool, or Review Gate. A Skill defines the repeatable method, required inputs, output shape, quality bar, and forbidden behavior for a creative or review capability.
+Skill is not an Agent, Knowledge asset, Template, Tool, Runtime Policy, or Review Gate. A Skill defines the repeatable method, required inputs, output shape, quality bar, and forbidden behavior for a creative or review capability.
 
 ## Inputs
 
@@ -13,13 +13,13 @@ Skill is not an Agent, Knowledge asset, Template, Tool, or Review Gate. A Skill 
 - `docs/`
 - `src/novel_forge/schemas/`
 - `src/novel_forge/workflows/`
-- Assets under `data/`
+- Runtime assets under `.local/workspace/` or the configured `NOVEL_FORGE_ROOT`
 
 ## Outputs
 
 - Reusable Skill instructions under `skills/*/SKILL.md`.
 - Agent-Skill mapping under `docs/09-skills/agent-skill-map.md`.
-- Validation coverage through `novel-forge validate` and `make test`.
+- Validation coverage through `novel-forge validate`, `make test`, and OS runtime acceptance tests when a Skill participates in workflow or Agent execution.
 
 ## File Paths
 
@@ -38,6 +38,10 @@ skills/
 ├── multidisciplinary-knowledge/
 ├── topic-development/
 ├── material-curation/
+├── analysis-to-asset-conversion/
+├── hot-novel-business-deconstruction/
+├── published-fiction-craft-analysis/
+├── classic-literary-depth-analysis/
 └── training-exercise/
 
 docs/09-skills/
@@ -78,15 +82,15 @@ Rules:
 - Skills do not replace the knowledge base.
 - Skills do not store copyrighted content.
 - Skills store stable methods, output rules, and quality standards.
-- Agents call Skills to perform role-specific work.
+- Agents call Skills to perform role-specific work, but workflow/Agent execution still runs through schema-backed artifacts, runtime policy, trace spans, cost ledgers, and gates when the output affects production state.
 - Drafting must pass through `chapter-outline` and `quality-review`.
 - Hot novel analysis must pass through `anti-copy-abstraction`.
-- Reader feedback, project planning, multidisciplinary knowledge, topic development, material curation, and training exercise are implemented second-stage Skills.
+- Reader feedback, project planning, multidisciplinary knowledge, topic development, material curation, analysis conversion, published-fiction analysis, classic-literary analysis, and training exercise are implemented Skills.
 
 ## Acceptance
 
 - `skills/` exists.
-- 14 Skills exist.
+- 18 Skills exist.
 - Every Skill has frontmatter with `name` and `description`.
 - Every Skill has required sections for inputs, workflow, output, quality, forbidden behavior, and module relationships.
 - `novel-forge validate` checks core Skills.
@@ -97,6 +101,6 @@ Rules:
 
 ## Risks And Boundaries
 
-- Do not turn Skills into a complex multi-agent platform.
+- Do not turn Skills into a parallel runtime or complex multi-agent platform.
 - Do not store private source material in Skills.
-- Do not let Skills bypass schema validation, workflow status, or review gates.
+- Do not let Skills bypass schema validation, workflow status, runtime policy, trace/cost recording, or review gates.

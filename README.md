@@ -1,12 +1,12 @@
-# Novel Forge V5
+# Novel Forge v6
 
-Novel Forge V5 is a local-first AI novel production platform.
+Novel Forge v6 is a local-first AI novel production platform and early Novel Operating System runtime.
 
-It is not an AI chapter generator. It is designed to turn source materials, abstracted reference analysis, multidisciplinary knowledge, reusable creative assets, context bundles, review reports, revision tasks, reader feedback, and publishing gates into a controlled long-form fiction production workflow.
+It is not an AI chapter generator. It is designed to turn source materials, abstracted reference analysis, multidisciplinary knowledge, reusable creative assets, context bundles, review reports, revision tasks, reader feedback, publishing gates, workflow runs, agent runs, trace spans, and cost ledgers into a controlled long-form fiction production workflow.
 
 Internal architecture vision: Novel Operating System.
 
-Repository/package/CLI name remains `novel-forge` in V5. Do not rename the project to Novel Operating System unless a separate migration task approves repository, package, command, path, and documentation changes.
+Repository/package/CLI name remains `novel-forge` in v6. Novel Operating System is the architecture target, not an approved repository/package rename, unless a separate migration task approves repository, package, command, path, and documentation changes.
 
 Core executable pipeline:
 
@@ -20,6 +20,26 @@ Target platform pipeline:
 project strategy -> analysis center -> context build plan -> context bundle -> versioned outline/chapter-plan/draft -> review pipeline -> editor patch/revision task -> continuity/publish gates -> publishing/feedback analytics -> next planning loop
 ```
 
+Novel Operating System acceptance chain:
+
+```text
+project fixture
+  -> WorkflowDefinition
+  -> execute_workflow
+  -> workflow / agent scheduler tick or loop
+  -> context bundle
+  -> model call through the runtime boundary
+  -> node_run / agent_run
+  -> trace_span / gate_result / model_call_log / cost_ledger
+  -> Novel KG gate / continuity preflight
+  -> review_issue -> revision_task -> editor_patch -> draft_version
+  -> re-review -> publish_gate
+  -> invalidation / resume
+  -> cost_quality_dashboard / acceptance report
+```
+
+This OS acceptance chain is not the same thing as generating a complete long novel. The P0 acceptance target is a minimal vertical slice, usually one project and one chapter-sized fixture, that proves workflow, agent dispatch, KG gates, trace, cost, review rework, invalidation, and resume all run through the same operating layer. Full-novel generation is a slower long-chain acceptance scenario after the runtime is stable.
+
 ## Principles
 
 - Extract structure, rhythm, hooks, conflict mechanics, emotional curves, craft technique, and commercial logic from reference works.
@@ -27,7 +47,7 @@ project strategy -> analysis center -> context build plan -> context bundle -> v
 - Keep raw sources, decomposition/analysis reports, generated assets, drafts, reviews, publishing assets, feedback, and runs in separate directories.
 - Treat prompts as node execution parameters, not the product architecture.
 - Prefer workflow nodes, schema-backed artifacts, context replay, versioning, and quality gates.
-- Use deterministic mock adapters for tests; real OpenAI-compatible providers are opt-in through environment variables.
+- Use deterministic mock adapters for tests; production agent model calls default to the local Claude Code Codex worker, and external OpenAI-compatible providers are opt-in through environment variables.
 
 ## Quick Start
 
@@ -36,6 +56,15 @@ make test
 make validate
 make demo
 ./novel-forge --help
+```
+
+Core Novel OS validation:
+
+```bash
+PYTHONPATH=src python3 -m unittest tests.integration.test_novel_os_acceptance
+PYTHONPATH=src python3 -m unittest tests.integration.test_novel_os_long_chain_smoke
+npm --prefix web/admin test
+npm --prefix web/admin run lint
 ```
 
 ## Runtime Workspace Boundary
@@ -180,18 +209,15 @@ make local-up
 
 See [Industrial Stack](docs/01-architecture/industrial-stack.md) for service boundaries.
 
-## Platform Migration Priorities
+## Novel OS Runtime Priorities
 
-Current P0 direction:
+Current P0/P1 closure status:
 
-1. Platform skeleton: workflow/node run, artifact version, context bundle, generation run, quality gate, revision task. First slice exists for `workflow_definition`, `workflow_node`, `node_run`, and the versioned production assets.
-2. Context Builder: first schema/service/API/UI slice exists for `context_build_plan`, `context_bundle`, token budget, asset ranking, compression preview, and actual-context replay; next work is manual curation and invalidation.
-3. Versioned production chain: `outline_version`, `chapter_plan_version`, `draft_version`, and `generation_run` now exist; next work is chapter queue, invalidation warnings, and parameter dashboards.
-4. Analysis Center upgrade: first schema/service/UI/handoff slice exists for web fiction, published fiction, classic literature, common analysis core, and analysis-to-asset conversion; next work is semantic scoring and richer conversion gates.
-5. Long-form stability: `change_impact_report` first slice exists; next work is timeline, foreshadowing placement/payoff, relationship/faction/map/prop systems, and invalidation visualization.
-6. AI Editor: paragraph suggestions, `editor_patch`, apply/rollback, diff replay.
-7. Agent industrialization: `agent_contract`, `agent_run`, `agent_dispatch_queue`, event/checkpoint/budget/gate/metric/failure assets, Agent Scheduler tick/loop, Workflow resume handoff, and Production Control visibility exist; next work is broader real-service operation registry, rollback, and deeper Agent Center UI.
-8. Reader feedback, publishing operations, and model evaluation centers.
+1. Universal Runtime Policy now has strict/compat checks, `RuntimePolicyEnvelope`, KG-context requirements, enforcement reporting, guarded model-call logging, and budget/gate/cost evidence checks.
+2. Provider runtime guard now normalizes usage, emits runtime events, supports OpenAI-compatible SSE streaming usage, token cutoff, cancel/timeout checks, and polling-based live cancel for local Codex/Claude Code workers; future providers still need adapter-specific streaming bindings.
+3. Checkpoint and rollback now have durable stage checkpoints, resume chains, rollback transactions/plans/results, version-restore rollback actions, ledger compensation, dirty-index markers, preview/apply/verify APIs, and rollback verification.
+4. Semantic quality now includes Novel KG evidence/confidence, model-assisted extraction validation, identity merge queues, KG-backed context enforcement, continuity/KG gates, and feedback-to-plan backflow first slice.
+5. Web OS operations now expose workflow, agent, KG, trace, cost, invalidation, review-rework, runtime policy coverage, legacy bypass audit, rollback preview/apply/verify, KG identity queues, and opt-in long-chain 12/50 chapter pressure acceptance.
 
 ## Key Docs
 
@@ -200,6 +226,8 @@ Current P0 direction:
 - [ARCHITECTURE.md](ARCHITECTURE.md)
 - [WORKFLOW.md](WORKFLOW.md)
 - [TESTING.md](TESTING.md)
+- [Novel Operating System Target](docs/00-product/novel-operating-system.md)
+- [Novel OS Remaining Closure Plan](docs/08-roadmap/novel-os-remaining-closure-plan.md)
 - [System Architecture](docs/01-architecture/system-architecture.md)
 - [Main Pipeline](docs/02-workflows/main-pipeline.md)
 - [Testing Strategy](docs/05-testing/testing-strategy.md)
@@ -211,7 +239,7 @@ Current P0 direction:
 
 ## Skills
 
-V5 includes repository-level Skills under `skills/`. Skills capture reusable creative capabilities and quality gates; they do not store source text or copyrighted content.
+v6 includes repository-level Skills under `skills/`. Skills capture reusable creative capabilities and quality gates; they do not store source text or copyrighted content.
 
 Preview runtime mapping:
 
@@ -227,6 +255,6 @@ make sync-skills
 
 ## Current Implementation Scope
 
-V5 keeps the Python standard-library core, dataclass schemas, local JSON storage, deterministic mock adapters, and `unittest` tests. Industrial services and real model providers are opt-in so local validation remains fast and dependency-light.
+v6 keeps the Python standard-library core, dataclass schemas, local JSON storage, deterministic mock adapters, and `unittest` tests. Industrial services and external real model providers are opt-in so local validation remains fast and dependency-light; the default production agent boundary is the local Claude Code Codex worker.
 
 Do not document target platform features as completed until schema, service, API/UI, tests, and validation exist.

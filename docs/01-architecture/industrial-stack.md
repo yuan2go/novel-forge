@@ -1,6 +1,6 @@
 # Industrial Stack
 
-Novel Forge V5 keeps JSON assets as the auditable interchange format and adds service-backed indexes around them.
+Novel Forge v6 keeps JSON assets as the auditable interchange format and adds service-backed indexes around them.
 
 ## Services
 
@@ -39,6 +39,11 @@ The web console now exposes the end-to-end product loop through `/product/*` API
 | Batch deconstruction | `POST /product/batch/deconstruct`, `GET /product/batch/items`, `POST /product/batch/items/retry`, `PATCH /product/batch/items/review` | raw, cleaned, decomposition, knowledge, material assets, per-source `BatchTaskItem` records, item/step-level Celery execution for async runs, independent retries, and item-level review gates |
 | Draft workbench | `GET /product/drafts`, `GET /product/drafts/editor`, `POST /product/drafts/generate`, `POST /product/drafts/save`, `GET /product/drafts/diff`, `POST /product/drafts/export` | chapter plans, editable draft versions, diff summaries, exports, and workspace updates |
 | Review and revision | `POST /product/reviews/run`, `PATCH /product/reviews/issues`, `POST /product/revisions/plan`, `POST /product/revisions/apply` | review reports, comparison reviews, issue states, revision plans, confirmation-gated revised drafts, and post-revision score comparison |
+| Review rework loop | `POST /product/revisions/rework-loop` | review issues, revision tasks, editor patches, revised draft versions, re-review reports, publish gate reports, and end-to-end issue-to-version lineage |
+| Workflow runtime | `/product/workflow/definitions`, `/product/workflow/runs`, `/product/workflow/dag`, `/product/workflow/dependencies`, `/product/workflow/ready-queue`, `/product/workflow/runtime-console`, `/product/workflow/processor-contracts`, `/product/workflow/execute`, `/product/workflow/resume`, `/product/workflow/runs/control`, `/product/workflow/scheduler/tick` | DAG validation, dependency resolution, ready queue state, processor contracts, execution, resume, runtime control, scheduler evidence, node runs, trace spans, gate results, invalidation, quarantine, and rollback markers |
+| Agent scheduler | `/product/agents/*` and scheduler control routes | Agent contracts, Agent runs, dispatch queue, scheduler tick/loop, checkpoints, budgets, gates, metrics, retry/dead-letter state, and recovery evidence |
+| Novel KG | `/product/kg/*` | typed Novel KG snapshots, query/path/impact/conflict results, KG gate evidence, continuity preflight, and workbench payloads |
+| Trace and cost | task/runtime ledger routes and cost dashboard routes | trace timeline payloads, gate results, model call logs, cost ledger records, budget policies, alerts, project/agent/chapter snapshots, and cost-quality dashboard assets |
 
 The product API is still a thin orchestration layer. It calls the existing workflow and module services so schema validation, copyright boundary metadata, and storage layout stay consistent. When PostgreSQL is configured, local asset writes use PostgreSQL write-through, and project, task, and asset listing APIs read from PostgreSQL first before falling back to JSON scans.
 
@@ -65,7 +70,7 @@ Agent model calls default to the local Claude Code Codex worker through `CODEX_H
 
 `chatgpt` and `deepseek` use OpenAI-compatible chat-completions JSON responses. Prompt builders require strict JSON outputs, and model responses are validated before any asset is written.
 
-Draft saves are append-only: manual edits create new `DraftChapter` assets with version metadata instead of overwriting the previous draft. Revision application is confirmation-gated; preview mode returns the planned change without writing a revised draft.
+Draft saves are append-only: manual edits create new `DraftChapter` assets with version metadata instead of overwriting the previous draft. Revision application is confirmation-gated; preview mode returns the planned change without writing a revised draft. The review rework loop binds review issues to revision tasks, editor patches, revised draft versions, re-review, and publish gate evidence.
 
 ## Local Infrastructure
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Agents working on Novel Forge V5 must preserve the platform boundary: Novel Forge is a local-first AI novel production platform, not a one-off prompt generator.
+Agents working on Novel Forge v6 must preserve the platform boundary: Novel Forge is a local-first AI novel production platform and early Novel Operating System runtime, not a one-off prompt generator.
 
 Agents may help with fiction production, analysis, review, implementation, and operations only through traceable inputs, schema-backed outputs, quality gates, and documented storage boundaries.
 
@@ -10,9 +10,9 @@ Reference works are used for abstract structural learning, not copying.
 
 ## Current Agent Maturity
 
-V5 currently supports manual/operator Agent roles, Skills, handoff packets, permission profiles, tool allowlists, task statuses, and workflow runs.
+v6 currently supports manual/operator Agent roles, Skills, handoff packets, runtime profiles, permission guards, tool allowlists, task statuses, workflow runs, and the first production slice of Agent execution.
 
-The full industrial Agent system is not complete. Treat the following as target architecture until implemented:
+The following Agent runtime assets and services now exist as first-slice infrastructure:
 
 - `agent_contract`
 - `agent_run`
@@ -20,11 +20,12 @@ The full industrial Agent system is not complete. Treat the following as target 
 - `agent_budget`
 - `agent_gate`
 - `agent_metric`
-- Agent state machine
-- Agent Center UI
-- resumable, rollback-capable, acceptance-gated Agent execution
+- `agent_dispatch_queue`
+- Agent operation registry
+- scheduler tick/loop with queue leasing, retry, and dead-letter behavior
+- resumable, rollback-aware, acceptance-gated Agent execution for registered operations
 
-Do not claim an autonomous Agent Center exists until those contracts, services, tests, and UI are implemented.
+Do not claim a complete autonomous Agent Center exists until UI depth, operation coverage, model usage hard-stop behavior, business rollback, and end-to-end OS acceptance tests are implemented.
 
 ## Core Agent Classes
 
@@ -86,9 +87,11 @@ Every Agent output must be traceable to:
 - prompt or Skill version when relevant;
 - validation status;
 - quality gate status;
+- `trace_id` / `span_id` when the output is part of a workflow or agent run;
+- `model_call_log` and `cost_ledger` records when a model call is made;
 - downstream artifact or revision task.
 
-Agents must not communicate by informal chat memory when a schema-backed artifact is required. Use JSON assets, workflow run records, task status, handoff packets, review reports, revision plans, or future Agent run records.
+Agents must not communicate by informal chat memory when a schema-backed artifact is required. Use JSON assets, workflow run records, task status, handoff packets, review reports, revision plans, Agent run records, trace spans, gate results, and ledger records.
 
 ## Agent State Model
 
@@ -149,5 +152,8 @@ An Agent task is not complete because text was generated. Completion requires th
 - schema/code: tests plus validation;
 - Skill changes: skill dry-run or drift check;
 - workflow changes: run/task status and recovery behavior checks;
+- Agent Scheduler changes: dispatch queue, checkpoint, gate, budget/SLA, retry/dead-letter, and recovery checks;
 - UI changes: local smoke or route-level verification when possible;
 - production content: review report and quality gate result.
+
+Novel Operating System acceptance is not equivalent to generating a full long novel. The P0 acceptance standard is a minimal vertical slice that proves one project/chapter-sized fixture can pass through workflow execution, agent dispatch, context/model boundary, trace/cost ledger, KG/continuity gate, review rework, publish gate, invalidation, and resume without bypassing schema-backed artifacts.

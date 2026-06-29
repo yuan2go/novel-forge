@@ -6,6 +6,8 @@ import { FeatureShell } from "../../shared/feature-shell";
 import type { AssetRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import {
+  createIdentityResolution,
+  createSemanticExtraction,
   createNovelKGSnapshot,
   loadNovelKGCypher,
   loadNovelKGData,
@@ -47,6 +49,8 @@ export function NovelKGWorkbenchPage() {
   const [pathResult, setPathResult] = useState<Record<string, unknown> | null>(null);
   const [impactResult, setImpactResult] = useState<Record<string, unknown> | null>(null);
   const [gateResult, setGateResult] = useState<Record<string, unknown> | null>(null);
+  const [semanticResult, setSemanticResult] = useState<Record<string, unknown> | null>(null);
+  const [identityResult, setIdentityResult] = useState<Record<string, unknown> | null>(null);
   const [cypher, setCypher] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -120,6 +124,8 @@ export function NovelKGWorkbenchPage() {
           <button className="primaryButton" disabled={busy} onClick={() => runAction(() => createNovelKGSnapshot(projectId, selectedProject?.path), "KG snapshot 已创建")}>创建 Snapshot</button>
           <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => refreshNovelKG(projectId, selectedProject?.path, targetPath), "KG 已刷新")}>刷新 Dirty</button>
           <button className="secondaryButton" disabled={busy} onClick={() => runAction(async () => setGateResult(await runNovelKGGate(targetPath, projectId, selectedProject?.path)), "KG gate 已运行", false)}>KG Gate</button>
+          <button className="secondaryButton" disabled={busy} onClick={() => runAction(async () => setSemanticResult(await createSemanticExtraction(targetPath, projectId, selectedProject?.path)), "语义抽取报告已创建", false)}>语义抽取</button>
+          <button className="secondaryButton" disabled={busy} onClick={() => runAction(async () => setIdentityResult(await createIdentityResolution(undefined, projectId, selectedProject?.path)), "Identity merge queue 已创建", false)}>别名归并队列</button>
           <button className="secondaryButton" disabled={busy} onClick={() => runAction(async () => setCypher(await loadNovelKGCypher(query)), "Cypher 已生成", false)}>Cypher</button>
         </div>
       </section>
@@ -197,6 +203,8 @@ export function NovelKGWorkbenchPage() {
           <PanelHeader title="门禁与冲突" icon={<ShieldCheck size={18} />} />
           <div className="summaryBand">
             <Metric label="Gate" value={String(gateResult?.status ?? "-")} />
+            <Metric label="Semantic Report" value={String((semanticResult?.asset as Record<string, unknown> | undefined)?.content ? "created" : "-")} />
+            <Metric label="Merge Queue" value={String((((identityResult?.asset as Record<string, unknown> | undefined)?.content as Record<string, unknown> | undefined)?.summary as Record<string, unknown> | undefined)?.human_gate_count ?? "-")} />
             <Metric label="建议" value={String(gateResult?.recommendation ?? conflicts.recommendation ?? "-")} />
             <Metric label="Blocking" value={String(conflicts.blocking_count ?? 0)} />
           </div>

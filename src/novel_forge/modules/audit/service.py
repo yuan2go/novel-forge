@@ -10,6 +10,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
+from novel_forge.modules.semantic_enhancement import analyze_story_semantics
 from novel_forge.modules.standards import create_quality_score_report
 from novel_forge.modules.style import create_style_review_report
 from novel_forge.schemas import ChapterAuditReport, OriginalityReport, PublishGateReport, ReleasePackage
@@ -135,8 +136,15 @@ def create_chapter_audit_report(
     originality = _read_asset_dict(storage, originality_path)
     runtime_gate_evidence = _draft_runtime_gate_evidence(target.to_dict())
     platform_compliance = _platform_compliance(target.to_dict(), context)
-    dimension_scores = _chapter_dimension_scores(quality, style, originality, context, runtime_gate_evidence, platform_compliance)
-    gate_results, issues = _chapter_gate_results(dimension_scores, quality, style, originality, context, runtime_gate_evidence, platform_compliance)
+    semantic_review = analyze_story_semantics(
+        storage,
+        target_path=path,
+        project_id=str(project.get("project_id", "")) or None,
+        workspace_path=str(project.get("workspace_path", "")) or workspace_path,
+        production_context=context,
+    )
+    dimension_scores = _chapter_dimension_scores(quality, style, originality, context, runtime_gate_evidence, platform_compliance, semantic_review)
+    gate_results, issues = _chapter_gate_results(dimension_scores, quality, style, originality, context, runtime_gate_evidence, platform_compliance, semantic_review)
     recommendation = "pass"
     if any(issue.get("severity") == "high" for issue in issues):
         recommendation = "block_publish"
@@ -160,6 +168,7 @@ def create_chapter_audit_report(
             },
             "runtime_gate_evidence": runtime_gate_evidence,
             "platform_compliance": platform_compliance,
+            "semantic_review": semantic_review,
             "recommendation": recommendation,
             "production_context": context,
         },
@@ -662,6 +671,7 @@ def _chapter_dimension_scores(
     context: dict[str, Any],
     runtime_gate_evidence: dict[str, Any],
     platform_compliance: dict[str, Any],
+    semantic_review: dict[str, Any],
 ) -> dict[str, float]:
     quality_content = quality.get("content", {}) if isinstance(quality.get("content", {}), dict) else {}
     style_content = style.get("content", {}) if isinstance(style.get("content", {}), dict) else {}
@@ -673,6 +683,15 @@ def _chapter_dimension_scores(
     scores["rag_context_quality"] = float(runtime_gate_evidence.get("rag_quality_score", 0) or 0)
     scores["long_form_stability"] = 100.0 if runtime_gate_evidence.get("stability_gate_passed") else 45.0
     scores["platform_compliance"] = float(platform_compliance.get("score", 0) or 0)
+    motivation = semantic_review.get("character_motivation_drift", {}) if isinstance(semantic_review.get("character_motivation_drift", {}), dict) else {}
+    power = semantic_review.get("power_scale_conflicts", {}) if isinstance(semantic_review.get("power_scale_conflicts", {}), dict) else {}
+    chapter = semantic_review.get("chapter_pleasure_toxicity", {}) if isinstance(semantic_review.get("chapter_pleasure_toxicity", {}), dict) else {}
+    platform = semantic_review.get("platform_adaptation_review", {}) if isinstance(semantic_review.get("platform_adaptation_review", {}), dict) else {}
+    scores["character_motivation_alignment"] = float(motivation.get("score", 75.0) or 0)
+    scores["power_scale_consistency"] = float(power.get("score", 100.0) or 0)
+    scores["chapter_pleasure_score"] = float(chapter.get("pleasure_score", 0.0) or 0)
+    scores["toxicity_safety"] = max(0.0, 100.0 - float(chapter.get("toxicity_score", 0.0) or 0))
+    scores["platform_semantic_fit"] = float(platform.get("score", 75.0) or 0)
     return {str(key): float(value) for key, value in scores.items() if isinstance(value, (int, float))}
 
 
@@ -684,6 +703,7 @@ def _chapter_gate_results(
     context: dict[str, Any],
     runtime_gate_evidence: dict[str, Any],
     platform_compliance: dict[str, Any],
+    semantic_review: dict[str, Any],
 ) -> tuple[dict[str, bool], list[dict[str, Any]]]:
     quality_content = quality.get("content", {}) if isinstance(quality.get("content", {}), dict) else {}
     style_content = style.get("content", {}) if isinstance(style.get("content", {}), dict) else {}
@@ -696,6 +716,10 @@ def _chapter_gate_results(
         "rag_quality_gate_passed": bool(runtime_gate_evidence.get("rag_quality_gate_passed")),
         "stability_preflight_passed": bool(runtime_gate_evidence.get("stability_gate_passed")),
         "platform_compliance_passed": bool(platform_compliance.get("passed")),
+        "semantic_review_passed": semantic_review.get("recommendation") != "block",
+        "motivation_drift_passed": str((semantic_review.get("character_motivation_drift", {}) if isinstance(semantic_review.get("character_motivation_drift", {}), dict) else {}).get("status", "")) != "blocked",
+        "power_scale_semantic_passed": str((semantic_review.get("power_scale_conflicts", {}) if isinstance(semantic_review.get("power_scale_conflicts", {}), dict) else {}).get("status", "")) != "blocked",
+        "platform_semantic_fit_passed": bool((semantic_review.get("platform_adaptation_review", {}) if isinstance(semantic_review.get("platform_adaptation_review", {}), dict) else {}).get("passed", True)),
     }
     issues: list[dict[str, Any]] = []
     for name, score in dimension_scores.items():
@@ -715,6 +739,8 @@ def _chapter_gate_results(
         issues.append(issue)
     for issue in platform_compliance.get("issues", []) if isinstance(platform_compliance.get("issues", []), list) else []:
         issues.append(issue)
+    for issue in semantic_review.get("issues", []) if isinstance(semantic_review.get("issues", []), list) else []:
+        issues.append(issue)
     return gate_results, issues
 
 
@@ -724,6 +750,7 @@ def _publish_gates(audit: dict[str, Any], context: dict[str, Any]) -> dict[str, 
     linked = audit_content.get("linked_reports", {}) if isinstance(audit_content.get("linked_reports", {}), dict) else {}
     runtime = audit_content.get("runtime_gate_evidence", {}) if isinstance(audit_content.get("runtime_gate_evidence", {}), dict) else {}
     platform = audit_content.get("platform_compliance", {}) if isinstance(audit_content.get("platform_compliance", {}), dict) else {}
+    semantic = audit_content.get("semantic_review", {}) if isinstance(audit_content.get("semantic_review", {}), dict) else {}
     gates = {
         "chapter_audit_passed": chapter_recommendation == "pass",
         "quality_report_present": bool(linked.get("quality_score_report_path")),
@@ -734,6 +761,7 @@ def _publish_gates(audit: dict[str, Any], context: dict[str, Any]) -> dict[str, 
         "stability_preflight_present": bool(linked.get("stability_preflight_path")),
         "stability_preflight_passed": bool(runtime.get("stability_gate_passed")),
         "platform_compliance_passed": bool(platform.get("passed")),
+        "semantic_review_passed": semantic.get("recommendation") != "block",
         "platform_profile_bound": bool(context.get("profiles", {}).get("platform_profile")) if isinstance(context.get("profiles", {}), dict) else False,
         "genre_market_profile_bound": bool(context.get("profiles", {}).get("genre_market_profile")) if isinstance(context.get("profiles", {}), dict) else False,
         "creative_strategy_profile_bound": bool(context.get("profiles", {}).get("creative_strategy_profile")) if isinstance(context.get("profiles", {}), dict) else False,
@@ -744,7 +772,7 @@ def _publish_gates(audit: dict[str, Any], context: dict[str, Any]) -> dict[str, 
     blocking = list(audit_content.get("issues", []) if isinstance(audit_content.get("issues", []), list) else [])
     for key, passed in gates.items():
         if not passed:
-            severity = "high" if key.endswith("_bound") or key == "chapter_audit_passed" else "medium"
+            severity = "high" if key.endswith("_bound") or key in {"chapter_audit_passed", "semantic_review_passed"} else "medium"
             blocking.append({"dimension": key, "severity": severity, "message": f"publish gate failed: {key}", "recommendation": "complete required gate"})
     return {"gates": gates, "blocking_issues": blocking}
 

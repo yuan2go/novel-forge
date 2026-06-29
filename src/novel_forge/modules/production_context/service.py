@@ -154,6 +154,9 @@ def filter_project_safe_references(storage: LocalStorage, project_id: str, refer
     for reference in references:
         if not reference:
             continue
+        if not _reference_may_be_asset(reference):
+            safe.append(reference)
+            continue
         linked_project_id = _project_id_for_reference(storage, reference)
         if linked_project_id and linked_project_id != project_id:
             continue
@@ -254,7 +257,7 @@ def _project_id_for_reference(storage: LocalStorage, reference: str) -> str:
         except Exception:
             return ""
         return _project_id_from_data(data)
-    for category in ASSET_DIR_BY_TYPE.values():
+    for category in _candidate_categories_for_reference(reference):
         for path in storage.list_json(category):
             try:
                 data = storage.read_json(path)
@@ -265,6 +268,20 @@ def _project_id_for_reference(storage: LocalStorage, reference: str) -> str:
             if reference in {str(data.get("id", "")), _display_path(storage.root, path)}:
                 return _project_id_from_data(data)
     return ""
+
+
+def _candidate_categories_for_reference(reference: str) -> list[str]:
+    value = str(reference or "").strip()
+    if "/" in value or value.endswith(".json"):
+        return list(dict.fromkeys(ASSET_DIR_BY_TYPE.values()))
+    categories: list[str] = []
+    for asset_type, category in ASSET_DIR_BY_TYPE.items():
+        prefix = asset_type.replace("_", "-")
+        if value.startswith(f"{prefix}-"):
+            categories.append(category)
+    if value.startswith(("project-", "workspace-")):
+        categories.append(ASSET_DIR_BY_TYPE.get("project_workspace_state", "workspaces"))
+    return list(dict.fromkeys(categories))
 
 
 def _reference_may_be_asset(reference: str) -> bool:

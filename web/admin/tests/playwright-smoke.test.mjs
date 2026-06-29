@@ -36,6 +36,14 @@ describe("Novel Forge browser smoke", () => {
       ["/evaluation", "模型评测"],
       ["/settings", "设置中心"],
       ["/tasks", "任务中心"],
+      ["/os", "Novel Operating System Console"],
+      ["/workflow-runtime", "Workflow Runtime Console"],
+      ["/agent-dispatch", "Agent Dispatch Center"],
+      ["/novel-kg", "Novel KG Workbench"],
+      ["/trace-timeline", "Trace Timeline"],
+      ["/cost-dashboard", "Cost Dashboard"],
+      ["/invalidation", "Invalidation Map"],
+      ["/review-rework", "Review Rework Board"],
       ["/health", "健康"]
     ];
 

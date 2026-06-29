@@ -170,6 +170,35 @@ class MockModelTests(unittest.TestCase):
             self.assertIn("agent_gate", run_types)
             self.assertIn("agent_failure_report", run_types)
 
+    def test_guarded_adapter_records_model_call_log_on_success(self):
+        class UsageModel(MockModelAdapter):
+            def generate(self, prompt: str, context: dict | None = None) -> dict:
+                return {
+                    "provider": "mock",
+                    "model": self.name,
+                    "text": "usable generated prose",
+                    "usage": {"input_tokens": 10, "output_tokens": 20, "total_tokens": 30},
+                    "cost": {"amount": 0.05, "currency": "USD", "source": "unit_test"},
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            run = start_agent_run(
+                storage,
+                agent_key="draft",
+                operation="draft",
+                status="running",
+                evidence={"trace_id": "guarded-trace"},
+            )
+            result = GuardedModelAdapter(UsageModel(), storage, run["path"]).generate("draft", {})
+
+            self.assertTrue(result["model_call_log_path"])
+            self.assertTrue(result["cost_ledger_path"])
+            run_types = {storage.read_json(path).get("type") for path in storage.list_json("runs")}
+            self.assertIn("model_call_log", run_types)
+            self.assertIn("cost_ledger", run_types)
+
     def test_claude_code_adapter_creates_manual_handoff_packet(self):
         packet = ClaudeCodeAdapter().create_handoff_packet(
             "review",

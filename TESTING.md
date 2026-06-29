@@ -8,7 +8,7 @@ A change is not complete because a prompt, page, or service was added. It must p
 
 ## Current Runner
 
-V5 uses Python standard-library `unittest` for the executable core. Avoid adding test dependencies unless an ADR or explicit task approves the dependency policy.
+v6 uses Python standard-library `unittest` for the executable core. Avoid adding test dependencies unless an ADR or explicit task approves the dependency policy.
 
 ## Required Commands
 
@@ -50,6 +50,7 @@ Do not claim tests passed if the commands were not run. State the exact command 
 | Schema | common fields, asset type, metadata, references, validation errors |
 | Storage | local JSON write/read, atomic backup, manifest, path safety |
 | Workflow | task status, workflow run, failure recovery, dead letters, sample cleanup |
+| Workflow runtime | DAG validation, ready-node queue, processor registry, gate pipeline, pause/resume/cancel, scheduler tick/loop, invalidation |
 | Module service | deterministic input/output behavior and schema-backed asset write |
 | Model adapter | mock determinism, provider fail-closed, strict JSON validation |
 | Context | selected assets, exclusion rules, compression, token budget, actual-context replay |
@@ -57,6 +58,8 @@ Do not claim tests passed if the commands were not run. State the exact command 
 | Review | quality/style/originality/chapter/continuity/platform reports and revision tasks |
 | Editor | patch preview, diff, single/batch apply, rollback, new draft version |
 | Agent | contract, checkpoint, budget, gate, metric, recovery, state transitions |
+| Trace / Cost | span hierarchy, model call log, cost ledger, budget policy, cost alert, cost snapshots |
+| Novel KG | ontology snapshot, query/path/impact/conflict, KG gate, continuity preflight |
 | API | route contract, project scoping, error handling, no direct bypass of services |
 | UI | critical flows through FastAPI, clear state, no hidden mutation |
 | Infrastructure | Postgres sync, Qdrant index/search, MinIO sync, Celery task behavior |
@@ -88,9 +91,30 @@ Current tests should continue covering:
 - end-to-end pipeline;
 - long-project fixture pressure test with six chapters and workspace memory.
 
-## New Test Requirements For Platform Migration
+## Novel OS Test Requirements
 
-As P0 platform work is implemented, keep or add tests for:
+As Novel OS platform work changes, keep or add tests for:
+
+### 0. Novel OS Acceptance Chain
+
+The OS end-to-end acceptance chain is not a full-novel generation test. P0 should use one project and one chapter-sized fixture to prove the operating layer works:
+
+- `WorkflowDefinition` creation and DAG validation;
+- workflow execution through the runtime state machine;
+- ready-node queue claim/ack or controlled blocking;
+- Agent dispatch queue materialization and scheduler tick/loop;
+- context bundle or explicit fixture context;
+- model call through the configured runtime boundary or deterministic mock adapter;
+- `node_run`, `agent_run`, checkpoint, and recovery records;
+- `trace_span`, `gate_result`, `model_call_log`, and `cost_ledger` evidence;
+- Novel KG gate and continuity preflight;
+- `review_issue -> revision_task -> editor_patch -> draft_version`;
+- re-review and publish gate;
+- downstream invalidation after an upstream change;
+- resume from blocked or failed state;
+- cost-quality dashboard or acceptance report.
+
+Full-novel generation is a later long-chain acceptance scenario for scale, continuity drift, quality drift, and cost control.
 
 ### 1. Context Builder
 
@@ -141,10 +165,11 @@ As P0 platform work is implemented, keep or add tests for:
 - `change_impact_report`;
 - downstream invalidation when continuity changes.
 
-### 6. Agent Industrialization
+### 6. Agent Scheduler
 
 - `agent_contract` validation;
-- `agent_run` state transitions;
+- `agent_run` state transitions through the scheduler;
+- dispatch queue claim, lease, ack, retry, and dead-letter behavior;
 - checkpoints;
 - budget limits;
 - gate results;
@@ -152,7 +177,17 @@ As P0 platform work is implemented, keep or add tests for:
 - failure and recovery;
 - rerun creates a new record.
 
-### 7. Feedback and Publishing
+### 7. Trace And Cost Runtime
+
+- trace span parent/child relationships across workflow, node, agent, gate, model, context, cost, and feedback spans;
+- model call logs with provider, model, operation, usage, status, and trace ids;
+- cost ledger writes from model calls and explicit cost events;
+- budget policy checks before or during runtime execution;
+- cost alerts on projected budget overrun;
+- project, agent, and chapter cost snapshots;
+- cost-quality dashboard aggregation.
+
+### 8. Feedback and Publishing
 
 - web feedback import;
 - sentiment distribution;
@@ -164,7 +199,7 @@ As P0 platform work is implemented, keep or add tests for:
 - platform status;
 - post-release data recovery.
 
-### 8. Model Evaluation
+### 9. Model Evaluation
 
 - model profile;
 - benchmark task;

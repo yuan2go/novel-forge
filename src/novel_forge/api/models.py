@@ -558,6 +558,21 @@ class NovelKGGateRequest(BaseModel):
     workspace_path: str | None = None
 
 
+class NovelKGSemanticExtractionRequest(BaseModel):
+    target_path: str | None = None
+    project_id: str | None = None
+    workspace_path: str | None = None
+    extractor_model: dict[str, Any] = Field(default_factory=dict)
+    limit: int = 500
+
+
+class NovelKGIdentityResolutionRequest(BaseModel):
+    snapshot_path: str | None = None
+    project_id: str | None = None
+    workspace_path: str | None = None
+    min_confidence: float = 0.7
+
+
 class ChapterContinuityReportRequest(BaseModel):
     draft_path: str
     workspace_path: str | None = None
@@ -660,6 +675,19 @@ class FeedbackStrategyApplyRequest(BaseModel):
     workspace_path: str | None = None
 
 
+class FeedbackBackflowPlanRequest(BaseModel):
+    feedback_paths: list[str] = Field(default_factory=list)
+    project_id: str | None = None
+    workspace_path: str | None = None
+    require_human_gate: bool = True
+
+
+class FeedbackBackflowApplyRequest(BaseModel):
+    plan_path: str
+    confirmed: bool = False
+    note: str = ""
+
+
 class OperationalMetricSnapshotRequest(BaseModel):
     feedback_paths: list[str] = Field(default_factory=list)
     project_id: str | None = None
@@ -676,6 +704,48 @@ class RuntimeCostSnapshotRequest(BaseModel):
     workspace_path: str | None = None
     chapter: int | None = None
     persist_snapshots: bool = True
+
+
+class RuntimePolicyCheckRequest(BaseModel):
+    operation: str
+    project_id: str | None = None
+    workspace_path: str | None = None
+    input_assets: list[str] = Field(default_factory=list)
+    output_assets: list[str] = Field(default_factory=list)
+    context_bundle_path: str = ""
+    runtime_policy: dict[str, Any] = Field(default_factory=dict)
+    token_used: int = 0
+    cost_estimate: float = 0.0
+    currency: str = "USD"
+    trace: dict[str, Any] = Field(default_factory=dict)
+    phase: str = "postflight"
+    mode: str | None = None
+    model_call_log_path: str = ""
+    cost_ledger_paths: list[str] = Field(default_factory=list)
+    gate_result_paths: list[str] = Field(default_factory=list)
+    require_context_bundle: bool | None = None
+    require_budget_policy: bool | None = None
+    require_model_call_log: bool | None = None
+    require_cost_ledger: bool | None = None
+    required_gates: list[str] | None = None
+    persist_gate_result: bool = True
+
+
+class RollbackVerifyRequest(BaseModel):
+    result_path_or_id: str
+
+
+class RollbackPreviewRequest(BaseModel):
+    transaction_path_or_id: str
+    strategy: str = "supersede_outputs"
+    reason: str = ""
+    persist: bool = True
+
+
+class RollbackApplyRequest(BaseModel):
+    plan_path_or_id: str
+    confirm: bool = False
+    actor: str = "web-os-console"
 
 
 class LocalSettingsProfileRequest(BaseModel):
@@ -962,6 +1032,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "NovelKGSnapshotRequest": NovelKGSnapshotRequest,
         "NovelKGRefreshRequest": NovelKGRefreshRequest,
         "NovelKGGateRequest": NovelKGGateRequest,
+        "NovelKGSemanticExtractionRequest": NovelKGSemanticExtractionRequest,
+        "NovelKGIdentityResolutionRequest": NovelKGIdentityResolutionRequest,
         "ChapterContinuityReportRequest": ChapterContinuityReportRequest,
         "CanonPatchRequest": CanonPatchRequest,
         "CanonPatchApplyRequest": CanonPatchApplyRequest,
@@ -978,9 +1050,15 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "ReaderSentimentReportRequest": ReaderSentimentReportRequest,
         "FeedbackInsightRequest": FeedbackInsightRequest,
         "FeedbackStrategyApplyRequest": FeedbackStrategyApplyRequest,
+        "FeedbackBackflowPlanRequest": FeedbackBackflowPlanRequest,
+        "FeedbackBackflowApplyRequest": FeedbackBackflowApplyRequest,
         "OperationalMetricSnapshotRequest": OperationalMetricSnapshotRequest,
         "ProjectMetricSnapshotRequest": ProjectMetricSnapshotRequest,
         "RuntimeCostSnapshotRequest": RuntimeCostSnapshotRequest,
+        "RuntimePolicyCheckRequest": RuntimePolicyCheckRequest,
+        "RollbackPreviewRequest": RollbackPreviewRequest,
+        "RollbackApplyRequest": RollbackApplyRequest,
+        "RollbackVerifyRequest": RollbackVerifyRequest,
         "LocalSettingsProfileRequest": LocalSettingsProfileRequest,
         "ChapterAuditRequest": ChapterAuditRequest,
         "OriginalityReportRequest": OriginalityReportRequest,

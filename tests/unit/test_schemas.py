@@ -43,7 +43,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 109)
+        self.assertEqual(len(SCHEMA_CLASSES), 124)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
         self.assertIn("review_report", SCHEMA_CLASSES)
@@ -89,6 +89,9 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("agent_sla_report", SCHEMA_CLASSES)
         self.assertIn("agent_rollback_report", SCHEMA_CLASSES)
         self.assertIn("agent_dispatch_queue", SCHEMA_CLASSES)
+        self.assertIn("operation_transaction", SCHEMA_CLASSES)
+        self.assertIn("rollback_plan", SCHEMA_CLASSES)
+        self.assertIn("rollback_result", SCHEMA_CLASSES)
         self.assertIn("editor_patch", SCHEMA_CLASSES)
         self.assertIn("draft_diff_report", SCHEMA_CLASSES)
         self.assertIn("long_form_macro_plan", SCHEMA_CLASSES)
@@ -103,6 +106,8 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("continuity_graph_snapshot", SCHEMA_CLASSES)
         self.assertIn("canon_graph_snapshot", SCHEMA_CLASSES)
         self.assertIn("novel_kg_snapshot", SCHEMA_CLASSES)
+        self.assertIn("semantic_extraction_report", SCHEMA_CLASSES)
+        self.assertIn("kg_identity_resolution", SCHEMA_CLASSES)
         self.assertIn("model_profile", SCHEMA_CLASSES)
         self.assertIn("model_benchmark_task", SCHEMA_CLASSES)
         self.assertIn("model_benchmark_run", SCHEMA_CLASSES)
@@ -111,6 +116,11 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("prompt_regression_report", SCHEMA_CLASSES)
         self.assertIn("feedback_import_batch", SCHEMA_CLASSES)
         self.assertIn("reader_sentiment_report", SCHEMA_CLASSES)
+        self.assertIn("feedback_cluster", SCHEMA_CLASSES)
+        self.assertIn("feedback_backflow_plan", SCHEMA_CLASSES)
+        self.assertIn("plan_adjustment_proposal", SCHEMA_CLASSES)
+        self.assertIn("review_rule_update_proposal", SCHEMA_CLASSES)
+        self.assertIn("feedback_kg_patch", SCHEMA_CLASSES)
         self.assertIn("project_metric_snapshot", SCHEMA_CLASSES)
         self.assertIn("local_settings_profile", SCHEMA_CLASSES)
 

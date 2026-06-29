@@ -10,6 +10,8 @@ from novel_forge.modules.runtime_ledger import (
     list_cost_ledgers,
     trace_timeline_payload,
 )
+from novel_forge.modules.operation_transactions import apply_rollback_plan, preview_operation_rollback, verify_rollback_result
+from novel_forge.modules.runtime_policy import check_runtime_policy, runtime_policy_enforcement_report, runtime_policy_legacy_entrypoint_audit, runtime_policy_status
 from novel_forge.storage.local import LocalStorage
 
 
@@ -19,6 +21,70 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     globals().update(models)
     router = APIRouter(tags=["product-runtime"])
     RuntimeCostSnapshotRequest = models["RuntimeCostSnapshotRequest"]
+    RuntimePolicyCheckRequest = models["RuntimePolicyCheckRequest"]
+    RollbackPreviewRequest = models["RollbackPreviewRequest"]
+    RollbackApplyRequest = models["RollbackApplyRequest"]
+    RollbackVerifyRequest = models["RollbackVerifyRequest"]
+
+    @router.get("/product/runtime/policy/status")
+    def runtime_policy_status_endpoint(
+        project_id: str | None = None,
+        workspace_path: str | None = None,
+        mode: str | None = None,
+    ) -> dict[str, Any]:
+        try:
+            return runtime_policy_status(LocalStorage(app_settings.root), project_id=project_id, workspace_path=workspace_path, mode=mode)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/runtime/policy/enforcement-report")
+    def runtime_policy_enforcement_report_endpoint(
+        project_id: str | None = None,
+        workspace_path: str | None = None,
+        mode: str | None = None,
+    ) -> dict[str, Any]:
+        try:
+            return runtime_policy_enforcement_report(LocalStorage(app_settings.root), project_id=project_id, workspace_path=workspace_path, mode=mode)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/runtime/policy/legacy-entrypoint-audit")
+    def runtime_policy_legacy_entrypoint_audit_endpoint() -> dict[str, Any]:
+        try:
+            return runtime_policy_legacy_entrypoint_audit()
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/runtime/policy/check")
+    def runtime_policy_check_endpoint(request: RuntimePolicyCheckRequest) -> dict[str, Any]:
+        try:
+            return check_runtime_policy(
+                LocalStorage(app_settings.root),
+                operation=request.operation,
+                project_id=request.project_id or "",
+                workspace_path=request.workspace_path or "",
+                input_assets=request.input_assets,
+                output_assets=request.output_assets,
+                context_bundle_path=request.context_bundle_path,
+                runtime_policy=request.runtime_policy,
+                token_used=request.token_used,
+                cost_estimate=request.cost_estimate,
+                currency=request.currency,
+                trace=request.trace,
+                phase=request.phase,
+                mode=request.mode,
+                model_call_log_path=request.model_call_log_path,
+                cost_ledger_paths=request.cost_ledger_paths,
+                gate_result_paths=request.gate_result_paths,
+                require_context_bundle=request.require_context_bundle,
+                require_budget_policy=request.require_budget_policy,
+                require_model_call_log=request.require_model_call_log,
+                require_cost_ledger=request.require_cost_ledger,
+                required_gates=request.required_gates,
+                persist_gate_result=request.persist_gate_result,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.get("/product/runtime/trace-timeline")
     def runtime_trace_timeline(
@@ -71,6 +137,44 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 chapter=request.chapter,
                 persist_snapshots=request.persist_snapshots,
             )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/runtime/rollback/verify")
+    def runtime_rollback_verify(request: RollbackVerifyRequest) -> dict[str, Any]:
+        try:
+            return verify_rollback_result(LocalStorage(app_settings.root), request.result_path_or_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/runtime/rollback/preview")
+    def runtime_rollback_preview(request: RollbackPreviewRequest) -> dict[str, Any]:
+        try:
+            return preview_operation_rollback(
+                LocalStorage(app_settings.root),
+                request.transaction_path_or_id,
+                strategy=request.strategy,
+                reason=request.reason,
+                persist=request.persist,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/runtime/rollback/apply")
+    def runtime_rollback_apply(request: RollbackApplyRequest) -> dict[str, Any]:
+        try:
+            return apply_rollback_plan(
+                LocalStorage(app_settings.root),
+                request.plan_path_or_id,
+                confirm=request.confirm,
+                actor=request.actor,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

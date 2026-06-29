@@ -1,16 +1,16 @@
-# Novel Forge V5 当前实现功能说明
+# Novel Forge v6 当前实现功能说明
 
-更新时间：2026-06-26
+更新时间：2026-06-28
 
 本文档基于当前代码实现整理，不描述尚未落地的愿景。它用于回答三个问题：
 
-1. Novel Forge V5 现在已经实现了哪些产品功能。
+1. Novel Forge v6 现在已经实现了哪些产品功能。
 2. 后端、存储、任务、RAG、Agent、Web 管理台分别做到什么程度。
-3. 当前距离正式本地生产使用还存在哪些边界和优化项。
+3. 当前距离完整 Novel Operating System 还存在哪些边界和优化项。
 
 ## 1. 当前定位
 
-Novel Forge V5 已经从单次脚本式小说生成，升级为一个本地运行的小说生产平台雏形。当前实现具备：
+Novel Forge v6 已经从单次脚本式小说生成，升级为本地运行的小说生产平台和早期 Novel Operating System runtime。当前实现具备：
 
 - 项目空间和项目生命周期管理。
 - 多文件上传、导入、清洗、拆书、知识卡和素材卡生产。
@@ -21,8 +21,13 @@ Novel Forge V5 已经从单次脚本式小说生成，升级为一个本地运�
 - RAG 上下文构建，按项目检索人物、世界观、前文摘要、知识卡、伏笔和素材卡。
 - Qdrant 真实向量检索，MinIO 对象存储同步，PostgreSQL 索引和 strict local-prod 检查。
 - Next.js Web 管理台，支持中英文切换，并提供一个面向创作闭环的 Studio 页面。
+- Workflow runtime first slice：DAG 校验、依赖解析、ready node queue、processor registry、gate pipeline、scheduler tick/loop、resume、invalidation、trace。
+- Agent Scheduler first slice：agent contract/run/dispatch queue、checkpoint、budget、SLA/gate、lease、retry、dead-letter、recovery。
+- Novel KG first slice：typed ontology、snapshot、query/path/impact/conflict、KG gate、continuity preflight、workbench。
+- Runtime ledger first slice：trace span、gate result、model call log、cost ledger、budget policy、cost alert、project/agent/chapter cost snapshot、cost-quality dashboard。
+- Review rework backend first slice：review issue -> revision task -> editor patch -> draft version -> re-review -> publish gate。
 
-当前系统的主工作模式仍是本地单人使用。运行态资产在 `.local/workspace/`，不再把真实运行数据纳入 Git。仓库保留 deterministic sample fixture 和测试夹具。
+当前系统的主工作模式仍是本地优先、operator 可控的生产系统。运行态资产在 `.local/workspace/`，不再把真实运行数据纳入 Git。仓库保留 deterministic sample fixture 和测试夹具。
 
 ## 2. 总体架构
 
@@ -1101,19 +1106,34 @@ http://localhost:3000
 
 ## 28. 结论
 
-当前 Novel Forge V5 已经具备“本地单人小说生产平台”的主要闭环：
+当前 Novel Forge v6 已经具备“本地小说生产平台 + early Novel Operating System runtime”的主要闭环：
 
 ```text
 项目 -> 来源 -> 拆解 -> 知识/素材 -> RAG -> 草稿 -> 审稿 -> 修订 -> 导出 -> 任务恢复 -> 健康审计
+```
+
+OS 运行时闭环的 first slice 也已经落地：
+
+```text
+WorkflowDefinition
+  -> workflow execute/resume
+  -> Agent dispatch/scheduler
+  -> context/model boundary
+  -> node_run / agent_run
+  -> trace/gate/model_call/cost ledger
+  -> Novel KG / continuity preflight
+  -> review_issue -> revision_task -> editor_patch -> draft_version
+  -> re-review -> publish_gate
+  -> invalidation / recovery
 ```
 
 它已经不是单纯 CLI 或 demo pipeline，而是有 Web 管理台、服务端 API、异步任务、向量检索、对象存储、项目隔离、handoff 验收和本地生产启动方案的产品化系统。
 
 下一阶段最有价值的优化方向是：
 
-- 把 Product API 拆模块。
-- 把 PostgreSQL 从主索引升级为更强的主写事务层。
-- 把 Studio 编辑器升级为章节级专业编辑器。
-- 为每类资产补深度编辑表单。
-- 强化真实 provider 下的语义审稿和质量趋势。
-- 完善数据库、MinIO、Qdrant 的生产级备份恢复。
+- 建立 OS 端到端验收 fixture，而不是直接用整本小说生成作为 P0 正确性验收。
+- 确认所有模型生产路径都强制写入 trace、model_call_log、cost_ledger，并执行 budget/provider timeout/cancel policy。
+- 补齐 Workflow Console、Agent Dispatch Center、Novel KG Workbench、Trace Timeline、Cost Dashboard、Invalidation Map、Review Rework Board 的 UI 深度和 route-level smoke。
+- 把 Review Center 直接接入 review rework loop，展示 issue-to-patch-to-version-to-publish-gate 证据链。
+- 强化真实 provider 下的语义审稿、Novel KG 语义抽取、质量趋势和 reader feedback 回流。
+- 完善数据库、MinIO、Qdrant、Neo4j 投影和 JSON 资产的生产级备份恢复。

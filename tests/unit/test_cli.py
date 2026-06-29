@@ -14,6 +14,7 @@ class CliTests(unittest.TestCase):
     def run_cli(self, *args, cwd=None):
         env = os.environ.copy()
         env["PYTHONPATH"] = str(ROOT / "src")
+        env.setdefault("NOVEL_FORGE_MODEL_PROVIDER", "mock")
         return subprocess.run(
             [sys.executable, "-m", "novel_forge.cli", *args],
             cwd=cwd or ROOT,

@@ -4,7 +4,14 @@ import time
 from typing import Any
 
 from novel_forge.model_adapters.base import ModelAdapter
+from novel_forge.model_adapters.runtime import (
+    evaluate_provider_runtime_guard,
+    normalize_provider_usage,
+    provider_runtime_guard_from_context,
+)
 from novel_forge.modules.agent_runs import create_agent_failure_report, guard_agent_action, record_agent_gate
+from novel_forge.modules.common import resolve_path
+from novel_forge.modules.runtime_ledger import record_model_call_log
 from novel_forge.storage.local import LocalStorage
 
 
@@ -47,16 +54,17 @@ class GuardedModelAdapter:
     def _call(self, operation: str, context: dict[str, Any] | None, thunk: Any) -> Any:
         self._guard()
         context_payload = context or {}
-        preflight = self._evaluate_provider_runtime_guard(operation, context_payload, usage={}, elapsed_ms=0)
+        preflight = self._evaluate_provider_runtime_guard(operation, context_payload, usage={}, elapsed_ms=0, phase="preflight")
         if preflight.get("status") == "failed":
             self._fail_provider_runtime_guard(operation, preflight)
         started = time.monotonic()
         result = thunk()
         elapsed_ms = int((time.monotonic() - started) * 1000)
         usage = _provider_usage_from_result(result)
-        postflight = self._evaluate_provider_runtime_guard(operation, context_payload, usage=usage, elapsed_ms=elapsed_ms)
+        postflight = self._evaluate_provider_runtime_guard(operation, context_payload, usage=usage, elapsed_ms=elapsed_ms, phase="postflight")
         if postflight.get("status") == "failed":
             self._fail_provider_runtime_guard(operation, postflight)
+        self._record_model_call(operation, result, usage)
         return result
 
     def _evaluate_provider_runtime_guard(
@@ -66,42 +74,19 @@ class GuardedModelAdapter:
         *,
         usage: dict[str, Any],
         elapsed_ms: int,
+        phase: str = "postflight",
     ) -> dict[str, Any]:
-        guard = context.get("provider_runtime_guard", context.get("runtime_guard", {})) if isinstance(context, dict) else {}
-        if not isinstance(guard, dict):
-            guard = {}
         context_usage = context.get("provider_usage", {}) if isinstance(context.get("provider_usage", {}), dict) else {}
-        merged_usage = {**context_usage, **usage}
+        merged_usage = normalize_provider_usage({**context_usage, **usage}, elapsed_ms=elapsed_ms, usage_source="guarded_adapter")
         if elapsed_ms:
             merged_usage["elapsed_ms"] = max(int(merged_usage.get("elapsed_ms", 0) or 0), elapsed_ms)
-        failures: list[str] = []
-        error_type = "ProviderRuntimeGuardFailed"
-        if bool(guard.get("cancel_requested", False) or merged_usage.get("cancel_requested", False)):
-            failures.append("provider execution cancellation requested")
-            error_type = "ProviderExecutionCancelled"
-        max_tokens = int(guard.get("max_tokens", guard.get("token_cutoff", 0)) or 0)
-        total_tokens = int(merged_usage.get("total_tokens", 0) or 0)
-        if total_tokens <= 0:
-            total_tokens = int(merged_usage.get("input_tokens", 0) or 0) + int(merged_usage.get("output_tokens", 0) or 0)
-        if max_tokens > 0 and total_tokens > max_tokens:
-            failures.append(f"provider token cutoff exceeded: used {total_tokens}, limit {max_tokens}")
-            error_type = "ProviderTokenCutoffExceeded"
-        timeout_ms = int(guard.get("timeout_ms", guard.get("max_elapsed_ms", 0)) or 0)
-        actual_elapsed_ms = int(merged_usage.get("elapsed_ms", elapsed_ms) or 0)
-        if timeout_ms > 0 and actual_elapsed_ms > timeout_ms:
-            failures.append(f"provider timeout exceeded: elapsed {actual_elapsed_ms}ms, limit {timeout_ms}ms")
-            error_type = "ProviderTimeoutExceeded"
-        if not failures:
-            return {"status": "passed", "operation": operation, "usage": merged_usage, "guard": guard}
-        return {
-            "status": "failed",
-            "operation": operation,
-            "message": "; ".join(failures),
-            "usage": merged_usage,
-            "guard": guard,
-            "error_type": error_type,
-            "provider": self.name,
-        }
+        return evaluate_provider_runtime_guard(
+            operation=operation,
+            provider=self.name,
+            usage=merged_usage,
+            guard=provider_runtime_guard_from_context(context),
+            phase=phase,
+        )
 
     def _fail_provider_runtime_guard(self, operation: str, result: dict[str, Any]) -> None:
         record_agent_gate(
@@ -119,6 +104,52 @@ class GuardedModelAdapter:
             recovery_instruction=f"Reduce provider usage or route {operation} through a smaller context before retrying.",
         )
         raise ProviderRuntimeGuardError(str(result.get("message") or "provider runtime guard failed"))
+
+    def _record_model_call(self, operation: str, result: Any, usage: dict[str, Any]) -> None:
+        if not isinstance(result, dict):
+            return
+        run_info = self._agent_run_info()
+        provider = str(result.get("provider") or run_info.get("model_provider") or self.name)
+        model = str(result.get("model") or run_info.get("model_name") or self.name)
+        normalized_usage = normalize_provider_usage(usage, usage_source="guarded_adapter")
+        cost = result.get("cost") if isinstance(result.get("cost"), dict) else {"amount": 0.0, "currency": "USD", "source": "guarded_adapter"}
+        try:
+            call = record_model_call_log(
+                self.storage,
+                provider=provider,
+                model=model,
+                operation=operation,
+                status="succeeded",
+                usage=normalized_usage,
+                cost=cost,
+                trace=run_info.get("trace", {}) if isinstance(run_info.get("trace", {}), dict) else {},
+                project_id=str(run_info.get("project_id", "")),
+                workspace_path=str(run_info.get("workspace_path", "")),
+                source_id=str(run_info.get("run_id", "")),
+                prompt_version=str(run_info.get("prompt_version", "")),
+            )
+        except Exception:
+            return
+        result["model_call_log_path"] = call.get("path", "")
+        if isinstance(call.get("cost_ledger"), dict):
+            result["cost_ledger_path"] = call["cost_ledger"].get("path", "")
+
+    def _agent_run_info(self) -> dict[str, Any]:
+        try:
+            data = self.storage.read_json(resolve_path(self.storage.root, self.agent_run_path))
+        except Exception:
+            return {}
+        content = data.get("content", {}) if isinstance(data, dict) and isinstance(data.get("content", {}), dict) else {}
+        metadata = data.get("metadata", {}) if isinstance(data, dict) and isinstance(data.get("metadata", {}), dict) else {}
+        return {
+            "run_id": content.get("run_id", ""),
+            "trace": content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {},
+            "model_provider": content.get("model_provider") or metadata.get("model_provider", ""),
+            "model_name": content.get("model_name") or metadata.get("model_name", ""),
+            "prompt_version": content.get("prompt_version") or metadata.get("prompt_version", ""),
+            "project_id": metadata.get("project_id", ""),
+            "workspace_path": metadata.get("workspace_path", ""),
+        }
 
 
 def _provider_usage_from_result(result: Any) -> dict[str, Any]:

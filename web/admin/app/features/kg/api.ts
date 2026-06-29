@@ -83,6 +83,25 @@ export function runNovelKGGate(targetPath?: string, projectId?: string, workspac
   }) as Promise<Record<string, unknown>>;
 }
 
+export function createSemanticExtraction(targetPath?: string, projectId?: string, workspacePath?: string) {
+  return postJson("/product/novel-kg/semantic-extraction", {
+    target_path: targetPath || null,
+    project_id: projectId || null,
+    workspace_path: workspacePath || null,
+    extractor_model: { provider: "local-semantic-rubric", model: "deterministic-story-semantics-v1" },
+    limit: 800
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function createIdentityResolution(snapshotPath?: string, projectId?: string, workspacePath?: string) {
+  return postJson("/product/novel-kg/identity-resolution", {
+    snapshot_path: snapshotPath || null,
+    project_id: projectId || null,
+    workspace_path: workspacePath || null,
+    min_confidence: 0.68
+  }) as Promise<Record<string, unknown>>;
+}
+
 export function loadNovelKGPath(source: string, target: string, projectId?: string) {
   const params = new URLSearchParams({ source, target, max_depth: "5", limit: "20" });
   if (projectId) params.set("project_id", projectId);

@@ -6,6 +6,7 @@ import shlex
 import shutil
 import subprocess
 import tempfile
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -14,6 +15,14 @@ from typing import Any
 from novel_forge.model_adapters.base import AdapterNotConfiguredError, ModelAdapterConfig
 from novel_forge.model_adapters.output_validation import parse_json_object, validate_model_output
 from novel_forge.model_adapters.prompts import build_messages
+from novel_forge.model_adapters.runtime import (
+    ProviderRuntimeGuardViolation,
+    estimate_provider_cost,
+    estimate_usage_from_text,
+    normalize_provider_usage,
+    provider_runtime_controller,
+    provider_runtime_guard_from_context,
+)
 
 
 class ProviderAdapter:
@@ -105,6 +114,9 @@ class LocalCodexCliWorkerMixin:
             )
         canonical = _canonical_local_operation(operation)
         context_payload = context or {}
+        guard = provider_runtime_guard_from_context(context_payload)
+        controller = provider_runtime_controller(operation=canonical, provider=self.config.provider, guard=guard)
+        controller.start()
         with tempfile.TemporaryDirectory(prefix="novel-forge-codex-") as tmp:
             tmpdir = Path(tmp)
             schema_path = tmpdir / "output.schema.json"
@@ -113,31 +125,43 @@ class LocalCodexCliWorkerMixin:
             prompt = _codex_prompt(canonical, payload, context_payload)
             command = self._codex_command(schema_path=schema_path, output_path=output_path, context=context_payload)
             env = self._codex_env()
-            timeout = self._codex_timeout_seconds()
+            timeout = max(1, int(guard.timeout_ms / 1000)) if guard.timeout_ms > 0 else self._codex_timeout_seconds()
+            started = time.monotonic()
             try:
-                completed = subprocess.run(
+                completed = _run_process_with_runtime_guard(
                     command,
-                    input=prompt,
-                    text=True,
-                    capture_output=True,
-                    timeout=timeout,
-                    check=False,
+                    input_text=prompt,
+                    timeout_seconds=timeout,
                     cwd=str(self._codex_workdir(context_payload)),
                     env=env,
+                    controller=controller,
+                    provider=self.config.provider,
                 )
-            except subprocess.TimeoutExpired as exc:
-                raise RuntimeError(f"{self.config.provider} local Codex CLI timed out after {timeout}s") from exc
+            except ProviderRuntimeGuardViolation as exc:
+                controller.fail(str(exc))
+                raise RuntimeError(str(exc)) from exc
+            elapsed_ms = int((time.monotonic() - started) * 1000)
             if completed.returncode != 0:
                 detail = (completed.stderr or completed.stdout or "").strip()
+                controller.fail(f"{self.config.provider} local Codex CLI failed with exit {completed.returncode}: {detail[:1000]}")
                 raise RuntimeError(f"{self.config.provider} local Codex CLI failed with exit {completed.returncode}: {detail[:1000]}")
             raw = output_path.read_text(encoding="utf-8") if output_path.exists() else _extract_last_json_text(completed.stdout)
             parsed = parse_json_object(raw)
             parsed.setdefault("model", self._codex_model() or self.config.default_model)
             parsed.setdefault("provider", self.config.provider)
-            usage = _codex_usage_from_stdout(completed.stdout)
-            if usage and "usage" not in parsed:
-                parsed["usage"] = usage
-            return validate_model_output(canonical, parsed)
+            usage = _codex_usage_from_stdout(completed.stdout, elapsed_ms=elapsed_ms)
+            if usage.get("total_tokens", 0) <= 0:
+                usage = estimate_usage_from_text(prompt, json.dumps(parsed, ensure_ascii=False), elapsed_ms=elapsed_ms, usage_source="codex_stdout_estimated")
+            parsed["usage"] = usage
+            if guard.cost_profile and "cost" not in parsed:
+                parsed["cost"] = estimate_provider_cost(usage, guard.cost_profile)
+            controller.finish(usage, elapsed_ms=elapsed_ms)
+            validated = validate_model_output(canonical, parsed)
+            validated["usage"] = usage
+            validated["runtime_events"] = controller.to_dict()["events"]
+            if "cost" in parsed:
+                validated["cost"] = parsed["cost"]
+            return validated
 
     def _local_cli_health(self, base: dict[str, Any]) -> dict[str, Any]:
         enabled = self._local_cli_enabled()
@@ -273,6 +297,10 @@ class OpenAICompatibleChatAdapter(ProviderAdapter):
         api_key = self._api_key()
         if not api_key:
             raise self._not_configured(operation)
+        context_payload = context or {}
+        guard = provider_runtime_guard_from_context(context_payload)
+        controller = provider_runtime_controller(operation=operation, provider=self.config.provider, guard=guard)
+        controller.start()
         messages = build_messages(operation, payload, context)
         request_payload = {
             "model": self._model(),
@@ -280,6 +308,10 @@ class OpenAICompatibleChatAdapter(ProviderAdapter):
             "temperature": float(os.environ.get("NOVEL_FORGE_MODEL_TEMPERATURE", "0.3")),
             "response_format": {"type": "json_object"},
         }
+        streaming = _streaming_enabled(context_payload)
+        if streaming:
+            request_payload["stream"] = True
+            request_payload["stream_options"] = {"include_usage": True}
         request = urllib.request.Request(
             self._base_url(),
             data=json.dumps(request_payload, ensure_ascii=False).encode("utf-8"),
@@ -289,14 +321,31 @@ class OpenAICompatibleChatAdapter(ProviderAdapter):
             },
             method="POST",
         )
+        started = time.monotonic()
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
-                response_data = json.loads(response.read().decode("utf-8"))
+            timeout = max(1, int(guard.timeout_ms / 1000)) if guard.timeout_ms > 0 else self.timeout_seconds
+            controller.cancel_if_requested()
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                if streaming:
+                    response_data = _read_openai_compatible_stream(
+                        response,
+                        controller=controller,
+                        operation=operation,
+                        provider=self.config.provider,
+                    )
+                else:
+                    response_data = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
+            controller.fail(f"{self.config.provider} API returned HTTP {exc.code}: {detail[:500]}")
             raise RuntimeError(f"{self.config.provider} API returned HTTP {exc.code}: {detail[:500]}") from exc
+        except ProviderRuntimeGuardViolation as exc:
+            controller.fail(str(exc))
+            raise RuntimeError(str(exc)) from exc
         except Exception as exc:
+            controller.fail(f"{self.config.provider} API call failed: {exc}")
             raise RuntimeError(f"{self.config.provider} API call failed: {exc}") from exc
+        elapsed_ms = int((time.monotonic() - started) * 1000)
 
         try:
             content = response_data["choices"][0]["message"]["content"]
@@ -305,7 +354,20 @@ class OpenAICompatibleChatAdapter(ProviderAdapter):
         parsed = parse_json_object(str(content))
         parsed.setdefault("model", self._model())
         parsed.setdefault("provider", self.config.provider)
-        return validate_model_output(operation, parsed)
+        raw_usage = response_data.get("usage", {}) if isinstance(response_data.get("usage", {}), dict) else {}
+        usage = normalize_provider_usage(raw_usage, elapsed_ms=elapsed_ms, usage_source="provider")
+        if usage.get("total_tokens", 0) <= 0:
+            usage = estimate_usage_from_text(json.dumps(messages, ensure_ascii=False), str(content), elapsed_ms=elapsed_ms, usage_source="estimated")
+        parsed["usage"] = usage
+        if guard.cost_profile and "cost" not in parsed:
+            parsed["cost"] = estimate_provider_cost(usage, guard.cost_profile)
+        controller.finish(usage, elapsed_ms=elapsed_ms)
+        validated = validate_model_output(operation, parsed)
+        validated["usage"] = usage
+        validated["runtime_events"] = controller.to_dict()["events"]
+        if "cost" in parsed:
+            validated["cost"] = parsed["cost"]
+        return validated
 
     def _api_key(self) -> str:
         return os.environ.get(self.api_key_env, "")
@@ -524,7 +586,7 @@ def _extract_last_json_text(stdout: str) -> str:
     return text
 
 
-def _codex_usage_from_stdout(stdout: str) -> dict[str, Any]:
+def _codex_usage_from_stdout(stdout: str, *, elapsed_ms: int = 0) -> dict[str, Any]:
     usage: dict[str, Any] = {}
     for line in stdout.splitlines():
         try:
@@ -536,7 +598,112 @@ def _codex_usage_from_stdout(stdout: str) -> dict[str, Any]:
         candidate = event.get("usage") if isinstance(event.get("usage"), dict) else {}
         if candidate:
             usage.update(candidate)
-    return usage
+    return normalize_provider_usage(usage, elapsed_ms=elapsed_ms, usage_source="codex_stdout")
+
+
+def _run_process_with_runtime_guard(
+    command: list[str],
+    *,
+    input_text: str,
+    timeout_seconds: int,
+    cwd: str,
+    env: dict[str, str],
+    controller: Any,
+    provider: str,
+) -> subprocess.CompletedProcess[str]:
+    """Run a local worker process while polling cancel/timeout guards.
+
+    `subprocess.run()` can only interrupt on its own timeout. This wrapper lets
+    the same provider runtime controller observe elapsed time and cancel flags
+    while the local Codex/Claude Code worker is still running.
+    """
+
+    started = time.monotonic()
+    process = subprocess.Popen(
+        command,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        cwd=cwd,
+        env=env,
+    )
+    input_sent = False
+    while True:
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        try:
+            controller.cancel_if_requested()
+            if timeout_seconds > 0 and elapsed_ms > timeout_seconds * 1000:
+                raise ProviderRuntimeGuardViolation(f"{provider} local worker timed out after {timeout_seconds}s")
+            stdout, stderr = process.communicate(input=input_text if not input_sent else None, timeout=0.25)
+            return subprocess.CompletedProcess(command, process.returncode or 0, stdout, stderr)
+        except subprocess.TimeoutExpired:
+            input_sent = True
+            controller.observe_usage_delta({"elapsed_ms": elapsed_ms, "usage_source": "process_poll"}, elapsed_ms=elapsed_ms)
+            continue
+        except ProviderRuntimeGuardViolation:
+            process.kill()
+            try:
+                stdout, stderr = process.communicate(timeout=1)
+            except Exception:
+                stdout, stderr = "", ""
+            raise
+
+
+def _streaming_enabled(context: dict[str, Any]) -> bool:
+    value = context.get("stream") if "stream" in context else context.get("provider_stream")
+    guard = context.get("provider_runtime_guard", {}) if isinstance(context.get("provider_runtime_guard", {}), dict) else {}
+    if value is None and "stream" in guard:
+        value = guard.get("stream")
+    if value is None:
+        value = os.environ.get("NOVEL_FORGE_PROVIDER_STREAMING", "")
+    return _truthy(str(value)) if value is not None else False
+
+
+def _read_openai_compatible_stream(response: Any, *, controller: Any, operation: str, provider: str) -> dict[str, Any]:
+    content_parts: list[str] = []
+    usage: dict[str, Any] = {}
+    finish_reason = ""
+    chunks: list[dict[str, Any]] = []
+    for raw_line in response:
+        line = raw_line.decode("utf-8", errors="replace").strip() if isinstance(raw_line, bytes) else str(raw_line).strip()
+        if not line or line.startswith(":"):
+            continue
+        if not line.startswith("data:"):
+            continue
+        payload = line[5:].strip()
+        if payload == "[DONE]":
+            break
+        try:
+            event = json.loads(payload)
+        except Exception:
+            continue
+        if not isinstance(event, dict):
+            continue
+        chunks.append(event)
+        event_usage = event.get("usage") if isinstance(event.get("usage"), dict) else {}
+        if event_usage:
+            usage.update(event_usage)
+            controller.observe_usage_delta({**event_usage, "usage_source": "provider_stream"})
+        choices = event.get("choices", []) if isinstance(event.get("choices", []), list) else []
+        for choice in choices:
+            if not isinstance(choice, dict):
+                continue
+            if choice.get("finish_reason"):
+                finish_reason = str(choice.get("finish_reason") or "")
+            delta = choice.get("delta", {}) if isinstance(choice.get("delta", {}), dict) else {}
+            fragment = str(delta.get("content") or "")
+            if fragment:
+                content_parts.append(fragment)
+                controller.observe_usage_delta(estimate_usage_from_text("", fragment, usage_source="provider_stream_estimated"))
+        controller.cancel_if_requested()
+    content = "".join(content_parts)
+    normalized_usage = normalize_provider_usage({**usage, "finish_reason": finish_reason}, usage_source="provider_stream")
+    return {
+        "choices": [{"message": {"content": content}, "finish_reason": finish_reason}],
+        "usage": normalized_usage,
+        "stream": {"enabled": True, "chunk_count": len(chunks), "finish_reason": finish_reason},
+    }
 
 
 def _truthy(value: str) -> bool:

@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import sys
 import tempfile
 import unittest
@@ -10,6 +11,16 @@ from novel_forge.storage.local import LocalStorage
 
 
 class PipelineTests(unittest.TestCase):
+    def setUp(self):
+        self._previous_model_provider = os.environ.get("NOVEL_FORGE_MODEL_PROVIDER")
+        os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = "mock"
+
+    def tearDown(self):
+        if self._previous_model_provider is None:
+            os.environ.pop("NOVEL_FORGE_MODEL_PROVIDER", None)
+        else:
+            os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = self._previous_model_provider
+
     def test_sample_pipeline_runs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

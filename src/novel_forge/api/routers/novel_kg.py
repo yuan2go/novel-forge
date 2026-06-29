@@ -10,6 +10,7 @@ from novel_forge.modules.novel_kg import (
     build_novel_kg,
     build_novel_kg_context,
     build_novel_kg_cypher,
+    create_kg_identity_resolution,
     create_novel_kg_snapshot,
     evaluate_novel_kg_gate,
     novel_kg_dirty_status,
@@ -18,6 +19,7 @@ from novel_forge.modules.novel_kg import (
     query_novel_kg_paths,
     refresh_novel_kg,
 )
+from novel_forge.modules.semantic_enhancement import create_semantic_extraction_report
 from novel_forge.storage.local import LocalStorage
 
 
@@ -29,6 +31,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     NovelKGSnapshotRequest = models["NovelKGSnapshotRequest"]
     NovelKGRefreshRequest = models["NovelKGRefreshRequest"]
     NovelKGGateRequest = models["NovelKGGateRequest"]
+    NovelKGSemanticExtractionRequest = models["NovelKGSemanticExtractionRequest"]
+    NovelKGIdentityResolutionRequest = models["NovelKGIdentityResolutionRequest"]
 
     @router.get("/product/novel-kg/graph")
     def novel_kg_graph(
@@ -200,6 +204,44 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 target_path=request.target_path,
                 project_id=request.project_id,
                 workspace_path=request.workspace_path,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/novel-kg/semantic-extraction")
+    def novel_kg_semantic_extraction(request: NovelKGSemanticExtractionRequest) -> dict[str, Any]:
+        try:
+            return create_semantic_extraction_report(
+                LocalStorage(app_settings.root),
+                target_path=request.target_path,
+                project_id=request.project_id,
+                workspace_path=request.workspace_path,
+                extractor_model=request.extractor_model,
+                limit=request.limit,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/novel-kg/identity-resolution")
+    def novel_kg_identity_resolution(request: NovelKGIdentityResolutionRequest) -> dict[str, Any]:
+        try:
+            storage = LocalStorage(app_settings.root)
+            graph = None
+            if not request.snapshot_path:
+                graph = build_novel_kg(
+                    storage,
+                    project_id=request.project_id,
+                    workspace_path=request.workspace_path,
+                    limit=1000,
+                    include_content_snapshot=False,
+                )
+            return create_kg_identity_resolution(
+                storage,
+                snapshot_path=request.snapshot_path,
+                graph=graph,
+                project_id=request.project_id,
+                workspace_path=request.workspace_path,
+                min_confidence=request.min_confidence,
             )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

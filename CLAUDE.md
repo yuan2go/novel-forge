@@ -1,8 +1,8 @@
 # CLAUDE.md
 
-This file defines project-level operating rules for Claude Code, Codex, and other coding agents working in Novel Forge V5.
+This file defines project-level operating rules for Claude Code, Codex, and other coding agents working in Novel Forge v6.
 
-Novel Forge V5 is no longer documented as a simple AI chapter generator. It is a local-first AI novel production platform. The internal long-term architecture vision may be called a Novel Operating System, but the repository, package, CLI, and public product name remain `novel-forge` / Novel Forge unless a separate migration task explicitly approves a rename.
+Novel Forge v6 is a local-first AI novel production platform and early Novel Operating System runtime. The repository, package, CLI, and public product name remain `novel-forge` / Novel Forge unless a separate migration task explicitly approves a rename.
 
 ## Product Identity
 
@@ -31,7 +31,7 @@ Use these names consistently:
 | Internal architecture vision | Novel Operating System |
 | Avoid as current public rename | `Novel Operating System` as repository/package name |
 
-A rename to Novel Operating System is not approved in V5. It is too broad for the current implementation state and would create unnecessary package, CLI, path, and documentation churn.
+A rename to Novel Operating System is not approved in v6. Novel Operating System is the architecture target, not the repository/package/CLI name.
 
 ## Platform Architecture Direction
 
@@ -43,9 +43,12 @@ Project / Workspace
   -> Workflow Node
   -> Context Bundle
   -> Generation / Analysis / Review Run
+  -> Agent Dispatch / Processor Contract
   -> Artifact Version
-  -> Quality Gate
+  -> Quality / KG / Publish Gate
+  -> Trace Span / Model Call Log / Cost Ledger
   -> Revision Task
+  -> Invalidation / Resume
   -> Publish / Feedback / Analytics Loop
 ```
 
@@ -64,7 +67,7 @@ Target platform layers:
 
 ## Current Implementation Truth
 
-Do not overclaim. V5 currently has a strong base but not the complete platform.
+Do not overclaim. v6 currently has an early OS runtime, but not the complete Novel Operating System product.
 
 Implemented or partially implemented:
 
@@ -77,18 +80,21 @@ Implemented or partially implemented:
 - Optional industrial stack: FastAPI, PostgreSQL, Redis/Celery, Qdrant, MinIO, Next.js admin console, gated Neo4j.
 - Draft/review/revision workbench, release package, publish gate report, originality report, chapter audit, style and quality profiles in varying depth.
 - Skills system under root `skills/` with `.claude/skills/` as generated runtime output only.
+- Workflow runtime first slice: DAG validation, ready-node queue, state machine, processor registry, gate pipeline, scheduler tick/loop, resume, invalidation, trace, quarantine, and rollback markers.
+- Agent Scheduler first slice: contracts, runs, dispatch queue, leases, operation registry, checkpoints, budget/SLA/gate records, retry, dead letter, and recovery.
+- Novel KG first slice: typed ontology collections, snapshots, query/path/impact/conflict APIs, KG gate, continuity preflight, and workbench.
+- Runtime ledger first slice: trace spans, gate results, model call logs, cost ledgers, budget policies, alerts, snapshots, and cost-quality dashboard assets.
+- Review rework backend first slice: review issue, revision task, editor patch, draft version, re-review, and publish gate.
 
 Known P0 gaps to respect in planning:
 
-1. Context Builder is now schema/API/UI backed for `context_build_plan` and `context_bundle`; remaining work is deeper manual source selection, richer compression controls, and invalidation warnings.
-2. Outline/chapter-plan/draft production now records `outline_version`, `chapter_plan_version`, `draft_version`, and `generation_run`; remaining work is chapter queue, parameter trace dashboards, and upstream-change invalidation.
-3. Analysis Center first slice is implemented: common/web-fiction/published/classic report schemas, services, UI, handoff packets, and analysis-to-asset conversion exist. Remaining work is stronger provider-backed semantic scoring, richer visualization, and conversion review gates.
-4. AI Editor is not yet a full editing workbench: paragraph-level suggestions, single/batch apply, `editor_patch`, operation presets, rollback, and replay are still needed.
-5. Long-form stability remains shallow, but `change_impact_report` now exists with downstream reference scanning and Web Admin visibility. Remaining work is timeline workbench, foreshadowing placement/payoff, relationship graph, faction/map/prop systems, and deeper impact visualization.
-6. Agent industrialization first slice exists: `agent_contract`, `agent_run`, `agent_checkpoint`, `agent_event`, `agent_budget`, `agent_gate`, `agent_metric`, `agent_failure_report`, state machine validation, handoff synchronization, and Production Control visibility. Remaining work is full executor enforcement, SLA/recovery, rollback, and deeper Agent Center UI.
-7. Reader Feedback Center is not fully productized: web import, sentiment distribution, payoff/toxic-point clustering, role heat, retention/drop-off analysis, and feedback-to-plan loops are still needed.
-8. Publishing Center is first-generation only: publishing calendar, chapter queue, platform status, title/summary/hook checks, `publishing_plan`, `publishing_log`, and post-release data recovery are still needed.
-9. Model Evaluation Center is not built: `model_profile`, `model_benchmark_task`, `model_benchmark_run`, A/B comparison, cost-quality analysis, prompt regression, and model routing are still needed.
+1. OS acceptance harness is still needed: one project/chapter-sized fixture must prove workflow execute/resume, Agent dispatch, KG/preflight gate, trace/cost ledger, review rework, publish gate, invalidation, and cost-quality output.
+2. Universal runtime policy enforcement is incomplete until every model-producing path writes trace/model-call/cost evidence and respects budget/provider timeout/cancel policy.
+3. OS console depth remains uneven: Workflow Runtime Console, Agent Dispatch Center, Novel KG Workbench, Trace Timeline, Cost Dashboard, Invalidation Map, and Review Rework Board need route-level smoke coverage and operator-ready views.
+4. Context Builder still needs deeper manual source selection, richer compression controls, KG-backed context, and invalidation warnings.
+5. Semantic quality remains P1/P0 edge work: stronger provider-backed review, Novel KG extraction, alias merge, evidence spans, continuity conflict analysis, and feedback-to-plan learning.
+6. Business rollback remains conservative: many operations can quarantine, mark, or supersede assets, but multi-asset rollback needs stronger guarantees.
+7. Reader Feedback and Publishing Centers are not fully productized: feedback-to-plan loops, publishing calendar, platform status, and post-release data recovery still need depth.
 
 ## Operating Discipline
 
@@ -173,7 +179,7 @@ Do not treat "code written" as "task complete". Completion requires verification
 
 Agents are roles and permission boundaries. Skills are reusable capabilities. Model adapters are execution interfaces.
 
-Future Agent work must be contract-based: `agent_contract`, `agent_run`, `agent_checkpoint`, `agent_budget`, `agent_gate`, and `agent_metric` before autonomous scheduling is trusted.
+Agent work must remain contract-based: `agent_contract`, `agent_run`, `agent_dispatch_queue`, `agent_checkpoint`, `agent_budget`, `agent_gate`, `agent_metric`, trace spans, and ledger records must be present before autonomous scheduling is trusted.
 
 ## Skills Rules
 
@@ -246,8 +252,9 @@ Runnable local workflows use:
 
 - `MockModelAdapter`.
 - `LocalRuleEngine`.
+- Claude Code Codex worker through `CODEX_HOME=~/.codex-claude codex` for production agent model calls.
 
-Provider adapters for ChatGPT and DeepSeek are opt-in OpenAI-compatible JSON providers. Claude Code and Codex are manual/operator adapters unless a future ADR approves an in-process provider integration.
+Provider adapters for ChatGPT and DeepSeek are opt-in OpenAI-compatible JSON providers. Generic Codex remains explicit unless selected through provider settings.
 
 - `health_check()` is safe.
 - Model output must be strict JSON when a schema-backed asset will be written.
@@ -258,11 +265,11 @@ Provider adapters for ChatGPT and DeepSeek are opt-in OpenAI-compatible JSON pro
 
 Real provider support requires:
 
-- ADR.
 - Dependency policy.
 - Secret policy.
 - Mocked tests.
 - No-network default test behavior.
+- Trace, model-call, and cost-ledger evidence for production paths.
 
 ## Required Commands
 

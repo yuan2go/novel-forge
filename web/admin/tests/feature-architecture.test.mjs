@@ -34,6 +34,55 @@ describe("Novel Forge admin feature architecture", () => {
     }
   });
 
+  it("has routed Novel OS runtime consoles wired to real runtime APIs", () => {
+    const navigation = read("app/shared/navigation.tsx");
+    for (const token of ["OS Runtime", "workflow_runtime", "agent_dispatch", "trace_timeline", "cost_dashboard", "invalidation_map", "review_rework_board"]) {
+      assert.match(navigation, new RegExp(token));
+    }
+
+    for (const path of [
+      "app/os/page.tsx",
+      "app/workflow-runtime/page.tsx",
+      "app/agent-dispatch/page.tsx",
+      "app/novel-kg/page.tsx",
+      "app/trace-timeline/page.tsx",
+      "app/cost-dashboard/page.tsx",
+      "app/invalidation/page.tsx",
+      "app/review-rework/page.tsx",
+      "app/features/os/OperatingSystemConsolePage.tsx",
+      "app/features/os/WorkflowRuntimeConsolePage.tsx",
+      "app/features/os/AgentDispatchCenterPage.tsx",
+      "app/features/os/TraceTimelinePage.tsx",
+      "app/features/os/CostDashboardPage.tsx",
+      "app/features/os/InvalidationMapPage.tsx",
+      "app/features/os/ReviewReworkBoardPage.tsx"
+    ]) {
+      assert.equal(existsSync(join(root, path)), true, `${path} should exist`);
+    }
+
+    const osApi = read("app/features/os/api.ts");
+    for (const endpoint of [
+      "/product/workflow/runtime-console",
+      "/product/workflow/scheduler/tick",
+      "/product/agents/scheduler/queue",
+      "/product/agents/scheduler/tick",
+      "/product/runtime/trace-timeline",
+      "/product/runtime/cost-ledger",
+      "/product/runtime/cost-dashboard",
+      "/product/runtime/policy/enforcement-report",
+      "/product/runtime/policy/legacy-entrypoint-audit",
+      "/product/runtime/rollback/preview",
+      "/product/runtime/rollback/apply",
+      "/product/runtime/rollback/verify",
+      "/product/novel-kg/refresh",
+      "/product/novel-kg/identity-resolution",
+      "/product/revisions/rework-loop",
+      "/product/publishing/gate"
+    ]) {
+      assert.match(osApi, new RegExp(endpoint.replaceAll("/", "\\/")));
+    }
+  });
+
   it("exposes asset graph, publishing calendar, version registry, and impact visualization in source", () => {
     const assets = read("app/features/assets/AssetsCenterPage.tsx");
     assert.match(assets, /loadAssetGraph/);
@@ -69,6 +118,10 @@ describe("Novel Forge admin feature architecture", () => {
     for (const endpoint of ["/product/publishing/plan", "/product/publishing/log", "/product/publishing/release-package", "/product/publishing/adapters", "/product/publishing/adapter-release"]) {
       assert.match(qualityApi, new RegExp(endpoint.replaceAll("/", "\\/")));
     }
+
+    const kgApi = read("app/features/kg/api.ts");
+    assert.match(kgApi, /\/product\/novel-kg\/semantic-extraction/);
+    assert.match(kgApi, /\/product\/novel-kg\/identity-resolution/);
   });
 
   it("wires industrial deep workbench panels for analysis, context, editor, production, evaluation, and control", () => {

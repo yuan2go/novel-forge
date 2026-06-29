@@ -5,6 +5,7 @@ import {
   BookOpen,
   Boxes,
   CheckCircle2,
+  CreditCard,
   Database,
   FileSearch,
   GitPullRequest,
@@ -15,6 +16,7 @@ import {
   MessageSquareText,
   Network,
   PenLine,
+  Route,
   Save,
   Send,
   Server,
@@ -26,11 +28,19 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-export type NavGroupKey = "workspace" | "assets" | "analysis" | "production" | "management";
+export type NavGroupKey = "workspace" | "os" | "assets" | "analysis" | "production" | "management";
 
 export type NavItemKey =
   | "workbench"
   | "projects"
+  | "os_console"
+  | "workflow_runtime"
+  | "agent_dispatch"
+  | "novel_kg_workbench"
+  | "trace_timeline"
+  | "cost_dashboard"
+  | "invalidation_map"
+  | "review_rework_board"
   | "topic_library"
   | "material_library"
   | "knowledge_library"
@@ -84,6 +94,20 @@ export const navGroups: NavGroup[] = [
     items: [
       { key: "workbench", label: "工作台", description: "本地小说工厂总览", href: "/", icon: <Home size={17} /> },
       { key: "projects", label: "项目管理", description: "项目生命周期与绑定配置", href: "/projects", icon: <Boxes size={17} /> }
+    ]
+  },
+  {
+    key: "os",
+    label: "OS Runtime",
+    items: [
+      { key: "os_console", label: "OS 控制台", description: "Novel Operating System 总览", href: "/os", icon: <Activity size={17} /> },
+      { key: "workflow_runtime", label: "Workflow Runtime", description: "DAG、ready queue 和 resume 控制台", href: "/workflow-runtime", icon: <Workflow size={17} /> },
+      { key: "agent_dispatch", label: "Agent Dispatch", description: "Agent queue、lease、recover 和 contract", href: "/agent-dispatch", icon: <ListChecks size={17} /> },
+      { key: "novel_kg_workbench", label: "Novel KG Workbench", description: "实体、关系、路径、影响和 KG gate", href: "/novel-kg", icon: <Network size={17} /> },
+      { key: "trace_timeline", label: "Trace Timeline", description: "统一 trace/span 时间线", href: "/trace-timeline", icon: <Route size={17} /> },
+      { key: "cost_dashboard", label: "Cost Dashboard", description: "成本账本、模型调用和预算告警", href: "/cost-dashboard", icon: <CreditCard size={17} /> },
+      { key: "invalidation_map", label: "Invalidation Map", description: "变更影响、KG dirty 和下游失效", href: "/invalidation", icon: <GitPullRequest size={17} /> },
+      { key: "review_rework_board", label: "Review Rework", description: "审稿问题到发布门禁闭环", href: "/review-rework", icon: <ShieldCheck size={17} /> }
     ]
   },
   {

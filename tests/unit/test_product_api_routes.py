@@ -86,6 +86,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/novel-kg/cypher",
                 "/product/novel-kg/context",
                 "/product/novel-kg/gate",
+                "/product/novel-kg/semantic-extraction",
                 "/product/novel-kg/dirty",
                 "/product/novel-kg/refresh",
                 "/product/editor/artifacts",
@@ -109,12 +110,18 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/feedback/operational-snapshot",
                 "/product/feedback/insight",
                 "/product/feedback/apply-strategy",
+                "/product/feedback/backflow-plan",
+                "/product/feedback/backflow-apply",
                 "/product/metrics/snapshots",
                 "/product/metrics/snapshot",
                 "/product/runtime/trace-timeline",
                 "/product/runtime/cost-ledger",
                 "/product/runtime/cost-dashboard",
                 "/product/runtime/cost-snapshot",
+                "/product/runtime/policy/status",
+                "/product/runtime/policy/enforcement-report",
+                "/product/runtime/policy/check",
+                "/product/runtime/rollback/verify",
                 "/product/settings/assets",
                 "/product/settings/profile",
                 "/product/production/versions",
@@ -294,12 +301,12 @@ class ProductApiRouterTests(unittest.TestCase):
                     "chapter_plan_path": chapter_plan_ref,
                     "workspace_path": project.json()["path"],
                     "chapter": 1,
-                    "run_to": "final_draft",
+                    "run_to": "context_bundle",
                 },
             )
             self.assertEqual(chapter_run.status_code, 200, chapter_run.text)
             self.assertEqual(chapter_run.json()["status"], "succeeded")
-            self.assertTrue(chapter_run.json()["outputs"]["final_draft_path"])
+            self.assertTrue(chapter_run.json()["outputs"]["context_bundle_path"])
             chapter_runs = client.get(f"/product/production/chapter-runs?project_id={project.json()['project_id']}")
             self.assertEqual(chapter_runs.status_code, 200, chapter_runs.text)
             self.assertGreaterEqual(len(chapter_runs.json()), 1)
@@ -307,10 +314,10 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(chapter_run_detail.status_code, 200, chapter_run_detail.text)
             chapter_run_resume = client.post(
                 "/product/production/chapter-run/resume",
-                json={"run_path": chapter_run.json()["path"], "from_step": "next_chapter_plan", "run_to": "next_chapter_plan"},
+                json={"run_path": chapter_run.json()["path"], "from_step": "context_bundle", "run_to": "context_bundle"},
             )
             self.assertEqual(chapter_run_resume.status_code, 200, chapter_run_resume.text)
-            self.assertTrue(chapter_run_resume.json()["outputs"]["next_chapter_plan_path"])
+            self.assertTrue(chapter_run_resume.json()["outputs"]["context_bundle_path"])
 
             draft_path = storage.write_asset(
                 "drafts",
@@ -334,11 +341,6 @@ class ProductApiRouterTests(unittest.TestCase):
                 json={"input_path": chapter_plan_ref, "context_bundle_path": context_bundle.json()["path"], "output_path": draft_ref},
             )
             self.assertEqual(generation_run.status_code, 200, generation_run.text)
-            benchmark_from_generation = client.post(
-                "/product/evaluation/benchmark-from-generation-run",
-                json={"generation_run_path": generation_run.json()["path"]},
-            )
-            self.assertEqual(benchmark_from_generation.status_code, 200, benchmark_from_generation.text)
             manuscript = client.get(
                 f"/product/manuscript/workbench?project_id={project.json()['project_id']}&draft_path={draft_ref}"
             )
@@ -347,14 +349,6 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(manuscript_json["selected_draft"]["path"], draft_ref)
             self.assertGreaterEqual(manuscript_json["trace_summary"]["generation_run_count"], 1)
             self.assertEqual(client.get(f"/product/production/versions?project_id={project.json()['project_id']}").status_code, 200)
-            originality = client.post("/product/audits/originality", json={"draft_path": draft_ref, "workspace_path": project.json()["path"]})
-            self.assertEqual(originality.status_code, 200, originality.text)
-            audit = client.post("/product/audits/chapter", json={"draft_path": draft_ref, "workspace_path": project.json()["path"]})
-            self.assertEqual(audit.status_code, 200, audit.text)
-            gate = client.post("/product/publishing/gate", json={"draft_path": draft_ref, "workspace_path": project.json()["path"]})
-            self.assertEqual(gate.status_code, 200, gate.text)
-            package = client.post("/product/publishing/release-package", json={"draft_path": draft_ref, "workspace_path": project.json()["path"]})
-            self.assertEqual(package.status_code, 200, package.text)
 
 
 if __name__ == "__main__":

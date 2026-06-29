@@ -2,7 +2,7 @@
 
 ## Decision Summary
 
-Do not rename the repository to Novel Operating System in V5.
+Do not rename the repository to Novel Operating System in v6.
 
 Use this naming model:
 
@@ -11,7 +11,7 @@ Use this naming model:
 | Repository/package/CLI | `novel-forge` |
 | Product | Novel Forge |
 | Product category | local-first AI novel production platform |
-| Internal long-term vision | Novel Operating System |
+| Architecture target | Novel Operating System |
 
 The system should now be designed as a platform, but migrated incrementally. Do not pause feature work until every platform concept exists; also do not keep adding isolated feature pages without platform contracts.
 
@@ -36,11 +36,14 @@ A module is a capability or asset area. A node is an executable production step.
 
 ## Current Runtime Architecture
 
-V5 currently uses a Python core plus optional industrial services.
+v6 currently uses a Python core plus optional industrial services and an early Novel OS runtime layer.
 
 ```text
 CLI / FastAPI / Celery / Next.js
   -> workflow layer
+  -> agent scheduler
+  -> runtime ledger
+  -> Novel KG
   -> module services
   -> schema-backed JSON assets
   -> local storage
@@ -87,7 +90,7 @@ Responsibilities:
 - record `WorkflowRun` and `TaskStatus`;
 - support recovery, retry, dead letters, and run logs;
 - support `WorkflowDefinition`, `WorkflowNode`, and `NodeRun`;
-- later support deeper invalidation wiring and chapter queues.
+- support ready-node queue, processor registry, gate pipeline, scheduler tick/loop, resume, invalidation, trace spans, and quarantine/rollback markers.
 
 Current implemented pipeline:
 
@@ -172,7 +175,7 @@ Responsibilities:
 - chapter queue;
 - invalidation when upstream outline/world/character/continuity changes.
 
-Current status: base generation chain exists, and outline, chapter plan, draft, and generation-run artifacts now produce versioned records. Remaining work is chapter queue, parameter trace dashboard, and upstream-change invalidation.
+Current status: base generation chain exists, and outline, chapter plan, draft, and generation-run artifacts now produce versioned records. Remaining work is chapter queue, richer parameter trace dashboard, and stronger UI around upstream-change invalidation.
 
 ### 7. Evaluation Layer
 
@@ -188,7 +191,7 @@ Responsibilities:
 - release package;
 - model benchmarks and prompt regression.
 
-Current status: review, originality, style, chapter audit, publish gate, release package exist in first-generation form. Continuity/platform/model evaluation need deeper implementation.
+Current status: review, originality, style, chapter audit, continuity/KG gates, publish gate, release package, model profile, benchmark, routing, and cost-quality assets exist in first-generation form. Semantic scoring and universal runtime enforcement need deeper implementation.
 
 ### 8. Long-Form Stability Layer
 
@@ -203,7 +206,7 @@ Responsibilities:
 - change impact report;
 - invalidation visualization.
 
-Current status: continuity/foreshadowing/power-rule schemas exist in shallow form. `change_impact_report` exists with project-scoped downstream reference scanning, severity summaries, recommendations, API routes, and Web Admin visibility. Remaining P0/P1 work is richer continuity workbenches and invalidation visualization.
+Current status: continuity graph, canon graph, Novel KG ontology, KG snapshots, query/path/impact/conflict APIs, KG gate, continuity preflight, and `change_impact_report` exist in first-slice form. Remaining P0/P1 work is semantic extraction depth, evidence spans, richer continuity workbenches, and invalidation visualization.
 
 ### 9. Agent Layer
 
@@ -219,9 +222,23 @@ Responsibilities:
 - resumable and rollback-capable execution;
 - Agent Center UI.
 
-Current status: permission profile, tool allowlist, handoff, acceptance, persisted agent contracts/runs/events/checkpoints/budgets/gates/metrics/failure reports, API routes, and Production Control visibility exist. Remaining P0/P1 work is full executor enforcement, rollback actions, SLA/timeout policy, and deeper Agent Center timelines.
+Current status: permission profiles, tool allowlists, handoff, persisted agent contracts/runs/events/checkpoints/budgets/gates/metrics/failure reports, Agent Operation Registry, dispatch queue, scheduler tick/loop, retries, dead letters, API routes, and Production Control visibility exist. Remaining P0/P1 work is broader operation coverage, business rollback actions, universal model budget enforcement, and deeper Agent Center timelines.
 
-### 10. Analytics and Publishing Layer
+### 10. Runtime Ledger Layer
+
+Responsibilities:
+
+- trace spans across workflow, node, agent, gate, model, cost, context, and feedback operations;
+- gate results;
+- model call logs;
+- cost ledgers;
+- budget policies and alerts;
+- project, agent, and chapter cost snapshots;
+- cost-quality dashboards.
+
+Current status: first production slice exists. Remaining P0/P1 work is universal model-call coverage, provider usage capture across all adapters, budget hard-stop behavior on every production path, and richer dashboard UI.
+
+### 11. Analytics and Publishing Layer
 
 Responsibilities:
 
@@ -253,17 +270,36 @@ Default local validation must remain fast and low-dependency.
 - Provider output must be strict JSON when writing schema-backed assets.
 - Industrial services are optional adapters and must fail closed when unavailable.
 
+## Novel OS Acceptance Chain
+
+The OS end-to-end acceptance chain is not a full-novel generation test. The P0 correctness target is a minimal vertical slice using one project and one chapter-sized fixture:
+
+```text
+WorkflowDefinition
+  -> execute_workflow
+  -> workflow / agent scheduler tick or loop
+  -> context bundle
+  -> model call through the configured runtime boundary
+  -> node_run / agent_run
+  -> trace_span / gate_result / model_call_log / cost_ledger
+  -> Novel KG gate / continuity preflight
+  -> review_issue -> revision_task -> editor_patch -> draft_version
+  -> re-review -> publish_gate
+  -> downstream invalidation
+  -> resume_workflow
+  -> cost_quality_dashboard / acceptance report
+```
+
+Full-novel generation should be a later long-chain acceptance scenario for scale, continuity, quality drift, and cost control.
+
 ## Implementation Priority
 
 Preferred order:
 
-1. Platform skeleton: workflow run/node run/artifact version/context bundle/generation run/quality gate/revision task.
-2. Context Builder curation and invalidation.
-3. Versioned outline/chapter-plan/draft production dashboards and chapter queue.
-4. Analysis Center semantic scoring and conversion gates.
-5. Long-form stability workbench.
-6. AI Editor patch system.
-7. Agent industrialization.
-8. Reader feedback, publishing operations, and model evaluation centers.
+1. OS acceptance harness covering workflow execute/resume, Agent dispatch, KG/preflight gate, trace/cost ledger, review rework, publish gate, invalidation, and cost-quality output.
+2. Universal runtime policy enforcement for all model-producing paths.
+3. OS console completion for workflow, Agent, KG, trace, cost, invalidation, and review rework operations.
+4. Semantic quality layer: KG-backed context, extraction, evidence spans, conflict analysis, originality/review gates, and feedback-to-plan learning.
+5. Documentation/version alignment across product, architecture, testing, operations, API, and UI surfaces.
 
 This order improves production quality first, then expands source methodology and automation.

@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import sys
 import tempfile
 import unittest
@@ -72,6 +73,16 @@ from novel_forge.workflows.status import write_task_status
 
 
 class ProductApiTests(unittest.TestCase):
+    def setUp(self):
+        self._previous_model_provider = os.environ.get("NOVEL_FORGE_MODEL_PROVIDER")
+        os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = "mock"
+
+    def tearDown(self):
+        if self._previous_model_provider is None:
+            os.environ.pop("NOVEL_FORGE_MODEL_PROVIDER", None)
+        else:
+            os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = self._previous_model_provider
+
     def test_project_space_lists_and_resolves_workspace_detail(self):
         with tempfile.TemporaryDirectory() as tmp:
             workspace_path = pipeline.init_workspace(tmp, "Factory Project", "Factory Saga", 1)

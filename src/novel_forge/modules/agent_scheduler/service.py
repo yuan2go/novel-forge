@@ -16,6 +16,7 @@ from novel_forge.modules.agent_runs import (
     update_agent_run_status,
 )
 from novel_forge.modules.common import resolve_path
+from novel_forge.modules.operation_checkpoint import operation_checkpoint_schema
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, release_scheduler_lease, scheduler_lease_status
 from novel_forge.schemas import AgentDispatchQueue, AgentRollbackReport, validate_common_fields
@@ -41,12 +42,18 @@ class AgentOperationSpec:
     sla_seconds: int = 1800
 
     def checkpoint_schema(self) -> dict[str, Any]:
+        schema = operation_checkpoint_schema(self.operation, checkpoint_strategy=self.checkpoint_strategy)
         return {
-            "version": "0.2.0",
+            **schema,
+            "version": "1.0",
             "strategy": self.checkpoint_strategy,
             "required": ["status", "operation", "idempotency_key", "input_assets", "output_assets"],
             "states": ["operation_started", "agent_scheduler_service_completed", "agent_scheduler_service_failed", "agent_scheduler_rollback_applied"],
-            "resume_from_checkpoint": "reuse completed output_assets when assets still exist and are not rolled back or quarantined",
+            "resume_from_checkpoint": {
+                "output_committed": "reuse completed output_assets when assets still exist and are not rolled back or quarantined",
+                "provider_completed": "resume output validation from durable raw provider output",
+                "prompt_built": "restart provider call without rebuilding context when input fingerprints still match",
+            },
             "idempotency_key": "agent_dispatch_queue.content.idempotency_key",
             "rollback_strategy": self.rollback_strategy,
         }
@@ -180,6 +187,8 @@ class AgentOperationRegistry:
                 "evidence": {
                     "agent_scheduler": "output_reuse",
                     "dispatch_queue_path": _display_path(storage.root, _queue_path(storage, str(queue_content.get("dispatch_id", "")))),
+                    "runtime_policy": evidence.get("runtime_policy", {}) if isinstance(evidence.get("runtime_policy", {}), dict) else {},
+                    "context_bundle_path": evidence.get("context_bundle_path", ""),
                     "provider_usage": evidence.get("provider_usage", {}) if isinstance(evidence.get("provider_usage", {}), dict) else {},
                     "provider_runtime_guard": evidence.get("provider_runtime_guard", {}) if isinstance(evidence.get("provider_runtime_guard", {}), dict) else {},
                 },
@@ -252,6 +261,8 @@ class AgentOperationRegistry:
                     "dispatch_queue_path": _display_path(storage.root, _queue_path(storage, str(queue_content.get("dispatch_id", "")))),
                     "checkpoint_path": checkpoint_asset.get("path", ""),
                     "service_result": _json_safe_result(service_result),
+                    "runtime_policy": evidence.get("runtime_policy", {}) if isinstance(evidence.get("runtime_policy", {}), dict) else {},
+                    "context_bundle_path": evidence.get("context_bundle_path", ""),
                     "provider_usage": evidence.get("provider_usage", {}) if isinstance(evidence.get("provider_usage", {}), dict) else {},
                     "provider_runtime_guard": evidence.get("provider_runtime_guard", {}) if isinstance(evidence.get("provider_runtime_guard", {}), dict) else {},
                 },

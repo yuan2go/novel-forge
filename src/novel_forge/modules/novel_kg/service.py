@@ -10,6 +10,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references
+from novel_forge.modules.semantic_enhancement import analyze_semantic_assets, analyze_story_semantics
 from novel_forge.schemas import NovelKGSnapshot, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -61,7 +62,6 @@ def build_novel_kg(
     include_content_snapshot: bool = False,
 ) -> dict[str, Any]:
     storage.ensure_layout()
-    assets = _load_kg_assets(storage, project_id=project_id, workspace_path=workspace_path, limit=limit)
     with AgentExecutionContext(
         storage,
         agent_key="continuity",
@@ -71,18 +71,12 @@ def build_novel_kg(
         sla_seconds=900,
     ) as run:
         run.guard("build_novel_kg")
-        graph = _project_assets(storage, assets, include_content_snapshot=include_content_snapshot)
-        graph.update(
-            {
-                "kg_id": make_id("novel_kg", project_id or workspace_path or "global"),
-                "ontology_version": ONTOLOGY_VERSION,
-                "ontology_schema_version": ONTOLOGY_SCHEMA_VERSION,
-                "ontology_schema": _ontology_schema(),
-                "migrations": _ontology_migrations(),
-                "project_id": project_id or "global",
-                "workspace_path": workspace_path or "",
-                "built_at": utc_now(),
-            }
+        graph = _build_novel_kg_payload(
+            storage,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            limit=limit,
+            include_content_snapshot=include_content_snapshot,
         )
         run.succeed(token_used=sum(len(graph.get(key, [])) for key in _ontology_collection_keys()))
         return graph
@@ -253,6 +247,10 @@ def analyze_novel_kg_conflicts(
     limit: int = 100,
 ) -> dict[str, Any]:
     graph = _load_snapshot_or_build(storage, snapshot_path=snapshot_path, project_id=project_id, workspace_path=workspace_path)
+    return _analyze_novel_kg_conflicts_from_graph(graph, limit=limit)
+
+
+def _analyze_novel_kg_conflicts_from_graph(graph: dict[str, Any], *, limit: int = 100) -> dict[str, Any]:
     node_index = _all_nodes_by_id(graph)
     conflicts: list[dict[str, Any]] = []
     alias_index: dict[str, list[dict[str, Any]]] = {}
@@ -262,6 +260,8 @@ def analyze_novel_kg_conflicts(
             if normalized:
                 alias_index.setdefault(normalized, []).append(item)
     for alias, nodes in alias_index.items():
+        if _generic_alias(alias):
+            continue
         canonical_ids = sorted({str(item.get("canonical_id", item.get("id", ""))) for item in nodes if str(item.get("canonical_id", item.get("id", ""))).strip()})
         kinds = sorted({str(item.get("kind", "")) for item in nodes if str(item.get("kind", "")).strip()})
         if len(canonical_ids) > 1 and len(kinds) > 1:
@@ -346,6 +346,17 @@ def build_novel_kg_context(
     limit: int = 8,
 ) -> dict[str, Any]:
     graph = build_novel_kg(storage, project_id=project_id, workspace_path=workspace_path)
+    return _build_novel_kg_context_from_graph(storage, graph, target_path=target_path, query=query, limit=limit)
+
+
+def _build_novel_kg_context_from_graph(
+    storage: LocalStorage,
+    graph: dict[str, Any],
+    *,
+    target_path: str | Path | None = None,
+    query: str = "",
+    limit: int = 8,
+) -> dict[str, Any]:
     target_text = ""
     target_asset_id = ""
     target_display_path = ""
@@ -395,10 +406,17 @@ def evaluate_novel_kg_gate(
             target_query = _extractable_text(storage.read_json(resolve_path(storage.root, target_path)))[:1200]
         except Exception:
             target_query = ""
-    conflicts = analyze_novel_kg_conflicts(storage, snapshot_path=snapshot_path, project_id=project_id, workspace_path=workspace_path, limit=200)
-    context = build_novel_kg_context(storage, target_path=target_path, query=target_query, project_id=project_id, workspace_path=workspace_path, limit=10)
+    graph = _load_snapshot_or_fast_build(storage, snapshot_path=snapshot_path, project_id=project_id, workspace_path=workspace_path)
+    semantic_review = graph.get("semantic_analysis", {}) if isinstance(graph.get("semantic_analysis", {}), dict) else {}
+    if not semantic_review:
+        semantic_review = analyze_story_semantics(storage, target_path=target_path, project_id=project_id, workspace_path=workspace_path)
+    conflicts = _analyze_novel_kg_conflicts_from_graph(graph, limit=200)
+    context = _build_novel_kg_context_from_graph(storage, graph, target_path=target_path, query=target_query, limit=10)
     blocking = [item for item in conflicts.get("conflicts", []) if item.get("severity") == "high"]
     warnings = [item for item in conflicts.get("conflicts", []) if item.get("severity") != "high"]
+    semantic_issues = semantic_review.get("issues", []) if isinstance(semantic_review.get("issues", []), list) else []
+    blocking.extend({**item, "conflict_type": item.get("dimension", "semantic_story_issue")} for item in semantic_issues if item.get("severity") == "high")
+    warnings.extend({**item, "conflict_type": item.get("dimension", "semantic_story_warning")} for item in semantic_issues if item.get("severity") != "high")
     gate_status = "blocked" if blocking else "passed_with_warnings" if warnings else "passed"
     if not context.get("items"):
         warnings.append({"severity": "medium", "conflict_type": "kg_context_missing", "message": "No KG context matched the target asset.", "recommendation": "Bind project story assets before generation or review."})
@@ -410,6 +428,7 @@ def evaluate_novel_kg_gate(
         "recommendation": "block" if gate_status == "blocked" else "review" if gate_status == "passed_with_warnings" else "pass",
         "blocking_issues": blocking,
         "warnings": warnings,
+        "semantic_review": semantic_review,
         "kg_context": context,
         "conflict_summary": {key: conflicts.get(key) for key in ["count", "blocking_count", "recommendation"]},
         "checked": {
@@ -494,6 +513,31 @@ def _load_kg_assets(storage: LocalStorage, *, project_id: str | None, workspace_
     return rows
 
 
+def _build_novel_kg_payload(
+    storage: LocalStorage,
+    *,
+    project_id: str | None,
+    workspace_path: str | None,
+    limit: int = 1000,
+    include_content_snapshot: bool = False,
+) -> dict[str, Any]:
+    assets = _load_kg_assets(storage, project_id=project_id, workspace_path=workspace_path, limit=limit)
+    graph = _project_assets(storage, assets, include_content_snapshot=include_content_snapshot)
+    graph.update(
+        {
+            "kg_id": make_id("novel_kg", project_id or workspace_path or "global"),
+            "ontology_version": ONTOLOGY_VERSION,
+            "ontology_schema_version": ONTOLOGY_SCHEMA_VERSION,
+            "ontology_schema": _ontology_schema(),
+            "migrations": _ontology_migrations(),
+            "project_id": project_id or "global",
+            "workspace_path": workspace_path or "",
+            "built_at": utc_now(),
+        }
+    )
+    return graph
+
+
 def _project_assets(storage: LocalStorage, assets: list[dict[str, Any]], *, include_content_snapshot: bool) -> dict[str, Any]:
     graph = {key: [] for key in _ontology_collection_keys()}
     graph["source_assets"] = []
@@ -515,6 +559,11 @@ def _project_assets(storage: LocalStorage, assets: list[dict[str, Any]], *, incl
             name = str(item.get("name", "")).strip().lower()
             if name:
                 entity_by_name[name] = str(item.get("id", ""))
+    semantic = analyze_semantic_assets(assets, project_id=_project_id_from_assets(assets), workspace_path=_workspace_path_from_assets(assets))
+    graph["semantic_analysis"] = semantic
+    semantic_projection = _semantic_projection_from_analysis(semantic)
+    for key in _ontology_collection_keys():
+        graph[key].extend(semantic_projection.get(key, []))
     graph["relations"].extend(_reference_relations(assets, primary_by_asset))
     graph["relations"].extend(_name_relations(graph, entity_by_name))
     for key in _ontology_collection_keys():
@@ -527,6 +576,83 @@ def _project_assets(storage: LocalStorage, assets: list[dict[str, Any]], *, incl
     graph["relations"] = _resolved_relations(graph)
     graph["summary"] = _summary(graph)
     return graph
+
+
+def _semantic_projection_from_analysis(semantic: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    projection = {key: [] for key in _ontology_collection_keys()}
+    semantic_entities = semantic.get("semantic_entities", []) if isinstance(semantic.get("semantic_entities", []), list) else []
+    for item in semantic_entities:
+        if not isinstance(item, dict):
+            continue
+        entity_type = str(item.get("entity_type") or "semantic_entity")
+        kind = {"faction": "faction", "location": "location", "prop": "prop"}.get(entity_type, "entity")
+        collection = {"faction": "factions", "location": "locations", "prop": "props"}.get(entity_type, "entities")
+        row = {
+            "id": _kg_id(kind, item.get("source_asset_id", ""), f"semantic_{entity_type}", str(item.get("name", ""))),
+            "schema_kind": "NovelKGNode",
+            "kind": kind,
+            "node_type": kind,
+            "entity_type": entity_type,
+            "canonical_id": _canonical_node_id(kind, entity_type, str(item.get("name", "")), str(item.get("project_id", ""))),
+            "name": str(item.get("name", "")),
+            "aliases": item.get("aliases", []) if isinstance(item.get("aliases", []), list) else [str(item.get("name", ""))],
+            "source_asset_id": str(item.get("source_asset_id", "")),
+            "source_asset_type": str(item.get("source_asset_type", "")),
+            "source_path": str(item.get("source_path", "")),
+            "project_id": str(item.get("project_id", "")),
+            "workspace_path": str(item.get("workspace_path", "")),
+            "confidence": _safe_confidence(item.get("confidence", 0.68)),
+            "attributes": {**(item.get("attributes", {}) if isinstance(item.get("attributes", {}), dict) else {}), "semantic_projection": True},
+            "evidence": {"extractor": "semantic-enhancement"},
+            "evidence_spans": item.get("evidence_spans", []) if isinstance(item.get("evidence_spans", []), list) else [],
+        }
+        projection[collection].append(row)
+    foreshadowing = semantic.get("foreshadowing_tracking", {}) if isinstance(semantic.get("foreshadowing_tracking", {}), dict) else {}
+    threads = foreshadowing.get("threads", []) if isinstance(foreshadowing.get("threads", []), list) else []
+    for thread in threads:
+        if not isinstance(thread, dict):
+            continue
+        name = str(thread.get("thread_id", "")).strip()
+        if not name:
+            continue
+        projection["foreshadowing"].append(
+            {
+                "id": _kg_id("foreshadowing", "semantic", str(thread.get("status", "")), name),
+                "schema_kind": "NovelKGNode",
+                "kind": "foreshadowing",
+                "node_type": "foreshadowing",
+                "entity_type": str(thread.get("status", "semantic_thread")),
+                "canonical_id": _canonical_node_id("foreshadowing", "semantic_thread", name, str(semantic.get("project_id", ""))),
+                "name": name,
+                "aliases": [name],
+                "source_asset_id": "",
+                "source_asset_type": "semantic_analysis",
+                "source_path": str(thread.get("evidence", {}).get("source_path", "")) if isinstance(thread.get("evidence", {}), dict) else "",
+                "project_id": str(semantic.get("project_id", "")),
+                "workspace_path": str(semantic.get("workspace_path", "")),
+                "confidence": 0.74,
+                "attributes": {"semantic_projection": True, **thread},
+                "evidence": thread.get("evidence", {}) if isinstance(thread.get("evidence", {}), dict) else {},
+                "evidence_spans": [],
+            }
+        )
+    return projection
+
+
+def _project_id_from_assets(assets: list[dict[str, Any]]) -> str:
+    for row in assets:
+        metadata = row.get("data", {}).get("metadata", {}) if isinstance(row.get("data", {}).get("metadata", {}), dict) else {}
+        if metadata.get("project_id"):
+            return str(metadata.get("project_id", ""))
+    return ""
+
+
+def _workspace_path_from_assets(assets: list[dict[str, Any]]) -> str:
+    for row in assets:
+        metadata = row.get("data", {}).get("metadata", {}) if isinstance(row.get("data", {}).get("metadata", {}), dict) else {}
+        if metadata.get("workspace_path"):
+            return str(metadata.get("workspace_path", ""))
+    return ""
 
 
 def _project_asset(data: dict[str, Any], path: str) -> dict[str, list[dict[str, Any]]]:
@@ -1017,6 +1143,12 @@ def _load_snapshot_or_build(storage: LocalStorage, *, snapshot_path: str | Path 
     return build_novel_kg(storage, project_id=project_id, workspace_path=workspace_path)
 
 
+def _load_snapshot_or_fast_build(storage: LocalStorage, *, snapshot_path: str | Path | None, project_id: str | None, workspace_path: str | None) -> dict[str, Any]:
+    if snapshot_path:
+        return _load_snapshot_or_build(storage, snapshot_path=snapshot_path, project_id=project_id, workspace_path=workspace_path)
+    return _build_novel_kg_payload(storage, project_id=project_id, workspace_path=workspace_path)
+
+
 def _write(storage: LocalStorage, asset: NovelKGSnapshot) -> dict[str, Any]:
     path = storage.write_asset("continuity", asset)
     data = storage.read_json(path)
@@ -1041,10 +1173,12 @@ def _summary(graph: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(rows, list):
             continue
         confidences.extend(float(item.get("confidence", 0.0) or 0.0) for item in rows if isinstance(item, dict))
+    semantic = graph.get("semantic_analysis", {}) if isinstance(graph.get("semantic_analysis", {}), dict) else {}
     return {
         "source_asset_count": len(graph.get("source_assets", [])),
         "counts": {key: len(graph.get(key, [])) for key in _ontology_collection_keys()},
         "by_source_type": by_source_type,
+        "semantic": semantic.get("summary", {}) if isinstance(semantic.get("summary", {}), dict) else {},
         "confidence": {
             "average": round(sum(confidences) / len(confidences), 4) if confidences else 0,
             "low_confidence_count": sum(1 for value in confidences if value < 0.75),
@@ -1273,6 +1407,18 @@ def _parenthetical_aliases(name: str) -> list[str]:
 
 def _normalize_name(value: str) -> str:
     return re.sub(r"\s+", "", str(value or "").strip().lower())
+
+
+def _generic_alias(value: str) -> bool:
+    text = _normalize_name(value)
+    generic_fragments = {
+        "character/place/object",
+        "characterplaceobject",
+        "continuityentity",
+        "semanticentity",
+        "unknownentity",
+    }
+    return any(fragment in text for fragment in generic_fragments)
 
 
 def _clean_extracted_name(value: str) -> str:

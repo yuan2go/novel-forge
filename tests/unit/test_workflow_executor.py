@@ -31,6 +31,56 @@ from novel_forge.storage.local import LocalStorage
 
 
 class WorkflowExecutorTests(unittest.TestCase):
+    def test_runtime_policy_blocks_generation_without_context_bundle(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}),
+            )
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Draft",
+                    source=storage.read_asset(plan_path).id,
+                    content={"chapter": 1, "text": "原创测试章节。", "copyright_boundary": "unit test"},
+                    references=[storage.read_asset(plan_path).id, str(plan_path.relative_to(storage.root))],
+                ),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Strict Context Workflow",
+                entry_node_id="draft-agent",
+                runtime_policy={"mode": "operating_system", "require_context_bundle": True},
+                nodes=[
+                    {
+                        "node_id": "draft-agent",
+                        "node_type": "agent",
+                        "operation": "draft",
+                        "input_types": ["chapter_plan"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {
+                            "kind": "agent",
+                            "agent_key": "draft",
+                            "agent_status": "prepared",
+                            "expected_output_assets": [str(draft_path.relative_to(storage.root))],
+                        },
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[plan_path], execute_agents=False)
+
+            self.assertEqual(result["status"], "failed")
+            self.assertIn("context_bundle", result["errors"][0])
+            runs = list_node_runs(storage, run_id=result["run_id"])
+            self.assertEqual(runs[0]["status"], "failed")
+            gate_results = [storage.read_json(path) for path in storage.list_json("runs") if storage.read_json(path).get("type") == "gate_result"]
+            runtime_policy_gates = [item for item in gate_results if item.get("content", {}).get("gate_kind") == "runtime_policy"]
+            self.assertTrue(runtime_policy_gates)
+            self.assertEqual(runtime_policy_gates[-1]["content"]["status"], "failed")
+
     def test_executor_runs_dag_and_records_workflow_run(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
