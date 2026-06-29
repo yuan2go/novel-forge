@@ -82,6 +82,7 @@ def build_checkpoint_state(
     model: str = "",
     provider_request_id: str = "",
     raw_output_path: str = "",
+    raw_output_segments: list[str | Path] | None = None,
     gate_result_paths: list[str | Path] | None = None,
     idempotency_key: str = "",
     error: str = "",
@@ -112,6 +113,7 @@ def build_checkpoint_state(
         "model": model,
         "provider_request_id": provider_request_id,
         "raw_output_path": raw_output_path,
+        "raw_output_segments": [str(item) for item in raw_output_segments or []],
         "output_assets": outputs,
         "gate_result_paths": [str(item) for item in gate_result_paths or []],
         "schema": operation_checkpoint_schema(operation),
@@ -136,6 +138,9 @@ def validate_checkpoint_state(storage: LocalStorage, state: dict[str, Any]) -> l
     raw_output_path = str(state.get("raw_output_path", "") or "")
     if raw_output_path and not _path_exists(storage, raw_output_path):
         errors.append(f"checkpoint raw output path does not exist: {raw_output_path}")
+    for item in state.get("raw_output_segments", []) if isinstance(state.get("raw_output_segments", []), list) else []:
+        if str(item).strip() and not _path_exists(storage, item):
+            errors.append(f"checkpoint raw output segment does not exist: {item}")
     return errors
 
 
@@ -157,8 +162,18 @@ def checkpoint_resume_plan(
     if stage in {"output_committed", "gates_completed"} and outputs and len(existing_outputs) == len(outputs):
         return {"status": "reusable", "resume_action": "reuse_committed_outputs", "output_assets": existing_outputs}
     raw_output_path = str(state.get("raw_output_path", "") or "")
+    raw_output_segments = [str(item) for item in state.get("raw_output_segments", []) if str(item).strip()] if isinstance(state.get("raw_output_segments", []), list) else []
     if stage == "provider_completed" and raw_output_path and _path_exists(storage, raw_output_path):
         return {"status": "resumable", "resume_action": "resume_output_validation", "raw_output_path": raw_output_path}
+    if stage == "provider_completed" and raw_output_segments and all(_path_exists(storage, item) for item in raw_output_segments):
+        manifest = assemble_raw_output_segments(storage, raw_output_segments=raw_output_segments, persist=False)
+        return {
+            "status": "resumable",
+            "resume_action": "resume_output_validation",
+            "raw_output_segments": raw_output_segments,
+            "assembled_sha256": manifest.get("sha256", ""),
+            "segment_count": manifest.get("segment_count", len(raw_output_segments)),
+        }
     if stage in {"prompt_built", "provider_started"}:
         return {"status": "resumable", "resume_action": "resume_provider_call"}
     if stage == "context_built":
@@ -183,6 +198,7 @@ def create_operation_checkpoint(
     model: str = "",
     provider_request_id: str = "",
     raw_output_path: str = "",
+    raw_output_segments: list[str | Path] | None = None,
     gate_result_paths: list[str | Path] | None = None,
     idempotency_key: str = "",
     error: str = "",
@@ -203,6 +219,7 @@ def create_operation_checkpoint(
         model=model,
         provider_request_id=provider_request_id,
         raw_output_path=raw_output_path,
+        raw_output_segments=raw_output_segments,
         gate_result_paths=gate_result_paths,
         idempotency_key=idempotency_key,
         error=error,
@@ -234,7 +251,7 @@ def create_operation_checkpoint(
         references=filter_project_safe_references(
             storage,
             project_id,
-            _dedupe([agent_run_path, workflow_run_path, context_bundle_path, raw_output_path, *[str(item) for item in input_assets or []], *[str(item) for item in output_assets or []], *[str(item) for item in gate_result_paths or []]]),
+            _dedupe([agent_run_path, workflow_run_path, context_bundle_path, raw_output_path, *[str(item) for item in raw_output_segments or []], *[str(item) for item in input_assets or []], *[str(item) for item in output_assets or []], *[str(item) for item in gate_result_paths or []]]),
         ),
     )
     data = asset.to_dict()
@@ -271,6 +288,114 @@ def record_operation_stage_checkpoint(
         extra_state=extra_state,
         **kwargs,
     )
+
+
+def record_raw_output_segment(
+    storage: LocalStorage,
+    *,
+    operation: str,
+    idempotency_key: str,
+    segment_index: int,
+    text: str = "",
+    raw_payload: dict[str, Any] | None = None,
+    provider: str = "",
+    model: str = "",
+    provider_request_id: str = "",
+    project_id: str = "",
+    workspace_path: str = "",
+) -> dict[str, Any]:
+    storage.ensure_layout()
+    segment_id = make_id("operation_raw_segment", f"{operation}-{idempotency_key}-{segment_index}")
+    payload = {
+        "type": "operation_raw_output_segment",
+        "id": segment_id,
+        "title": f"Raw output segment {operation} #{segment_index}",
+        "source": idempotency_key,
+        "tags": ["operation-checkpoint", "raw-output-segment", operation],
+        "content": {
+            "operation": operation,
+            "idempotency_key": idempotency_key,
+            "segment_index": int(segment_index),
+            "text": text,
+            "raw_payload": raw_payload or {},
+            "provider": provider,
+            "model": model,
+            "provider_request_id": provider_request_id,
+            "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            "byte_count": len(text.encode("utf-8")),
+            "created_at": utc_now(),
+        },
+        "metadata": {"project_id": project_id, "workspace_path": workspace_path},
+        "references": [],
+        "created_at": utc_now(),
+        "updated_at": utc_now(),
+    }
+    path = storage.root / "data" / "runs" / f"{segment_id}.json"
+    storage.write_json(path, payload)
+    return {"path": _display_path(storage.root, path), "asset": payload}
+
+
+def assemble_raw_output_segments(
+    storage: LocalStorage,
+    *,
+    operation: str = "",
+    idempotency_key: str = "",
+    raw_output_segments: list[str | Path] | None = None,
+    persist: bool = True,
+    project_id: str = "",
+    workspace_path: str = "",
+) -> dict[str, Any]:
+    storage.ensure_layout()
+    selected: list[tuple[str, dict[str, Any]]] = []
+    if raw_output_segments:
+        for item in raw_output_segments:
+            path = resolve_path(storage.root, item)
+            data = storage.read_json(path)
+            if isinstance(data, dict) and data.get("type") == "operation_raw_output_segment":
+                selected.append((_display_path(storage.root, path), data))
+    else:
+        for path in storage.list_json("runs"):
+            try:
+                data = storage.read_json(path)
+            except Exception:
+                continue
+            if not isinstance(data, dict) or data.get("type") != "operation_raw_output_segment":
+                continue
+            content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            if operation and str(content.get("operation", "")) != operation:
+                continue
+            if idempotency_key and str(content.get("idempotency_key", "")) != idempotency_key:
+                continue
+            selected.append((_display_path(storage.root, path), data))
+    selected.sort(key=lambda item: int((item[1].get("content", {}) if isinstance(item[1].get("content", {}), dict) else {}).get("segment_index", 0)))
+    assembled_text = "".join(str((data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}).get("text", "")) for _, data in selected)
+    first_content = selected[0][1].get("content", {}) if selected and isinstance(selected[0][1].get("content", {}), dict) else {}
+    manifest = {
+        "type": "operation_raw_output_manifest",
+        "id": make_id("operation_raw_manifest", f"{operation}-{idempotency_key}-{len(selected)}"),
+        "title": f"Raw output manifest {operation}",
+        "source": idempotency_key,
+        "tags": ["operation-checkpoint", "raw-output-manifest", operation],
+        "content": {
+            "operation": operation or str(first_content.get("operation", "")),
+            "idempotency_key": idempotency_key or str(first_content.get("idempotency_key", "")),
+            "segment_paths": [path for path, _ in selected],
+            "segment_count": len(selected),
+            "byte_count": len(assembled_text.encode("utf-8")),
+            "sha256": hashlib.sha256(assembled_text.encode("utf-8")).hexdigest(),
+            "text": assembled_text,
+            "created_at": utc_now(),
+        },
+        "metadata": {"project_id": project_id, "workspace_path": workspace_path},
+        "references": [path for path, _ in selected],
+        "created_at": utc_now(),
+        "updated_at": utc_now(),
+    }
+    if not persist:
+        return {**manifest["content"], "asset": manifest, "path": ""}
+    path = storage.root / "data" / "runs" / f"{manifest['id']}.json"
+    storage.write_json(path, manifest)
+    return {**manifest["content"], "asset": manifest, "path": _display_path(storage.root, path)}
 
 
 def operation_checkpoint_chain(

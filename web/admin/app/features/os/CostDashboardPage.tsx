@@ -76,6 +76,8 @@ export function CostDashboardPage() {
   const byModel = asRows(projectSnapshot.by_model);
   const byOperation = asRows(projectSnapshot.by_operation);
   const scopes = useMemo(() => Array.from(new Set(ledgers.map((ledger) => ledger.scope).filter(Boolean))).slice(0, 80), [ledgers]);
+  const costTrend = useMemo(() => groupLedgerTrend(ledgers), [ledgers]);
+  const maxTrendAmount = Math.max(...costTrend.map((row) => row.total), 0.01);
   const currency = String(summary.currency || projectSnapshot.currency || "USD");
 
   return (
@@ -113,6 +115,28 @@ export function CostDashboardPage() {
       </section>
 
       <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Cost Trend" icon={<BarChart3 size={18} />} />
+          <div className="assetGraphCanvas layered">
+            {costTrend.slice(-18).map((row) => (
+              <div className="graphNode" key={row.day}>
+                <strong>{row.day}</strong>
+                <span>{formatMoney(row.total, currency)}</span>
+                <small>{row.count} ledger · {Math.round((row.total / maxTrendAmount) * 100)}%</small>
+              </div>
+            ))}
+          </div>
+          <DataTable
+            emptyText="暂无成本趋势"
+            columns={["日期", "成本", "Ledger", "主要来源"]}
+            rows={costTrend.slice(-30).map((row) => [
+              row.day,
+              formatMoney(row.total, currency),
+              String(row.count),
+              row.sources.join(", ") || "-"
+            ])}
+          />
+        </div>
         <div className="panel">
           <PanelHeader title="Provider / Model Cost" icon={<BarChart3 size={18} />} />
           <DataTable
@@ -249,4 +273,19 @@ function asRows(value: unknown): Array<Record<string, unknown>> {
     return Object.values(value as Record<string, unknown>).filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object");
   }
   return [];
+}
+
+function groupLedgerTrend(ledgers: CostLedgerRow[]): Array<{ day: string; total: number; count: number; sources: string[] }> {
+  const byDay = new Map<string, { day: string; total: number; count: number; sources: Set<string> }>();
+  for (const ledger of ledgers) {
+    const day = String(ledger.created_at || "").slice(0, 10) || "unknown";
+    const current = byDay.get(day) || { day, total: 0, count: 0, sources: new Set<string>() };
+    current.total += Number(ledger.amount || 0);
+    current.count += 1;
+    if (ledger.source_type) current.sources.add(ledger.source_type);
+    byDay.set(day, current);
+  }
+  return Array.from(byDay.values())
+    .sort((a, b) => a.day.localeCompare(b.day))
+    .map((row) => ({ day: row.day, total: row.total, count: row.count, sources: Array.from(row.sources).slice(0, 4) }));
 }

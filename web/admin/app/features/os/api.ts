@@ -258,6 +258,16 @@ export function verifyRollbackResult(resultPathOrId: string) {
   }) as Promise<Record<string, unknown>>;
 }
 
+export function coordinateRollback(transactionPaths: string[], strategy = "physical_restore", confirm = false) {
+  return postJson("/product/runtime/rollback/coordinate", {
+    transaction_paths: transactionPaths,
+    strategy,
+    confirm,
+    actor: "os-console",
+    reason: "os console coordinated rollback"
+  }) as Promise<Record<string, unknown>>;
+}
+
 export function createCostSnapshot(projectId?: string, workspacePath?: string, chapter?: number) {
   return postJson("/product/runtime/cost-snapshot", {
     project_id: projectId || null,

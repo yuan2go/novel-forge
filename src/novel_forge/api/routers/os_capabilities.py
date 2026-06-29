@@ -21,7 +21,7 @@ from novel_forge.modules.long_memory import (
     select_memory_for_node,
 )
 from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, list_model_router_assets, resolve_model_route
-from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve, pgvector_capabilities
+from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve, migrate_pgvector_online, pgvector_capabilities, pgvector_operations_plan
 from novel_forge.modules.prompt_registry import (
     bind_prompt_to_node,
     create_prompt_template,
@@ -72,6 +72,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     PgVectorSchemaPlanRequest = models["PgVectorSchemaPlanRequest"]
     EmbeddingJobRequest = models["EmbeddingJobRequest"]
     HybridRetrievalRequest = models["HybridRetrievalRequest"]
+    PgVectorMigrateRequest = models["PgVectorMigrateRequest"]
 
     @router.get("/model-router/assets")
     def model_router_assets(project_id: str | None = None, task_type: str | None = None, limit: int = Query(default=200, ge=1, le=1000)) -> list[dict[str, Any]]:
@@ -349,6 +350,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def pgvector_capability_report(project_id: str | None = None) -> dict[str, Any]:
         try:
             return pgvector_capabilities(LocalStorage(app_settings.root), project_id=project_id or "")
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/retrieval/pgvector-operations-plan")
+    def pgvector_operations(project_id: str | None = None, target_chunk_count: int = Query(default=500000, ge=1, le=5000000), target_qps: int = Query(default=20, ge=1, le=10000)) -> dict[str, Any]:
+        try:
+            return pgvector_operations_plan(LocalStorage(app_settings.root), project_id=project_id or "", target_chunk_count=target_chunk_count, target_qps=target_qps, persist=False)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/retrieval/pgvector-migrate")
+    def pgvector_migrate(request: PgVectorMigrateRequest) -> dict[str, Any]:
+        try:
+            return migrate_pgvector_online(LocalStorage(app_settings.root), dry_run=request.dry_run, project_id=request.project_id or "")
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

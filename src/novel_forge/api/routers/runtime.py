@@ -10,7 +10,7 @@ from novel_forge.modules.runtime_ledger import (
     list_cost_ledgers,
     trace_timeline_payload,
 )
-from novel_forge.modules.operation_transactions import apply_rollback_plan, preview_operation_rollback, verify_rollback_result
+from novel_forge.modules.operation_transactions import apply_rollback_plan, coordinate_runtime_rollback, preview_operation_rollback, verify_rollback_result
 from novel_forge.modules.runtime_policy import check_runtime_policy, runtime_policy_enforcement_report, runtime_policy_legacy_entrypoint_audit, runtime_policy_status
 from novel_forge.storage.local import LocalStorage
 
@@ -25,6 +25,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     RollbackPreviewRequest = models["RollbackPreviewRequest"]
     RollbackApplyRequest = models["RollbackApplyRequest"]
     RollbackVerifyRequest = models["RollbackVerifyRequest"]
+    RollbackCoordinateRequest = models["RollbackCoordinateRequest"]
 
     @router.get("/product/runtime/policy/status")
     def runtime_policy_status_endpoint(
@@ -172,6 +173,25 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 request.plan_path_or_id,
                 confirm=request.confirm,
                 actor=request.actor,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/runtime/rollback/coordinate")
+    def runtime_rollback_coordinate(request: RollbackCoordinateRequest) -> dict[str, Any]:
+        try:
+            return coordinate_runtime_rollback(
+                LocalStorage(app_settings.root),
+                transaction_paths=request.transaction_paths,
+                strategy=request.strategy,
+                confirm=request.confirm,
+                actor=request.actor,
+                reason=request.reason,
+                project_id=request.project_id or "",
+                workspace_path=request.workspace_path or "",
+                trace=request.trace,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

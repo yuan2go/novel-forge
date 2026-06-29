@@ -91,6 +91,89 @@ def pgvector_capabilities(storage: LocalStorage, *, project_id: str = "") -> dic
     }
 
 
+def pgvector_operations_plan(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    target_chunk_count: int = 500_000,
+    target_qps: int = 20,
+    persist: bool = True,
+) -> dict[str, Any]:
+    capabilities = pgvector_capabilities(storage, project_id=project_id)
+    migration_steps = [
+        {"step": "ensure_extension", "command": "create extension if not exists vector", "blocking": True},
+        {"step": "ensure_table", "command": "create table if not exists nf_pgvector_chunks (... embedding vector(64) ...)", "blocking": True},
+        {"step": "ensure_project_index", "command": "create index if not exists nf_pgvector_chunks_project_idx on nf_pgvector_chunks(project_id)", "blocking": False},
+        {"step": "ensure_type_index", "command": "create index if not exists nf_pgvector_chunks_type_idx on nf_pgvector_chunks(chunk_type)", "blocking": False},
+        {"step": "ensure_vector_index", "command": "create index if not exists nf_pgvector_chunks_embedding_idx on nf_pgvector_chunks using ivfflat (embedding vector_cosine_ops)", "blocking": False},
+        {"step": "backfill_chunks", "command": "run embedding_job for memory, knowledge, review, entity, and artifact assets", "blocking": False},
+        {"step": "verify_context_builder", "command": "run Context Builder backend=auto and verify pgvector appears before qdrant in backend_attempts", "blocking": True},
+    ]
+    maintenance = {
+        "analyze": "analyze nf_pgvector_chunks after large backfills",
+        "vacuum": "vacuum analyze nf_pgvector_chunks after delete-heavy rollback batches",
+        "reindex": "reindex index concurrently nf_pgvector_chunks_embedding_idx when vector recall degrades after major model changes",
+        "connection_pool": "use API/worker process pooling or external pgbouncer for concurrent long-chain runs",
+    }
+    pressure_plan = {
+        "target_chunk_count": int(target_chunk_count or 0),
+        "target_qps": int(target_qps or 0),
+        "scenarios": [
+            {"name": "single_project_100_chapters", "chapters": 100, "expected_chunks": min(max(int(target_chunk_count or 0), 10_000), 500_000), "checks": ["p95_query_ms", "recall_top_k", "context_policy_rejections"]},
+            {"name": "rollback_backfill_recovery", "checks": ["dirty_index_count", "rebuild_seconds", "context_builder_backend_attempts"]},
+            {"name": "qdrant_optional_comparison", "checks": ["pgvector_recall", "qdrant_recall", "cost_per_context_bundle"]},
+        ],
+        "pass_thresholds": {"p95_query_ms": 800, "context_builder_pgvector_first": True, "fallback_without_data_loss": True},
+    }
+    report = {
+        "type": "pgvector_operations_plan",
+        "id": make_id("pgvector_ops", f"{project_id}-{target_chunk_count}-{utc_now()}"),
+        "title": "Pgvector operations plan",
+        "source": project_id,
+        "tags": ["pgvector", "operations", "migration", "pressure"],
+        "content": {
+            "role": "os_internal_knowledge_memory_retrieval_base",
+            "qdrant_role": "optional_high_performance_vector_service",
+            "capabilities": capabilities,
+            "migration_steps": migration_steps,
+            "maintenance": maintenance,
+            "pressure_plan": pressure_plan,
+            "created_at": utc_now(),
+        },
+        "metadata": {"project_id": project_id},
+        "references": [],
+        "created_at": utc_now(),
+        "updated_at": utc_now(),
+    }
+    if not persist:
+        return {"path": "", "asset": report, "content": report["content"]}
+    path = storage.root / "data" / "runs" / f"{report['id']}.json"
+    storage.write_json(path, report)
+    return {"path": _display_path(storage.root, path), "asset": report, "content": report["content"]}
+
+
+def migrate_pgvector_online(storage: LocalStorage, *, dry_run: bool = True, project_id: str = "") -> dict[str, Any]:
+    statements = _pgvector_schema_statements()
+    if dry_run:
+        return {
+            "status": "planned",
+            "dry_run": True,
+            "statements": statements,
+            "capabilities": pgvector_capabilities(storage, project_id=project_id),
+        }
+    with _pgvector_connect(storage) as conn:
+        _ensure_pgvector_online_schema(conn)
+        _commit(conn)
+        counts = _pgvector_counts(conn)
+    return {
+        "status": "migrated",
+        "dry_run": False,
+        "statements": statements,
+        "counts": counts,
+        "capabilities": pgvector_capabilities(storage, project_id=project_id),
+    }
+
+
 def build_embedding_job(
     storage: LocalStorage,
     *,
@@ -437,7 +520,12 @@ def _dedupe_strings(items: list[str]) -> list[str]:
 
 
 def _ensure_pgvector_online_schema(conn: Any) -> None:
-    for statement in [
+    for statement in _pgvector_schema_statements():
+        _execute(conn, statement, ())
+
+
+def _pgvector_schema_statements() -> list[str]:
+    return [
         "create extension if not exists vector",
         """
         create table if not exists nf_pgvector_chunks (
@@ -455,8 +543,27 @@ def _ensure_pgvector_online_schema(conn: Any) -> None:
         "create index if not exists nf_pgvector_chunks_project_idx on nf_pgvector_chunks(project_id)",
         "create index if not exists nf_pgvector_chunks_type_idx on nf_pgvector_chunks(chunk_type)",
         "create index if not exists nf_pgvector_chunks_embedding_idx on nf_pgvector_chunks using ivfflat (embedding vector_cosine_ops)",
-    ]:
-        _execute(conn, statement, ())
+    ]
+
+
+def _pgvector_counts(conn: Any) -> dict[str, Any]:
+    rows = _fetchall(
+        conn,
+        """
+        select coalesce(chunk_type, '') as chunk_type, count(*) as row_count
+        from nf_pgvector_chunks
+        group by chunk_type
+        order by chunk_type
+        """,
+        (),
+    )
+    counts: dict[str, int] = {}
+    for row in rows:
+        if isinstance(row, dict):
+            counts[str(row.get("chunk_type", ""))] = int(row.get("row_count", 0) or 0)
+        else:
+            counts[str(row[0])] = int(row[1] or 0)
+    return {"by_chunk_type": counts, "total": sum(counts.values())}
 
 
 def _pgvector_connect(storage: LocalStorage) -> Any:

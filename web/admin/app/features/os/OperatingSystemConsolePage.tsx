@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AssetRow, ProjectRow, TaskControl, WorkflowDefinitionRow, WorkflowRunRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { applyRollback, loadAgentDispatchData, loadCostDashboardData, loadInvalidationData, loadRuntimePolicyEnforcement, loadRuntimePolicyLegacyAudit, loadTraceTimelineData, loadWorkflowRuntimeData, previewRollback, verifyRollbackResult, type RuntimeCostDashboard, type RuntimeTraceTimeline } from "./api";
+import { applyRollback, coordinateRollback, loadAgentDispatchData, loadCostDashboardData, loadInvalidationData, loadRuntimePolicyEnforcement, loadRuntimePolicyLegacyAudit, loadTraceTimelineData, loadWorkflowRuntimeData, previewRollback, verifyRollbackResult, type RuntimeCostDashboard, type RuntimeTraceTimeline } from "./api";
 import { formatMoney } from "./helpers";
 
 const consoleLinks = [
@@ -33,6 +33,7 @@ export function OperatingSystemConsolePage() {
   const [legacyAudit, setLegacyAudit] = useState<Record<string, unknown>>({});
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [rollbackVerify, setRollbackVerify] = useState<Record<string, unknown> | null>(null);
+  const [rollbackCoordination, setRollbackCoordination] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState("");
 
   async function refresh() {
@@ -72,6 +73,7 @@ export function OperatingSystemConsolePage() {
   const uncoveredOperations = (policyReport.uncovered_operations as string[] | undefined) || [];
   const policyOperations = (policyReport.operations as Array<Record<string, unknown>> | undefined) || [];
   const rollbackRows = assets.filter((asset) => ["operation_transaction", "rollback_plan", "rollback_result"].includes(asset.type));
+  const rollbackTransactionPaths = rollbackRows.filter((asset) => asset.type === "operation_transaction").map((asset) => asset.path);
   const queued = agentQueue.filter((item) => ["queued", "claimed", "retry_scheduled"].includes(String(item.status || ""))).length;
   const blockedRuns = workflowRuns.filter((run) => Boolean(run.blocked_node_id) || ["blocked", "waiting_human", "failed"].includes(run.status));
 
@@ -173,7 +175,13 @@ export function OperatingSystemConsolePage() {
         <PanelHeader title="Rollback Operations" icon={<GitPullRequest size={18} />} />
         <div className="summaryBand">
           <Metric label="Rollback Assets" value={String(rollbackRows.length)} />
+          <Metric label="Transactions" value={String(rollbackTransactionPaths.length)} />
           <Metric label="Last Verify" value={String((rollbackVerify?.verification as Record<string, unknown> | undefined)?.status ?? "-")} />
+          <Metric label="Coordination" value={String((rollbackCoordination?.verification as Record<string, unknown> | undefined)?.status ?? "-")} />
+        </div>
+        <div className="formGrid wide">
+          <button className="secondaryButton" disabled={!rollbackTransactionPaths.length} onClick={() => coordinateRollback(rollbackTransactionPaths, "physical_restore", false).then(setRollbackCoordination).catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)))}>Coordinate Preview</button>
+          <button className="secondaryButton dangerButton" disabled={!rollbackTransactionPaths.length} onClick={() => coordinateRollback(rollbackTransactionPaths, "physical_restore", true).then((result) => { setRollbackCoordination(result); refresh().catch(() => undefined); }).catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)))}>Coordinate Apply</button>
         </div>
         <DataTable
           emptyText="暂无 rollback transaction / result"
@@ -188,6 +196,7 @@ export function OperatingSystemConsolePage() {
               : asset.type === "rollback_result" ? <button className="secondaryButton" key={`${asset.path}-verify`} onClick={() => verifyRollbackResult(asset.path).then(setRollbackVerify).catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)))}>Verify</button> : "-"
           ])}
         />
+        <pre className="jsonPreview">{JSON.stringify(rollbackCoordination || {}, null, 2)}</pre>
       </section>
     </FeatureShell>
   );

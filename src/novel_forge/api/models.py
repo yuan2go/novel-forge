@@ -985,6 +985,22 @@ class RollbackApplyRequest(BaseModel):
     actor: str = "web-os-console"
 
 
+class RollbackCoordinateRequest(BaseModel):
+    transaction_paths: list[str] = Field(default_factory=list)
+    strategy: str = "physical_restore"
+    confirm: bool = False
+    actor: str = "web-os-console"
+    reason: str = ""
+    project_id: str | None = None
+    workspace_path: str | None = None
+    trace: dict[str, Any] = Field(default_factory=dict)
+
+
+class PgVectorMigrateRequest(BaseModel):
+    dry_run: bool = True
+    project_id: str | None = None
+
+
 class LocalSettingsProfileRequest(BaseModel):
     title: str = "Local production settings"
     profile_id: str | None = None
@@ -1320,6 +1336,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "RollbackPreviewRequest": RollbackPreviewRequest,
         "RollbackApplyRequest": RollbackApplyRequest,
         "RollbackVerifyRequest": RollbackVerifyRequest,
+        "RollbackCoordinateRequest": RollbackCoordinateRequest,
+        "PgVectorMigrateRequest": PgVectorMigrateRequest,
         "LocalSettingsProfileRequest": LocalSettingsProfileRequest,
         "ChapterAuditRequest": ChapterAuditRequest,
         "OriginalityReportRequest": OriginalityReportRequest,

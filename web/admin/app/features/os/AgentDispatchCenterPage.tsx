@@ -134,6 +134,33 @@ export function AgentDispatchCenterPage() {
       </section>
 
       <section className="panel">
+        <PanelHeader title="Agent Timeline" icon={<Activity size={18} />} />
+        <div className="assetGraphCanvas layered">
+          {agentEvents.slice(0, 42).map((event) => (
+            <button className="graphNode" key={event.path} onClick={() => setAgentRunPath(event.agent_run_path || agentRunPath)}>
+              <strong>{event.event_type}</strong>
+              <span>{event.status || "-"} / {event.created_at || "-"}</span>
+              <small>{event.message || event.agent_run_path || "-"}</small>
+            </button>
+          ))}
+        </div>
+        <DataTable
+          emptyText="暂无 Agent queue 事件"
+          columns={["Queue", "状态", "Operation", "Checkpoint", "Rollback"]}
+          rows={queue.slice(0, 30).map((row) => {
+            const contract = contracts.find((item) => String(item.operation || "") === String(row.operation || ""));
+            return [
+              String(row.dispatch_id || row.path || "-"),
+              <span className={statusClass(String(row.status || ""))} key={`${row.path}-timeline-status`}>{String(row.status || "-")}</span>,
+              String(row.operation || "-"),
+              String(contract?.checkpoint_strategy || row.checkpoint_strategy || "-"),
+              String(contract?.rollback_strategy || "-")
+            ];
+          })}
+        />
+      </section>
+
+      <section className="panel">
         <PanelHeader title="Dispatch Queue" icon={<Activity size={18} />} />
         <DataTable
           emptyText="暂无 Agent dispatch queue"

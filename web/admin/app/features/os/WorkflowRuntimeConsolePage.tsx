@@ -147,6 +147,7 @@ export function WorkflowRuntimeConsolePage() {
   const stateMachine = ((runtime?.state_machine as Record<string, unknown> | undefined) || {});
   const selectedRunRow = runs.find((run) => run.path === selectedRun);
   const blockedRuns = runs.filter((run) => run.blocked_node_id || ["blocked", "failed", "paused", "waiting_human"].includes(run.status));
+  const nodeStatusById = new Map(nodeRuns.map((run) => [run.node_id, run.status]));
 
   return (
     <FeatureShell title="Workflow Runtime Console" subtitle="DAG 解析、ready node queue、processor contract、execute/resume/control/scheduler 的正式运行台。" eyebrow="OS Runtime">
@@ -187,6 +188,37 @@ export function WorkflowRuntimeConsolePage() {
           <button className="secondaryButton dangerButton" disabled={busy || !selectedRun} onClick={() => controlSelected("cancel")}><Square size={16} />Cancel</button>
           <button className="primaryButton" disabled={busy} onClick={() => tickScheduler(1)}><Workflow size={16} />Scheduler Tick</button>
         </div>
+      </section>
+
+      <section className="panel">
+        <PanelHeader title="DAG Graph" icon={<GitBranch size={18} />} />
+        <div className="assetGraphCanvas layered">
+          {dagNodes.slice(0, 36).map((node) => {
+            const nodeId = String(node.node_id || node.id || "-");
+            const status = nodeStatusById.get(nodeId) || (selectedRunRow?.blocked_node_id === nodeId ? selectedRunRow.blocked_status || "blocked" : "ready");
+            const depends = listValue(node.depends_on || node.dependencies || node.input_nodes);
+            const contract = node.processor_contract as Record<string, unknown> | undefined;
+            return (
+              <button className="graphNode" key={nodeId} onClick={() => setInputText(depends.join("\n"))}>
+                <strong>{nodeId}</strong>
+                <span>{String(node.processor_kind || "-")} / {String(node.processor_operation || node.operation || "-")}</span>
+                <small>{status} · checkpoint {String(contract?.checkpoint_strategy || "-")}</small>
+              </button>
+            );
+          })}
+        </div>
+        <DataTable
+          emptyText="暂无 DAG edge"
+          columns={["From", "To", "Gate/输入"]}
+          rows={dagNodes.flatMap((node) => {
+            const to = String(node.node_id || node.id || "-");
+            return listValue(node.depends_on || node.dependencies || node.input_nodes).map((from) => [
+              from,
+              to,
+              `${String((node.input_types as unknown[] | undefined)?.join(", ") || "-")} / ${String((node.gate_refs as unknown[] | undefined)?.join(", ") || "-")}`
+            ]);
+          }).slice(0, 80)}
+        />
       </section>
 
       <section className="workspaceGrid">
@@ -284,4 +316,9 @@ export function WorkflowRuntimeConsolePage() {
       </section>
     </FeatureShell>
   );
+}
+
+function listValue(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item || "").trim()).filter(Boolean);
 }

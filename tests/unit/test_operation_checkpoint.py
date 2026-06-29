@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.operation_checkpoint import (
     CHECKPOINT_STAGES,
+    assemble_raw_output_segments,
     build_checkpoint_state,
     checkpoint_idempotency_key,
     checkpoint_resume_plan,
@@ -14,6 +15,7 @@ from novel_forge.modules.operation_checkpoint import (
     latest_operation_checkpoint,
     operation_checkpoint_chain,
     operation_checkpoint_schema,
+    record_raw_output_segment,
     record_operation_stage_checkpoint,
 )
 from novel_forge.schemas import DraftChapter
@@ -136,6 +138,48 @@ class OperationCheckpointTests(unittest.TestCase):
             self.assertIn("prompt_built", chain["completed_stages"])
             self.assertIn("provider_completed", chain["completed_stages"])
             self.assertEqual(chain["latest"]["stage"], "output_committed")
+
+    def test_raw_output_segments_resume_validation_without_rerunning_provider(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            idempotency = "draft-segment-chain"
+            first = record_raw_output_segment(
+                storage,
+                operation="draft",
+                idempotency_key=idempotency,
+                segment_index=0,
+                text='{"text":"part ',
+                provider="claude-code",
+                model="codex",
+                project_id="checkpoint-project",
+            )
+            second = record_raw_output_segment(
+                storage,
+                operation="draft",
+                idempotency_key=idempotency,
+                segment_index=1,
+                text='two"}',
+                provider="claude-code",
+                model="codex",
+                project_id="checkpoint-project",
+            )
+            manifest = assemble_raw_output_segments(storage, operation="draft", idempotency_key=idempotency, project_id="checkpoint-project")
+            checkpoint = create_operation_checkpoint(
+                storage,
+                operation="draft",
+                stage="provider_completed",
+                idempotency_key=idempotency,
+                raw_output_segments=[first["path"], second["path"]],
+                project_id="checkpoint-project",
+                model="codex",
+            )
+
+            self.assertEqual(manifest["text"], '{"text":"part two"}')
+            self.assertEqual(manifest["segment_count"], 2)
+            self.assertEqual(checkpoint["asset"]["content"]["resume_plan"]["resume_action"], "resume_output_validation")
+            self.assertEqual(checkpoint["asset"]["content"]["resume_plan"]["segment_count"], 2)
+            self.assertIn(first["path"], checkpoint["asset"]["content"]["state"]["raw_output_segments"])
 
 
 if __name__ == "__main__":

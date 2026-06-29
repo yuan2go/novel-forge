@@ -122,6 +122,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/runtime/policy/enforcement-report",
                 "/product/runtime/policy/check",
                 "/product/runtime/rollback/verify",
+                "/product/runtime/rollback/coordinate",
                 "/product/settings/assets",
                 "/product/settings/profile",
                 "/product/production/versions",
@@ -162,6 +163,9 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/system/failure-drill",
                 "/product/system/long-chain-acceptance",
                 "/product/qdrant/search",
+                "/product/os/retrieval/pgvector-capabilities",
+                "/product/os/retrieval/pgvector-operations-plan",
+                "/product/os/retrieval/pgvector-migrate",
                 "/product/minio/objects",
             }
             self.assertTrue(expected.issubset(set(paths)))

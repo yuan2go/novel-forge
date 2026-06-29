@@ -170,6 +170,72 @@ def verify_rollback_result(storage: LocalStorage, result_path_or_id: str | Path)
     return {"path": _display_path(storage.root, result_path), "verification": verification, "asset": result}
 
 
+def coordinate_runtime_rollback(
+    storage: LocalStorage,
+    *,
+    transaction_paths: list[str | Path],
+    strategy: str = "physical_restore",
+    confirm: bool = False,
+    actor: str = "runtime-rollback-coordinator",
+    reason: str = "",
+    project_id: str = "",
+    workspace_path: str = "",
+    trace: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    storage.ensure_layout()
+    trace_payload = _trace_payload(trace, fallback=make_id("rollback_coordination", utc_now()))
+    ordered_transactions = _ordered_transactions(storage, transaction_paths)
+    previews: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
+    unsafe: list[str] = []
+    for item in ordered_transactions:
+        preview = preview_operation_rollback(storage, item["path"], strategy=strategy, reason=reason or "coordinated runtime rollback", persist=True)
+        previews.append(_compact_rollback_asset(preview))
+        content = preview.get("asset", {}).get("content", {}) if isinstance(preview.get("asset", {}).get("content", {}), dict) else {}
+        unsafe.extend([str(value) for value in content.get("unsafe_reasons", []) if str(value).strip()])
+    if confirm and not unsafe:
+        for preview in previews:
+            result = apply_rollback_plan(storage, preview["path"], confirm=True, actor=actor)
+            results.append(_compact_rollback_asset(result))
+    verification = {
+        "status": "unsafe" if unsafe else "applied" if confirm else "previewed",
+        "unsafe_reasons": unsafe,
+        "preview_count": len(previews),
+        "result_count": len(results),
+        "domains": _rollback_domain_summary(ordered_transactions, previews, results),
+    }
+    report_id = make_id("rollback_coordination", f"{strategy}-{len(transaction_paths)}-{utc_now()}")
+    report = {
+        "type": "rollback_coordination_report",
+        "id": report_id,
+        "title": f"Rollback coordination {strategy}",
+        "source": ",".join([str(item) for item in transaction_paths]),
+        "tags": ["rollback-coordination", strategy, verification["status"]],
+        "content": {
+            "report_id": report_id,
+            "strategy": strategy,
+            "confirm": confirm,
+            "actor": actor,
+            "reason": reason,
+            "transaction_paths": [item["path"] for item in ordered_transactions],
+            "execution_order": [item["operation"] for item in ordered_transactions],
+            "previews": previews,
+            "results": results,
+            "verification": verification,
+            "trace": trace_payload,
+            "created_at": utc_now(),
+        },
+        "metadata": {"project_id": project_id, "workspace_path": workspace_path},
+        "references": _dedupe([*[item["path"] for item in ordered_transactions], *[str(item.get("path", "")) for item in previews], *[str(item.get("path", "")) for item in results]]),
+        "created_at": utc_now(),
+        "updated_at": utc_now(),
+    }
+    path = storage.root / "data" / "runs" / f"{report_id}.json"
+    storage.write_json(path, report)
+    _record_span(storage, trace_payload, "rollback_coordination", strategy, "failed" if unsafe else "succeeded", project_id, workspace_path, {"report_path": _display_path(storage.root, path), "confirm": confirm, "transaction_count": len(ordered_transactions)})
+    return {"path": _display_path(storage.root, path), "asset": report, "verification": verification}
+
+
 def _rollback_actions(storage: LocalStorage, transaction: dict[str, Any], *, strategy: str) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
     transaction_id = str(transaction.get("transaction_id") or make_id("operation_transaction", utc_now()))
@@ -216,6 +282,72 @@ def _rollback_actions(storage: LocalStorage, transaction: dict[str, Any], *, str
     for index in transaction.get("indexes_touched", []) if isinstance(transaction.get("indexes_touched", []), list) else []:
         actions.append({"action": "mark_index_dirty", "index": str(index), "reason": "rollback touched indexed story state"})
     return actions
+
+
+def _ordered_transactions(storage: LocalStorage, transaction_paths: list[str | Path]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in transaction_paths:
+        path = _resolve_asset(storage, item, "operation_transaction")
+        data = storage.read_json(path)
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        rows.append(
+            {
+                "path": _display_path(storage.root, path),
+                "operation": str(content.get("operation", "")),
+                "workflow_run_id": str(content.get("workflow_run_id", "")),
+                "agent_run_id": str(content.get("agent_run_id", "")),
+                "created_assets": content.get("created_assets", []) if isinstance(content.get("created_assets", []), list) else [],
+                "updated_assets": content.get("updated_assets", []) if isinstance(content.get("updated_assets", []), list) else [],
+                "ledger_paths": content.get("ledger_paths", []) if isinstance(content.get("ledger_paths", []), list) else [],
+                "indexes_touched": content.get("indexes_touched", []) if isinstance(content.get("indexes_touched", []), list) else [],
+                "created_at": str(content.get("created_at", data.get("created_at", ""))),
+            }
+        )
+    return sorted(rows, key=lambda row: (_rollback_order_weight(row), str(row.get("created_at", ""))), reverse=True)
+
+
+def _rollback_order_weight(row: dict[str, Any]) -> int:
+    weight = 0
+    if row.get("workflow_run_id"):
+        weight += 40
+    if row.get("agent_run_id"):
+        weight += 30
+    if row.get("created_assets") or row.get("updated_assets"):
+        weight += 20
+    if row.get("indexes_touched"):
+        weight += 10
+    if row.get("ledger_paths"):
+        weight += 5
+    return weight
+
+
+def _compact_rollback_asset(result: dict[str, Any]) -> dict[str, Any]:
+    asset = result.get("asset", {}) if isinstance(result.get("asset", {}), dict) else {}
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    return {
+        "path": result.get("path", ""),
+        "type": asset.get("type", ""),
+        "id": asset.get("id", ""),
+        "status": content.get("status", content.get("rollback_status", "")),
+        "strategy": content.get("strategy", ""),
+        "transaction_id": content.get("transaction_id", ""),
+        "action_count": len(content.get("actions", [])) if isinstance(content.get("actions", []), list) else len(content.get("applied_actions", [])) if isinstance(content.get("applied_actions", []), list) else 0,
+        "verification": content.get("verification", {}),
+        "unsafe_reasons": content.get("unsafe_reasons", []),
+    }
+
+
+def _rollback_domain_summary(transactions: list[dict[str, Any]], previews: list[dict[str, Any]], results: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "workflow_transaction_count": len([item for item in transactions if item.get("workflow_run_id")]),
+        "agent_transaction_count": len([item for item in transactions if item.get("agent_run_id")]),
+        "asset_create_count": sum(len(item.get("created_assets", [])) for item in transactions),
+        "asset_update_count": sum(len(item.get("updated_assets", [])) for item in transactions),
+        "kg_or_index_touch_count": sum(len(item.get("indexes_touched", [])) for item in transactions),
+        "ledger_compensation_count": sum(len(item.get("ledger_paths", [])) for item in transactions),
+        "preview_count": len(previews),
+        "applied_result_count": len(results),
+    }
 
 
 def _logical_rollback_actions(storage: LocalStorage, transaction: dict[str, Any], *, strategy: str) -> list[dict[str, Any]]:

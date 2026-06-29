@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.modules.agent_messages import acknowledge_agent_message, create_agent_conversation_trace, replay_agent_messages, send_agent_message
 from novel_forge.modules.long_memory import create_memory_record, retrieve_memory, select_memory_for_node
 from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, resolve_model_route
-from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve, pgvector_capabilities
+from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve, migrate_pgvector_online, pgvector_capabilities, pgvector_operations_plan
 from novel_forge.modules.prompt_registry import bind_prompt_to_node, create_prompt_version_asset, release_prompt_version, resolve_prompt
 from novel_forge.modules.state_bus import create_state_snapshot, detect_state_conflicts, record_state_event, replay_state_events
 from novel_forge.modules.tool_gateway import create_tool_permission_policy, invoke_tool, register_internal_tools, register_mcp_server
@@ -276,6 +276,21 @@ class NovelOSNewCapabilitiesTests(unittest.TestCase):
             self.assertEqual(hybrid["vector_backend"], "pgvector_online")
             self.assertEqual(hybrid["online_pgvector"]["status"], "succeeded")
             self.assertTrue(hybrid["results"])
+
+    def test_pgvector_operations_plan_and_migration_dry_run_define_production_boundary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            plan = pgvector_operations_plan(storage, project_id="ops-project", target_chunk_count=120000, target_qps=50, persist=False)
+            migration = migrate_pgvector_online(storage, dry_run=True, project_id="ops-project")
+
+            self.assertEqual(plan["asset"]["type"], "pgvector_operations_plan")
+            self.assertEqual(plan["content"]["role"], "os_internal_knowledge_memory_retrieval_base")
+            self.assertEqual(plan["content"]["qdrant_role"], "optional_high_performance_vector_service")
+            self.assertEqual(plan["content"]["pressure_plan"]["target_chunk_count"], 120000)
+            self.assertEqual(migration["status"], "planned")
+            self.assertTrue(any("nf_pgvector_chunks" in statement for statement in migration["statements"]))
 
 class _FakePgVectorConnection:
     def __init__(self):

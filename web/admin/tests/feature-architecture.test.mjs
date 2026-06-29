@@ -74,6 +74,7 @@ describe("Novel Forge admin feature architecture", () => {
       "/product/runtime/rollback/preview",
       "/product/runtime/rollback/apply",
       "/product/runtime/rollback/verify",
+      "/product/runtime/rollback/coordinate",
       "/product/novel-kg/refresh",
       "/product/novel-kg/identity-resolution",
       "/product/revisions/rework-loop",
@@ -81,6 +82,19 @@ describe("Novel Forge admin feature architecture", () => {
     ]) {
       assert.match(osApi, new RegExp(endpoint.replaceAll("/", "\\/")));
     }
+
+    const workflowConsole = read("app/features/os/WorkflowRuntimeConsolePage.tsx");
+    assert.match(workflowConsole, /DAG Graph/);
+
+    const agentConsole = read("app/features/os/AgentDispatchCenterPage.tsx");
+    assert.match(agentConsole, /Agent Timeline/);
+
+    const costConsole = read("app/features/os/CostDashboardPage.tsx");
+    assert.match(costConsole, /Cost Trend/);
+
+    const osConsole = read("app/features/os/OperatingSystemConsolePage.tsx");
+    assert.match(osConsole, /Coordinate Preview/);
+    assert.match(osConsole, /Coordinate Apply/);
   });
 
   it("exposes asset graph, publishing calendar, version registry, and impact visualization in source", () => {

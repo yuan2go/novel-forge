@@ -1,0 +1,59 @@
+name: Web Cockpit Smoke
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - v6
+  workflow_dispatch:
+
+jobs:
+  architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/admin/package-lock.json
+      - run: npm --prefix web/admin ci
+      - run: npm --prefix web/admin test
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && contains(join(github.event.pull_request.labels.*.name, ','), 'browser-smoke'))
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/admin/package-lock.json
+      - run: python -m pip install -e ".[api]"
+      - run: npm --prefix web/admin ci
+      - run: npm --prefix web/admin install --no-save playwright
+      - run: npx --prefix web/admin playwright install --with-deps chromium
+      - name: Start API
+        run: |
+          PYTHONPATH=src NOVEL_FORGE_ROOT=.local/workspace NOVEL_FORGE_MODEL_PROVIDER=mock python -m novel_forge.cli serve-api --root .local/workspace &
+          echo $! > /tmp/novel-forge-api.pid
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Start Web
+        run: |
+          NEXT_PUBLIC_NOVEL_FORGE_API_URL=http://127.0.0.1:8000 npm --prefix web/admin run dev -- -H 127.0.0.1 -p 3000 &
+          echo $! > /tmp/novel-forge-web.pid
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3000 >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - run: NOVEL_FORGE_REQUIRE_PLAYWRIGHT=1 NOVEL_FORGE_WEB_BASE_URL=http://127.0.0.1:3000 NOVEL_FORGE_API_BASE_URL=http://127.0.0.1:8000 node --test web/admin/tests/playwright-smoke.test.mjs

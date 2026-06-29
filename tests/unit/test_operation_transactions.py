@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.operation_transactions import apply_rollback_plan, create_operation_transaction, preview_operation_rollback, verify_rollback_result
+from novel_forge.modules.operation_transactions import apply_rollback_plan, coordinate_runtime_rollback, create_operation_transaction, preview_operation_rollback, verify_rollback_result
 from novel_forge.modules.runtime_ledger import record_cost_ledger
 from novel_forge.schemas import DraftVersion, validate_common_fields
 from novel_forge.storage.local import LocalStorage
@@ -184,6 +184,106 @@ class OperationTransactionTests(unittest.TestCase):
             restored = storage.read_json(updated)
             self.assertEqual(restored["content"]["text"], "known good")
             self.assertEqual(restored["metadata"]["rollback_status"], "physically_restored")
+
+    def test_coordinate_runtime_rollback_previews_and_applies_multiple_transactions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "rollback-coordinate-project"
+            created_a = storage.write_asset_auto(
+                DraftVersion(
+                    title="Created A",
+                    content={"draft_id": "coord-a", "version_index": 1, "chapter": 1, "text": "bad a", "source_draft_id": "coord-a", "change_summary": "bad", "status": "active"},
+                    metadata={"project_id": project_id},
+                )
+            )
+            created_b = storage.write_asset_auto(
+                DraftVersion(
+                    title="Created B",
+                    content={"draft_id": "coord-b", "version_index": 1, "chapter": 2, "text": "bad b", "source_draft_id": "coord-b", "change_summary": "bad", "status": "active"},
+                    metadata={"project_id": project_id},
+                )
+            )
+            tx_a = create_operation_transaction(
+                storage,
+                operation="workflow_node_draft",
+                workflow_run_id="workflow-1",
+                created_assets=[str(created_a.relative_to(storage.root))],
+                indexes_touched=["novel_kg"],
+                project_id=project_id,
+            )
+            tx_b = create_operation_transaction(
+                storage,
+                operation="agent_revision",
+                agent_run_id="agent-1",
+                created_assets=[str(created_b.relative_to(storage.root))],
+                indexes_touched=["pgvector"],
+                project_id=project_id,
+            )
+
+            preview = coordinate_runtime_rollback(
+                storage,
+                transaction_paths=[tx_a["path"], tx_b["path"]],
+                strategy="supersede_outputs",
+                confirm=False,
+                project_id=project_id,
+            )
+            applied = coordinate_runtime_rollback(
+                storage,
+                transaction_paths=[tx_a["path"], tx_b["path"]],
+                strategy="supersede_outputs",
+                confirm=True,
+                project_id=project_id,
+            )
+
+            self.assertEqual(preview["asset"]["type"], "rollback_coordination_report")
+            self.assertEqual(preview["verification"]["status"], "previewed")
+            self.assertEqual(applied["verification"]["status"], "applied")
+            self.assertEqual(applied["verification"]["result_count"], 2)
+            self.assertEqual(applied["verification"]["domains"]["workflow_transaction_count"], 1)
+            self.assertEqual(applied["verification"]["domains"]["agent_transaction_count"], 1)
+            self.assertEqual(storage.read_json(created_a)["metadata"]["rollback_status"], "rolled_back")
+            self.assertEqual(storage.read_json(created_b)["metadata"]["rollback_status"], "rolled_back")
+
+    def test_coordinate_runtime_rollback_does_not_partially_apply_when_any_plan_is_unsafe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "rollback-coordinate-unsafe"
+            created = storage.write_asset_auto(
+                DraftVersion(
+                    title="Created survivor",
+                    content={"draft_id": "coord-safe", "version_index": 1, "chapter": 1, "text": "should remain active", "source_draft_id": "coord-safe", "change_summary": "safe", "status": "active"},
+                    metadata={"project_id": project_id},
+                )
+            )
+            safe_tx = create_operation_transaction(
+                storage,
+                operation="workflow_node_draft",
+                workflow_run_id="workflow-safe",
+                created_assets=[str(created.relative_to(storage.root))],
+                project_id=project_id,
+            )
+            unsafe_tx = create_operation_transaction(
+                storage,
+                operation="agent_revision",
+                agent_run_id="agent-unsafe",
+                created_assets=["data/drafts/missing-created-output.json"],
+                project_id=project_id,
+            )
+
+            coordinated = coordinate_runtime_rollback(
+                storage,
+                transaction_paths=[safe_tx["path"], unsafe_tx["path"]],
+                strategy="supersede_outputs",
+                confirm=True,
+                project_id=project_id,
+            )
+
+            self.assertEqual(coordinated["verification"]["status"], "unsafe")
+            self.assertEqual(coordinated["verification"]["result_count"], 0)
+            self.assertTrue(coordinated["verification"]["unsafe_reasons"])
+            self.assertNotEqual(storage.read_json(created).get("metadata", {}).get("rollback_status"), "rolled_back")
 
 
 if __name__ == "__main__":

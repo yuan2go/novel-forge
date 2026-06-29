@@ -142,6 +142,19 @@ export function NovelKGWorkbenchPage() {
               </button>
             ))}
           </div>
+          <DataTable
+            emptyText="暂无关系边"
+            columns={["From", "Relation", "To", "置信度"]}
+            rows={(graph.relations || []).slice(0, 40).map((relation) => {
+              const row = relation as unknown as Record<string, unknown>;
+              return [
+                String(row.from || row.source || "-"),
+                String(row.relation_type || row.type || "-"),
+                String(row.to || row.target || "-"),
+                String(Math.round(Number(row.confidence ?? 0) * 100))
+              ];
+            })}
+          />
         </div>
         <div className="panel">
           <PanelHeader title="路径与影响" icon={<Route size={18} />} />
