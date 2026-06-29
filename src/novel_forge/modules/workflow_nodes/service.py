@@ -62,6 +62,28 @@ WORKFLOW_SERVICE_OPERATIONS = {
     "outline_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_outline_version"]},
     "chapter_plan_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_chapter_plan_version"]},
     "draft_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_draft_version"]},
+    "model_route_resolution": {"category": "model_router", "checkpoint_strategy": "operation_state", "aliases": ["resolve_model_route"]},
+    "model_gateway_call": {"category": "model_router", "checkpoint_strategy": "operation_state", "aliases": ["execute_model_gateway_call"]},
+    "prompt_template": {"category": "prompt_registry", "checkpoint_strategy": "output_reuse", "aliases": ["create_prompt_template"]},
+    "prompt_version": {"category": "prompt_registry", "checkpoint_strategy": "output_reuse", "aliases": ["create_prompt_version_asset"]},
+    "prompt_release": {"category": "prompt_registry", "checkpoint_strategy": "output_reuse", "aliases": ["release_prompt_version"]},
+    "prompt_node_binding": {"category": "prompt_registry", "checkpoint_strategy": "output_reuse", "aliases": ["bind_prompt_to_node"]},
+    "tool_register_internal": {"category": "tool_gateway", "checkpoint_strategy": "output_reuse", "aliases": ["register_internal_tools"]},
+    "tool_invoke": {"category": "tool_gateway", "checkpoint_strategy": "operation_state", "aliases": ["invoke_tool"]},
+    "state_event": {"category": "state_bus", "checkpoint_strategy": "event_append", "aliases": ["record_state_event"]},
+    "state_snapshot": {"category": "state_bus", "checkpoint_strategy": "output_reuse", "aliases": ["create_state_snapshot"]},
+    "state_replay": {"category": "state_bus", "checkpoint_strategy": "output_reuse", "aliases": ["replay_state_events"]},
+    "state_conflict_report": {"category": "state_bus", "checkpoint_strategy": "output_reuse", "aliases": ["detect_state_conflicts"]},
+    "agent_message": {"category": "agent_message_bus", "checkpoint_strategy": "event_append", "aliases": ["send_agent_message"]},
+    "agent_handoff": {"category": "agent_message_bus", "checkpoint_strategy": "output_reuse", "aliases": ["create_agent_handoff"]},
+    "agent_conversation_trace": {"category": "agent_message_bus", "checkpoint_strategy": "output_reuse", "aliases": ["create_agent_conversation_trace"]},
+    "memory_record": {"category": "long_memory", "checkpoint_strategy": "output_reuse", "aliases": ["create_memory_record"]},
+    "memory_from_asset": {"category": "long_memory", "checkpoint_strategy": "output_reuse", "aliases": ["create_memory_from_asset"]},
+    "memory_selection": {"category": "long_memory", "checkpoint_strategy": "output_reuse", "aliases": ["select_memory_for_node"]},
+    "memory_retrieval": {"category": "long_memory", "checkpoint_strategy": "output_reuse", "aliases": ["retrieve_memory"]},
+    "pgvector_schema_plan": {"category": "retrieval", "checkpoint_strategy": "output_reuse", "aliases": ["create_pgvector_schema_plan"]},
+    "embedding_job": {"category": "retrieval", "checkpoint_strategy": "output_reuse", "aliases": ["build_embedding_job"]},
+    "hybrid_retrieval": {"category": "retrieval", "checkpoint_strategy": "output_reuse", "aliases": ["hybrid_retrieve"]},
 }
 
 
@@ -4416,6 +4438,232 @@ def _execute_registered_service_processor_impl(
             external_url=str(processor.get("external_url") or ""),
             rollback_note=str(processor.get("rollback_note") or ""),
         )
+        return _service_success(storage, operation, result)
+    if operation in {"model_route_resolution", "resolve_model_route"}:
+        from novel_forge.modules.model_router import resolve_model_route
+
+        result = resolve_model_route(
+            storage,
+            task_type=str(processor.get("task_type") or processor.get("operation_task_type") or "generate"),
+            project_id=str(processor.get("project_id") or ""),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or ""),
+            prompt_id=str(processor.get("prompt_id") or ""),
+            prompt_version=str(processor.get("prompt_version") or ""),
+            workflow_node_id=str(processor.get("workflow_node_id") or processor.get("node_id") or ""),
+            trace=processor.get("trace", {}) if isinstance(processor.get("trace", {}), dict) else {},
+            persist=bool(processor.get("persist", True)),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"model_gateway_call", "execute_model_gateway_call"}:
+        from novel_forge.modules.model_router import execute_model_gateway_call
+
+        result = execute_model_gateway_call(
+            storage,
+            task_type=str(processor.get("task_type") or "generate"),
+            operation=str(processor.get("runtime_operation") or processor.get("model_operation") or "model_benchmark"),
+            prompt_id=str(processor.get("prompt_id") or ""),
+            prompt_version=str(processor.get("prompt_version") or ""),
+            project_id=str(processor.get("project_id") or ""),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or ""),
+            input_assets=input_assets,
+            output_assets=[str(item) for item in processor.get("output_assets", [])] if isinstance(processor.get("output_assets", []), list) else [],
+            context_bundle_path=str(processor.get("context_bundle_path") or ""),
+            usage=processor.get("usage", {}) if isinstance(processor.get("usage", {}), dict) else {},
+            cost=processor.get("cost", {}) if isinstance(processor.get("cost", {}), dict) else {},
+            status=str(processor.get("status") or "succeeded"),
+            trace=processor.get("trace", {}) if isinstance(processor.get("trace", {}), dict) else {},
+            mode=str(processor.get("mode") or "") or None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"prompt_template", "create_prompt_template"}:
+        from novel_forge.modules.prompt_registry import create_prompt_template
+
+        result = create_prompt_template(
+            storage,
+            prompt_id=str(processor.get("prompt_id") or "prompt"),
+            task_type=str(processor.get("task_type") or "generate"),
+            template=str(processor.get("template") or ""),
+            variables=processor.get("variables", {}) if isinstance(processor.get("variables", {}), dict) else {},
+            output_schema=processor.get("output_schema", {}) if isinstance(processor.get("output_schema", {}), dict) else {},
+            status=str(processor.get("status") or "draft"),
+            project_id=str(processor.get("project_id") or ""),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or ""),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"prompt_version", "create_prompt_version_asset"}:
+        from novel_forge.modules.prompt_registry import create_prompt_version_asset
+
+        result = create_prompt_version_asset(
+            storage,
+            prompt_id=str(processor.get("prompt_id") or "prompt"),
+            version=str(processor.get("version") or "v1"),
+            task_type=str(processor.get("task_type") or "generate"),
+            template=str(processor.get("template") or ""),
+            variables=processor.get("variables", {}) if isinstance(processor.get("variables", {}), dict) else {},
+            output_schema=processor.get("output_schema", {}) if isinstance(processor.get("output_schema", {}), dict) else {},
+            status=str(processor.get("status") or "draft"),
+            project_id=str(processor.get("project_id") or ""),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or ""),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"prompt_release", "release_prompt_version"}:
+        from novel_forge.modules.prompt_registry import release_prompt_version
+
+        result = release_prompt_version(
+            storage,
+            prompt_id=str(processor.get("prompt_id") or "prompt"),
+            version=str(processor.get("version") or "v1"),
+            task_type=str(processor.get("task_type") or "generate"),
+            status=str(processor.get("status") or "active"),
+            release_note=str(processor.get("release_note") or ""),
+            project_id=str(processor.get("project_id") or ""),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or ""),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"prompt_node_binding", "bind_prompt_to_node"}:
+        from novel_forge.modules.prompt_registry import bind_prompt_to_node
+
+        result = bind_prompt_to_node(
+            storage,
+            prompt_id=str(processor.get("prompt_id") or "prompt"),
+            workflow_node_id=str(processor.get("workflow_node_id") or processor.get("node_id") or ""),
+            task_type=str(processor.get("task_type") or "generate"),
+            version=str(processor.get("version") or ""),
+            status=str(processor.get("status") or "active"),
+            project_id=str(processor.get("project_id") or ""),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or ""),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"tool_register_internal", "register_internal_tools"}:
+        from novel_forge.modules.tool_gateway import register_internal_tools
+
+        result = register_internal_tools(storage, project_id=str(processor.get("project_id") or ""), workspace_path=str(processor.get("workspace_path") or workspace_path or ""))
+        return _service_success(storage, operation, result)
+    if operation in {"tool_invoke", "invoke_tool"}:
+        from novel_forge.modules.tool_gateway import invoke_tool
+
+        result = invoke_tool(
+            storage,
+            tool_name=str(processor.get("tool_name") or ""),
+            input_payload=processor.get("input_payload", {}) if isinstance(processor.get("input_payload", {}), dict) else {},
+            agent_type=str(processor.get("agent_type") or ""),
+            operation=str(processor.get("tool_operation") or ""),
+            project_id=str(processor.get("project_id") or ""),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or ""),
+            trace=processor.get("trace", {}) if isinstance(processor.get("trace", {}), dict) else {},
+            enforce_permissions=bool(processor.get("enforce_permissions", True)),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"state_event", "record_state_event"}:
+        from novel_forge.modules.state_bus import record_state_event
+
+        result = record_state_event(
+            storage,
+            stream=str(processor.get("stream") or "workflow"),
+            subject_id=str(processor.get("subject_id") or processor.get("workflow_run_id") or ""),
+            event_type=str(processor.get("event_type") or "updated"),
+            payload=processor.get("payload", {}) if isinstance(processor.get("payload", {}), dict) else {},
+            expected_version=int(processor["expected_version"]) if processor.get("expected_version") is not None else None,
+            project_id=str(processor.get("project_id") or ""),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or ""),
+            trace=processor.get("trace", {}) if isinstance(processor.get("trace", {}), dict) else {},
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"state_snapshot", "create_state_snapshot"}:
+        from novel_forge.modules.state_bus import create_state_snapshot
+
+        result = create_state_snapshot(storage, stream=str(processor.get("stream") or "workflow"), subject_id=str(processor.get("subject_id") or ""), project_id=str(processor.get("project_id") or ""), workspace_path=str(processor.get("workspace_path") or workspace_path or ""))
+        return _service_success(storage, operation, result)
+    if operation in {"state_replay", "replay_state_events"}:
+        from novel_forge.modules.state_bus import replay_state_events
+
+        result = replay_state_events(storage, stream=str(processor.get("stream") or "workflow"), subject_id=str(processor.get("subject_id") or ""), from_version=int(processor.get("from_version", 0) or 0), project_id=str(processor.get("project_id") or ""), workspace_path=str(processor.get("workspace_path") or workspace_path or ""))
+        return _service_success(storage, operation, result)
+    if operation in {"state_conflict_report", "detect_state_conflicts"}:
+        from novel_forge.modules.state_bus import detect_state_conflicts
+
+        result = detect_state_conflicts(storage, stream=str(processor.get("stream") or "") or None, subject_id=str(processor.get("subject_id") or "") or None, project_id=str(processor.get("project_id") or ""), workspace_path=str(processor.get("workspace_path") or workspace_path or ""))
+        return _service_success(storage, operation, result)
+    if operation in {"agent_message", "send_agent_message"}:
+        from novel_forge.modules.agent_messages import send_agent_message
+
+        result = send_agent_message(
+            storage,
+            sender_agent=str(processor.get("sender_agent") or "workflow"),
+            recipient_agent=str(processor.get("recipient_agent") or "chief_editor"),
+            topic=str(processor.get("topic") or "workflow_update"),
+            payload=processor.get("payload", {}) if isinstance(processor.get("payload", {}), dict) else {},
+            conversation_id=str(processor.get("conversation_id") or ""),
+            priority=int(processor.get("priority", 5) or 5),
+            project_id=str(processor.get("project_id") or ""),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or ""),
+            trace=processor.get("trace", {}) if isinstance(processor.get("trace", {}), dict) else {},
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"agent_handoff", "create_agent_handoff"}:
+        from novel_forge.modules.agent_messages import create_agent_handoff
+
+        result = create_agent_handoff(
+            storage,
+            from_agent=str(processor.get("from_agent") or "workflow"),
+            to_agent=str(processor.get("to_agent") or "chief_editor"),
+            payload=processor.get("payload", {}) if isinstance(processor.get("payload", {}), dict) else {},
+            conversation_id=str(processor.get("conversation_id") or ""),
+            status=str(processor.get("status") or "ready"),
+            project_id=str(processor.get("project_id") or ""),
+            workspace_path=str(processor.get("workspace_path") or workspace_path or ""),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"agent_conversation_trace", "create_agent_conversation_trace"}:
+        from novel_forge.modules.agent_messages import create_agent_conversation_trace
+
+        result = create_agent_conversation_trace(storage, conversation_id=str(processor.get("conversation_id") or ""), project_id=str(processor.get("project_id") or ""), workspace_path=str(processor.get("workspace_path") or workspace_path or ""))
+        return _service_success(storage, operation, result)
+    if operation in {"memory_record", "create_memory_record"}:
+        from novel_forge.modules.long_memory import create_memory_record
+
+        result = create_memory_record(
+            storage,
+            project_id=str(processor.get("project_id") or ""),
+            level=str(processor.get("level") or "L1"),
+            memory_type=str(processor.get("memory_type") or "workflow"),
+            title=str(processor.get("title") or "Workflow memory"),
+            summary=str(processor.get("summary") or ""),
+            content=processor.get("content", {}) if isinstance(processor.get("content", {}), (dict, str)) else {},
+            source_artifact_ids=[str(item) for item in processor.get("source_artifact_ids", input_assets)] if isinstance(processor.get("source_artifact_ids", input_assets), list) else input_assets,
+            workspace_path=str(processor.get("workspace_path") or workspace_path or ""),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"memory_from_asset", "create_memory_from_asset"}:
+        from novel_forge.modules.long_memory import create_memory_from_asset
+
+        result = create_memory_from_asset(storage, _processor_path(processor, input_assets, "source_path", "target_path"), level=str(processor.get("level") or ""), memory_type=str(processor.get("memory_type") or ""), project_id=str(processor.get("project_id") or ""), workspace_path=str(processor.get("workspace_path") or workspace_path or ""))
+        return _service_success(storage, operation, result)
+    if operation in {"memory_selection", "select_memory_for_node"}:
+        from novel_forge.modules.long_memory import select_memory_for_node
+
+        result = select_memory_for_node(storage, target_node=str(processor.get("target_node") or processor.get("node_id") or ""), task_type=str(processor.get("task_type") or "workflow"), project_id=str(processor.get("project_id") or ""), query=str(processor.get("query") or ""), max_items=int(processor.get("max_items", 12) or 12))
+        return _service_success(storage, operation, result)
+    if operation in {"memory_retrieval", "retrieve_memory"}:
+        from novel_forge.modules.long_memory import retrieve_memory
+
+        result = retrieve_memory(storage, query=str(processor.get("query") or ""), project_id=str(processor.get("project_id") or ""), levels=[str(item) for item in processor.get("levels", [])] if isinstance(processor.get("levels", []), list) else [], memory_types=[str(item) for item in processor.get("memory_types", [])] if isinstance(processor.get("memory_types", []), list) else [], limit=int(processor.get("limit", 20) or 20), persist_report=bool(processor.get("persist_report", True)))
+        return _service_success(storage, operation, result)
+    if operation in {"pgvector_schema_plan", "create_pgvector_schema_plan"}:
+        from novel_forge.modules.pgvector_store import create_pgvector_schema_plan
+
+        result = create_pgvector_schema_plan(storage, status=str(processor.get("status") or "planned"), project_id=str(processor.get("project_id") or ""), workspace_path=str(processor.get("workspace_path") or workspace_path or ""))
+        return _service_success(storage, operation, result)
+    if operation in {"embedding_job", "build_embedding_job"}:
+        from novel_forge.modules.pgvector_store import build_embedding_job
+
+        source_paths = [str(item) for item in processor.get("source_paths", input_assets)] if isinstance(processor.get("source_paths", input_assets), list) else input_assets
+        result = build_embedding_job(storage, source_paths=source_paths, backend=str(processor.get("backend") or "local_hash_embedding"), project_id=str(processor.get("project_id") or ""), workspace_path=str(processor.get("workspace_path") or workspace_path or ""), chunk_size=int(processor.get("chunk_size", 900) or 900))
+        return _service_success(storage, operation, result)
+    if operation in {"hybrid_retrieval", "hybrid_retrieve"}:
+        from novel_forge.modules.pgvector_store import hybrid_retrieve
+
+        result = hybrid_retrieve(storage, query=str(processor.get("query") or ""), project_id=str(processor.get("project_id") or ""), retrieval_backend=str(processor.get("retrieval_backend") or "hybrid"), limit=int(processor.get("limit", 12) or 12), levels=[str(item) for item in processor.get("levels", [])] if isinstance(processor.get("levels", []), list) else [], persist=bool(processor.get("persist", True)))
         return _service_success(storage, operation, result)
     raise ValueError(f"unknown service processor operation: {operation or '<empty>'}")
 

@@ -1431,6 +1431,68 @@ def _operation_specs() -> list[AgentOperationSpec]:
             required_tool="write_operational_metric_snapshot",
             sla_seconds=300,
         ),
+        AgentOperationSpec(
+            operation="resolve-model-route",
+            aliases=("model-route-resolution", "model_router_resolve"),
+            runner=_run_resolve_model_route,
+            agent_key="model_evaluation",
+            input_types=(),
+            output_types=("model_route_resolution",),
+            required_tool="write_model_routing_policy",
+            sla_seconds=120,
+        ),
+        AgentOperationSpec(
+            operation="invoke-tool",
+            aliases=("tool-invoke", "tool_gateway_invoke"),
+            runner=_run_invoke_tool,
+            agent_key="engineering",
+            input_types=(),
+            output_types=("tool_invocation",),
+            required_tool="run_validation",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="record-state-event",
+            aliases=("state-event",),
+            runner=_run_record_state_event,
+            agent_key="workflow",
+            input_types=(),
+            output_types=("state_event",),
+            required_tool="run_validation",
+            checkpoint_strategy="event_append",
+            sla_seconds=120,
+        ),
+        AgentOperationSpec(
+            operation="send-agent-message",
+            aliases=("agent-message",),
+            runner=_run_send_agent_message,
+            agent_key="workflow",
+            input_types=(),
+            output_types=("agent_message", "agent_inbox", "agent_outbox"),
+            required_tool="run_validation",
+            checkpoint_strategy="event_append",
+            sla_seconds=120,
+        ),
+        AgentOperationSpec(
+            operation="select-memory",
+            aliases=("memory-selection",),
+            runner=_run_select_memory,
+            agent_key="knowledge",
+            input_types=(),
+            output_types=("memory_selection",),
+            required_tool="read_asset",
+            sla_seconds=120,
+        ),
+        AgentOperationSpec(
+            operation="hybrid-retrieve",
+            aliases=("hybrid-retrieval", "pgvector-retrieve"),
+            runner=_run_hybrid_retrieve,
+            agent_key="knowledge",
+            input_types=(),
+            output_types=("hybrid_retrieval_report",),
+            required_tool="read_asset",
+            sla_seconds=120,
+        ),
     ]
 
 
@@ -1710,6 +1772,105 @@ def _run_operational_metric_snapshot(storage: LocalStorage, queue_item: dict[str
         feedback_paths=_input_paths(agent_run) or None,
         project_id=_project_id(agent_run) or None,
         workspace_path=_workspace_path(agent_run) or None,
+    )
+
+
+def _run_resolve_model_route(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.model_router import resolve_model_route
+
+    evidence = _evidence(agent_run)
+    return resolve_model_route(
+        storage,
+        task_type=str(evidence.get("task_type") or "generate"),
+        project_id=_project_id(agent_run),
+        workspace_path=_workspace_path(agent_run),
+        prompt_id=str(evidence.get("prompt_id") or ""),
+        prompt_version=str(evidence.get("prompt_version") or ""),
+        workflow_node_id=str(evidence.get("workflow_node_id") or ""),
+        trace=evidence.get("trace", {}) if isinstance(evidence.get("trace", {}), dict) else {},
+        persist=True,
+    )
+
+
+def _run_invoke_tool(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.tool_gateway import invoke_tool
+
+    evidence = _evidence(agent_run)
+    return invoke_tool(
+        storage,
+        tool_name=str(evidence.get("tool_name") or ""),
+        input_payload=evidence.get("input_payload", {}) if isinstance(evidence.get("input_payload", {}), dict) else {},
+        agent_type=str(evidence.get("agent_type") or _project_id(agent_run) or ""),
+        operation=str(evidence.get("tool_operation") or ""),
+        project_id=_project_id(agent_run),
+        workspace_path=_workspace_path(agent_run),
+        trace=evidence.get("trace", {}) if isinstance(evidence.get("trace", {}), dict) else {},
+        enforce_permissions=bool(evidence.get("enforce_permissions", True)),
+    )
+
+
+def _run_record_state_event(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.state_bus import record_state_event
+
+    evidence = _evidence(agent_run)
+    return record_state_event(
+        storage,
+        stream=str(evidence.get("stream") or "agent"),
+        subject_id=str(evidence.get("subject_id") or _project_id(agent_run) or ""),
+        event_type=str(evidence.get("event_type") or "updated"),
+        payload=evidence.get("payload", {}) if isinstance(evidence.get("payload", {}), dict) else {},
+        expected_version=int(evidence["expected_version"]) if evidence.get("expected_version") is not None else None,
+        project_id=_project_id(agent_run),
+        workspace_path=_workspace_path(agent_run),
+        trace=evidence.get("trace", {}) if isinstance(evidence.get("trace", {}), dict) else {},
+    )
+
+
+def _run_send_agent_message(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.agent_messages import send_agent_message
+
+    evidence = _evidence(agent_run)
+    return send_agent_message(
+        storage,
+        sender_agent=str(evidence.get("sender_agent") or "workflow"),
+        recipient_agent=str(evidence.get("recipient_agent") or "chief_editor"),
+        topic=str(evidence.get("topic") or "agent_update"),
+        payload=evidence.get("payload", {}) if isinstance(evidence.get("payload", {}), dict) else {},
+        conversation_id=str(evidence.get("conversation_id") or ""),
+        priority=int(evidence.get("priority", 5) or 5),
+        project_id=_project_id(agent_run),
+        workspace_path=_workspace_path(agent_run),
+        trace=evidence.get("trace", {}) if isinstance(evidence.get("trace", {}), dict) else {},
+    )
+
+
+def _run_select_memory(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.long_memory import select_memory_for_node
+
+    evidence = _evidence(agent_run)
+    return select_memory_for_node(
+        storage,
+        target_node=str(evidence.get("target_node") or evidence.get("workflow_node_id") or ""),
+        task_type=str(evidence.get("task_type") or "workflow"),
+        project_id=_project_id(agent_run),
+        query=str(evidence.get("query") or ""),
+        max_items=int(evidence.get("max_items", 12) or 12),
+        trace=evidence.get("trace", {}) if isinstance(evidence.get("trace", {}), dict) else {},
+    )
+
+
+def _run_hybrid_retrieve(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.pgvector_store import hybrid_retrieve
+
+    evidence = _evidence(agent_run)
+    return hybrid_retrieve(
+        storage,
+        query=str(evidence.get("query") or ""),
+        project_id=_project_id(agent_run),
+        retrieval_backend=str(evidence.get("retrieval_backend") or "hybrid"),
+        limit=int(evidence.get("limit", 12) or 12),
+        levels=[str(item) for item in evidence.get("levels", [])] if isinstance(evidence.get("levels", []), list) else [],
+        persist=True,
     )
 
 

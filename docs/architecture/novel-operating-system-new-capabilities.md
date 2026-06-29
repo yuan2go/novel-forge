@@ -1267,3 +1267,171 @@ MessageReplay
 Novel Forge 不只是能生成小说，
 而是能像操作系统一样统一调度模型、Prompt、工具、Agent、Workflow、知识、记忆、质量、日志、成本和反馈。
 ```
+
+---
+
+## 19. 2026-06-29 落地状态
+
+本文件定义的 P1/P2 Novel OS 新能力已经完成本地可运行 first production slice，并保持“不引入强制外部依赖”的本地优先边界。
+
+### 19.1 新增资产 / Schema
+
+已新增并纳入 `SCHEMA_CLASSES`、`ASSET_DIR_BY_TYPE` 和 `validate_common_fields` 的对象：
+
+```text
+model_route
+model_route_resolution
+prompt_template
+prompt_release
+prompt_node_binding
+tool_definition
+tool_invocation
+tool_permission_policy
+mcp_server_registry
+state_event
+state_snapshot
+state_replay
+state_conflict_report
+agent_message
+agent_inbox
+agent_outbox
+agent_handoff
+agent_conversation_trace
+memory_record
+memory_selection
+memory_retrieval_report
+memory_chunk
+knowledge_chunk
+artifact_embedding
+review_memory_chunk
+entity_memory_chunk
+pgvector_schema_plan
+embedding_job
+hybrid_retrieval_report
+```
+
+### 19.2 新增 Service
+
+| 能力 | Service |
+|---|---|
+| ModelRouter / ModelGateway | `src/novel_forge/modules/model_router/service.py` |
+| PromptRegistry / PromptOps | `src/novel_forge/modules/prompt_registry/service.py` |
+| Tool Gateway / MCP registry | `src/novel_forge/modules/tool_gateway/service.py` |
+| StateBus | `src/novel_forge/modules/state_bus/service.py` |
+| AgentMessageBus | `src/novel_forge/modules/agent_messages/service.py` |
+| L0-L5 Long Memory | `src/novel_forge/modules/long_memory/service.py` |
+| pgvector schema plan / local projection / HybridRetriever | `src/novel_forge/modules/pgvector_store/service.py` |
+
+### 19.3 API
+
+新增统一 API 入口：
+
+```text
+/product/os/model-router/*
+/product/os/prompts/*
+/product/os/tools/*
+/product/os/state/*
+/product/os/messages/*
+/product/os/memory/*
+/product/os/retrieval/*
+```
+
+这些接口通过 `src/novel_forge/api/routers/os_capabilities.py` 注册，继续复用 `LocalStorage`、资产验证、Postgres write-through、TraceSpan 和 Cost/Runtime Ledger。
+
+### 19.4 Workflow / Agent 接入
+
+`Workflow ProcessorRegistry` 已支持以下新 operation：
+
+```text
+model_route_resolution
+model_gateway_call
+prompt_template
+prompt_version
+prompt_release
+prompt_node_binding
+tool_register_internal
+tool_invoke
+state_event
+state_snapshot
+state_replay
+state_conflict_report
+agent_message
+agent_handoff
+agent_conversation_trace
+memory_record
+memory_from_asset
+memory_selection
+memory_retrieval
+pgvector_schema_plan
+embedding_job
+hybrid_retrieval
+```
+
+`AgentOperationRegistry` 已补充关键 OS 底座 operation：
+
+```text
+resolve-model-route
+invoke-tool
+record-state-event
+send-agent-message
+select-memory
+hybrid-retrieve
+```
+
+这意味着新增能力不只可被 API 调用，也可以被 Workflow DAG 和 Agent Scheduler 调度。
+
+### 19.5 Context Builder 检索后端
+
+`Context Builder` 的 `backend` 现在支持：
+
+```text
+auto
+local
+qdrant
+pgvector
+hybrid
+```
+
+其中 `pgvector/hybrid` 在没有真实 PostgreSQL `vector` 扩展时，会使用本地 deterministic embedding projection 作为兼容实现，并写入 `embedding_job`、chunk assets 和 `hybrid_retrieval_report`。
+
+### 19.6 验证结果
+
+新增测试：
+
+```text
+tests/unit/test_os_new_capabilities.py
+```
+
+覆盖：
+
+```text
+PromptRegistry -> ModelRouter
+ToolGateway -> ToolInvocation
+StateBus -> Snapshot/Replay/Conflict
+AgentMessageBus -> Ack/Replay/ConversationTrace
+L0-L5 Memory -> MemorySelector
+pgvector schema plan -> embedding job -> hybrid retrieval
+Context Builder backend=hybrid
+```
+
+全量验证：
+
+```text
+make test
+```
+
+结果：
+
+```text
+222 Python tests passed, 1 skipped
+7 Node tests passed, 1 browser smoke skipped because Playwright is optional/not installed
+```
+
+### 19.7 当前边界
+
+本轮实现完成了文档要求的本地可运行 OS 能力闭环。以下仍作为后续增强方向，而不是本轮阻塞项：
+
+1. 真实 PostgreSQL `pgvector` online index 写入和 SQL 查询可以在本地 projection 稳定后接入。
+2. MCP server registry 已有资产和 API，真实远程 MCP 调用仍需按工具安全策略逐个 adapter 接入。
+3. ModelGateway 已把路由、Prompt、runtime policy、ModelCallLog、CostLedger 串起来；真实 provider streaming cutoff 继续由 provider adapter 深化。
+4. MemorySelector 已按任务类型选择 L0-L5 记忆，后续可把选择结果进一步强制注入所有长篇正文生产节点。

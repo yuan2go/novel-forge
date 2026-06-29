@@ -15,7 +15,7 @@ from novel_forge.storage.vector_index import vector_search_assets
 
 RAG_CONTEXT_VERSION = "0.1.0"
 DEFAULT_RAG_TOP_K = 8
-RAG_BACKENDS = {"auto", "local", "qdrant"}
+RAG_BACKENDS = {"auto", "local", "qdrant", "pgvector", "hybrid"}
 
 RAG_BUCKETS = {
     "characters": "人物",
@@ -138,6 +138,25 @@ class RagContextBuilder:
 
     def _ranked_candidates(self, query: str, limit: int, backend: str) -> tuple[list[dict[str, Any]], str, list[dict[str, Any]]]:
         attempts: list[dict[str, Any]] = []
+        if backend in {"pgvector", "hybrid"}:
+            try:
+                from novel_forge.modules.pgvector_store import hybrid_retrieve
+
+                report = hybrid_retrieve(
+                    self.storage,
+                    query=query,
+                    project_id="",
+                    retrieval_backend=backend,
+                    limit=limit,
+                    persist=False,
+                )
+                results = [_rag_result_from_hybrid(item) for item in report.get("results", []) if isinstance(item, dict)]
+                attempts.append({"backend": backend, "ok": True, "result_count": len(results), "projection": report.get("vector_backend", "")})
+                return results, backend, attempts
+            except Exception as exc:
+                attempts.append({"backend": backend, "ok": False, "error": str(exc)})
+                if backend == "pgvector":
+                    raise
         if backend in {"auto", "qdrant"}:
             health = embedding_provider_health(require_semantic=True)
             if health.get("ok"):
@@ -613,6 +632,14 @@ def _read_reference(storage: LocalStorage, reference: str) -> tuple[str, dict[st
 def _ranker_name(items: list[dict[str, Any]]) -> str:
     rankers = _dedupe([str(item.get("ranker", "")) for item in items if str(item.get("ranker", "")).strip()])
     return "+".join(rankers) if rankers else "project-scoped-asset-priority"
+
+
+def _rag_result_from_hybrid(item: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "path": str(item.get("path", "")),
+        "score": float(item.get("score", 0.0) or 0.0),
+        "ranker": str(item.get("backend", "") or "hybrid-local-projection"),
+    }
 
 
 def _normalize_backend(value: str) -> str:

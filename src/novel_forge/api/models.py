@@ -646,6 +646,242 @@ class PromptRegressionRequest(BaseModel):
     benchmark_runs: list[str] = Field(default_factory=list)
 
 
+class ModelRouteRequest(BaseModel):
+    task_type: str
+    provider: str = "mock"
+    model_name: str = "mock-model"
+    fallbacks: list[dict[str, Any]] = Field(default_factory=list)
+    selection_rule: str = "balanced"
+    max_cost_per_run: float = 0.0
+    max_latency_ms: int = 0
+    status: str = "active"
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class ModelRouteResolveRequest(BaseModel):
+    task_type: str
+    project_id: str | None = None
+    workspace_path: str | None = None
+    prompt_id: str = ""
+    prompt_version: str = ""
+    workflow_node_id: str = ""
+    trace: dict[str, Any] = Field(default_factory=dict)
+    persist: bool = True
+
+
+class ModelGatewayCallRequest(BaseModel):
+    task_type: str
+    operation: str
+    prompt_id: str = ""
+    prompt_version: str = ""
+    project_id: str | None = None
+    workspace_path: str | None = None
+    input_assets: list[str] = Field(default_factory=list)
+    output_assets: list[str] = Field(default_factory=list)
+    context_bundle_path: str = ""
+    usage: dict[str, Any] = Field(default_factory=dict)
+    cost: dict[str, Any] = Field(default_factory=dict)
+    status: str = "succeeded"
+    trace: dict[str, Any] = Field(default_factory=dict)
+    mode: str | None = None
+
+
+class PromptTemplateRequest(BaseModel):
+    prompt_id: str
+    task_type: str
+    template: str
+    variables: dict[str, Any] = Field(default_factory=dict)
+    output_schema: dict[str, Any] = Field(default_factory=dict)
+    status: str = "draft"
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class PromptReleaseRequest(BaseModel):
+    prompt_id: str
+    version: str
+    task_type: str
+    status: str = "active"
+    release_note: str = ""
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class PromptNodeBindingRequest(BaseModel):
+    prompt_id: str
+    workflow_node_id: str
+    task_type: str
+    version: str = ""
+    status: str = "active"
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class ToolPermissionPolicyRequest(BaseModel):
+    tool_id: str
+    agent_types: list[str] = Field(default_factory=list)
+    allowed_operations: list[str] = Field(default_factory=list)
+    status: str = "active"
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class MCPServerRegistryRequest(BaseModel):
+    name: str
+    transport: str = "stdio"
+    tools: list[dict[str, Any]] = Field(default_factory=list)
+    endpoint: str = ""
+    status: str = "registered"
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class ToolInvokeRequest(BaseModel):
+    tool_name: str
+    input_payload: dict[str, Any] = Field(default_factory=dict)
+    agent_type: str = ""
+    operation: str = ""
+    project_id: str | None = None
+    workspace_path: str | None = None
+    trace: dict[str, Any] = Field(default_factory=dict)
+    enforce_permissions: bool = True
+
+
+class StateEventRequest(BaseModel):
+    stream: str
+    subject_id: str
+    event_type: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    expected_version: int | None = None
+    project_id: str | None = None
+    workspace_path: str | None = None
+    trace: dict[str, Any] = Field(default_factory=dict)
+
+
+class StateSnapshotRequest(BaseModel):
+    stream: str
+    subject_id: str
+    project_id: str | None = None
+    workspace_path: str | None = None
+    trace: dict[str, Any] = Field(default_factory=dict)
+
+
+class StateReplayRequest(BaseModel):
+    stream: str
+    subject_id: str
+    from_version: int = 0
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class StateConflictRequest(BaseModel):
+    stream: str | None = None
+    subject_id: str | None = None
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class AgentMessageRequest(BaseModel):
+    sender_agent: str
+    recipient_agent: str
+    topic: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    conversation_id: str = ""
+    priority: int = 5
+    project_id: str | None = None
+    workspace_path: str | None = None
+    trace: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentMessageAckRequest(BaseModel):
+    message_path_or_id: str
+    actor_agent: str = ""
+    note: str = ""
+
+
+class AgentHandoffRequest(BaseModel):
+    from_agent: str
+    to_agent: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    conversation_id: str = ""
+    status: str = "ready"
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class AgentConversationTraceRequest(BaseModel):
+    conversation_id: str
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class MemoryRecordRequest(BaseModel):
+    project_id: str
+    level: str
+    memory_type: str
+    title: str
+    summary: str
+    content: dict[str, Any] | str = Field(default_factory=dict)
+    source_artifact_ids: list[str] = Field(default_factory=list)
+    related_entity_ids: list[str] = Field(default_factory=list)
+    related_chapters: list[int] = Field(default_factory=list)
+    priority: int = 5
+    stability: str = "stable"
+    status: str = "active"
+    workspace_path: str | None = None
+    trace: dict[str, Any] = Field(default_factory=dict)
+
+
+class MemoryFromAssetRequest(BaseModel):
+    source_path: str
+    level: str = ""
+    memory_type: str = ""
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class MemorySelectionRequest(BaseModel):
+    target_node: str
+    task_type: str
+    project_id: str | None = None
+    query: str = ""
+    max_items: int = 12
+    trace: dict[str, Any] = Field(default_factory=dict)
+
+
+class MemoryRetrievalRequest(BaseModel):
+    query: str
+    project_id: str | None = None
+    levels: list[str] = Field(default_factory=list)
+    memory_types: list[str] = Field(default_factory=list)
+    limit: int = 20
+    persist_report: bool = True
+
+
+class PgVectorSchemaPlanRequest(BaseModel):
+    status: str = "planned"
+    project_id: str | None = None
+    workspace_path: str | None = None
+
+
+class EmbeddingJobRequest(BaseModel):
+    source_paths: list[str]
+    backend: str = "local_hash_embedding"
+    project_id: str | None = None
+    workspace_path: str | None = None
+    chunk_size: int = 900
+
+
+class HybridRetrievalRequest(BaseModel):
+    query: str
+    project_id: str | None = None
+    retrieval_backend: str = "hybrid"
+    limit: int = 12
+    levels: list[str] = Field(default_factory=list)
+    persist: bool = True
+
+
 class BenchmarkFromGenerationRunRequest(BaseModel):
     generation_run_path: str
     task_type: str = "generation"
@@ -1045,6 +1281,30 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "ModelRoutingPolicyRequest": ModelRoutingPolicyRequest,
         "PromptVersionRequest": PromptVersionRequest,
         "PromptRegressionRequest": PromptRegressionRequest,
+        "ModelRouteRequest": ModelRouteRequest,
+        "ModelRouteResolveRequest": ModelRouteResolveRequest,
+        "ModelGatewayCallRequest": ModelGatewayCallRequest,
+        "PromptTemplateRequest": PromptTemplateRequest,
+        "PromptReleaseRequest": PromptReleaseRequest,
+        "PromptNodeBindingRequest": PromptNodeBindingRequest,
+        "ToolPermissionPolicyRequest": ToolPermissionPolicyRequest,
+        "MCPServerRegistryRequest": MCPServerRegistryRequest,
+        "ToolInvokeRequest": ToolInvokeRequest,
+        "StateEventRequest": StateEventRequest,
+        "StateSnapshotRequest": StateSnapshotRequest,
+        "StateReplayRequest": StateReplayRequest,
+        "StateConflictRequest": StateConflictRequest,
+        "AgentMessageRequest": AgentMessageRequest,
+        "AgentMessageAckRequest": AgentMessageAckRequest,
+        "AgentHandoffRequest": AgentHandoffRequest,
+        "AgentConversationTraceRequest": AgentConversationTraceRequest,
+        "MemoryRecordRequest": MemoryRecordRequest,
+        "MemoryFromAssetRequest": MemoryFromAssetRequest,
+        "MemorySelectionRequest": MemorySelectionRequest,
+        "MemoryRetrievalRequest": MemoryRetrievalRequest,
+        "PgVectorSchemaPlanRequest": PgVectorSchemaPlanRequest,
+        "EmbeddingJobRequest": EmbeddingJobRequest,
+        "HybridRetrievalRequest": HybridRetrievalRequest,
         "BenchmarkFromGenerationRunRequest": BenchmarkFromGenerationRunRequest,
         "FeedbackImportBatchRequest": FeedbackImportBatchRequest,
         "ReaderSentimentReportRequest": ReaderSentimentReportRequest,

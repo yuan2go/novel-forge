@@ -218,6 +218,7 @@ Current P0/P1 closure status:
 3. Checkpoint and rollback now have durable stage checkpoints, resume chains, rollback transactions/plans/results, version-restore rollback actions, ledger compensation, dirty-index markers, preview/apply/verify APIs, and rollback verification.
 4. Semantic quality now includes Novel KG evidence/confidence, model-assisted extraction validation, identity merge queues, KG-backed context enforcement, continuity/KG gates, and feedback-to-plan backflow first slice.
 5. Web OS operations now expose workflow, agent, KG, trace, cost, invalidation, review-rework, runtime policy coverage, legacy bypass audit, rollback preview/apply/verify, KG identity queues, and opt-in long-chain 12/50 chapter pressure acceptance.
+6. P1/P2 OS capabilities now include ModelRouter/ModelGateway, PromptRegistry, ToolGateway/MCP registry, StateBus, AgentMessageBus, L0-L5 memory, pgvector schema planning, deterministic local embedding projection, hybrid retrieval, `/product/os/*` APIs, and Workflow/Agent operation contracts for these services.
 
 ## Key Docs
 
@@ -227,6 +228,7 @@ Current P0/P1 closure status:
 - [WORKFLOW.md](WORKFLOW.md)
 - [TESTING.md](TESTING.md)
 - [Novel Operating System Target](docs/00-product/novel-operating-system.md)
+- [Novel OS New Capabilities](docs/architecture/novel-operating-system-new-capabilities.md)
 - [Novel OS Remaining Closure Plan](docs/08-roadmap/novel-os-remaining-closure-plan.md)
 - [System Architecture](docs/01-architecture/system-architecture.md)
 - [Main Pipeline](docs/02-workflows/main-pipeline.md)

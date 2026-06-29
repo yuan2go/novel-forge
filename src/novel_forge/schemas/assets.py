@@ -594,6 +594,16 @@ class ModelProfile(BaseAsset):
 
 
 @dataclass
+class ModelRoute(BaseAsset):
+    type: str = "model_route"
+
+
+@dataclass
+class ModelRouteResolution(BaseAsset):
+    type: str = "model_route_resolution"
+
+
+@dataclass
 class ModelBenchmarkTask(BaseAsset):
     type: str = "model_benchmark_task"
 
@@ -609,8 +619,23 @@ class ModelComparisonReport(BaseAsset):
 
 
 @dataclass
+class PromptTemplate(BaseAsset):
+    type: str = "prompt_template"
+
+
+@dataclass
 class PromptVersion(BaseAsset):
     type: str = "prompt_version"
+
+
+@dataclass
+class PromptRelease(BaseAsset):
+    type: str = "prompt_release"
+
+
+@dataclass
+class PromptNodeBinding(BaseAsset):
+    type: str = "prompt_node_binding"
 
 
 @dataclass
@@ -621,6 +646,126 @@ class PromptRegressionReport(BaseAsset):
 @dataclass
 class ModelRoutingPolicy(BaseAsset):
     type: str = "model_routing_policy"
+
+
+@dataclass
+class ToolDefinition(BaseAsset):
+    type: str = "tool_definition"
+
+
+@dataclass
+class ToolInvocation(BaseAsset):
+    type: str = "tool_invocation"
+
+
+@dataclass
+class ToolPermissionPolicy(BaseAsset):
+    type: str = "tool_permission_policy"
+
+
+@dataclass
+class MCPServerRegistry(BaseAsset):
+    type: str = "mcp_server_registry"
+
+
+@dataclass
+class StateEvent(BaseAsset):
+    type: str = "state_event"
+
+
+@dataclass
+class StateSnapshot(BaseAsset):
+    type: str = "state_snapshot"
+
+
+@dataclass
+class StateReplay(BaseAsset):
+    type: str = "state_replay"
+
+
+@dataclass
+class StateConflictReport(BaseAsset):
+    type: str = "state_conflict_report"
+
+
+@dataclass
+class AgentMessage(BaseAsset):
+    type: str = "agent_message"
+
+
+@dataclass
+class AgentInbox(BaseAsset):
+    type: str = "agent_inbox"
+
+
+@dataclass
+class AgentOutbox(BaseAsset):
+    type: str = "agent_outbox"
+
+
+@dataclass
+class AgentHandoff(BaseAsset):
+    type: str = "agent_handoff"
+
+
+@dataclass
+class AgentConversationTrace(BaseAsset):
+    type: str = "agent_conversation_trace"
+
+
+@dataclass
+class MemoryRecord(BaseAsset):
+    type: str = "memory_record"
+
+
+@dataclass
+class MemorySelection(BaseAsset):
+    type: str = "memory_selection"
+
+
+@dataclass
+class MemoryRetrievalReport(BaseAsset):
+    type: str = "memory_retrieval_report"
+
+
+@dataclass
+class MemoryChunk(BaseAsset):
+    type: str = "memory_chunk"
+
+
+@dataclass
+class KnowledgeChunk(BaseAsset):
+    type: str = "knowledge_chunk"
+
+
+@dataclass
+class ArtifactEmbedding(BaseAsset):
+    type: str = "artifact_embedding"
+
+
+@dataclass
+class ReviewMemoryChunk(BaseAsset):
+    type: str = "review_memory_chunk"
+
+
+@dataclass
+class EntityMemoryChunk(BaseAsset):
+    type: str = "entity_memory_chunk"
+
+
+@dataclass
+class PgVectorSchemaPlan(BaseAsset):
+    type: str = "pgvector_schema_plan"
+
+
+@dataclass
+class EmbeddingJob(BaseAsset):
+    type: str = "embedding_job"
+
+
+@dataclass
+class HybridRetrievalReport(BaseAsset):
+    type: str = "hybrid_retrieval_report"
 
 
 @dataclass
@@ -752,12 +897,41 @@ SCHEMA_CLASSES = {
         ChapterCostSnapshot,
         CostQualityDashboard,
         ModelProfile,
+        ModelRoute,
+        ModelRouteResolution,
         ModelBenchmarkTask,
         ModelBenchmarkRun,
         ModelComparisonReport,
+        PromptTemplate,
         PromptVersion,
+        PromptRelease,
+        PromptNodeBinding,
         PromptRegressionReport,
         ModelRoutingPolicy,
+        ToolDefinition,
+        ToolInvocation,
+        ToolPermissionPolicy,
+        MCPServerRegistry,
+        StateEvent,
+        StateSnapshot,
+        StateReplay,
+        StateConflictReport,
+        AgentMessage,
+        AgentInbox,
+        AgentOutbox,
+        AgentHandoff,
+        AgentConversationTrace,
+        MemoryRecord,
+        MemorySelection,
+        MemoryRetrievalReport,
+        MemoryChunk,
+        KnowledgeChunk,
+        ArtifactEmbedding,
+        ReviewMemoryChunk,
+        EntityMemoryChunk,
+        PgVectorSchemaPlan,
+        EmbeddingJob,
+        HybridRetrievalReport,
         LocalOpsDrillReport,
         LongChainAcceptanceReport,
     ]

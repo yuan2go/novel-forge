@@ -7,6 +7,7 @@ Date: 2026-06-29
 Primary optimization document:
 
 - `docs/08-roadmap/novel-os-remaining-closure-plan.md`
+- `docs/architecture/novel-operating-system-new-capabilities.md`
 
 Execution tracking documents:
 
@@ -26,6 +27,7 @@ Execution tracking documents:
 | Long-chain Scale Acceptance | Completed smoke plus opt-in pressure profile | `tests/integration/test_novel_os_long_chain_smoke.py`, `tests/integration/test_novel_os_long_chain_pressure.py`, long-chain scale metrics in `modules/operations` |
 | Runtime Performance Hardening | Completed targeted fixes | KG gate avoids repeated graph builds; project reference filtering avoids full scans for non-asset trace references |
 | Test Provider Isolation | Completed | Unit/integration tests force deterministic `mock` provider where needed; default production provider remains Claude Code Codex |
+| P1/P2 Novel OS Capabilities | Completed local-first first production slice | ModelRouter/ModelGateway, PromptRegistry, ToolGateway/MCP registry, StateBus, AgentMessageBus, L0-L5 memory, pgvector schema plan, deterministic local embedding projection, hybrid retrieval, `/product/os/*` APIs, Workflow ProcessorRegistry operations, AgentOperationRegistry operations, `tests/unit/test_os_new_capabilities.py` |
 
 ## Remaining Items
 
@@ -48,6 +50,14 @@ These are not blocked for the current deliverable, but remain future hardening w
 - `src/novel_forge/modules/feedback_backflow/`
 - `src/novel_forge/modules/novel_kg/identity.py`
 - `src/novel_forge/modules/semantic_enhancement/`
+- `src/novel_forge/modules/model_router/`
+- `src/novel_forge/modules/prompt_registry/`
+- `src/novel_forge/modules/tool_gateway/`
+- `src/novel_forge/modules/state_bus/`
+- `src/novel_forge/modules/agent_messages/`
+- `src/novel_forge/modules/long_memory/`
+- `src/novel_forge/modules/pgvector_store/`
+- `src/novel_forge/api/routers/os_capabilities.py`
 
 ## Modified Modules
 
@@ -77,6 +87,35 @@ New asset types include:
 - `review_rule_update_proposal`
 - `feedback_kg_patch`
 - `semantic_extraction_report`
+- `model_route`
+- `model_route_resolution`
+- `prompt_template`
+- `prompt_release`
+- `prompt_node_binding`
+- `tool_definition`
+- `tool_invocation`
+- `tool_permission_policy`
+- `mcp_server_registry`
+- `state_event`
+- `state_snapshot`
+- `state_replay`
+- `state_conflict_report`
+- `agent_message`
+- `agent_inbox`
+- `agent_outbox`
+- `agent_handoff`
+- `agent_conversation_trace`
+- `memory_record`
+- `memory_selection`
+- `memory_retrieval_report`
+- `memory_chunk`
+- `knowledge_chunk`
+- `artifact_embedding`
+- `review_memory_chunk`
+- `entity_memory_chunk`
+- `pgvector_schema_plan`
+- `embedding_job`
+- `hybrid_retrieval_report`
 
 All are local JSON asset types mapped through `ASSET_DIR_BY_TYPE`; no destructive migration is required.
 
@@ -91,6 +130,13 @@ New or extended endpoints:
 - `POST /product/novel-kg/semantic-extraction`
 - `POST /product/feedback/backflow-plan`
 - `POST /product/feedback/backflow-apply`
+- `/product/os/model-router/*`
+- `/product/os/prompts/*`
+- `/product/os/tools/*`
+- `/product/os/state/*`
+- `/product/os/messages/*`
+- `/product/os/memory/*`
+- `/product/os/retrieval/*`
 
 Existing workflow, agent, KG, trace, cost, feedback, and production endpoints remain available.
 
@@ -126,8 +172,7 @@ npm --prefix web/admin run lint
 
 Observed counts:
 
-- Unit tests: 214 passed.
-- Integration tests: 5 passed, including one optional 12/50-chapter pressure test skipped unless explicitly enabled.
+- Python tests: 222 passed, 1 skipped.
 - Web Admin tests: 7 passed, 1 browser smoke skipped because Playwright is not installed.
 
 ## Known Risks
