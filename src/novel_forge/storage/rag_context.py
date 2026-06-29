@@ -347,6 +347,10 @@ def retrieval_reference_ids(input_asset_id: str, context: dict[str, Any]) -> lis
     return _dedupe([input_asset_id, *[str(item) for item in context.get("source_asset_ids", []) if str(item).strip()]])
 
 
+def generation_context_policy(data: dict[str, Any]) -> dict[str, Any]:
+    return _copyright_assessment(data)
+
+
 def _recall_explanation(query: str, items: list[dict[str, Any]], top_k: int, backend: str) -> dict[str, Any]:
     return {
         "backend": backend,

@@ -33,7 +33,23 @@ from novel_forge.modules.production_chain import (
 )
 from novel_forge.modules.runtime_policy import check_runtime_policy
 from novel_forge.modules.workspace.service import init_workspace
-from novel_forge.schemas import ChapterPlan, CharacterCard, ContinuityBible, CraftTemplate, DraftChapter, FeedbackInsight, ForeshadowingThread, KnowledgeCard, MaterialCard, Outline, ReleasePackage, WritingTemplate, WorldBible
+from novel_forge.schemas import (
+    ChapterPlan,
+    CharacterCard,
+    ContinuityBible,
+    CraftTemplate,
+    DraftChapter,
+    FeedbackInsight,
+    ForeshadowingThread,
+    KnowledgeCard,
+    MaterialCard,
+    Outline,
+    ReleasePackage,
+    SourceDocument,
+    WebFictionBusinessAnalysisReport,
+    WritingTemplate,
+    WorldBible,
+)
 from novel_forge.storage.local import LocalStorage
 from novel_forge.workers.tasks import chapter_production_run_task
 
@@ -144,6 +160,43 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     metadata={"copyright_boundary": "unsafe fixture", "copyright_risk": "high"},
                 ),
             )
+            raw_reference = storage.write_asset(
+                "raw",
+                SourceDocument(
+                    title="Protected raw reference",
+                    content={"text": "第一章 受保护参考文本，不允许直接进入生成上下文。"},
+                    metadata={
+                        "rights": {
+                            "authorization": "unknown",
+                            "copyright_boundary": "protected reference fixture",
+                            "allow_downstream_generation": False,
+                        },
+                        "use_in_generation_rag": False,
+                    },
+                ),
+            )
+            analysis_report = storage.write_asset(
+                "analysis",
+                WebFictionBusinessAnalysisReport(
+                    title="Protected analysis report",
+                    content={
+                        "source_asset_id": storage.read_asset(raw_reference).id,
+                        "platform_pattern": {},
+                        "reader_promise": {},
+                        "hook_system": {},
+                        "payoff_loop": [],
+                        "pacing_model": {},
+                        "monetization_nodes": [],
+                        "abstraction_boundary": "abstract only",
+                        "reusable_assets": [],
+                    },
+                    metadata={
+                        "copyright_boundary": "abstract analysis report, convert before context use",
+                        "copyright_risk": "low",
+                        "use_in_generation_rag": False,
+                    },
+                ),
+            )
             writing_template = storage.write_asset(
                 "materials",
                 WritingTemplate(
@@ -230,7 +283,13 @@ class ContextAndProductionChainTests(unittest.TestCase):
             tuned_bundle = create_context_bundle(
                 storage,
                 plan["path"],
-                selected_asset_paths=[str(knowledge.relative_to(storage.root)), str(material.relative_to(storage.root))],
+                selected_asset_paths=[
+                    str(knowledge.relative_to(storage.root)),
+                    str(material.relative_to(storage.root)),
+                    str(raw_reference.relative_to(storage.root)),
+                    str(analysis_report.relative_to(storage.root)),
+                    str(high_risk_material.relative_to(storage.root)),
+                ],
                 disabled_asset_paths=[str(material.relative_to(storage.root))],
                 priority_asset_paths=[str(knowledge.relative_to(storage.root))],
                 final_confirmed=True,
@@ -240,6 +299,17 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertIn(str(material.relative_to(storage.root)), tuned_asset.content["manual_selection"]["disabled_asset_paths"])
             self.assertIn(storage.read_asset(knowledge).id, tuned_asset.content["source_asset_ids"])
             self.assertNotIn(storage.read_asset(material).id, tuned_asset.content["source_asset_ids"])
+            self.assertNotIn(storage.read_asset(raw_reference).id, tuned_asset.content["source_asset_ids"])
+            self.assertNotIn(storage.read_asset(analysis_report).id, tuned_asset.content["source_asset_ids"])
+            self.assertNotIn(storage.read_asset(high_risk_material).id, tuned_asset.content["source_asset_ids"])
+            rejected_paths = {item["path"]: item for item in tuned_asset.content["policy_rejections"]}
+            self.assertIn(str(raw_reference.relative_to(storage.root)), rejected_paths)
+            self.assertIn(str(analysis_report.relative_to(storage.root)), rejected_paths)
+            self.assertIn(str(high_risk_material.relative_to(storage.root)), rejected_paths)
+            self.assertIn("blocked_asset_type", rejected_paths[str(raw_reference.relative_to(storage.root))]["signals"])
+            tuned_quality_report = storage.read_asset(tuned_asset.content["rag_quality_report_path"])
+            self.assertTrue(tuned_quality_report.content["manual_policy_rejections"])
+            self.assertEqual(tuned_quality_report.content["recommendation"], "revise")
             diff = compare_context_bundles(storage, bundle["path"], tuned_bundle["path"])
             self.assertEqual(storage.read_asset(diff["path"]).type, "project_metric_snapshot")
             self.assertIn("recommendation", diff)

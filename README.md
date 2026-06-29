@@ -220,6 +220,7 @@ Current P0/P1 closure status:
 5. Web OS operations now expose workflow, agent, KG, trace, cost, invalidation, review-rework, runtime policy coverage, legacy bypass audit, rollback preview/apply/verify, KG identity queues, and opt-in long-chain 12/50 chapter pressure acceptance.
 6. P1/P2 OS capabilities now include ModelRouter/ModelGateway, PromptRegistry, ToolGateway/MCP registry, StateBus, AgentMessageBus, L0-L5 memory, pgvector schema planning, deterministic local embedding projection, hybrid retrieval, `/product/os/*` APIs, and Workflow/Agent operation contracts for these services.
 7. Reference intake now detects common Chinese text encodings such as GB18030/GBK, and `analyze-reference` creates abstract web-fiction analysis reports with oral-performance style signals while preserving the no-copy boundary.
+8. Context Builder now records policy rejections in bundles and RAG quality reports, so manually selected raw sources, analysis reports, or high-risk assets are blocked with auditable reasons instead of silently entering generation context.
 
 ## Key Docs
 

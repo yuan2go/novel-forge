@@ -12,7 +12,7 @@ from novel_forge.modules.production_context import filter_project_safe_reference
 from novel_forge.modules.runtime_ledger import record_trace_span
 from novel_forge.schemas import BaseAsset, ContextBuildPlan, ContextBundle, ProjectMetricSnapshot, RagQualityReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
-from novel_forge.storage.rag_context import build_rag_context, retrieval_metadata
+from novel_forge.storage.rag_context import build_rag_context, generation_context_policy, retrieval_metadata
 
 RAW_OR_REPORT_TYPES = {
     "source_document",
@@ -255,6 +255,7 @@ def create_context_bundle(
         disabled_paths=manual_selection["disabled_asset_paths"],
         priority_paths=manual_selection["priority_asset_paths"],
     )
+    policy_rejections = _selection_policy_rejections(storage, content, candidates, manual_selection)
     selected_ids = _dedupe([str(item.get("asset_id", "")) for item in selected if item.get("asset_id")])
     kg_context = content.get("kg_context", {}) if isinstance(content.get("kg_context", {}), dict) else {"items": [], "source_asset_ids": [], "recommendation": "kg_context_missing_from_plan"}
     kg_source_ids = [str(item) for item in kg_context.get("source_asset_ids", []) if str(item).strip()] if isinstance(kg_context.get("source_asset_ids", []), list) else []
@@ -290,6 +291,7 @@ def create_context_bundle(
             "recall_explanation": content.get("recall_explanation", {}),
             "omission_check": content.get("omission_check", {}),
             "copyright_filter": content.get("copyright_filter", {}),
+            "policy_rejections": policy_rejections,
             "retrieved_context": content.get("retrieved_context", {}),
             "kg_context": kg_context,
             "kg_context_item_count": len(kg_context.get("items", []) if isinstance(kg_context.get("items", []), list) else []),
@@ -306,6 +308,7 @@ def create_context_bundle(
             "kg_context_source_asset_ids": kg_source_ids,
             "kg_context_item_count": len(kg_context.get("items", []) if isinstance(kg_context.get("items", []), list) else []),
             "token_estimate": token_estimate,
+            "context_policy_rejection_count": len(policy_rejections),
             "copyright_boundary": "context bundle includes compressed summaries and project-owned/abstract assets only; raw source text is not included",
             "final_context_confirmed": bool(final_confirmed),
             "run_metadata": run_metadata("context_bundle", plan),
@@ -642,7 +645,8 @@ def _create_rag_quality_report(
     metadata = bundle_data.get("metadata", {}) if isinstance(bundle_data.get("metadata", {}), dict) else {}
     omission = content.get("omission_check", {}) if isinstance(content.get("omission_check", {}), dict) else {}
     copyright_filter = content.get("copyright_filter", {}) if isinstance(content.get("copyright_filter", {}), dict) else {}
-    recommendation = _rag_recommendation(omission, copyright_filter, budget_score)
+    policy_rejections = content.get("policy_rejections", []) if isinstance(content.get("policy_rejections", []), list) else []
+    recommendation = _rag_recommendation(omission, copyright_filter, budget_score, policy_rejections)
     selected_ids = content.get("source_asset_ids", []) if isinstance(content.get("source_asset_ids", []), list) else []
     asset = RagQualityReport(
         title=f"RAG quality report for {content.get('target_asset_type', 'asset')} {content.get('target_asset_id', '')}",
@@ -662,6 +666,8 @@ def _create_rag_quality_report(
             "recall_explanation": content.get("recall_explanation", {}),
             "omission_check": omission,
             "copyright_filter": copyright_filter,
+            "policy_rejections": policy_rejections,
+            "manual_policy_rejections": [item for item in policy_rejections if isinstance(item, dict) and item.get("requested_by")],
             "context_budget_score": budget_score,
             "selected_asset_ids": selected_ids,
             "recommendation": recommendation,
@@ -704,9 +710,16 @@ def _attach_quality_report_to_bundle(storage: LocalStorage, bundle_path: Path, r
     storage.write_json(bundle_path, data)
 
 
-def _rag_recommendation(omission: dict[str, Any], copyright_filter: dict[str, Any], budget_score: dict[str, Any]) -> str:
+def _rag_recommendation(
+    omission: dict[str, Any],
+    copyright_filter: dict[str, Any],
+    budget_score: dict[str, Any],
+    policy_rejections: list[dict[str, Any]] | None = None,
+) -> str:
     if copyright_filter.get("status") == "blocked" or budget_score.get("status") in {"over_budget", "empty"}:
         return "block"
+    if any(item.get("requested_by") for item in policy_rejections or [] if isinstance(item, dict)):
+        return "revise"
     if omission.get("missing_count", 0) >= 3 or budget_score.get("status") == "underfilled":
         return "revise"
     if omission.get("missing_count", 0):
@@ -767,6 +780,116 @@ def _candidate_allowed_by_copyright(candidate: dict[str, Any]) -> bool:
     if copyright.get("eligible") is False:
         return False
     return str(copyright.get("risk_level", "unknown")) != "high"
+
+
+def _selection_policy_rejections(
+    storage: LocalStorage,
+    plan_content: dict[str, Any],
+    candidates: list[dict[str, Any]],
+    manual_selection: dict[str, Any],
+) -> list[dict[str, Any]]:
+    candidate_by_path = {str(item.get("path", "")): item for item in candidates if isinstance(item, dict) and str(item.get("path", "")).strip()}
+    exclusion_by_path = _plan_exclusion_index(plan_content)
+    requested_by_path: dict[str, list[str]] = {}
+    for field, label in [("selected_asset_paths", "manual_selected"), ("priority_asset_paths", "manual_priority")]:
+        for path in manual_selection.get(field, []) if isinstance(manual_selection.get(field, []), list) else []:
+            path_text = str(path).strip()
+            if not path_text:
+                continue
+            requested_by_path.setdefault(path_text, []).append(label)
+    disabled = {str(path) for path in manual_selection.get("disabled_asset_paths", []) if str(path).strip()} if isinstance(manual_selection.get("disabled_asset_paths", []), list) else set()
+    rejections: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for path, candidate in candidate_by_path.items():
+        if path in disabled:
+            continue
+        if str(candidate.get("type", "")) in RAW_OR_REPORT_TYPES:
+            rejections.append(_candidate_rejection(candidate, reason="raw source or analysis report cannot enter generation context", requested_by=requested_by_path.get(path, [])))
+            seen.add(path)
+        elif not _candidate_allowed_by_copyright(candidate):
+            copyright = candidate.get("copyright", {}) if isinstance(candidate.get("copyright", {}), dict) else {}
+            rejections.append(_candidate_rejection(candidate, reason=str(copyright.get("reason") or "copyright policy rejected candidate"), requested_by=requested_by_path.get(path, [])))
+            seen.add(path)
+
+    for path, requested_by in requested_by_path.items():
+        if path in disabled or path in seen:
+            continue
+        if path in exclusion_by_path:
+            item = exclusion_by_path[path]
+            rejections.append(
+                {
+                    "path": path,
+                    "asset_id": str(item.get("asset_id", "")),
+                    "type": str(item.get("type", "")),
+                    "title": str(item.get("title", "")),
+                    "reason": str(item.get("reason") or "generation context policy excluded this asset"),
+                    "signals": item.get("signals", []) if isinstance(item.get("signals", []), list) else [],
+                    "requested_by": requested_by,
+                }
+            )
+            seen.add(path)
+            continue
+        data = _read_asset_policy_candidate(storage, path)
+        if data:
+            policy = generation_context_policy(data)
+            if not policy["eligible"]:
+                rejections.append(
+                    {
+                        "path": path,
+                        "asset_id": str(data.get("id", "")),
+                        "type": str(data.get("type", "")),
+                        "title": str(data.get("title") or data.get("name") or ""),
+                        "reason": policy["reason"],
+                        "signals": policy["signals"],
+                        "requested_by": requested_by,
+                    }
+                )
+                seen.add(path)
+                continue
+        rejections.append(
+            {
+                "path": path,
+                "asset_id": "",
+                "type": str(data.get("type", "")) if data else "",
+                "title": str(data.get("title") or data.get("name") or "") if data else "",
+                "reason": "manual selection was not present in the audited eligible candidate set",
+                "signals": ["not_in_candidate_set"],
+                "requested_by": requested_by,
+            }
+        )
+        seen.add(path)
+
+    return rejections[:80]
+
+
+def _plan_exclusion_index(plan_content: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    rows: list[Any] = []
+    rows.extend(plan_content.get("exclusions", []) if isinstance(plan_content.get("exclusions", []), list) else [])
+    copyright_filter = plan_content.get("copyright_filter", {}) if isinstance(plan_content.get("copyright_filter", {}), dict) else {}
+    rows.extend(copyright_filter.get("filtered_assets", []) if isinstance(copyright_filter.get("filtered_assets", []), list) else [])
+    return {str(item.get("path", "")): item for item in rows if isinstance(item, dict) and str(item.get("path", "")).strip()}
+
+
+def _candidate_rejection(candidate: dict[str, Any], *, reason: str, requested_by: list[str]) -> dict[str, Any]:
+    copyright = candidate.get("copyright", {}) if isinstance(candidate.get("copyright", {}), dict) else {}
+    return {
+        "path": str(candidate.get("path", "")),
+        "asset_id": str(candidate.get("asset_id", "")),
+        "type": str(candidate.get("type", "")),
+        "title": str(candidate.get("title", "")),
+        "reason": reason,
+        "signals": copyright.get("signals", []) if isinstance(copyright.get("signals", []), list) else [],
+        "requested_by": requested_by,
+    }
+
+
+def _read_asset_policy_candidate(storage: LocalStorage, path: str) -> dict[str, Any] | None:
+    try:
+        data = storage.read_json(resolve_path(storage.root, path))
+    except Exception:
+        return None
+    return data if isinstance(data, dict) else None
 
 
 def _bucket_selected(selected: list[dict[str, Any]]) -> dict[str, list[dict[str, str]]]:

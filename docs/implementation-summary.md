@@ -29,6 +29,7 @@ Execution tracking documents:
 | Test Provider Isolation | Completed | Unit/integration tests force deterministic `mock` provider where needed; default production provider remains Claude Code Codex |
 | P1/P2 Novel OS Capabilities | Completed local-first first production slice | ModelRouter/ModelGateway, PromptRegistry, ToolGateway/MCP registry, StateBus, AgentMessageBus, L0-L5 memory, pgvector schema plan, deterministic local embedding projection, hybrid retrieval, `/product/os/*` APIs, Workflow ProcessorRegistry operations, AgentOperationRegistry operations, `tests/unit/test_os_new_capabilities.py` |
 | Protected Reference Intake | Hardened first production slice | TXT/MD encoding detection for UTF-8/GB18030/GBK/Big5, `analyze-reference` CLI, oral-performance style metrics for pingshu/xiangsheng-like narration, abstract-only analysis assets, `tests/unit/test_cli.py` |
+| Context Builder Policy Evidence | Hardened runtime boundary | Context bundles and RAG quality reports now persist `policy_rejections` / `manual_policy_rejections` when manual selections try to include raw sources, analysis reports, explicit no-RAG assets, or high-risk material; `tests/unit/test_context_and_production_chain.py` |
 
 ## Remaining Items
 

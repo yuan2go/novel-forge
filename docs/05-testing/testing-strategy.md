@@ -87,7 +87,8 @@ Context Builder changes must continue testing:
 - token budget accounting;
 - compression preview;
 - actual sent context replay;
-- prevention of raw protected source text entering draft context.
+- prevention of raw protected source text entering draft context;
+- policy rejection evidence when manual source selection requests raw sources, analysis reports, explicit `use_in_generation_rag=false` assets, or high-risk copyrighted material.
 
 ### Versioned Production Chain
 
