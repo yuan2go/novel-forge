@@ -7,13 +7,34 @@
     "total_chars": 2000000
   },
   "observed": {
-    "chapters": 47,
-    "total_chars": 322332,
-    "average_chars": 6858.13
+    "chapters": 63,
+    "total_chars": 428963,
+    "average_chars": 6808.94
   },
-  "completion": 0.1175,
+  "completion": 0.1575,
   "quality": {
-    "latest_scores": [],
+    "latest_scores": [
+      {
+        "chapter": 60,
+        "score": 100,
+        "warnings": []
+      },
+      {
+        "chapter": 61,
+        "score": 100,
+        "warnings": []
+      },
+      {
+        "chapter": 62,
+        "score": 100,
+        "warnings": []
+      },
+      {
+        "chapter": 63,
+        "score": 100,
+        "warnings": []
+      }
+    ],
     "all_scores": [
       {
         "chapter": 1,
@@ -314,10 +335,112 @@
         "score": 100.0,
         "char_count": 8343,
         "warnings": []
+      },
+      {
+        "chapter": 48,
+        "score": 95.75,
+        "char_count": 7415,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 49,
+        "score": 100.0,
+        "char_count": 6226,
+        "warnings": []
+      },
+      {
+        "chapter": 50,
+        "score": 100.0,
+        "char_count": 6774,
+        "warnings": []
+      },
+      {
+        "chapter": 51,
+        "score": 100.0,
+        "char_count": 6060,
+        "warnings": []
+      },
+      {
+        "chapter": 52,
+        "score": 100.0,
+        "char_count": 8014,
+        "warnings": []
+      },
+      {
+        "chapter": 53,
+        "score": 100.0,
+        "char_count": 6505,
+        "warnings": []
+      },
+      {
+        "chapter": 54,
+        "score": 100.0,
+        "char_count": 6842,
+        "warnings": []
+      },
+      {
+        "chapter": 55,
+        "score": 99.04,
+        "char_count": 4863,
+        "warnings": []
+      },
+      {
+        "chapter": 56,
+        "score": 100.0,
+        "char_count": 7229,
+        "warnings": []
+      },
+      {
+        "chapter": 57,
+        "score": 100.0,
+        "char_count": 5940,
+        "warnings": []
+      },
+      {
+        "chapter": 58,
+        "score": 95.75,
+        "char_count": 7529,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 59,
+        "score": 100.0,
+        "char_count": 7502,
+        "warnings": []
+      },
+      {
+        "chapter": 60,
+        "score": 100.0,
+        "char_count": 6290,
+        "warnings": []
+      },
+      {
+        "chapter": 61,
+        "score": 100.0,
+        "char_count": 6414,
+        "warnings": []
+      },
+      {
+        "chapter": 62,
+        "score": 100.0,
+        "char_count": 6218,
+        "warnings": []
+      },
+      {
+        "chapter": 63,
+        "score": 100.0,
+        "char_count": 6810,
+        "warnings": []
       }
     ],
-    "warning_count": 9,
+    "warning_count": 11,
     "warning_samples": [
+      "chapter ending punctuation is weak",
+      "chapter ending punctuation is weak",
       "chapter ending punctuation is weak",
       "chapter ending punctuation is weak",
       "chapter ending punctuation is weak",
@@ -348,14 +471,14 @@
   },
   "cost_drift": {
     "status": "warning",
-    "model_call_count": 101,
-    "provider_model_call_count": 54,
+    "model_call_count": 133,
+    "provider_model_call_count": 70,
     "ledger_count": 0,
-    "total_tokens": 1008268,
-    "average_tokens_per_generated_chapter": 21452.51,
+    "total_tokens": 1348117,
+    "average_tokens_per_generated_chapter": 21398.68,
     "first_window_average_tokens": 8726.0,
-    "latest_window_average_tokens": 21556.4,
-    "token_drift_ratio": 2.4704,
+    "latest_window_average_tokens": 21171.6,
+    "token_drift_ratio": 2.4263,
     "total_cost": 0.0,
     "cost_per_generated_chapter": 0.0,
     "cost_currency": "USD"
@@ -366,15 +489,15 @@
     "first_window_average_score": 98.3,
     "latest_window_average_score": 100.0,
     "score_delta": 1.7,
-    "warning_count": 9,
+    "warning_count": 11,
     "average_char_first_window": 7012.6,
-    "average_char_latest_window": 6898.4,
-    "char_drift_ratio": 0.9837
+    "average_char_latest_window": 6646.8,
+    "char_drift_ratio": 0.9478
   },
   "foreshadowing_lifecycle": {
     "overall_status": "passed",
-    "generated_chapters": 47,
-    "active_count": 2,
+    "generated_chapters": 63,
+    "active_count": 1,
     "due_count": 0,
     "overdue_count": 0,
     "hooks": [
@@ -419,8 +542,34 @@
         "payoff_window": "chapters 55-70",
         "window_start": 55,
         "window_end": 70,
-        "status": "seeded",
-        "payoff_evidence": []
+        "status": "paid_off",
+        "payoff_evidence": [
+          {
+            "chapter": 55,
+            "marker": "债",
+            "evidence_span": "第五十五章债从案里来井里刮铜钱的声音，第三次响起时，卢七差点跪下。他膝盖一弯"
+          },
+          {
+            "chapter": 56,
+            "marker": "债",
+            "evidence_span": "就能领粮、派工、摊银。”“也能让一批已经不存在的人，在账上继续欠债。”这句话落下，卢七忽然想起第五十五章那口铜匣里夹着的债签。债从"
+          },
+          {
+            "chapter": 57,
+            "marker": "债",
+            "evidence_span": "回忆。回忆这东西，人人都有，偏偏人人不一样。”卢七小声接道：“欠债的回忆尤其会短。”马差役扫了他一眼。卢七立刻把嘴闭上，闭得很有经"
+          },
+          {
+            "chapter": 58,
+            "marker": "债",
+            "evidence_span": "老司簿死在冬天，留下的不是银子，是一叠未结案的追档单。沈砚继承的债，不写在借据上，写在每一个找不到来处的空格里。登记完，他把油布放"
+          },
+          {
+            "chapter": 59,
+            "marker": "债",
+            "evidence_span": "用井机关逼它“重现”。沈砚呼吸慢下来。他忽然明白为什么导师留下的债会从这口井冒头。许多年前，夜档司不是没有见过这行，而是有人见过之"
+          }
+        ]
       },
       {
         "id": "district_machine",
@@ -446,16 +595,18 @@
       21,
       22,
       38,
-      39
+      39,
+      48,
+      58
     ],
     "proposal_count": 2
   },
   "acceptance_assets": {
-    "chapter_production_run": 0,
-    "context_bundle": 0,
-    "chapter_continuity_report": 0,
+    "chapter_production_run": 4,
+    "context_bundle": 4,
+    "chapter_continuity_report": 4,
     "feedback_backflow_plan": 0
   },
-  "acceptance_report": "data/runs/long-chain-acceptance-report-long-chain-acceptance-400-chapters-985e1454.json",
-  "created_at": "2026-06-30T17:49:07+00:00"
+  "acceptance_report": "data/runs/long-chain-acceptance-report-long-chain-acceptance-400-chapters-faed998d.json",
+  "created_at": "2026-06-30T18:37:37+00:00"
 }

@@ -3,7 +3,7 @@
 - Updated at: 2026-07-01
 - Export: `generated/longchain-webnovel`
 - Target: 400 chapters x 5000 Chinese characters, about 2,000,000 characters.
-- Current generated scope: chapters 001-047.
+- Current generated scope: chapters 001-063.
 - Provider path: `CODEX_HOME=~/.codex-claude codex` through `ClaudeCodeAdapter` and `GuardedModelAdapter`.
 - CLI used for successful continuation: `/Users/yuan/.local/share/fnm/node-versions/v22.22.2/installation/bin/codex` (`codex-cli 0.142.3`).
 - Model selection: explicit `codex5.4` was tested first, but the account rejected it as unsupported. The successful chapter generation used the Codex CLI default model from the same `CODEX_HOME`.
@@ -12,7 +12,7 @@
 
 ## Current Pressure Result
 
-- Observed: 47 chapters, 322,332 characters, average 6,858.13 characters.
-- Completion against 400 chapters: 11.75%.
+- Observed: 63 chapters, 428,963 characters, average 6,808.94 characters.
+- Completion against 400 chapters: 15.75%.
 - Pressure acceptance: warning / continue_with_watch.
 - Watch item: cost drift remains above the warning threshold. `ledger_origin` briefly hit a false overdue condition at chapter 47 because the previous lifecycle check did not read chapter payoff evidence; it now resolves through evidence spans from chapters 35, 36, 40, 42, and 47.

@@ -2,12 +2,12 @@
 
 - Project: `real-longchain-webnovel`
 - Target: 400 chapters x 5000 chars = 2000000 chars
-- Observed: 47 chapters, 322332 chars, avg 6858.13
-- Completion: 11.75%
-- Warning count: 9
+- Observed: 63 chapters, 428963 chars, avg 6808.94
+- Completion: 15.75%
+- Warning count: 11
 - Recommendation: continue
 - Pressure acceptance: warning / continue_with_watch
-- Acceptance report: `data/runs/long-chain-acceptance-report-long-chain-acceptance-400-chapters-985e1454.json`
+- Acceptance report: `data/runs/long-chain-acceptance-report-long-chain-acceptance-400-chapters-faed998d.json`
 
 ## Pressure Coverage
 
@@ -18,11 +18,14 @@
 
 ## Pressure Metrics
 
-- Cost drift: warning; model calls 101, provider calls 54, tokens 1008268, token drift ratio 2.4704
-- Quality drift: passed; trend improving, score delta 1.7, char drift ratio 0.9837
+- Cost drift: warning; model calls 133, provider calls 70, tokens 1348117, token drift ratio 2.4263
+- Quality drift: passed; trend improving, score delta 1.7, char drift ratio 0.9478
 - Foreshadow lifecycle: passed; due 0, overdue 0
 - Feedback backflow: passed; plans 1, proposals 2
 
 ## Latest Chapter Scores
 
-
+- Chapter 60: 100 (no warnings)
+- Chapter 61: 100 (no warnings)
+- Chapter 62: 100 (no warnings)
+- Chapter 63: 100 (no warnings)
