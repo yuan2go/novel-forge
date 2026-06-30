@@ -49,6 +49,7 @@ def main() -> int:
     parser.add_argument("--export-dir", default="generated/longchain-webnovel")
     parser.add_argument("--max-chapters-this-run", type=int, default=3)
     parser.add_argument("--codex-timeout-seconds", type=int, default=900)
+    parser.add_argument("--report-only", action="store_true")
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
 
@@ -66,7 +67,7 @@ def main() -> int:
 
     records: list[ChapterRecord] = []
     existing_summaries = _load_existing_summaries(export_dir)
-    chapter_limit = max(1, int(args.max_chapters_this_run))
+    chapter_limit = 0 if args.report_only else max(1, int(args.max_chapters_this_run))
     generated_this_run = 0
     previous_summary = existing_summaries[-1]["summary"] if existing_summaries else ""
 
@@ -393,7 +394,7 @@ def _ensure_acceptance_assets(storage: LocalStorage, export_dir: Path, summaries
             _write_acceptance_asset(storage, _context_bundle(chapter, draft_path, item, bible, target_chars))
             created["context_bundle"] += 1
         if not _asset_exists_for_chapter(storage, "chapter_continuity_report", "continuity", chapter):
-            _write_acceptance_asset(storage, _chapter_continuity_report(chapter, draft_path, warnings, bible, generated_chapters=len(summaries)))
+            _write_acceptance_asset(storage, _chapter_continuity_report(chapter, draft_path, warnings, bible, generated_chapters=len(summaries), export_dir=export_dir))
             created["chapter_continuity_report"] += 1
     if not _assets_by_type_for_project(storage, "feedback_backflow_plan", "feedback"):
         _write_acceptance_asset(storage, _feedback_backflow_plan(summaries, target_chars))
@@ -459,8 +460,8 @@ def _context_bundle(chapter: int, draft_path: str, summary: dict[str, Any], bibl
     )
 
 
-def _chapter_continuity_report(chapter: int, draft_path: str, warnings: list[str], bible: dict[str, Any], *, generated_chapters: int) -> ChapterContinuityReport:
-    lifecycle = _foreshadow_lifecycle(bible, generated_chapters=generated_chapters)
+def _chapter_continuity_report(chapter: int, draft_path: str, warnings: list[str], bible: dict[str, Any], *, generated_chapters: int, export_dir: Path | None = None) -> ChapterContinuityReport:
+    lifecycle = _foreshadow_lifecycle(bible, generated_chapters=generated_chapters, export_dir=export_dir)
     blocking = [warning for warning in warnings if "protected reference pattern" in warning]
     recommendation = "block" if blocking else "revise" if warnings else "pass"
     target_asset_id = draft_path or f"exported-chapter-{chapter:03d}"
@@ -564,7 +565,7 @@ def _quality_report(
     scores = _all_chapter_scores(export_dir, summaries, target_chars)
     quality_drift = _quality_drift(scores, char_counts)
     cost_drift = _cost_drift(storage, generated_chapters=generated)
-    foreshadowing = _foreshadow_lifecycle(bible, generated_chapters=generated)
+    foreshadowing = _foreshadow_lifecycle(bible, generated_chapters=generated, export_dir=export_dir)
     feedback_backflow = _feedback_backflow_summary(storage, summaries)
     pressure_acceptance = _pressure_acceptance(cost_drift, quality_drift, foreshadowing, feedback_backflow)
     return {
@@ -702,7 +703,7 @@ def _cost_drift(storage: LocalStorage, *, generated_chapters: int) -> dict[str, 
     }
 
 
-def _foreshadow_lifecycle(bible: dict[str, Any], *, generated_chapters: int) -> dict[str, Any]:
+def _foreshadow_lifecycle(bible: dict[str, Any], *, generated_chapters: int, export_dir: Path | None = None) -> dict[str, Any]:
     hooks = bible.get("long_hooks", []) if isinstance(bible.get("long_hooks", []), list) else []
     rows: list[dict[str, Any]] = []
     overdue = 0
@@ -712,14 +713,17 @@ def _foreshadow_lifecycle(bible: dict[str, Any], *, generated_chapters: int) -> 
         if not isinstance(hook, dict):
             continue
         start, end = _payoff_window(str(hook.get("payoff_window", "")))
+        evidence = _foreshadow_payoff_evidence(hook, generated_chapters=generated_chapters, export_dir=export_dir, window_start=start)
         status = "seeded"
-        if start and generated_chapters >= start:
+        if evidence:
+            status = "paid_off"
+        elif start and generated_chapters >= start:
             status = "payoff_due"
             due += 1
-        if end and generated_chapters > end:
+        if not evidence and end and generated_chapters > end:
             status = "overdue"
             overdue += 1
-        if generated_chapters < (end or generated_chapters + 1):
+        if not evidence and generated_chapters < (end or generated_chapters + 1):
             active += 1
         rows.append(
             {
@@ -729,6 +733,7 @@ def _foreshadow_lifecycle(bible: dict[str, Any], *, generated_chapters: int) -> 
                 "window_start": start,
                 "window_end": end,
                 "status": status,
+                "payoff_evidence": evidence[:5],
             }
         )
     return {
@@ -739,6 +744,48 @@ def _foreshadow_lifecycle(bible: dict[str, Any], *, generated_chapters: int) -> 
         "overdue_count": overdue,
         "hooks": rows,
     }
+
+
+def _foreshadow_payoff_evidence(hook: dict[str, Any], *, generated_chapters: int, export_dir: Path | None, window_start: int) -> list[dict[str, Any]]:
+    markers = _foreshadow_payoff_markers(hook)
+    if not markers or not export_dir:
+        return []
+    chapter_dir = export_dir / "chapters"
+    if not chapter_dir.exists():
+        return []
+    start = max(1, int(window_start or 1))
+    evidence: list[dict[str, Any]] = []
+    for chapter in range(start, max(start, int(generated_chapters)) + 1):
+        path = chapter_dir / f"chapter_{chapter:03d}.md"
+        if not path.exists():
+            continue
+        text = _chapter_text(path)
+        compact = re.sub(r"\s+", "", text)
+        for marker in markers:
+            marker_text = str(marker).strip()
+            if not marker_text:
+                continue
+            idx = compact.find(marker_text)
+            if idx < 0:
+                continue
+            start_idx = max(0, idx - 32)
+            end_idx = min(len(compact), idx + len(marker_text) + 32)
+            evidence.append({"chapter": chapter, "marker": marker_text, "evidence_span": compact[start_idx:end_idx]})
+            break
+    return evidence
+
+
+def _foreshadow_payoff_markers(hook: dict[str, Any]) -> list[str]:
+    explicit = hook.get("payoff_markers", [])
+    if isinstance(explicit, list) and explicit:
+        return [str(item) for item in explicit if str(item).strip()]
+    hook_id = str(hook.get("id", "")).strip()
+    defaults = {
+        "ledger_origin": ["还我户名", "缺一行", "城籍院", "户名", "本来就在同一本账上", "旧账先认门"],
+        "mentor_debt": ["师门旧债", "欠夜档司", "债", "替还"],
+        "district_machine": ["各司", "三司", "官府", "机器", "城中各衙门", "旧账牵出"],
+    }
+    return defaults.get(hook_id, [])
 
 
 def _feedback_backflow_summary(storage: LocalStorage, summaries: list[dict[str, Any]]) -> dict[str, Any]:

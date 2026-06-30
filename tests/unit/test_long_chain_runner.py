@@ -23,6 +23,33 @@ def _load_runner():
 
 
 class LongChainRunnerReportTests(unittest.TestCase):
+    def test_foreshadow_lifecycle_uses_payoff_evidence_spans(self):
+        runner = _load_runner()
+        with tempfile.TemporaryDirectory() as tmp:
+            export_dir = Path(tmp) / "export"
+            chapter_dir = export_dir / "chapters"
+            chapter_dir.mkdir(parents=True)
+            (chapter_dir / "chapter_046.md").write_text(
+                "# 第046章\n\n沈砚终于在城籍院旧册里补回那条缺一行，户名得以归位。\n",
+                encoding="utf-8",
+            )
+            bible = {
+                "long_hooks": [
+                    {
+                        "id": "ledger_origin",
+                        "setup": "missing registry line",
+                        "payoff_window": "chapters 35-45",
+                    }
+                ]
+            }
+
+            lifecycle = runner._foreshadow_lifecycle(bible, generated_chapters=47, export_dir=export_dir)
+
+            self.assertEqual(lifecycle["overall_status"], "passed")
+            self.assertEqual(lifecycle["overdue_count"], 0)
+            self.assertEqual(lifecycle["hooks"][0]["status"], "paid_off")
+            self.assertEqual(lifecycle["hooks"][0]["payoff_evidence"][0]["chapter"], 46)
+
     def test_pressure_report_materializes_acceptance_assets_and_metrics(self):
         runner = _load_runner()
         with tempfile.TemporaryDirectory() as tmp:

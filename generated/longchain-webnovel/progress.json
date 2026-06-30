@@ -2,40 +2,40 @@
   "project_id": "real-longchain-webnovel",
   "target_chapters": 400,
   "target_chars_per_chapter": 5000,
-  "generated_chapters": 35,
+  "generated_chapters": 47,
   "latest_run_records": [
     {
-      "chapter": 32,
-      "path": "generated/longchain-webnovel/chapters/chapter_032.md",
-      "asset_path": "data/drafts/draft-version-032-5a3e0e90.json",
-      "char_count": 7589,
+      "chapter": 44,
+      "path": "generated/longchain-webnovel/chapters/chapter_044.md",
+      "asset_path": "data/drafts/draft-version-044-c8e47cc5.json",
+      "char_count": 6859,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
     },
     {
-      "chapter": 33,
-      "path": "generated/longchain-webnovel/chapters/chapter_033.md",
-      "asset_path": "data/drafts/draft-version-033-43d17273.json",
-      "char_count": 6907,
-      "quality_score": 86.75,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 34,
-      "path": "generated/longchain-webnovel/chapters/chapter_034.md",
-      "asset_path": "data/drafts/draft-version-034-0c01d666.json",
-      "char_count": 6087,
+      "chapter": 45,
+      "path": "generated/longchain-webnovel/chapters/chapter_045.md",
+      "asset_path": "data/drafts/draft-version-045-9b197b13.json",
+      "char_count": 7371,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
     },
     {
-      "chapter": 35,
-      "path": "generated/longchain-webnovel/chapters/chapter_035.md",
-      "asset_path": "data/drafts/draft-version-035-7d3c1c46.json",
-      "char_count": 6903,
+      "chapter": 46,
+      "path": "generated/longchain-webnovel/chapters/chapter_046.md",
+      "asset_path": "data/drafts/draft-version-046-608818fe.json",
+      "char_count": 5629,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 47,
+      "path": "generated/longchain-webnovel/chapters/chapter_047.md",
+      "asset_path": "data/drafts/draft-version-047-ed13b357.json",
+      "char_count": 8343,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
@@ -295,7 +295,95 @@
       "char_count": 6903,
       "warnings": [],
       "quality_score": 100
+    },
+    {
+      "chapter": 36,
+      "summary": "第36章完成：第三十六章账底的灰沈砚把那页缺行的旧籍摊在灯下时，天光正从窗格里一点点爬进来。纸是老纸，边角软得像被水泡过又晒干，墨色却怪。缺去的那一行并不是被虫蛀，也不像有人拿刀剜过。它只是在两道竖栏之间空着，空得过分干净，仿佛当年抄籍的人写到此处，手腕忽然被谁按住，连落笔的念头都被一并抹掉。夜档司的人都盯着那块空白。卢灯芯忍了半天，终于小声道：“沈哥，这纸昨夜真响了。我...",
+      "char_count": 7661,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 37,
+      "summary": "第37章完成：第三十七章牵丝印沈砚把那页缺行旧籍重新压进竹夹时，夜档司外的晨钟刚过第三声。钟声一落，窗纸便鼓了一下。不是风。七月初的晨风从河坊那头来，带着鱼腥、湿灰和早点摊第一锅油的味道，吹进屋里只会凉，不会让一张窗纸像活物似的往里吸气。可这一鼓之后，窗纸上竟慢慢浮出一串浅浅黑点，细如针鼻，排得整整齐齐，像有人隔着窗在外头拿湿墨戳字。卢灯芯抱着茶碗，手一抖，半碗凉茶泼在鞋...",
+      "char_count": 6949,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 38,
+      "summary": "第38章完成：第三十八章账尾灯窗纸上的黑点一排一排透出来，像有只看不见的虫在外头啃纸，又像旧账房里算盘珠子被人拨乱后留下的影。沈砚没有立刻去推窗。夜档司这地方，最怕的不是半夜有人敲门，是半夜有东西怕你听不见，专挑窗纸、门缝、茶盏、水盆这类薄处显形。薄处一动，说明那东西还没进屋；人若手快把窗一开，便等于替它写了放行批文。卢灯芯端着半碗凉茶，眼睁睁看黑点慢慢连成一行，嘴皮子发...",
+      "char_count": 8783,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 39,
+      "summary": "第39章完成：第三十九章账线入库窗纸上的黑点连成那一行字后，屋里足足静了三息。卢灯芯端着半碗凉茶，茶面被他手抖得起了一圈细纹。他不敢念出来，只拿眼睛去瞟沈砚，像怕自己一开口，那些黑点便会顺着声音爬进喉咙。沈砚也没念。他先把案上的铜镇纸往窗下移了半寸，又将油灯罩住一半，让灯焰从亮变暗。黑点果然慢了下来，几处刚要接上的笔画悬在窗纸纤维里，像被人按住了手腕。“不是虫。”沈砚道。...",
+      "char_count": 6926,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 40,
+      "summary": "第40章完成：第四十章档脊里的旧名窗纸上的黑点停住以后，屋里反倒比方才更冷。沈砚把灯罩揭开一线，火苗往上一蹿，悬在纸纤维里的黑痕便像被热气逼退，几粒碎点沿着窗棂边缘蜷成小团。卢灯芯看得眼皮直跳，半碗凉茶终于洒在袖口上。“沈哥，”他小声道，“这东西要是会认灯明暗，那它比我值夜还懂规矩。”“它不懂规矩。”沈砚用竹镊夹起一角窗纸，“有人让它照规矩走。”窗纸不能整张撕。夜档库的窗...",
+      "char_count": 7145,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 41,
+      "summary": "第41章完成：第四十一章账脚上的空格夜档库的窗纸被装进细竹夹时，外头正敲三更。三更鼓声从坊墙那边滚过来，像有人拿湿布蒙着铜盆敲。沈砚没有立刻说话。他把那片带黑点的窗纸平摊在白瓷盘上，又在旁边压了一枚铜钱，叫纸不被门缝里的风掀起。卢灯芯缩着脖子看了半晌，终于忍不住道：“沈哥，这黑点若真是有人养出来的，那咱们是不是该先把窗户糊厚些？我这人胆子不小，就是脸皮薄，怕它认得我。”“...",
+      "char_count": 7004,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 42,
+      "summary": "第42章完成：第四十二章户册里多出来的人天亮前的档库最怕安静。沈砚从前不信这话。档库里纸多、灰多、鼠洞多，连梁上的瓦缝都能漏进风声，哪里算得上安静。可那一夜，他听见满屋卷宗像一群屏住气的人，连卢灯芯磨牙的细声都显得太响。白瓷盘里的窗纸已经干透。纸上那几点黑斑不再像霉，倒像有人用极细的针蘸墨，按着星宿方位点上去。沈砚把铜钱移开，拿竹签轻轻挑起纸角。纸背露出一道淡黄痕。卢灯芯...",
+      "char_count": 6340,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 43,
+      "summary": "第43章完成：第四十三章灰线从哪里来卯时的鼓还没响，档库外先响起了人声。不是报更人的嗓子，也不是早市挑担人压着肩头叫卖的调子，而是一种被门槛拦住的急声，低低密密，像一锅水刚要翻滚。沈砚把窗纸压回白瓷盘里，抬眼看向门缝。门缝下头有影子。一条，两条，三条，都是官靴的影子。再往后，还有草鞋，鞋底沾着湿泥，泥里夹着碎稻壳。卢灯芯抱着灯盏，脸色比灯芯还短半截：“沈书吏，昨夜不是说只...",
+      "char_count": 6290,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 44,
+      "summary": "第44章完成：第四十四章账从雨里来卯鼓到底没有敲成。鼓楼那边刚起第一下，声还在雾里滚，档库门前便被人声撞歪了。门槛外跪着三个人，站着七八个，还有两个衙役夹在人堆里，脸上挂着一种“我也不想来，可我若不来，回去就有人要我来第二趟”的苦相。沈砚一夜没合眼，眼底像被灰线勒过。他把昨夜压在白瓷盘里的窗纸收进竹筒，又把盘底那一点黑灰用鸡翎扫入纸包，才对卢灯芯道：“开半扇门。”卢灯芯愣...",
+      "char_count": 6859,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 45,
+      "summary": "第45章完成：第四十五章缺行从何处来沈砚把档库门开到半扇，外头的雾便挤进来一半。门槛前跪着的三个人里，有一个是昨夜在南井巷抬账匣的脚夫，肩上还缠着湿布；一个是东市绸铺的掌柜，平日里算盘珠子拨得比官鼓还响，此刻两只手却抖得像刚从冰水里捞出来；第三个最怪，是个卖糖画的老汉，背后插着竹签架，架上糖龙糖马都化了边，黏成一片黄亮的泪。卢灯芯探头看了一眼，低声道：“这阵仗不像报案，像...",
+      "char_count": 7371,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 46,
+      "summary": "第46章完成：第四十六章账从火里醒卖糖画的老汉把竹签架往地上一放，糖龙糖马一齐歪倒，像一群被判了秋后问斩的小兽。沈砚先没问案，只看地上。档库门槛外有三道湿脚印，脚夫的宽，掌柜的窄，老汉的鞋底最怪，前掌沾了一圈细灰，灰里夹着一点发亮的黑粒。雨夜里能把灰带成这样，不是从灶前来，就是从烧过纸的地方来。卢灯芯蹲下，用竹片挑了一粒，凑到鼻尖闻了闻，立刻皱脸：“不是香灰，倒像锅底灰里...",
+      "char_count": 5629,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 47,
+      "summary": "第47章完成：第四十七章旧账先认门雨停在五更前，街面却像还在咳水。沈砚把那只黑粒放进白瓷碟里，碟底薄，灯一照，黑粒边上竟浮出一点青光。卢灯芯伸手要戳，被沈砚用竹签挡住。“别碰。”“我不碰它，它倒像要碰我。”卢灯芯缩回手，嘴上不肯输，“这东西在碟里蹦了一下，跟欠债的看见账房先生似的。”碟里的黑粒没有再动，只在水珠边缘贴着，像一枚被烧残的米。档库外的老汉、掌柜、脚夫都被巡夜差...",
+      "char_count": 8343,
+      "warnings": [],
+      "quality_score": 100
     }
   ],
-  "updated_at": "2026-06-30T16:58:18+00:00"
+  "updated_at": "2026-06-30T17:43:15+00:00"
 }

@@ -7,34 +7,13 @@
     "total_chars": 2000000
   },
   "observed": {
-    "chapters": 35,
-    "total_chars": 237032,
-    "average_chars": 6772.34
+    "chapters": 47,
+    "total_chars": 322332,
+    "average_chars": 6858.13
   },
-  "completion": 0.0875,
+  "completion": 0.1175,
   "quality": {
-    "latest_scores": [
-      {
-        "chapter": 32,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 33,
-        "score": 86.75,
-        "warnings": []
-      },
-      {
-        "chapter": 34,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 35,
-        "score": 100,
-        "warnings": []
-      }
-    ],
+    "latest_scores": [],
     "all_scores": [
       {
         "chapter": 1,
@@ -259,10 +238,88 @@
         "score": 100.0,
         "char_count": 6903,
         "warnings": []
+      },
+      {
+        "chapter": 36,
+        "score": 100.0,
+        "char_count": 7661,
+        "warnings": []
+      },
+      {
+        "chapter": 37,
+        "score": 100.0,
+        "char_count": 6949,
+        "warnings": []
+      },
+      {
+        "chapter": 38,
+        "score": 95.75,
+        "char_count": 8783,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 39,
+        "score": 95.75,
+        "char_count": 6926,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 40,
+        "score": 100.0,
+        "char_count": 7145,
+        "warnings": []
+      },
+      {
+        "chapter": 41,
+        "score": 100.0,
+        "char_count": 7004,
+        "warnings": []
+      },
+      {
+        "chapter": 42,
+        "score": 100.0,
+        "char_count": 6340,
+        "warnings": []
+      },
+      {
+        "chapter": 43,
+        "score": 100.0,
+        "char_count": 6290,
+        "warnings": []
+      },
+      {
+        "chapter": 44,
+        "score": 100.0,
+        "char_count": 6859,
+        "warnings": []
+      },
+      {
+        "chapter": 45,
+        "score": 100.0,
+        "char_count": 7371,
+        "warnings": []
+      },
+      {
+        "chapter": 46,
+        "score": 100.0,
+        "char_count": 5629,
+        "warnings": []
+      },
+      {
+        "chapter": 47,
+        "score": 100.0,
+        "char_count": 8343,
+        "warnings": []
       }
     ],
-    "warning_count": 7,
+    "warning_count": 9,
     "warning_samples": [
+      "chapter ending punctuation is weak",
+      "chapter ending punctuation is weak",
       "chapter ending punctuation is weak",
       "chapter ending punctuation is weak",
       "chapter ending punctuation is weak",
@@ -284,41 +341,41 @@
     "checks": {
       "cost_drift": "warning",
       "quality_drift": "passed",
-      "foreshadow_lifecycle": "warning",
+      "foreshadow_lifecycle": "passed",
       "feedback_backflow": "passed"
     },
     "recommendation": "continue_with_watch"
   },
   "cost_drift": {
     "status": "warning",
-    "model_call_count": 77,
-    "provider_model_call_count": 42,
+    "model_call_count": 101,
+    "provider_model_call_count": 54,
     "ledger_count": 0,
-    "total_tokens": 747996,
-    "average_tokens_per_generated_chapter": 21371.31,
+    "total_tokens": 1008268,
+    "average_tokens_per_generated_chapter": 21452.51,
     "first_window_average_tokens": 8726.0,
-    "latest_window_average_tokens": 21315.0,
-    "token_drift_ratio": 2.4427,
+    "latest_window_average_tokens": 21556.4,
+    "token_drift_ratio": 2.4704,
     "total_cost": 0.0,
     "cost_per_generated_chapter": 0.0,
     "cost_currency": "USD"
   },
   "quality_drift": {
     "status": "passed",
-    "trend": "stable",
+    "trend": "improving",
     "first_window_average_score": 98.3,
-    "latest_window_average_score": 97.35,
-    "score_delta": -0.95,
-    "warning_count": 7,
+    "latest_window_average_score": 100.0,
+    "score_delta": 1.7,
+    "warning_count": 9,
     "average_char_first_window": 7012.6,
-    "average_char_latest_window": 6748.6,
-    "char_drift_ratio": 0.9624
+    "average_char_latest_window": 6898.4,
+    "char_drift_ratio": 0.9837
   },
   "foreshadowing_lifecycle": {
-    "overall_status": "warning",
-    "generated_chapters": 35,
-    "active_count": 3,
-    "due_count": 1,
+    "overall_status": "passed",
+    "generated_chapters": 47,
+    "active_count": 2,
+    "due_count": 0,
     "overdue_count": 0,
     "hooks": [
       {
@@ -327,7 +384,34 @@
         "payoff_window": "chapters 35-45",
         "window_start": 35,
         "window_end": 45,
-        "status": "payoff_due"
+        "status": "paid_off",
+        "payoff_evidence": [
+          {
+            "chapter": 35,
+            "marker": "缺一行",
+            "evidence_span": "第三十五章缺一行的老籍天亮以后，夜档司反倒更像夜里。门外东街热汤铺子支起青布棚，"
+          },
+          {
+            "chapter": 36,
+            "marker": "缺一行",
+            "evidence_span": "家能否领盐引、能否入学、能否赁铺、能否免杂役，全系在几行旧字上。缺一行，少的未必只是名字，可能是一条街的欠账，也可能是一群人的活路。姚"
+          },
+          {
+            "chapter": 40,
+            "marker": "户名",
+            "evidence_span": "”沈砚翻到总册前后。永宁坊那一段登记的是二十四年前城西水患后的归户名单，凡屋毁、人散、迁入、迁出，都要重定户籍。名单上每户有户长、丁"
+          },
+          {
+            "chapter": 42,
+            "marker": "缺一行",
+            "evidence_span": "家所在那页，账脚果然有半枚鱼鳞押记，却被一笔横线刮过。“原本这里缺一行。”沈砚道，“后来补了陶仁。”高典吏道：“也许旧年漏登。漏登丁口"
+          },
+          {
+            "chapter": 47,
+            "marker": "本来就在同一本账上",
+            "evidence_span": "向它，那三十七户、灯户、算房、师父留下的债，就不是几条散线。它们本来就在同一本账上。沈砚抬头，魏算盘已经转身上车。车轮碾过积水，留下两道黑痕，像一"
+          }
+        ]
       },
       {
         "id": "mentor_debt",
@@ -335,7 +419,8 @@
         "payoff_window": "chapters 55-70",
         "window_start": 55,
         "window_end": 70,
-        "status": "seeded"
+        "status": "seeded",
+        "payoff_evidence": []
       },
       {
         "id": "district_machine",
@@ -343,7 +428,8 @@
         "payoff_window": "chapters 80-100",
         "window_start": 80,
         "window_end": 100,
-        "status": "seeded"
+        "status": "seeded",
+        "payoff_evidence": []
       }
     ]
   },
@@ -358,16 +444,18 @@
       14,
       15,
       21,
-      22
+      22,
+      38,
+      39
     ],
     "proposal_count": 2
   },
   "acceptance_assets": {
-    "chapter_production_run": 4,
-    "context_bundle": 4,
-    "chapter_continuity_report": 4,
+    "chapter_production_run": 0,
+    "context_bundle": 0,
+    "chapter_continuity_report": 0,
     "feedback_backflow_plan": 0
   },
-  "acceptance_report": "data/runs/long-chain-acceptance-report-long-chain-acceptance-400-chapters-795bf659.json",
-  "created_at": "2026-06-30T16:59:17+00:00"
+  "acceptance_report": "data/runs/long-chain-acceptance-report-long-chain-acceptance-400-chapters-985e1454.json",
+  "created_at": "2026-06-30T17:49:07+00:00"
 }
