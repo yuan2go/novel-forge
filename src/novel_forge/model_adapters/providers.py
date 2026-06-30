@@ -26,6 +26,9 @@ from novel_forge.model_adapters.runtime import (
 )
 
 
+_CODEX_EXEC_HELP_CACHE: dict[tuple[str, ...], str] = {}
+
+
 class ProviderAdapter:
     """Base adapter for providers that do not implement in-process calls.
 
@@ -191,7 +194,8 @@ class LocalCodexCliWorkerMixin:
         return self.local_cli_enabled_by_default
 
     def _codex_command(self, *, schema_path: Path, output_path: Path, context: dict[str, Any]) -> list[str]:
-        command = [*self._codex_command_base(), "exec"]
+        command_base = self._codex_command_base()
+        command = [*command_base, "exec"]
         model = self._codex_model()
         profile = os.environ.get(f"{self.cli_env_prefix}_PROFILE", "").strip()
         sandbox = os.environ.get(f"{self.cli_env_prefix}_SANDBOX", "read-only").strip() or "read-only"
@@ -201,11 +205,11 @@ class LocalCodexCliWorkerMixin:
             command.extend(["--profile", profile])
         command.extend(["--sandbox", sandbox, "--skip-git-repo-check", "--json", "--output-schema", str(schema_path), "--output-last-message", str(output_path), "--color", "never"])
         isolation = self._codex_automation_isolation()
-        if isolation["ignore_user_config"]:
+        if isolation["ignore_user_config"] and _codex_exec_option_supported(command_base, "--ignore-user-config"):
             command.append("--ignore-user-config")
-        if isolation["ignore_rules"]:
+        if isolation["ignore_rules"] and _codex_exec_option_supported(command_base, "--ignore-rules"):
             command.append("--ignore-rules")
-        if _truthy(os.environ.get(f"{self.cli_env_prefix}_EPHEMERAL", "1")):
+        if _truthy(os.environ.get(f"{self.cli_env_prefix}_EPHEMERAL", "1")) and _codex_exec_option_supported(command_base, "--ephemeral"):
             command.append("--ephemeral")
         command.extend(["--cd", str(self._codex_workdir(context)), "-"])
         return command
@@ -851,6 +855,29 @@ def _read_openai_compatible_stream(response: Any, *, controller: Any, operation:
 
 def _truthy(value: str) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "on", "enabled"}
+
+
+def _codex_exec_option_supported(command_base: list[str], option: str) -> bool:
+    if not command_base or not option:
+        return False
+    key = tuple(command_base)
+    if key not in _CODEX_EXEC_HELP_CACHE:
+        try:
+            completed = subprocess.run(
+                [*command_base, "exec", "--help"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=5,
+                env=dict(os.environ),
+            )
+            _CODEX_EXEC_HELP_CACHE[key] = f"{completed.stdout}\n{completed.stderr}"
+        except Exception:
+            _CODEX_EXEC_HELP_CACHE[key] = ""
+    help_text = _CODEX_EXEC_HELP_CACHE.get(key, "")
+    if not help_text.strip():
+        return False
+    return option in help_text
 
 
 def _which_executable(executable: str) -> str:

@@ -2,31 +2,49 @@
   "project_id": "real-longchain-webnovel",
   "target_chapters": 100,
   "target_chars_per_chapter": 5000,
-  "generated_chapters": 5,
+  "generated_chapters": 30,
   "latest_run_records": [
     {
-      "chapter": 2,
-      "path": "generated/longchain-webnovel/chapters/chapter_002.md",
-      "asset_path": "data/drafts/draft-version-002-345a29a7.json",
-      "char_count": 7589,
+      "chapter": 6,
+      "path": "generated/longchain-webnovel/chapters/chapter_006.md",
+      "asset_path": "data/drafts/draft-version-006-3895822a.json",
+      "char_count": 7050,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
     },
     {
-      "chapter": 3,
-      "path": "generated/longchain-webnovel/chapters/chapter_003.md",
-      "asset_path": "data/drafts/draft-version-003-4e219cae.json",
-      "char_count": 7724,
+      "chapter": 7,
+      "path": "generated/longchain-webnovel/chapters/chapter_007.md",
+      "asset_path": "data/drafts/draft-version-007-8f8cf451.json",
+      "char_count": 7101,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
     },
     {
-      "chapter": 4,
-      "path": "generated/longchain-webnovel/chapters/chapter_004.md",
-      "asset_path": "data/drafts/draft-version-004-8f36ae98.json",
-      "char_count": 7616,
+      "chapter": 8,
+      "path": "generated/longchain-webnovel/chapters/chapter_008.md",
+      "asset_path": "data/drafts/draft-version-008-f9f5204f.json",
+      "char_count": 6925,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 9,
+      "path": "generated/longchain-webnovel/chapters/chapter_009.md",
+      "asset_path": "data/drafts/draft-version-009-4dfd950c.json",
+      "char_count": 6747,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 10,
+      "path": "generated/longchain-webnovel/chapters/chapter_010.md",
+      "asset_path": "data/drafts/draft-version-010-a0de12d8.json",
+      "char_count": 7372,
       "quality_score": 95.75,
       "warnings": [
         "chapter ending punctuation is weak"
@@ -34,14 +52,191 @@
       "cost_paths": []
     },
     {
-      "chapter": 5,
-      "path": "generated/longchain-webnovel/chapters/chapter_005.md",
-      "asset_path": "data/drafts/draft-version-005-17143064.json",
-      "char_count": 5281,
+      "chapter": 11,
+      "path": "generated/longchain-webnovel/chapters/chapter_011.md",
+      "asset_path": "data/drafts/draft-version-011-f6533d42.json",
+      "char_count": 6241,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 12,
+      "path": "generated/longchain-webnovel/chapters/chapter_012.md",
+      "asset_path": "data/drafts/draft-version-012-35dc1228.json",
+      "char_count": 5788,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 13,
+      "path": "generated/longchain-webnovel/chapters/chapter_013.md",
+      "asset_path": "data/drafts/draft-version-013-568ccddd.json",
+      "char_count": 7077,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 14,
+      "path": "generated/longchain-webnovel/chapters/chapter_014.md",
+      "asset_path": "data/drafts/draft-version-014-35a02628.json",
+      "char_count": 7039,
       "quality_score": 95.75,
       "warnings": [
         "chapter ending punctuation is weak"
       ],
+      "cost_paths": []
+    },
+    {
+      "chapter": 15,
+      "path": "generated/longchain-webnovel/chapters/chapter_015.md",
+      "asset_path": "data/drafts/draft-version-015-b0dd57ed.json",
+      "char_count": 6838,
+      "quality_score": 95.75,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "cost_paths": []
+    },
+    {
+      "chapter": 16,
+      "path": "generated/longchain-webnovel/chapters/chapter_016.md",
+      "asset_path": "data/drafts/draft-version-016-9c28f1a6.json",
+      "char_count": 6656,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 17,
+      "path": "generated/longchain-webnovel/chapters/chapter_017.md",
+      "asset_path": "data/drafts/draft-version-017-f591c1af.json",
+      "char_count": 5455,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 18,
+      "path": "generated/longchain-webnovel/chapters/chapter_018.md",
+      "asset_path": "data/drafts/draft-version-018-801d713d.json",
+      "char_count": 6774,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 19,
+      "path": "generated/longchain-webnovel/chapters/chapter_019.md",
+      "asset_path": "data/drafts/draft-version-019-41125410.json",
+      "char_count": 6918,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 20,
+      "path": "generated/longchain-webnovel/chapters/chapter_020.md",
+      "asset_path": "data/drafts/draft-version-020-81cd63f2.json",
+      "char_count": 6216,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 21,
+      "path": "generated/longchain-webnovel/chapters/chapter_021.md",
+      "asset_path": "data/drafts/draft-version-021-0d71b36e.json",
+      "char_count": 6550,
+      "quality_score": 95.75,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "cost_paths": []
+    },
+    {
+      "chapter": 22,
+      "path": "generated/longchain-webnovel/chapters/chapter_022.md",
+      "asset_path": "data/drafts/draft-version-022-2226b1e2.json",
+      "char_count": 7553,
+      "quality_score": 95.75,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "cost_paths": []
+    },
+    {
+      "chapter": 23,
+      "path": "generated/longchain-webnovel/chapters/chapter_023.md",
+      "asset_path": "data/drafts/draft-version-023-c43f97d8.json",
+      "char_count": 6818,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 24,
+      "path": "generated/longchain-webnovel/chapters/chapter_024.md",
+      "asset_path": "data/drafts/draft-version-024-cb93debe.json",
+      "char_count": 6114,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 25,
+      "path": "generated/longchain-webnovel/chapters/chapter_025.md",
+      "asset_path": "data/drafts/draft-version-025-a7a967f3.json",
+      "char_count": 6921,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 26,
+      "path": "generated/longchain-webnovel/chapters/chapter_026.md",
+      "asset_path": "data/drafts/draft-version-026-eedac502.json",
+      "char_count": 7268,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 27,
+      "path": "generated/longchain-webnovel/chapters/chapter_027.md",
+      "asset_path": "data/drafts/draft-version-027-d5eca0f1.json",
+      "char_count": 6096,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 28,
+      "path": "generated/longchain-webnovel/chapters/chapter_028.md",
+      "asset_path": "data/drafts/draft-version-028-659de144.json",
+      "char_count": 7098,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 29,
+      "path": "generated/longchain-webnovel/chapters/chapter_029.md",
+      "asset_path": "data/drafts/draft-version-029-e0a486a4.json",
+      "char_count": 7460,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 30,
+      "path": "generated/longchain-webnovel/chapters/chapter_030.md",
+      "asset_path": "data/drafts/draft-version-030-d91227d5.json",
+      "char_count": 6151,
+      "quality_score": 100,
+      "warnings": [],
       "cost_paths": []
     }
   ],
@@ -79,7 +274,192 @@
       "warnings": [
         "chapter ending punctuation is weak"
       ]
+    },
+    {
+      "chapter": 6,
+      "summary": "第6章完成：第六章铜槛青痕顾砚秋听了三声算盘，才伸手去碰那道铜槛。铜槛冷得不像金石，倒像从井底捞上来的骨头。指腹一贴，青痕便顺着他的皮肉往上爬了半寸，细细一线，像有人拿蚕丝在他手腕上量尺寸。“别动！”门外传来一声压低的喝止。沈槐从雾里钻出来，怀里抱着一只油布包，肩头全湿，头发上挂着水珠。他本来生得清瘦，这会儿被雾一裹，像刚从墙缝里抠出来的旧画。顾砚秋收回手，腕上青线已经...",
+      "char_count": 7050,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 7,
+      "summary": "第7章完成：第七章旧账无名更鼓敲过三下，南市后街的雾还没散。雾里先亮起来的不是灯，是一行字。顾砚秋站在巡遗司后院的石井旁，看着井沿上慢慢渗出的水痕。那水痕细得像虫爬，起初只是一条，转眼分作四横一竖，竟在青石上排成了一个半残的“欠”字。沈槐抱着昨夜从铜槛下取出的薄铜片，困得眼皮打架，见状立刻清醒了半截。“顾兄，”他咽了口唾沫，“这井是不是识字？”“井不识字。”顾砚秋蹲下，...",
+      "char_count": 7101,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 8,
+      "summary": "第8章完成：第八章漆印半干天亮以前，巡遗司最先醒的不是人，是门。后院通前厅那扇槐木门，平日推起来要哼两声，像老吏翻案卷。今日却自己开了半指宽，门缝里透出一线灰白，灰白里夹着一点红。顾砚秋正把井沿拓下来的水痕晾在灯下，见那红点一闪，手里的竹夹停住。沈槐已经扑过去，伸手就要拉门。“慢。”顾砚秋道。沈槐的手悬在门环上，苦着脸回头：“顾兄，我现在听见你说慢，心里就觉得门后不是人...",
+      "char_count": 6925,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 9,
+      "summary": "第9章完成：第九章账页里少了一横巡遗司的门开了半指宽，红点伏在门缝里，不像血，更像有人把一粒朱砂塞进木纹。沈槐的手还悬着，半晌不敢动，嘴上却不肯输：“顾兄，这门若是自己想进仕途，咱们是不是该给它递个门生帖？”顾砚秋没笑。他把灯拨亮些，灯芯“噼”地吐出一粒黑花，照见门下灰尘被压出两道极细的线。线从外头进来，到门缝前断了，像有东西拖着一根湿线走到此处，忽然没了重量。“不是门...",
+      "char_count": 6747,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 10,
+      "summary": "第10章完成：第十章红泥账门缝里的红点没有再动。可越是不动，越叫人心里没底。夜档房里本就冷，旧架子挨着旧架子，纸灰气像多年没散的病。灯火压在门板上，那一点朱红便像在灯下睁着眼。顾砚秋蹲下去，先没碰门，只从袖中取出一枚竹夹。竹夹头磨得极薄，是他平日翻残卷用的，碰到烂纸不会带走字皮。沈槐在旁边伸长脖子，声音压得比灯芯还细：“顾兄，你若夹出一颗眼珠来，烦请先告诉我一声，我好把祖...",
+      "char_count": 7372,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 11,
+      "summary": "第11章完成：第十一章账门旧墨红泥账门后头没有眼珠。顾砚秋用竹夹把那点朱红挑起来时，沈槐已经把半张脸藏到灯后，只露出一只眼，像替自己先留一条退路。朱红薄薄一片，贴在门缝里，外头是干的，里头却还带着潮意。灯一近，泥色里泛出细细金屑，像有人把旧印泥、朱砂和某种矿粉揉在一起，又故意压成米粒大小。“不是血。”顾砚秋道。沈槐立刻把脸放出来：“我就说嘛，血哪有这么讲究。真要流到门缝里...",
+      "char_count": 6241,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 12,
+      "summary": "第12章完成：第十二章缺行子时一过，坊墙外的更鼓像被雨水泡软了，咚一声，半天才散开。顾砚秋把那粒朱红泥屑封进小瓷盏，又在盏口贴了纸签。纸签上只写四个字：旧墨，金屑。沈槐蹲在旁边看他写，忍了半晌，终于道：“顾先生，你这字写得太稳了。要是我半夜从门缝里挑出这么个东西，手早抖成筛糠。你倒好，像给人记饭账。”“饭账能要命。”顾砚秋把笔搁下，“尤其是官仓饭账。”沈槐立刻闭嘴。院子里...",
+      "char_count": 5788,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 13,
+      "summary": "第13章完成：第十三章朱泥压线天快亮时，雨终于停了。夜档司的瓦沟里还滴着水，一滴一滴落在青石阶上，像有人躲在檐下数铜钱。顾砚秋没睡，灯芯挑过三回，案上摊着昨夜那张旧仓簿的残页，旁边摆着小瓷盏、竹镊、细麻绳和一块压纸的黑石。沈槐趴在门槛上，眼皮打架，嘴还不肯闲着：“先生，咱们夜里抓贼，白天还得给贼的泥巴看相。要我说，这泥巴要是会说话，第一句准是：官爷饶命，我只是被人捏了一下...",
+      "char_count": 7077,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 14,
+      "summary": "第14章完成：第十四章账眼里的人名天亮以后，夜档司反倒比夜里更像一座空衙门。昨夜雨水把院里的浮灰洗净了，青石缝里冒出几根细草，嫩得像刚从账页里抄出来的绿字。顾砚秋把旧仓簿残页压在窗下，等晨光斜斜照过朱泥印痕。泥线在光里显出两层颜色：外圈暗红，内里却有一点发黄，像掺了细粉。沈槐蹲在案边，捧着半个冷炊饼，眼睛跟着那印痕转。“先生，这红泥也分贫富？”“分。”顾砚秋用竹镊挑起一粒...",
+      "char_count": 7039,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 15,
+      "summary": "第15章完成：第十五章旧册缺一行夜档司的日头刚照到门槛，门外便来了三拨人。第一拨是南市库房的脚夫，抬着一口湿漉漉的木箱，箱角滴水，水里带着黑灰。第二拨是户曹的小吏，抱着一卷新封的文书，脸上挂着比封泥还硬的笑。第三拨最热闹，七八个街坊堵在影壁外，有卖豆浆的，有补鞋的，还有一个满头银簪的媒婆，人人都说自己昨夜亲眼见了怪事。沈槐站在门槛里，看看箱子，又看看文书，再看看街坊，低声...",
+      "char_count": 6838,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 16,
+      "summary": "第16章完成：第十六章账脚有泥沈槐把那口湿箱子搬进夜档司时，箱底在青砖上拖出一道黑线。线不直，像有人用烧焦的指头在地上写字，写到一半又改了主意。门外街坊看见这道线，声音立刻低下去。卖豆浆的方才还说昨夜亲眼看见河里浮着一盏无主灯，这会儿只敢把扁担往肩上一挪，装作自己只是路过。户曹来的小吏却不退。他姓钱，脸圆，袖口窄，笑起来很省油，仿佛多露一颗牙都要报销。他把新封文书往案上一...",
+      "char_count": 6656,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 17,
+      "summary": "第17章完成：第十七章灰线入册沈槐先看见的不是箱子里那卷账。他看见箱底那道黑泥线到了案脚下，忽然断了半寸。夜档司的青砖常年受潮，谁走一趟都能留下鞋印，可这道泥线不一样。它从箱底拖出来时黑得发亮，像河心淤泥，又在案脚前忽然变浅，末端还散着几粒白灰。白灰极细，落在砖缝里，不像墙灰，倒像筛过的米粉。钱小吏把文书按在案上，笑得圆圆满满：“沈录事，户曹只问一句，昨夜丢箱，今夜入档。...",
+      "char_count": 5455,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 18,
+      "summary": "第18章完成：第十八章账脚生尘沈槐把那几粒白灰收进纸角时，灯花正好爆了一声。夜档司里的人都抬头，仿佛那不是灯芯炸响，而是哪位看不见的官爷在堂上拍了惊堂木。钱小吏的笑僵在脸上，手还按着户曹催来的文牒，指节却不自觉缩了缩。案脚下的黑泥线已经干了一半。泥色发青，边缘有细碎亮点，像被水淘过的河砂。白灰却干净，极轻，落在泥尾巴旁边，偏偏没有被泥水染脏。这便不对。若是搬箱人鞋底带泥，...",
+      "char_count": 6774,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 19,
+      "summary": "第19章完成：第十九章灰不落账沈槐把纸角压在砚台下时，夜档司外的更鼓刚敲过二更。那几粒白灰静得不像案证，倒像几只没睡醒的小虫，偏偏把一屋子人都咬醒了。钱小吏先咽了口唾沫，手里那份户曹催牒被他捏出一道褶。他平日最会拿官话做人情，嘴上常说“规矩是死的，人是活的”，到了这会儿，规矩和人都像被那白灰按住了脖子。“沈书办，”他赔笑道，“这灰也许是墙粉。库房年久，掉点粉，不稀奇。”沈...",
+      "char_count": 6918,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 20,
+      "summary": "第20章完成：第二十章漏尺走慢沈槐回到夜档司时，铜漏旁的水声忽然断了一息。那一息短得像人眨眼，偏偏屋里所有人都听见了。夜档司靠水漏记时，漏壶一停，文牒上的时刻就没了根。没根的时刻最讨厌，案子能往前推，责任也能往后推，推到最后，总有一个倒霉人被推出来顶在门口。钱小吏正抱着一摞催牒打盹，脑袋一点，额头差点磕到案角。他猛地醒来，先看沈槐，再看漏壶，脸色比纸还薄。“沈书办，”他压...",
+      "char_count": 6216,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 21,
+      "summary": "第21章完成：第二十一章纸灰不落沈槐是在更鼓第二声后发现纸灰不肯落地的。夜档司后院有一口废井，井沿封着青砖，砖缝里长年浮着潮气。各坊送来的残牒、污册、误写的催票，凡不入正档又不能外流的，都会先堆在井旁的小灰炉里，等司里点验过，再由火房焚去。烧纸是件小事，小到钱小吏平日能一边打呵欠一边干，闭着眼也知道哪一摞火旺，哪一摞要添松针。可今夜那炉纸烧完以后，灰没有塌下去。灰片薄如蝉...",
+      "char_count": 6550,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 22,
+      "summary": "第22章完成：第二十二章竹签向北沈槐是在天亮前听见竹签响的。夜档司正堂檐下挂着一排报时竹签，平日里只管更鼓、火烛、门禁三样小事。竹签用的是老竹，剖得薄，风一过便相互轻敲，声轻得像有人拿指甲点桌面。可今夜无风，院里那棵病槐连叶尖都没动，檐下的竹签却一齐偏向北面，叮叮当当地响。更古怪的是，所有竹签的影子都偏向南。钱小吏抱着封好的灰袋站在台阶下，脸色比灰还差：“沈哥，这玩意儿也...",
+      "char_count": 7553,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 23,
+      "summary": "第23章完成：第二十三章瓦声过桥沈槐把那枚指北的竹签取下来时，天色刚泛白。夜档司的院子平日里不大，清晨一亮，所有破旧都显得有出处：墙皮是雨年剥的，石阶是脚底磨的，檐角的鸟窝是没人有闲心拆的。可今日不同，院里一排竹签还挂着，影子齐齐落向南，签身却都微微朝北，像一群被人拽住脖子的瘦小卒子。钱小吏抱着灰袋，眼睛一夜没合，见沈槐用布包住竹签，忙问：“沈哥，咱们是不是该请个会念咒的...",
+      "char_count": 6818,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 24,
+      "summary": "第24章完成：第二十四章纸灯照井沈槐把北指竹签收进夜档司的木匣时，匣底忽然响了一声。不是木头受潮的闷响，也不是虫蛀梁柱的细碎声，而像有一粒小石子落进空井，叮地一下，声音清亮，转眼又被深处吞了。钱小吏正抱着灰袋打瞌睡，听见这一声，差点把袋口倒扣在自己头上。他抬头看天，又看地，最后看那只木匣，脸色比灰还灰：“沈哥，咱们夜档司什么时候养井了？”“你少给公家添产业。”沈槐按住匣盖...",
+      "char_count": 6114,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 25,
+      "summary": "第25章完成：第二十五章雨印过坊沈槐把木匣重新扣紧时，匣底那声空井似的回响已经没了。可没了不等于平安。夜档司里最怕的不是东西响，响了还能找响处；最怕的是它忽然懂事，知道在人眼前装死。钱小吏抱着灰袋，站在门边不敢进也不敢退，活像被衙门口石狮子借了胆又马上讨回去：“沈哥，它刚才真响了。我耳朵虽不值钱，但还没到替木匣作伪证的年纪。”“值不值钱，得看谁来收。”沈槐把北指竹签从匣中...",
+      "char_count": 6921,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 26,
+      "summary": "第26章完成：第二十六章铁尺量灯夜档司的灯，在三更后向来比人有精神。人熬到这会儿，眼皮先议和，腰背后投降，只有嘴还肯替命硬撑两句。灯不一样，豆火小小一粒，偏偏照得案上灰纹、纸角水痕、木匣铜扣都分外清楚，像怕谁赖账。沈槐盯着木匣看了半盏茶。匣子不响了。方才在雨印坊外，那一声空井回音像从城底传上来，震得北指竹签都偏了一线。如今它却安安稳稳卧在案头，若不是匣底还有一圈细湿的灰印...",
+      "char_count": 7268,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 27,
+      "summary": "第27章完成：第二十七章灰线过桥卯正之前，城南的瓦桥先醒。不是人醒，是桥下那排旧水尺醒。青石桥洞里本来嵌着七根铜钉，专给河房记涨落，年月久了，铜面青绿，像七只闭眼的虫。今夜雨停之后，巡河小吏去量水，提灯一照，七根铜钉齐齐往外冒了半寸。小吏当场把尺杆丢进河里。这也怪不得他。人在夜里胆子有数，官给的胆子另算，通常只够白天用。沈槐赶到瓦桥时，桥头已经挤满了人。卖热浆的挑子靠在柳...",
+      "char_count": 6096,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 28,
+      "summary": "第28章完成：第二十八章铜铃不开口瓦桥的七枚铜钉还没按回去，城东的素绸坊先出了第二桩怪事。卯正刚过，坊门外的报时铜铃自己响了三声。这铜铃不是寺观里的大钟，也不是巡夜人的更铃，只比酒盏大一圈，吊在素绸坊南门檐下，专给染户、织户、验色吏三方约时用。城东做绸，怕火，怕潮，怕客商赖账，最怕官验时辰说不清。于是旧年定下一条小规矩：每回开染缸、收绸匹、封色票，都敲铃记时，铃下有木牌，...",
+      "char_count": 7098,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 29,
+      "summary": "第29章完成：第二十九章染票上多出来的手印素绸坊的铜铃响过三声，城东半条街都像被人掐住了嗓子。铃声不大，却怪在不该响。那只铜铃吊在南门檐下，铃舌用一根细麻绳牵着，绳头平日绕在木牌后，只有验色吏、坊正、当值染头三人能解。昨夜三更之后，素绸坊封门，门栓上了朱泥，墙脚撒了白灰，连看门老秦都抱着火叉睡在门洞里。卯正刚到，天还没亮透，街上挑水的、送浆的、买早饼的，齐齐听见铃响。一声...",
+      "char_count": 7460,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 30,
+      "summary": "第30章完成：第三十章银灰里藏着一粒米天亮以后，素绸坊没有开门。这件事比铜铃夜响还要怪。城东做绸的地方，最怕两样东西：一怕火，二怕误时。火烧一匹，赔一匹；误了时辰，赔的就不止绸，是整条街的饭碗。染缸要趁水温，浆布要趁湿气，铺面掌柜等着样绸挂门，巷口脚夫等着挑担领钱。素绸坊平日里卯初就有人推门，今早却门缝紧闭，朱泥封条还贴在横栓上，像一张没睡醒的嘴。封条下面，挤着一圈人。卖...",
+      "char_count": 6151,
+      "warnings": [],
+      "quality_score": 100
     }
   ],
-  "updated_at": "2026-06-30T13:03:30+00:00"
+  "updated_at": "2026-06-30T15:49:05+00:00"
 }
