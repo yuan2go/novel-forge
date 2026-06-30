@@ -38,6 +38,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 top_k=request.top_k,
                 token_budget=request.token_budget,
                 backend=request.backend,
+                retrieval_backend=request.retrieval_backend,
+                memory_levels=request.memory_levels,
+                kg_context_enabled=request.kg_context,
+                quality_memory_enabled=request.quality_memory,
                 context_profile=request.context_profile,
                 workspace_path=request.workspace_path,
             )

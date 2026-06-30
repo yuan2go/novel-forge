@@ -87,6 +87,8 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/novel-kg/context",
                 "/product/novel-kg/gate",
                 "/product/novel-kg/semantic-extraction",
+                "/product/novel-kg/identity-resolution",
+                "/product/novel-kg/identity-resolution/adjudicate",
                 "/product/novel-kg/dirty",
                 "/product/novel-kg/refresh",
                 "/product/editor/artifacts",

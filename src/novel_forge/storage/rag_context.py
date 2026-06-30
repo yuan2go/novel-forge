@@ -91,6 +91,8 @@ class RagContextBuilder:
         query: str | None = None,
         top_k: int | None = None,
         backend: str | None = None,
+        memory_levels: list[str] | None = None,
+        quality_memory: bool = True,
     ) -> dict[str, Any]:
         requested_top_k = int(top_k or self.default_top_k)
         if requested_top_k < 1:
@@ -99,10 +101,15 @@ class RagContextBuilder:
         source_path = _relative_path(self.storage, input_path) if input_path else ""
         query_text = _compact_text(query or _default_query(input_asset), limit=1200) or input_asset.title or input_asset.id
         scope = _project_scope_for_asset(self.storage, input_asset.to_dict(), source_path)
+        selected_memory_levels = _normalized_memory_levels(memory_levels)
+        if quality_memory and "L5" not in selected_memory_levels:
+            selected_memory_levels.append("L5")
         ranked, actual_backend, backend_attempts = self._ranked_candidates(
             query_text,
             limit=max(requested_top_k * 8, 40),
             backend=requested_backend,
+            project_id=str(scope.get("project_id", "")),
+            memory_levels=selected_memory_levels,
         )
         items = self._select_items(ranked, input_asset, source_path, scope, requested_top_k, query_text)
         if len(items) < requested_top_k:
@@ -124,6 +131,8 @@ class RagContextBuilder:
             "requested_backend": requested_backend,
             "retrieval_backend": actual_backend,
             "backend_attempts": backend_attempts,
+            "memory_levels": selected_memory_levels,
+            "quality_memory_enabled": bool(quality_memory),
             "project_id": scope.get("project_id", ""),
             "workspace_path": scope.get("workspace_path", ""),
             "source_asset_id": input_asset.id,
@@ -143,8 +152,9 @@ class RagContextBuilder:
             },
         }
 
-    def _ranked_candidates(self, query: str, limit: int, backend: str) -> tuple[list[dict[str, Any]], str, list[dict[str, Any]]]:
+    def _ranked_candidates(self, query: str, limit: int, backend: str, *, project_id: str = "", memory_levels: list[str] | None = None) -> tuple[list[dict[str, Any]], str, list[dict[str, Any]]]:
         attempts: list[dict[str, Any]] = []
+        levels = memory_levels or []
         if backend == "auto":
             for candidate in _auto_backend_order():
                 if candidate in {"pgvector", "hybrid"}:
@@ -154,9 +164,10 @@ class RagContextBuilder:
                         report = hybrid_retrieve(
                             self.storage,
                             query=query,
-                            project_id="",
+                            project_id=project_id,
                             retrieval_backend="pgvector",
                             limit=limit,
+                            levels=levels,
                             persist=False,
                         )
                         results = [_rag_result_from_hybrid(item) for item in report.get("results", []) if isinstance(item, dict)]
@@ -171,7 +182,10 @@ class RagContextBuilder:
                     if health.get("ok"):
                         try:
                             settings = self.settings or IndustrialSettings.from_env(root=self.storage.root)
-                            results = qdrant_search_assets(self.storage, settings, query=query, limit=limit)
+                            results = _merge_ranked_results(
+                                qdrant_search_assets(self.storage, settings, query=query, limit=limit),
+                                _memory_ranked_results(self.storage, query=query, project_id=project_id, levels=levels, limit=limit),
+                            )
                             attempts.append({"backend": "qdrant", "ok": True, "result_count": len(results)})
                             if results:
                                 return results, "qdrant", attempts
@@ -182,7 +196,10 @@ class RagContextBuilder:
                     continue
                 if candidate == "local":
                     try:
-                        results = vector_search_assets(self.storage, query=query, limit=limit)
+                        results = _merge_ranked_results(
+                            vector_search_assets(self.storage, query=query, limit=limit),
+                            _memory_ranked_results(self.storage, query=query, project_id=project_id, levels=levels, limit=limit),
+                        )
                         attempts.append({"backend": "local", "ok": True, "result_count": len(results)})
                         return results, "local", attempts
                     except Exception as exc:
@@ -195,9 +212,10 @@ class RagContextBuilder:
                 report = hybrid_retrieve(
                     self.storage,
                     query=query,
-                    project_id="",
+                    project_id=project_id,
                     retrieval_backend=backend,
                     limit=limit,
+                    levels=levels,
                     persist=False,
                 )
                 results = [_rag_result_from_hybrid(item) for item in report.get("results", []) if isinstance(item, dict)]
@@ -212,7 +230,7 @@ class RagContextBuilder:
             if health.get("ok"):
                 try:
                     settings = self.settings or IndustrialSettings.from_env(root=self.storage.root)
-                    results = qdrant_search_assets(self.storage, settings, query=query, limit=limit)
+                    results = _merge_ranked_results(qdrant_search_assets(self.storage, settings, query=query, limit=limit), _memory_ranked_results(self.storage, query=query, project_id=project_id, levels=levels, limit=limit))
                     attempts.append({"backend": "qdrant", "ok": True, "result_count": len(results)})
                     return results, "qdrant", attempts
                 except Exception as exc:
@@ -224,7 +242,7 @@ class RagContextBuilder:
                 if backend == "qdrant":
                     raise RuntimeError(str(attempts[-1]["error"]))
         try:
-            results = vector_search_assets(self.storage, query=query, limit=limit)
+            results = _merge_ranked_results(vector_search_assets(self.storage, query=query, limit=limit), _memory_ranked_results(self.storage, query=query, project_id=project_id, levels=levels, limit=limit))
             attempts.append({"backend": "local", "ok": True, "result_count": len(results)})
             return results, "local", attempts
         except Exception as exc:
@@ -373,8 +391,10 @@ def build_rag_context(
     top_k: int = DEFAULT_RAG_TOP_K,
     backend: str = "auto",
     settings: IndustrialSettings | None = None,
+    memory_levels: list[str] | None = None,
+    quality_memory: bool = True,
 ) -> dict[str, Any]:
-    return RagContextBuilder(storage, backend=backend, settings=settings).build(input_asset, input_path=input_path, query=query, top_k=top_k)
+    return RagContextBuilder(storage, backend=backend, settings=settings).build(input_asset, input_path=input_path, query=query, top_k=top_k, memory_levels=memory_levels, quality_memory=quality_memory)
 
 
 def retrieval_metadata(context: dict[str, Any]) -> dict[str, Any]:
@@ -696,6 +716,49 @@ def _rag_result_from_hybrid(item: dict[str, Any]) -> dict[str, Any]:
         "score": float(item.get("score", 0.0) or 0.0),
         "ranker": str(item.get("backend", "") or "hybrid-local-projection"),
     }
+
+
+def _memory_ranked_results(storage: LocalStorage, *, query: str, project_id: str, levels: list[str], limit: int) -> list[dict[str, Any]]:
+    if not levels:
+        return []
+    try:
+        from novel_forge.modules.long_memory import retrieve_memory
+
+        report = retrieve_memory(storage, query=query, project_id=project_id, levels=levels, limit=limit, persist_report=False)
+    except Exception:
+        return []
+    rows: list[dict[str, Any]] = []
+    for item in report.get("results", []) if isinstance(report.get("results", []), list) else []:
+        if not isinstance(item, dict):
+            continue
+        rows.append(
+            {
+                "path": str(item.get("path", "")),
+                "score": float(item.get("score", 0.0) or 0.0),
+                "ranker": f"long_memory:{item.get('level', '')}",
+            }
+        )
+    return rows
+
+
+def _merge_ranked_results(primary: list[dict[str, Any]], memory: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_path: dict[str, dict[str, Any]] = {}
+    for item in [*primary, *memory]:
+        path = str(item.get("path", "")).strip()
+        if not path:
+            continue
+        existing = by_path.get(path)
+        if not existing or float(item.get("score", 0) or 0) > float(existing.get("score", 0) or 0):
+            by_path[path] = item
+    return sorted(by_path.values(), key=lambda row: (-float(row.get("score", 0) or 0), str(row.get("path", ""))))
+
+
+def _normalized_memory_levels(levels: list[str] | None) -> list[str]:
+    values = [str(item).strip().upper() for item in levels or [] if str(item).strip()]
+    if not values:
+        values = ["L0", "L1", "L2", "L3", "L4", "L5"]
+    allowed = {"L0", "L1", "L2", "L3", "L4", "L5"}
+    return [item for item in _dedupe(values) if item in allowed]
 
 
 def _auto_backend_order() -> list[str]:

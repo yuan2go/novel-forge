@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.agent_messages import acknowledge_agent_message, create_agent_conversation_trace, replay_agent_messages, send_agent_message
 from novel_forge.modules.long_memory import create_memory_record, retrieve_memory, select_memory_for_node
-from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, resolve_model_route
+from novel_forge.modules.model_router import call_model_via_router, create_model_route, execute_model_gateway_call, resolve_model_route
 from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve, migrate_pgvector_online, pgvector_capabilities, pgvector_operations_plan
 from novel_forge.modules.prompt_registry import bind_prompt_to_node, create_prompt_version_asset, release_prompt_version, resolve_prompt
 from novel_forge.modules.state_bus import create_state_snapshot, detect_state_conflicts, record_state_event, replay_state_events
@@ -102,6 +102,48 @@ class NovelOSNewCapabilitiesTests(unittest.TestCase):
             failed_gates = [row for row in rows if row.get("type") == "gate_result" and row.get("content", {}).get("gate_kind") == "provider_runtime_guard" and row.get("content", {}).get("status") == "failed"]
             self.assertTrue(failed_calls)
             self.assertTrue(failed_gates)
+
+    def test_legacy_adapter_call_resolves_model_router_before_execution(self):
+        class ReviewAdapter:
+            name = "unit-review-adapter"
+
+            def review(self, content, context=None):
+                return {
+                    "score": 82,
+                    "summary": "route checked",
+                    "strengths": ["clear route evidence"],
+                    "weaknesses": [],
+                    "issues": [],
+                    "revision_suggestions": [],
+                    "risk_level": "low",
+                    "next_action": "accept",
+                    "provider": "unit-provider",
+                    "model": "unit-model",
+                    "usage": {"input_tokens": 4, "output_tokens": 6, "total_tokens": 10},
+                    "route_path_seen": (context or {}).get("model_route", {}).get("path", ""),
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "legacy-router-project"
+            create_model_route(storage, task_type="review", provider="unit-provider", model_name="unit-model", project_id=project_id)
+
+            result = call_model_via_router(
+                storage,
+                adapter=ReviewAdapter(),
+                operation="review",
+                payload="review this",
+                task_type="review",
+                project_id=project_id,
+                trace={"trace_id": "trace-legacy-route"},
+            )
+
+            self.assertIn("/runs/", result["route_path_seen"])
+            self.assertIn("/runs/", result["model_route_resolution_path"])
+            rows = [storage.read_json(path) for path in storage.list_json("runs")]
+            self.assertTrue(any(row.get("type") == "model_route_resolution" for row in rows))
+            self.assertTrue(any(row.get("type") == "model_call_log" and row.get("content", {}).get("operation") == "review" for row in rows))
 
     def test_tool_gateway_state_bus_and_agent_messages(self):
         with tempfile.TemporaryDirectory() as tmp:

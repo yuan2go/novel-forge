@@ -6,6 +6,7 @@ import { FeatureShell } from "../../shared/feature-shell";
 import type { AssetRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import {
+  adjudicateIdentityCandidate,
   createIdentityResolution,
   createSemanticExtraction,
   createNovelKGSnapshot,
@@ -61,6 +62,9 @@ export function NovelKGWorkbenchPage() {
   const timeline = [...(graph.timelines || []), ...(graph.events || [])].slice(0, 36);
   const foreshadowing = graph.foreshadowing || [];
   const conflictRows = (conflicts.conflicts as Array<Record<string, unknown>> | undefined) || [];
+  const identityContent = ((identityResult?.asset as Record<string, unknown> | undefined)?.content as Record<string, unknown> | undefined) || {};
+  const identityQueue = (identityContent.merge_queue as Array<Record<string, unknown>> | undefined) || [];
+  const identityResolutionPath = String(identityResult?.path || "");
 
   async function refresh(nextProjectId = projectId) {
     const [projectRows, kgGraph, conflictResult, dirtyResult, assetRows] = await loadNovelKGData(nextProjectId);
@@ -230,6 +234,43 @@ export function NovelKGWorkbenchPage() {
               String(conflict.message || "-"),
               String(conflict.recommendation || "-")
             ])}
+          />
+          <DataTable
+            emptyText="暂无待人工合并的 KG identity candidate"
+            columns={["别名", "节点", "证据", "操作"]}
+            rows={identityQueue.slice(0, 8).map((candidate) => {
+              const candidateId = String(candidate.candidate_id || "");
+              const aliases = (candidate.aliases as string[] | undefined) || [];
+              const evidence = (candidate.evidence_spans as Array<Record<string, unknown>> | undefined) || [];
+              return [
+                <span key={`${candidateId}-alias`} className="pathText">{String(candidate.normalized_alias || aliases[0] || "-")}</span>,
+                `${((candidate.node_ids as string[] | undefined) || []).length} nodes · ${Math.round(Number(candidate.confidence ?? 0) * 100)}%`,
+                String(evidence[0]?.snippet || evidence[0]?.source_path || "-"),
+                <span key={`${candidateId}-actions`} className="inlineActions">
+                  <button
+                    className="secondaryButton compactButton"
+                    disabled={busy || !identityResolutionPath || !candidateId}
+                    onClick={() => runAction(async () => setIdentityResult(await adjudicateIdentityCandidate({ resolutionPathOrId: identityResolutionPath, candidateId, decision: "approve", note: "operator approved in KG workbench", applyMerge: true })), "identity merge 已批准并应用", false)}
+                  >
+                    批准
+                  </button>
+                  <button
+                    className="secondaryButton compactButton"
+                    disabled={busy || !identityResolutionPath || !candidateId}
+                    onClick={() => runAction(async () => setIdentityResult(await adjudicateIdentityCandidate({ resolutionPathOrId: identityResolutionPath, candidateId, decision: "reject", note: "operator rejected in KG workbench" })), "identity merge 已驳回", false)}
+                  >
+                    驳回
+                  </button>
+                  <button
+                    className="secondaryButton compactButton"
+                    disabled={busy || !identityResolutionPath || !candidateId}
+                    onClick={() => runAction(async () => setIdentityResult(await adjudicateIdentityCandidate({ resolutionPathOrId: identityResolutionPath, candidateId, decision: "defer", note: "operator deferred in KG workbench" })), "identity merge 已延期", false)}
+                  >
+                    延期
+                  </button>
+                </span>
+              ];
+            })}
           />
         </div>
       </section>

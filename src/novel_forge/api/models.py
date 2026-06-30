@@ -230,6 +230,10 @@ class ContextBuildPlanRequest(BaseModel):
     top_k: int = 8
     token_budget: int = 4000
     backend: str = "auto"
+    retrieval_backend: str | None = None
+    memory_levels: list[str] = Field(default_factory=lambda: ["L0", "L1", "L2", "L3", "L4", "L5"])
+    kg_context: bool = True
+    quality_memory: bool = True
     context_profile: str = "chapter_generation"
     workspace_path: str | None = None
 
@@ -571,6 +575,15 @@ class NovelKGIdentityResolutionRequest(BaseModel):
     project_id: str | None = None
     workspace_path: str | None = None
     min_confidence: float = 0.7
+
+
+class NovelKGIdentityAdjudicationRequest(BaseModel):
+    resolution_path_or_id: str
+    candidate_id: str
+    decision: str = "approve"
+    actor: str = "web-kg-workbench"
+    note: str = ""
+    apply_merge: bool = False
 
 
 class ChapterContinuityReportRequest(BaseModel):
@@ -1287,6 +1300,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "NovelKGGateRequest": NovelKGGateRequest,
         "NovelKGSemanticExtractionRequest": NovelKGSemanticExtractionRequest,
         "NovelKGIdentityResolutionRequest": NovelKGIdentityResolutionRequest,
+        "NovelKGIdentityAdjudicationRequest": NovelKGIdentityAdjudicationRequest,
         "ChapterContinuityReportRequest": ChapterContinuityReportRequest,
         "CanonPatchRequest": CanonPatchRequest,
         "CanonPatchApplyRequest": CanonPatchApplyRequest,

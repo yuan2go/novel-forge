@@ -21,7 +21,7 @@ from novel_forge.modules.common import resolve_path
 from novel_forge.modules.agent_runs import create_agent_failure_report, update_agent_run_status
 from novel_forge.modules.creative_assets import create_creative_asset
 from novel_forge.modules.ingestion.service import discover_source_files
-from novel_forge.modules.runtime_policy import runtime_policy_envelope
+from novel_forge.modules.model_router import call_model_via_router
 from novel_forge.modules.source_intake import (
     create_github_source_note,
     list_github_knowledge_sources,
@@ -2658,21 +2658,24 @@ def _review_handoff_output_quality(storage: LocalStorage, handoff: dict[str, Any
         adapter = model_from_env("review")
         prompt = json.dumps(payload, ensure_ascii=False, sort_keys=True)
         trace = {"trace_id": str(handoff.get("id", "")) or "handoff-review", "parent_span_id": str(handoff.get("id", "")) or "handoff-review"}
-        with runtime_policy_envelope(
-            storage,
-            operation="handoff_review",
-            input_assets=[handoff_path],
-            trace=trace,
-        ) as envelope:
-            review = validate_model_output("review", adapter.review(prompt, {**payload, "runtime_operation": "handoff_review"}))
-            usage = review.get("usage") if isinstance(review.get("usage"), dict) else estimate_usage_from_text(prompt, json.dumps(review, ensure_ascii=False), usage_source="handoff_review_estimated")
-            envelope.record_model_result(
-                provider=str(review.get("provider") or getattr(adapter, "name", "")),
-                model=str(review.get("model") or getattr(adapter, "name", "")),
-                usage=usage,
-                cost=review.get("cost") if isinstance(review.get("cost"), dict) else {"amount": 0.0, "currency": "USD", "source": "handoff_review"},
-                source_id=str(handoff.get("id", "")),
-            )
+        review = validate_model_output(
+            "review",
+            call_model_via_router(
+                storage,
+                adapter=adapter,
+                operation="handoff_review",
+                payload=prompt,
+                context=payload,
+                task_type="review",
+                input_assets=[handoff_path],
+                trace=trace,
+            ),
+        )
+        usage = review.get("usage") if isinstance(review.get("usage"), dict) else estimate_usage_from_text(prompt, json.dumps(review, ensure_ascii=False), usage_source="handoff_review_estimated")
+        if "usage" not in review:
+            review["usage"] = usage
+        if "cost" not in review:
+            review["cost"] = {"amount": 0.0, "currency": "USD", "source": "handoff_review"}
         score = float(review.get("score", 0))
         issues = review.get("issues", []) if isinstance(review.get("issues", []), list) else []
         return {

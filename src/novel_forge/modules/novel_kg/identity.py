@@ -109,6 +109,99 @@ def create_kg_identity_resolution(
     return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
 
 
+def adjudicate_kg_identity_candidate(
+    storage: LocalStorage,
+    *,
+    resolution_path_or_id: str | Path,
+    candidate_id: str,
+    decision: str,
+    actor: str = "operator",
+    note: str = "",
+    apply_merge: bool = False,
+) -> dict[str, Any]:
+    """Record and optionally apply a human identity-merge decision.
+
+    The KG snapshot remains immutable. Approved decisions are materialized as an
+    identity overlay inside the resolution asset so workflow gates and context
+    builders can treat the merge as reviewed evidence without rewriting the
+    source graph.
+    """
+
+    storage.ensure_layout()
+    path = _resolve_identity_resolution(storage, resolution_path_or_id)
+    data = storage.read_json(path)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    normalized_decision = str(decision or "").strip().lower()
+    if normalized_decision not in {"approve", "reject", "defer"}:
+        raise ValueError("decision must be approve, reject, or defer")
+    candidate = _find_candidate(content, candidate_id)
+    if not candidate:
+        raise ValueError(f"identity candidate not found: {candidate_id}")
+    now = utc_now()
+    should_apply = apply_merge or normalized_decision == "approve"
+    status = "approved" if normalized_decision == "approve" else "rejected" if normalized_decision == "reject" else "deferred"
+    adjudication = {
+        "candidate_id": candidate_id,
+        "decision": normalized_decision,
+        "status": status,
+        "actor": actor,
+        "note": note,
+        "apply_merge": should_apply,
+        "canonical_identity_id": candidate.get("canonical_identity_id", ""),
+        "node_ids": candidate.get("node_ids", []),
+        "aliases": candidate.get("aliases", []),
+        "confidence": candidate.get("confidence", 0),
+        "evidence_spans": candidate.get("evidence_spans", []),
+        "created_at": now,
+    }
+    adjudications = content.get("adjudications", []) if isinstance(content.get("adjudications", []), list) else []
+    adjudications = [item for item in adjudications if not (isinstance(item, dict) and item.get("candidate_id") == candidate_id)]
+    adjudications.append(adjudication)
+    content["adjudications"] = adjudications
+    _mark_candidate_status(content, candidate_id, status)
+    if should_apply:
+        overlay = content.get("identity_overlay", {}) if isinstance(content.get("identity_overlay", {}), dict) else {}
+        applied = overlay.get("applied_merges", []) if isinstance(overlay.get("applied_merges", []), list) else []
+        applied = [item for item in applied if not (isinstance(item, dict) and item.get("candidate_id") == candidate_id)]
+        applied.append(
+            {
+                "candidate_id": candidate_id,
+                "canonical_identity_id": candidate.get("canonical_identity_id", ""),
+                "kind": candidate.get("kind", ""),
+                "normalized_alias": candidate.get("normalized_alias", ""),
+                "node_ids": candidate.get("node_ids", []),
+                "aliases": candidate.get("aliases", []),
+                "source_paths": candidate.get("source_paths", []),
+                "confidence": candidate.get("confidence", 0),
+                "evidence_spans": candidate.get("evidence_spans", []),
+                "applied_by": actor,
+                "applied_at": now,
+                "note": note,
+            }
+        )
+        overlay["applied_merges"] = applied
+        overlay["node_to_canonical_identity"] = _node_to_canonical_overlay(applied)
+        overlay["updated_at"] = now
+        content["identity_overlay"] = overlay
+    content["merge_queue"] = _open_merge_queue(content)
+    content["summary"] = _resolution_summary(content)
+    content["status"] = "needs_review" if content["merge_queue"] else "ready"
+    content["updated_at"] = now
+    data["content"] = content
+    data["updated_at"] = now
+    data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], "identity-adjudicated", content["status"]])
+    storage.write_json(path, data)
+    return {
+        "path": _display_path(storage.root, path),
+        "candidate_id": candidate_id,
+        "decision": normalized_decision,
+        "status": content["status"],
+        "adjudication": adjudication,
+        "identity_overlay": content.get("identity_overlay", {}),
+        "asset": data,
+    }
+
+
 def normalize_identity_name(value: str) -> str:
     text = str(value or "").strip().lower()
     text = re.sub(r"\s+", "", text)
@@ -123,6 +216,79 @@ def _load_snapshot_graph(storage: LocalStorage, snapshot_path: str | Path | None
     if not isinstance(data, dict) or data.get("type") != "novel_kg_snapshot":
         raise ValueError(f"snapshot_path must point to novel_kg_snapshot: {snapshot_path}")
     return data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+
+
+def _resolve_identity_resolution(storage: LocalStorage, path_or_id: str | Path) -> Path:
+    candidate = resolve_path(storage.root, path_or_id)
+    if candidate.exists():
+        data = storage.read_json(candidate)
+        if isinstance(data, dict) and data.get("type") == "kg_identity_resolution":
+            return candidate
+    needle = str(path_or_id)
+    for path in storage.list_json("continuity"):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if data.get("type") == "kg_identity_resolution" and (str(data.get("id", "")) == needle or str(content.get("resolution_id", "")) == needle):
+            return path
+    raise FileNotFoundError(f"kg_identity_resolution not found: {path_or_id}")
+
+
+def _find_candidate(content: dict[str, Any], candidate_id: str) -> dict[str, Any] | None:
+    for key in ["candidates", "merge_queue", "auto_merge_candidates"]:
+        for item in content.get(key, []) if isinstance(content.get(key, []), list) else []:
+            if isinstance(item, dict) and str(item.get("candidate_id", "")) == str(candidate_id):
+                return item
+    return None
+
+
+def _mark_candidate_status(content: dict[str, Any], candidate_id: str, status: str) -> None:
+    for key in ["candidates", "merge_queue", "auto_merge_candidates"]:
+        rows = content.get(key, []) if isinstance(content.get(key, []), list) else []
+        for item in rows:
+            if isinstance(item, dict) and str(item.get("candidate_id", "")) == str(candidate_id):
+                item["review_status"] = status
+                item["requires_human_gate"] = status == "deferred"
+
+
+def _open_merge_queue(content: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = content.get("candidates", []) if isinstance(content.get("candidates", []), list) else []
+    return [
+        item
+        for item in rows
+        if isinstance(item, dict)
+        and item.get("requires_human_gate")
+        and str(item.get("review_status", "pending")) in {"", "pending", "deferred"}
+    ]
+
+
+def _resolution_summary(content: dict[str, Any]) -> dict[str, Any]:
+    candidates = content.get("candidates", []) if isinstance(content.get("candidates", []), list) else []
+    adjudications = content.get("adjudications", []) if isinstance(content.get("adjudications", []), list) else []
+    overlay = content.get("identity_overlay", {}) if isinstance(content.get("identity_overlay", {}), dict) else {}
+    applied = overlay.get("applied_merges", []) if isinstance(overlay.get("applied_merges", []), list) else []
+    return {
+        "candidate_count": len(candidates),
+        "human_gate_count": len(_open_merge_queue(content)),
+        "auto_merge_count": len(content.get("auto_merge_candidates", [])) if isinstance(content.get("auto_merge_candidates", []), list) else 0,
+        "adjudicated_count": len(adjudications),
+        "approved_count": sum(1 for item in adjudications if isinstance(item, dict) and item.get("decision") == "approve"),
+        "rejected_count": sum(1 for item in adjudications if isinstance(item, dict) and item.get("decision") == "reject"),
+        "deferred_count": sum(1 for item in adjudications if isinstance(item, dict) and item.get("decision") == "defer"),
+        "applied_merge_count": len(applied),
+    }
+
+
+def _node_to_canonical_overlay(applied_merges: list[dict[str, Any]]) -> dict[str, str]:
+    overlay: dict[str, str] = {}
+    for merge in applied_merges:
+        canonical = str(merge.get("canonical_identity_id", ""))
+        for node_id in merge.get("node_ids", []) if isinstance(merge.get("node_ids", []), list) else []:
+            if str(node_id).strip() and canonical:
+                overlay[str(node_id)] = canonical
+    return overlay
 
 
 def _all_identity_nodes(graph: dict[str, Any]) -> list[dict[str, Any]]:

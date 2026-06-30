@@ -519,6 +519,21 @@ h3 {
   color: var(--error-text);
 }
 
+.inlineActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.compactButton {
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .primaryButton:hover {
   background: var(--accent-strong);
 }

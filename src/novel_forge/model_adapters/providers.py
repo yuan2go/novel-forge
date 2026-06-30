@@ -70,6 +70,7 @@ class ProviderAdapter:
             "required_env_vars": self.config.required_env_vars,
             "missing_env_vars": missing,
             "implemented": False,
+            "runtime_capabilities": _base_runtime_capabilities(self.config.provider),
             "message": "manual or base adapter only; no in-process model call is implemented",
         }
 
@@ -182,6 +183,11 @@ class LocalCodexCliWorkerMixin:
             "codex_home": self._codex_home_display(),
             "launch_command": self._launch_command_display(),
             "automation_isolation": self._codex_automation_isolation(),
+            "runtime_capabilities": _local_process_runtime_capabilities(
+                provider=self.config.provider,
+                configured=configured,
+                enabled=enabled,
+            ),
             "message": "ready for local Codex CLI worker" if configured else self._local_cli_disabled_message(enabled, executable),
         }
 
@@ -311,6 +317,7 @@ class OpenAICompatibleChatAdapter(ProviderAdapter):
             "model": self._model(),
             "sdk_streaming_supported": _openai_sdk_available(),
             "sdk_streaming_enabled": _provider_sdk_streaming_enabled({}, self),
+            "runtime_capabilities": _openai_compatible_runtime_capabilities({}, self),
             "message": "ready for JSON chat completions" if self._api_key() else "missing API key",
         }
 
@@ -329,7 +336,7 @@ class OpenAICompatibleChatAdapter(ProviderAdapter):
             "temperature": float(os.environ.get("NOVEL_FORGE_MODEL_TEMPERATURE", "0.3")),
             "response_format": {"type": "json_object"},
         }
-        streaming = _streaming_enabled(context_payload)
+        streaming = _streaming_enabled(context_payload, guard=guard)
         if streaming:
             request_payload["stream"] = True
             request_payload["stream_options"] = {"include_usage": True}
@@ -681,14 +688,94 @@ def _run_process_with_runtime_guard(
             raise
 
 
-def _streaming_enabled(context: dict[str, Any]) -> bool:
-    value = context.get("stream") if "stream" in context else context.get("provider_stream")
-    guard = context.get("provider_runtime_guard", {}) if isinstance(context.get("provider_runtime_guard", {}), dict) else {}
-    if value is None and "stream" in guard:
-        value = guard.get("stream")
-    if value is None:
-        value = os.environ.get("NOVEL_FORGE_PROVIDER_STREAMING", "")
-    return _truthy(str(value)) if value is not None else False
+def _streaming_enabled(context: dict[str, Any], *, guard: Any | None = None) -> bool:
+    value, explicit = _streaming_config_value(context)
+    if explicit:
+        return _truthy(str(value))
+    resolved_guard = guard or provider_runtime_guard_from_context(context if isinstance(context, dict) else {})
+    return _provider_guard_requires_live_stream(resolved_guard)
+
+
+def _streaming_config_value(context: dict[str, Any]) -> tuple[Any | None, bool]:
+    context_payload = context if isinstance(context, dict) else {}
+    if "stream" in context_payload:
+        return context_payload.get("stream"), True
+    if "provider_stream" in context_payload:
+        return context_payload.get("provider_stream"), True
+    guard = context_payload.get("provider_runtime_guard", {}) if isinstance(context_payload.get("provider_runtime_guard", {}), dict) else {}
+    if "stream" in guard:
+        return guard.get("stream"), True
+    env_value = os.environ.get("NOVEL_FORGE_PROVIDER_STREAMING", "")
+    if env_value != "":
+        return env_value, True
+    return None, False
+
+
+def _provider_guard_requires_live_stream(guard: Any) -> bool:
+    return any(
+        [
+            int(getattr(guard, "max_output_tokens", 0) or 0) > 0,
+            int(getattr(guard, "max_total_tokens", 0) or 0) > 0,
+            int(getattr(guard, "timeout_ms", 0) or 0) > 0,
+            bool(str(getattr(guard, "cancel_file", "") or "").strip()),
+            bool(getattr(guard, "cancel_requested", False)),
+        ]
+    )
+
+
+def _base_runtime_capabilities(provider: str) -> dict[str, Any]:
+    return {
+        "provider": provider,
+        "live_streaming": {"supported": False, "enabled": False, "transport": "none"},
+        "live_cancel": {"supported": False, "mechanism": "not_implemented"},
+        "usage_reporting": {"live": False, "final": False, "estimated": False},
+        "cost_reporting": {"precise_provider_cost": False, "estimated": False},
+    }
+
+
+def _local_process_runtime_capabilities(*, provider: str, configured: bool, enabled: bool) -> dict[str, Any]:
+    return {
+        "provider": provider,
+        "live_streaming": {"supported": False, "enabled": False, "transport": "process_poll"},
+        "live_cancel": {"supported": bool(enabled), "enabled": bool(configured), "mechanism": "process_kill_on_guard_violation"},
+        "usage_reporting": {"live": False, "final": True, "estimated": True, "source": "codex_stdout_or_estimated"},
+        "cost_reporting": {"precise_provider_cost": False, "estimated": True},
+        "guard_phases": ["start", "process_poll", "postflight"],
+    }
+
+
+def _openai_compatible_runtime_capabilities(context: dict[str, Any], adapter: OpenAICompatibleChatAdapter) -> dict[str, Any]:
+    context_payload = context if isinstance(context, dict) else {}
+    guard = provider_runtime_guard_from_context(context_payload)
+    streaming = _streaming_enabled(context_payload, guard=guard)
+    _, explicit_stream = _streaming_config_value(context_payload)
+    sdk_enabled = streaming and _provider_sdk_streaming_enabled(context_payload, adapter)
+    transport = "openai_sdk_stream" if sdk_enabled else "http_sse" if streaming else "json_postflight"
+    auto_guard_stream = streaming and not explicit_stream and _provider_guard_requires_live_stream(guard)
+    return {
+        "provider": adapter.config.provider,
+        "live_streaming": {
+            "supported": True,
+            "enabled": streaming,
+            "auto_enabled_by_guard": auto_guard_stream,
+            "transport": transport,
+            "sdk_supported": _openai_sdk_available(),
+            "sdk_enabled": sdk_enabled,
+        },
+        "live_cancel": {
+            "supported": streaming,
+            "enabled": streaming,
+            "mechanism": "stream_close_on_guard_violation" if streaming else "postflight_guard_only",
+        },
+        "usage_reporting": {
+            "live": streaming,
+            "final": True,
+            "estimated": True,
+            "source": "provider_stream_or_openai_usage" if streaming else "provider_usage_or_estimated",
+        },
+        "cost_reporting": {"precise_provider_cost": True, "estimated": True},
+        "guard_phases": ["start", "stream", "postflight"] if streaming else ["start", "postflight"],
+    }
 
 
 def _provider_sdk_streaming_enabled(context: dict[str, Any], adapter: OpenAICompatibleChatAdapter) -> bool:

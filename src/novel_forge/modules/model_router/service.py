@@ -260,6 +260,103 @@ def execute_model_gateway_call(
     }
 
 
+def call_model_via_router(
+    storage: LocalStorage,
+    *,
+    adapter: Any,
+    operation: str,
+    payload: Any,
+    context: dict[str, Any] | None = None,
+    task_type: str = "",
+    project_id: str = "",
+    workspace_path: str = "",
+    input_assets: list[str] | None = None,
+    output_assets: list[str] | None = None,
+    context_bundle_path: str = "",
+    prompt_id: str = "",
+    prompt_version: str = "",
+    trace: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Resolve ModelRouter before executing an adapter operation.
+
+    This is for legacy API/CLI/service paths that do not have an AgentRun and
+    therefore cannot use GuardedModelAdapter. Agent paths should keep using
+    GuardedModelAdapter, which now resolves ModelRouter internally.
+    """
+
+    routed_task = task_type or _task_type_for_operation(operation)
+    route = resolve_model_route(
+        storage,
+        task_type=routed_task,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        prompt_id=prompt_id,
+        prompt_version=prompt_version,
+        trace=trace,
+    )
+    context_payload = {**(context or {}), "model_route": _compact_route_for_context(route), "runtime_operation": operation}
+    started = utc_now()
+    try:
+        if operation == "generate":
+            result = adapter.generate(str(payload), context_payload)
+        elif operation == "analyze":
+            result = adapter.analyze(str(payload), context_payload)
+        elif operation in {"review", "handoff_review"}:
+            result = adapter.review(str(payload), context_payload)
+        elif operation == "revise":
+            review_payload = context_payload.get("review", {}) if isinstance(context_payload.get("review", {}), dict) else {}
+            result = adapter.revise(str(payload), review_payload, context_payload)
+        else:
+            raise ValueError(f"unsupported routed model operation: {operation}")
+    except Exception:
+        execute_model_gateway_call(
+            storage,
+            task_type=routed_task,
+            operation=operation,
+            prompt_id=prompt_id,
+            prompt_version=prompt_version,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            input_assets=input_assets or [],
+            output_assets=output_assets or [],
+            context_bundle_path=context_bundle_path,
+            usage={},
+            cost={"amount": 0.0, "currency": "USD", "source": "model_router_adapter_exception"},
+            status="failed",
+            trace=trace,
+        )
+        raise
+    usage = normalize_provider_usage(
+        result.get("usage", result.get("provider_usage", {})) if isinstance(result, dict) else {},
+        usage_source="model_router_adapter",
+    )
+    cost = result.get("cost") if isinstance(result, dict) and isinstance(result.get("cost"), dict) else {"amount": 0.0, "currency": "USD", "source": "model_router_adapter"}
+    gateway = execute_model_gateway_call(
+        storage,
+        task_type=routed_task,
+        operation=operation,
+        prompt_id=prompt_id,
+        prompt_version=prompt_version,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        input_assets=input_assets or [],
+        output_assets=output_assets or [],
+        context_bundle_path=context_bundle_path,
+        usage=usage,
+        cost=cost,
+        status="succeeded",
+        trace=trace,
+    )
+    if isinstance(result, dict):
+        result["model_route_resolution_path"] = str(route.get("path", ""))
+        result["model_gateway_call"] = {
+            "started_at": started,
+            "status": gateway.get("status", ""),
+            "model_call_log_path": gateway.get("model_call", {}).get("path", "") if isinstance(gateway.get("model_call", {}), dict) else "",
+        }
+    return result if isinstance(result, dict) else {"text": str(result), "model_route_resolution_path": str(route.get("path", "")), "model_gateway_call": gateway}
+
+
 def list_model_router_assets(storage: LocalStorage, *, project_id: str | None = None, task_type: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for path in storage.list_json("runs"):
@@ -367,6 +464,28 @@ def _gateway_cost_from_usage(usage: dict[str, Any], guard_payload: dict[str, Any
 
 def _compact_resolution(resolution: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in resolution.items() if key not in {"prompt", "budget"}}
+
+
+def _compact_route_for_context(route: dict[str, Any]) -> dict[str, Any]:
+    resolution = route.get("resolution", {}) if isinstance(route.get("resolution", {}), dict) else {}
+    return {
+        "path": route.get("path", ""),
+        "provider": resolution.get("provider", ""),
+        "model_name": resolution.get("model_name", ""),
+        "task_type": resolution.get("task_type", ""),
+        "route_source": resolution.get("route_source", ""),
+    }
+
+
+def _task_type_for_operation(operation: str) -> str:
+    value = str(operation or "").strip().lower().replace("-", "_")
+    return {
+        "generate": "generate",
+        "analyze": "analyze",
+        "review": "review",
+        "revise": "revise",
+        "handoff_review": "review",
+    }.get(value, value or "generate")
 
 
 def _selection_rule(value: str) -> str:

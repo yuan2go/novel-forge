@@ -33,6 +33,10 @@ def create_context_build_plan(
     top_k: int = 8,
     token_budget: int = 4000,
     backend: str = "auto",
+    retrieval_backend: str | None = None,
+    memory_levels: list[str] | None = None,
+    kg_context_enabled: bool = True,
+    quality_memory_enabled: bool = True,
     context_profile: str = "chapter_generation",
     workspace_path: str | None = None,
 ) -> dict[str, Any]:
@@ -40,23 +44,31 @@ def create_context_build_plan(
     target_asset = storage.read_asset(target_file)
     project = project_scope_from_asset(storage, target_asset, input_path=target_file, workspace_path=workspace_path)
     context_query = query or _default_query(target_asset)
+    resolved_backend = retrieval_backend or backend
+    resolved_memory_levels = _memory_levels(memory_levels)
     retrieved_context = build_rag_context(
         storage,
         target_asset,
         input_path=target_file,
         query=context_query,
         top_k=top_k,
-        backend=backend,
+        backend=resolved_backend,
+        memory_levels=resolved_memory_levels,
+        quality_memory=quality_memory_enabled,
     )
     project_id = str(project.get("project_id", ""))
     workspace = str(project.get("workspace_path", "") or workspace_path or "")
-    kg_context = _kg_context_for_plan(
-        storage,
-        target_path=target_file,
-        query=context_query,
-        project_id=project_id or None,
-        workspace_path=workspace or None,
-        limit=max(4, int(top_k)),
+    kg_context = (
+        _kg_context_for_plan(
+            storage,
+            target_path=target_file,
+            query=context_query,
+            project_id=project_id or None,
+            workspace_path=workspace or None,
+            limit=max(4, int(top_k)),
+        )
+        if kg_context_enabled
+        else {"items": [], "source_asset_ids": [], "recommendation": "kg_context_disabled"}
     )
     candidates = _merge_context_candidates(
         [*_candidate_payloads(retrieved_context.get("items", [])), *kg_context.get("items", [])],
@@ -76,9 +88,24 @@ def create_context_build_plan(
             "context_profile": context_profile,
             "context_profile_policy": profile_policy,
             "ranker": retrieved_context.get("ranker", ""),
-            "requested_backend": retrieved_context.get("requested_backend", backend),
+            "requested_backend": retrieved_context.get("requested_backend", resolved_backend),
             "retrieval_backend": retrieved_context.get("retrieval_backend", ""),
+            "retrieval_backend_policy": {
+                "supported": ["pgvector", "qdrant", "local", "hybrid"],
+                "requested": resolved_backend,
+                "actual": retrieved_context.get("retrieval_backend", ""),
+                "auto_allowed": True,
+            },
             "backend_attempts": retrieved_context.get("backend_attempts", []),
+            "memory_levels": retrieved_context.get("memory_levels", resolved_memory_levels),
+            "memory_policy": {
+                "enabled": True,
+                "levels": retrieved_context.get("memory_levels", resolved_memory_levels),
+                "quality_memory": bool(quality_memory_enabled),
+                "source": "long_memory+pgvector_hybrid_retrieval",
+            },
+            "kg_context_enabled": bool(kg_context_enabled),
+            "quality_memory_enabled": bool(quality_memory_enabled),
             "token_budget": _token_budget(token_budget),
             "selection_policy": {
                 "project_scoped": bool(project_id or workspace),
@@ -114,6 +141,9 @@ def create_context_build_plan(
             "retrieval_top_k": retrieved_context.get("top_k", top_k),
             "retrieval_query": retrieved_context.get("query", context_query),
             "context_profile": context_profile,
+            "memory_levels": retrieved_context.get("memory_levels", resolved_memory_levels),
+            "kg_context_enabled": bool(kg_context_enabled),
+            "quality_memory_enabled": bool(quality_memory_enabled),
             "source_asset_path": _display_path(storage.root, target_file),
             "copyright_boundary": "generation context plan uses project-scoped abstract and original assets; raw sources and analysis reports are excluded",
             "run_metadata": run_metadata("context_build_plan", target_asset),
@@ -278,6 +308,11 @@ def create_context_bundle(
             "query": content.get("query", ""),
             "ranker": content.get("ranker", ""),
             "retrieval_backend": content.get("retrieval_backend", ""),
+            "retrieval_backend_policy": content.get("retrieval_backend_policy", {}),
+            "memory_levels": content.get("memory_levels", []),
+            "memory_policy": content.get("memory_policy", {}),
+            "kg_context_enabled": bool(content.get("kg_context_enabled", True)),
+            "quality_memory_enabled": bool(content.get("quality_memory_enabled", True)),
             "selected_assets": selected,
             "manual_selection": manual_selection,
             "stale_context_warnings": _stale_context_warnings(selected),
@@ -301,6 +336,9 @@ def create_context_bundle(
             "workspace_path": workspace_path,
             "context_build_plan_path": _display_path(storage.root, plan_file),
             "retrieval_backend": content.get("retrieval_backend", ""),
+            "memory_levels": content.get("memory_levels", []),
+            "kg_context_enabled": bool(content.get("kg_context_enabled", True)),
+            "quality_memory_enabled": bool(content.get("quality_memory_enabled", True)),
             "retrieval_ranker": content.get("ranker", ""),
             "retrieval_query": content.get("query", ""),
             "retrieval_top_k": content.get("top_k", 0),
@@ -410,6 +448,14 @@ def _context_profile_policy(profile: str) -> dict[str, Any]:
         },
     }
     return {"profile": key, **policies.get(key, policies["chapter_generation"])}
+
+
+def _memory_levels(levels: list[str] | None) -> list[str]:
+    values = [str(item).strip().upper() for item in levels or [] if str(item).strip()]
+    if not values:
+        values = ["L0", "L1", "L2", "L3", "L4", "L5"]
+    allowed = {"L0", "L1", "L2", "L3", "L4", "L5"}
+    return _dedupe([item for item in values if item in allowed])
 
 
 def _selected_paths(content: dict[str, Any]) -> set[str]:

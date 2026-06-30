@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.novel_kg import (
+    adjudicate_kg_identity_candidate,
     analyze_novel_kg_conflicts,
     build_novel_kg,
     build_novel_kg_context,
@@ -33,6 +34,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     NovelKGGateRequest = models["NovelKGGateRequest"]
     NovelKGSemanticExtractionRequest = models["NovelKGSemanticExtractionRequest"]
     NovelKGIdentityResolutionRequest = models["NovelKGIdentityResolutionRequest"]
+    NovelKGIdentityAdjudicationRequest = models["NovelKGIdentityAdjudicationRequest"]
 
     @router.get("/product/novel-kg/graph")
     def novel_kg_graph(
@@ -242,6 +244,21 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 project_id=request.project_id,
                 workspace_path=request.workspace_path,
                 min_confidence=request.min_confidence,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/novel-kg/identity-resolution/adjudicate")
+    def novel_kg_identity_adjudication(request: NovelKGIdentityAdjudicationRequest) -> dict[str, Any]:
+        try:
+            return adjudicate_kg_identity_candidate(
+                LocalStorage(app_settings.root),
+                resolution_path_or_id=request.resolution_path_or_id,
+                candidate_id=request.candidate_id,
+                decision=request.decision,
+                actor=request.actor,
+                note=request.note,
+                apply_merge=request.apply_merge,
             )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

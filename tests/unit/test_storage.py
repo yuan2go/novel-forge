@@ -382,6 +382,8 @@ class StorageTests(unittest.TestCase):
                 context = build_rag_context(storage, plan, input_path=plan_path, query="blue bell memory debt", top_k=1, backend="auto")
 
             self.assertEqual(context["retrieval_backend"], "pgvector")
+            self.assertEqual(context["memory_levels"], ["L0", "L1", "L2", "L3", "L4", "L5"])
+            self.assertTrue(context["quality_memory_enabled"])
             self.assertEqual(context["items"][0]["title"], "Internal Bell Memory")
             self.assertIn("pgvector", context["items"][0]["ranker"])
             self.assertEqual(context["backend_attempts"][0]["backend"], "pgvector")

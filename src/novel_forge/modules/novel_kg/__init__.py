@@ -1,4 +1,5 @@
 from novel_forge.modules.novel_kg.identity import (
+    adjudicate_kg_identity_candidate,
     build_identity_merge_queue,
     create_kg_identity_resolution,
     normalize_identity_name,
@@ -19,6 +20,7 @@ from novel_forge.modules.novel_kg.service import (
 
 __all__ = [
     "analyze_novel_kg_conflicts",
+    "adjudicate_kg_identity_candidate",
     "build_identity_merge_queue",
     "build_novel_kg",
     "build_novel_kg_context",

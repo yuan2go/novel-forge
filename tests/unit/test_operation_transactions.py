@@ -285,6 +285,58 @@ class OperationTransactionTests(unittest.TestCase):
             self.assertTrue(coordinated["verification"]["unsafe_reasons"])
             self.assertNotEqual(storage.read_json(created).get("metadata", {}).get("rollback_status"), "rolled_back")
 
+    def test_coordinate_runtime_rollback_blocks_cross_transaction_asset_conflicts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "rollback-coordinate-conflict"
+            previous = storage.write_asset_auto(
+                DraftVersion(
+                    title="Previous draft",
+                    content={"draft_id": "conflict-draft", "version_index": 1, "chapter": 1, "text": "known good", "source_draft_id": "conflict-draft", "change_summary": "base", "status": "active"},
+                    metadata={"project_id": project_id},
+                )
+            )
+            updated = storage.write_asset_auto(
+                DraftVersion(
+                    title="Updated draft",
+                    content={"draft_id": "conflict-draft", "version_index": 2, "chapter": 1, "text": "bad edit", "source_draft_id": "conflict-draft", "change_summary": "bad", "status": "active"},
+                    metadata={"project_id": project_id},
+                )
+            )
+            tx_a = create_operation_transaction(
+                storage,
+                operation="draft_revision_a",
+                workflow_run_id="workflow-a",
+                updated_assets=[str(updated.relative_to(storage.root))],
+                previous_versions=[str(previous.relative_to(storage.root))],
+                project_id=project_id,
+            )
+            tx_b = create_operation_transaction(
+                storage,
+                operation="draft_revision_b",
+                agent_run_id="agent-b",
+                updated_assets=[str(updated.relative_to(storage.root))],
+                previous_versions=[str(previous.relative_to(storage.root))],
+                project_id=project_id,
+            )
+
+            coordinated = coordinate_runtime_rollback(
+                storage,
+                transaction_paths=[tx_a["path"], tx_b["path"]],
+                strategy="physical_restore",
+                confirm=True,
+                project_id=project_id,
+            )
+
+            self.assertEqual(coordinated["verification"]["status"], "unsafe")
+            self.assertEqual(coordinated["verification"]["result_count"], 0)
+            consistency = coordinated["verification"]["consistency"]
+            self.assertEqual(consistency["status"], "unsafe")
+            self.assertGreaterEqual(consistency["duplicate_action_target_count"], 1)
+            self.assertTrue(any("multiple physical rollback actions" in reason for reason in consistency["unsafe_reasons"]))
+            self.assertEqual(storage.read_json(updated)["content"]["text"], "bad edit")
+
 
 if __name__ == "__main__":
     unittest.main()

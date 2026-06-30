@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.novel_kg import build_identity_merge_queue, create_kg_identity_resolution, normalize_identity_name
+from novel_forge.modules.novel_kg import adjudicate_kg_identity_candidate, build_identity_merge_queue, create_kg_identity_resolution, normalize_identity_name
 from novel_forge.schemas import NovelKGSnapshot, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -44,6 +44,39 @@ class NovelKGIdentityTests(unittest.TestCase):
             self.assertEqual(validate_common_fields(result["asset"]), [])
             self.assertEqual(result["asset"]["content"]["summary"]["candidate_count"], 1)
             self.assertEqual(result["asset"]["content"]["status"], "needs_review")
+
+    def test_adjudicates_and_applies_identity_merge_overlay(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            snapshot = storage.write_asset_auto(
+                NovelKGSnapshot(
+                    title="KG snapshot",
+                    content={**_identity_graph(), "kg_id": "kg-1", "ontology_version": "novel-kg-0.2.0", "summary": {}, "built_at": "2026-06-29T00:00:00Z"},
+                    metadata={"project_id": "kg-project"},
+                )
+            )
+            resolution = create_kg_identity_resolution(storage, snapshot_path=str(snapshot.relative_to(storage.root)))
+            candidate_id = resolution["asset"]["content"]["candidates"][0]["candidate_id"]
+
+            result = adjudicate_kg_identity_candidate(
+                storage,
+                resolution_path_or_id=resolution["path"],
+                candidate_id=candidate_id,
+                decision="approve",
+                actor="unit-test",
+                note="same protagonist alias",
+                apply_merge=True,
+            )
+
+            content = result["asset"]["content"]
+            self.assertEqual(content["status"], "ready")
+            self.assertEqual(content["summary"]["approved_count"], 1)
+            self.assertEqual(content["summary"]["applied_merge_count"], 1)
+            self.assertFalse(content["merge_queue"])
+            overlay = content["identity_overlay"]
+            self.assertEqual(overlay["node_to_canonical_identity"]["node-a"], content["candidates"][0]["canonical_identity_id"])
+            self.assertEqual(content["adjudications"][0]["actor"], "unit-test")
 
 
 def _identity_graph() -> dict:

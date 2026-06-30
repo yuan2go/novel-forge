@@ -246,7 +246,13 @@ class ContextAndProductionChainTests(unittest.TestCase):
 
             self.assertEqual(storage.read_asset(plan["path"]).type, "context_build_plan")
             self.assertEqual(plan_asset.content["context_profile"], "chapter_generation")
+            self.assertEqual(plan_asset.content["retrieval_backend_policy"]["supported"], ["pgvector", "qdrant", "local", "hybrid"])
+            self.assertEqual(plan_asset.content["memory_levels"], ["L0", "L1", "L2", "L3", "L4", "L5"])
+            self.assertTrue(plan_asset.content["kg_context_enabled"])
+            self.assertTrue(plan_asset.content["quality_memory_enabled"])
             self.assertEqual(bundle_asset.type, "context_bundle")
+            self.assertEqual(bundle_asset.content["memory_levels"], ["L0", "L1", "L2", "L3", "L4", "L5"])
+            self.assertTrue(bundle_asset.content["memory_policy"]["quality_memory"])
             self.assertIn(storage.read_asset(knowledge).id, bundle_asset.content["source_asset_ids"])
             self.assertIn(storage.read_asset(material).id, bundle_asset.content["source_asset_ids"])
             self.assertNotIn(storage.read_asset(high_risk_material).id, bundle_asset.content["source_asset_ids"])

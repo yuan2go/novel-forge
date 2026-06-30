@@ -312,7 +312,19 @@ def _dispatch_internal_tool(storage: LocalStorage, tool_name: str, payload: dict
     if tool_name == "context_builder.build_bundle":
         from novel_forge.modules.context_builder import create_context_build_plan, create_context_bundle
 
-        plan = create_context_build_plan(storage, target_path=str(payload.get("target_path", "")), query=str(payload.get("query", "")), top_k=int(payload.get("top_k", 8) or 8), token_budget=int(payload.get("token_budget", 4000) or 4000), backend=str(payload.get("backend", "auto")), workspace_path=payload.get("workspace_path") or workspace_path)
+        plan = create_context_build_plan(
+            storage,
+            target_path=str(payload.get("target_path", "")),
+            query=str(payload.get("query", "")),
+            top_k=int(payload.get("top_k", 8) or 8),
+            token_budget=int(payload.get("token_budget", 4000) or 4000),
+            backend=str(payload.get("backend", payload.get("retrieval_backend", "auto"))),
+            retrieval_backend=str(payload.get("retrieval_backend", "")) or None,
+            memory_levels=[str(item) for item in payload.get("memory_levels", [])] if isinstance(payload.get("memory_levels", []), list) else None,
+            kg_context_enabled=bool(payload.get("kg_context", True)),
+            quality_memory_enabled=bool(payload.get("quality_memory", True)),
+            workspace_path=payload.get("workspace_path") or workspace_path,
+        )
         bundle = create_context_bundle(storage, plan["path"], max_items=payload.get("max_items"))
         return {"plan": plan, "bundle": bundle}
     if tool_name == "review.run":

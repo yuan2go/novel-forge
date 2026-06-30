@@ -161,7 +161,23 @@ CostLedger
 TraceSpan
 ```
 
-### 4.5 数据结构建议
+### 4.5 运行时硬化落地状态
+
+当前实现已经把 provider runtime guard 从“后置检查”推进到更接近 OS runtime 的执行协议：
+
+1. OpenAI-compatible provider 在存在 `max_output_tokens`、`max_total_tokens`、`timeout_ms`、`cancel_file` 或 `cancel_requested` 时自动启用 SSE streaming，逐块执行 usage / token cutoff / cancel 检查；
+2. 调用方仍可通过显式 `stream: false` 或 `provider_runtime_guard.stream: false` 覆盖，兼容旧 provider；
+3. provider `health_check()` 暴露 `runtime_capabilities`，区分 `http_sse`、`openai_sdk_stream`、`process_poll`、`json_postflight`；
+4. 本地 Codex / Claude Code worker 的 cancel 机制是进程级 kill，usage 来自 stdout 或估算；OpenAI-compatible provider 的 cancel 机制是 stream close；
+5. 所有新增能力通过 `tests/unit/test_provider_runtime_guard.py` 覆盖自动 streaming、显式覆盖、SSE usage 和 guarded adapter 账本路径。
+
+剩余深化方向：
+
+1. 接入更多 provider SDK 的 native streaming event；
+2. 将 provider 端精确 pricing 回填到 `model_call_log`；
+3. 在 Web OS Console 展示 provider capability matrix 和实时 cancel 证据。
+
+### 4.6 数据结构建议
 
 ```json
 {
@@ -1452,3 +1468,58 @@ focused 2026-06-30 tests passed for provider SDK streaming, SDK stream close on 
 4. GuardedModelAdapter 已在真实 Agent 模型调用边界记录 provider guard gate、失败 model_call_log、prompt/provider/output stage checkpoint；未来新增长任务必须复用该边界或显式调用同一 checkpoint contract。
 5. Context Builder 已把 Novel KG context 从 build plan 传递到 context bundle，使 OS mode 的 draft/review KG-context preflight 能基于真实 bundle evidence 阻断。
 6. MemorySelector 已按任务类型选择 L0-L5 记忆，后续可把选择结果进一步强制注入所有长篇正文生产节点。
+
+### 19.8 2026-06-30 运行时治理强化
+
+本轮新增三项 OS 级治理能力：
+
+1. **跨 provider runtime capability matrix**：所有 provider `health_check()` 返回 `runtime_capabilities`，明确 live streaming、live cancel、usage/cost 来源和 guard phase。OpenAI-compatible provider 在存在实时 guard 时自动进入 SSE streaming；本地 Codex / Claude Code worker 明确使用进程轮询和 kill 作为 live cancel 机制。
+2. **KG identity 人工合并治理**：`kg_identity_resolution` 从“生成待合并队列”升级为可审批资产。新增 approve/reject/defer adjudication、`identity_overlay.applied_merges`、`node_to_canonical_identity` 和 Web KG Workbench 操作入口，保留 evidence span、置信度、actor、note 和时间戳。
+3. **跨资产 rollback 一致性阻断**：`coordinate_runtime_rollback()` 在 apply 前生成 read/write set 与 action target consistency report。同一资产被多个 transaction 同时物理恢复、隔离，或出现 created/updated 交叉写入时，coordination report 标记 `unsafe`，不会部分执行 rollback。
+
+新增/更新测试：
+
+```text
+tests/unit/test_provider_runtime_guard.py
+tests/unit/test_novel_kg_identity.py
+tests/unit/test_operation_transactions.py
+tests/unit/test_product_api_routes.py
+```
+
+本轮验证命令：
+
+```text
+python3 -m unittest tests.unit.test_provider_runtime_guard tests.unit.test_novel_kg_identity tests.unit.test_operation_transactions
+python3 -m unittest tests.unit.test_product_api_routes tests.unit.test_schemas
+python3 -m unittest tests.unit.test_os_new_capabilities
+npm --prefix web/admin run lint
+python3 -m compileall -q src/novel_forge tests/unit/test_provider_runtime_guard.py tests/unit/test_novel_kg_identity.py tests/unit/test_operation_transactions.py
+```
+
+### 19.9 2026-07-01 P0 路由与上下文收口
+
+本轮完成两个 P0 收口：
+
+1. **真实模型调用路径强制经过 ModelRouter**
+   `GuardedModelAdapter` 在每次 `generate/analyze/review/revise` 前都会调用 `resolve_model_route()` 并持久化 `model_route_resolution`。route evidence 写入 operation checkpoint 的 `prompt_built.stage_payload.model_route`，成功和失败的 `model_call_log.source_id` 指向 route resolution path。无 AgentRun 的旧 API/CLI/service 路径通过 `call_model_via_router()` 先解析 route，再执行 adapter，再写 `execute_model_gateway_call()` 证据。
+
+2. **Context Builder 默认接入 Memory + pgvector + KG**
+   `build_rag_context()` 支持 `memory_levels=L0-L5` 和 `quality_memory`，并在 `pgvector/qdrant/local/hybrid` 候选池中合并 long-memory rows。`create_context_build_plan()` / `context_bundle` 写入 `retrieval_backend_policy`、`memory_policy`、`memory_levels`、`kg_context_enabled`、`quality_memory_enabled`，默认启用 KG context 和质量记忆。
+
+新增/更新测试：
+
+```text
+tests/unit/test_os_new_capabilities.py
+tests/unit/test_provider_runtime_guard.py
+tests/unit/test_context_and_production_chain.py
+tests/unit/test_storage.py
+```
+
+本轮验证命令：
+
+```text
+python3 -m unittest tests.unit.test_os_new_capabilities tests.unit.test_provider_runtime_guard tests.unit.test_model_adapter tests.unit.test_context_and_production_chain tests.unit.test_storage
+python3 -m unittest tests.unit.test_product_api_routes tests.unit.test_schemas tests.unit.test_runtime_policy tests.integration.test_novel_os_acceptance
+npm --prefix web/admin run lint
+python3 -m compileall -q src/novel_forge
+```

@@ -60,13 +60,14 @@ class GuardedModelAdapter:
         context_payload = context or {}
         run_info = self._agent_run_info()
         runtime_operation = _runtime_operation(operation, context_payload, run_info)
-        checkpoint_common = self._checkpoint_common(runtime_operation, context_payload, run_info, prompt_payload)
-        self._record_stage_checkpoint("prompt_built", checkpoint_common)
+        model_route = self._resolve_model_route(runtime_operation, context_payload, run_info)
+        checkpoint_common = self._checkpoint_common(runtime_operation, context_payload, run_info, prompt_payload, model_route=model_route)
+        self._record_stage_checkpoint("prompt_built", checkpoint_common, stage_payload={"model_route": model_route})
         preflight = self._evaluate_provider_runtime_guard(runtime_operation, context_payload, usage={}, elapsed_ms=0, phase="preflight")
         if preflight.get("status") == "failed":
             self._record_stage_checkpoint("provider_started", checkpoint_common, error=str(preflight.get("message", "")), stage_payload={"guard": preflight})
             self._record_provider_guard_gate(runtime_operation, preflight, run_info, status="failed")
-            self._record_failed_model_call(runtime_operation, run_info, preflight, usage={})
+            self._record_failed_model_call(runtime_operation, run_info, preflight, usage={}, model_route=model_route)
             self._fail_provider_runtime_guard(runtime_operation, preflight)
         self._record_provider_guard_gate(runtime_operation, preflight, run_info, status="passed")
         self._record_stage_checkpoint("provider_started", checkpoint_common, stage_payload={"guard": preflight})
@@ -79,7 +80,7 @@ class GuardedModelAdapter:
             failure = {"status": "failed", "message": str(exc), "usage": usage, "error_type": type(exc).__name__}
             self._record_stage_checkpoint("provider_started", checkpoint_common, error=str(exc), stage_payload={"error_type": type(exc).__name__})
             self._record_provider_guard_gate(runtime_operation, failure, run_info, status="failed")
-            self._record_failed_model_call(runtime_operation, run_info, failure, usage=usage)
+            self._record_failed_model_call(runtime_operation, run_info, failure, usage=usage, model_route=model_route)
             raise
         elapsed_ms = int((time.monotonic() - started) * 1000)
         usage = _provider_usage_from_result(result)
@@ -89,11 +90,11 @@ class GuardedModelAdapter:
         if postflight.get("status") == "failed":
             self._record_stage_checkpoint("provider_completed", checkpoint_with_output, error=str(postflight.get("message", "")), stage_payload={"guard": postflight, "usage": postflight.get("usage", {})})
             self._record_provider_guard_gate(runtime_operation, postflight, run_info, status="failed")
-            self._record_failed_model_call(runtime_operation, run_info, postflight, usage=postflight.get("usage", usage))
+            self._record_failed_model_call(runtime_operation, run_info, postflight, usage=postflight.get("usage", usage), model_route=model_route)
             self._fail_provider_runtime_guard(runtime_operation, postflight)
         self._record_provider_guard_gate(runtime_operation, postflight, run_info, status="passed")
         self._record_stage_checkpoint("provider_completed", checkpoint_with_output, stage_payload={"guard": postflight, "usage": postflight.get("usage", usage)})
-        self._record_model_call(runtime_operation, result, usage, context_payload=context_payload, run_info=run_info)
+        self._record_model_call(runtime_operation, result, usage, context_payload=context_payload, run_info=run_info, model_route=model_route)
         self._record_stage_checkpoint(
             "output_validated",
             checkpoint_with_output,
@@ -143,13 +144,14 @@ class GuardedModelAdapter:
         )
         raise ProviderRuntimeGuardError(str(result.get("message") or "provider runtime guard failed"))
 
-    def _record_model_call(self, operation: str, result: Any, usage: dict[str, Any], *, context_payload: dict[str, Any], run_info: dict[str, Any]) -> None:
+    def _record_model_call(self, operation: str, result: Any, usage: dict[str, Any], *, context_payload: dict[str, Any], run_info: dict[str, Any], model_route: dict[str, Any]) -> None:
         if not isinstance(result, dict):
             return
         provider = str(result.get("provider") or run_info.get("model_provider") or self.name)
         model = str(result.get("model") or run_info.get("model_name") or self.name)
         normalized_usage = normalize_provider_usage(usage, usage_source="guarded_adapter")
         cost = _cost_from_result(result, normalized_usage, context_payload)
+        source_id = str(model_route.get("path") or run_info.get("run_id", ""))
         try:
             call = record_model_call_log(
                 self.storage,
@@ -162,18 +164,22 @@ class GuardedModelAdapter:
                 trace=run_info.get("trace", {}) if isinstance(run_info.get("trace", {}), dict) else {},
                 project_id=str(run_info.get("project_id", "")),
                 workspace_path=str(run_info.get("workspace_path", "")),
-                source_id=str(run_info.get("run_id", "")),
+                source_id=source_id,
                 prompt_version=str(run_info.get("prompt_version", "")),
             )
         except Exception:
             return
         result["model_call_log_path"] = call.get("path", "")
+        result["model_route_resolution_path"] = str(model_route.get("path", ""))
+        result["model_route_provider"] = str(model_route.get("provider", ""))
+        result["model_route_model"] = str(model_route.get("model_name", ""))
         if isinstance(call.get("cost_ledger"), dict):
             result["cost_ledger_path"] = call["cost_ledger"].get("path", "")
 
-    def _record_failed_model_call(self, operation: str, run_info: dict[str, Any], failure: dict[str, Any], *, usage: dict[str, Any]) -> None:
+    def _record_failed_model_call(self, operation: str, run_info: dict[str, Any], failure: dict[str, Any], *, usage: dict[str, Any], model_route: dict[str, Any] | None = None) -> None:
         provider = str(run_info.get("model_provider") or self.name)
         model = str(run_info.get("model_name") or self.name)
+        route = model_route or {}
         try:
             record_model_call_log(
                 self.storage,
@@ -186,7 +192,7 @@ class GuardedModelAdapter:
                 trace=run_info.get("trace", {}) if isinstance(run_info.get("trace", {}), dict) else {},
                 project_id=str(run_info.get("project_id", "")),
                 workspace_path=str(run_info.get("workspace_path", "")),
-                source_id=str(run_info.get("run_id", "")),
+                source_id=str(route.get("path") or run_info.get("run_id", "")),
                 prompt_version=str(run_info.get("prompt_version", "")),
             )
         except Exception:
@@ -210,7 +216,7 @@ class GuardedModelAdapter:
         except Exception:
             return
 
-    def _checkpoint_common(self, operation: str, context: dict[str, Any], run_info: dict[str, Any], prompt_payload: Any) -> dict[str, Any]:
+    def _checkpoint_common(self, operation: str, context: dict[str, Any], run_info: dict[str, Any], prompt_payload: Any, *, model_route: dict[str, Any]) -> dict[str, Any]:
         prompt_hash = hashlib.sha256(json.dumps(prompt_payload, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
         input_assets = [str(item.get("path", "")) for item in run_info.get("input_assets", []) if isinstance(item, dict) and str(item.get("path", "")).strip()]
         context_bundle_path = _context_bundle_path(context)
@@ -236,6 +242,31 @@ class GuardedModelAdapter:
             "idempotency_key": idempotency_key,
             "project_id": str(run_info.get("project_id", "")),
             "workspace_path": str(run_info.get("workspace_path", "")),
+        }
+
+    def _resolve_model_route(self, operation: str, context: dict[str, Any], run_info: dict[str, Any]) -> dict[str, Any]:
+        from novel_forge.modules.model_router import resolve_model_route
+
+        route = resolve_model_route(
+            self.storage,
+            task_type=_router_task_type(operation),
+            project_id=str(run_info.get("project_id", "")),
+            workspace_path=str(run_info.get("workspace_path", "")),
+            prompt_id=str(context.get("prompt_id", "")),
+            prompt_version=str(context.get("prompt_version") or run_info.get("prompt_version", "")),
+            workflow_node_id=str(context.get("workflow_node_id", "")),
+            trace=run_info.get("trace", {}) if isinstance(run_info.get("trace", {}), dict) else {},
+            persist=True,
+        )
+        resolution = route.get("resolution", {}) if isinstance(route.get("resolution", {}), dict) else route.get("asset", {}).get("content", {})
+        return {
+            "status": route.get("status", "resolved"),
+            "path": route.get("path", ""),
+            "id": route.get("id", ""),
+            "provider": str(resolution.get("provider", "")),
+            "model_name": str(resolution.get("model_name", "")),
+            "route_source": str(resolution.get("route_source", "")),
+            "selection_rule": str(resolution.get("selection_rule", "")),
         }
 
     def _record_stage_checkpoint(self, stage: str, common: dict[str, Any], *, error: str = "", stage_payload: dict[str, Any] | None = None) -> None:
@@ -338,6 +369,28 @@ def _runtime_operation(adapter_operation: str, context: dict[str, Any], run_info
             return value
     run_operation = str(run_info.get("operation", "") or "").strip()
     return run_operation or adapter_operation
+
+
+def _router_task_type(operation: str) -> str:
+    normalized = str(operation or "").strip().lower().replace("-", "_")
+    aliases = {
+        "draft": "draft",
+        "generate": "generate",
+        "develop_topic": "topic",
+        "topic": "topic",
+        "decompose": "analyze",
+        "analysis": "analyze",
+        "analyze": "analyze",
+        "review": "review",
+        "handoff_review": "review",
+        "revise": "revise",
+        "revision": "revise",
+        "revision_executor": "revise",
+        "final_draft": "revise",
+        "chapter_plan": "chapter_plan",
+        "outline": "outline",
+    }
+    return aliases.get(normalized, normalized or "generate")
 
 
 def _context_bundle_path(context: dict[str, Any]) -> str:

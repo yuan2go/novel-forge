@@ -102,6 +102,23 @@ export function createIdentityResolution(snapshotPath?: string, projectId?: stri
   }) as Promise<Record<string, unknown>>;
 }
 
+export function adjudicateIdentityCandidate(payload: {
+  resolutionPathOrId: string;
+  candidateId: string;
+  decision: "approve" | "reject" | "defer";
+  note?: string;
+  applyMerge?: boolean;
+}) {
+  return postJson("/product/novel-kg/identity-resolution/adjudicate", {
+    resolution_path_or_id: payload.resolutionPathOrId,
+    candidate_id: payload.candidateId,
+    decision: payload.decision,
+    actor: "web-kg-workbench",
+    note: payload.note || "",
+    apply_merge: payload.applyMerge ?? payload.decision === "approve"
+  }) as Promise<Record<string, unknown>>;
+}
+
 export function loadNovelKGPath(source: string, target: string, projectId?: string) {
   const params = new URLSearchParams({ source, target, max_depth: "5", limit: "20" });
   if (projectId) params.set("project_id", projectId);

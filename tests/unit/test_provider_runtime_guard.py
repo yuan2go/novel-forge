@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -16,7 +17,7 @@ from novel_forge.model_adapters.runtime import (
     provider_runtime_guard_from_context,
 )
 from novel_forge.model_adapters.guarded import GuardedModelAdapter, ProviderRuntimeGuardError
-from novel_forge.model_adapters.providers import _read_openai_compatible_stream
+from novel_forge.model_adapters.providers import ChatGPTAdapter, _read_openai_compatible_stream, _streaming_enabled
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.storage.local import LocalStorage
 
@@ -145,6 +146,18 @@ class ProviderRuntimeGuardTests(unittest.TestCase):
         self.assertTrue(result["stream"]["enabled"])
         self.assertIn("provider_stream_guard_ok", {event["event_type"] for event in controller.to_dict()["events"]})
 
+    def test_openai_compatible_streaming_auto_enables_for_live_guard_and_can_be_overridden(self):
+        with patch.dict("os.environ", {"NOVEL_FORGE_PROVIDER_STREAMING": ""}):
+            self.assertTrue(_streaming_enabled({"provider_runtime_guard": {"max_output_tokens": 32}}))
+            self.assertTrue(_streaming_enabled({"provider_runtime_guard": {"cancel_file": "/tmp/novel-forge-cancel.flag"}}))
+            self.assertFalse(_streaming_enabled({"stream": False, "provider_runtime_guard": {"max_total_tokens": 32}}))
+
+            health = ChatGPTAdapter().health_check()
+        capabilities = health["runtime_capabilities"]
+        self.assertTrue(capabilities["live_streaming"]["supported"])
+        self.assertEqual(capabilities["live_streaming"]["transport"], "json_postflight")
+        self.assertEqual(capabilities["live_cancel"]["mechanism"], "postflight_guard_only")
+
     def test_guarded_adapter_persists_provider_gate_checkpoint_model_call_and_cost(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -178,8 +191,11 @@ class ProviderRuntimeGuardTests(unittest.TestCase):
             self.assertTrue({"prompt_built", "provider_started", "provider_completed", "output_validated"}.issubset(stages))
             provider_gates = [row for row in rows if row.get("type") == "gate_result" and row.get("content", {}).get("gate_kind") == "provider_runtime_guard"]
             self.assertTrue(provider_gates)
+            route_resolutions = [row for row in rows if row.get("type") == "model_route_resolution" and row.get("content", {}).get("task_type") == "draft"]
+            self.assertTrue(route_resolutions)
             model_calls = [row for row in rows if row.get("type") == "model_call_log" and row.get("content", {}).get("operation") == "draft"]
             self.assertEqual(model_calls[-1]["content"]["status"], "succeeded")
+            self.assertEqual(model_calls[-1]["content"]["source_id"], result["model_route_resolution_path"])
 
     def test_guarded_adapter_records_failed_model_call_when_postflight_guard_blocks(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -186,13 +186,18 @@ def coordinate_runtime_rollback(
     trace_payload = _trace_payload(trace, fallback=make_id("rollback_coordination", utc_now()))
     ordered_transactions = _ordered_transactions(storage, transaction_paths)
     previews: list[dict[str, Any]] = []
+    preview_assets: list[dict[str, Any]] = []
     results: list[dict[str, Any]] = []
     unsafe: list[str] = []
     for item in ordered_transactions:
         preview = preview_operation_rollback(storage, item["path"], strategy=strategy, reason=reason or "coordinated runtime rollback", persist=True)
+        preview_assets.append(preview)
         previews.append(_compact_rollback_asset(preview))
         content = preview.get("asset", {}).get("content", {}) if isinstance(preview.get("asset", {}).get("content", {}), dict) else {}
         unsafe.extend([str(value) for value in content.get("unsafe_reasons", []) if str(value).strip()])
+    consistency = _rollback_consistency_report(storage, ordered_transactions, preview_assets)
+    unsafe.extend([str(value) for value in consistency.get("unsafe_reasons", []) if str(value).strip()])
+    unsafe = _dedupe(unsafe)
     if confirm and not unsafe:
         for preview in previews:
             result = apply_rollback_plan(storage, preview["path"], confirm=True, actor=actor)
@@ -203,6 +208,7 @@ def coordinate_runtime_rollback(
         "preview_count": len(previews),
         "result_count": len(results),
         "domains": _rollback_domain_summary(ordered_transactions, previews, results),
+        "consistency": consistency,
     }
     report_id = make_id("rollback_coordination", f"{strategy}-{len(transaction_paths)}-{utc_now()}")
     report = {
@@ -347,6 +353,69 @@ def _rollback_domain_summary(transactions: list[dict[str, Any]], previews: list[
         "ledger_compensation_count": sum(len(item.get("ledger_paths", [])) for item in transactions),
         "preview_count": len(previews),
         "applied_result_count": len(results),
+    }
+
+
+def _rollback_consistency_report(storage: LocalStorage, transactions: list[dict[str, Any]], preview_assets: list[dict[str, Any]]) -> dict[str, Any]:
+    action_targets: dict[str, list[dict[str, Any]]] = {}
+    read_write_sets: dict[str, dict[str, list[str]]] = {}
+    unsafe: list[str] = []
+    warnings: list[str] = []
+    for transaction in transactions:
+        transaction_id = str(transaction.get("path", ""))
+        for mode, key in [("create", "created_assets"), ("update", "updated_assets"), ("ledger", "ledger_paths"), ("index", "indexes_touched")]:
+            for path_value in transaction.get(key, []) if isinstance(transaction.get(key, []), list) else []:
+                canonical = _canonical_rollback_key(storage, path_value)
+                read_write_sets.setdefault(canonical, {"create": [], "update": [], "ledger": [], "index": []}).setdefault(mode, []).append(transaction_id)
+    for preview in preview_assets:
+        content = preview.get("asset", {}).get("content", {}) if isinstance(preview.get("asset", {}).get("content", {}), dict) else {}
+        transaction_id = str(content.get("transaction_id", "") or content.get("transaction_path", "") or preview.get("path", ""))
+        for action in content.get("actions", []) if isinstance(content.get("actions", []), list) else []:
+            action_name = str(action.get("action", ""))
+            path_value = str(action.get("path") or action.get("index") or "")
+            if not path_value:
+                continue
+            canonical = _canonical_rollback_key(storage, path_value)
+            action_targets.setdefault(canonical, []).append(
+                {
+                    "transaction_id": transaction_id,
+                    "action": action_name,
+                    "path": path_value,
+                    "previous_path": action.get("previous_path", ""),
+                    "status": action.get("status", "planned"),
+                }
+            )
+    for canonical, actions in action_targets.items():
+        physical_actions = [item for item in actions if item.get("action") in {"restore_asset_file", "quarantine_asset_file"}]
+        if len(physical_actions) > 1:
+            unsafe.append(f"asset has multiple physical rollback actions: {canonical}")
+        restore_previous = _dedupe([str(item.get("previous_path", "")) for item in actions if item.get("action") == "restore_asset_file" and str(item.get("previous_path", "")).strip()])
+        if len(restore_previous) > 1:
+            unsafe.append(f"asset has conflicting previous versions: {canonical}")
+        if any(item.get("action") == "quarantine_asset_file" for item in actions) and any(item.get("action") == "restore_asset_file" for item in actions):
+            unsafe.append(f"asset is both quarantined and restored in same coordination: {canonical}")
+    for canonical, sets in read_write_sets.items():
+        create_count = len(_dedupe(sets.get("create", [])))
+        update_count = len(_dedupe(sets.get("update", [])))
+        if create_count > 1:
+            unsafe.append(f"asset is created by multiple transactions: {canonical}")
+        if update_count > 1:
+            warnings.append(f"asset is updated by multiple transactions and requires ordered restore review: {canonical}")
+        if create_count and update_count:
+            unsafe.append(f"asset is both created and updated across transactions: {canonical}")
+    unsafe = _dedupe(unsafe)
+    warnings = _dedupe(warnings)
+    status = "unsafe" if unsafe else "warning" if warnings else "passed"
+    return {
+        "status": status,
+        "unsafe_reasons": unsafe,
+        "warnings": warnings,
+        "touched_asset_count": len([key for key in action_targets if key]),
+        "read_write_set_count": len([key for key in read_write_sets if key]),
+        "duplicate_action_target_count": len([key for key, value in action_targets.items() if len(value) > 1]),
+        "action_targets": action_targets,
+        "read_write_sets": read_write_sets,
+        "recommendation": "manual_reconcile_before_apply" if unsafe else "operator_review" if warnings else "safe_to_apply",
     }
 
 
@@ -639,6 +708,16 @@ def _asset_identity_keys(data: dict[str, Any]) -> set[str]:
 def _rollback_archive_path(storage: LocalStorage, transaction_id: str, section: str, path_value: str) -> str:
     relative = _safe_relative_for_archive(storage, path_value)
     return _display_path(storage.root, storage.root / "data" / "rollback_archive" / _safe_name(transaction_id) / _safe_name(section) / relative)
+
+
+def _canonical_rollback_key(storage: LocalStorage, path_value: Any) -> str:
+    value = str(path_value or "").strip()
+    if not value:
+        return ""
+    try:
+        return _display_path(storage.root, resolve_path(storage.root, value).resolve())
+    except Exception:
+        return value
 
 
 def _safe_relative_for_archive(storage: LocalStorage, path_value: str) -> Path:
