@@ -1,0 +1,57 @@
+{
+  "project_id": "real-longchain-webnovel",
+  "export_dir": "generated/longchain-webnovel",
+  "target": {
+    "chapters": 100,
+    "chars_per_chapter": 5000,
+    "total_chars": 500000
+  },
+  "observed": {
+    "chapters": 5,
+    "total_chars": 35063,
+    "average_chars": 7012.6
+  },
+  "completion": 0.05,
+  "quality": {
+    "latest_scores": [
+      {
+        "chapter": 2,
+        "score": 100,
+        "warnings": []
+      },
+      {
+        "chapter": 3,
+        "score": 100,
+        "warnings": []
+      },
+      {
+        "chapter": 4,
+        "score": 95.75,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 5,
+        "score": 95.75,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      }
+    ],
+    "warning_count": 2,
+    "warning_samples": [
+      "chapter ending punctuation is weak",
+      "chapter ending punctuation is weak"
+    ],
+    "recommendation": "continue"
+  },
+  "pressure_dimensions": [
+    "cost drift via cost ledger",
+    "quality drift via heuristic review",
+    "foreshadow lifecycle via series_bible.long_hooks",
+    "feedback backflow via future reader feedback import"
+  ],
+  "acceptance_report": "data/runs/long-chain-acceptance-report-long-chain-acceptance-100-chapters-def4ee50.json",
+  "created_at": "2026-06-30T13:03:32+00:00"
+}

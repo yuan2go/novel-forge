@@ -1,0 +1,85 @@
+{
+  "project_id": "real-longchain-webnovel",
+  "target_chapters": 100,
+  "target_chars_per_chapter": 5000,
+  "generated_chapters": 5,
+  "latest_run_records": [
+    {
+      "chapter": 2,
+      "path": "generated/longchain-webnovel/chapters/chapter_002.md",
+      "asset_path": "data/drafts/draft-version-002-345a29a7.json",
+      "char_count": 7589,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 3,
+      "path": "generated/longchain-webnovel/chapters/chapter_003.md",
+      "asset_path": "data/drafts/draft-version-003-4e219cae.json",
+      "char_count": 7724,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 4,
+      "path": "generated/longchain-webnovel/chapters/chapter_004.md",
+      "asset_path": "data/drafts/draft-version-004-8f36ae98.json",
+      "char_count": 7616,
+      "quality_score": 95.75,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "cost_paths": []
+    },
+    {
+      "chapter": 5,
+      "path": "generated/longchain-webnovel/chapters/chapter_005.md",
+      "asset_path": "data/drafts/draft-version-005-17143064.json",
+      "char_count": 5281,
+      "quality_score": 95.75,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "cost_paths": []
+    }
+  ],
+  "chapters": [
+    {
+      "chapter": 1,
+      "summary": "第1章完成：第一章夜档缺页亥时三刻，澄安城的更鼓从南钟楼滚过来，像一串湿了水的豆子，敲到第三声便散了。城中各坊早已落栅，酒旗收进门槛，卖汤饼的炉火只剩红眼。惟有西署后巷还亮着一盏青油灯。灯下的门匾歪着，写的是“遗簿库”。字不大，灰也厚，平日里连巡街的皂隶都懒得多看一眼。顾砚秋就在这扇门后值夜。他今年二十二，穿一身洗得发白的青布吏衣，腰间挂着铜牌，牌上刻“夜档”。这名头听...",
+      "char_count": 6853,
+      "warnings": []
+    },
+    {
+      "chapter": 2,
+      "summary": "第2章完成：第二章纸灰生纹顾砚秋把那张发硬的纸页摊在案上时，油灯正好爆了一粒灯花。灯花一响，遗簿库里所有旧柜都像醒了一下。柜门缝里积了多年的灰，细细往下落，落在木地板上，竟不是散灰，而是一道一道，像有人用指甲划过。他没有立刻去吹灯。夜档的规矩，灯可暗，不可灭。灭了灯，库中旧物少了一重人气，最会把藏在纸缝里的东西勾出来。这个规矩是谁定的，簿后没署名，只在末尾画了个歪歪扭扭...",
+      "char_count": 7589,
+      "warnings": []
+    },
+    {
+      "chapter": 3,
+      "summary": "第3章完成：第三章朱印压夜顾砚秋听见库门外第三声梆子时，纸页上的灰纹已经停住了。那不是寻常灰迹。遗簿库里积灰厚，风从门缝钻进来，最多卷出几道乱线，像醉汉写字，横竖不认亲。可案上这几道纹路却细得很，绕开墨字，贴着纸筋走，末了在一处空白上结成小小一枚方框。方框中间没有字，只压着一点暗红。顾砚秋拿竹镊轻轻拨了拨。暗红不散。他把灯移近些，油火一偏，那一点红忽然像活物似的沉了下去...",
+      "char_count": 7724,
+      "warnings": []
+    },
+    {
+      "chapter": 4,
+      "summary": "第4章完成：第四章账上无名顾砚秋把那一点暗红挑到白瓷片上时，库门外的梆子声已经远了。遗簿库里只剩油灯哔剥，火芯结了黑花，照得满墙旧册像一排排闭眼的人。案上那张纸被他用镇尺压着，灰纹仍在，只是不再游走。它们沿着纸筋拧成一个小方框，像有人拿极细的线，在无字处缝了一扇门。朱砂不是血。顾砚秋先闻，后看，又取针尖沾水。暗红遇水略浑，边缘散出一点橘色。他心里有数了，这是朱砂掺胶，再...",
+      "char_count": 7616,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ]
+    },
+    {
+      "chapter": 5,
+      "summary": "第5章完成：第五章纸筋藏门天快亮时，遗簿库外起了雾。雾不是从河渠那边来的。顾砚秋把窗纸挑开一线，看见院中槐树下白茫茫一片，贴着地砖滚，绕过石阶，偏偏不肯越过库门前那道铜槛。铜槛上本来压着一层旧尘，此刻尘面泛青，像被人用冷水擦过。更怪的是，雾里有算盘声。一粒，一粒，噼啪落下。慢，不急，像老账房夜里替死人补账。每响一下，案上那张灰纹纸便轻轻鼓一次，纸筋里缝出的方框也随之收紧...",
+      "char_count": 5281,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ]
+    }
+  ],
+  "updated_at": "2026-06-30T13:03:30+00:00"
+}

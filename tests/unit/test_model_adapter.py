@@ -27,6 +27,7 @@ from novel_forge.model_adapters import (
     validate_model_output,
 )
 from novel_forge.modules.agent_runs import list_agent_runs, start_agent_run
+from novel_forge.model_adapters.providers import _codex_output_schema
 from novel_forge.storage.local import LocalStorage
 
 
@@ -200,6 +201,19 @@ class MockModelTests(unittest.TestCase):
             self.assertTrue(health["automation_isolation"]["ignore_rules"])
             self.assertEqual(result["provider"], "claude-code")
             self.assertTrue(result["codex_home"].endswith(".codex-claude"))
+
+    def test_codex_output_schema_is_strict_for_response_format(self):
+        for operation in ["generate", "analyze", "review", "revise"]:
+            schema = _codex_output_schema(operation)
+            self.assertIs(schema["additionalProperties"], False)
+            self.assertEqual(set(schema.get("required", [])), set(schema.get("properties", {})))
+            for value in schema.get("properties", {}).values():
+                if isinstance(value, dict) and value.get("type") == "object":
+                    self.assertIs(value.get("additionalProperties"), False)
+                    self.assertEqual(set(value.get("required", [])), set(value.get("properties", {})))
+                if isinstance(value, dict) and isinstance(value.get("items"), dict) and value["items"].get("type") == "object":
+                    self.assertIs(value["items"].get("additionalProperties"), False)
+                    self.assertEqual(set(value["items"].get("required", [])), set(value["items"].get("properties", {})))
 
     def test_model_output_contract_validation(self):
         parsed = parse_json_object('```json\n{"text":"usable generated prose"}\n```')

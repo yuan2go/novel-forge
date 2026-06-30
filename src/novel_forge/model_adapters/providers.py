@@ -535,16 +535,13 @@ def _codex_output_schema(operation: str) -> dict[str, Any]:
     schemas = {
         "generate": {
             "type": "object",
-            "required": ["text"],
+            "required": ["text", "notes", "copyright_boundary"],
             "properties": {
                 "text": {"type": "string", "minLength": 8},
                 "notes": {"type": "array", "items": {"type": "string"}},
                 "copyright_boundary": {"type": "string"},
-                "provider": {"type": "string"},
-                "model": {"type": "string"},
-                "usage": {"type": "object"},
             },
-            "additionalProperties": True,
+            "additionalProperties": False,
         },
         "analyze": {
             "type": "object",
@@ -553,11 +550,8 @@ def _codex_output_schema(operation: str) -> dict[str, Any]:
                 "summary": {"type": "string", "minLength": 1},
                 "word_count": {"type": "integer", "minimum": 0},
                 "patterns": {"type": "array", "items": {"type": "string"}, "minItems": 1},
-                "provider": {"type": "string"},
-                "model": {"type": "string"},
-                "usage": {"type": "object"},
             },
-            "additionalProperties": True,
+            "additionalProperties": False,
         },
         "review": {
             "type": "object",
@@ -566,27 +560,34 @@ def _codex_output_schema(operation: str) -> dict[str, Any]:
                 "score": {"type": "number", "minimum": 0, "maximum": 100},
                 "strengths": {"type": "array", "items": {"type": "string"}, "minItems": 1},
                 "weaknesses": {"type": "array", "items": {"type": "string"}, "minItems": 1},
-                "issues": {"type": "array", "items": {"type": "object"}},
+                "issues": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "dimension": {"type": "string"},
+                            "severity": {"type": "string"},
+                            "message": {"type": "string"},
+                            "recommendation": {"type": "string"},
+                        },
+                        "required": ["dimension", "severity", "message", "recommendation"],
+                        "additionalProperties": False,
+                    },
+                },
                 "risk_level": {"type": "string", "enum": ["low", "medium", "high"]},
                 "revision_suggestions": {"type": "array", "items": {"type": "string"}, "minItems": 1},
                 "next_action": {"type": "string", "enum": ["approve", "revise", "rewrite", "block"]},
-                "provider": {"type": "string"},
-                "model": {"type": "string"},
-                "usage": {"type": "object"},
             },
-            "additionalProperties": True,
+            "additionalProperties": False,
         },
         "revise": {
             "type": "object",
-            "required": ["plan"],
+            "required": ["plan", "target_score"],
             "properties": {
                 "plan": {"type": "array", "items": {"type": "string"}, "minItems": 1},
                 "target_score": {"type": "number"},
-                "provider": {"type": "string"},
-                "model": {"type": "string"},
-                "usage": {"type": "object"},
             },
-            "additionalProperties": True,
+            "additionalProperties": False,
         },
     }
     return {"$schema": "https://json-schema.org/draft/2020-12/schema", **schemas[operation]}
