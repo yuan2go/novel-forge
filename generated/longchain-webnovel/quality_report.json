@@ -2,150 +2,35 @@
   "project_id": "real-longchain-webnovel",
   "export_dir": "generated/longchain-webnovel",
   "target": {
-    "chapters": 100,
+    "chapters": 400,
     "chars_per_chapter": 5000,
-    "total_chars": 500000
+    "total_chars": 2000000
   },
   "observed": {
-    "chapters": 30,
-    "total_chars": 203289,
-    "average_chars": 6776.3
+    "chapters": 35,
+    "total_chars": 237032,
+    "average_chars": 6772.34
   },
-  "completion": 0.3,
+  "completion": 0.0875,
   "quality": {
     "latest_scores": [
       {
-        "chapter": 6,
+        "chapter": 32,
         "score": 100,
         "warnings": []
       },
       {
-        "chapter": 7,
+        "chapter": 33,
+        "score": 86.75,
+        "warnings": []
+      },
+      {
+        "chapter": 34,
         "score": 100,
         "warnings": []
       },
       {
-        "chapter": 8,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 9,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 10,
-        "score": 95.75,
-        "warnings": [
-          "chapter ending punctuation is weak"
-        ]
-      },
-      {
-        "chapter": 11,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 12,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 13,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 14,
-        "score": 95.75,
-        "warnings": [
-          "chapter ending punctuation is weak"
-        ]
-      },
-      {
-        "chapter": 15,
-        "score": 95.75,
-        "warnings": [
-          "chapter ending punctuation is weak"
-        ]
-      },
-      {
-        "chapter": 16,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 17,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 18,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 19,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 20,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 21,
-        "score": 95.75,
-        "warnings": [
-          "chapter ending punctuation is weak"
-        ]
-      },
-      {
-        "chapter": 22,
-        "score": 95.75,
-        "warnings": [
-          "chapter ending punctuation is weak"
-        ]
-      },
-      {
-        "chapter": 23,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 24,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 25,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 26,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 27,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 28,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 29,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 30,
+        "chapter": 35,
         "score": 100,
         "warnings": []
       }
@@ -344,6 +229,36 @@
         "score": 100.0,
         "char_count": 6151,
         "warnings": []
+      },
+      {
+        "chapter": 31,
+        "score": 100.0,
+        "char_count": 6257,
+        "warnings": []
+      },
+      {
+        "chapter": 32,
+        "score": 100.0,
+        "char_count": 7589,
+        "warnings": []
+      },
+      {
+        "chapter": 33,
+        "score": 86.75,
+        "char_count": 6907,
+        "warnings": []
+      },
+      {
+        "chapter": 34,
+        "score": 100.0,
+        "char_count": 6087,
+        "warnings": []
+      },
+      {
+        "chapter": 35,
+        "score": 100.0,
+        "char_count": 6903,
+        "warnings": []
       }
     ],
     "warning_count": 7,
@@ -369,41 +284,41 @@
     "checks": {
       "cost_drift": "warning",
       "quality_drift": "passed",
-      "foreshadow_lifecycle": "passed",
+      "foreshadow_lifecycle": "warning",
       "feedback_backflow": "passed"
     },
     "recommendation": "continue_with_watch"
   },
   "cost_drift": {
     "status": "warning",
-    "model_call_count": 67,
-    "provider_model_call_count": 37,
+    "model_call_count": 77,
+    "provider_model_call_count": 42,
     "ledger_count": 0,
-    "total_tokens": 641421,
-    "average_tokens_per_generated_chapter": 21380.7,
+    "total_tokens": 747996,
+    "average_tokens_per_generated_chapter": 21371.31,
     "first_window_average_tokens": 8726.0,
-    "latest_window_average_tokens": 21328.2,
-    "token_drift_ratio": 2.4442,
+    "latest_window_average_tokens": 21315.0,
+    "token_drift_ratio": 2.4427,
     "total_cost": 0.0,
     "cost_per_generated_chapter": 0.0,
     "cost_currency": "USD"
   },
   "quality_drift": {
     "status": "passed",
-    "trend": "improving",
+    "trend": "stable",
     "first_window_average_score": 98.3,
-    "latest_window_average_score": 100.0,
-    "score_delta": 1.7,
+    "latest_window_average_score": 97.35,
+    "score_delta": -0.95,
     "warning_count": 7,
     "average_char_first_window": 7012.6,
-    "average_char_latest_window": 6814.6,
-    "char_drift_ratio": 0.9718
+    "average_char_latest_window": 6748.6,
+    "char_drift_ratio": 0.9624
   },
   "foreshadowing_lifecycle": {
-    "overall_status": "passed",
-    "generated_chapters": 30,
+    "overall_status": "warning",
+    "generated_chapters": 35,
     "active_count": 3,
-    "due_count": 0,
+    "due_count": 1,
     "overdue_count": 0,
     "hooks": [
       {
@@ -412,7 +327,7 @@
         "payoff_window": "chapters 35-45",
         "window_start": 35,
         "window_end": 45,
-        "status": "seeded"
+        "status": "payoff_due"
       },
       {
         "id": "mentor_debt",
@@ -448,11 +363,11 @@
     "proposal_count": 2
   },
   "acceptance_assets": {
-    "chapter_production_run": 30,
-    "context_bundle": 30,
-    "chapter_continuity_report": 30,
-    "feedback_backflow_plan": 1
+    "chapter_production_run": 4,
+    "context_bundle": 4,
+    "chapter_continuity_report": 4,
+    "feedback_backflow_plan": 0
   },
-  "acceptance_report": "data/runs/long-chain-acceptance-report-long-chain-acceptance-100-chapters-e2160dd4.json",
-  "created_at": "2026-06-30T15:50:02+00:00"
+  "acceptance_report": "data/runs/long-chain-acceptance-report-long-chain-acceptance-400-chapters-795bf659.json",
+  "created_at": "2026-06-30T16:59:17+00:00"
 }

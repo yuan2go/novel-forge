@@ -1,240 +1,41 @@
 {
   "project_id": "real-longchain-webnovel",
-  "target_chapters": 100,
+  "target_chapters": 400,
   "target_chars_per_chapter": 5000,
-  "generated_chapters": 30,
+  "generated_chapters": 35,
   "latest_run_records": [
     {
-      "chapter": 6,
-      "path": "generated/longchain-webnovel/chapters/chapter_006.md",
-      "asset_path": "data/drafts/draft-version-006-3895822a.json",
-      "char_count": 7050,
+      "chapter": 32,
+      "path": "generated/longchain-webnovel/chapters/chapter_032.md",
+      "asset_path": "data/drafts/draft-version-032-5a3e0e90.json",
+      "char_count": 7589,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
     },
     {
-      "chapter": 7,
-      "path": "generated/longchain-webnovel/chapters/chapter_007.md",
-      "asset_path": "data/drafts/draft-version-007-8f8cf451.json",
-      "char_count": 7101,
+      "chapter": 33,
+      "path": "generated/longchain-webnovel/chapters/chapter_033.md",
+      "asset_path": "data/drafts/draft-version-033-43d17273.json",
+      "char_count": 6907,
+      "quality_score": 86.75,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 34,
+      "path": "generated/longchain-webnovel/chapters/chapter_034.md",
+      "asset_path": "data/drafts/draft-version-034-0c01d666.json",
+      "char_count": 6087,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
     },
     {
-      "chapter": 8,
-      "path": "generated/longchain-webnovel/chapters/chapter_008.md",
-      "asset_path": "data/drafts/draft-version-008-f9f5204f.json",
-      "char_count": 6925,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 9,
-      "path": "generated/longchain-webnovel/chapters/chapter_009.md",
-      "asset_path": "data/drafts/draft-version-009-4dfd950c.json",
-      "char_count": 6747,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 10,
-      "path": "generated/longchain-webnovel/chapters/chapter_010.md",
-      "asset_path": "data/drafts/draft-version-010-a0de12d8.json",
-      "char_count": 7372,
-      "quality_score": 95.75,
-      "warnings": [
-        "chapter ending punctuation is weak"
-      ],
-      "cost_paths": []
-    },
-    {
-      "chapter": 11,
-      "path": "generated/longchain-webnovel/chapters/chapter_011.md",
-      "asset_path": "data/drafts/draft-version-011-f6533d42.json",
-      "char_count": 6241,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 12,
-      "path": "generated/longchain-webnovel/chapters/chapter_012.md",
-      "asset_path": "data/drafts/draft-version-012-35dc1228.json",
-      "char_count": 5788,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 13,
-      "path": "generated/longchain-webnovel/chapters/chapter_013.md",
-      "asset_path": "data/drafts/draft-version-013-568ccddd.json",
-      "char_count": 7077,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 14,
-      "path": "generated/longchain-webnovel/chapters/chapter_014.md",
-      "asset_path": "data/drafts/draft-version-014-35a02628.json",
-      "char_count": 7039,
-      "quality_score": 95.75,
-      "warnings": [
-        "chapter ending punctuation is weak"
-      ],
-      "cost_paths": []
-    },
-    {
-      "chapter": 15,
-      "path": "generated/longchain-webnovel/chapters/chapter_015.md",
-      "asset_path": "data/drafts/draft-version-015-b0dd57ed.json",
-      "char_count": 6838,
-      "quality_score": 95.75,
-      "warnings": [
-        "chapter ending punctuation is weak"
-      ],
-      "cost_paths": []
-    },
-    {
-      "chapter": 16,
-      "path": "generated/longchain-webnovel/chapters/chapter_016.md",
-      "asset_path": "data/drafts/draft-version-016-9c28f1a6.json",
-      "char_count": 6656,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 17,
-      "path": "generated/longchain-webnovel/chapters/chapter_017.md",
-      "asset_path": "data/drafts/draft-version-017-f591c1af.json",
-      "char_count": 5455,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 18,
-      "path": "generated/longchain-webnovel/chapters/chapter_018.md",
-      "asset_path": "data/drafts/draft-version-018-801d713d.json",
-      "char_count": 6774,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 19,
-      "path": "generated/longchain-webnovel/chapters/chapter_019.md",
-      "asset_path": "data/drafts/draft-version-019-41125410.json",
-      "char_count": 6918,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 20,
-      "path": "generated/longchain-webnovel/chapters/chapter_020.md",
-      "asset_path": "data/drafts/draft-version-020-81cd63f2.json",
-      "char_count": 6216,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 21,
-      "path": "generated/longchain-webnovel/chapters/chapter_021.md",
-      "asset_path": "data/drafts/draft-version-021-0d71b36e.json",
-      "char_count": 6550,
-      "quality_score": 95.75,
-      "warnings": [
-        "chapter ending punctuation is weak"
-      ],
-      "cost_paths": []
-    },
-    {
-      "chapter": 22,
-      "path": "generated/longchain-webnovel/chapters/chapter_022.md",
-      "asset_path": "data/drafts/draft-version-022-2226b1e2.json",
-      "char_count": 7553,
-      "quality_score": 95.75,
-      "warnings": [
-        "chapter ending punctuation is weak"
-      ],
-      "cost_paths": []
-    },
-    {
-      "chapter": 23,
-      "path": "generated/longchain-webnovel/chapters/chapter_023.md",
-      "asset_path": "data/drafts/draft-version-023-c43f97d8.json",
-      "char_count": 6818,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 24,
-      "path": "generated/longchain-webnovel/chapters/chapter_024.md",
-      "asset_path": "data/drafts/draft-version-024-cb93debe.json",
-      "char_count": 6114,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 25,
-      "path": "generated/longchain-webnovel/chapters/chapter_025.md",
-      "asset_path": "data/drafts/draft-version-025-a7a967f3.json",
-      "char_count": 6921,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 26,
-      "path": "generated/longchain-webnovel/chapters/chapter_026.md",
-      "asset_path": "data/drafts/draft-version-026-eedac502.json",
-      "char_count": 7268,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 27,
-      "path": "generated/longchain-webnovel/chapters/chapter_027.md",
-      "asset_path": "data/drafts/draft-version-027-d5eca0f1.json",
-      "char_count": 6096,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 28,
-      "path": "generated/longchain-webnovel/chapters/chapter_028.md",
-      "asset_path": "data/drafts/draft-version-028-659de144.json",
-      "char_count": 7098,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 29,
-      "path": "generated/longchain-webnovel/chapters/chapter_029.md",
-      "asset_path": "data/drafts/draft-version-029-e0a486a4.json",
-      "char_count": 7460,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 30,
-      "path": "generated/longchain-webnovel/chapters/chapter_030.md",
-      "asset_path": "data/drafts/draft-version-030-d91227d5.json",
-      "char_count": 6151,
+      "chapter": 35,
+      "path": "generated/longchain-webnovel/chapters/chapter_035.md",
+      "asset_path": "data/drafts/draft-version-035-7d3c1c46.json",
+      "char_count": 6903,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
@@ -459,7 +260,42 @@
       "char_count": 6151,
       "warnings": [],
       "quality_score": 100
+    },
+    {
+      "chapter": 31,
+      "summary": "第31章完成：第三十一章封条背后的旧账午后风从东市口拐进来，带着米汤味、湿灰味，还有一点烧焦的麻绳味。封条还在素绸坊门上贴着。一张朱泥纸，压住了半条街的嗓门。早起围在门口的人已经散过一轮，又聚过一轮。卖豆羹的挑子从街头挪到街尾，羹卖完了，勺子还举着，像也等着官府给个说法。脚夫们蹲在墙根，嘴里骂得小声，眼睛却不离那道门。夜档司的人来得迟。不是他们故意摆架子，是城中各衙门都学...",
+      "char_count": 6257,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 32,
+      "summary": "第32章完成：第三十二章账缝里的一笔灰夜档司的门槛，比白日里更会认人。白日来的是差役、书吏、铺户掌柜，脚步一个比一个硬，仿佛把地砖踩响了，话也就有了分量。入夜以后，来的多半是怕事的人，鞋尖先探进来半寸，眼睛再探进来半寸，最后才把人挪进灯影里。今晚第一个探进来的，却是一只竹篾箱。箱子不大，四角用旧铜片包着，铜片上有浅浅的烟痕。提箱的人站在门外，肩膀缩得像被雨打过，偏偏今夜无...",
+      "char_count": 7589,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 33,
+      "summary": "第33章完成：第三十三章铜钉下的空行竹篾箱一落到案上，夜档司里几盏油灯都像矮了一寸。不是风吹的。沈砚看见灯焰往箱角偏，偏得很齐，仿佛那只箱子里另有一口看不见的井，正把光往下吸。箱身旧，篾片却不松，四角铜片压得死紧，唯有右下角一枚铜钉周围发黑，黑得不像烟熏，倒像有人用湿灰一点一点按进去。提箱的人姓卢，是南瓦子口卖灯芯的小贩。平日里一张嘴能把一把灯芯夸成龙须，今晚却连自己的姓...",
+      "char_count": 6907,
+      "warnings": [],
+      "quality_score": 86.75
+    },
+    {
+      "chapter": 34,
+      "summary": "第34章完成：第三十四章账页边上的虫眼卢灯芯一夜没敢走。他蹲在夜档司檐下，双手抱着膝，像一捆被雨泡软的灯草。天还没亮，东街卖早汤的铜勺已经叮当响起来，他听见一声便抬一次头，生怕那只竹篾箱自己从屋里爬出来，顺着石阶滚到他脚边。沈砚也没睡。竹篾箱摆在验案桌上，箱盖未开，四角封条却多贴了两道。不是怕里面的东西逃，是怕外头的人太急。夜档司的门槛，半个时辰里被三拨人踩过。第一拨是南...",
+      "char_count": 6087,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 35,
+      "summary": "第35章完成：第三十五章缺一行的老籍天亮以后，夜档司反倒更像夜里。门外东街热汤铺子支起青布棚，蒸气一团一团往檐下扑，行人肩头挂着水珠，挑担的喊价声从巷口滚进来。可夜档司里没有人敢大声说话。竹篾箱摆在验案桌中央，封条压着封条，红印子叠得像一张被人按疼的脸。卢灯芯蹲在门边，眼下两团青。他昨夜说自己只眯一会儿，结果眯到一半听见箱里有响，吓得抱住门柱，连梦都没敢做完整。沈砚把窗纸...",
+      "char_count": 6903,
+      "warnings": [],
+      "quality_score": 100
     }
   ],
-  "updated_at": "2026-06-30T15:49:05+00:00"
+  "updated_at": "2026-06-30T16:58:18+00:00"
 }
