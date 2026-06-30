@@ -264,9 +264,16 @@ class MockModelTests(unittest.TestCase):
 
             self.assertTrue(result["model_call_log_path"])
             self.assertTrue(result["cost_ledger_path"])
+            self.assertTrue(result["raw_output_segment_paths"])
             run_types = {storage.read_json(path).get("type") for path in storage.list_json("runs")}
             self.assertIn("model_call_log", run_types)
             self.assertIn("cost_ledger", run_types)
+            self.assertIn("operation_raw_output_segment", run_types)
+            checkpoints = [storage.read_json(path) for path in storage.list_json("runs") if storage.read_json(path).get("type") == "agent_checkpoint"]
+            provider_completed = [item for item in checkpoints if item.get("content", {}).get("stage") == "provider_completed"]
+            self.assertTrue(provider_completed)
+            self.assertEqual(provider_completed[-1]["content"]["resume_plan"]["resume_action"], "resume_output_validation")
+            self.assertEqual(provider_completed[-1]["content"]["resume_plan"]["segment_count"], 1)
 
     def test_claude_code_adapter_creates_manual_handoff_packet(self):
         packet = ClaudeCodeAdapter().create_handoff_packet(

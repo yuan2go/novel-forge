@@ -14,7 +14,7 @@ from novel_forge.model_adapters.runtime import (
 )
 from novel_forge.modules.agent_runs import create_agent_failure_report, guard_agent_action, record_agent_gate
 from novel_forge.modules.common import resolve_path
-from novel_forge.modules.operation_checkpoint import record_operation_stage_checkpoint
+from novel_forge.modules.operation_checkpoint import checkpoint_idempotency_key, record_operation_stage_checkpoint, record_raw_output_segment
 from novel_forge.modules.runtime_ledger import record_gate_result, record_model_call_log
 from novel_forge.storage.local import LocalStorage
 
@@ -83,21 +83,24 @@ class GuardedModelAdapter:
             raise
         elapsed_ms = int((time.monotonic() - started) * 1000)
         usage = _provider_usage_from_result(result)
+        raw_output_segments = self._record_raw_output_segments(runtime_operation, result, checkpoint_common, run_info)
+        checkpoint_with_output = {**checkpoint_common, "raw_output_segments": raw_output_segments}
         postflight = self._evaluate_provider_runtime_guard(runtime_operation, context_payload, usage=usage, elapsed_ms=elapsed_ms, phase="postflight")
         if postflight.get("status") == "failed":
-            self._record_stage_checkpoint("provider_completed", checkpoint_common, error=str(postflight.get("message", "")), stage_payload={"guard": postflight, "usage": postflight.get("usage", {})})
+            self._record_stage_checkpoint("provider_completed", checkpoint_with_output, error=str(postflight.get("message", "")), stage_payload={"guard": postflight, "usage": postflight.get("usage", {})})
             self._record_provider_guard_gate(runtime_operation, postflight, run_info, status="failed")
             self._record_failed_model_call(runtime_operation, run_info, postflight, usage=postflight.get("usage", usage))
             self._fail_provider_runtime_guard(runtime_operation, postflight)
         self._record_provider_guard_gate(runtime_operation, postflight, run_info, status="passed")
-        self._record_stage_checkpoint("provider_completed", checkpoint_common, stage_payload={"guard": postflight, "usage": postflight.get("usage", usage)})
+        self._record_stage_checkpoint("provider_completed", checkpoint_with_output, stage_payload={"guard": postflight, "usage": postflight.get("usage", usage)})
         self._record_model_call(runtime_operation, result, usage, context_payload=context_payload, run_info=run_info)
         self._record_stage_checkpoint(
             "output_validated",
-            checkpoint_common,
+            checkpoint_with_output,
             stage_payload={
                 "model_call_log_path": result.get("model_call_log_path", "") if isinstance(result, dict) else "",
                 "usage": postflight.get("usage", usage),
+                "raw_output_segments": raw_output_segments,
             },
         )
         return result
@@ -209,15 +212,28 @@ class GuardedModelAdapter:
 
     def _checkpoint_common(self, operation: str, context: dict[str, Any], run_info: dict[str, Any], prompt_payload: Any) -> dict[str, Any]:
         prompt_hash = hashlib.sha256(json.dumps(prompt_payload, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
+        input_assets = [str(item.get("path", "")) for item in run_info.get("input_assets", []) if isinstance(item, dict) and str(item.get("path", "")).strip()]
+        context_bundle_path = _context_bundle_path(context)
+        prompt_version = str(run_info.get("prompt_version", ""))
+        model = str(run_info.get("model_name") or self.name)
+        idempotency_key = checkpoint_idempotency_key(
+            self.storage,
+            operation=operation,
+            input_assets=input_assets,
+            context_bundle_path=context_bundle_path,
+            prompt_version=prompt_version,
+            model=model,
+        )
         return {
             "operation": operation,
             "agent_run_path": self.agent_run_path,
             "agent_run_id": str(run_info.get("run_id", "")),
-            "input_assets": [str(item.get("path", "")) for item in run_info.get("input_assets", []) if isinstance(item, dict) and str(item.get("path", "")).strip()],
-            "context_bundle_path": _context_bundle_path(context),
-            "prompt_version": str(run_info.get("prompt_version", "")),
+            "input_assets": input_assets,
+            "context_bundle_path": context_bundle_path,
+            "prompt_version": prompt_version,
             "prompt_hash": prompt_hash,
-            "model": str(run_info.get("model_name") or self.name),
+            "model": model,
+            "idempotency_key": idempotency_key,
             "project_id": str(run_info.get("project_id", "")),
             "workspace_path": str(run_info.get("workspace_path", "")),
         }
@@ -227,6 +243,34 @@ class GuardedModelAdapter:
             record_operation_stage_checkpoint(self.storage, stage=stage, error=error, stage_payload=stage_payload or {}, **common)
         except Exception:
             return
+
+    def _record_raw_output_segments(self, operation: str, result: Any, common: dict[str, Any], run_info: dict[str, Any]) -> list[str]:
+        text = _raw_output_text(result)
+        if not text:
+            return []
+        paths: list[str] = []
+        chunk_size = 8000
+        for index, start in enumerate(range(0, len(text), chunk_size), start=1):
+            try:
+                segment = record_raw_output_segment(
+                    self.storage,
+                    operation=operation,
+                    idempotency_key=str(common.get("idempotency_key", "")),
+                    segment_index=index,
+                    text=text[start : start + chunk_size],
+                    raw_payload=_raw_output_payload(result, index=index),
+                    provider=str(run_info.get("model_provider") or self.name),
+                    model=str(run_info.get("model_name") or self.name),
+                    provider_request_id=str(_result_value(result, "provider_request_id") or _result_value(result, "request_id") or ""),
+                    project_id=str(common.get("project_id", "")),
+                    workspace_path=str(common.get("workspace_path", "")),
+                )
+            except Exception:
+                continue
+            paths.append(str(segment.get("path", "")))
+        if isinstance(result, dict):
+            result["raw_output_segment_paths"] = paths
+        return [path for path in paths if path]
 
     def _agent_run_info(self) -> dict[str, Any]:
         try:
@@ -255,6 +299,36 @@ def _provider_usage_from_result(result: Any) -> dict[str, Any]:
             if isinstance(value, dict):
                 return value
     return {}
+
+
+def _raw_output_text(result: Any) -> str:
+    if isinstance(result, dict):
+        for key in ["raw_output", "text", "summary", "content"]:
+            value = result.get(key)
+            if isinstance(value, str) and value.strip():
+                return value
+        return json.dumps(result, ensure_ascii=False, sort_keys=True, default=str)
+    if isinstance(result, str):
+        return result
+    return json.dumps(result, ensure_ascii=False, sort_keys=True, default=str)
+
+
+def _raw_output_payload(result: Any, *, index: int) -> dict[str, Any]:
+    if not isinstance(result, dict):
+        return {"segment_index": index, "raw_type": type(result).__name__}
+    return {
+        "segment_index": index,
+        "provider": result.get("provider", ""),
+        "model": result.get("model", ""),
+        "usage": result.get("usage", result.get("provider_usage", {})),
+        "cost": result.get("cost", {}),
+        "status": result.get("status", "succeeded"),
+        "keys": sorted(str(key) for key in result.keys()),
+    }
+
+
+def _result_value(result: Any, key: str) -> Any:
+    return result.get(key) if isinstance(result, dict) else None
 
 
 def _runtime_operation(adapter_operation: str, context: dict[str, Any], run_info: dict[str, Any]) -> str:
