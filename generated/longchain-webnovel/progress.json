@@ -2,40 +2,44 @@
   "project_id": "real-longchain-webnovel",
   "target_chapters": 400,
   "target_chars_per_chapter": 5000,
-  "generated_chapters": 63,
+  "generated_chapters": 75,
   "latest_run_records": [
     {
-      "chapter": 60,
-      "path": "generated/longchain-webnovel/chapters/chapter_060.md",
-      "asset_path": "data/drafts/draft-version-060-d1453d57.json",
-      "char_count": 6290,
+      "chapter": 72,
+      "path": "generated/longchain-webnovel/chapters/chapter_072.md",
+      "asset_path": "data/drafts/draft-version-072-3b8ea81e.json",
+      "char_count": 6083,
+      "quality_score": 95.75,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "cost_paths": []
+    },
+    {
+      "chapter": 73,
+      "path": "generated/longchain-webnovel/chapters/chapter_073.md",
+      "asset_path": "data/drafts/draft-version-073-95f51d10.json",
+      "char_count": 6590,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
     },
     {
-      "chapter": 61,
-      "path": "generated/longchain-webnovel/chapters/chapter_061.md",
-      "asset_path": "data/drafts/draft-version-061-70891242.json",
-      "char_count": 6414,
-      "quality_score": 100,
-      "warnings": [],
+      "chapter": 74,
+      "path": "generated/longchain-webnovel/chapters/chapter_074.md",
+      "asset_path": "data/drafts/draft-version-074-0c2b1127.json",
+      "char_count": 8980,
+      "quality_score": 95.75,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
       "cost_paths": []
     },
     {
-      "chapter": 62,
-      "path": "generated/longchain-webnovel/chapters/chapter_062.md",
-      "asset_path": "data/drafts/draft-version-062-7a790f20.json",
-      "char_count": 6218,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 63,
-      "path": "generated/longchain-webnovel/chapters/chapter_063.md",
-      "asset_path": "data/drafts/draft-version-063-a16c5c28.json",
-      "char_count": 6810,
+      "chapter": 75,
+      "path": "generated/longchain-webnovel/chapters/chapter_075.md",
+      "asset_path": "data/drafts/draft-version-075-d6199ec5.json",
+      "char_count": 7321,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
@@ -499,7 +503,103 @@
       "char_count": 6810,
       "warnings": [],
       "quality_score": 100
+    },
+    {
+      "chapter": 64,
+      "summary": "第64章完成：第六十四章盐灰认账天亮以后，北档房的门槛比夜里更难看。夜里灯影摇，灰字藏在木纹里，还像是两个不肯认人的鬼画符；一到晨光底下，那两笔灰却清清楚楚贴在门槛内侧，左边一横短，右边一横长，中间有一点细得像针眼的白盐。江砚把纸匣合上，没有立刻说话。钱步同站在他身后，脖子伸得比鹅还长，偏偏脚不肯往前挪。他昨夜被那层潮痕吓得不轻，天亮后胆子回来一半，嘴也回来一半。“江主簿...",
+      "char_count": 8798,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 65,
+      "summary": "第65章完成：第六十五章湿账从门里醒来北档房的门槛被拆下来时，院里站了三圈人。第一圈是档房的人，个个缩着脖子，好像那门槛不是木头，是谁家欠债的老亲戚，拆开就要开口叫名。第二圈是巡街、仓吏和两个被临时叫来的铺户，人人都说自己只是路过，脚底却钉在地上。第三圈最远，是东廊下看热闹的小吏，手里拿着笔，眼睛比笔尖还尖。江砚蹲在门槛前，用竹片把灰痕边上的盐粒一点点拨进纸包。钱步同在旁...",
+      "char_count": 7417,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 66,
+      "summary": "第66章完成：第六十六章盐不是给死人吃的北档房的门槛拆下以后，湿账没有再往外渗水。这件事按理该叫人松一口气。可院里没人敢先松，连钱步同那张惯会把祸事说成买菜少找两个钱的嘴，也闭得比库门还严。江砚把纸包里的盐粒摊在黑漆托盘上，拿竹签拨开。盐粒不白，边角发灰，细看又有一点青。那青不是霉，霉浮在外头，手一抹就散；这青像从盐心里长出来的，针尖似的扎着光。“井盐？”许照青弯腰看。“...",
+      "char_count": 6185,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 67,
+      "summary": "第67章完成：第六十七章账页底下有旧名北档房的盐粒一夜未干。江砚把托盘搁在窗下，窗纸外头天光发灰，屋里那点青色反倒更显眼。盐粒被竹签拨成三行，像三道小小的堤，靠近墨迹的一边泛着针芒。昨夜湿账停了水，门槛也拆了，按理说这桩怪事该有个收口，可盐不肯白，账不肯干，事情便还没完。许照青端来半盏温水，没往盐上倒，只把水盏贴在托盘旁边。盐粒边上的青色慢慢向水气一面偏，像草根见了潮。钱...",
+      "char_count": 6833,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 68,
+      "summary": "第68章完成：第六十八章旧名入账天亮得不大痛快。北档房外的檐水停了，瓦沟里却还挂着一线潮，像谁把昨夜剩下的阴气拴在屋脊上，不肯放它走。江砚把窗支开半掌，冷风一进，托盘里的盐粒便轻轻一颤，三行小堤中间那道青色更深了些。钱小满蹲在案边，盯得眼睛发酸，忍不住道：“江先生，这盐是不是嫌咱们穷？寻常盐白白净净，到咱们手里，偏要长出颜色来。”许照青把水盏挪远一点：“不是长色，是受气。...",
+      "char_count": 8067,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 69,
+      "summary": "第69章完成：第六十九章盐账开口北档房的门闩在辰时响了三下。第一下像人敲门，第二下像木头自己冷得发抖，第三下却从案底传出来，闷闷一声，把钱小满吓得差点把茶泼进盐堤里。“谁？”他抱着空茶盏往后退，“先说是人是账，若是账，排队，今早已经有三册不做人了。”江砚没接他的贫嘴。他把昨夜那只托盘挪到窗下，三行盐堤被湿气浸了一夜，边缘已塌，中间那道青色却凝成一条细细的筋，像有人用铜绿在...",
+      "char_count": 6460,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 70,
+      "summary": "第70章完成：第七十章债从灯里来北档房的灯，是被盐账吹亮的。江砚明明记得，昨夜收工时，他亲手把灯芯掐进冷油里，又用铜罩压住。辰时一过，窗外雨丝还挂在瓦檐上，那盏三年没换过灯座的旧灯却自己吐出一点豆大的青火。火苗不往上窜，反倒贴着灯碗边缘游了一圈，像有人用舌尖舔过一枚旧钱。钱小满正蹲在案下找那声闷响的来处，抬头看见青火，脸色比盐堤还白。“江档头，”他慢慢把脑袋缩回来，“我先...",
+      "char_count": 8037,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 71,
+      "summary": "第71章完成：第七十一章账脚有灰北档房里那盏青火没有烧多久。它绕着灯碗舔完一圈，忽然往里一缩，像被看不见的手按进油底，只剩下一缕淡得发白的烟。烟没有散，贴着桌面爬，爬到那册盐账残页旁边，便停住了。钱小满屏着气，拿两根竹签去挑。竹签还没碰到纸，残页边上先渗出一点黑水。“别碰。”江砚出声。钱小满手一僵，竹签悬在半寸外，喉结上下滚了滚：“江档头，它自己流汗。”“账会流汗，那是账...",
+      "char_count": 6522,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 72,
+      "summary": "第72章完成：{\"copyright_boundary\":\"原创章节；仅使用抽象结构、制度压力、工艺与勘验逻辑，不复用受保护表达、人物组合、设定或情节序列。\",\"notes\":[\"按开端异象、账册工艺线索、司署压力、带代价选择、局部回报、下一钩子推进。\"],\"text\":\"第七十二章油里有印\\n\\n北档房的烟贴着桌面不肯散。\\n\\n江砚把那册盐账残页往灯外挪了半寸，烟也跟...",
+      "char_count": 6083,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 73,
+      "summary": "第73章完成：第七十三章账脊里的针北档房的灯芯爆了一下，像有人在油盏里轻轻弹指。江砚没有抬头。他盯着桌上那册盐账残页。昨夜他们从油印里辨出一道倒置的署押，知道这账不是市盐司一处能做出来的。可到了五更，残页边角忽然渗出一线青黑，沿着纸脊慢慢游走，像一条被冻僵的虫，爬到“丁卯春支银”四字旁，停住不动。阿照抱着一摞晒干的档皮进门，见状脚下一顿：“江主簿，这纸又活了？”“纸不会活...",
+      "char_count": 6590,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 74,
+      "summary": "第74章完成：第七十四章官印下的冷灰北档房最怕天亮。夜里闹出来的东西，若在鸡鸣前能按回纸里，便只算一桩夜案；若拖到衙门开门，门房一声锣响，茶炉一冒白气，所有惊疑都要披上官样衣裳，变成“谁准你查”“谁担这个责”“此物何以在你手中”。鬼神倒还讲因果，公文只认栏格。江砚把那册盐账残页摊在案上，指尖按着纸脊旁那线青黑。青黑停在“丁卯春支银”四字旁，细得像针，却冷得透纸。阿照凑近吹...",
+      "char_count": 8980,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 75,
+      "summary": "第75章完成：第七十五章盐账第一笔天亮以后，北档房的窗纸先白了一线。那一线白光落在盐账残页上，恰好照出纸背一道极浅的压痕。昨夜灯下看不分明，如今晨色一透，字不在墨里，倒像藏在纸骨头里。江砚把残页反扣，用竹尺轻轻刮过。阿照在旁边屏着气，连茶碗都不敢端，怕一口热气把那点痕迹吹没了。老阮蹲在门边给炭盆添灰，嘴里却闲不住：“你们读书人就是讲究，墨写的字不看，偏看没墨的。照这么办，...",
+      "char_count": 7321,
+      "warnings": [],
+      "quality_score": 100
     }
   ],
-  "updated_at": "2026-06-30T18:35:24+00:00"
+  "updated_at": "2026-07-01T01:40:21+00:00"
 }

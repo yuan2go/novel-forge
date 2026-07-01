@@ -7,30 +7,34 @@
     "total_chars": 2000000
   },
   "observed": {
-    "chapters": 63,
-    "total_chars": 428963,
-    "average_chars": 6808.94
+    "chapters": 75,
+    "total_chars": 516256,
+    "average_chars": 6883.41
   },
-  "completion": 0.1575,
+  "completion": 0.1875,
   "quality": {
     "latest_scores": [
       {
-        "chapter": 60,
+        "chapter": 72,
+        "score": 95.75,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 73,
         "score": 100,
         "warnings": []
       },
       {
-        "chapter": 61,
-        "score": 100,
-        "warnings": []
+        "chapter": 74,
+        "score": 95.75,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
       },
       {
-        "chapter": 62,
-        "score": 100,
-        "warnings": []
-      },
-      {
-        "chapter": 63,
+        "chapter": 75,
         "score": 100,
         "warnings": []
       }
@@ -435,10 +439,100 @@
         "score": 100.0,
         "char_count": 6810,
         "warnings": []
+      },
+      {
+        "chapter": 64,
+        "score": 100.0,
+        "char_count": 8798,
+        "warnings": []
+      },
+      {
+        "chapter": 65,
+        "score": 95.75,
+        "char_count": 7417,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 66,
+        "score": 95.75,
+        "char_count": 6185,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 67,
+        "score": 100.0,
+        "char_count": 6833,
+        "warnings": []
+      },
+      {
+        "chapter": 68,
+        "score": 95.75,
+        "char_count": 8067,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 69,
+        "score": 100.0,
+        "char_count": 6460,
+        "warnings": []
+      },
+      {
+        "chapter": 70,
+        "score": 100.0,
+        "char_count": 8037,
+        "warnings": []
+      },
+      {
+        "chapter": 71,
+        "score": 95.75,
+        "char_count": 6522,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 72,
+        "score": 95.75,
+        "char_count": 6083,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 73,
+        "score": 100.0,
+        "char_count": 6590,
+        "warnings": []
+      },
+      {
+        "chapter": 74,
+        "score": 95.75,
+        "char_count": 8980,
+        "warnings": [
+          "chapter ending punctuation is weak"
+        ]
+      },
+      {
+        "chapter": 75,
+        "score": 100.0,
+        "char_count": 7321,
+        "warnings": []
       }
     ],
-    "warning_count": 11,
+    "warning_count": 17,
     "warning_samples": [
+      "chapter ending punctuation is weak",
+      "chapter ending punctuation is weak",
+      "chapter ending punctuation is weak",
+      "chapter ending punctuation is weak",
+      "chapter ending punctuation is weak",
+      "chapter ending punctuation is weak",
       "chapter ending punctuation is weak",
       "chapter ending punctuation is weak",
       "chapter ending punctuation is weak",
@@ -471,32 +565,32 @@
   },
   "cost_drift": {
     "status": "warning",
-    "model_call_count": 133,
-    "provider_model_call_count": 70,
+    "model_call_count": 157,
+    "provider_model_call_count": 82,
     "ledger_count": 0,
-    "total_tokens": 1348117,
-    "average_tokens_per_generated_chapter": 21398.68,
+    "total_tokens": 1610048,
+    "average_tokens_per_generated_chapter": 21467.31,
     "first_window_average_tokens": 8726.0,
-    "latest_window_average_tokens": 21171.6,
-    "token_drift_ratio": 2.4263,
+    "latest_window_average_tokens": 21632.4,
+    "token_drift_ratio": 2.4791,
     "total_cost": 0.0,
     "cost_per_generated_chapter": 0.0,
     "cost_currency": "USD"
   },
   "quality_drift": {
     "status": "passed",
-    "trend": "improving",
+    "trend": "stable",
     "first_window_average_score": 98.3,
-    "latest_window_average_score": 100.0,
-    "score_delta": 1.7,
-    "warning_count": 11,
+    "latest_window_average_score": 97.45,
+    "score_delta": -0.85,
+    "warning_count": 17,
     "average_char_first_window": 7012.6,
-    "average_char_latest_window": 6646.8,
-    "char_drift_ratio": 0.9478
+    "average_char_latest_window": 7099.2,
+    "char_drift_ratio": 1.0123
   },
   "foreshadowing_lifecycle": {
     "overall_status": "passed",
-    "generated_chapters": 63,
+    "generated_chapters": 75,
     "active_count": 1,
     "due_count": 0,
     "overdue_count": 0,
@@ -597,7 +691,13 @@
       38,
       39,
       48,
-      58
+      58,
+      65,
+      66,
+      68,
+      71,
+      72,
+      74
     ],
     "proposal_count": 2
   },
@@ -607,6 +707,6 @@
     "chapter_continuity_report": 4,
     "feedback_backflow_plan": 0
   },
-  "acceptance_report": "data/runs/long-chain-acceptance-report-long-chain-acceptance-400-chapters-faed998d.json",
-  "created_at": "2026-06-30T18:37:37+00:00"
+  "acceptance_report": "data/runs/long-chain-acceptance-report-long-chain-acceptance-400-chapters-f9bbb8ca.json",
+  "created_at": "2026-07-01T01:42:12+00:00"
 }
