@@ -2,44 +2,40 @@
   "project_id": "real-longchain-webnovel",
   "target_chapters": 400,
   "target_chars_per_chapter": 5000,
-  "generated_chapters": 75,
+  "generated_chapters": 87,
   "latest_run_records": [
     {
-      "chapter": 72,
-      "path": "generated/longchain-webnovel/chapters/chapter_072.md",
-      "asset_path": "data/drafts/draft-version-072-3b8ea81e.json",
-      "char_count": 6083,
-      "quality_score": 95.75,
-      "warnings": [
-        "chapter ending punctuation is weak"
-      ],
-      "cost_paths": []
-    },
-    {
-      "chapter": 73,
-      "path": "generated/longchain-webnovel/chapters/chapter_073.md",
-      "asset_path": "data/drafts/draft-version-073-95f51d10.json",
-      "char_count": 6590,
+      "chapter": 84,
+      "path": "generated/longchain-webnovel/chapters/chapter_084.md",
+      "asset_path": "data/drafts/draft-version-084-a7f05c73.json",
+      "char_count": 7737,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
     },
     {
-      "chapter": 74,
-      "path": "generated/longchain-webnovel/chapters/chapter_074.md",
-      "asset_path": "data/drafts/draft-version-074-0c2b1127.json",
-      "char_count": 8980,
-      "quality_score": 95.75,
-      "warnings": [
-        "chapter ending punctuation is weak"
-      ],
+      "chapter": 85,
+      "path": "generated/longchain-webnovel/chapters/chapter_085.md",
+      "asset_path": "data/drafts/draft-version-085-3918e2ac.json",
+      "char_count": 6329,
+      "quality_score": 100,
+      "warnings": [],
       "cost_paths": []
     },
     {
-      "chapter": 75,
-      "path": "generated/longchain-webnovel/chapters/chapter_075.md",
-      "asset_path": "data/drafts/draft-version-075-d6199ec5.json",
-      "char_count": 7321,
+      "chapter": 86,
+      "path": "generated/longchain-webnovel/chapters/chapter_086.md",
+      "asset_path": "data/drafts/draft-version-086-fa972a25.json",
+      "char_count": 6933,
+      "quality_score": 100,
+      "warnings": [],
+      "cost_paths": []
+    },
+    {
+      "chapter": 87,
+      "path": "generated/longchain-webnovel/chapters/chapter_087.md",
+      "asset_path": "data/drafts/draft-version-087-265559b1.json",
+      "char_count": 7666,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
@@ -599,7 +595,93 @@
       "char_count": 7321,
       "warnings": [],
       "quality_score": 100
+    },
+    {
+      "chapter": 76,
+      "summary": "第76章完成：第七十六章账背有人辰时刚过，北档房外的石阶还潮着。昨夜那张盐账残页被晨光照出压痕以后，江砚没有立刻报上去。他把窗纸半掩，又让阿照取来一碗清水、一撮细灰、一张旧熟纸。熟纸覆在账页背面，细灰薄薄一扑，再用羊毫笔杆顺着纸筋轻推，几道没墨的横竖便慢慢浮出来。阿照看得眼睛都直了：“这不是字，是人拿硬物顶出来的？”“不是硬物。”江砚把笔杆停住，“硬物会破纸面。这个痕浅而...",
+      "char_count": 9250,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 77,
+      "summary": "第77章完成：第七十七章灰线入册江砚把那几道压痕看了三遍。横的不像账线，竖的不像栏格，偏偏每一处都落在盐账残页的背面，像有人在纸外另写了一本账，只是不肯给墨。阿照蹲在案边，手里还捏着那撮细灰，鼻尖沾了一点，自己浑然不觉：“江哥，这要是人名，咱们是不是该立刻送去南库？昨夜巡牌才说，凡涉盐课，三房会同。”“送去以后，三房先会同什么？”“会同看账。”“错。”江砚把熟纸从账页背上...",
+      "char_count": 8177,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 78,
+      "summary": "第78章完成：第七十八章账外第一笔南库的门，向来开得比鸡早，关得比债主晚。江砚抱着那册盐账残页到时，天色还没亮透，库前石阶上已经坐了两排人。左边是盐课房的书吏，右边是巡街司的牌手，中间空出一条窄道，像给谁留的刑路。阿照跟在后头，怀里揣着熟纸、炭粉、竹夹和一只小瓷盒。小瓷盒里不是宝贝，是昨夜从账页背面扫下来的细灰。他一路护得比护亲爹还紧，偏偏走到门口，被冷风一扑，打了个喷嚏...",
+      "char_count": 8885,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 79,
+      "summary": "第79章完成：第七十九章灰里有盐南库的门终于开了一半。不是让江砚进去，是让里面的人出来。两个库丁抬着一只木盘，盘上盖着青布。青布不厚，风一吹，下面的东西露出一点白边，像纸，又不像纸。门口两排人同时往前探头，盐课房的书吏探得文雅些，只伸脖子；巡街司的牌手就实在多了，脚尖都踩到窄道里。阿照小声道：“哥，像出殡。”江砚看了他一眼。阿照立刻改口：“像出账。”这话倒更准。木盘落在石...",
+      "char_count": 6832,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 80,
+      "summary": "第80章完成：第八十章铜街听鼓更鼓刚过三下，南库外的窄道忽然安静了。不是没人说话，是所有声音都像被人从中间掐住，只剩尾音贴着墙根往下滑。江砚站在库门外，手里还捏着那片从灰账中挑出的白边纸。纸面被盐气熏得发脆，边缘却不卷，像有一层看不见的浆护着。阿照蹲在石阶下，正用指甲抠靴底的盐粒，抠着抠着抬头：“哥，你听。”江砚听见了。南库里没有风，库脊上却传来一阵鼓声。咚。很轻，像有人...",
+      "char_count": 5713,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 81,
+      "summary": "第81章完成：第八十一章纸鼓换牌鼓声从库脊里落下来，轻得像一颗盐粒砸在空碗里。江砚没有立刻进门。南库的门槛已经被夜潮泡出白痕，门缝里却透出一线暗红，不像灯火，倒像旧漆在自己发热。阿照抠靴底的手停在半空，嘴上还硬：“哥，要不我先喊一嗓子？万一里面躲着人，吓也吓出来。”“躲着人的鼓，不会从梁上响。”江砚把白边纸夹进账册，伸手按住库门铜环。铜环冰凉。第二声鼓响时，铜环里却震出一...",
+      "char_count": 6017,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 82,
+      "summary": "第82章完成：第八十二章灯盐过桥南库的门终于开了。门轴没有响，倒是门槛下先滚出一撮盐，细白，像有人在屋里磨了一夜骨粉。阿照往后一蹦，差点踩进排水沟，嘴上还不肯输：“这库里管饭？怎么还先撒盐迎客。”江砚没笑。盐不是随手撒的。它从门槛内侧一道窄槽里漏出来，薄薄一线，正好截住门口。旧法里盐能防潮，也能记脚印。若有人从里头出来，鞋底必然拖出断痕；若没人出来，盐线就该平整如尺。可眼...",
+      "char_count": 7755,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 83,
+      "summary": "第83章完成：第八十三章霜线牵城盐线没有断，门却开了。这事比门里躺着个人还叫人背后发凉。人能藏，脚能轻，盐线这种东西不会替谁说谎。它薄薄横在门槛内侧，像一根白得过分的眉毛，连灰都没沾上。阿照蹲下去看，鼻尖差点贴到地上，忍了半天还是小声道：“要么是鬼讲规矩，知道进出要绕门；要么是人比我还会省鞋底。”江砚从袖里取出竹签，没碰盐，只沿槽边挑起一点木屑。木屑发黑，潮里带甜，闻着像...",
+      "char_count": 5110,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 84,
+      "summary": "第84章完成：第八十四章铜牌换命阿照把那块门牌翻过来时，屋里所有人都静了一瞬。门牌不是这家的。它背面刻着一行细小的局号，铜锈堵在笔画里，像一群冻死的蚁。若只是旧牌错挂，倒也不稀奇。旧城里拆过街、并过坊，许多门户一夜之间换了号，连住户自己都能把前朝的门牌留到孙子娶亲。可这块牌的边沿有新磨痕。江砚伸出竹签，轻轻拨开铜牌背后的灰泥。灰泥里混了细盐，盐粒受潮后结成小白点，嵌在铜与...",
+      "char_count": 7737,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 85,
+      "summary": "第85章完成：第八十五章盐线过坊门牌背后的细盐还在返潮。阿照把铜牌搁在桌上，没敢再用手碰。那东西在灯下静静躺着，边沿的新磨痕泛出一点暗亮，像有人刚给旧尸修过指甲。屋外夜风穿过破窗纸，吹得油灯一缩一伸，墙上众人的影子也跟着矮下去又站起来。江砚没看铜牌，先看地。“谁刚才进门踩了水？”众人一怔。小七忙抬脚，鞋底干的。老范把自己的靴子往后藏了藏，藏完又觉得太明显，只好咳了一声：“...",
+      "char_count": 6329,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 86,
+      "summary": "第86章完成：第八十六章牌牙入水天快亮时，坊门外忽然响了一声锣。那锣不是巡夜的更锣。更锣拖尾，像人困到极处还要把一句话说完；这一声却短，脆，像有人拿铜片敲在骨头上，只响一下，余音便钻进雾里没了。阿照刚把盐线铜牌包进油纸，手一抖，差点把纸角撕开。小七从门缝往外看：“没见人。”江砚已经站了起来。桌上那块铜牌在油纸里慢慢鼓起一点，像里头含了口气。包纸边缘渗出细白盐霜，盐霜不是平...",
+      "char_count": 6933,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 87,
+      "summary": "第87章完成：第八十七章盐线借路天亮之前，铜牌先喘了一口气。那声气不大，像旧柜里压了多年的账册忽然松开纸缝。阿照听见时，窗外锣声已经散尽，坊门外的雾却往巷子里倒灌，贴着青砖一寸一寸爬。油纸包在桌上鼓起，盐霜沿着纸角往外走，走到桌沿便停住，堆成一条细细白线。小七伸手要按，被江砚用竹尺拦住。“别碰。”“它还能咬人？”小七嘴上硬，手却缩得比账房见欠条还快。阿照盯着盐线：“不是咬...",
+      "char_count": 7666,
+      "warnings": [],
+      "quality_score": 100
     }
   ],
-  "updated_at": "2026-07-01T01:40:21+00:00"
+  "updated_at": "2026-07-01T02:28:25+00:00"
 }

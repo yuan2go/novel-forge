@@ -1,12 +1,12 @@
 {
   "status": "paused_after_max_batches",
-  "started_at": "2026-07-01T00:57:52Z",
-  "updated_at": "2026-07-01T01:42:12Z",
+  "started_at": "2026-07-01T01:46:11Z",
+  "updated_at": "2026-07-01T02:30:48Z",
   "target_chapters": 400,
-  "generated_chapters": 75,
+  "generated_chapters": 87,
   "batch_size": 4,
   "completed_batches": 3,
-  "completion": 0.1875,
+  "completion": 0.2175,
   "pressure_acceptance": {
     "status": "warning",
     "checks": {
@@ -19,33 +19,33 @@
   },
   "quality_drift": {
     "status": "passed",
-    "trend": "stable",
+    "trend": "improving",
     "first_window_average_score": 98.3,
-    "latest_window_average_score": 97.45,
-    "score_delta": -0.85,
-    "warning_count": 17,
+    "latest_window_average_score": 100.0,
+    "score_delta": 1.7,
+    "warning_count": 18,
     "average_char_first_window": 7012.6,
-    "average_char_latest_window": 7099.2,
-    "char_drift_ratio": 1.0123
+    "average_char_latest_window": 6755.0,
+    "char_drift_ratio": 0.9633
   },
   "cost_drift": {
     "status": "warning",
-    "model_call_count": 157,
-    "provider_model_call_count": 82,
+    "model_call_count": 181,
+    "provider_model_call_count": 94,
     "ledger_count": 0,
-    "total_tokens": 1610048,
-    "average_tokens_per_generated_chapter": 21467.31,
+    "total_tokens": 1870920,
+    "average_tokens_per_generated_chapter": 21504.83,
     "first_window_average_tokens": 8726.0,
-    "latest_window_average_tokens": 21632.4,
-    "token_drift_ratio": 2.4791,
+    "latest_window_average_tokens": 21300.2,
+    "token_drift_ratio": 2.441,
     "total_cost": 0.0,
     "cost_per_generated_chapter": 0.0,
     "cost_currency": "USD"
   },
   "foreshadowing_lifecycle": {
     "overall_status": "passed",
-    "generated_chapters": 75,
-    "active_count": 1,
+    "generated_chapters": 87,
+    "active_count": 0,
     "due_count": 0,
     "overdue_count": 0,
     "hooks": [
@@ -125,8 +125,34 @@
         "payoff_window": "chapters 80-100",
         "window_start": 80,
         "window_end": 100,
-        "status": "seeded",
-        "payoff_evidence": []
+        "status": "paid_off",
+        "payoff_evidence": [
+          {
+            "chapter": 81,
+            "marker": "各司",
+            "evidence_span": "掉，它就拿开门的人抵数。”这话说得平静，阿照却听得后背发麻。城里各司各库的旧规矩多，平日里挂在墙上，谁也不当真；可一旦被遗物醒了，那"
+          },
+          {
+            "chapter": 82,
+            "marker": "官府",
+            "evidence_span": "被抹，旧界被吞，三十年灯盐余钱不知去向！我们不向摊户收一文，只问官府还名，还账，还公道！”这话比碗底字高明得多。它把恐惧翻成了义愤，"
+          },
+          {
+            "chapter": 83,
+            "marker": "机器",
+            "evidence_span": "不灭、沟不堵、米不涨；他写必追，是知道有人会借救急养出一台吃账的机器。债没有轻，反而更重。因为这债不是洗清师父就完了，而是要照着师父"
+          },
+          {
+            "chapter": 84,
+            "marker": "机器",
+            "evidence_span": "、熟悉坊簿规矩，还熟悉老沈的过去。这不是路过的害人术士。这是旧城机器里伸出来的一只手。老沈走到他身边：“想问就问。”江砚道：“当年南"
+          },
+          {
+            "chapter": 86,
+            "marker": "机器",
+            "evidence_span": "的工、货、物再被扣走。坊门、牌牙、盐线，全成了一台把人推入欠账的机器。这就是地区机器的成本。他们带着沈介赶回本坊时，半个时辰刚到。阿"
+          }
+        ]
       }
     ]
   },
@@ -151,7 +177,8 @@
       68,
       71,
       72,
-      74
+      74,
+      80
     ],
     "proposal_count": 2
   },
