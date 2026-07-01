@@ -2,40 +2,42 @@
   "project_id": "real-longchain-webnovel",
   "target_chapters": 400,
   "target_chars_per_chapter": 5000,
-  "generated_chapters": 87,
+  "generated_chapters": 99,
   "latest_run_records": [
     {
-      "chapter": 84,
-      "path": "generated/longchain-webnovel/chapters/chapter_084.md",
-      "asset_path": "data/drafts/draft-version-084-a7f05c73.json",
-      "char_count": 7737,
+      "chapter": 96,
+      "path": "generated/longchain-webnovel/chapters/chapter_096.md",
+      "asset_path": "data/drafts/draft-version-096-6f41fe7a.json",
+      "char_count": 6745,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
     },
     {
-      "chapter": 85,
-      "path": "generated/longchain-webnovel/chapters/chapter_085.md",
-      "asset_path": "data/drafts/draft-version-085-3918e2ac.json",
-      "char_count": 6329,
+      "chapter": 97,
+      "path": "generated/longchain-webnovel/chapters/chapter_097.md",
+      "asset_path": "data/drafts/draft-version-097-32a4ba87.json",
+      "char_count": 5978,
+      "quality_score": 95.75,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "cost_paths": []
+    },
+    {
+      "chapter": 98,
+      "path": "generated/longchain-webnovel/chapters/chapter_098.md",
+      "asset_path": "data/drafts/draft-version-098-b9fe210d.json",
+      "char_count": 5783,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
     },
     {
-      "chapter": 86,
-      "path": "generated/longchain-webnovel/chapters/chapter_086.md",
-      "asset_path": "data/drafts/draft-version-086-fa972a25.json",
-      "char_count": 6933,
-      "quality_score": 100,
-      "warnings": [],
-      "cost_paths": []
-    },
-    {
-      "chapter": 87,
-      "path": "generated/longchain-webnovel/chapters/chapter_087.md",
-      "asset_path": "data/drafts/draft-version-087-265559b1.json",
-      "char_count": 7666,
+      "chapter": 99,
+      "path": "generated/longchain-webnovel/chapters/chapter_099.md",
+      "asset_path": "data/drafts/draft-version-099-a0d8e4ff.json",
+      "char_count": 5118,
       "quality_score": 100,
       "warnings": [],
       "cost_paths": []
@@ -681,7 +683,97 @@
       "char_count": 7666,
       "warnings": [],
       "quality_score": 100
+    },
+    {
+      "chapter": 88,
+      "summary": "第88章完成：第八十八章井税听声卯时三刻，东槐坊的井先醒了。不是水声醒，是账声醒。阿照一脚刚跨过坊门，就听见井栏里哗啦啦响，像有人把一串铜钱倒进空瓮。晨雾还没散，挑水的妇人们围在井旁，扁担横七竖八架着，谁也不敢先下桶。井口上贴了一张新黄榜，墨迹未干，写的是巡水司临时告示：本坊井水自今日起按桶登记，三桶以上，另纳井税。小七看完差点笑出声，又硬生生憋住：“水也收税？那我以后喘...",
+      "char_count": 6166,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 89,
+      "summary": "第89章完成：第八十九章灶灰封印东槐坊的井税黄榜还没晒干，南篾市先冒了白烟。烟不是从灶膛里起的。卯时刚过，卖蒸饼的老柳揭开第一笼，笼屉里没有饼香，倒飘出一层薄白雾，贴着地往街心爬。雾里夹着细碎响动，像有人拿竹签一下一下刮账册。阿照赶到时，整条南篾市都站在雾里。竹器铺、药材摊、早食担子，全把火压灭了，可白烟仍从每家灶灰口往外吐。更怪的是，烟一过脚面，人的鞋底便沾上一圈灰印，...",
+      "char_count": 7126,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 90,
+      "summary": "第90章完成：第九十章铜尺量雾南篾市的白烟散到辰时，街面像被人拿冷水洗过，灰印却还留在每个人鞋底。阿照蹲在竹器铺门槛前，用竹签挑起一点灰。灰不是灶灰，细得过分，落在指腹上竟有微微的涩意。他拿鼻尖一嗅，没有焦糊味，倒有一股湿麻绳泡久了的酸气。老柳在旁边抖着鞋，越抖越急：“阿照，昨儿井税黄榜才贴，今儿灶里就吐白烟。东槐坊要钱，南篾市要命，这城是准备把百姓当面团揉？”阿照没接这...",
+      "char_count": 7473,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 91,
+      "summary": "第91章完成：第九十一章纸桥过税白烟散后的第二日，南篾市没有开早锣。这事比白烟还怪。南篾市靠竹篾、纸扎、绳索吃饭，天不亮便有人劈竹，刀背敲案，声响一层压一层，像把整条街的骨头敲醒。可今日辰时过半，街上只听见风刮过竹帘，帘片相撞，薄薄几声，像有人在暗处磨牙。阿照从井税黄榜下经过，榜角被夜露泡卷，墨色却更黑。黄榜旁新钉了一块小牌，牌上六个字：桥纸另验，逾时倍征。老柳念完，脸当...",
+      "char_count": 6152,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 92,
+      "summary": "第92章完成：第九十二章竹灰验桥南篾市不开早锣，到了午后，连卖凉茶的都不敢把铜勺敲响。阿照站在桥纸验棚外，看见棚檐下挂着一串细竹铃。风从河面上来，竹铃该响，却一只只垂着，像被人塞住了喉咙。这就是今日的怪处。纸桥要验，桥纸另税，逾时倍征，听着像衙门多伸了一只手。可衙门伸手，总要手指头会动。南篾市这些年最会动的就是声音：劈竹声、拉篾声、糊纸声、吆喝声。今日街上静得过分，静到每...",
+      "char_count": 6947,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 93,
+      "summary": "第93章完成：第九十三章倒签的税筹桥纸验棚里的竹铃不响，桥外的水却先响了。不是水拍桥墩，也不是船篙点岸。那声音从税案底下传出来，细细一串，像有人把算盘珠子含在嘴里，一颗一颗往牙上磕。阿照正弯腰看棚脚的竹灰，听见这动静，手里的银针停在半寸外。桥南篾市的人也停了。前一章闹到这里，众人刚知道所谓桥纸另税，不是衙门新设的明条，而是被人借旧验纸规矩另搭了一层暗门。纸户要过桥，得先把...",
+      "char_count": 6505,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 94,
+      "summary": "第94章完成：第九十四章纸筋里的第二枚印税案底下的响声一停，桥纸验棚里反倒更静。阿照把银针从竹灰上移开，掌心贴住案边。那张旧税案是槐木做的，木心早被水汽熏得发黑，平日搬动时只会闷响，此刻却有细细碎碎的声从里头走，像一队看不见的小吏，抱着账册在木缝里赶路。桥南篾市的人挤在棚外，谁也不敢先笑。方才他们还喊着要退桥纸钱，要把验棚掀了，如今听见税案自己作响，胆子大的也只敢把嘴闭紧...",
+      "char_count": 6366,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 95,
+      "summary": "第95章完成：第九十五章桥南灯契税案里的碎响没有立刻停。阿照听了三息，忽然把手从案边收回，指尖却多了一层灰白的细粉。那粉不是木灰，也不是纸屑，捻开时有一点涩，像久泡的石灰，又带着竹筋蒸过后的酸气。棚外有人咽了一口唾沫。“案子会走账？”篾市一个卖灯笼骨的老汉压低声问，“那我家欠下的三吊桥纸钱，是不是也能自己走没？”旁边立刻有人拽他袖子：“你少盼好事。官案会走，先走的多半是你...",
+      "char_count": 6986,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 96,
+      "summary": "第96章完成：第九十六章纸桥上的第二笔桥南灯契税案没有等到天亮。夜档棚外那排旧灯骨本来已经按规矩收进灰绳里，风一吹，灯影却从地上倒着爬了回去。不是灯笼动，是影子动。十几条细长的竹影像被人从桥缝里拽住，一寸一寸往水面贴，贴到第三寸时，桥下传来一声很轻的响。咔。阿照正把那层灰白细粉收进小纸包，听见这声，眼皮没抬，先用指节敲了敲案边的铜尺。铜尺不响。“坏了。”她说。棚里三个人同...",
+      "char_count": 6745,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 97,
+      "summary": "第97章完成：{\"text\":\"第九十七章倒验灯灰\\n\\n桥下那一声轻响落进水里，像有人把一枚冷钱投进了夜。\\n\\n阿照没有立刻探头。她先把铜尺翻过来，尺背贴在案面上，又用那只沾了灰粉的指尖沿尺边慢慢抹了一道。灰白粉末被拉成细线，线头到了第三寸，忽然往外散开，散成一朵很小的梅花。\\n\\n棚里的老差役看得喉结一动。\\n\\n“这粉认路？”\\n\\n“粉不认路。”阿照说，“风认。...",
+      "char_count": 5978,
+      "warnings": [
+        "chapter ending punctuation is weak"
+      ],
+      "quality_score": 95.75
+    },
+    {
+      "chapter": 98,
+      "summary": "第98章完成：第九十八章泥契照影桥下那一点轻响，没有再响第二声。夜水贴着桥洞往东流，灯灰被风吹散以后，棚口只剩几缕湿冷的腥气。阿照蹲在案边，指尖还沾着灰粉。她没有去看水面，先看那把铜尺。尺背上，第三寸外的灰线散成梅花，梅花旁边又多出一道极细的弯痕。那痕不像刀划，也不像虫爬，倒像有人用湿指甲在铜上轻轻摁过，摁完又怕人瞧见，急忙抹平。老差役把油灯往前挪了半寸，灯火一靠近，弯痕...",
+      "char_count": 5783,
+      "warnings": [],
+      "quality_score": 100
+    },
+    {
+      "chapter": 99,
+      "summary": "第99章完成：第九十九章井税无声桥下捞出的不是尸骨，也不是账册。那只沉在水窝里的匣子，被老差役用竹钩挑上来时，外头裹着三层油布，油布外又缠麻线。麻线一断，水从缝里渗出，滴在青砖上，竟不是寻常河水的腥味，而有一股淡淡的石灰涩气。阿照先退了半步。老差役正要伸手，见她退，手也悬住了，低声道：“又会咬人？”“匣子不会。”阿照盯着地上的水痕，“里头的规矩会。”棚里几盏灯被夜风吹得发...",
+      "char_count": 5118,
+      "warnings": [],
+      "quality_score": 100
     }
   ],
-  "updated_at": "2026-07-01T02:28:25+00:00"
+  "updated_at": "2026-07-01T03:11:37+00:00"
 }
