@@ -9,6 +9,7 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
+from novel_forge.modules.longform_stability import create_revision_task_from_gate, evaluate_longform_stability_gate
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.modules.semantic_enhancement import analyze_story_semantics
 from novel_forge.modules.standards import create_quality_score_report
@@ -216,6 +217,11 @@ def create_publish_gate_report(
     audit_path = resolve_path(storage.root, chapter_audit_path) if chapter_audit_path else create_chapter_audit_report(storage, path, workspace_path=workspace_path)
     audit = _read_asset_dict(storage, audit_path)
     gate_data = _publish_gates(audit, context)
+    longform_gate = evaluate_longform_stability_gate(storage, path, workspace_path=workspace_path)
+    gate_data["gates"]["longform_stability_passed"] = bool(longform_gate.get("passed"))
+    for key, value in longform_gate.get("gates", {}).items():
+        gate_data["gates"][f"longform_{key}"] = bool(value)
+    gate_data["blocking_issues"].extend(longform_gate.get("blocking_issues", []))
     blocking = gate_data["blocking_issues"]
     decision = "ready"
     if any(issue.get("severity") == "high" for issue in blocking):
@@ -235,10 +241,12 @@ def create_publish_gate_report(
             "blocking_issues": blocking,
             "required_reports": {
                 "chapter_audit_report_path": _display_path(storage.root, Path(audit_path)),
+                "longform_stability_reports": longform_gate.get("required_reports", {}),
                 **(audit.get("content", {}).get("linked_reports", {}) if isinstance(audit.get("content", {}), dict) else {}),
             },
             "human_override": bool(human_override),
             "preflight": context.get("preflight", {}),
+            "longform_stability": longform_gate,
         },
         metadata={
             "workflow": "publish-gate",
@@ -265,6 +273,14 @@ def create_publish_gate_report(
         run.guard("read_asset")
         run.guard("write_publish_gate_report", "publish_gate_report")
         output = storage.write_asset("publishing", asset)
+        if decision != "ready":
+            create_revision_task_from_gate(
+                storage,
+                output,
+                path,
+                blocking_issues=blocking,
+                workspace_path=str(project.get("workspace_path", "")) or workspace_path,
+            )
         run.succeed(output_assets=[_display_path(storage.root, output)])
         return output
 

@@ -76,6 +76,20 @@ class ProviderRuntimeGuardTests(unittest.TestCase):
         self.assertEqual(cost["currency"], "USD")
         self.assertEqual(cost["source"], "provider_usage")
 
+    def test_guard_blocks_cost_cutoff_with_triggered_dimension(self):
+        result = evaluate_provider_runtime_guard(
+            operation="draft",
+            provider="local-provider",
+            usage={"input_tokens": 1000, "output_tokens": 1000, "total_tokens": 2000},
+            guard=ProviderRuntimeGuard(max_cost=0.001, cost_profile={"per_1k": 0.01, "currency": "USD"}),
+        )
+
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["error_type"], "ProviderCostCutoffExceeded")
+        self.assertTrue(result["hard_stop"]["cost"]["triggered"])
+        self.assertFalse(result["hard_stop"]["timeout"]["triggered"])
+        self.assertIn("provider_cost_cutoff", {event["event_type"] for event in result["events"]})
+
     def test_guard_blocks_token_timeout_and_cancel_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             cancel_file = Path(tmp) / "cancel.flag"

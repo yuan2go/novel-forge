@@ -36,6 +36,16 @@ NOVEL_KG_SOURCE_TYPES = {
     "revision_plan",
     "canon_graph_snapshot",
     "canon_patch",
+    "canon_database",
+    "chapter_state",
+    "chapter_pattern_report",
+    "fact_ledger",
+    "arc_plan",
+    "foreshadowing_graph",
+    "motif_budget_report",
+    "character_state_ledger",
+    "villain_operation_plan",
+    "reward_ledger",
 }
 
 

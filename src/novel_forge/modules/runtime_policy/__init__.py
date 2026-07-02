@@ -8,10 +8,12 @@ from novel_forge.modules.runtime_policy.service import (
     commit_runtime_outputs,
     fail_runtime_execution,
     record_runtime_model_result,
+    provider_hard_stop_evidence_report,
     runtime_policy_enforcement_report,
     runtime_policy_envelope,
     runtime_policy_legacy_entrypoint_audit,
     runtime_policy_mode,
+    runtime_policy_surface_coverage_report,
     runtime_policy_status,
 )
 
@@ -25,9 +27,11 @@ __all__ = [
     "commit_runtime_outputs",
     "fail_runtime_execution",
     "record_runtime_model_result",
+    "provider_hard_stop_evidence_report",
     "runtime_policy_enforcement_report",
     "runtime_policy_envelope",
     "runtime_policy_legacy_entrypoint_audit",
     "runtime_policy_mode",
+    "runtime_policy_surface_coverage_report",
     "runtime_policy_status",
 ]

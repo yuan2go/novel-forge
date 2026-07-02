@@ -211,6 +211,100 @@ OPERATION_POLICIES: dict[str, OperationPolicy] = {
         required_gates=("runtime_policy",),
         description="Review a handoff output against acceptance criteria and copyright boundary.",
     ),
+    "model_assisted_longform_extraction": _policy(
+        "model_assisted_longform_extraction",
+        required_input_types=("draft_chapter", "draft_version"),
+        allowed_output_types=(
+            "chapter_state",
+            "chapter_pattern_report",
+            "fact_ledger",
+            "motif_budget_report",
+            "character_state_ledger",
+            "foreshadowing_graph",
+            "villain_operation_plan",
+            "reader_fatigue_report",
+            "style_control_plan",
+            "platform_adapter_report",
+            "reward_ledger",
+            "review_score_system_report",
+        ),
+        require_context_bundle=False,
+        require_budget_policy=False,
+        required_gates=("runtime_policy", "provider_runtime_guard"),
+        description="Extract long-form stability evidence with model assistance and deterministic fallback.",
+    ),
+    "publish_gate_report": _policy(
+        "publish_gate_report",
+        operation_kind="mutation",
+        required_input_types=("draft_chapter", "draft_version"),
+        allowed_output_types=("publish_gate_report", "revision_task"),
+        require_context_bundle=False,
+        require_budget_policy=False,
+        require_model_call_log=False,
+        require_cost_ledger_for_cost=False,
+        required_gates=("runtime_policy", "publish", "longform_os_acceptance"),
+        description="Create a publish gate report and block non-canonical chapter promotion.",
+    ),
+    "publishing_plan": _policy(
+        "publishing_plan",
+        operation_kind="mutation",
+        required_input_types=("release_package", "publish_gate_report"),
+        allowed_output_types=("publishing_plan",),
+        require_context_bundle=False,
+        require_budget_policy=False,
+        require_model_call_log=False,
+        require_cost_ledger_for_cost=False,
+        required_gates=("runtime_policy", "publish"),
+        description="Create a platform publishing plan from release packages.",
+    ),
+    "publishing_log": _policy(
+        "publishing_log",
+        operation_kind="mutation",
+        required_input_types=("release_package",),
+        allowed_output_types=("publishing_log",),
+        require_context_bundle=False,
+        require_budget_policy=False,
+        require_model_call_log=False,
+        require_cost_ledger_for_cost=False,
+        required_gates=("runtime_policy", "publish"),
+        description="Record a publishing action with rollback and feedback evidence.",
+    ),
+    "feedback_backflow": _policy(
+        "feedback_backflow",
+        operation_kind="mutation",
+        required_input_types=("reader_feedback", "feedback_insight", "reader_sentiment_report"),
+        allowed_output_types=("feedback_backflow_plan", "feedback_cluster", "plan_adjustment_proposal", "review_rule_update_proposal", "feedback_kg_patch"),
+        require_context_bundle=False,
+        require_budget_policy=False,
+        require_model_call_log=False,
+        require_cost_ledger_for_cost=False,
+        required_gates=("runtime_policy", "feedback"),
+        description="Convert reader feedback into human-gated plan, review-rule, or KG proposals.",
+    ),
+    "rollback_rehearsal": _policy(
+        "rollback_rehearsal",
+        operation_kind="mutation",
+        required_input_types=("operation_transaction", "rollback_plan"),
+        allowed_output_types=("rollback_coordination_report", "local_ops_drill_report"),
+        require_context_bundle=False,
+        require_budget_policy=False,
+        require_model_call_log=False,
+        require_cost_ledger_for_cost=False,
+        required_gates=("runtime_policy",),
+        description="Preview rollback consistency without mutating production assets unless confirmed.",
+    ),
+    "pgvector_operations_plan": _policy(
+        "pgvector_operations_plan",
+        operation_kind="mutation",
+        required_input_types=("memory_record", "knowledge_card", "novel_kg_snapshot", "review_report"),
+        allowed_output_types=("pgvector_schema_plan", "embedding_job", "hybrid_retrieval_report", "local_ops_drill_report"),
+        require_context_bundle=False,
+        require_budget_policy=False,
+        require_model_call_log=False,
+        require_cost_ledger_for_cost=False,
+        required_gates=("runtime_policy",),
+        description="Plan or rehearse pgvector migration, retrieval, and pressure operations.",
+    ),
 }
 
 for _alias, _target in {
@@ -223,6 +317,14 @@ for _alias, _target in {
     "generate-chapter-plan": "generate_chapter_plan",
     "develop-topic": "develop_topic",
     "topic": "develop_topic",
+    "longform_extraction": "model_assisted_longform_extraction",
+    "publish_gate": "publish_gate_report",
+    "create_publish_gate_report": "publish_gate_report",
+    "create_publishing_plan": "publishing_plan",
+    "create_publishing_log": "publishing_log",
+    "create_feedback_backflow_plan": "feedback_backflow",
+    "create_rollback_rehearsal": "rollback_rehearsal",
+    "pgvector_ops": "pgvector_operations_plan",
 }.items():
     OPERATION_POLICIES[_alias] = OPERATION_POLICIES[_target]
 
@@ -514,6 +616,143 @@ def runtime_policy_enforcement_report(
     }
 
 
+def runtime_policy_surface_coverage_report(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+    mode: str | None = None,
+    repo_root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Operator-facing proof that OS envelope coverage is broad and auditable."""
+
+    storage.ensure_layout()
+    resolved_mode = runtime_policy_mode(mode)
+    policies = _unique_policies()
+    enforcement = runtime_policy_enforcement_report(storage, project_id=project_id, workspace_path=workspace_path, mode=resolved_mode)
+    legacy = runtime_policy_legacy_entrypoint_audit(repo_root=repo_root)
+    provider = provider_hard_stop_evidence_report(storage, project_id=project_id, workspace_path=workspace_path)
+    review_required = [row for row in legacy["entrypoints"] if row.get("status") == "review_required"]
+    strict_blockers = [
+        *[f"legacy entrypoint requires review: {row['path']}" for row in review_required],
+        *[f"runtime evidence missing: {operation}" for operation in enforcement.get("uncovered_operations", [])],
+    ]
+    policy_rows = []
+    for policy in sorted(policies.values(), key=lambda item: item.operation):
+        operation_report = next((row for row in enforcement["operations"] if row["operation"] == policy.operation), {})
+        policy_rows.append(
+            {
+                "operation": policy.operation,
+                "operation_kind": policy.operation_kind,
+                "envelope_required": policy.operation_kind in {"model", "mutation"},
+                "requires_model_call_log": policy.require_model_call_log,
+                "requires_context_bundle": policy.require_context_bundle,
+                "requires_budget_policy": policy.require_budget_policy,
+                "requires_gates": list(policy.required_gates),
+                "evidence_status": operation_report.get("status", "not_observed"),
+                "issues": operation_report.get("issues", []),
+                "recommendation": "bind through RuntimePolicyEnvelope/ModelGateway/Agent Scheduler before strict OS use"
+                if operation_report.get("issues")
+                else "covered by registered OS policy",
+            }
+        )
+    score_components = [
+        1.0 - (len(review_required) / max(1, legacy["summary"]["candidate_count"])),
+        enforcement["summary"]["covered_operation_count"] / max(1, enforcement["summary"]["operation_count"]),
+        provider["summary"]["covered_hard_stop_dimension_count"] / max(1, provider["summary"]["required_hard_stop_dimension_count"]),
+    ]
+    score = round(100 * sum(score_components) / len(score_components))
+    status = "blocked" if strict_blockers and resolved_mode == "operating_system" else "warning" if strict_blockers or provider["summary"]["missing_dimensions"] else "passed"
+    return {
+        "status": status,
+        "mode": resolved_mode,
+        "project_id": project_id or "",
+        "workspace_path": workspace_path or "",
+        "summary": {
+            "score": score,
+            "operation_policy_count": len(policy_rows),
+            "legacy_candidate_count": legacy["summary"]["candidate_count"],
+            "legacy_review_required_count": len(review_required),
+            "uncovered_operation_count": enforcement["summary"]["uncovered_operation_count"],
+            "provider_hard_stop_status": provider["status"],
+            "strict_blocker_count": len(strict_blockers),
+        },
+        "surface_matrix": policy_rows,
+        "policy_rows": policy_rows,
+        "legacy_audit": legacy,
+        "enforcement_report": enforcement,
+        "provider_hard_stop_evidence": provider,
+        "strict_blockers": strict_blockers,
+        "recommendations": _surface_coverage_recommendations(strict_blockers, provider),
+        "created_at": utc_now(),
+    }
+
+
+def provider_hard_stop_evidence_report(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+) -> dict[str, Any]:
+    storage.ensure_layout()
+    gates = _assets_by_type(storage, "gate_result", project_id=project_id, workspace_path=workspace_path)
+    model_calls = _assets_by_type(storage, "model_call_log", project_id=project_id, workspace_path=workspace_path)
+    provider_gates = [row for row in gates if _content(row).get("gate_kind") == "provider_runtime_guard"]
+    dimensions = {"token": 0, "cost": 0, "cancel": 0, "timeout": 0}
+    failures: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    for row in provider_gates:
+        content = _content(row)
+        result = content.get("result", {}) if isinstance(content.get("result", {}), dict) else {}
+        hard_stop = result.get("hard_stop", {}) if isinstance(result.get("hard_stop", {}), dict) else {}
+        error_type = str(result.get("error_type", ""))
+        event_types = {str(event.get("event_type", "")) for event in result.get("events", []) if isinstance(event, dict)}
+        observed = {
+            "token": bool((hard_stop.get("token", {}) if isinstance(hard_stop.get("token", {}), dict) else {}).get("triggered") or "provider_token_cutoff" in event_types or error_type == "ProviderTokenCutoffExceeded"),
+            "cost": bool((hard_stop.get("cost", {}) if isinstance(hard_stop.get("cost", {}), dict) else {}).get("triggered") or "provider_cost_cutoff" in event_types or error_type == "ProviderCostCutoffExceeded"),
+            "cancel": bool((hard_stop.get("cancel", {}) if isinstance(hard_stop.get("cancel", {}), dict) else {}).get("triggered") or "provider_cancel_requested" in event_types or error_type == "ProviderExecutionCancelled"),
+            "timeout": bool((hard_stop.get("timeout", {}) if isinstance(hard_stop.get("timeout", {}), dict) else {}).get("triggered") or "provider_timeout" in event_types or error_type == "ProviderTimeoutExceeded"),
+        }
+        for key, value in observed.items():
+            if value:
+                dimensions[key] += 1
+        if str(content.get("status", "")) == "failed":
+            failures.append({"path": row.get("_path", ""), "error_type": error_type, "message": str(content.get("message", ""))})
+        rows.append(
+            {
+                "path": row.get("_path", ""),
+                "status": content.get("status", ""),
+                "operation": result.get("operation", ""),
+                "provider": result.get("provider", ""),
+                "error_type": error_type,
+                "observed_dimensions": [key for key, value in observed.items() if value],
+                "hard_stop": hard_stop,
+                "event_types": sorted(event_types),
+            }
+        )
+    failed_calls = [row for row in model_calls if str(_content(row).get("status", "")) == "failed"]
+    missing = [key for key, count in dimensions.items() if count <= 0]
+    status = "passed" if not missing and provider_gates else "warning" if provider_gates else "missing"
+    return {
+        "status": status,
+        "summary": {
+            "provider_guard_gate_count": len(provider_gates),
+            "failed_provider_guard_count": len(failures),
+            "failed_model_call_count": len(failed_calls),
+            "required_hard_stop_dimension_count": 4,
+            "covered_hard_stop_dimension_count": 4 - len(missing),
+            "dimension_counts": dimensions,
+            "missing_dimensions": missing,
+        },
+        "provider_gates": rows[:200],
+        "provider_guard_rows": rows[:200],
+        "failures": failures[:50],
+        "failed_model_calls": [{"path": row.get("_path", ""), "operation": _content(row).get("operation", ""), "provider": _content(row).get("provider", "")} for row in failed_calls[:50]],
+        "recommendations": _provider_hard_stop_recommendations(missing, provider_gates),
+        "created_at": utc_now(),
+    }
+
+
 def runtime_policy_legacy_entrypoint_audit(*, repo_root: str | Path | None = None) -> dict[str, Any]:
     """Static audit for model-producing paths that may bypass the OS envelope.
 
@@ -533,6 +772,7 @@ def runtime_policy_legacy_entrypoint_audit(*, repo_root: str | Path | None = Non
         "AgentOperationRegistry",
         "check_runtime_policy",
         "record_model_call_log",
+        "call_model_via_router",
     ]
     rows: list[dict[str, Any]] = []
     for source_root in source_roots:
@@ -1090,6 +1330,26 @@ def _enforcement_recommendations(uncovered: list[str], mode: str) -> list[str]:
     return recommendations
 
 
+def _surface_coverage_recommendations(strict_blockers: list[str], provider_report: dict[str, Any]) -> list[str]:
+    recommendations: list[str] = []
+    if strict_blockers:
+        recommendations.append("clear strict blockers before marking OS envelope coverage complete")
+    missing = provider_report.get("summary", {}).get("missing_dimensions", [])
+    if missing:
+        recommendations.append(f"add provider hard-stop probes for: {', '.join(str(item) for item in missing)}")
+    if not recommendations:
+        recommendations.append("registered surfaces have OS envelope coverage and provider hard-stop evidence")
+    return recommendations
+
+
+def _provider_hard_stop_recommendations(missing: list[str], provider_gates: list[dict[str, Any]]) -> list[str]:
+    if not provider_gates:
+        return ["run at least one ModelGateway or GuardedModelAdapter call with provider_runtime_guard enabled"]
+    if missing:
+        return [f"add deterministic or real-provider guard probe for missing dimension: {item}" for item in missing]
+    return ["provider hard-stop evidence covers token, cost, cancel, and timeout dimensions"]
+
+
 def _legacy_entrypoint_recommendation(status: str) -> str:
     if status == "review_required":
         return "route this direct model-producing path through RuntimePolicyEnvelope, GuardedModelAdapter, or Agent Scheduler"
@@ -1177,6 +1437,10 @@ def _assets_by_type(storage: LocalStorage, asset_type: str, *, project_id: str |
         data["_path"] = _display_path(storage.root, path)
         rows.append(data)
     return rows
+
+
+def _content(row: dict[str, Any]) -> dict[str, Any]:
+    return row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
 
 
 def _cost_count_for_operation(ledgers: list[dict[str, Any]], operation: str) -> int:

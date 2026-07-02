@@ -1,4 +1,5 @@
 from novel_forge.modules.agent_scheduler.service import (
+    agent_center_snapshot,
     dispatch_agent_run,
     ensure_agent_dispatch_queue,
     list_agent_dispatch_queue,
@@ -10,6 +11,7 @@ from novel_forge.modules.agent_scheduler.service import (
 )
 
 __all__ = [
+    "agent_center_snapshot",
     "dispatch_agent_run",
     "ensure_agent_dispatch_queue",
     "list_agent_dispatch_queue",

@@ -1314,6 +1314,96 @@ pre {
   align-content: start;
 }
 
+.longformControls {
+  grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.2fr) minmax(150px, 0.45fr) auto auto auto;
+}
+
+.longformControls textarea {
+  grid-column: 1 / -1;
+}
+
+.mutedText {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.checkboxLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.checkboxLine input {
+  width: 16px;
+  height: 16px;
+}
+
+.longformArcHeader,
+.longformArcLane,
+.longformArcNode {
+  min-width: 0;
+}
+
+.longformArcHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.longformArcHeader span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.longformArcLane {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(142px, 1fr));
+  gap: 8px;
+}
+
+.longformArcNode {
+  display: grid;
+  gap: 4px;
+  min-height: 118px;
+  padding: 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.longformArcNode.ok {
+  border-color: #bbf7d0;
+  background: #f4fbf6;
+}
+
+.longformArcNode.warn {
+  border-color: #fde68a;
+  background: #fffdf0;
+}
+
+.longformArcNode span,
+.longformArcNode strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.longformArcNode span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .traceRail {
   display: grid;
   gap: 8px;
@@ -1895,7 +1985,8 @@ pre {
   .editorGrid,
   .formGrid,
   .formGrid.compact,
-  .formGrid.wide {
+  .formGrid.wide,
+  .longformControls {
     grid-template-columns: 1fr;
   }
 

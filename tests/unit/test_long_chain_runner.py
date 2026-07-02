@@ -23,6 +23,33 @@ def _load_runner():
 
 
 class LongChainRunnerReportTests(unittest.TestCase):
+    def test_canonicalize_generated_text_repairs_lead_name_alias_drift(self):
+        runner = _load_runner()
+
+        repaired, repairs = runner._canonicalize_generated_text("江砚走到夜档司门口，沈砚看见旧账。")
+
+        self.assertEqual(repaired, "沈砚走到夜档司门口，沈砚看见旧账。")
+        self.assertEqual(repairs[0]["kind"], "canonical_lead_name_alias_repair")
+        self.assertEqual(repairs[0]["count"], 1)
+
+    def test_force_chapter_filter_removes_stale_summary(self):
+        runner = _load_runner()
+
+        filtered = runner._filter_forced_chapter_summaries(
+            [{"chapter": 118, "summary": "old"}, {"chapter": 119, "summary": "stale"}],
+            {119},
+        )
+
+        self.assertEqual(filtered, [{"chapter": 118, "summary": "old"}])
+
+    def test_extract_generated_text_unwraps_nested_json_text(self):
+        runner = _load_runner()
+
+        text, repairs = runner._extract_generated_text({"text": "{\"text\":\"正文\"}"})
+
+        self.assertEqual(text, "正文")
+        self.assertEqual(repairs, [{"kind": "nested_json_text_unwrapped", "field": "text"}])
+
     def test_foreshadow_lifecycle_uses_payoff_evidence_spans(self):
         runner = _load_runner()
         with tempfile.TemporaryDirectory() as tmp:

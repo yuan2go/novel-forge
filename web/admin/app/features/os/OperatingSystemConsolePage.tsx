@@ -1,11 +1,27 @@
 "use client";
 
-import { Activity, BarChart3, CheckCircle2, GitPullRequest, ListChecks, Network, Route, ShieldCheck, Workflow } from "lucide-react";
+import { Activity, BarChart3, BookOpenCheck, CheckCircle2, GitPullRequest, ListChecks, Network, Route, ShieldCheck, Workflow } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AssetRow, ProjectRow, TaskControl, WorkflowDefinitionRow, WorkflowRunRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { applyRollback, coordinateRollback, loadAgentDispatchData, loadCostDashboardData, loadInvalidationData, loadRuntimePolicyEnforcement, loadRuntimePolicyLegacyAudit, loadTraceTimelineData, loadWorkflowRuntimeData, previewRollback, verifyRollbackResult, type RuntimeCostDashboard, type RuntimeTraceTimeline } from "./api";
+import {
+  applyRollback,
+  coordinateRollback,
+  loadAgentDispatchData,
+  loadCostDashboardData,
+  loadInvalidationData,
+  loadProviderHardStopEvidence,
+  loadRuntimePolicyEnforcement,
+  loadRuntimePolicyLegacyAudit,
+  loadRuntimePolicySurfaceCoverage,
+  loadTraceTimelineData,
+  loadWorkflowRuntimeData,
+  previewRollback,
+  verifyRollbackResult,
+  type RuntimeCostDashboard,
+  type RuntimeTraceTimeline
+} from "./api";
 import { formatMoney } from "./helpers";
 
 const consoleLinks = [
@@ -15,7 +31,8 @@ const consoleLinks = [
   { href: "/trace-timeline", label: "Trace Timeline", icon: <Route size={18} />, description: "workflow/node/agent/model/gate/cost span 全链路。" },
   { href: "/cost-dashboard", label: "Cost Dashboard", icon: <BarChart3 size={18} />, description: "ledger、model call、预算、质量成本比。" },
   { href: "/invalidation", label: "Invalidation Map", icon: <GitPullRequest size={18} />, description: "变更影响、KG dirty、下游失效和恢复入口。" },
-  { href: "/review-rework", label: "Review Rework Board", icon: <ShieldCheck size={18} />, description: "review issue -> revision task -> patch -> re-review -> publish gate。" }
+  { href: "/review-rework", label: "Review Rework Board", icon: <ShieldCheck size={18} />, description: "review issue -> revision task -> patch -> re-review -> publish gate。" },
+  { href: "/longform-stability", label: "Longform Stability", icon: <BookOpenCheck size={18} />, description: "canon、chapter state、arc、motif、villain 和 OS acceptance。" }
 ];
 
 export function OperatingSystemConsolePage() {
@@ -31,20 +48,24 @@ export function OperatingSystemConsolePage() {
   const [dirty, setDirty] = useState<Record<string, unknown>>({});
   const [policyReport, setPolicyReport] = useState<Record<string, unknown>>({});
   const [legacyAudit, setLegacyAudit] = useState<Record<string, unknown>>({});
+  const [surfaceCoverage, setSurfaceCoverage] = useState<Record<string, unknown>>({});
+  const [providerHardStop, setProviderHardStop] = useState<Record<string, unknown>>({});
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [rollbackVerify, setRollbackVerify] = useState<Record<string, unknown> | null>(null);
   const [rollbackCoordination, setRollbackCoordination] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState("");
 
   async function refresh() {
-    const [workflowData, agentData, traceData, costData, invalidationData, policyData, legacyAuditData] = await Promise.all([
+    const [workflowData, agentData, traceData, costData, invalidationData, policyData, legacyAuditData, surfaceData, hardStopData] = await Promise.all([
       loadWorkflowRuntimeData(),
       loadAgentDispatchData(),
       loadTraceTimelineData(),
       loadCostDashboardData(),
       loadInvalidationData(),
       loadRuntimePolicyEnforcement(),
-      loadRuntimePolicyLegacyAudit()
+      loadRuntimePolicyLegacyAudit(),
+      loadRuntimePolicySurfaceCoverage(),
+      loadProviderHardStopEvidence()
     ]);
     setProjects(workflowData[0]);
     setTaskControl(workflowData[1]);
@@ -59,6 +80,8 @@ export function OperatingSystemConsolePage() {
     setDirty(invalidationData[3]);
     setPolicyReport(policyData);
     setLegacyAudit(legacyAuditData);
+    setSurfaceCoverage(surfaceData);
+    setProviderHardStop(hardStopData);
   }
 
   useEffect(() => {
@@ -69,7 +92,11 @@ export function OperatingSystemConsolePage() {
   const schedulerLease = (agentScheduler.lease as Record<string, unknown> | undefined) || {};
   const policySummary = (policyReport.summary as Record<string, unknown> | undefined) || {};
   const legacySummary = (legacyAudit.summary as Record<string, unknown> | undefined) || {};
+  const surfaceSummary = (surfaceCoverage.summary as Record<string, unknown> | undefined) || {};
+  const hardStopSummary = (providerHardStop.summary as Record<string, unknown> | undefined) || {};
   const legacyEntrypoints = (legacyAudit.entrypoints as Array<Record<string, unknown>> | undefined) || [];
+  const surfaceRows = (surfaceCoverage.surface_matrix as Array<Record<string, unknown>> | undefined) || [];
+  const hardStopRows = (providerHardStop.provider_gates as Array<Record<string, unknown>> | undefined) || [];
   const uncoveredOperations = (policyReport.uncovered_operations as string[] | undefined) || [];
   const policyOperations = (policyReport.operations as Array<Record<string, unknown>> | undefined) || [];
   const rollbackRows = assets.filter((asset) => ["operation_transaction", "rollback_plan", "rollback_result"].includes(asset.type));
@@ -90,6 +117,8 @@ export function OperatingSystemConsolePage() {
         <Metric label="KG Dirty" value={dirty.dirty ? "yes" : "no"} />
         <Metric label="Policy Gaps" value={String(policySummary.uncovered_operation_count ?? uncoveredOperations.length)} />
         <Metric label="Bypass Audit" value={String(legacySummary.review_required_count ?? 0)} />
+        <Metric label="Surface" value={String(surfaceCoverage.status || "-")} />
+        <Metric label="Hard Stops" value={String(hardStopSummary.covered_hard_stop_dimension_count ?? 0)} />
       </section>
 
       <section className="osConsoleGrid">
@@ -136,6 +165,49 @@ export function OperatingSystemConsolePage() {
               ["Invalidation", `${impactReports.length} reports / dirty ${dirty.dirty ? "yes" : "no"}`, <a className="linkButton" href="/invalidation" key="invalidation">打开</a>],
               ["Runtime Policy", `${String(policySummary.covered_operation_count ?? 0)} covered / ${String(policySummary.operation_count ?? 0)} operations`, <span className={uncoveredOperations.length ? "badge warn" : "badge ok"} key="policy">{uncoveredOperations.length ? "gaps" : "covered"}</span>]
             ]}
+          />
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="OS Surface Coverage" icon={<ShieldCheck size={18} />} />
+          <div className="summaryBand">
+            <Metric label="Status" value={String(surfaceCoverage.status || "-")} />
+            <Metric label="Score" value={String(surfaceSummary.score ?? surfaceCoverage.score ?? 0)} />
+            <Metric label="Strict Blockers" value={String(surfaceSummary.strict_blocker_count ?? 0)} />
+          </div>
+          <DataTable
+            emptyText="暂无 surface coverage 矩阵"
+            columns={["Path", "Type", "Envelope", "Trace", "Cost", "Gate", "Status"]}
+            rows={surfaceRows.slice(0, 28).map((row) => [
+              String(row.path || row.operation || "-"),
+              String(row.type || "-"),
+              String(row.has_os_envelope ?? "-"),
+              String(row.has_trace ?? "-"),
+              String(row.has_cost_ledger ?? "-"),
+              String(row.has_publishing_gate ?? "-"),
+              <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-surface-status`}>{String(row.status || "-")}</span>
+            ])}
+          />
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="Provider Hard-stop Evidence" icon={<ListChecks size={18} />} />
+          <div className="summaryBand">
+            <Metric label="Status" value={String(providerHardStop.status || "-")} />
+            <Metric label="Dimensions" value={String(hardStopSummary.covered_hard_stop_dimension_count ?? 0)} />
+            <Metric label="Failures" value={String(hardStopSummary.failed_model_call_count ?? 0)} />
+          </div>
+          <DataTable
+            emptyText="暂无 provider hard-stop gate"
+            columns={["Gate", "Status", "Dimension", "Message"]}
+            rows={hardStopRows.slice(0, 28).map((row) => [
+              String(row.gate_kind || "provider_runtime_guard"),
+              <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-provider-status`}>{String(row.status || "-")}</span>,
+              Array.isArray(row.observed_dimensions) ? row.observed_dimensions.join(", ") : Array.isArray(row.hard_stop_dimensions) ? row.hard_stop_dimensions.join(", ") : String(row.hard_stop_dimension || "-"),
+              String(row.message || "-")
+            ])}
           />
         </div>
       </section>

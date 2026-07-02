@@ -48,6 +48,59 @@ export type AgentOperationContracts = {
   contracts: Array<Record<string, unknown>>;
 };
 
+export type AgentCenterSnapshot = {
+  status?: string;
+  summary?: Record<string, unknown>;
+  health_score?: number;
+  readiness_checks?: Array<Record<string, unknown>>;
+  run_graph?: Record<string, unknown>;
+  gate_timeline?: Array<Record<string, unknown>>;
+  checkpoints?: Array<Record<string, unknown>>;
+  budget_burn?: Record<string, unknown>;
+  retry_controls?: Array<Record<string, unknown>>;
+  dead_letter_queue?: Array<Record<string, unknown>>;
+  rollback_preview?: Array<Record<string, unknown>>;
+  sla_duration?: Array<Record<string, unknown>>;
+  evidence_drawer?: Array<Record<string, unknown>>;
+  operation_coverage?: Array<Record<string, unknown>>;
+  recommendations?: string[];
+};
+
+export type LongformStabilityDashboard = {
+  project_id: string;
+  workspace_path: string;
+  summary: Record<string, unknown>;
+  counts_by_type: Record<string, number>;
+  chapters: Array<Record<string, unknown>>;
+  latest_assets: Record<string, Record<string, unknown>>;
+  arc_visualization: {
+    arc_id?: string;
+    title?: string;
+    chapter_range?: string;
+    nodes: Array<Record<string, unknown>>;
+    edges: Array<Record<string, unknown>>;
+    lanes: Array<Record<string, unknown>>;
+  };
+  gate_history: Array<Record<string, unknown>>;
+  revision_tasks: Array<Record<string, unknown>>;
+  acceptance: {
+    status: string;
+    summary: Record<string, unknown>;
+    checks: Array<Record<string, unknown>>;
+    recommendations?: string[];
+    gate_result_path?: string;
+  };
+  created_at: string;
+};
+
+export type LongformControlAssetPayload = {
+  asset_type: "canon_database" | "arc_plan" | "foreshadowing_graph" | "character_state_ledger" | "villain_operation_plan";
+  title?: string;
+  project_id?: string;
+  workspace_path?: string;
+  content?: Record<string, unknown>;
+};
+
 export function projectAssetPath(projectId?: string, limit = 220) {
   return projectId ? `/product/projects/${encodeURIComponent(projectId)}/assets?limit=${limit}` : `/assets?limit=${limit}&rank=path`;
 }
@@ -156,6 +209,12 @@ export function loadAgentDispatchData(projectId?: string, status?: string) {
   ]);
 }
 
+export function loadAgentCenterSnapshot(projectId?: string) {
+  const params = new URLSearchParams({ limit: "300" });
+  if (projectId) params.set("project_id", projectId);
+  return fetchJson<AgentCenterSnapshot>(`/product/agents/center?${params.toString()}`);
+}
+
 export function runAgentSchedulerTick(projectId?: string, iterations = 1) {
   return postJson("/product/agents/scheduler/tick", {
     project_id: projectId || null,
@@ -233,6 +292,20 @@ export function loadRuntimePolicyEnforcement(projectId?: string) {
 
 export function loadRuntimePolicyLegacyAudit() {
   return fetchJson<Record<string, unknown>>("/product/runtime/policy/legacy-entrypoint-audit");
+}
+
+export function loadRuntimePolicySurfaceCoverage(projectId?: string, workspacePath?: string) {
+  const params = new URLSearchParams({ mode: "operating_system" });
+  if (projectId) params.set("project_id", projectId);
+  if (workspacePath) params.set("workspace_path", workspacePath);
+  return fetchJson<Record<string, unknown>>(`/product/runtime/policy/surface-coverage?${params.toString()}`);
+}
+
+export function loadProviderHardStopEvidence(projectId?: string, workspacePath?: string) {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  if (workspacePath) params.set("workspace_path", workspacePath);
+  return fetchJson<Record<string, unknown>>(`/product/runtime/provider-hard-stop-evidence?${params.toString()}`);
 }
 
 export function previewRollback(transactionPathOrId: string, strategy = "restore_previous_versions") {
@@ -394,5 +467,52 @@ export function createPublishGate(draftPath: string, workspacePath?: string, hum
     draft_path: draftPath,
     workspace_path: workspacePath || null,
     human_override: humanOverride
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function loadLongformStabilityData(projectId?: string, workspacePath?: string) {
+  const params = new URLSearchParams({ limit: "320" });
+  if (projectId) params.set("project_id", projectId);
+  if (workspacePath) params.set("workspace_path", workspacePath);
+  return Promise.all([
+    fetchJson<ProjectRow[]>("/product/projects"),
+    fetchJson<AssetRow[]>(projectAssetPath(projectId, 320)),
+    fetchJson<LongformStabilityDashboard>(`/product/longform-stability/dashboard?${params.toString()}`)
+  ]);
+}
+
+export function runLongformExtraction(draftPath: string, workspacePath?: string, useModel = true) {
+  return postJson("/product/longform-stability/extract", {
+    draft_path: draftPath,
+    workspace_path: workspacePath || null,
+    use_model: useModel
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function upsertLongformControlAsset(payload: LongformControlAssetPayload) {
+  return postJson("/product/longform-stability/control-asset", {
+    asset_type: payload.asset_type,
+    title: payload.title || null,
+    project_id: payload.project_id || null,
+    workspace_path: payload.workspace_path || null,
+    content: payload.content || {}
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function calibrateLongformExtraction(draftPath: string, workspacePath?: string, expected?: Record<string, unknown>, useModel = true, persist = true) {
+  return postJson("/product/longform-stability/calibrate", {
+    draft_path: draftPath,
+    workspace_path: workspacePath || null,
+    expected: expected || {},
+    use_model: useModel,
+    persist
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function runLongformAcceptance(projectId?: string, workspacePath?: string, persist = true) {
+  return postJson("/product/longform-stability/acceptance", {
+    project_id: projectId || null,
+    workspace_path: workspacePath || null,
+    persist
   }) as Promise<Record<string, unknown>>;
 }

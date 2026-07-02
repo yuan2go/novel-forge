@@ -12,6 +12,7 @@ from novel_forge.modules.runtime_ledger import (
 )
 from novel_forge.modules.operation_transactions import apply_rollback_plan, coordinate_runtime_rollback, preview_operation_rollback, verify_rollback_result
 from novel_forge.modules.runtime_policy import check_runtime_policy, runtime_policy_enforcement_report, runtime_policy_legacy_entrypoint_audit, runtime_policy_status
+from novel_forge.modules.runtime_policy import provider_hard_stop_evidence_report, runtime_policy_surface_coverage_report
 from novel_forge.storage.local import LocalStorage
 
 
@@ -53,6 +54,27 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def runtime_policy_legacy_entrypoint_audit_endpoint() -> dict[str, Any]:
         try:
             return runtime_policy_legacy_entrypoint_audit()
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/runtime/policy/surface-coverage")
+    def runtime_policy_surface_coverage_endpoint(
+        project_id: str | None = None,
+        workspace_path: str | None = None,
+        mode: str | None = None,
+    ) -> dict[str, Any]:
+        try:
+            return runtime_policy_surface_coverage_report(LocalStorage(app_settings.root), project_id=project_id, workspace_path=workspace_path, mode=mode)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/runtime/provider-hard-stop-evidence")
+    def runtime_provider_hard_stop_evidence_endpoint(
+        project_id: str | None = None,
+        workspace_path: str | None = None,
+    ) -> dict[str, Any]:
+        try:
+            return provider_hard_stop_evidence_report(LocalStorage(app_settings.root), project_id=project_id, workspace_path=workspace_path)
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

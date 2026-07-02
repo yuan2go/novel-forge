@@ -76,6 +76,34 @@ class DraftGenerateRequest(BaseModel):
     update_workspace: bool = True
 
 
+class LongformExtractionRequest(BaseModel):
+    draft_path: str
+    workspace_path: str | None = None
+    use_model: bool = True
+
+
+class LongformAcceptanceRequest(BaseModel):
+    project_id: str | None = None
+    workspace_path: str | None = None
+    persist: bool = True
+
+
+class LongformControlAssetRequest(BaseModel):
+    asset_type: str
+    title: str | None = None
+    project_id: str | None = None
+    workspace_path: str | None = None
+    content: dict[str, Any] = Field(default_factory=dict)
+
+
+class LongformCalibrationRequest(BaseModel):
+    draft_path: str
+    workspace_path: str | None = None
+    expected: dict[str, Any] = Field(default_factory=dict)
+    use_model: bool = True
+    persist: bool = True
+
+
 class ReviewRunRequest(BaseModel):
     draft_path: str | None = None
     workspace_path: str | None = None
@@ -1239,6 +1267,10 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "ProjectDuplicateRequest": ProjectDuplicateRequest,
         "BatchDeconstructRequest": BatchDeconstructRequest,
         "DraftGenerateRequest": DraftGenerateRequest,
+        "LongformExtractionRequest": LongformExtractionRequest,
+        "LongformAcceptanceRequest": LongformAcceptanceRequest,
+        "LongformControlAssetRequest": LongformControlAssetRequest,
+        "LongformCalibrationRequest": LongformCalibrationRequest,
         "ReviewRunRequest": ReviewRunRequest,
         "RevisionPlanRequest": RevisionPlanRequest,
         "TaskRetryRequest": TaskRetryRequest,

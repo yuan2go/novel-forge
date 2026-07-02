@@ -8,12 +8,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.modules.runtime_ledger import create_budget_policy, record_gate_result
 from novel_forge.modules.runtime_policy import (
     check_runtime_policy,
+    provider_hard_stop_evidence_report,
     record_runtime_model_result,
     runtime_policy_enforcement_report,
     runtime_policy_envelope,
     runtime_policy_legacy_entrypoint_audit,
+    runtime_policy_surface_coverage_report,
     runtime_policy_status,
 )
+from novel_forge.model_adapters.runtime import ProviderRuntimeGuard, evaluate_provider_runtime_guard
 from novel_forge.schemas import ChapterPlan, ContextBundle, DraftChapter
 from novel_forge.storage.local import LocalStorage
 
@@ -236,6 +239,46 @@ class RuntimePolicyTests(unittest.TestCase):
             self.assertEqual(rows["src/novel_forge/modules/legacy_service.py"]["status"], "review_required")
             self.assertEqual(rows["src/novel_forge/modules/covered_service.py"]["status"], "covered")
             self.assertEqual(audit["summary"]["review_required_count"], 1)
+
+    def test_provider_hard_stop_report_counts_only_triggered_dimensions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            trace = {"trace_id": "trace-hard-stop", "span_id": "span-hard-stop"}
+            result = evaluate_provider_runtime_guard(
+                operation="draft",
+                provider="local-provider",
+                usage={"input_tokens": 1000, "output_tokens": 1000, "total_tokens": 2000},
+                guard=ProviderRuntimeGuard(max_cost=0.001, cost_profile={"per_1k": 0.01}),
+            )
+            record_gate_result(
+                storage,
+                gate_kind="provider_runtime_guard",
+                status="failed",
+                target_paths=[],
+                result=result,
+                trace=trace,
+                project_id="policy-project",
+                message=result["message"],
+            )
+
+            report = provider_hard_stop_evidence_report(storage, project_id="policy-project")
+
+            self.assertEqual(report["summary"]["dimension_counts"]["cost"], 1)
+            self.assertEqual(report["summary"]["dimension_counts"]["token"], 0)
+            self.assertIn("token", report["summary"]["missing_dimensions"])
+            self.assertEqual(report["provider_gates"][0]["observed_dimensions"], ["cost"])
+
+    def test_surface_coverage_report_exposes_operator_matrix(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            report = runtime_policy_surface_coverage_report(storage, mode="compat", repo_root=Path(tmp))
+
+            self.assertIn("surface_matrix", report)
+            self.assertTrue(any(row["operation"] == "draft" for row in report["surface_matrix"]))
+            self.assertIn(report["status"], {"passed", "warning"})
+            self.assertIn("provider_hard_stop_evidence", report)
 
 
 if __name__ == "__main__":

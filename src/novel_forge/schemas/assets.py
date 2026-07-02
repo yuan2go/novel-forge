@@ -177,6 +177,76 @@ class CanonPatch(BaseAsset):
 
 
 @dataclass
+class CanonDatabase(BaseAsset):
+    type: str = "canon_database"
+
+
+@dataclass
+class ChapterStatePackage(BaseAsset):
+    type: str = "chapter_state"
+
+
+@dataclass
+class ChapterPatternReport(BaseAsset):
+    type: str = "chapter_pattern_report"
+
+
+@dataclass
+class FactLedger(BaseAsset):
+    type: str = "fact_ledger"
+
+
+@dataclass
+class ArcPlan(BaseAsset):
+    type: str = "arc_plan"
+
+
+@dataclass
+class ForeshadowingGraph(BaseAsset):
+    type: str = "foreshadowing_graph"
+
+
+@dataclass
+class MotifBudgetReport(BaseAsset):
+    type: str = "motif_budget_report"
+
+
+@dataclass
+class CharacterStateLedger(BaseAsset):
+    type: str = "character_state_ledger"
+
+
+@dataclass
+class VillainOperationPlan(BaseAsset):
+    type: str = "villain_operation_plan"
+
+
+@dataclass
+class ReaderFatigueReport(BaseAsset):
+    type: str = "reader_fatigue_report"
+
+
+@dataclass
+class StyleControlPlan(BaseAsset):
+    type: str = "style_control_plan"
+
+
+@dataclass
+class PlatformAdapterReport(BaseAsset):
+    type: str = "platform_adapter_report"
+
+
+@dataclass
+class RewardLedger(BaseAsset):
+    type: str = "reward_ledger"
+
+
+@dataclass
+class ReviewScoreSystemReport(BaseAsset):
+    type: str = "review_score_system_report"
+
+
+@dataclass
 class StyleProfile(BaseAsset):
     type: str = "style_profile"
 
@@ -815,6 +885,20 @@ SCHEMA_CLASSES = {
         SemanticExtractionReport,
         KgIdentityResolution,
         CanonPatch,
+        CanonDatabase,
+        ChapterStatePackage,
+        ChapterPatternReport,
+        FactLedger,
+        ArcPlan,
+        ForeshadowingGraph,
+        MotifBudgetReport,
+        CharacterStateLedger,
+        VillainOperationPlan,
+        ReaderFatigueReport,
+        StyleControlPlan,
+        PlatformAdapterReport,
+        RewardLedger,
+        ReviewScoreSystemReport,
         StyleProfile,
         StyleDecompositionReport,
         StyleBlendPreset,

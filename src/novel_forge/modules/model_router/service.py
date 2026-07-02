@@ -185,7 +185,7 @@ def execute_model_gateway_call(
     guard_payload = provider_runtime_guard if isinstance(provider_runtime_guard, dict) else {}
     guard_context = {"provider_runtime_guard": guard_payload}
     preflight = evaluate_provider_runtime_guard(operation=operation, provider=provider, usage={}, guard=provider_runtime_guard_from_context(guard_context), phase="preflight")
-    _record_provider_guard_gate(storage, operation=operation, provider=provider, result=preflight, trace=trace_payload, project_id=project_id, workspace_path=workspace_path, target_paths=[*(input_assets or []), *(output_assets or [])])
+    preflight_gate = _record_provider_guard_gate(storage, operation=operation, provider=provider, result=preflight, trace=trace_payload, project_id=project_id, workspace_path=workspace_path, target_paths=[*(input_assets or []), *(output_assets or [])])
     if preflight.get("status") == "failed":
         _record_gateway_checkpoint(storage, "provider_started", checkpoint_common, error=str(preflight.get("message", "")), stage_payload={"guard": preflight})
         failed_call = record_model_call_log(
@@ -207,7 +207,7 @@ def execute_model_gateway_call(
     normalized_usage = normalize_provider_usage(usage or {}, usage_source=str((usage or {}).get("usage_source", "model_gateway") if isinstance(usage, dict) else "model_gateway"))
     cost_payload = cost if isinstance(cost, dict) and cost else _gateway_cost_from_usage(normalized_usage, guard_payload)
     postflight = evaluate_provider_runtime_guard(operation=operation, provider=provider, usage=normalized_usage, guard=provider_runtime_guard_from_context(guard_context), phase="postflight")
-    _record_provider_guard_gate(storage, operation=operation, provider=provider, result=postflight, trace=trace_payload, project_id=project_id, workspace_path=workspace_path, target_paths=[*(input_assets or []), *(output_assets or [])])
+    postflight_gate = _record_provider_guard_gate(storage, operation=operation, provider=provider, result=postflight, trace=trace_payload, project_id=project_id, workspace_path=workspace_path, target_paths=[*(input_assets or []), *(output_assets or [])])
     if postflight.get("status") == "failed":
         _record_gateway_checkpoint(storage, "provider_completed", checkpoint_common, error=str(postflight.get("message", "")), stage_payload={"guard": postflight, "usage": normalized_usage})
         failed_call = record_model_call_log(
@@ -237,6 +237,10 @@ def execute_model_gateway_call(
         trace=trace_payload,
         mode=mode,
     ) as envelope:
+        if preflight_gate:
+            envelope.add_gate_result(preflight_gate)
+        if postflight_gate:
+            envelope.add_gate_result(postflight_gate)
         model_call = envelope.record_model_result(
             provider=provider,
             model=model,
@@ -437,9 +441,9 @@ def _record_provider_guard_gate(
     project_id: str,
     workspace_path: str,
     target_paths: list[str],
-) -> None:
+) -> dict[str, Any] | None:
     try:
-        record_gate_result(
+        return record_gate_result(
             storage,
             gate_kind="provider_runtime_guard",
             status="passed" if result.get("status") != "failed" else "failed",
@@ -452,7 +456,7 @@ def _record_provider_guard_gate(
             blocking=True,
         )
     except Exception:
-        return
+        return None
 
 
 def _gateway_cost_from_usage(usage: dict[str, Any], guard_payload: dict[str, Any]) -> dict[str, Any]:

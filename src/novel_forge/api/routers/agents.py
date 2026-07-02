@@ -18,6 +18,7 @@ from novel_forge.modules.agent_runs import (
     update_agent_run_status,
 )
 from novel_forge.modules.agent_scheduler import (
+    agent_center_snapshot,
     dispatch_agent_run,
     list_agent_dispatch_queue,
     list_agent_operation_contracts,
@@ -229,6 +230,16 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.get("/product/agents/operation-contracts")
     def agent_operation_contracts_endpoint() -> dict[str, Any]:
         return {"contracts": list_agent_operation_contracts()}
+
+    @router.get("/product/agents/center")
+    def agent_center_endpoint(
+        project_id: str | None = None,
+        limit: int = Query(default=300, ge=1, le=1000),
+    ) -> dict[str, Any]:
+        try:
+            return agent_center_snapshot(LocalStorage(app_settings.root), project_id=project_id, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.post("/product/agents/dispatch")
     def agent_dispatch_endpoint(request: AgentDispatchRequest) -> dict[str, Any]:

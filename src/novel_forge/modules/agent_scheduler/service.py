@@ -461,6 +461,91 @@ def list_agent_operation_contracts() -> list[dict[str, Any]]:
     return OPERATION_REGISTRY.list_contracts()
 
 
+def agent_center_snapshot(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    limit: int = 300,
+) -> dict[str, Any]:
+    """Operator-grade Agent Center aggregation.
+
+    The scheduler owns execution. This snapshot gives the UI and acceptance
+    tests one evidence payload for autonomy readiness, recovery, gates,
+    checkpoints, budgets, failures, rollback, and queue health.
+    """
+
+    storage.ensure_layout()
+    queue = list_agent_dispatch_queue(storage, project_id=project_id, limit=limit)
+    contracts = list_agent_operation_contracts()
+    runs = _agent_center_assets(storage, "agent_run", project_id=project_id, limit=limit)
+    events = _agent_center_assets(storage, "agent_event", project_id=project_id, limit=limit)
+    checkpoints = _agent_center_assets(storage, "agent_checkpoint", project_id=project_id, limit=limit)
+    gates = _agent_center_assets(storage, "agent_gate", project_id=project_id, limit=limit)
+    budgets = _agent_center_assets(storage, "agent_budget", project_id=project_id, limit=limit)
+    failures = _agent_center_assets(storage, "agent_failure_report", project_id=project_id, limit=limit)
+    rollbacks = _agent_center_assets(storage, "agent_rollback_report", project_id=project_id, limit=limit)
+    by_status: dict[str, int] = {}
+    for row in queue:
+        by_status[str(row.get("status", ""))] = by_status.get(str(row.get("status", "")), 0) + 1
+    blocked_queue = [row for row in queue if str(row.get("status", "")) in {"waiting_human", "dead_letter", "retry_scheduled", "cancelled"}]
+    run_rows = [_agent_run_summary(row) for row in runs]
+    checkpoint_rows = [_agent_checkpoint_row(row) for row in checkpoints]
+    gate_rows = [_agent_gate_row(row) for row in gates]
+    budget_summary = _budget_coverage(budgets)
+    rollback_rows = [_agent_asset_compact(row) for row in rollbacks]
+    health_score = _agent_center_health_score(queue, runs, checkpoints, gates, budgets, failures, rollbacks, contracts)
+    readiness_checks = [
+        _agent_center_check("operation_contracts", bool(contracts), "Agent operation contracts are registered", "register at least one operation contract"),
+        _agent_center_check("dispatch_queue", bool(queue) or bool(runs), "Agent queue or run evidence exists", "create an agent_run and dispatch it"),
+        _agent_center_check("checkpoints", bool(checkpoints), "Agent checkpoints exist", "run scheduler or execute_agent_run_once with checkpointing"),
+        _agent_center_check("gates", bool(gates), "Agent gate evidence exists", "record permission/schema/budget gates"),
+        _agent_center_check("budgets", bool(budgets), "Agent budget evidence exists", "attach token/cost budgets to AgentRun"),
+        _agent_center_check("rollback", bool(rollbacks) or not failures, "Rollback evidence exists or no failures need rollback", "create rollback report for failed agent outputs"),
+    ]
+    status = "blocked" if blocked_queue or failures else "warning" if any(check["status"] == "warning" for check in readiness_checks) else "ready"
+    recommendations = _agent_center_recommendations(status, blocked_queue, failures, readiness_checks)
+    return {
+        "status": status,
+        "project_id": project_id or "",
+        "health_score": health_score,
+        "summary": {
+            "health_score": health_score,
+            "agent_run_count": len(runs),
+            "queue_count": len(queue),
+            "blocked_queue_count": len(blocked_queue),
+            "checkpoint_count": len(checkpoints),
+            "gate_count": len(gates),
+            "budget_count": len(budgets),
+            "failure_count": len(failures),
+            "rollback_count": len(rollbacks),
+            "contract_count": len(contracts),
+            "queue_by_status": by_status,
+        },
+        "readiness_checks": readiness_checks,
+        "run_graph": _agent_run_graph(run_rows, queue),
+        "gate_timeline": gate_rows[:120],
+        "checkpoints": checkpoint_rows[:120],
+        "budget_burn": budget_summary,
+        "retry_controls": [row for row in blocked_queue if str(row.get("status", "")) in {"waiting_human", "retry_scheduled", "dead_letter"}][:80],
+        "dead_letter_queue": [row for row in blocked_queue if str(row.get("status", "")) == "dead_letter"][:80],
+        "rollback_preview": rollback_rows[:80],
+        "sla_duration": _agent_sla_duration_rows(run_rows),
+        "evidence_drawer": _agent_evidence_drawer(events, checkpoints, gates, budgets, failures, rollbacks)[:160],
+        "operation_coverage": contracts,
+        "blocked_queue": blocked_queue[:80],
+        "runs": run_rows[:80],
+        "recent_events": [_agent_asset_compact(row) for row in events[:80]],
+        "checkpoint_coverage": _checkpoint_coverage(checkpoints),
+        "gate_coverage": _gate_coverage(gates),
+        "budget_coverage": budget_summary,
+        "failure_recovery": _failure_recovery_rows(failures, rollbacks),
+        "contracts": contracts,
+        "recommended_actions": recommendations,
+        "recommendations": recommendations,
+        "created_at": utc_now(),
+    }
+
+
 def run_agent_scheduler_tick(
     storage: LocalStorage,
     *,
@@ -1982,6 +2067,259 @@ def _json_safe_result(value: Any) -> Any:
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
     return str(value)
+
+
+def _agent_center_assets(storage: LocalStorage, asset_type: str, *, project_id: str | None, limit: int) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in reversed(storage.list_json("runs")):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != asset_type:
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        if project_id and str(metadata.get("project_id", "")) != project_id:
+            continue
+        data["_path"] = _display_path(storage.root, path)
+        rows.append(data)
+        if len(rows) >= max(1, int(limit or 300)):
+            break
+    return rows
+
+
+def _agent_asset_compact(row: dict[str, Any]) -> dict[str, Any]:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+    return {
+        "path": row.get("_path", ""),
+        "id": row.get("id", ""),
+        "type": row.get("type", ""),
+        "title": row.get("title", ""),
+        "status": content.get("status", metadata.get("status", "")),
+        "operation": content.get("operation", ""),
+        "agent_run_path": content.get("agent_run_path", metadata.get("agent_run_path", "")),
+        "created_at": content.get("created_at", row.get("created_at", "")),
+    }
+
+
+def _agent_run_summary(row: dict[str, Any]) -> dict[str, Any]:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+    return {
+        "path": row.get("_path", ""),
+        "run_id": content.get("run_id", row.get("id", "")),
+        "agent_key": metadata.get("agent_key", content.get("agent_key", "")),
+        "operation": content.get("operation", ""),
+        "status": content.get("status", ""),
+        "model_provider": content.get("model_provider", metadata.get("model_provider", "")),
+        "model_name": content.get("model_name", metadata.get("model_name", "")),
+        "token_budget": content.get("token_budget", 0),
+        "token_used": content.get("token_used", 0),
+        "cost_estimate": content.get("cost_estimate", 0),
+        "checkpoint": content.get("checkpoint", {}) if isinstance(content.get("checkpoint", {}), dict) else {},
+        "output_count": len(content.get("output_assets", [])) if isinstance(content.get("output_assets", []), list) else 0,
+    }
+
+
+def _agent_checkpoint_row(row: dict[str, Any]) -> dict[str, Any]:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    compact = _agent_asset_compact(row)
+    compact.update(
+        {
+            "stage": content.get("stage", content.get("checkpoint_stage", "")),
+            "operation": content.get("operation", ""),
+            "status": content.get("status", compact.get("status", "")),
+            "trace_id": (content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}).get("trace_id", ""),
+        }
+    )
+    return compact
+
+
+def _agent_gate_row(row: dict[str, Any]) -> dict[str, Any]:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    compact = _agent_asset_compact(row)
+    compact.update(
+        {
+            "gate_kind": content.get("gate_kind", content.get("gate_type", "")),
+            "status": content.get("status", compact.get("status", "")),
+            "target": ", ".join(str(item) for item in content.get("target_paths", [])[:3]) if isinstance(content.get("target_paths", []), list) else content.get("target_path", ""),
+            "trace_id": (content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}).get("trace_id", ""),
+        }
+    )
+    return compact
+
+
+def _agent_run_graph(runs: list[dict[str, Any]], queue: list[dict[str, Any]]) -> dict[str, Any]:
+    nodes = []
+    for row in runs:
+        nodes.append(
+            {
+                "id": row.get("run_id") or row.get("path"),
+                "path": row.get("path", ""),
+                "agent_type": row.get("agent_key", ""),
+                "operation": row.get("operation", ""),
+                "status": row.get("status", ""),
+                "duration_ms": row.get("duration_ms", 0),
+                "token_used": row.get("token_used", 0),
+                "cost_estimate": row.get("cost_estimate", 0),
+            }
+        )
+    run_paths = {str(row.get("path", "")): str(row.get("run_id") or row.get("path", "")) for row in runs}
+    edges = []
+    for row in queue:
+        agent_path = str(row.get("agent_run_path", ""))
+        if agent_path in run_paths:
+            edges.append(
+                {
+                    "from": run_paths[agent_path],
+                    "to": str(row.get("dispatch_id") or row.get("path", "")),
+                    "type": "dispatch",
+                    "status": row.get("status", ""),
+                }
+            )
+    return {"nodes": nodes, "edges": edges}
+
+
+def _agent_sla_duration_rows(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for row in runs:
+        token_budget = int(row.get("token_budget", 0) or 0)
+        token_used = int(row.get("token_used", 0) or 0)
+        rows.append(
+            {
+                "path": row.get("path", ""),
+                "operation": row.get("operation", ""),
+                "status": row.get("status", ""),
+                "duration_ms": row.get("duration_ms", 0),
+                "sla_status": "over_token_budget" if token_budget and token_used > token_budget else "within_known_budget" if token_budget else "not_configured",
+                "token_used": token_used,
+                "token_budget": token_budget,
+            }
+        )
+    return rows
+
+
+def _agent_evidence_drawer(
+    events: list[dict[str, Any]],
+    checkpoints: list[dict[str, Any]],
+    gates: list[dict[str, Any]],
+    budgets: list[dict[str, Any]],
+    failures: list[dict[str, Any]],
+    rollbacks: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for source in [events, checkpoints, gates, budgets, failures, rollbacks]:
+        for row in source:
+            compact = _agent_asset_compact(row)
+            compact["summary"] = compact.get("title") or compact.get("operation") or compact.get("id")
+            rows.append(compact)
+    return rows
+
+
+def _agent_center_check(key: str, passed: bool, message: str, recommendation: str) -> dict[str, Any]:
+    return {"key": key, "status": "passed" if passed else "warning", "message": message, "recommendation": "" if passed else recommendation}
+
+
+def _checkpoint_coverage(checkpoints: list[dict[str, Any]]) -> dict[str, Any]:
+    by_stage: dict[str, int] = {}
+    by_operation: dict[str, int] = {}
+    for row in checkpoints:
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        stage = str(content.get("stage", content.get("status", "")))
+        operation = str(content.get("operation", ""))
+        if stage:
+            by_stage[stage] = by_stage.get(stage, 0) + 1
+        if operation:
+            by_operation[operation] = by_operation.get(operation, 0) + 1
+    return {"by_stage": by_stage, "by_operation": by_operation, "count": len(checkpoints)}
+
+
+def _gate_coverage(gates: list[dict[str, Any]]) -> dict[str, Any]:
+    by_type: dict[str, int] = {}
+    by_status: dict[str, int] = {}
+    for row in gates:
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        gate_type = str(content.get("gate_type", content.get("gate_kind", "")))
+        status = str(content.get("status", ""))
+        if gate_type:
+            by_type[gate_type] = by_type.get(gate_type, 0) + 1
+        if status:
+            by_status[status] = by_status.get(status, 0) + 1
+    return {"by_type": by_type, "by_status": by_status, "count": len(gates)}
+
+
+def _budget_coverage(budgets: list[dict[str, Any]]) -> dict[str, Any]:
+    exceeded = 0
+    total_tokens = 0
+    total_cost = 0.0
+    for row in budgets:
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(content.get("status", "")) in {"exceeded", "failed", "over_budget"}:
+            exceeded += 1
+        total_tokens += int(content.get("token_used", content.get("tokens", 0)) or 0)
+        try:
+            total_cost += float(content.get("cost_estimate", content.get("cost", 0.0)) or 0.0)
+        except Exception:
+            pass
+    return {"count": len(budgets), "exceeded_count": exceeded, "token_used": total_tokens, "cost_estimate": round(total_cost, 6)}
+
+
+def _failure_recovery_rows(failures: list[dict[str, Any]], rollbacks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rollback_sources = {
+        str((row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}).get("agent_run_path", ""))
+        for row in rollbacks
+    }
+    rows = []
+    for failure in failures:
+        content = failure.get("content", {}) if isinstance(failure.get("content", {}), dict) else {}
+        agent_run_path = str(content.get("agent_run_path", ""))
+        rows.append(
+            {
+                "path": failure.get("_path", ""),
+                "agent_run_path": agent_run_path,
+                "error_type": content.get("error_type", ""),
+                "recovery_instruction": content.get("recovery_instruction", ""),
+                "rollback_present": agent_run_path in rollback_sources if agent_run_path else bool(rollbacks),
+            }
+        )
+    return rows[:80]
+
+
+def _agent_center_health_score(
+    queue: list[dict[str, Any]],
+    runs: list[dict[str, Any]],
+    checkpoints: list[dict[str, Any]],
+    gates: list[dict[str, Any]],
+    budgets: list[dict[str, Any]],
+    failures: list[dict[str, Any]],
+    rollbacks: list[dict[str, Any]],
+    contracts: list[dict[str, Any]],
+) -> int:
+    score = 100
+    if not contracts:
+        score -= 20
+    if not runs and not queue:
+        score -= 15
+    if not checkpoints:
+        score -= 15
+    if not gates:
+        score -= 10
+    if not budgets:
+        score -= 10
+    blocked = [row for row in queue if str(row.get("status", "")) in {"waiting_human", "dead_letter", "retry_scheduled"}]
+    score -= min(25, len(blocked) * 5)
+    if failures and not rollbacks:
+        score -= 15
+    return max(0, min(100, score))
+
+
+def _agent_center_recommendations(status: str, blocked_queue: list[dict[str, Any]], failures: list[dict[str, Any]], checks: list[dict[str, Any]]) -> list[str]:
+    recommendations = [str(check["recommendation"]) for check in checks if check.get("recommendation")]
+    if blocked_queue:
+        recommendations.append("recover or cancel blocked dispatch queue items before scheduling more autonomous work")
+    if failures:
+        recommendations.append("create rollback reports and recovery instructions for failed Agent runs")
+    if status == "ready" and not recommendations:
+        recommendations.append("Agent Center evidence is ready for broader autonomous operation coverage")
+    return recommendations
 
 
 def _tool_name_for_output(output_types: list[str]) -> str:

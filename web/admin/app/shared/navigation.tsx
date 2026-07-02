@@ -2,6 +2,7 @@ import {
   Activity,
   BarChart3,
   BookMarked,
+  BookOpenCheck,
   BookOpen,
   Boxes,
   CheckCircle2,
@@ -41,6 +42,7 @@ export type NavItemKey =
   | "cost_dashboard"
   | "invalidation_map"
   | "review_rework_board"
+  | "longform_stability"
   | "topic_library"
   | "material_library"
   | "knowledge_library"
@@ -107,7 +109,8 @@ export const navGroups: NavGroup[] = [
       { key: "trace_timeline", label: "Trace Timeline", description: "统一 trace/span 时间线", href: "/trace-timeline", icon: <Route size={17} /> },
       { key: "cost_dashboard", label: "Cost Dashboard", description: "成本账本、模型调用和预算告警", href: "/cost-dashboard", icon: <CreditCard size={17} /> },
       { key: "invalidation_map", label: "Invalidation Map", description: "变更影响、KG dirty 和下游失效", href: "/invalidation", icon: <GitPullRequest size={17} /> },
-      { key: "review_rework_board", label: "Review Rework", description: "审稿问题到发布门禁闭环", href: "/review-rework", icon: <ShieldCheck size={17} /> }
+      { key: "review_rework_board", label: "Review Rework", description: "审稿问题到发布门禁闭环", href: "/review-rework", icon: <ShieldCheck size={17} /> },
+      { key: "longform_stability", label: "Longform Stability", description: "正典、章节状态、卷级推进和 OS 验收", href: "/longform-stability", icon: <BookOpenCheck size={17} /> }
     ]
   },
   {

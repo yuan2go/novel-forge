@@ -3,6 +3,10 @@
   "target_chapters": 400,
   "originality_boundary": "No protected names, cremation-specific premise, source plot sequence, or copied jokes from the supplied reference.",
   "premise": "A night-shift civic relic archivist discovers that abandoned city records can wake harmful folk mechanisms; each case must be resolved by combining forensic reasoning, craft knowledge, institutional rules, and street-level banter.",
+  "canonical_lead_characters": {
+    "沈砚": "senior night archive clerk and forensic/craft reasoning lead",
+    "阿照": "巡遗司 field investigator and debt-bearing case lead"
+  },
   "tone": "suspenseful, brisk, lightly oral-performance; humor releases pressure but never replaces plot consequence",
   "chapter_loop": [
     "setup promise",

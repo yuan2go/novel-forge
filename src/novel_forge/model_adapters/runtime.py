@@ -14,6 +14,7 @@ class ProviderRuntimeGuard:
     max_input_tokens: int = 0
     max_output_tokens: int = 0
     max_total_tokens: int = 0
+    max_cost: float = 0.0
     timeout_ms: int = 0
     cancel_file: str = ""
     cancel_requested: bool = False
@@ -27,6 +28,7 @@ class ProviderRuntimeGuard:
             max_input_tokens=_int(payload.get("max_input_tokens", payload.get("input_token_cutoff", 0))),
             max_output_tokens=_int(payload.get("max_output_tokens", payload.get("output_token_cutoff", 0))),
             max_total_tokens=max_total,
+            max_cost=_float(payload.get("max_cost", payload.get("max_cost_usd", payload.get("cost_cutoff", 0.0)))),
             timeout_ms=_int(payload.get("timeout_ms", payload.get("max_elapsed_ms", 0))),
             cancel_file=str(payload.get("cancel_file", "") or ""),
             cancel_requested=bool(payload.get("cancel_requested", False)),
@@ -244,28 +246,68 @@ def evaluate_provider_runtime_guard(
             guard=resolved_guard,
         ).to_dict()
     ]
+    estimated_cost = estimate_provider_cost(normalized_usage, resolved_guard.cost_profile) if resolved_guard.cost_profile else {"amount": 0.0, "currency": "USD", "source": "provider_runtime_guard_no_cost_profile"}
+    hard_stop = {
+        "token": {
+            "triggered": False,
+            "input_limit": resolved_guard.max_input_tokens,
+            "output_limit": resolved_guard.max_output_tokens,
+            "total_limit": resolved_guard.max_total_tokens,
+            "input_used": _int(normalized_usage.get("input_tokens", 0)),
+            "output_used": _int(normalized_usage.get("output_tokens", 0)),
+            "total_used": _int(normalized_usage.get("total_tokens", 0)),
+        },
+        "cost": {
+            "triggered": False,
+            "limit": resolved_guard.max_cost,
+            "amount": float(estimated_cost.get("amount", 0.0) or 0.0),
+            "currency": str(estimated_cost.get("currency", "USD")),
+            "source": str(estimated_cost.get("source", "")),
+        },
+        "cancel": {
+            "triggered": False,
+            "requested": bool(resolved_guard.cancel_requested or _cancel_file_requested(resolved_guard.cancel_file)),
+            "cancel_file": resolved_guard.cancel_file,
+        },
+        "timeout": {
+            "triggered": False,
+            "limit_ms": resolved_guard.timeout_ms,
+            "elapsed_ms": _int(normalized_usage.get("elapsed_ms", 0)),
+        },
+    }
 
     if resolved_guard.cancel_requested or _cancel_file_requested(resolved_guard.cancel_file):
+        hard_stop["cancel"]["triggered"] = True
         failures.append("provider execution cancellation requested")
         error_type = "ProviderExecutionCancelled"
         events.append(_event("provider_cancel_requested", operation, provider, normalized_usage, resolved_guard, failures[-1]))
 
     if resolved_guard.max_input_tokens > 0 and _int(normalized_usage.get("input_tokens", 0)) > resolved_guard.max_input_tokens:
+        hard_stop["token"]["triggered"] = True
         failures.append(f"provider input token cutoff exceeded: used {normalized_usage.get('input_tokens')}, limit {resolved_guard.max_input_tokens}")
         error_type = "ProviderTokenCutoffExceeded"
         events.append(_event("provider_token_cutoff", operation, provider, normalized_usage, resolved_guard, failures[-1]))
 
     if resolved_guard.max_output_tokens > 0 and _int(normalized_usage.get("output_tokens", 0)) > resolved_guard.max_output_tokens:
+        hard_stop["token"]["triggered"] = True
         failures.append(f"provider output token cutoff exceeded: used {normalized_usage.get('output_tokens')}, limit {resolved_guard.max_output_tokens}")
         error_type = "ProviderTokenCutoffExceeded"
         events.append(_event("provider_token_cutoff", operation, provider, normalized_usage, resolved_guard, failures[-1]))
 
     if resolved_guard.max_total_tokens > 0 and _int(normalized_usage.get("total_tokens", 0)) > resolved_guard.max_total_tokens:
+        hard_stop["token"]["triggered"] = True
         failures.append(f"provider token cutoff exceeded: used {normalized_usage.get('total_tokens')}, limit {resolved_guard.max_total_tokens}")
         error_type = "ProviderTokenCutoffExceeded"
         events.append(_event("provider_token_cutoff", operation, provider, normalized_usage, resolved_guard, failures[-1]))
 
+    if resolved_guard.max_cost > 0 and float(estimated_cost.get("amount", 0.0) or 0.0) > resolved_guard.max_cost:
+        hard_stop["cost"]["triggered"] = True
+        failures.append(f"provider cost cutoff exceeded: estimated {estimated_cost.get('amount')} {estimated_cost.get('currency', 'USD')}, limit {resolved_guard.max_cost}")
+        error_type = "ProviderCostCutoffExceeded"
+        events.append(_event("provider_cost_cutoff", operation, provider, normalized_usage, resolved_guard, failures[-1]))
+
     if resolved_guard.timeout_ms > 0 and _int(normalized_usage.get("elapsed_ms", 0)) > resolved_guard.timeout_ms:
+        hard_stop["timeout"]["triggered"] = True
         failures.append(f"provider timeout exceeded: elapsed {normalized_usage.get('elapsed_ms')}ms, limit {resolved_guard.timeout_ms}ms")
         error_type = "ProviderTimeoutExceeded"
         events.append(_event("provider_timeout", operation, provider, normalized_usage, resolved_guard, failures[-1]))
@@ -278,6 +320,8 @@ def evaluate_provider_runtime_guard(
             "message": "; ".join(failures),
             "usage": normalized_usage,
             "guard": resolved_guard.to_dict(),
+            "estimated_cost": estimated_cost,
+            "hard_stop": hard_stop,
             "events": events,
             "error_type": error_type,
         }
@@ -296,6 +340,8 @@ def evaluate_provider_runtime_guard(
         "message": "provider runtime guard passed",
         "usage": normalized_usage,
         "guard": resolved_guard.to_dict(),
+        "estimated_cost": estimated_cost,
+        "hard_stop": hard_stop,
         "events": events,
     }
 

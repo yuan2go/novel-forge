@@ -5,7 +5,14 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AgentEventRow, AgentRunRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { dispatchAgentRun, loadAgentDispatchData, recoverAgentDispatch, runAgentSchedulerTick } from "./api";
+import {
+  dispatchAgentRun,
+  loadAgentCenterSnapshot,
+  loadAgentDispatchData,
+  recoverAgentDispatch,
+  runAgentSchedulerTick,
+  type AgentCenterSnapshot
+} from "./api";
 import { compactJson, pathCell, splitLines } from "./helpers";
 
 const queueStatuses = ["", "queued", "claimed", "retry_scheduled", "waiting_human", "dead_letter", "acked"];
@@ -17,6 +24,7 @@ export function AgentDispatchCenterPage() {
   const [schedulerStatus, setSchedulerStatus] = useState<Record<string, unknown>>({});
   const [queue, setQueue] = useState<Array<Record<string, unknown>>>([]);
   const [contracts, setContracts] = useState<Array<Record<string, unknown>>>([]);
+  const [agentCenter, setAgentCenter] = useState<AgentCenterSnapshot | null>(null);
   const [projectId, setProjectId] = useState("");
   const [status, setStatus] = useState("");
   const [agentRunPath, setAgentRunPath] = useState("");
@@ -30,13 +38,17 @@ export function AgentDispatchCenterPage() {
   const [error, setError] = useState("");
 
   async function refresh(nextProjectId = projectId, nextStatus = status) {
-    const [projectRows, runRows, eventRows, schedulerState, queueRows, contractRows] = await loadAgentDispatchData(nextProjectId, nextStatus);
+    const [[projectRows, runRows, eventRows, schedulerState, queueRows, contractRows], centerSnapshot] = await Promise.all([
+      loadAgentDispatchData(nextProjectId, nextStatus),
+      loadAgentCenterSnapshot(nextProjectId)
+    ]);
     setProjects(projectRows);
     setAgentRuns(runRows);
     setAgentEvents(eventRows);
     setSchedulerStatus(schedulerState);
     setQueue(queueRows);
     setContracts(contractRows.contracts || []);
+    setAgentCenter(centerSnapshot);
     const resolvedProject = nextProjectId || projectRows[0]?.project_id || "";
     setProjectId(resolvedProject);
     setAgentRunPath((current) => current || runRows.find((run) => run.status === "prepared")?.path || runRows[0]?.path || "");
@@ -66,6 +78,8 @@ export function AgentDispatchCenterPage() {
   const byStatus = (schedulerStatus.by_status as Record<string, unknown> | undefined) || {};
   const preparedRuns = agentRuns.filter((run) => ["prepared", "waiting_human", "failed", "dead_letter"].includes(run.status));
   const failedQueue = queue.filter((row) => ["dead_letter", "waiting_human", "retry_scheduled"].includes(String(row.status || "")));
+  const runGraphNodes = ((agentCenter?.run_graph as Record<string, unknown> | undefined)?.nodes as Array<Record<string, unknown>> | undefined) || [];
+  const runGraphEdges = ((agentCenter?.run_graph as Record<string, unknown> | undefined)?.edges as Array<Record<string, unknown>> | undefined) || [];
 
   return (
     <FeatureShell title="Agent Dispatch Center" subtitle="让 prepared AgentRun 进入 queue，由 scheduler lease/claim/retry/recover 执行，并留下 checkpoint、gate、budget 和 trace 证据。" eyebrow="OS Runtime">
@@ -79,6 +93,21 @@ export function AgentDispatchCenterPage() {
         <Metric label="Acked" value={String(byStatus.acked ?? 0)} />
         <Metric label="Waiting" value={String(byStatus.waiting_human ?? 0)} />
         <Metric label="Lease" value={String(lease.status ?? "missing")} />
+        <Metric label="Health" value={String(agentCenter?.health_score ?? 0)} />
+      </section>
+
+      <section className="panel">
+        <PanelHeader title="Autonomy Readiness" icon={<ShieldCheck size={18} />} />
+        <DataTable
+          emptyText="暂无 Agent Center readiness evidence"
+          columns={["Capability", "状态", "Evidence", "Fix"]}
+          rows={(agentCenter?.readiness_checks || []).map((check) => [
+            String(check.key || check.name || "-"),
+            <span className={statusClass(String(check.status || ""))} key={`${String(check.key)}-status`}>{String(check.status || "-")}</span>,
+            String(check.evidence || check.message || "-"),
+            String(check.required_fix || check.recommendation || "-")
+          ])}
+        />
       </section>
 
       <section className="workspaceGrid">
@@ -134,16 +163,150 @@ export function AgentDispatchCenterPage() {
       </section>
 
       <section className="panel">
-        <PanelHeader title="Agent Timeline" icon={<Activity size={18} />} />
+        <PanelHeader title="Run Graph" icon={<Activity size={18} />} />
         <div className="assetGraphCanvas layered">
-          {agentEvents.slice(0, 42).map((event) => (
-            <button className="graphNode" key={event.path} onClick={() => setAgentRunPath(event.agent_run_path || agentRunPath)}>
-              <strong>{event.event_type}</strong>
-              <span>{event.status || "-"} / {event.created_at || "-"}</span>
-              <small>{event.message || event.agent_run_path || "-"}</small>
+          {runGraphNodes.slice(0, 42).map((node) => (
+            <button className="graphNode" key={String(node.id || node.path)} onClick={() => setAgentRunPath(String(node.path || agentRunPath))}>
+              <strong>{String(node.operation || node.agent_type || node.id || "-")}</strong>
+              <span>{String(node.status || "-")} / {String(node.duration_ms ?? "-")}ms</span>
+              <small>{String(node.path || node.id || "-")}</small>
             </button>
           ))}
+          {!runGraphNodes.length ? <div className="emptyCell">暂无 run graph 节点</div> : null}
         </div>
+        <div className="pillRow">
+          <span className="badge">nodes {runGraphNodes.length}</span>
+          <span className="badge">edges {runGraphEdges.length}</span>
+          <span className="badge">budget {String((agentCenter?.budget_burn || {}).total_cost ?? 0)}</span>
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Gate Timeline" icon={<ListChecks size={18} />} />
+          <DataTable
+            emptyText="暂无 gate timeline"
+            columns={["Gate", "状态", "Target", "Trace"]}
+            rows={(agentCenter?.gate_timeline || []).slice(0, 60).map((row) => [
+              String(row.gate_kind || row.kind || "-"),
+              <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-gate-status`}>{String(row.status || "-")}</span>,
+              String(row.target || row.target_paths || "-"),
+              String(row.trace_id || "-")
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="Checkpoint List" icon={<ShieldCheck size={18} />} />
+          <DataTable
+            emptyText="暂无 checkpoint"
+            columns={["Stage", "Operation", "状态", "Path"]}
+            rows={(agentCenter?.checkpoints || []).slice(0, 60).map((row) => [
+              String(row.stage || "-"),
+              String(row.operation || "-"),
+              <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-checkpoint-status`}>{String(row.status || "-")}</span>,
+              pathCell(String(row.path || "-"), `${String(row.path)}-checkpoint`)
+            ])}
+          />
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Budget Burn" icon={<Activity size={18} />} />
+          <pre className="jsonPreview">{compactJson(agentCenter?.budget_burn || {}, 1600)}</pre>
+        </div>
+        <div className="panel">
+          <PanelHeader title="Retry Controls" icon={<RotateCcw size={18} />} />
+          <DataTable
+            emptyText="暂无可恢复队列项"
+            columns={["状态", "Operation", "Attempt", "Action"]}
+            rows={(agentCenter?.retry_controls || []).slice(0, 50).map((row) => [
+              <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-retry-status`}>{String(row.status || "-")}</span>,
+              String(row.operation || "-"),
+              `${String(row.attempt_count ?? 0)}/${String(row.max_attempts ?? 0)}`,
+              row.path ? (
+                <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => recoverAgentDispatch(String(row.path || "")), "Dispatch 已恢复", setDispatchResult)} key={`${String(row.path)}-retry`}>
+                  Recover
+                </button>
+              ) : "-"
+            ])}
+          />
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Dead-letter Queue" icon={<Activity size={18} />} />
+          <DataTable
+            emptyText="暂无 dead-letter"
+            columns={["Operation", "错误", "Path"]}
+            rows={(agentCenter?.dead_letter_queue || []).slice(0, 50).map((row) => [
+              String(row.operation || "-"),
+              String(row.last_error || row.error || "-"),
+              pathCell(String(row.path || "-"), `${String(row.path)}-dead-letter`)
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="Rollback Preview" icon={<RotateCcw size={18} />} />
+          <DataTable
+            emptyText="暂无 rollback preview"
+            columns={["Operation", "Strategy", "状态", "Path"]}
+            rows={(agentCenter?.rollback_preview || []).slice(0, 50).map((row) => [
+              String(row.operation || "-"),
+              String(row.strategy || row.rollback_strategy || "-"),
+              <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-rollback-status`}>{String(row.status || "-")}</span>,
+              pathCell(String(row.path || "-"), `${String(row.path)}-rollback`)
+            ])}
+          />
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="SLA / Duration" icon={<Activity size={18} />} />
+          <DataTable
+            emptyText="暂无 SLA 证据"
+            columns={["Operation", "Status", "Duration", "SLA"]}
+            rows={(agentCenter?.sla_duration || []).slice(0, 60).map((row) => [
+              String(row.operation || "-"),
+              <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-sla-status`}>{String(row.status || "-")}</span>,
+              String(row.duration_ms ?? "-"),
+              String(row.sla_status || row.sla_seconds || "-")
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="Operation Coverage" icon={<ListChecks size={18} />} />
+          <DataTable
+            emptyText="暂无 operation coverage"
+            columns={["Operation", "Runner", "Checkpoint", "Rollback"]}
+            rows={(agentCenter?.operation_coverage || []).slice(0, 80).map((row) => [
+              String(row.operation || "-"),
+              String(row.runner_kind || row.runner || "-"),
+              String(row.checkpoint_strategy || "-"),
+              String(row.rollback_strategy || "-")
+            ])}
+          />
+        </div>
+      </section>
+
+      <section className="panel">
+        <PanelHeader title="Evidence Drawer" icon={<ShieldCheck size={18} />} />
+        <DataTable
+          emptyText="暂无 evidence drawer"
+          columns={["类型", "状态", "路径", "摘要"]}
+          rows={(agentCenter?.evidence_drawer || []).slice(0, 80).map((row) => [
+            String(row.type || "-"),
+            <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-evidence-status`}>{String(row.status || "-")}</span>,
+            pathCell(String(row.path || "-"), `${String(row.path)}-evidence`),
+            String(row.summary || row.title || "-")
+          ])}
+        />
+      </section>
+
+      <section className="panel">
+        <PanelHeader title="Agent Timeline" icon={<Activity size={18} />} />
         <DataTable
           emptyText="暂无 Agent queue 事件"
           columns={["Queue", "状态", "Operation", "Checkpoint", "Rollback"]}

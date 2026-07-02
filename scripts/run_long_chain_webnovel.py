@@ -26,6 +26,15 @@ from novel_forge.storage.local import LocalStorage
 
 
 PROJECT_ID = "real-longchain-webnovel"
+CANONICAL_LEAD_CHARACTERS = {
+    "沈砚": "senior night archive clerk and forensic/craft reasoning lead",
+    "阿照": "巡遗司 field investigator and debt-bearing case lead",
+}
+KNOWN_NAME_ALIAS_REPAIRS = {
+    "江砚": "沈砚",
+    "沈照": "阿照",
+    "沈夜照": "阿照",
+}
 
 
 @dataclass
@@ -51,6 +60,7 @@ def main() -> int:
     parser.add_argument("--codex-timeout-seconds", type=int, default=900)
     parser.add_argument("--report-only", action="store_true")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--force-chapter", action="append", type=int, default=[], help="Regenerate only the selected existing chapter; can be repeated.")
     args = parser.parse_args()
 
     storage = LocalStorage(args.root)
@@ -66,7 +76,8 @@ def main() -> int:
     _write_json(export_dir / "series_bible.json", bible)
 
     records: list[ChapterRecord] = []
-    existing_summaries = _load_existing_summaries(export_dir)
+    force_chapters = _force_chapter_set(args.force_chapter)
+    existing_summaries = _filter_forced_chapter_summaries(_load_existing_summaries(export_dir), force_chapters)
     chapter_limit = 0 if args.report_only else max(1, int(args.max_chapters_this_run))
     generated_this_run = 0
     previous_summary = existing_summaries[-1]["summary"] if existing_summaries else ""
@@ -75,7 +86,8 @@ def main() -> int:
     adapter = ClaudeCodeAdapter()
     for chapter in range(1, max(1, int(args.chapters)) + 1):
         chapter_path = export_dir / "chapters" / f"chapter_{chapter:03d}.md"
-        if chapter_path.exists() and not args.force:
+        force_this_chapter = bool(args.force or chapter in force_chapters)
+        if chapter_path.exists() and not force_this_chapter:
             continue
         if generated_this_run >= chapter_limit:
             break
@@ -104,7 +116,10 @@ def main() -> int:
             run.guard("call_model_adapter")
             model_result = GuardedModelAdapter(adapter, storage, run.path).generate(_chapter_prompt(chapter, args.target_chars), context)
             generated = validate_model_output("generate", model_result)
-            text = str(generated.get("text", "")).strip()
+            text, output_repairs = _extract_generated_text(generated)
+            text, canonical_repairs = _canonicalize_generated_text(text)
+            if output_repairs or canonical_repairs:
+                generated["canonical_repairs"] = [*output_repairs, *canonical_repairs]
             warnings = _quality_warnings(text, args.target_chars)
             chapter_path.write_text(f"# 第{chapter:03d}章\n\n{text}\n", encoding="utf-8")
             run.guard("write_draft_version", "draft_version")
@@ -223,6 +238,7 @@ def _series_bible(reference: dict[str, Any], knowledge: dict[str, Any], *, chapt
         "target_chapters": chapters,
         "originality_boundary": "No protected names, cremation-specific premise, source plot sequence, or copied jokes from the supplied reference.",
         "premise": "A night-shift civic relic archivist discovers that abandoned city records can wake harmful folk mechanisms; each case must be resolved by combining forensic reasoning, craft knowledge, institutional rules, and street-level banter.",
+        "canonical_lead_characters": CANONICAL_LEAD_CHARACTERS,
         "tone": "suspenseful, brisk, lightly oral-performance; humor releases pressure but never replaces plot consequence",
         "chapter_loop": reference.get("payoff_loop") or ["setup promise", "raise cost", "partial payoff", "new unresolved pressure"],
         "oral_controls": reference.get("generation_controls") or [],
@@ -248,6 +264,11 @@ def _chapter_context(bible: dict[str, Any], reference: dict[str, Any], knowledge
         "target_chars": target_chars,
         "arc": arc,
         "previous_summary": previous_summary,
+        "continuity_contract": {
+            "canonical_lead_characters": CANONICAL_LEAD_CHARACTERS,
+            "known_name_alias_repairs": KNOWN_NAME_ALIAS_REPAIRS,
+            "hard_rule": "Keep 沈砚 and 阿照 as distinct established lead characters. Do not rename one into the other or introduce a third replacement lead name.",
+        },
         "provider_runtime_guard": {"timeout_ms": int(os.environ.get("NOVEL_FORGE_CLAUDE_CODE_TIMEOUT_SECONDS", "900")) * 1000, "max_total_tokens": max(32000, target_chars * 7)},
         "copyright_boundary": bible["originality_boundary"],
         "output_contract": "Return JSON only: {\"text\":\"...\"}. The text must be original Chinese prose.",
@@ -258,6 +279,7 @@ def _chapter_context(bible: dict[str, Any], reference: dict[str, Any], knowledge
 def _chapter_prompt(chapter: int, target_chars: int) -> str:
     return (
         f"Write chapter {chapter} of an original Chinese web-novel, about {target_chars} Chinese characters. "
+        "The canonical lead roster is 沈砚 and 阿照; keep their identities distinct and do not rename either lead. "
         "Use the provided abstract structure and multidisciplinary knowledge only. "
         "Do not copy protected expression, named characters, settings, scenes, plot sequence, or jokes from references. "
         "Return valid JSON with a single field text."
@@ -338,11 +360,44 @@ def _quality_warnings(text: str, target_chars: int) -> list[str]:
         warnings.append("chapter ending punctuation is weak")
     if not any(marker in text for marker in ["却", "偏偏", "谁知", "忽然", "只见", "没想到"]):
         warnings.append("hook/reversal markers are thin")
+    if any(name in text for name in KNOWN_NAME_ALIAS_REPAIRS):
+        warnings.append("canonical lead name alias drift appeared")
     for pattern in _forbidden_source_patterns():
         if pattern in text:
             warnings.append("protected reference pattern appeared and must be removed")
             break
     return warnings
+
+
+def _canonicalize_generated_text(text: str) -> tuple[str, list[dict[str, Any]]]:
+    repaired = text
+    repairs: list[dict[str, Any]] = []
+    for drift_name, canonical_name in KNOWN_NAME_ALIAS_REPAIRS.items():
+        count = repaired.count(drift_name)
+        if not count:
+            continue
+        repaired = repaired.replace(drift_name, canonical_name)
+        repairs.append(
+            {
+                "kind": "canonical_lead_name_alias_repair",
+                "from": drift_name,
+                "to": canonical_name,
+                "count": count,
+            }
+        )
+    return repaired, repairs
+
+
+def _extract_generated_text(generated: dict[str, Any]) -> tuple[str, list[dict[str, Any]]]:
+    raw = str(generated.get("text", "")).strip()
+    if raw.startswith("{") and raw.endswith("}"):
+        try:
+            nested = json.loads(raw)
+        except Exception:
+            nested = {}
+        if isinstance(nested, dict) and str(nested.get("text", "")).strip():
+            return str(nested["text"]).strip(), [{"kind": "nested_json_text_unwrapped", "field": "text"}]
+    return raw, []
 
 
 def _quality_score(text: str, warnings: list[str], target_chars: int) -> float:
@@ -362,6 +417,16 @@ def _forbidden_source_patterns() -> list[str]:
 def _chapter_summary(text: str, chapter: int) -> str:
     compact = re.sub(r"\s+", "", text)
     return f"第{chapter}章完成：{compact[:180]}..."
+
+
+def _force_chapter_set(values: list[int] | None) -> set[int]:
+    return {int(value) for value in values or [] if int(value) > 0}
+
+
+def _filter_forced_chapter_summaries(summaries: list[dict[str, Any]], force_chapters: set[int]) -> list[dict[str, Any]]:
+    if not force_chapters:
+        return summaries
+    return [item for item in summaries if int(item.get("chapter", 0) or 0) not in force_chapters]
 
 
 def _load_existing_summaries(export_dir: Path) -> list[dict[str, Any]]:

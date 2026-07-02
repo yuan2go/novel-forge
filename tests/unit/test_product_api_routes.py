@@ -58,6 +58,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/agents/dispatch",
                 "/product/agents/recover",
                 "/product/agents/operation-contracts",
+                "/product/agents/center",
                 "/product/assets/detail",
                 "/product/manuscript/workbench",
                 "/product/libraries/creative",
@@ -91,6 +92,11 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/novel-kg/identity-resolution/adjudicate",
                 "/product/novel-kg/dirty",
                 "/product/novel-kg/refresh",
+                "/product/longform-stability/dashboard",
+                "/product/longform-stability/extract",
+                "/product/longform-stability/acceptance",
+                "/product/longform-stability/control-asset",
+                "/product/longform-stability/calibrate",
                 "/product/editor/artifacts",
                 "/product/editor/patch",
                 "/product/editor/apply",
@@ -122,6 +128,9 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/runtime/cost-snapshot",
                 "/product/runtime/policy/status",
                 "/product/runtime/policy/enforcement-report",
+                "/product/runtime/policy/legacy-entrypoint-audit",
+                "/product/runtime/policy/surface-coverage",
+                "/product/runtime/provider-hard-stop-evidence",
                 "/product/runtime/policy/check",
                 "/product/runtime/rollback/verify",
                 "/product/runtime/rollback/coordinate",
@@ -176,6 +185,10 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(client.get("/product/projects").status_code, 200)
             self.assertEqual(client.get("/product/tasks").status_code, 200)
             self.assertEqual(client.get("/product/system/health").status_code, 200)
+            self.assertEqual(client.get("/product/agents/center").status_code, 200)
+            self.assertEqual(client.get("/product/runtime/policy/surface-coverage").status_code, 200)
+            self.assertEqual(client.get("/product/runtime/provider-hard-stop-evidence").status_code, 200)
+            self.assertEqual(client.get("/product/longform-stability/dashboard").status_code, 200)
             completion = client.get("/product/system/module-completion")
             self.assertEqual(completion.status_code, 200, completion.text)
             self.assertGreaterEqual(completion.json()["summary"]["module_count"], 8)
@@ -197,6 +210,16 @@ class ProductApiRouterTests(unittest.TestCase):
 
             project = client.post("/product/projects", json={"title": "Bound Project"})
             self.assertEqual(project.status_code, 200, project.text)
+            control_asset = client.post(
+                "/product/longform-stability/control-asset",
+                json={
+                    "asset_type": "canon_database",
+                    "project_id": project.json()["project_id"],
+                    "workspace_path": project.json()["path"],
+                    "content": {"entities": [{"entity_id": "azhao", "entity_type": "character", "canonical_name": "阿照"}]},
+                },
+            )
+            self.assertEqual(control_asset.status_code, 200, control_asset.text)
             settings_profile = client.post("/product/settings/profile", json={"workspace_path": project.json()["path"]})
             self.assertEqual(settings_profile.status_code, 200, settings_profile.text)
             metric_snapshot = client.post(
@@ -340,6 +363,17 @@ class ProductApiRouterTests(unittest.TestCase):
                 ),
             )
             draft_ref = str(draft_path.relative_to(storage.root))
+            calibration = client.post(
+                "/product/longform-stability/calibrate",
+                json={
+                    "draft_path": draft_ref,
+                    "workspace_path": project.json()["path"],
+                    "expected": {"characters": ["阿照"], "organizations": [], "locations": [], "clues": [], "motifs": []},
+                    "use_model": False,
+                    "persist": True,
+                },
+            )
+            self.assertEqual(calibration.status_code, 200, calibration.text)
             draft_version = client.post("/product/production/draft-version", json={"draft_path": draft_ref})
             self.assertEqual(draft_version.status_code, 200, draft_version.text)
             generation_run = client.post(

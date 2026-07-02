@@ -9,6 +9,11 @@ from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.context_builder import create_context_build_plan, create_context_bundle
 from novel_forge.modules.continuity_graph import create_chapter_stability_preflight_report
+from novel_forge.modules.longform_stability import (
+    create_longform_artifacts_for_draft,
+    require_chapter_state_for_generation,
+    sanitize_chapter_text,
+)
 from novel_forge.modules.production_chain import create_draft_version, create_generation_run
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.schemas import DraftChapter
@@ -31,6 +36,12 @@ def draft(
     plan = storage.read_asset(plan_path)
     plan_ref = _display_path(storage.root, plan_path)
     production_context = build_production_context(storage, plan, input_path=plan_path, workspace_path=workspace_path)
+    previous_chapter_state = require_chapter_state_for_generation(
+        storage,
+        int(plan.content.get("chapter", 1) or 1),
+        project_id=str(production_context["project"].get("project_id", "")) or None,
+        workspace_path=str(production_context["project"].get("workspace_path", "")) or workspace_path,
+    )
     stability_preflight = _load_or_create_stability_preflight(
         storage,
         plan_path,
@@ -88,6 +99,7 @@ def draft(
                 "source_asset_id": plan.id,
                 "retrieved_context": retrieved_context,
                 "stability_preflight": stability_preflight["content"],
+                "previous_chapter_state": previous_chapter_state,
                 "rag_quality_gate": rag_quality_gate,
                 "context_build_plan": context_plan_asset.get("content", {}),
                 "context_bundle": context_bundle_asset.get("content", {}),
@@ -106,6 +118,10 @@ def draft(
                 "她把纸条塞进口袋，听见第二声钟从城市另一端传来。"
             )
         )
+        sanitizer_result = sanitize_chapter_text(draft_text)
+        if sanitizer_result["status"] == "fail":
+            raise ValueError(f"draft generation blocked by output sanitizer: {sanitizer_result['issues']}")
+        draft_text = sanitizer_result["text"]
         asset = DraftChapter(
             title="Chapter 1 draft v0",
             source=plan.id,
@@ -113,9 +129,11 @@ def draft(
             content={
                 "chapter": 1,
                 "text": draft_text,
+                "output_sanitizer": sanitizer_result,
                 "model_output": generated,
                 "retrieved_context": retrieved_context,
                 "stability_preflight": stability_preflight["content"],
+                "previous_chapter_state": previous_chapter_state,
                 "stability_preflight_path": stability_preflight["path"],
                 "stability_preflight_id": stability_preflight["id"],
                 "rag_quality_gate": rag_quality_gate,
@@ -187,6 +205,11 @@ def draft(
             ),
         )
         path = storage.write_asset("drafts", asset)
+        longform_artifacts = create_longform_artifacts_for_draft(
+            storage,
+            path,
+            workspace_path=str(production_context["project"].get("workspace_path", "")) or workspace_path,
+        )
         agent_run.guard("write_draft_version", "draft_version")
         draft_version = create_draft_version(storage, path)
         agent_run.guard("write_generation_run", "generation_run")
@@ -207,7 +230,11 @@ def draft(
             metadata["draft_version_id"] = draft_version.get("asset", {}).get("id", "")
             metadata["generation_run_path"] = generation_run.get("path", "")
             metadata["generation_run_id"] = generation_run.get("asset", {}).get("id", "")
+            metadata.update(longform_artifacts)
             data["metadata"] = metadata
+            content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            content["longform_stability_artifacts"] = longform_artifacts
+            data["content"] = content
             storage.write_json(path, data)
         agent_run.succeed(output_assets=[path, draft_version.get("path", ""), generation_run.get("path", "")], token_used=len(draft_text))
         return path

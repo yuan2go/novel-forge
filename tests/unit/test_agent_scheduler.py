@@ -5,8 +5,10 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.agent_runs import list_agent_runs, record_agent_checkpoint
+from novel_forge.modules.agent_runs import list_agent_runs, record_agent_budget, record_agent_checkpoint, record_agent_gate, start_agent_run
 from novel_forge.modules.agent_scheduler import (
+    agent_center_snapshot,
+    dispatch_agent_run,
     list_agent_dispatch_queue,
     list_agent_operation_contracts,
     recover_agent_dispatch,
@@ -20,6 +22,44 @@ from novel_forge.storage.local import LocalStorage
 
 
 class AgentSchedulerTests(unittest.TestCase):
+    def test_agent_center_snapshot_exposes_evidence_cockpit_fields(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            run = start_agent_run(
+                storage,
+                agent_key="draft",
+                operation="draft",
+                status="prepared",
+                token_budget=1000,
+                evidence={"trace": {"trace_id": "trace-agent-center", "span_id": "span-agent-center"}},
+            )
+            dispatch_agent_run(storage, agent_run_path=run["path"], max_attempts=2)
+            record_agent_checkpoint(
+                storage,
+                agent_run_path=run["path"],
+                status="prompt_built",
+                state={"operation": "draft", "status": "prompt_built"},
+            )
+            record_agent_budget(storage, agent_run_path=run["path"], token_budget=1000, token_used=120, cost_estimate=0.02)
+            record_agent_gate(storage, agent_run_path=run["path"], gate_type="permission", status="passed", result={"allowed": True})
+
+            snapshot = agent_center_snapshot(storage)
+
+            self.assertIn("run_graph", snapshot)
+            self.assertIn("gate_timeline", snapshot)
+            self.assertIn("checkpoints", snapshot)
+            self.assertIn("budget_burn", snapshot)
+            self.assertIn("retry_controls", snapshot)
+            self.assertIn("dead_letter_queue", snapshot)
+            self.assertIn("rollback_preview", snapshot)
+            self.assertIn("sla_duration", snapshot)
+            self.assertIn("evidence_drawer", snapshot)
+            self.assertIn("operation_coverage", snapshot)
+            self.assertTrue(snapshot["run_graph"]["nodes"])
+            self.assertEqual(snapshot["budget_burn"]["token_used"], 120)
+            self.assertTrue(snapshot["gate_timeline"])
+
     def test_strict_scheduler_requires_active_budget_policy(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

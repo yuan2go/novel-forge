@@ -36,7 +36,7 @@ describe("Novel Forge admin feature architecture", () => {
 
   it("has routed Novel OS runtime consoles wired to real runtime APIs", () => {
     const navigation = read("app/shared/navigation.tsx");
-    for (const token of ["OS Runtime", "workflow_runtime", "agent_dispatch", "trace_timeline", "cost_dashboard", "invalidation_map", "review_rework_board"]) {
+    for (const token of ["OS Runtime", "workflow_runtime", "agent_dispatch", "trace_timeline", "cost_dashboard", "invalidation_map", "review_rework_board", "longform_stability"]) {
       assert.match(navigation, new RegExp(token));
     }
 
@@ -49,13 +49,15 @@ describe("Novel Forge admin feature architecture", () => {
       "app/cost-dashboard/page.tsx",
       "app/invalidation/page.tsx",
       "app/review-rework/page.tsx",
+      "app/longform-stability/page.tsx",
       "app/features/os/OperatingSystemConsolePage.tsx",
       "app/features/os/WorkflowRuntimeConsolePage.tsx",
       "app/features/os/AgentDispatchCenterPage.tsx",
       "app/features/os/TraceTimelinePage.tsx",
       "app/features/os/CostDashboardPage.tsx",
       "app/features/os/InvalidationMapPage.tsx",
-      "app/features/os/ReviewReworkBoardPage.tsx"
+      "app/features/os/ReviewReworkBoardPage.tsx",
+      "app/features/os/LongformStabilityPage.tsx"
     ]) {
       assert.equal(existsSync(join(root, path)), true, `${path} should exist`);
     }
@@ -71,6 +73,8 @@ describe("Novel Forge admin feature architecture", () => {
       "/product/runtime/cost-dashboard",
       "/product/runtime/policy/enforcement-report",
       "/product/runtime/policy/legacy-entrypoint-audit",
+      "/product/runtime/policy/surface-coverage",
+      "/product/runtime/provider-hard-stop-evidence",
       "/product/runtime/rollback/preview",
       "/product/runtime/rollback/apply",
       "/product/runtime/rollback/verify",
@@ -78,7 +82,13 @@ describe("Novel Forge admin feature architecture", () => {
       "/product/novel-kg/refresh",
       "/product/novel-kg/identity-resolution",
       "/product/revisions/rework-loop",
-      "/product/publishing/gate"
+      "/product/publishing/gate",
+      "/product/longform-stability/dashboard",
+      "/product/longform-stability/extract",
+      "/product/longform-stability/acceptance",
+      "/product/longform-stability/control-asset",
+      "/product/longform-stability/calibrate",
+      "/product/agents/center"
     ]) {
       assert.match(osApi, new RegExp(endpoint.replaceAll("/", "\\/")));
     }
@@ -87,7 +97,9 @@ describe("Novel Forge admin feature architecture", () => {
     assert.match(workflowConsole, /DAG Graph/);
 
     const agentConsole = read("app/features/os/AgentDispatchCenterPage.tsx");
-    assert.match(agentConsole, /Agent Timeline/);
+    for (const token of ["Run Graph", "Gate Timeline", "Checkpoint List", "Budget Burn", "Dead-letter Queue", "Rollback Preview", "SLA \\/ Duration", "Evidence Drawer", "Operation Coverage"]) {
+      assert.match(agentConsole, new RegExp(token));
+    }
 
     const costConsole = read("app/features/os/CostDashboardPage.tsx");
     assert.match(costConsole, /Cost Trend/);
@@ -95,6 +107,14 @@ describe("Novel Forge admin feature architecture", () => {
     const osConsole = read("app/features/os/OperatingSystemConsolePage.tsx");
     assert.match(osConsole, /Coordinate Preview/);
     assert.match(osConsole, /Coordinate Apply/);
+    assert.match(osConsole, /Longform Stability/);
+    assert.match(osConsole, /OS Surface Coverage/);
+    assert.match(osConsole, /Provider Hard-stop Evidence/);
+
+    const longformConsole = read("app/features/os/LongformStabilityPage.tsx");
+    for (const token of ["Arc Visualization", "Model assisted", "OS acceptance gate", "Chapter Stability", "Acceptance Checks", "Editable OS Control Assets", "Extraction Calibration", "Save Control Asset", "Calibrate Draft"]) {
+      assert.match(longformConsole, new RegExp(token));
+    }
   });
 
   it("exposes asset graph, publishing calendar, version registry, and impact visualization in source", () => {
