@@ -14,6 +14,7 @@ from novel_forge.modules.longform_stability import (
     require_chapter_state_for_generation,
     sanitize_chapter_text,
 )
+from novel_forge.modules.mkaos import build_knowledge_pack, record_pack_usage_for_artifact
 from novel_forge.modules.production_chain import create_draft_version, create_generation_run
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.schemas import DraftChapter
@@ -77,6 +78,17 @@ def draft(
     context_bundle_asset = context_bundle["asset"]
     retrieved_context = context_bundle_asset.get("content", {}).get("retrieved_context", {})
     rag_quality_gate = _load_rag_quality_gate(storage, context_bundle_asset)
+    project_config = production_context.get("project_config", {}) if isinstance(production_context.get("project_config", {}), dict) else {}
+    mkaos_pack = _build_mkaos_pack(
+        storage,
+        flow="prose",
+        project_id=str(production_context["project"].get("project_id", "")),
+        workspace_path=str(production_context["project"].get("workspace_path", "")),
+        genre=str(project_config.get("genre") or ""),
+        platform=str(project_config.get("target_platform") or ""),
+        chapter_id=str(plan.content.get("chapter", 1) or 1),
+        current_goal=str(plan.content.get("objective") or plan.title or "draft chapter"),
+    )
     with AgentExecutionContext(
         storage,
         agent_key="draft",
@@ -105,6 +117,7 @@ def draft(
                 "context_bundle": context_bundle_asset.get("content", {}),
                 "actual_context": context_bundle_asset.get("content", {}).get("actual_context", ""),
                 "production_context": production_context,
+                "mkaos_knowledge_pack": _pack_content(mkaos_pack),
             }),
         )
         enforce_agent_action(agent_profile, "write_draft_chapter", "draft_chapter")
@@ -146,6 +159,9 @@ def draft(
                 "context_bundle_path": context_bundle.get("path", ""),
                 "actual_context": context_bundle_asset.get("content", {}).get("actual_context", ""),
                 "production_context": production_context,
+                "mkaos_knowledge_pack": _pack_content(mkaos_pack),
+                "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
+                "mkaos_knowledge_pack_warning": mkaos_pack.get("warning", ""),
                 "agent_run_path": agent_run.path,
                 "copyright_boundary": generated.get("copyright_boundary")
                 or "original draft generated from chapter plan; no reference expression copied",
@@ -176,6 +192,9 @@ def draft(
                 "context_build_plan_path": context_plan_ref,
                 "context_bundle_id": context_bundle_asset.get("id", ""),
                 "context_bundle_path": context_bundle.get("path", ""),
+                "mkaos_knowledge_pack_id": mkaos_pack.get("asset", {}).get("id", ""),
+                "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
+                "mkaos_warning": mkaos_pack.get("warning", ""),
                 "preflight_ready": production_context["preflight"].get("ready", False),
                 "preflight_warnings": production_context["preflight"].get("warnings", []),
                 **retrieval_metadata(retrieved_context),
@@ -200,11 +219,21 @@ def draft(
                     context_plan_ref,
                     str(context_bundle_asset.get("id", "")),
                     str(context_bundle.get("path", "")),
+                    str(mkaos_pack.get("asset", {}).get("id", "")),
+                    str(mkaos_pack.get("path", "")),
                     *production_context.get("profile_references", []),
                 ]),
             ),
         )
         path = storage.write_asset("drafts", asset)
+        _record_mkaos_usage(
+            storage,
+            mkaos_pack,
+            flow="prose",
+            target_asset_id=asset.id,
+            chapter_id=str(plan.content.get("chapter", 1) or 1),
+            agent_name="ProseAgent",
+        )
         longform_artifacts = create_longform_artifacts_for_draft(
             storage,
             path,
@@ -344,6 +373,56 @@ def _dedupe(values: list[str]) -> list[str]:
             seen.add(value)
             result.append(value)
     return result
+
+
+def _build_mkaos_pack(
+    storage: LocalStorage,
+    *,
+    flow: str,
+    project_id: str,
+    workspace_path: str,
+    genre: str,
+    platform: str,
+    chapter_id: str,
+    current_goal: str,
+) -> dict[str, Any]:
+    try:
+        return build_knowledge_pack(
+            storage,
+            {
+                "flow": flow,
+                "task_id": f"{flow}-{project_id or 'local'}-{chapter_id}",
+                "project_id": project_id or "local-system",
+                "workspace_path": workspace_path,
+                "genre": genre,
+                "platform": platform,
+                "chapter_id": chapter_id,
+                "current_goal": current_goal,
+            },
+        )
+    except Exception as exc:
+        return {"path": "", "asset": {"content": {}}, "warning": str(exc)}
+
+
+def _pack_content(pack: dict[str, Any]) -> dict[str, Any]:
+    asset = pack.get("asset", {}) if isinstance(pack.get("asset", {}), dict) else {}
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    return content
+
+
+def _record_mkaos_usage(storage: LocalStorage, pack: dict[str, Any], *, flow: str, target_asset_id: str, chapter_id: str, agent_name: str) -> None:
+    try:
+        record_pack_usage_for_artifact(
+            storage,
+            pack,
+            flow=flow,
+            target_artifact_id=target_asset_id,
+            chapter_id=chapter_id,
+            agent_name=agent_name,
+            used_as="prose_generation_constraint",
+        )
+    except Exception:
+        return
 
 
 def _display_path(root: Path, path: Path) -> str:

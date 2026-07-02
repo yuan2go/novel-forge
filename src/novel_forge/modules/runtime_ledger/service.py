@@ -160,7 +160,11 @@ def record_model_call_log(
         tags=["model-call", provider or "unknown", model or "unknown", _model_call_status(status)],
         content=content,
         metadata={"project_id": project_id, "workspace_path": workspace_path},
-        references=filter_project_safe_references(storage, project_id, _dedupe([source_id, trace_payload.get("trace_id", "")])),
+        references=filter_project_safe_references(
+            storage,
+            project_id,
+            _dedupe([source_id, trace_payload.get("trace_id", "")] if _is_project_scoped(project_id, workspace_path) else [source_id]),
+        ),
     )
     written = _write_asset(storage, asset)
     amount = _float((cost or {}).get("amount", 0.0))
@@ -866,6 +870,10 @@ def _write_asset(storage: LocalStorage, asset: Any) -> dict[str, Any]:
         raise ValueError("; ".join(errors))
     path = storage.write_asset_auto(asset)
     return {"path": _display_path(storage.root, path), "id": asset.id, "asset": asset.to_dict(), "validation": {"ok": True, "errors": []}}
+
+
+def _is_project_scoped(project_id: str, workspace_path: str = "") -> bool:
+    return bool((project_id and project_id != "local-system") or (workspace_path and workspace_path != "local-system"))
 
 
 def _write_json_validated(storage: LocalStorage, path: Path, data: dict[str, Any]) -> None:

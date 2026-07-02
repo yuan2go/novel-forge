@@ -43,9 +43,17 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 167)
+        self.assertEqual(len(SCHEMA_CLASSES), 175)
         self.assertIn("source_document", SCHEMA_CLASSES)
+        self.assertIn("source_chunk", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
+        self.assertIn("knowledge_usage_binding", SCHEMA_CLASSES)
+        self.assertIn("rule_card", SCHEMA_CLASSES)
+        self.assertIn("template_card", SCHEMA_CLASSES)
+        self.assertIn("knowledge_pack", SCHEMA_CLASSES)
+        self.assertIn("knowledge_pack_item", SCHEMA_CLASSES)
+        self.assertIn("knowledge_usage_event", SCHEMA_CLASSES)
+        self.assertIn("knowledge_quality_score", SCHEMA_CLASSES)
         self.assertIn("review_report", SCHEMA_CLASSES)
         self.assertIn("project_workspace_state", SCHEMA_CLASSES)
         self.assertIn("task_dead_letter", SCHEMA_CLASSES)

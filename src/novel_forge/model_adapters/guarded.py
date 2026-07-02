@@ -151,7 +151,9 @@ class GuardedModelAdapter:
         model = str(result.get("model") or run_info.get("model_name") or self.name)
         normalized_usage = normalize_provider_usage(usage, usage_source="guarded_adapter")
         cost = _cost_from_result(result, normalized_usage, context_payload)
-        source_id = str(model_route.get("path") or run_info.get("run_id", ""))
+        trace = run_info.get("trace", {}) if isinstance(run_info.get("trace", {}), dict) else {}
+        project_scoped = _is_project_scoped_run(run_info)
+        source_id = str((run_info.get("run_id") or trace.get("trace_id") or self.agent_run_path) if project_scoped else (model_route.get("path") or run_info.get("run_id", "")))
         try:
             call = record_model_call_log(
                 self.storage,
@@ -161,7 +163,7 @@ class GuardedModelAdapter:
                 status="succeeded",
                 usage=normalized_usage,
                 cost=cost,
-                trace=run_info.get("trace", {}) if isinstance(run_info.get("trace", {}), dict) else {},
+                trace=trace,
                 project_id=str(run_info.get("project_id", "")),
                 workspace_path=str(run_info.get("workspace_path", "")),
                 source_id=source_id,
@@ -181,6 +183,7 @@ class GuardedModelAdapter:
         model = str(run_info.get("model_name") or self.name)
         route = model_route or {}
         try:
+            trace = run_info.get("trace", {}) if isinstance(run_info.get("trace", {}), dict) else {}
             record_model_call_log(
                 self.storage,
                 provider=provider,
@@ -189,10 +192,10 @@ class GuardedModelAdapter:
                 status="failed",
                 usage=normalize_provider_usage(usage or failure.get("usage", {}), usage_source="guarded_adapter_failed"),
                 cost={"amount": 0.0, "currency": "USD", "source": "guarded_adapter_failed"},
-                trace=run_info.get("trace", {}) if isinstance(run_info.get("trace", {}), dict) else {},
+                trace=trace,
                 project_id=str(run_info.get("project_id", "")),
                 workspace_path=str(run_info.get("workspace_path", "")),
-                source_id=str(route.get("path") or run_info.get("run_id", "")),
+                source_id=str((run_info.get("run_id") or trace.get("trace_id") or self.agent_run_path) if _is_project_scoped_run(run_info) else (route.get("path") or run_info.get("run_id", ""))),
                 prompt_version=str(run_info.get("prompt_version", "")),
             )
         except Exception:
@@ -414,3 +417,9 @@ def _cost_from_result(result: dict[str, Any], usage: dict[str, Any], context: di
     if guard.cost_profile:
         return estimate_provider_cost(usage, guard.cost_profile)
     return {"amount": 0.0, "currency": "USD", "source": "guarded_adapter"}
+
+
+def _is_project_scoped_run(run_info: dict[str, Any]) -> bool:
+    project_id = str(run_info.get("project_id", "") or "").strip()
+    workspace_path = str(run_info.get("workspace_path", "") or "").strip()
+    return bool((project_id and project_id != "local-system") or (workspace_path and workspace_path != "local-system"))

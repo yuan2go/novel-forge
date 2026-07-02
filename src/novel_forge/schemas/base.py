@@ -86,6 +86,26 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "abstraction_level",
     ],
     "knowledge_card": ["principles"],
+    "source_chunk": ["source_document_id", "chunk_index", "clean_text", "content_hash"],
+    "knowledge_usage_binding": ["knowledge_id", "flow", "usage_type", "usage_granularity", "input_role", "output_form"],
+    "rule_card": ["rule_name", "rule_type", "trigger_condition", "check_items", "severity", "blocking", "applicable_flows", "enabled"],
+    "template_card": ["template_name", "template_type", "structure", "usage_constraints", "enabled"],
+    "knowledge_pack": [
+        "knowledge_pack_id",
+        "task_id",
+        "project_id",
+        "flow",
+        "required_knowledge",
+        "optional_knowledge",
+        "forbidden_knowledge",
+        "generation_constraints",
+        "review_rules",
+        "knowledge_budget",
+        "output_contract",
+    ],
+    "knowledge_pack_item": ["knowledge_pack_id", "item_role", "flow", "payload"],
+    "knowledge_usage_event": ["event_id", "knowledge_id", "knowledge_pack_id", "project_id", "flow", "agent_name", "used_as", "created_at"],
+    "knowledge_quality_score": ["score_id", "knowledge_id", "flow", "delta", "reason", "created_at"],
     "material_card": ["usable_patterns", "do_not_copy"],
     "asset_collection": ["purpose", "asset_paths"],
     "platform_profile": [
@@ -686,6 +706,17 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         "long_chain_acceptance_report",
     } and isinstance(content, dict):
         errors.extend(_validate_industrial_extension_content(asset_type, content))
+    if asset_type in {
+        "source_chunk",
+        "knowledge_usage_binding",
+        "rule_card",
+        "template_card",
+        "knowledge_pack",
+        "knowledge_pack_item",
+        "knowledge_usage_event",
+        "knowledge_quality_score",
+    } and isinstance(content, dict):
+        errors.extend(_validate_mkaos_content(asset_type, content))
 
     return errors
 
@@ -695,6 +726,56 @@ def _is_missing(value: Any) -> bool:
         return True
     if isinstance(value, str):
         return value.strip() == ""
+    return False
+
+
+def _validate_mkaos_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    flows = {"outline", "chapter_outline", "prose", "review"}
+    item_roles = {
+        "required",
+        "optional",
+        "forbidden",
+        "constraint",
+        "review_rule",
+        "canon_context",
+        "style_constraint",
+        "risk_warning",
+    }
+    if asset_type in {"knowledge_usage_binding", "knowledge_pack", "knowledge_pack_item", "knowledge_usage_event", "knowledge_quality_score"}:
+        flow = str(content.get("flow", "") or "")
+        if flow and flow not in flows:
+            errors.append("MKAOS flow must be outline, chapter_outline, prose, or review")
+    if asset_type == "knowledge_pack_item" and str(content.get("item_role", "")) not in item_roles:
+        errors.append("knowledge_pack_item item_role is invalid")
+    if asset_type == "rule_card":
+        if str(content.get("severity", "")) not in {"info", "low", "medium", "high", "critical"}:
+            errors.append("rule_card severity is invalid")
+        if not isinstance(content.get("blocking"), bool):
+            errors.append("rule_card blocking must be a boolean")
+        if not isinstance(content.get("enabled"), bool):
+            errors.append("rule_card enabled must be a boolean")
+        applicable = content.get("applicable_flows")
+        if not isinstance(applicable, list):
+            errors.append("rule_card applicable_flows must be a list")
+        elif any(str(item) not in flows for item in applicable):
+            errors.append("rule_card applicable_flows contains an invalid flow")
+    if asset_type == "template_card" and not isinstance(content.get("enabled"), bool):
+        errors.append("template_card enabled must be a boolean")
+    if asset_type == "knowledge_pack":
+        for key in ["required_knowledge", "optional_knowledge", "forbidden_knowledge", "review_rules"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"knowledge_pack {key} must be a list")
+        if content.get("flow") == "prose" and _contains_key(content, "raw_text"):
+            errors.append("prose knowledge_pack must not contain source chunk raw_text")
+    return errors
+
+
+def _contains_key(value: Any, key: str) -> bool:
+    if isinstance(value, dict):
+        return any(str(item_key) == key or _contains_key(item_value, key) for item_key, item_value in value.items())
+    if isinstance(value, list):
+        return any(_contains_key(item, key) for item in value)
     return False
 
 

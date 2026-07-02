@@ -74,6 +74,25 @@ GENERATION_RAG_BLOCKED_TYPES = {
     "web_fiction_business_analysis_report",
     "published_fiction_analysis_report",
     "classic_literary_analysis_report",
+    "agent_run",
+    "agent_checkpoint",
+    "agent_budget",
+    "agent_gate",
+    "agent_metric",
+    "agent_dispatch_queue",
+    "agent_contract",
+    "trace_span",
+    "model_call_log",
+    "cost_ledger",
+    "workflow_run",
+    "task_status",
+    "knowledge_usage_binding",
+    "rule_card",
+    "template_card",
+    "knowledge_pack",
+    "knowledge_pack_item",
+    "knowledge_usage_event",
+    "knowledge_quality_score",
 }
 
 
@@ -259,7 +278,10 @@ class RagContextBuilder:
         query: str,
     ) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
+        deferred: list[dict[str, Any]] = []
         seen: set[str] = set()
+        expected_buckets = _expected_buckets_for_input(input_asset.type)
+        covered_buckets: set[str] = set()
         for result in ranked:
             path_text = str(result.get("path", "")).strip()
             if not path_text:
@@ -272,9 +294,19 @@ class RagContextBuilder:
             if key in seen:
                 continue
             seen.add(key)
-            items.append(item)
+            item_buckets = set(item.get("categories", []))
+            adds_expected_coverage = bool(item_buckets.intersection(expected_buckets).difference(covered_buckets))
+            if adds_expected_coverage or not expected_buckets:
+                items.append(item)
+                covered_buckets.update(item_buckets.intersection(expected_buckets))
+            else:
+                deferred.append(item)
+            if len(items) >= top_k and all(bucket in covered_buckets for bucket in expected_buckets):
+                break
+        for item in deferred:
             if len(items) >= top_k:
                 break
+            items.append(item)
         return items
 
     def _fill_from_project_scan(
@@ -287,6 +319,9 @@ class RagContextBuilder:
         query: str,
     ) -> list[dict[str, Any]]:
         seen = {str(item["path"]) for item in items}
+        deferred: list[dict[str, Any]] = []
+        expected_buckets = _expected_buckets_for_input(input_asset.type)
+        covered_buckets = {bucket for item in items for bucket in item.get("categories", []) if bucket in expected_buckets}
         for category in DATA_DIRS:
             for path in reversed(self.storage.list_json(category)):
                 result = {"path": _relative_path(self.storage, path), "score": 0.0, "ranker": "project-scoped-asset-priority"}
@@ -294,9 +329,19 @@ class RagContextBuilder:
                 if not item or str(item["path"]) in seen:
                     continue
                 seen.add(str(item["path"]))
-                items.append(item)
-                if len(items) >= top_k:
+                item_buckets = set(item.get("categories", []))
+                adds_expected_coverage = bool(item_buckets.intersection(expected_buckets).difference(covered_buckets))
+                if adds_expected_coverage or not expected_buckets:
+                    items.append(item)
+                    covered_buckets.update(item_buckets.intersection(expected_buckets))
+                else:
+                    deferred.append(item)
+                if len(items) >= top_k and all(bucket in covered_buckets for bucket in expected_buckets):
                     return items
+        for item in deferred:
+            if len(items) >= top_k:
+                break
+            items.append(item)
         return items
 
     def _item_from_path(

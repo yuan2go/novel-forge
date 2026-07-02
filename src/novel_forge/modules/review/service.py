@@ -12,6 +12,7 @@ from novel_forge.model_adapters.mock import MockModelAdapter
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, run_metadata
 from novel_forge.modules.audit import create_chapter_audit_report, create_originality_report
+from novel_forge.modules.mkaos import build_knowledge_pack, record_pack_usage_for_artifact, validate_artifact as validate_mkaos_artifact
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, quality_dimensions_from_context
 from novel_forge.modules.standards import create_quality_score_report, evaluate_quality_standard
 from novel_forge.modules.style import create_style_review_report
@@ -27,6 +28,17 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
     production_context = build_production_context(storage, draft_asset, input_path=input_path)
     quality_dimensions = quality_dimensions_from_context(production_context) or QUALITY_DIMENSIONS
     feedback_rubric_constraints = _feedback_rubric_constraints(storage, production_context)
+    project_config = production_context.get("project_config", {}) if isinstance(production_context.get("project_config", {}), dict) else {}
+    mkaos_pack = _build_mkaos_pack(
+        storage,
+        flow="review",
+        project_id=str(production_context["project"].get("project_id", "")),
+        workspace_path=str(production_context["project"].get("workspace_path", "")),
+        genre=str(project_config.get("genre") or ""),
+        platform=str(project_config.get("target_platform") or ""),
+        chapter_id=str(draft_asset.content.get("chapter", "")),
+        current_goal=f"review {draft_asset.title or draft_asset.id}",
+    )
     retrieved_context = build_rag_context(
         storage,
         draft_asset,
@@ -60,6 +72,7 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                     "feedback_rubric_constraints": feedback_rubric_constraints,
                     "retrieved_context": retrieved_context,
                     "production_context": production_context,
+                    "mkaos_knowledge_pack": _pack_content(mkaos_pack),
                 },
             ),
         )
@@ -67,8 +80,17 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
         agent_run.guard("write_review_report", "review_report")
         quality_gate = evaluate_draft_quality(draft_asset.content.get("text", ""))
         standard_evaluation = evaluate_quality_standard(draft_asset, production_context, review_result=result)
+        mkaos_validation = validate_mkaos_artifact(
+            storage,
+            {
+                "artifact_text": draft_asset.content.get("text", ""),
+                "project_id": production_context["project"].get("project_id", ""),
+                "knowledge_pack_id": mkaos_pack.get("asset", {}).get("id", ""),
+                "checks": ["canon", "logic", "anti_encyclopedia", "knowledge_usage", "platform"],
+            },
+        )
         issues = _normalize_review_issues(
-            [*result["issues"], *gate_issues(quality_gate)],
+            [*result["issues"], *gate_issues(quality_gate), *mkaos_validation.get("issues", [])],
             source_key=draft_asset.id,
             stage="initial_review",
         )
@@ -84,6 +106,10 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                 "feedback_rubric_constraints": feedback_rubric_constraints,
                 "production_context": production_context,
                 "retrieved_context": retrieved_context,
+                "mkaos_knowledge_pack": _pack_content(mkaos_pack),
+                "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
+                "mkaos_knowledge_pack_warning": mkaos_pack.get("warning", ""),
+                "mkaos_validation": mkaos_validation,
                 "agent_run_path": agent_run.path,
                 "model_output": result,
             },
@@ -101,6 +127,10 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                 "preflight_ready": production_context["preflight"].get("ready", False),
                 "preflight_warnings": production_context["preflight"].get("warnings", []),
                 "feedback_rubric_loaded": bool(feedback_rubric_constraints),
+                "mkaos_knowledge_pack_id": mkaos_pack.get("asset", {}).get("id", ""),
+                "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
+                "mkaos_warning": mkaos_pack.get("warning", ""),
+                "mkaos_validation_passed": mkaos_validation.get("passed", False),
                 **retrieval_metadata(retrieved_context),
                 "run_metadata": run_metadata(
                     "review",
@@ -129,10 +159,19 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
             references=filter_project_safe_references(
                 storage,
                 str(production_context["project"].get("project_id", "")),
-                _dedupe([*retrieval_reference_ids(draft_asset.id, retrieved_context), *production_context.get("profile_references", [])]),
+                _dedupe([*retrieval_reference_ids(draft_asset.id, retrieved_context), mkaos_pack.get("path", ""), mkaos_pack.get("asset", {}).get("id", ""), *production_context.get("profile_references", [])]),
             ),
         )
         review_path = storage.write_asset("reviews", asset)
+        _record_mkaos_usage(
+            storage,
+            mkaos_pack,
+            flow="review",
+            target_asset_id=asset.id,
+            chapter_id=str(draft_asset.content.get("chapter", "")),
+            agent_name="ReviewAgent",
+            review_result=mkaos_validation.get("usage_assessment", {}),
+        )
         agent_run.guard("write_quality_score_report", "quality_score_report")
         quality_path = create_quality_score_report(
             storage,
@@ -466,3 +505,63 @@ def _dedupe(values: list[str]) -> list[str]:
         seen.add(normalized)
         result.append(normalized)
     return result
+
+
+def _build_mkaos_pack(
+    storage: LocalStorage,
+    *,
+    flow: str,
+    project_id: str,
+    workspace_path: str,
+    genre: str,
+    platform: str,
+    chapter_id: str,
+    current_goal: str,
+) -> dict[str, Any]:
+    try:
+        return build_knowledge_pack(
+            storage,
+            {
+                "flow": flow,
+                "task_id": f"{flow}-{project_id or 'local'}-{chapter_id or 'artifact'}",
+                "project_id": project_id or "local-system",
+                "workspace_path": workspace_path,
+                "genre": genre,
+                "platform": platform,
+                "chapter_id": chapter_id,
+                "current_goal": current_goal,
+            },
+        )
+    except Exception as exc:
+        return {"path": "", "asset": {"content": {}}, "warning": str(exc)}
+
+
+def _pack_content(pack: dict[str, Any]) -> dict[str, Any]:
+    asset = pack.get("asset", {}) if isinstance(pack.get("asset", {}), dict) else {}
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    return content
+
+
+def _record_mkaos_usage(
+    storage: LocalStorage,
+    pack: dict[str, Any],
+    *,
+    flow: str,
+    target_asset_id: str,
+    chapter_id: str,
+    agent_name: str,
+    review_result: dict[str, Any],
+) -> None:
+    try:
+        record_pack_usage_for_artifact(
+            storage,
+            pack,
+            flow=flow,
+            target_artifact_id=target_asset_id,
+            chapter_id=chapter_id,
+            agent_name=agent_name,
+            used_as="review_rule",
+            review_result=review_result,
+        )
+    except Exception:
+        return

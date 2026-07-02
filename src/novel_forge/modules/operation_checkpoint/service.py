@@ -309,6 +309,8 @@ def record_raw_output_segment(
     payload = {
         "type": "operation_raw_output_segment",
         "id": segment_id,
+        "name": f"Raw output segment {operation} #{segment_index}",
+        "version": "1.0",
         "title": f"Raw output segment {operation} #{segment_index}",
         "source": idempotency_key,
         "tags": ["operation-checkpoint", "raw-output-segment", operation],

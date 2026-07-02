@@ -24,6 +24,36 @@ RAW_OR_REPORT_TYPES = {
     "classic_literary_analysis_report",
 }
 
+CONTEXT_TYPE_BUCKETS = {
+    "character_card": ["characters"],
+    "character_mechanism": ["characters", "material_cards"],
+    "world_bible": ["worldbuilding"],
+    "continuity_bible": ["worldbuilding", "foreshadowing"],
+    "foreshadowing_thread": ["foreshadowing"],
+    "power_scale_rule": ["worldbuilding"],
+    "platform_profile": ["material_cards"],
+    "genre_market_profile": ["material_cards"],
+    "creative_strategy_profile": ["material_cards", "writing_templates", "foreshadowing"],
+    "quality_standard_profile": ["writing_templates"],
+    "style_profile": ["writing_templates"],
+    "style_blend_preset": ["writing_templates"],
+    "outline": ["previous_summaries"],
+    "outline_version": ["previous_summaries"],
+    "chapter_plan": ["previous_summaries"],
+    "chapter_plan_version": ["previous_summaries"],
+    "draft_chapter": ["previous_summaries"],
+    "revision_plan": ["previous_summaries"],
+    "knowledge_card": ["knowledge_cards"],
+    "material_card": ["material_cards"],
+    "commercial_pattern": ["material_cards"],
+    "narrative_pattern": ["material_cards"],
+    "conflict_pattern": ["material_cards"],
+    "emotion_curve": ["material_cards"],
+    "hook_pattern": ["foreshadowing", "material_cards"],
+    "writing_template": ["writing_templates", "material_cards"],
+    "craft_template": ["writing_templates", "material_cards"],
+}
+
 
 def create_context_build_plan(
     storage: LocalStorage,
@@ -290,6 +320,7 @@ def create_context_bundle(
     kg_context = content.get("kg_context", {}) if isinstance(content.get("kg_context", {}), dict) else {"items": [], "source_asset_ids": [], "recommendation": "kg_context_missing_from_plan"}
     kg_source_ids = [str(item) for item in kg_context.get("source_asset_ids", []) if str(item).strip()] if isinstance(kg_context.get("source_asset_ids", []), list) else []
     bucketed = _bucket_selected(selected)
+    bundle_omission = _bundle_omission_check(str(content.get("target_asset_type", "")), bucketed, content.get("omission_check", {}))
     actual_context = _actual_context_text(bucketed, int(content.get("token_budget", {}).get("max_tokens", 4000)))
     token_estimate = _estimate_tokens(actual_context)
     budget_score = _context_budget_score(selected, content.get("candidate_assets", []), token_estimate, content.get("token_budget", _token_budget(4000)))
@@ -324,7 +355,8 @@ def create_context_bundle(
             "source_asset_ids": selected_ids,
             "retrieval_quality": content.get("retrieval_quality", {}),
             "recall_explanation": content.get("recall_explanation", {}),
-            "omission_check": content.get("omission_check", {}),
+            "retrieval_omission_check": content.get("omission_check", {}),
+            "omission_check": bundle_omission,
             "copyright_filter": content.get("copyright_filter", {}),
             "policy_rejections": policy_rejections,
             "retrieved_context": content.get("retrieved_context", {}),
@@ -559,6 +591,7 @@ def _merge_context_candidates(items: list[dict[str, Any]]) -> list[dict[str, Any
         path = str(item.get("path", ""))
         if not path:
             continue
+        item = {**item, "categories": _normalized_candidate_categories(item)}
         existing = by_path.get(path)
         if not existing or float(item.get("score", 0) or 0) > float(existing.get("score", 0) or 0):
             if existing:
@@ -573,6 +606,12 @@ def _merged_candidate_categories(left: dict[str, Any], right: dict[str, Any]) ->
     categories = left.get("categories", []) if isinstance(left.get("categories", []), list) else []
     more = right.get("categories", []) if isinstance(right.get("categories", []), list) else []
     return _dedupe([*[str(value) for value in categories], *[str(value) for value in more]])
+
+
+def _normalized_candidate_categories(item: dict[str, Any]) -> list[str]:
+    categories = item.get("categories", []) if isinstance(item.get("categories", []), list) else []
+    asset_type = str(item.get("type", ""))
+    return _dedupe([*[str(value) for value in categories if str(value).strip()], *CONTEXT_TYPE_BUCKETS.get(asset_type, [])])
 
 
 def _rag_copyright_exclusions(retrieved_context: dict[str, Any]) -> list[dict[str, str]]:
@@ -957,15 +996,55 @@ def _bucket_selected(selected: list[dict[str, Any]]) -> dict[str, list[dict[str,
     return buckets
 
 
+def _bundle_omission_check(target_asset_type: str, bucketed: dict[str, list[dict[str, str]]], retrieval_omission: Any) -> dict[str, Any]:
+    retrieval = retrieval_omission if isinstance(retrieval_omission, dict) else {}
+    expected = retrieval.get("expected_buckets") if isinstance(retrieval.get("expected_buckets"), list) else []
+    if not expected:
+        if target_asset_type in {"chapter_plan", "draft_chapter", "draft_version", "review_report", "revision_plan"}:
+            expected = ["characters", "worldbuilding", "previous_summaries", "knowledge_cards", "foreshadowing", "material_cards", "writing_templates"]
+        elif target_asset_type in {"outline", "outline_version"}:
+            expected = ["characters", "worldbuilding", "knowledge_cards", "material_cards", "writing_templates"]
+        else:
+            expected = ["knowledge_cards", "material_cards"]
+    expected_buckets = [str(bucket) for bucket in expected if str(bucket).strip()]
+    present = [bucket for bucket in expected_buckets if bucketed.get(bucket)]
+    missing = [bucket for bucket in expected_buckets if bucket not in present]
+    return {
+        "expected_buckets": expected_buckets,
+        "present_buckets": present,
+        "missing_buckets": missing,
+        "missing_count": len(missing),
+        "retrieval_missing_buckets": retrieval.get("missing_buckets", []) if isinstance(retrieval.get("missing_buckets", []), list) else [],
+        "status": "passed" if not missing else "warning",
+        "recommendations": retrieval.get("recommendations", []) if isinstance(retrieval.get("recommendations", []), list) else [],
+    }
+
+
 def _actual_context_text(bucketed: dict[str, list[dict[str, str]]], max_tokens: int) -> str:
     limit = max(max_tokens * 4, 1200)
     chunks: list[str] = []
+    emitted_paths: set[str] = set()
+    emitted_bucket_by_path: dict[str, list[str]] = {}
     for bucket, items in bucketed.items():
         if not items:
             continue
-        chunks.append(f"## {bucket}")
+        bucket_chunks: list[str] = []
         for item in items:
-            chunks.append(f"- [{item['type']}] {item['title']} ({item['path']}): {item['summary']}")
+            path = str(item.get("path", ""))
+            if path in emitted_paths:
+                emitted_bucket_by_path.setdefault(path, []).append(str(bucket))
+                continue
+            emitted_paths.add(path)
+            emitted_bucket_by_path[path] = [str(bucket)]
+            bucket_chunks.append(f"- [{item['type']}] {item['title']} ({path}): {item['summary']}")
+        if bucket_chunks:
+            chunks.append(f"## {bucket}")
+            chunks.extend(bucket_chunks)
+    if emitted_bucket_by_path:
+        multi_bucket = [f"{path}: {', '.join(buckets)}" for path, buckets in emitted_bucket_by_path.items() if len(buckets) > 1]
+        if multi_bucket:
+            chunks.append("## bucket_crosswalk")
+            chunks.extend(f"- {item}" for item in multi_bucket[:40])
     text = "\n".join(chunks).strip()
     return _compact(text or "No eligible project-scoped context assets were selected.", limit)
 

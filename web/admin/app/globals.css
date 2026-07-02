@@ -687,6 +687,12 @@ th {
   white-space: pre-wrap;
 }
 
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .checkItem {
   border: 1px solid var(--soft-line);
   border-radius: 8px;

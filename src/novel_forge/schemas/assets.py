@@ -82,6 +82,46 @@ class KnowledgeCard(BaseAsset):
 
 
 @dataclass
+class SourceChunk(BaseAsset):
+    type: str = "source_chunk"
+
+
+@dataclass
+class KnowledgeUsageBinding(BaseAsset):
+    type: str = "knowledge_usage_binding"
+
+
+@dataclass
+class RuleCard(BaseAsset):
+    type: str = "rule_card"
+
+
+@dataclass
+class TemplateCard(BaseAsset):
+    type: str = "template_card"
+
+
+@dataclass
+class KnowledgePack(BaseAsset):
+    type: str = "knowledge_pack"
+
+
+@dataclass
+class KnowledgePackItem(BaseAsset):
+    type: str = "knowledge_pack_item"
+
+
+@dataclass
+class KnowledgeUsageEvent(BaseAsset):
+    type: str = "knowledge_usage_event"
+
+
+@dataclass
+class KnowledgeQualityScore(BaseAsset):
+    type: str = "knowledge_quality_score"
+
+
+@dataclass
 class MaterialCard(BaseAsset):
     type: str = "material_card"
 
@@ -866,6 +906,14 @@ SCHEMA_CLASSES = {
         ClassicLiteraryAnalysisReport,
         AnalysisConversionReport,
         KnowledgeCard,
+        SourceChunk,
+        KnowledgeUsageBinding,
+        RuleCard,
+        TemplateCard,
+        KnowledgePack,
+        KnowledgePackItem,
+        KnowledgeUsageEvent,
+        KnowledgeQualityScore,
         MaterialCard,
         AssetCollection,
         PlatformProfile,

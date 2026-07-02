@@ -639,13 +639,25 @@ def _production_sidecar_outputs(storage: LocalStorage, output_paths: list[Path])
         "outline_version",
         "chapter_plan_version",
         "chapter_continuity_report",
+        "chapter_state",
+        "chapter_pattern_report",
+        "fact_ledger",
+        "foreshadowing_graph",
+        "motif_budget_report",
+        "character_state_ledger",
+        "villain_operation_plan",
+        "reward_ledger",
+        "platform_adapter_report",
+        "style_control_plan",
+        "reader_fatigue_report",
+        "review_score_system_report",
         "draft_version",
         "generation_run",
     }
     changed = True
     while changed:
         changed = False
-        for category in ["contexts", "continuity", "outlines", "chapter_plans", "drafts", "runs"]:
+        for category in ["contexts", "continuity", "outlines", "chapter_plans", "drafts", "platforms", "styles", "reviews", "runs"]:
             for path in storage.list_json(category):
                 try:
                     data = storage.read_json(path)
@@ -859,6 +871,8 @@ def _attach_run_assets_to_workspace(storage: LocalStorage, workspace_path: Path,
         if not isinstance(data, dict) or data.get("type") == "project_workspace_state":
             continue
         metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        if _has_cross_project_intrinsic_reference(storage, data, project_id):
+            continue
         if metadata.get("project_id") in {"", None, "local-system"}:
             metadata["project_id"] = project_id
         if metadata.get("workspace_id") in {"", None, "local-system"}:
@@ -874,9 +888,43 @@ def _attach_run_assets_to_workspace(storage: LocalStorage, workspace_path: Path,
         for ref in [project_id, workspace_id]:
             if ref and ref not in references:
                 references.append(ref)
-        data["references"] = list(dict.fromkeys(reference for reference in references if reference))
+        data["references"] = filter_project_safe_references(
+            storage,
+            project_id,
+            list(dict.fromkeys(reference for reference in references if reference)),
+        )
         data["updated_at"] = utc_now()
         storage.write_json(resolved, data)
+
+
+def _has_cross_project_intrinsic_reference(storage: LocalStorage, data: dict, project_id: str) -> bool:
+    if not project_id:
+        return False
+    values: list[str] = []
+    source = str(data.get("source", "") or "")
+    if source:
+        values.append(source)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    for payload in [content, metadata]:
+        for key in [
+            "source_id",
+            "source_path",
+            "source_asset_id",
+            "source_asset_path",
+            "model_route_resolution_path",
+            "handoff_id",
+            "handoff_path",
+            "batch_item_id",
+            "batch_item_path",
+        ]:
+            value = str(payload.get(key) or "")
+            if value:
+                values.append(value)
+    for value in values:
+        if value and not filter_project_safe_references(storage, project_id, [value]):
+            return True
+    return False
 
 
 def _attach_priority(storage: LocalStorage, path: Path) -> tuple[int, str]:
@@ -898,6 +946,9 @@ def _attach_priority(storage: LocalStorage, path: Path) -> tuple[int, str]:
         "agent_failure_report": 9,
         "agent_sla_report": 10,
         "agent_rollback_report": 11,
+        "model_route_resolution": 12,
+        "model_call_log": 13,
+        "cost_ledger": 14,
     }
     return (priorities.get(asset_type, 20), str(path))
 

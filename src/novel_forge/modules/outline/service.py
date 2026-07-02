@@ -14,6 +14,7 @@ from novel_forge.model_adapters import (
 )
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.mkaos import build_knowledge_pack, record_pack_usage_for_artifact
 from novel_forge.modules.planning_context import build_planning_context, planning_context_metadata
 from novel_forge.modules.production_chain import create_outline_version
 from novel_forge.modules.production_context import filter_project_safe_references
@@ -38,6 +39,16 @@ def generate_outline(
     production_context = planning_context["production_context"]
     project_id = str(production_context.get("project", {}).get("project_id", ""))
     workspace = str(production_context.get("project", {}).get("workspace_path", ""))
+    project_config = production_context.get("project_config", {}) if isinstance(production_context.get("project_config", {}), dict) else {}
+    mkaos_pack = _build_mkaos_pack(
+        storage,
+        flow="outline",
+        project_id=project_id,
+        workspace_path=workspace,
+        genre=str(project_config.get("genre") or ""),
+        platform=str(project_config.get("target_platform") or ""),
+        current_goal=f"outline for {character.title or character.id}",
+    )
     with AgentExecutionContext(
         storage,
         agent_key="outline",
@@ -81,6 +92,7 @@ def generate_outline(
                     },
                     "source_character": character.to_dict(),
                     "planning_context": planning_context,
+                    "mkaos_knowledge_pack": _pack_content(mkaos_pack),
                     "copyright_boundary": "Use reference assets for abstract structure only. Do not copy protected scenes, names, settings, or prose.",
                 },
             ),
@@ -103,6 +115,9 @@ def generate_outline(
                 "continuity_constraints": packet.get("continuity_constraints", []),
                 "feedback_constraints": packet.get("feedback_constraints", []),
                 "planning_context": planning_context,
+                "mkaos_knowledge_pack": _pack_content(mkaos_pack),
+                "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
+                "mkaos_knowledge_pack_warning": mkaos_pack.get("warning", ""),
                 "model_output": generated,
                 "agent_run_path": run.path,
                 "copyright_boundary": generated.get("copyright_boundary")
@@ -114,6 +129,9 @@ def generate_outline(
                 "agent_run_path": run.path,
                 "prompt_version": PROMPT_VERSION,
                 "source_asset_path": source_ref,
+                "mkaos_knowledge_pack_id": mkaos_pack.get("asset", {}).get("id", ""),
+                "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
+                "mkaos_warning": mkaos_pack.get("warning", ""),
                 **planning_context_metadata(planning_context),
                 "run_metadata": run_metadata(
                     "generate-outline",
@@ -126,11 +144,12 @@ def generate_outline(
             references=filter_project_safe_references(
                 storage,
                 project_id,
-                _dedupe([character.id, source_ref, workspace, *planning_context.get("references", [])]),
+                _dedupe([character.id, source_ref, workspace, mkaos_pack.get("path", ""), mkaos_pack.get("asset", {}).get("id", ""), *planning_context.get("references", [])]),
             ),
         )
         run.guard("write_outline", "outline")
         path = storage.write_asset("outlines", asset)
+        _record_mkaos_usage(storage, mkaos_pack, flow="outline", target_asset_id=asset.id, agent_name="OutlineAgent")
         run.guard("write_outline_version", "outline_version")
         version = create_outline_version(storage, path, change_summary="model-driven outline from project planning context")
         run.succeed(output_assets=[_display_path(storage.root, path), version["path"]], token_used=len(json.dumps(packet, ensure_ascii=False)))
@@ -316,3 +335,43 @@ def _dedupe(values: list[str]) -> list[str]:
             seen.add(value)
             result.append(value)
     return result
+
+
+def _build_mkaos_pack(
+    storage: LocalStorage,
+    *,
+    flow: str,
+    project_id: str,
+    workspace_path: str,
+    genre: str,
+    platform: str,
+    current_goal: str,
+) -> dict[str, Any]:
+    try:
+        return build_knowledge_pack(
+            storage,
+            {
+                "flow": flow,
+                "task_id": f"{flow}-{project_id or 'local'}",
+                "project_id": project_id or "local-system",
+                "workspace_path": workspace_path,
+                "genre": genre,
+                "platform": platform,
+                "current_goal": current_goal,
+            },
+        )
+    except Exception as exc:
+        return {"path": "", "asset": {"content": {}}, "warning": str(exc)}
+
+
+def _pack_content(pack: dict[str, Any]) -> dict[str, Any]:
+    asset = pack.get("asset", {}) if isinstance(pack.get("asset", {}), dict) else {}
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    return content
+
+
+def _record_mkaos_usage(storage: LocalStorage, pack: dict[str, Any], *, flow: str, target_asset_id: str, agent_name: str) -> None:
+    try:
+        record_pack_usage_for_artifact(storage, pack, flow=flow, target_artifact_id=target_asset_id, agent_name=agent_name, used_as="planning_constraint")
+    except Exception:
+        return

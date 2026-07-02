@@ -170,6 +170,8 @@ def execute_model_gateway_call(
     trace_payload = _trace_payload(trace, task_type=task_type)
     provider = str(resolution.get("provider", "mock"))
     model = str(resolution.get("model_name", "mock-model"))
+    project_scoped = bool((project_id and project_id != "local-system") or (workspace_path and workspace_path != "local-system"))
+    model_call_source_id = str((trace_payload.get("trace_id") or context_bundle_path or next(iter(input_assets or []), "")) if project_scoped else route.get("path", ""))
     checkpoint_common = _gateway_checkpoint_common(
         operation=operation,
         input_assets=input_assets or [],
@@ -199,7 +201,7 @@ def execute_model_gateway_call(
             trace=trace_payload,
             project_id=project_id,
             workspace_path=workspace_path,
-            source_id=str(route.get("path", "")),
+            source_id=model_call_source_id,
             prompt_version=prompt_version or str(resolution.get("prompt", {}).get("version", "")),
         )
         raise RuntimeError(f"provider runtime guard blocked model gateway call: {preflight.get('message')} ({failed_call.get('path', '')})")
@@ -221,7 +223,7 @@ def execute_model_gateway_call(
             trace=trace_payload,
             project_id=project_id,
             workspace_path=workspace_path,
-            source_id=str(route.get("path", "")),
+            source_id=model_call_source_id,
             prompt_version=prompt_version or str(resolution.get("prompt", {}).get("version", "")),
         )
         raise RuntimeError(f"provider runtime guard blocked model gateway call: {postflight.get('message')} ({failed_call.get('path', '')})")
@@ -247,7 +249,7 @@ def execute_model_gateway_call(
             usage=normalized_usage,
             cost=cost_payload,
             status=status,
-            source_id=str(route.get("path", "")),
+            source_id=model_call_source_id,
             prompt_version=prompt_version or str(resolution.get("prompt", {}).get("version", "")),
         )
     _record_gateway_checkpoint(
