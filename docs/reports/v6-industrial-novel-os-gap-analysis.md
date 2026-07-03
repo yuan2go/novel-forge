@@ -8,7 +8,7 @@
 | -- | -- | -- | -- | -- |
 | G-01 | Canon / Character / Arc / Foreshadowing 深度推理仍不完整 | P1 | 有结构化 adapter、资产和 ReviewIssue，但不是完整语义推理 | 建立统一 Canon Graph query/check service |
 | G-02 | Agent Center operation coverage 不足 | P1 | 可观察和派发最小闭环已完成 | 把更多 production operations 注册成 AgentTask |
-| G-03 | Loop Kernel 尚未成为所有工作流默认执行器 | P1 | chapter_review/outline_revision/longform_recap 可跑 | 将 review-revise-publish 主链迁移到 LoopRun |
+| G-03 | Loop Kernel 主链默认执行已完成，非主链 operation 仍需按收益迁移 | P2 | review-revise-re-review-publish gate 已通过 `review_revision_publish` LoopRun 默认执行 | 为需要 checkpoint/step 语义的非主链 operation 制定迁移矩阵 |
 | G-04 | UI 仍偏 JSON asset 编辑 | P1 | 路由齐全，最小可编辑 | 增加领域表单、批量操作、血缘/阻断视图 |
 | G-05 | Provider hard-stop 已证明，但自动 fallback 未治理化 | P1 | fail-closed/no silent fallback | 增加显式 fallback policy、human gate 和成本预测 |
 | G-06 | Publish 外部平台 adapter 仍是受限边界 | P2 | local/manual/webhook 边界存在 | 建立平台 schema、回执和 rollback protocol |
@@ -36,6 +36,6 @@
 | 可回写 | 84 | Recap、Feedback、MKAOS weight 已回写，平台反馈仍薄 |
 | 可复盘 | 86 | Longform Recap 和 reports 已成体系 |
 | 可观测 | 82 | Agent Center、trace、cost、gate 可见，operation coverage 仍不足 |
-| 可扩展 | 85 | Envelope/Context/Loop 基座已成形，legacy surface 需继续迁移 |
+| 可扩展 | 87 | Envelope/Context/Loop 基座已成形，主链 workflow 默认进入 LoopRun，非主链 operation 继续分批迁移 |
 
-综合：**86/100**。
+综合：**87/100**。

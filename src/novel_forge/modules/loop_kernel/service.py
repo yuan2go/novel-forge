@@ -11,7 +11,7 @@ from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.review_issue import blocking_review_issues, review_issues_to_gate_issues
 from novel_forge.modules.runtime_ledger import record_trace_span
-from novel_forge.schemas import DraftChapter, LoopCheckpoint, LoopReport, LoopRun, LoopStep, ReviewReport, RevisionPlan, validate_common_fields
+from novel_forge.schemas import DraftChapter, EditorPatch, LoopCheckpoint, LoopReport, LoopRun, LoopStep, ReviewReport, RevisionPlan, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 LOOP_STATES = {"planned", "running", "waiting_human", "succeeded", "failed", "cancelled"}
@@ -264,6 +264,7 @@ def run_loop(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
         stop_condition = "quality_passed"
         stop_message = "loop completed without blocking issues or budget overrun"
     status = _status_from_stop_condition(stop_condition)
+    loop_outputs.setdefault("loop_run_path", run_path)
     report = _write_report(
         storage,
         run_path=run_path,
@@ -283,6 +284,17 @@ def run_loop(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
         blocking_rows=blocking_rows,
         loop_outputs=loop_outputs,
     )
+    loop_outputs["loop_report_path"] = report["path"]
+    if loop_type == "review_revision_publish" and loop_outputs.get("revision_task_path"):
+        task_data = storage.read_json(resolve_path(storage.root, str(loop_outputs.get("revision_task_path"))))
+        task_content = task_data.get("content", {}) if isinstance(task_data.get("content", {}), dict) else {}
+        _update_loop_revision_task(
+            storage,
+            str(loop_outputs.get("revision_task_path")),
+            status=str(task_content.get("status") or ("failed" if status == "failed" else "running")),
+            stage=str(task_content.get("stage") or "loop_report"),
+            outputs={"loop_run_path": run_path, "loop_report_path": report["path"]},
+        )
     _update_loop_run(
         storage,
         run_path,
@@ -635,7 +647,7 @@ def _execute_loop_step_side_effect(
         if step_type == "revision_plan":
             return _loop_revision_plan(storage, payload, target=target, project_id=project_id, workspace_path=workspace_path, loop_outputs=loop_outputs, envelope=envelope)
         if step_type == "revision_apply":
-            return _loop_revision_apply(storage, payload, target=target, project_id=project_id, workspace_path=workspace_path, loop_outputs=loop_outputs, envelope=envelope)
+            return _loop_revision_apply(storage, payload, target=target, project_id=project_id, workspace_path=workspace_path, loop_outputs=loop_outputs, context_result=context_result, envelope=envelope)
         if step_type == "re_review":
             return _loop_re_review(storage, payload, target=target, project_id=project_id, workspace_path=workspace_path, loop_outputs=loop_outputs, envelope=envelope)
         if step_type == "publish_gate":
@@ -705,8 +717,32 @@ def _loop_revision_plan(
     review_path = str(loop_outputs.get("review_report_path") or payload.get("review_path") or "").strip()
     if not review_path:
         raise ValueError("revision_plan step requires review_report_path")
+    from novel_forge.modules.revision import create_revision_task, revise
+
     review = storage.read_json(resolve_path(storage.root, review_path))
     review_content = review.get("content", {}) if isinstance(review.get("content", {}), dict) else {}
+    revision_task_path = str(payload.get("revision_task_path") or loop_outputs.get("revision_task_path") or "").strip()
+    if not revision_task_path:
+        task = create_revision_task(
+            storage,
+            review_path,
+            draft_path=target.get("path") or None,
+            issue_indexes=[int(item) for item in payload.get("issue_indexes", [])] if isinstance(payload.get("issue_indexes", []), list) else None,
+            workspace_path=workspace_path or None,
+        )
+        revision_task_path = task["path"]
+    task_data = storage.read_json(resolve_path(storage.root, revision_task_path))
+    task_content = task_data.get("content", {}) if isinstance(task_data.get("content", {}), dict) else {}
+    issue_indexes = [int(item) for item in task_content.get("issue_indexes", []) if str(item).strip()] if isinstance(task_content.get("issue_indexes", []), list) else []
+    revision_model = payload.get("revision_model")
+    if revision_model is not None:
+        revision_file = revise(storage, review_path, model=revision_model)
+        revision_ref = _display_path(storage.root, revision_file)
+        _link_loop_revision_plan(storage, revision_ref, revision_task_path=revision_task_path, issue_indexes=issue_indexes, envelope=envelope)
+        outputs = {"revision_task_path": revision_task_path, "revision_plan_path": revision_ref}
+        _update_loop_revision_task(storage, revision_task_path, status="running", stage="editor_patch", outputs=outputs)
+        return {"status": "succeeded", "message": "provider-backed revision plan created through Loop Kernel", "outputs": outputs}
+
     steps = payload.get("revision_steps", []) if isinstance(payload.get("revision_steps", []), list) else []
     if not steps:
         steps = [str(item) for item in review.get("revision_suggestions", []) if str(item).strip()] or ["tighten continuity and preserve chapter hook"]
@@ -721,6 +757,8 @@ def _loop_revision_plan(
             "review_report_path": review_path,
             "source_draft_path": target.get("path", ""),
             "review_issues": review_content.get("issues", []),
+            "revision_task_path": revision_task_path,
+            "review_issue_indexes": issue_indexes,
             "os_envelope_id": envelope.get("envelope_id", ""),
             "created_at": utc_now(),
         },
@@ -729,7 +767,11 @@ def _loop_revision_plan(
     )
     _ensure_valid(asset.to_dict())
     path = storage.write_asset("reviews", asset)
-    return {"status": "succeeded", "message": "revision plan created", "outputs": {"revision_plan_path": _display_path(storage.root, path)}}
+    revision_ref = _display_path(storage.root, path)
+    _link_loop_revision_plan(storage, revision_ref, revision_task_path=revision_task_path, issue_indexes=issue_indexes, envelope=envelope)
+    outputs = {"revision_task_path": revision_task_path, "revision_plan_path": revision_ref}
+    _update_loop_revision_task(storage, revision_task_path, status="running", stage="editor_patch", outputs=outputs)
+    return {"status": "succeeded", "message": "revision task and plan created", "outputs": outputs}
 
 
 def _loop_revision_apply(
@@ -740,19 +782,55 @@ def _loop_revision_apply(
     project_id: str,
     workspace_path: str,
     loop_outputs: dict[str, Any],
+    context_result: dict[str, Any],
     envelope: dict[str, Any],
 ) -> dict[str, Any]:
     draft_path = _required_loop_target_path(target)
+    review_path = str(loop_outputs.get("review_report_path") or payload.get("review_path") or "").strip()
+    revision_plan_path = str(loop_outputs.get("revision_plan_path") or payload.get("revision_plan_path") or "").strip()
+    revision_task_path = str(loop_outputs.get("revision_task_path") or payload.get("revision_task_path") or "").strip()
+    editor_model = payload.get("editor_model")
+    if editor_model is not None:
+        from novel_forge.modules.editor import execute_revision_plan
+
+        execution = execute_revision_plan(
+            storage,
+            draft_path=draft_path,
+            review_path=review_path,
+            revision_path=revision_plan_path,
+            context_bundle_path=context_result.get("path", ""),
+            model=editor_model,
+            workspace_path=workspace_path or None,
+        )
+        outputs = {
+            "editor_patch_path": execution.get("forward_patch_path", ""),
+            "rollback_patch_path": execution.get("rollback_patch_path", ""),
+            "final_draft_path": execution.get("final_draft_path", ""),
+            "draft_version_path": execution.get("final_draft_version_path", ""),
+            "draft_diff_report_path": execution.get("final_diff_report_path", ""),
+            "generation_run_path": execution.get("final_generation_run_path", ""),
+        }
+        if revision_task_path:
+            _update_loop_revision_task(storage, revision_task_path, status="applied", stage="re_review", outputs=outputs)
+        return {"status": "succeeded", "message": "provider-backed revision executor produced final draft", "outputs": outputs}
+
+    from novel_forge.modules.production_chain import create_draft_version
+
     draft = storage.read_asset(resolve_path(storage.root, draft_path))
+    before_text = str(draft.content.get("text", ""))
     content = dict(draft.content if isinstance(draft.content, dict) else {})
     content["revision_lineage"] = {
         "source_draft_id": draft.id,
         "source_draft_path": draft_path,
-        "revision_plan_path": loop_outputs.get("revision_plan_path", ""),
+        "revision_task_path": revision_task_path,
+        "revision_plan_path": revision_plan_path,
+        "review_report_path": review_path,
         "mode": "loop_kernel_controlled_candidate",
         "created_at": utc_now(),
     }
     content["revision_applied"] = True
+    if before_text.strip():
+        content["text"] = before_text
     asset = DraftChapter(
         title=f"Loop revised {draft.title or draft.id}",
         source=draft.id,
@@ -763,7 +841,59 @@ def _loop_revision_apply(
     )
     _ensure_valid(asset.to_dict())
     path = storage.write_asset("drafts", asset)
-    return {"status": "succeeded", "message": "controlled revision candidate created", "outputs": {"final_draft_path": _display_path(storage.root, path), "draft_version_path": _display_path(storage.root, path)}}
+    final_ref = _display_path(storage.root, path)
+    now = utc_now()
+    patch = EditorPatch(
+        title=f"Loop editor patch for {draft.title or draft.id}",
+        source=str(loop_outputs.get("revision_plan_path") or draft.id),
+        tags=["editor", "patch", "loop-kernel", "applied"],
+        content={
+            "patch_id": make_id("editor_patch", f"loop-{draft.id}-{revision_plan_path}-{now}"),
+            "target_draft_id": draft.id,
+            "target_draft_path": draft_path,
+            "instructions": "Loop Kernel controlled revision candidate preserving project-owned draft text.",
+            "operations": [
+                {
+                    "op_id": "loop-controlled-candidate",
+                    "kind": "derive_final_draft",
+                    "target": "draft",
+                    "before": before_text,
+                    "after": str(content.get("text", "")),
+                    "instruction": "Create traceable revision candidate for review-revision-publish loop.",
+                    "rationale": "Main-chain workflow must have an editor patch artifact before draft versioning.",
+                    "risk": "low",
+                }
+            ],
+            "status": "applied",
+            "risk_flags": [],
+            "created_at": now,
+            "applied_at": now,
+            "final_draft_path": final_ref,
+            "revision_task_path": revision_task_path,
+            "revision_plan_path": revision_plan_path,
+        },
+        metadata={
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "revision_task_path": revision_task_path,
+            "revision_plan_path": revision_plan_path,
+            "patch_role": "loop_kernel_forward_revision",
+            **envelope_asset_metadata(envelope),
+        },
+        references=filter_project_safe_references(storage, project_id, [draft.id, draft_path, final_ref, revision_task_path, revision_plan_path, review_path]),
+    )
+    _ensure_valid(patch.to_dict())
+    patch_path = storage.write_asset("drafts", patch)
+    patch_ref = _display_path(storage.root, patch_path)
+    version = create_draft_version(storage, final_ref, change_summary="Loop Kernel controlled revision candidate", status="active")
+    outputs = {
+        "editor_patch_path": patch_ref,
+        "final_draft_path": final_ref,
+        "draft_version_path": version["path"],
+    }
+    if revision_task_path:
+        _update_loop_revision_task(storage, revision_task_path, status="applied", stage="re_review", outputs=outputs)
+    return {"status": "succeeded", "message": "controlled revision candidate, patch, and draft version created", "outputs": outputs}
 
 
 def _loop_re_review(
@@ -779,6 +909,23 @@ def _loop_re_review(
     draft_path = str(loop_outputs.get("final_draft_path") or target.get("path") or "").strip()
     if not draft_path:
         raise ValueError("re_review step requires final_draft_path")
+    review_model = payload.get("review_model")
+    if review_model is not None:
+        from novel_forge.modules.review import service as review_service
+
+        review_file = review_service.review(storage, draft_path, model=review_model)
+        review_ref = _display_path(storage.root, review_file)
+        _link_loop_rework_metadata(
+            storage,
+            review_ref,
+            revision_task_path=str(loop_outputs.get("revision_task_path") or ""),
+            source_review_path=str(loop_outputs.get("review_report_path") or payload.get("review_path") or ""),
+            outputs=loop_outputs,
+        )
+        if loop_outputs.get("revision_task_path"):
+            _update_loop_revision_task(storage, str(loop_outputs.get("revision_task_path")), status="reviewed", stage="publish_gate", outputs={"re_review_path": review_ref})
+        return {"status": "succeeded", "message": "provider-backed re-review report created", "outputs": {"re_review_path": review_ref}}
+
     draft = storage.read_asset(resolve_path(storage.root, draft_path))
     asset = ReviewReport(
         title=f"Loop re-review for {draft.title or draft.id}",
@@ -802,12 +949,25 @@ def _loop_re_review(
         risk_level="low",
         revision_suggestions=[],
         next_action="publish_gate",
-        metadata={"project_id": project_id, "workspace_path": workspace_path, **envelope_asset_metadata(envelope)},
+        metadata={
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "rework_loop": {
+                "revision_task_path": str(loop_outputs.get("revision_task_path") or ""),
+                "source_review_path": str(loop_outputs.get("review_report_path") or payload.get("review_path") or ""),
+                "editor_patch_path": str(loop_outputs.get("editor_patch_path") or ""),
+                "draft_version_path": str(loop_outputs.get("draft_version_path") or ""),
+            },
+            **envelope_asset_metadata(envelope),
+        },
         references=filter_project_safe_references(storage, project_id, [draft.id, draft_path, str(loop_outputs.get("revision_plan_path", ""))]),
     )
     _ensure_valid(asset.to_dict())
     path = storage.write_asset("reviews", asset)
-    return {"status": "succeeded", "message": "re-review report created", "outputs": {"re_review_path": _display_path(storage.root, path)}}
+    review_ref = _display_path(storage.root, path)
+    if loop_outputs.get("revision_task_path"):
+        _update_loop_revision_task(storage, str(loop_outputs.get("revision_task_path")), status="reviewed", stage="publish_gate", outputs={"re_review_path": review_ref})
+    return {"status": "succeeded", "message": "re-review report created", "outputs": {"re_review_path": review_ref}}
 
 
 def _loop_publish_gate(storage: LocalStorage, payload: dict[str, Any], *, target: dict[str, Any], workspace_path: str, loop_outputs: dict[str, Any]) -> dict[str, Any]:
@@ -827,7 +987,154 @@ def _loop_publish_gate(storage: LocalStorage, payload: dict[str, Any], *, target
     )
     data = storage.read_json(path)
     decision = str(data.get("content", {}).get("decision", "")) if isinstance(data.get("content", {}), dict) else ""
-    return {"status": "succeeded", "message": f"publish gate created: {decision}", "outputs": {"publish_gate_report_path": _display_path(storage.root, path), "publish_decision": decision}}
+    gate_ref = _display_path(storage.root, path)
+    revision_task_path = str(loop_outputs.get("revision_task_path") or payload.get("revision_task_path") or "")
+    source_review_path = str(loop_outputs.get("review_report_path") or payload.get("review_path") or "")
+    if revision_task_path:
+        _link_loop_rework_metadata(storage, gate_ref, revision_task_path=revision_task_path, source_review_path=source_review_path, outputs=loop_outputs)
+        status = _loop_revision_task_status_from_gate(decision)
+        outputs = {"publish_gate_report_path": gate_ref, "publish_decision": decision}
+        _update_loop_revision_task(storage, revision_task_path, status=status, stage="complete", outputs=outputs)
+        issue_indexes = [int(item) for item in payload.get("issue_indexes", [])] if isinstance(payload.get("issue_indexes", []), list) else []
+        if not issue_indexes:
+            try:
+                task = storage.read_json(resolve_path(storage.root, revision_task_path))
+                content = task.get("content", {}) if isinstance(task.get("content", {}), dict) else {}
+                issue_indexes = [int(item) for item in content.get("issue_indexes", []) if str(item).strip()] if isinstance(content.get("issue_indexes", []), list) else []
+            except Exception:
+                issue_indexes = []
+        _mark_loop_review_issues(
+            storage,
+            source_review_path,
+            issue_indexes,
+            status="fixed" if status == "publish_ready" else "open",
+            evidence={"revision_task_path": revision_task_path, **loop_outputs, **outputs},
+        )
+    return {"status": "succeeded", "message": f"publish gate created: {decision}", "outputs": {"publish_gate_report_path": gate_ref, "publish_decision": decision, "revision_task_status": _loop_revision_task_status_from_gate(decision)}}
+
+
+def _link_loop_revision_plan(storage: LocalStorage, revision_path: str | Path, *, revision_task_path: str, issue_indexes: list[int], envelope: dict[str, Any]) -> None:
+    path = resolve_path(storage.root, revision_path)
+    data = storage.read_json(path)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    content["revision_task_path"] = revision_task_path
+    content["review_issue_indexes"] = issue_indexes
+    content["loop_kernel"] = {"loop_type": "review_revision_publish", "os_envelope_id": envelope.get("envelope_id", "")}
+    data["content"] = content
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    metadata["revision_task_path"] = revision_task_path
+    metadata["review_issue_indexes"] = issue_indexes
+    data["metadata"] = {**metadata, **envelope_asset_metadata(envelope)}
+    data["references"] = _dedupe([*[str(item) for item in data.get("references", [])], revision_task_path])
+    data["updated_at"] = utc_now()
+    _ensure_valid(data)
+    storage.write_json(path, data)
+
+
+def _update_loop_revision_task(
+    storage: LocalStorage,
+    revision_task_path: str | Path,
+    *,
+    status: str,
+    stage: str,
+    outputs: dict[str, Any] | None = None,
+    error: str = "",
+) -> None:
+    if not str(revision_task_path or "").strip():
+        return
+    path = resolve_path(storage.root, revision_task_path)
+    data = storage.read_json(path)
+    if not isinstance(data, dict) or data.get("type") != "revision_task":
+        raise ValueError(f"revision_task_path must point to a revision_task asset: {revision_task_path}")
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    merged_outputs = content.get("outputs", {}) if isinstance(content.get("outputs", {}), dict) else {}
+    if outputs:
+        merged_outputs.update({key: value for key, value in outputs.items() if value is not None})
+    timeline = content.get("timeline", []) if isinstance(content.get("timeline", []), list) else []
+    timeline.append({"stage": stage, "status": status, "at": utc_now(), "outputs": outputs or {}, "error": error, "runner": "loop_kernel"})
+    content.update({"status": status, "stage": stage, "outputs": merged_outputs, "timeline": timeline, "updated_at": utc_now()})
+    if error:
+        content["error"] = error
+    data["content"] = content
+    data["updated_at"] = utc_now()
+    _ensure_valid(data)
+    storage.write_json(path, data)
+
+
+def _link_loop_rework_metadata(
+    storage: LocalStorage,
+    asset_path: str | Path,
+    *,
+    revision_task_path: str,
+    source_review_path: str,
+    outputs: dict[str, Any],
+) -> None:
+    if not str(asset_path or "").strip():
+        return
+    path = resolve_path(storage.root, asset_path)
+    data = storage.read_json(path)
+    if not isinstance(data, dict):
+        return
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    metadata["rework_loop"] = {
+        "runner": "loop_kernel",
+        "loop_type": "review_revision_publish",
+        "revision_task_path": revision_task_path,
+        "source_review_path": source_review_path,
+        "editor_patch_path": str(outputs.get("editor_patch_path") or ""),
+        "draft_version_path": str(outputs.get("draft_version_path") or ""),
+        "final_draft_path": str(outputs.get("final_draft_path") or ""),
+        "loop_run_path": str(outputs.get("loop_run_path") or ""),
+    }
+    data["metadata"] = metadata
+    data["references"] = _dedupe([*[str(item) for item in data.get("references", [])], revision_task_path, source_review_path])
+    data["updated_at"] = utc_now()
+    _ensure_valid(data)
+    storage.write_json(path, data)
+
+
+def _mark_loop_review_issues(
+    storage: LocalStorage,
+    review_path: str | Path,
+    issue_indexes: list[int],
+    *,
+    status: str,
+    evidence: dict[str, Any],
+) -> None:
+    if not str(review_path or "").strip():
+        return
+    try:
+        path = resolve_path(storage.root, review_path)
+        data = storage.read_json(path)
+    except Exception:
+        return
+    issues = data.get("issues", []) if isinstance(data.get("issues", []), list) else []
+    for index in issue_indexes:
+        if 0 <= index < len(issues) and isinstance(issues[index], dict):
+            issue = dict(issues[index])
+            issue["status"] = status
+            issue["rework_evidence"] = {**(issue.get("rework_evidence", {}) if isinstance(issue.get("rework_evidence", {}), dict) else {}), **evidence}
+            issue["status_updated_at"] = utc_now()
+            issues[index] = issue
+    data["issues"] = issues
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    summary: dict[str, int] = {}
+    for issue in issues:
+        if isinstance(issue, dict):
+            key = str(issue.get("status") or "open")
+            summary[key] = summary.get(key, 0) + 1
+    metadata["issue_status_summary"] = summary
+    data["metadata"] = metadata
+    data["updated_at"] = utc_now()
+    storage.write_json(path, data)
+
+
+def _loop_revision_task_status_from_gate(decision: str) -> str:
+    if decision == "ready":
+        return "publish_ready"
+    if decision == "needs_revision":
+        return "needs_revision"
+    return "blocked"
 
 
 def _required_loop_target_path(target: dict[str, Any]) -> str:

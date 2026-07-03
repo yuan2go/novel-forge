@@ -155,95 +155,60 @@ def run_review_rework_loop(
     if not isinstance(review_data, dict) or review_data.get("type") != "review_report":
         raise ValueError(f"review_path must point to a review_report asset: {review_path}")
     draft_file = resolve_path(storage.root, draft_path) if draft_path else _draft_path_for_review(storage, review_data)
-    task = create_revision_task(
+    draft_asset = storage.read_asset(draft_file)
+    draft_metadata = draft_asset.metadata if isinstance(draft_asset.metadata, dict) else {}
+    review_metadata = review_data.get("metadata", {}) if isinstance(review_data.get("metadata", {}), dict) else {}
+    project = project_scope_from_asset(storage, draft_asset, input_path=draft_file, workspace_path=workspace_path)
+    project_id = str(project.get("project_id") or draft_metadata.get("project_id") or review_metadata.get("project_id") or "")
+    resolved_workspace_path = str(project.get("workspace_path") or workspace_path or draft_metadata.get("workspace_path") or review_metadata.get("workspace_path") or "")
+    from novel_forge.modules.loop_kernel import run_loop
+
+    result = run_loop(
         storage,
-        review_file,
-        draft_path=draft_file,
-        issue_indexes=issue_indexes,
-        workspace_path=workspace_path,
-    )
-    task_path = task["path"]
-    issue_indexes = [int(item) for item in task["asset"]["content"].get("issue_indexes", [])]
-    try:
-        _update_revision_task(storage, task_path, status="running", stage="revision_plan")
-        revision_path = revise(storage, str(review_file), model=revision_model)
-        revision_ref = _display_path(storage.root, revision_path)
-        _link_revision_plan(storage, revision_path, task_path=task_path, issue_indexes=issue_indexes)
-        _update_revision_task(storage, task_path, status="running", stage="editor_patch", outputs={"revision_plan_path": revision_ref})
-
-        bundle_path = resolve_path(storage.root, context_bundle_path) if context_bundle_path else _create_rework_context_bundle(
-            storage,
-            draft_file=draft_file,
-            review_file=review_file,
-            revision_file=revision_path,
-            task_path=resolve_path(storage.root, task_path),
-            workspace_path=workspace_path,
-        )
-        execution = execute_revision_plan(
-            storage,
-            draft_path=draft_file,
-            review_path=review_file,
-            revision_path=revision_path,
-            context_bundle_path=bundle_path,
-            model=editor_model,
-            workspace_path=workspace_path,
-        )
-        outputs = {
-            "revision_plan_path": revision_ref,
-            "context_bundle_path": _display_path(storage.root, bundle_path),
-            "editor_patch_path": execution.get("forward_patch_path", ""),
-            "rollback_patch_path": execution.get("rollback_patch_path", ""),
-            "final_draft_path": execution.get("final_draft_path", ""),
-            "draft_version_path": execution.get("final_draft_version_path", ""),
-            "draft_diff_report_path": execution.get("final_diff_report_path", ""),
-            "generation_run_path": execution.get("final_generation_run_path", ""),
-        }
-        _update_revision_task(storage, task_path, status="applied", stage="re_review", outputs=outputs)
-
-        re_review_path = review_service.review(storage, str(execution["final_draft_path"]), model=review_model)
-        re_review_ref = _display_path(storage.root, re_review_path)
-        _link_re_review(storage, re_review_path, task_path=task_path, source_review_path=_display_path(storage.root, review_file), outputs=outputs)
-        outputs["re_review_path"] = re_review_ref
-        _update_revision_task(storage, task_path, status="reviewed", stage="publish_gate", outputs=outputs)
-
-        publish_gate_path = create_publish_gate_report(
-            storage,
-            execution["final_draft_path"],
-            workspace_path=workspace_path,
-            human_override=human_override,
-        )
-        publish_gate_ref = _display_path(storage.root, publish_gate_path)
-        gate_data = storage.read_json(publish_gate_path)
-        decision = str(gate_data.get("content", {}).get("decision", "blocked")) if isinstance(gate_data, dict) else "blocked"
-        final_status = _revision_task_status_from_gate(decision)
-        outputs["publish_gate_report_path"] = publish_gate_ref
-        outputs["publish_decision"] = decision
-        _link_publish_gate(storage, publish_gate_path, task_path=task_path, source_review_path=_display_path(storage.root, review_file))
-        _update_revision_task(storage, task_path, status=final_status, stage="complete", outputs=outputs)
-        _mark_review_issues(
-            storage,
-            review_file,
-            issue_indexes,
-            status="fixed" if final_status == "publish_ready" else "open",
-            evidence={"revision_task_path": task_path, **outputs},
-        )
-        return {
-            "status": final_status,
-            "revision_task_path": task_path,
+        {
+            "loop_type": "review_revision_publish",
+            "target_path": _display_path(storage.root, draft_file),
             "review_path": _display_path(storage.root, review_file),
-            "source_draft_path": _display_path(storage.root, draft_file),
-            "revision_plan_path": revision_ref,
-            "editor_patch_path": outputs["editor_patch_path"],
-            "draft_version_path": outputs["draft_version_path"],
-            "final_draft_path": outputs["final_draft_path"],
-            "re_review_path": re_review_ref,
-            "publish_gate_report_path": publish_gate_ref,
-            "publish_decision": decision,
-            "outputs": outputs,
-        }
-    except Exception as exc:
-        _update_revision_task(storage, task_path, status="failed", stage="failed", error=str(exc))
-        raise
+            "issue_indexes": issue_indexes or [],
+            "context_bundle_path": str(context_bundle_path or ""),
+            "workspace_path": resolved_workspace_path,
+            "project_id": project_id,
+            "revision_model": revision_model,
+            "editor_model": editor_model,
+            "review_model": review_model,
+            "human_override": human_override,
+            "bypass_reason": "review rework compatibility facade routed through Loop Kernel",
+        },
+    )
+    outputs = result.get("outputs", {}) if isinstance(result.get("outputs", {}), dict) else {}
+    revision_task_path = str(outputs.get("revision_task_path") or "")
+    task_status = str(outputs.get("revision_task_status") or "")
+    if revision_task_path:
+        try:
+            task = storage.read_json(resolve_path(storage.root, revision_task_path))
+            task_status = task_status or str((task.get("content", {}) if isinstance(task.get("content", {}), dict) else {}).get("status") or "")
+        except Exception:
+            pass
+    status = task_status or ("failed" if result.get("status") == "failed" else str(result.get("status") or "succeeded"))
+    return {
+        "status": status,
+        "revision_task_path": revision_task_path,
+        "review_path": _display_path(storage.root, review_file),
+        "source_draft_path": _display_path(storage.root, draft_file),
+        "revision_plan_path": str(outputs.get("revision_plan_path") or ""),
+        "editor_patch_path": str(outputs.get("editor_patch_path") or ""),
+        "rollback_patch_path": str(outputs.get("rollback_patch_path") or ""),
+        "draft_version_path": str(outputs.get("draft_version_path") or ""),
+        "draft_diff_report_path": str(outputs.get("draft_diff_report_path") or ""),
+        "generation_run_path": str(outputs.get("generation_run_path") or ""),
+        "final_draft_path": str(outputs.get("final_draft_path") or ""),
+        "re_review_path": str(outputs.get("re_review_path") or ""),
+        "publish_gate_report_path": str(outputs.get("publish_gate_report_path") or ""),
+        "publish_decision": str(outputs.get("publish_decision") or ""),
+        "loop_run_path": str(result.get("loop_run_path") or outputs.get("loop_run_path") or ""),
+        "loop_report_path": str(result.get("loop_report_path") or outputs.get("loop_report_path") or ""),
+        "outputs": outputs,
+    }
 
 
 def _selected_review_issues(review: dict[str, Any], issue_indexes: list[int] | None) -> list[dict[str, Any]]:

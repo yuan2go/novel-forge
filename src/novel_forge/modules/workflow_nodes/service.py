@@ -59,6 +59,7 @@ WORKFLOW_SERVICE_OPERATIONS = {
     "publish_gate_report": {"category": "publishing", "checkpoint_strategy": "output_reuse", "aliases": ["create_publish_gate_report"]},
     "release_package": {"category": "publishing", "checkpoint_strategy": "output_reuse", "aliases": ["create_release_package"]},
     "review_rework_loop": {"category": "revision", "checkpoint_strategy": "operation_state", "aliases": ["run_review_rework_loop"]},
+    "review_revision_publish": {"category": "revision", "checkpoint_strategy": "operation_state", "aliases": ["review_revision_publish_loop", "loop.review_revision_publish"]},
     "outline_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_outline_version"]},
     "chapter_plan_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_chapter_plan_version"]},
     "draft_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_draft_version"]},
@@ -2309,7 +2310,7 @@ def _operation_requires_context_bundle(node: dict[str, Any], processor: dict[str
     operation = str(processor.get("operation") or node.get("operation") or node.get("node_id", "")).strip().lower().replace("-", "_")
     node_type = str(node.get("node_type", "")).strip().lower()
     agent_key = str(processor.get("agent_key", "") or node.get("agent_key", "")).strip().lower()
-    if operation in {"draft", "prose_generation", "draft_chapter", "chapter_draft", "review_rework_loop", "run_review_rework_loop"}:
+    if operation in {"draft", "prose_generation", "draft_chapter", "chapter_draft", "review_rework_loop", "run_review_rework_loop", "review_revision_publish", "review_revision_publish_loop", "loop.review_revision_publish"}:
         return True
     if node_type in {"draft", "generation", "revision"}:
         return True
@@ -4378,7 +4379,30 @@ def _execute_registered_service_processor_impl(
             workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
             human_override=bool(processor.get("human_override", False)),
         )
-        return _service_success(storage, operation, result)
+        return _loop_service_success(storage, operation, result)
+    if operation in {"review_revision_publish", "review_revision_publish_loop", "loop.review_revision_publish"}:
+        from novel_forge.modules.loop_kernel import run_loop
+
+        result = run_loop(
+            storage,
+            {
+                "loop_type": "review_revision_publish",
+                "target_path": _processor_path(processor, input_assets, "draft_path", "target_path"),
+                "review_path": str(processor.get("review_path") or ""),
+                "revision_task_path": str(processor.get("revision_task_path") or ""),
+                "issue_indexes": [int(item) for item in processor.get("issue_indexes", [])] if isinstance(processor.get("issue_indexes", []), list) else [],
+                "context_bundle_path": str(processor.get("context_bundle_path") or ""),
+                "project_id": str(processor.get("project_id") or ""),
+                "workspace_path": str(processor.get("workspace_path") or workspace_path or ""),
+                "human_override": bool(processor.get("human_override", False)),
+                "budget": processor.get("budget", {}) if isinstance(processor.get("budget", {}), dict) else {},
+                "environment": str(processor.get("environment") or ""),
+                "envelope": processor.get("envelope", {}) if isinstance(processor.get("envelope", {}), dict) else {},
+                "source_policy": processor.get("source_policy", {}) if isinstance(processor.get("source_policy", {}), dict) else {},
+                "bypass_reason": str(processor.get("bypass_reason") or "workflow main-chain processor routed through Loop Kernel"),
+            },
+        )
+        return _loop_service_success(storage, operation, result)
     if operation in {"editor_patch", "create_editor_patch"}:
         from novel_forge.modules.editor import create_editor_patch
 
@@ -4676,6 +4700,19 @@ def _service_success(storage: LocalStorage, operation: str, result: Any) -> dict
         "contract": _service_processor_contract(operation),
         "output_assets": _service_output_assets(storage, result),
         "payload": _json_safe_service_payload(result),
+    }
+
+
+def _loop_service_success(storage: LocalStorage, operation: str, result: dict[str, Any]) -> dict[str, Any]:
+    loop_status = str(result.get("status") or "")
+    status = "failed" if loop_status in {"failed", "cancelled"} else "succeeded"
+    return {
+        "status": status,
+        "operation": _canonical_service_operation(operation) or operation,
+        "contract": _service_processor_contract(operation),
+        "output_assets": _service_output_assets(storage, result),
+        "payload": _json_safe_service_payload({**result, "workflow_default_executor": "loop_kernel"}),
+        "message": str(result.get("stop_message") or result.get("status") or ""),
     }
 
 

@@ -50,7 +50,7 @@
 | -- | -- | -- |
 | Canon Graph | Canon / Character / Arc / Foreshadowing / WorldRule 仍需完整图谱级语义推理 | P1 |
 | Agent Center | operation coverage、硬停止 UI、rollback depth 仍不足 | P1 |
-| Loop Kernel | 尚未成为所有 workflow 的默认执行机制 | P1 |
+| Loop Kernel | review -> revision -> re-review -> publish gate 主链已默认进入 LoopRun；非主链 operation 分批迁移 | P2 |
 | UI 领域表单 | 当前是最小可编辑控制台，专用表单、批量治理、血缘图仍不足 | P1/P2 |
 | Provider fallback | hard-stop 后 fail closed 已证明，但显式 fallback 策略尚未治理化 | P1 |
 | Publishing adapters | 外部平台发布 adapter 仍是受限边界，平台回执 schema 需深化 | P2 |

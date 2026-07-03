@@ -26,7 +26,7 @@ from novel_forge.modules.workflow_nodes import (
     validate_workflow_run_transition,
     workflow_state_machine,
 )
-from novel_forge.schemas import CharacterCard, ChapterPlan, CleanedText, DraftChapter, Outline, SourceDocument, WorldBible
+from novel_forge.schemas import CharacterCard, ChapterPlan, CleanedText, DraftChapter, Outline, ReviewReport, SourceDocument, WorldBible
 from novel_forge.storage.local import LocalStorage
 
 
@@ -242,6 +242,73 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(contract_map["publish_gate_report"]["rollback_strategy"], "quarantine_outputs")
             self.assertEqual(contract_map["publish_gate_report"]["input_schema"], {"type": "asset_paths"})
             self.assertTrue(contract_map["publish_gate_report"]["resume_supported"])
+            self.assertIn("review_revision_publish", contracts)
+            self.assertTrue(contract_map["review_revision_publish"]["resume_supported"])
+
+    def test_main_chain_workflow_service_defaults_to_loop_kernel(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Main chain draft",
+                    content={"chapter": 1, "text": "原创主链 workflow 章节。", "copyright_boundary": "unit test"},
+                    metadata={"project_id": "wf-loop"},
+                ),
+            )
+            draft = storage.read_asset(draft_path)
+            review_path = storage.write_asset(
+                "reviews",
+                ReviewReport(
+                    title="Main chain review",
+                    source=draft.id,
+                    content={"summary": "needs governed revision", "target_asset_id": draft.id, "target_asset_path": str(draft_path.relative_to(storage.root))},
+                    score=82.0,
+                    issues=[{"issue_id": "main-chain-1", "issue_index": 0, "severity": "medium", "message": "tighten continuity", "status": "open"}],
+                    revision_suggestions=["tighten continuity"],
+                    metadata={"project_id": "wf-loop"},
+                    references=[draft.id, str(draft_path.relative_to(storage.root))],
+                ),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Loop Default Main Chain",
+                entry_node_id="review-rework",
+                nodes=[
+                    {
+                        "node_id": "review-rework",
+                        "node_type": "revision",
+                        "operation": "review_rework_loop",
+                        "input_assets": [str(review_path.relative_to(storage.root))],
+                        "input_types": ["review_report"],
+                        "output_types": ["revision_task", "editor_patch", "draft_version", "review_report", "publish_gate_report", "loop_run", "loop_report"],
+                        "processor": {
+                            "kind": "service",
+                            "operation": "review_rework_loop",
+                            "review_path": str(review_path.relative_to(storage.root)),
+                            "draft_path": str(draft_path.relative_to(storage.root)),
+                            "issue_indexes": [0],
+                            "human_override": True,
+                            "project_id": "wf-loop",
+                        },
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[review_path])
+
+            self.assertEqual(result["status"], "completed", result)
+            node_run = storage.read_asset(result["node_runs"][0]["path"])
+            payload = node_run.content["processor"]["registry_payload"]
+            self.assertEqual(payload["workflow_default_executor"], "loop_kernel")
+            self.assertTrue(payload["loop_run_path"])
+            self.assertTrue(payload["loop_report_path"])
+            self.assertEqual(storage.read_json(storage.root / payload["loop_run_path"])["type"], "loop_run")
+            self.assertEqual(storage.read_json(storage.root / payload["revision_task_path"])["type"], "revision_task")
+            output_paths = {row["path"] for row in node_run.content["output_assets"]}
+            self.assertIn(payload["loop_run_path"], output_paths)
+            self.assertIn(payload["loop_report_path"], output_paths)
 
     def test_executor_blocks_failed_quality_gate_before_downstream_node(self):
         with tempfile.TemporaryDirectory() as tmp:

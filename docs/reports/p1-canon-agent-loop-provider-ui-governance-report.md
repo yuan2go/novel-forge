@@ -51,7 +51,9 @@ This increases production operation coverage without changing existing scheduler
 
 ### Loop Kernel
 
-Added `review_revision_publish` as a first-class LoopRun type. It writes review, revision, revised draft, re-review, and publish gate outputs into the loop report.
+Added `review_revision_publish` as a first-class LoopRun type. It now writes review, revision task, revision plan, editor patch, revised draft, draft version, re-review, and publish gate outputs into the loop report.
+
+The legacy `run_review_rework_loop` API/function and workflow service operations now route through Loop Kernel by default. Workflow NodeRun payloads include `workflow_default_executor: loop_kernel`, `loop_run_path`, and `loop_report_path`; failed LoopRuns map to failed workflow nodes.
 
 Blocking ReviewIssue gates still stop the loop through the existing `review_issue_gate`.
 
@@ -86,7 +88,7 @@ Attempted but interrupted:
 ## Tradeoffs
 
 - Canon Graph is a JSON-asset graph view, not a graph database. This is sufficient for local-first P1 governance and avoids a migration.
-- `review_revision_publish` writes deterministic schema-backed outputs. Provider-backed editing can be routed behind the same loop contract later.
+- `review_revision_publish` writes deterministic schema-backed outputs by default while preserving explicit provider-backed rework when model adapters are supplied.
 - Provider fallback approval is modeled as a `gate_result`, not a new asset type, so existing trace/gate tooling can read it immediately.
 - UI batch governance is intentionally bounded to visible ReviewIssue assets to avoid accidental large bulk writes.
 
@@ -95,7 +97,7 @@ Attempted but interrupted:
 | Risk | Priority | Next Step |
 |---|---|---|
 | Canon conflict semantics are deterministic and field-backed, not full causal temporal inference. | P1 | Add chapter-event extraction and optional approved semantic scorer behind provider hard-stop. |
-| Main-chain LoopRun does not yet call provider-backed review/revision by default. | P1 | Add policy-controlled provider execution behind hard-stop and fallback approval. |
+| Main-chain LoopRun is default for workflow/API rework, but provider-backed execution is still explicit rather than policy-routed. | P1 | Add policy-controlled provider execution behind hard-stop and fallback approval. |
 | UI typed editor still stores JSON-backed assets. | P2 | Add list-row editors for entities, clues, and issues. |
 | Provider fallback approval has no expiry enforcement yet. | P2 | Enforce `expires_at` in `resolve_provider_fallback`. |
 | Agent Center coverage is broader, but not every workflow node is migrated. | P2 | Add workflow-to-agent coverage matrix and migration gate. |

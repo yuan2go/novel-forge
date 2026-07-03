@@ -75,13 +75,18 @@ Default steps:
 The loop writes:
 
 - `review_report`
+- `revision_task`
 - `revision_plan`
+- `editor_patch`
 - revised `draft_chapter`
+- `draft_version`
 - re-review `review_report`
 - `publish_gate_report`
 - `loop_step`, `loop_checkpoint`, `loop_report`
 
-The implementation is deterministic and schema-backed. Provider-backed review/revision can be substituted later behind the same LoopRun contract.
+`run_review_rework_loop` is now a compatibility facade over `run_loop(loop_type="review_revision_publish")`. Workflow service operations `review_rework_loop`, `run_review_rework_loop`, `review_revision_publish`, and `review_revision_publish_loop` use Loop Kernel as the default executor. Failed or cancelled LoopRuns map to failed workflow NodeRuns so production execution remains fail-closed.
+
+The implementation supports deterministic schema-backed execution by default. Provider-backed review/revision remains available when explicit model adapters are passed through the compatibility facade and can be made policy-controlled later behind provider hard-stop and fallback approval.
 
 ## Provider Fallback
 

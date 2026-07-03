@@ -145,13 +145,19 @@ class LoopKernelTests(unittest.TestCase):
             report_outputs = result["report"]["content"]["outputs"]
 
             self.assertEqual(result["status"], "succeeded")
-            for key in ["review_report_path", "revision_plan_path", "final_draft_path", "re_review_path", "publish_gate_report_path"]:
+            for key in ["review_report_path", "revision_task_path", "revision_plan_path", "editor_patch_path", "final_draft_path", "draft_version_path", "re_review_path", "publish_gate_report_path"]:
                 self.assertTrue(outputs[key], key)
                 self.assertTrue((storage.root / outputs[key]).exists(), key)
                 self.assertEqual(outputs[key], report_outputs[key])
             self.assertEqual(storage.read_json(storage.root / outputs["review_report_path"])["type"], "review_report")
+            self.assertEqual(storage.read_json(storage.root / outputs["revision_task_path"])["type"], "revision_task")
             self.assertEqual(storage.read_json(storage.root / outputs["revision_plan_path"])["type"], "revision_plan")
+            self.assertEqual(storage.read_json(storage.root / outputs["editor_patch_path"])["type"], "editor_patch")
+            self.assertEqual(storage.read_json(storage.root / outputs["draft_version_path"])["type"], "draft_version")
             self.assertEqual(storage.read_json(storage.root / outputs["publish_gate_report_path"])["type"], "publish_gate_report")
+            task = storage.read_json(storage.root / outputs["revision_task_path"])
+            self.assertEqual(task["content"]["outputs"]["loop_run_path"], result["loop_run_path"])
+            self.assertEqual(task["content"]["outputs"]["loop_report_path"], result["loop_report_path"])
 
 
 def _draft(storage: LocalStorage, *, project_id: str) -> Path:
