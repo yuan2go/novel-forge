@@ -7,6 +7,7 @@ from typing import Any
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.mkaos import build_knowledge_pack
 from novel_forge.modules.novel_kg import build_novel_kg_context
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import record_trace_span
@@ -22,6 +23,17 @@ RAW_OR_REPORT_TYPES = {
     "web_fiction_business_analysis_report",
     "published_fiction_analysis_report",
     "classic_literary_analysis_report",
+}
+
+FLOW_CONTEXT_PROFILES = {
+    "outline": "outline",
+    "chapter_outline": "chapter_outline",
+    "prose": "prose",
+    "review": "review",
+    "revision": "revision",
+    "recap": "recap",
+    "publish": "publish",
+    "feedback": "feedback",
 }
 
 CONTEXT_TYPE_BUCKETS = {
@@ -407,6 +419,181 @@ def create_context_bundle(
     return {"path": _display_path(storage.root, path), "asset": bundle_data, "rag_quality_report": report, "validation": {"ok": True, "errors": []}}
 
 
+def build_flow_context_bundle(
+    storage: LocalStorage,
+    target_path: str | Path,
+    *,
+    flow: str,
+    project_id: str = "",
+    workspace_path: str = "",
+    genre: str = "",
+    platform: str = "",
+    chapter_id: str = "",
+    current_goal: str = "",
+    query: str = "",
+    top_k: int = 8,
+    token_budget: int = 4000,
+    context_profile: str | None = None,
+    existing_context_bundle_path: str | Path | None = None,
+    source_policy: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    target_file = resolve_path(storage.root, target_path)
+    profile = context_profile or FLOW_CONTEXT_PROFILES.get(flow, "chapter_generation")
+    policy = {
+        "source_chunk_raw_text_allowed": False,
+        "runtime_assets_in_generation_rag_allowed": False,
+        "exclude_raw_sources": True,
+        **(source_policy or {}),
+    }
+    if existing_context_bundle_path:
+        bundle_file = resolve_path(storage.root, existing_context_bundle_path)
+        bundle_asset = storage.read_asset(bundle_file)
+        if bundle_asset.type != "context_bundle":
+            raise ValueError("existing_context_bundle_path must point to a context_bundle asset")
+        context_bundle = {"path": _display_path(storage.root, bundle_file), "asset": bundle_asset.to_dict()}
+        build_plan_path = str(bundle_asset.content.get("build_plan_path", ""))
+        context_plan = {"path": build_plan_path, "asset": storage.read_asset(resolve_path(storage.root, build_plan_path)).to_dict() if build_plan_path else {"id": "", "content": {}}}
+    else:
+        context_plan = create_context_build_plan(
+            storage,
+            target_file,
+            query=query,
+            top_k=top_k,
+            token_budget=token_budget,
+            backend="auto",
+            context_profile=profile,
+            workspace_path=workspace_path or None,
+        )
+        context_bundle = create_context_bundle(storage, context_plan["path"])
+        bundle_file = resolve_path(storage.root, context_bundle["path"])
+    mkaos_pack = build_knowledge_pack(
+        storage,
+        {
+            "flow": _mkaos_flow_for_context(flow),
+            "task_id": f"{flow}-{project_id or 'local'}-{chapter_id or 'project'}",
+            "project_id": project_id or "local-system",
+            "workspace_path": workspace_path,
+            "genre": genre,
+            "platform": platform,
+            "chapter_id": chapter_id,
+            "current_goal": current_goal,
+            "knowledge_budget": {"max_core_knowledge": 3 if flow == "prose" else 8},
+            "source_policy": policy,
+        },
+    )
+    bundle_data = storage.read_json(bundle_file)
+    if not isinstance(bundle_data, dict):
+        raise ValueError("context_bundle asset JSON must be an object")
+    content = bundle_data.get("content", {}) if isinstance(bundle_data.get("content", {}), dict) else {}
+    metadata = bundle_data.get("metadata", {}) if isinstance(bundle_data.get("metadata", {}), dict) else {}
+    mkaos_content = _mkaos_pack_content(mkaos_pack)
+    _assert_flow_context_source_isolated(flow, content, mkaos_content)
+    context_id = str(bundle_data.get("id", ""))
+    mkaos_asset = mkaos_pack.get("asset", {}) if isinstance(mkaos_pack.get("asset", {}), dict) else {}
+    source_asset_ids = [str(item) for item in content.get("source_asset_ids", []) if str(item).strip()] if isinstance(content.get("source_asset_ids", []), list) else []
+    evidence_refs = _dedupe([str(mkaos_asset.get("id", "")), str(mkaos_pack.get("path", "")), *source_asset_ids])
+    content.update(
+        {
+            "context_bundle_id": context_id,
+            "context_builder_version": "context-builder-v2-mkaos",
+            "task_type": flow,
+            "target_asset_type": content.get("target_asset_type", ""),
+            "target_asset_id": content.get("target_asset_id", ""),
+            "mkaos_pack": mkaos_content,
+            "mkaos_pack_id": str(mkaos_asset.get("id", "")),
+            "mkaos_pack_path": str(mkaos_pack.get("path", "")),
+            "mkaos_pack_warning": str(mkaos_pack.get("warning", "")),
+            "mkaos_knowledge_pack": mkaos_content,
+            "mkaos_knowledge_pack_id": str(mkaos_asset.get("id", "")),
+            "mkaos_knowledge_pack_path": str(mkaos_pack.get("path", "")),
+            "review_rules": mkaos_content.get("review_rules", []) if isinstance(mkaos_content.get("review_rules", []), list) else [],
+            "prior_issues": content.get("prior_issues", []) if isinstance(content.get("prior_issues", []), list) else [],
+            "revision_constraints": content.get("revision_constraints", []) if isinstance(content.get("revision_constraints", []), list) else [],
+            "forbidden_changes": content.get("forbidden_changes", []) if isinstance(content.get("forbidden_changes", []), list) else [],
+            "source_policy": policy,
+            "source_isolation": {
+                "source_chunk_raw_text_allowed": False,
+                "mkaos_raw_text_included": False,
+                "runtime_assets_in_generation_rag_allowed": False,
+            },
+            "evidence_refs": evidence_refs,
+            "trace_id": str(metadata.get("trace_id") or context_id),
+            "envelope_id": str(metadata.get("os_envelope_id") or ""),
+        }
+    )
+    metadata.update(
+        {
+            "context_builder_unified": True,
+            "task_type": flow,
+            "source_policy": policy,
+            "mkaos_pack_id": str(mkaos_asset.get("id", "")),
+            "mkaos_pack_path": str(mkaos_pack.get("path", "")),
+            "mkaos_warning": str(mkaos_pack.get("warning", "")),
+            "trace_id": str(metadata.get("trace_id") or context_id),
+        }
+    )
+    bundle_data["content"] = content
+    bundle_data["metadata"] = metadata
+    bundle_data["references"] = filter_project_safe_references(
+        storage,
+        project_id,
+        _dedupe([*[str(item) for item in bundle_data.get("references", []) if str(item).strip()], *evidence_refs]),
+    )
+    bundle_data["updated_at"] = utc_now()
+    storage.write_json(bundle_file, bundle_data)
+    _record_context_span(
+        storage,
+        trace_id=str(metadata.get("trace_id") or context_id),
+        span_type="context_bundle",
+        name=f"build_flow_context_bundle.{flow}",
+        path=_display_path(storage.root, bundle_file),
+        project_id=project_id,
+        workspace_path=workspace_path,
+        attributes={"flow": flow, "mkaos_pack_id": str(mkaos_asset.get("id", "")), "token_budget": token_budget},
+    )
+    updated_bundle = storage.read_json(bundle_file)
+    return {
+        "path": _display_path(storage.root, bundle_file),
+        "asset": updated_bundle,
+        "context_plan": context_plan,
+        "context_bundle": {"path": _display_path(storage.root, bundle_file), "asset": updated_bundle},
+        "mkaos_pack": mkaos_pack,
+        "source_policy": policy,
+        "validation": {"ok": True, "errors": []},
+    }
+
+
+def _mkaos_flow_for_context(flow: str) -> str:
+    if flow in {"outline", "chapter_outline", "prose", "review"}:
+        return flow
+    if flow in {"revision", "recap", "publish", "feedback"}:
+        return "review"
+    return "review"
+
+
+def _mkaos_pack_content(pack: dict[str, Any]) -> dict[str, Any]:
+    asset = pack.get("asset", {}) if isinstance(pack.get("asset", {}), dict) else {}
+    return asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+
+
+def _assert_flow_context_source_isolated(flow: str, context_content: dict[str, Any], mkaos_content: dict[str, Any]) -> None:
+    if _contains_key(mkaos_content, "raw_text"):
+        raise ValueError(f"{flow} context bundle must not include MKAOS source_chunk.raw_text")
+    actual_context = str(context_content.get("actual_context") or "")
+    if "source_chunk.raw_text" in actual_context:
+        raise ValueError(f"{flow} context bundle actual_context mentions source_chunk.raw_text")
+    if flow in {"prose", "recap", "publish"} and '"raw_text"' in json.dumps(context_content, ensure_ascii=False):
+        raise ValueError(f"{flow} context bundle must not include raw_text keys")
+
+
+def _contains_key(value: Any, key: str) -> bool:
+    if isinstance(value, dict):
+        return any(str(item_key) == key or _contains_key(item_value, key) for item_key, item_value in value.items())
+    if isinstance(value, list):
+        return any(_contains_key(item, key) for item in value)
+    return False
+
+
 def list_context_assets(storage: LocalStorage, *, project_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for path in storage.list_json("contexts"):
@@ -477,6 +664,36 @@ def _context_profile_policy(profile: str) -> dict[str, Any]:
             "required_buckets": ["knowledge", "materials", "templates"],
             "default_top_k": 6,
             "risk_gate": "analysis reports must stay abstract-only until human approved",
+        },
+        "outline": {
+            "required_buckets": ["characters", "worldbuilding", "knowledge_cards", "material_cards", "writing_templates"],
+            "default_top_k": 8,
+            "risk_gate": "outline context must use project canon, abstract knowledge, and original assets only",
+        },
+        "chapter_outline": {
+            "required_buckets": ["characters", "worldbuilding", "previous_summaries", "knowledge_cards", "foreshadowing"],
+            "default_top_k": 8,
+            "risk_gate": "chapter outline context must preserve continuity and exclude raw sources",
+        },
+        "prose": {
+            "required_buckets": ["characters", "worldbuilding", "previous_summaries", "knowledge_cards", "foreshadowing", "writing_templates"],
+            "default_top_k": 8,
+            "risk_gate": "prose context must not include source_chunk.raw_text or runtime assets",
+        },
+        "recap": {
+            "required_buckets": ["previous_summaries", "characters", "worldbuilding", "foreshadowing", "knowledge_cards", "quality"],
+            "default_top_k": 10,
+            "risk_gate": "recap context must summarize project-owned state without raw sources",
+        },
+        "publish": {
+            "required_buckets": ["quality", "previous_summaries", "drafts", "knowledge_cards"],
+            "default_top_k": 8,
+            "risk_gate": "publish context must include gate evidence and exclude raw sources",
+        },
+        "feedback": {
+            "required_buckets": ["quality", "previous_summaries", "knowledge_cards"],
+            "default_top_k": 8,
+            "risk_gate": "feedback context must map reader signals to assets and issues",
         },
     }
     return {"profile": key, **policies.get(key, policies["chapter_generation"])}

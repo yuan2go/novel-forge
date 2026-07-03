@@ -12,13 +12,14 @@ from novel_forge.model_adapters.mock import MockModelAdapter
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, run_metadata
 from novel_forge.modules.audit import create_chapter_audit_report, create_originality_report
-from novel_forge.modules.mkaos import build_knowledge_pack, record_pack_usage_for_artifact, validate_artifact as validate_mkaos_artifact
+from novel_forge.modules.context_builder import build_flow_context_bundle
+from novel_forge.modules.mkaos import record_pack_usage_for_artifact, validate_artifact as validate_mkaos_artifact
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, quality_dimensions_from_context
 from novel_forge.modules.standards import create_quality_score_report, evaluate_quality_standard
 from novel_forge.modules.style import create_style_review_report
 from novel_forge.schemas import ReviewReport
 from novel_forge.storage.local import LocalStorage
-from novel_forge.storage.rag_context import build_rag_context, retrieval_metadata, retrieval_reference_ids
+from novel_forge.storage.rag_context import retrieval_metadata, retrieval_reference_ids
 
 
 def review(storage: LocalStorage, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
@@ -29,8 +30,10 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
     quality_dimensions = quality_dimensions_from_context(production_context) or QUALITY_DIMENSIONS
     feedback_rubric_constraints = _feedback_rubric_constraints(storage, production_context)
     project_config = production_context.get("project_config", {}) if isinstance(production_context.get("project_config", {}), dict) else {}
+    draft_path_for_reports = input_path or str(storage.root / "data" / "drafts" / f"{draft_asset.id}.json")
     mkaos_pack = _build_mkaos_pack(
         storage,
+        target_path=draft_path_for_reports,
         flow="review",
         project_id=str(production_context["project"].get("project_id", "")),
         workspace_path=str(production_context["project"].get("workspace_path", "")),
@@ -39,18 +42,15 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
         chapter_id=str(draft_asset.content.get("chapter", "")),
         current_goal=f"review {draft_asset.title or draft_asset.id}",
     )
-    retrieved_context = build_rag_context(
-        storage,
-        draft_asset,
-        input_path=input_path,
-        query=f"review draft {draft_asset.title} {draft_asset.content.get('chapter', '')}",
-    )
-    draft_path_for_reports = input_path or str(storage.root / "data" / "drafts" / f"{draft_asset.id}.json")
+    context_bundle = mkaos_pack.get("context_bundle", {})
+    context_bundle_asset = context_bundle.get("asset", {}) if isinstance(context_bundle, dict) else {}
+    context_bundle_content = context_bundle_asset.get("content", {}) if isinstance(context_bundle_asset.get("content", {}), dict) else {}
+    retrieved_context = context_bundle_content.get("retrieved_context", {}) if isinstance(context_bundle_content.get("retrieved_context", {}), dict) else {}
     with AgentExecutionContext(
         storage,
         agent_key="review",
         operation="review",
-        input_assets=[draft_path_for_reports],
+        input_assets=[draft_path_for_reports, mkaos_pack.get("context_bundle_path", "")],
         output_types=["review_report", "quality_score_report", "style_review_report", "originality_report", "chapter_audit_report"],
         model_provider=getattr(model, "name", "local"),
         model_name=getattr(model, "name", "local"),
@@ -71,6 +71,7 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                     "copyright_boundary": draft_asset.content.get("copyright_boundary", ""),
                     "feedback_rubric_constraints": feedback_rubric_constraints,
                     "retrieved_context": retrieved_context,
+                    "context_bundle": context_bundle_content,
                     "production_context": production_context,
                     "mkaos_knowledge_pack": _pack_content(mkaos_pack),
                 },
@@ -106,6 +107,9 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                 "feedback_rubric_constraints": feedback_rubric_constraints,
                 "production_context": production_context,
                 "retrieved_context": retrieved_context,
+                "context_bundle": context_bundle_content,
+                "context_bundle_id": context_bundle_asset.get("id", ""),
+                "context_bundle_path": mkaos_pack.get("context_bundle_path", ""),
                 "mkaos_knowledge_pack": _pack_content(mkaos_pack),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
                 "mkaos_knowledge_pack_warning": mkaos_pack.get("warning", ""),
@@ -127,6 +131,9 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                 "preflight_ready": production_context["preflight"].get("ready", False),
                 "preflight_warnings": production_context["preflight"].get("warnings", []),
                 "feedback_rubric_loaded": bool(feedback_rubric_constraints),
+                "context_bundle_id": context_bundle_asset.get("id", ""),
+                "context_bundle_path": mkaos_pack.get("context_bundle_path", ""),
+                "context_builder_unified": bool(mkaos_pack.get("context_bundle_path", "")),
                 "mkaos_knowledge_pack_id": mkaos_pack.get("asset", {}).get("id", ""),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
                 "mkaos_warning": mkaos_pack.get("warning", ""),
@@ -159,7 +166,7 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
             references=filter_project_safe_references(
                 storage,
                 str(production_context["project"].get("project_id", "")),
-                _dedupe([*retrieval_reference_ids(draft_asset.id, retrieved_context), mkaos_pack.get("path", ""), mkaos_pack.get("asset", {}).get("id", ""), *production_context.get("profile_references", [])]),
+                _dedupe([*retrieval_reference_ids(draft_asset.id, retrieved_context), mkaos_pack.get("path", ""), mkaos_pack.get("asset", {}).get("id", ""), mkaos_pack.get("context_bundle_path", ""), context_bundle_asset.get("id", ""), *production_context.get("profile_references", [])]),
             ),
         )
         review_path = storage.write_asset("reviews", asset)
@@ -510,6 +517,7 @@ def _dedupe(values: list[str]) -> list[str]:
 def _build_mkaos_pack(
     storage: LocalStorage,
     *,
+    target_path: str | Path,
     flow: str,
     project_id: str,
     workspace_path: str,
@@ -519,19 +527,22 @@ def _build_mkaos_pack(
     current_goal: str,
 ) -> dict[str, Any]:
     try:
-        return build_knowledge_pack(
+        flow_context = build_flow_context_bundle(
             storage,
-            {
-                "flow": flow,
-                "task_id": f"{flow}-{project_id or 'local'}-{chapter_id or 'artifact'}",
-                "project_id": project_id or "local-system",
-                "workspace_path": workspace_path,
-                "genre": genre,
-                "platform": platform,
-                "chapter_id": chapter_id,
-                "current_goal": current_goal,
-            },
+            target_path,
+            flow=flow,
+            project_id=project_id or "local-system",
+            workspace_path=workspace_path,
+            genre=genre,
+            platform=platform,
+            chapter_id=chapter_id,
+            current_goal=current_goal,
+            query=current_goal,
+            token_budget=5000,
+            context_profile="review",
         )
+        pack = flow_context["mkaos_pack"]
+        return {**pack, "context_bundle": flow_context["context_bundle"], "context_bundle_path": flow_context["path"], "context_plan": flow_context["context_plan"]}
     except Exception as exc:
         return {"path": "", "asset": {"content": {}}, "warning": str(exc)}
 

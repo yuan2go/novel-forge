@@ -14,7 +14,8 @@ from novel_forge.model_adapters import (
 )
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
-from novel_forge.modules.mkaos import build_knowledge_pack, record_pack_usage_for_artifact
+from novel_forge.modules.context_builder import build_flow_context_bundle
+from novel_forge.modules.mkaos import record_pack_usage_for_artifact
 from novel_forge.modules.planning_context import build_planning_context, planning_context_metadata
 from novel_forge.modules.production_chain import create_outline_version
 from novel_forge.modules.production_context import filter_project_safe_references
@@ -42,6 +43,7 @@ def generate_outline(
     project_config = production_context.get("project_config", {}) if isinstance(production_context.get("project_config", {}), dict) else {}
     mkaos_pack = _build_mkaos_pack(
         storage,
+        target_path=source_path,
         flow="outline",
         project_id=project_id,
         workspace_path=workspace,
@@ -92,6 +94,7 @@ def generate_outline(
                     },
                     "source_character": character.to_dict(),
                     "planning_context": planning_context,
+                    "context_bundle": _context_bundle_content(mkaos_pack),
                     "mkaos_knowledge_pack": _pack_content(mkaos_pack),
                     "copyright_boundary": "Use reference assets for abstract structure only. Do not copy protected scenes, names, settings, or prose.",
                 },
@@ -115,6 +118,9 @@ def generate_outline(
                 "continuity_constraints": packet.get("continuity_constraints", []),
                 "feedback_constraints": packet.get("feedback_constraints", []),
                 "planning_context": planning_context,
+                "context_bundle": _context_bundle_content(mkaos_pack),
+                "context_bundle_id": mkaos_pack.get("context_bundle", {}).get("asset", {}).get("id", ""),
+                "context_bundle_path": mkaos_pack.get("context_bundle_path", ""),
                 "mkaos_knowledge_pack": _pack_content(mkaos_pack),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
                 "mkaos_knowledge_pack_warning": mkaos_pack.get("warning", ""),
@@ -129,6 +135,9 @@ def generate_outline(
                 "agent_run_path": run.path,
                 "prompt_version": PROMPT_VERSION,
                 "source_asset_path": source_ref,
+                "context_bundle_id": mkaos_pack.get("context_bundle", {}).get("asset", {}).get("id", ""),
+                "context_bundle_path": mkaos_pack.get("context_bundle_path", ""),
+                "context_builder_unified": bool(mkaos_pack.get("context_bundle_path", "")),
                 "mkaos_knowledge_pack_id": mkaos_pack.get("asset", {}).get("id", ""),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
                 "mkaos_warning": mkaos_pack.get("warning", ""),
@@ -144,7 +153,7 @@ def generate_outline(
             references=filter_project_safe_references(
                 storage,
                 project_id,
-                _dedupe([character.id, source_ref, workspace, mkaos_pack.get("path", ""), mkaos_pack.get("asset", {}).get("id", ""), *planning_context.get("references", [])]),
+                _dedupe([character.id, source_ref, workspace, mkaos_pack.get("path", ""), mkaos_pack.get("asset", {}).get("id", ""), mkaos_pack.get("context_bundle_path", ""), mkaos_pack.get("context_bundle", {}).get("asset", {}).get("id", ""), *planning_context.get("references", [])]),
             ),
         )
         run.guard("write_outline", "outline")
@@ -340,6 +349,7 @@ def _dedupe(values: list[str]) -> list[str]:
 def _build_mkaos_pack(
     storage: LocalStorage,
     *,
+    target_path: str | Path,
     flow: str,
     project_id: str,
     workspace_path: str,
@@ -348,18 +358,20 @@ def _build_mkaos_pack(
     current_goal: str,
 ) -> dict[str, Any]:
     try:
-        return build_knowledge_pack(
+        flow_context = build_flow_context_bundle(
             storage,
-            {
-                "flow": flow,
-                "task_id": f"{flow}-{project_id or 'local'}",
-                "project_id": project_id or "local-system",
-                "workspace_path": workspace_path,
-                "genre": genre,
-                "platform": platform,
-                "current_goal": current_goal,
-            },
+            target_path,
+            flow=flow,
+            project_id=project_id or "local-system",
+            workspace_path=workspace_path,
+            genre=genre,
+            platform=platform,
+            current_goal=current_goal,
+            query=current_goal,
+            token_budget=5000,
         )
+        pack = flow_context["mkaos_pack"]
+        return {**pack, "context_bundle": flow_context["context_bundle"], "context_bundle_path": flow_context["path"], "context_plan": flow_context["context_plan"]}
     except Exception as exc:
         return {"path": "", "asset": {"content": {}}, "warning": str(exc)}
 
@@ -368,6 +380,12 @@ def _pack_content(pack: dict[str, Any]) -> dict[str, Any]:
     asset = pack.get("asset", {}) if isinstance(pack.get("asset", {}), dict) else {}
     content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
     return content
+
+
+def _context_bundle_content(pack: dict[str, Any]) -> dict[str, Any]:
+    bundle = pack.get("context_bundle", {}) if isinstance(pack.get("context_bundle", {}), dict) else {}
+    asset = bundle.get("asset", {}) if isinstance(bundle.get("asset", {}), dict) else {}
+    return asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
 
 
 def _record_mkaos_usage(storage: LocalStorage, pack: dict[str, Any], *, flow: str, target_asset_id: str, agent_name: str) -> None:

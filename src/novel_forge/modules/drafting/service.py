@@ -7,14 +7,14 @@ from novel_forge.agents import agent_runtime_profile, enforce_agent_action
 from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.agent_runs import AgentExecutionContext
-from novel_forge.modules.context_builder import create_context_build_plan, create_context_bundle
+from novel_forge.modules.context_builder import build_flow_context_bundle, create_context_build_plan, create_context_bundle
 from novel_forge.modules.continuity_graph import create_chapter_stability_preflight_report
 from novel_forge.modules.longform_stability import (
     create_longform_artifacts_for_draft,
     require_chapter_state_for_generation,
     sanitize_chapter_text,
 )
-from novel_forge.modules.mkaos import build_knowledge_pack, record_pack_usage_for_artifact
+from novel_forge.modules.mkaos import record_pack_usage_for_artifact
 from novel_forge.modules.production_chain import create_draft_version, create_generation_run
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.schemas import DraftChapter
@@ -81,6 +81,8 @@ def draft(
     project_config = production_context.get("project_config", {}) if isinstance(production_context.get("project_config", {}), dict) else {}
     mkaos_pack = _build_mkaos_pack(
         storage,
+        target_path=plan_path,
+        existing_context_bundle_path=context_bundle["path"],
         flow="prose",
         project_id=str(production_context["project"].get("project_id", "")),
         workspace_path=str(production_context["project"].get("workspace_path", "")),
@@ -89,6 +91,8 @@ def draft(
         chapter_id=str(plan.content.get("chapter", 1) or 1),
         current_goal=str(plan.content.get("objective") or plan.title or "draft chapter"),
     )
+    context_bundle = mkaos_pack.get("context_bundle", context_bundle)
+    context_bundle_asset = context_bundle["asset"]
     with AgentExecutionContext(
         storage,
         agent_key="draft",
@@ -192,6 +196,7 @@ def draft(
                 "context_build_plan_path": context_plan_ref,
                 "context_bundle_id": context_bundle_asset.get("id", ""),
                 "context_bundle_path": context_bundle.get("path", ""),
+                "context_builder_unified": bool(context_bundle.get("path", "")),
                 "mkaos_knowledge_pack_id": mkaos_pack.get("asset", {}).get("id", ""),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
                 "mkaos_warning": mkaos_pack.get("warning", ""),
@@ -378,6 +383,8 @@ def _dedupe(values: list[str]) -> list[str]:
 def _build_mkaos_pack(
     storage: LocalStorage,
     *,
+    target_path: str | Path,
+    existing_context_bundle_path: str | Path,
     flow: str,
     project_id: str,
     workspace_path: str,
@@ -387,19 +394,22 @@ def _build_mkaos_pack(
     current_goal: str,
 ) -> dict[str, Any]:
     try:
-        return build_knowledge_pack(
+        flow_context = build_flow_context_bundle(
             storage,
-            {
-                "flow": flow,
-                "task_id": f"{flow}-{project_id or 'local'}-{chapter_id}",
-                "project_id": project_id or "local-system",
-                "workspace_path": workspace_path,
-                "genre": genre,
-                "platform": platform,
-                "chapter_id": chapter_id,
-                "current_goal": current_goal,
-            },
+            target_path,
+            flow=flow,
+            project_id=project_id or "local-system",
+            workspace_path=workspace_path,
+            genre=genre,
+            platform=platform,
+            chapter_id=chapter_id,
+            current_goal=current_goal,
+            query=current_goal,
+            token_budget=8000,
+            existing_context_bundle_path=existing_context_bundle_path,
         )
+        pack = flow_context["mkaos_pack"]
+        return {**pack, "context_bundle": flow_context["context_bundle"], "context_bundle_path": flow_context["path"], "context_plan": flow_context["context_plan"]}
     except Exception as exc:
         return {"path": "", "asset": {"content": {}}, "warning": str(exc)}
 

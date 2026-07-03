@@ -30,6 +30,19 @@
 | `python3 -m unittest tests/unit/test_mkaos_os_envelope.py` | OS Envelope 强制与 Query/Convert 回归不退化。 | 5 tests OK |
 | `python3 -m unittest tests.integration.test_pipeline` | 旧 pipeline 集成链路不回归。 | 1 test OK，用时 257.578s |
 
+## Phase 4
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m compileall -q src/novel_forge/modules/context_builder src/novel_forge/modules/outline src/novel_forge/modules/chapter_plan src/novel_forge/modules/drafting src/novel_forge/modules/review` | Context Builder 与四个接入服务语法/导入检查。 | OK |
+| `python3 -m unittest tests/unit/test_context_builder_mkaos_flow.py` | 统一 Context Builder 注入 MKAOS Pack，并证明 Outline/ChapterOutline/Prose/Review 输出引用 ContextBundle。 | 2 tests OK，用时约 12.3s |
+| `python3 -m unittest tests/unit/test_context_and_production_chain.py` | Context Builder 与生产链路回归。 | 12 tests OK，用时约 62.9s |
+| `python3 -m unittest tests/unit/test_module_services.py` | 主模块服务链路回归。 | 10 tests OK，用时约 60.1s |
+| `python3 -m unittest tests/unit/test_mkaos_isolation.py` | MKAOS source isolation 回归。 | 4 tests OK，用时约 7.7s |
+| `python3 -m unittest tests/unit/test_mkaos.py` | MKAOS P0 原有单测回归。 | 5 tests OK |
+| `python3 -m unittest tests/unit/test_mkaos_os_envelope.py` | OS Envelope 回归。 | 5 tests OK |
+| `python3 -m unittest tests.integration.test_pipeline` | 旧 pipeline 集成链路不回归。 | 1 test OK，用时 406.239s |
+
 ## 待最终全量运行
 
 最终 Phase 12 必须重新运行：
