@@ -140,6 +140,14 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/runtime/policy/check",
                 "/product/runtime/rollback/verify",
                 "/product/runtime/rollback/coordinate",
+                "/product/platform-strategy/assets",
+                "/product/platform-strategy/defaults",
+                "/product/platform-strategy/pack",
+                "/product/platform-strategy/opening-gate",
+                "/product/platform-strategy/chapter-gate",
+                "/product/platform-strategy/retention-risk",
+                "/product/platform-strategy/publish-adapter",
+                "/product/platform-strategy/feedback-backflow",
                 "/product/settings/assets",
                 "/product/settings/profile",
                 "/product/production/versions",
@@ -198,6 +206,7 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(client.get("/product/runtime/policy/surface-coverage").status_code, 200)
             self.assertEqual(client.get("/product/runtime/provider-hard-stop-evidence").status_code, 200)
             self.assertEqual(client.get("/product/longform-stability/dashboard").status_code, 200)
+            self.assertEqual(client.get("/product/platform-strategy/assets").status_code, 200)
             completion = client.get("/product/system/module-completion")
             self.assertEqual(completion.status_code, 200, completion.text)
             self.assertGreaterEqual(completion.json()["summary"]["module_count"], 8)

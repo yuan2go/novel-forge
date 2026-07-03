@@ -147,6 +147,41 @@ class PlatformProfile(BaseAsset):
 
 
 @dataclass
+class PlatformRhythmRule(BaseAsset):
+    type: str = "platform_rhythm_rule"
+
+
+@dataclass
+class PlatformOpeningGate(BaseAsset):
+    type: str = "platform_opening_gate"
+
+
+@dataclass
+class PlatformChapterGate(BaseAsset):
+    type: str = "platform_chapter_gate"
+
+
+@dataclass
+class PlatformRetentionRisk(BaseAsset):
+    type: str = "platform_retention_risk"
+
+
+@dataclass
+class PlatformPublishAdapter(BaseAsset):
+    type: str = "platform_publish_adapter"
+
+
+@dataclass
+class PlatformFeedbackBackflow(BaseAsset):
+    type: str = "platform_feedback_backflow"
+
+
+@dataclass
+class PlatformStrategyPack(BaseAsset):
+    type: str = "platform_strategy_pack"
+
+
+@dataclass
 class GenreMarketProfile(BaseAsset):
     type: str = "genre_market_profile"
 
@@ -964,6 +999,13 @@ SCHEMA_CLASSES = {
         MaterialCard,
         AssetCollection,
         PlatformProfile,
+        PlatformRhythmRule,
+        PlatformOpeningGate,
+        PlatformChapterGate,
+        PlatformRetentionRisk,
+        PlatformPublishAdapter,
+        PlatformFeedbackBackflow,
+        PlatformStrategyPack,
         GenreMarketProfile,
         CreativeStrategyProfile,
         TopicSeed,

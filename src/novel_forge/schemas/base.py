@@ -121,6 +121,13 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "genre_fit",
         "style_tendency",
     ],
+    "platform_rhythm_rule": ["rule_id", "platform_id", "scope", "strategy_axes", "beat_cadence", "hook_policy", "priority"],
+    "platform_opening_gate": ["gate_id", "platform_id", "required_signals", "score_thresholds", "fail_conditions", "revision_hints"],
+    "platform_chapter_gate": ["gate_id", "platform_id", "required_beats", "density_targets", "ending_hook", "blocking_rules"],
+    "platform_retention_risk": ["risk_id", "platform_id", "project_id", "risk_level", "risk_score", "signals", "mitigation_plan", "created_at"],
+    "platform_publish_adapter": ["adapter_id", "platform_id", "package_rules", "metadata_rules", "release_cadence", "checklist", "export_contract"],
+    "platform_feedback_backflow": ["backflow_id", "platform_id", "project_id", "signal_mapping", "plan_adjustments", "weight_updates", "created_at"],
+    "platform_strategy_pack": ["pack_id", "platform_id", "project_id", "topic", "genre", "outline_strategy", "chapter_strategy", "prose_strategy", "validation_policy", "created_at"],
     "genre_market_profile": [
         "genre",
         "platform_id",
@@ -689,6 +696,8 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.extend(_validate_revision_task_content(content))
     if asset_type == "platform_profile" and isinstance(content, dict):
         errors.extend(_validate_platform_profile_content(content))
+    if asset_type.startswith("platform_") and isinstance(content, dict):
+        errors.extend(_validate_platform_strategy_content(asset_type, content))
     if asset_type == "topic_fit_report" and isinstance(content, dict):
         errors.extend(_validate_topic_fit_report_content(content))
     if asset_type == "creative_strategy_profile" and isinstance(content, dict):
@@ -1270,6 +1279,43 @@ def _validate_platform_profile_content(content: dict[str, Any]) -> list[str]:
     for key in ["reader_expectation", "review_risks", "genre_fit", "style_tendency"]:
         if key in content and not isinstance(content.get(key), list):
             errors.append(f"platform_profile {key} must be a list")
+    return errors
+
+
+def _validate_platform_strategy_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "platform_profile":
+        return errors
+    list_fields = {
+        "platform_rhythm_rule": ["strategy_axes", "beat_cadence", "prohibited_patterns"],
+        "platform_opening_gate": ["required_signals", "fail_conditions", "revision_hints"],
+        "platform_chapter_gate": ["required_beats", "blocking_rules"],
+        "platform_retention_risk": ["signals", "mitigation_plan"],
+        "platform_publish_adapter": ["checklist"],
+        "platform_feedback_backflow": ["plan_adjustments", "weight_updates"],
+    }
+    dict_fields = {
+        "platform_opening_gate": ["score_thresholds"],
+        "platform_chapter_gate": ["density_targets"],
+        "platform_publish_adapter": ["package_rules", "metadata_rules", "export_contract"],
+        "platform_feedback_backflow": ["signal_mapping"],
+        "platform_strategy_pack": ["outline_strategy", "chapter_strategy", "prose_strategy", "validation_policy"],
+    }
+    for key in list_fields.get(asset_type, []):
+        if not isinstance(content.get(key), list):
+            errors.append(f"{asset_type} {key} must be a list")
+    for key in dict_fields.get(asset_type, []):
+        if not isinstance(content.get(key), dict):
+            errors.append(f"{asset_type} {key} must be an object")
+    if asset_type == "platform_retention_risk":
+        if content.get("risk_level") not in {"low", "medium", "high", "critical", "unknown"}:
+            errors.append("platform_retention_risk risk_level must be low, medium, high, critical, or unknown")
+        if not isinstance(content.get("risk_score"), (int, float)) or content.get("risk_score") < 0 or content.get("risk_score") > 100:
+            errors.append("platform_retention_risk risk_score must be between 0 and 100")
+    if asset_type == "platform_strategy_pack":
+        for key in ["opening_gate", "chapter_gate", "publish_adapter", "feedback_backflow"]:
+            if key in content and not isinstance(content.get(key), dict):
+                errors.append(f"platform_strategy_pack {key} must be an object")
     return errors
 
 

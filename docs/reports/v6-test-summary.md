@@ -145,3 +145,19 @@ Phase 12 要求的 Python、integration、新增工业化 proof、前端 test �
 | `python3 -m unittest tests/unit/test_mkaos.py tests/unit/test_mkaos_selector_canon.py tests/unit/test_mkaos_os_envelope.py tests/unit/test_mkaos_knowledge_graph_learning.py` | MKAOS P0、selector/canon、OS Envelope、图谱/学习相邻回归。 | 16 tests OK，用时约 2.2s |
 | `python3 -m unittest tests/unit/test_schemas.py` | 新 `knowledge_graph_snapshot`、`knowledge_learning_snapshot` schema 注册与通用 schema 回归。 | 17 tests OK |
 | `python3 -m unittest discover -s tests -p 'test_*.py'` | 全量 Python unittest discover 回归。 | 307 tests OK，用时 934.118s，skipped=1 |
+
+## Platform Strategy OS
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m compileall -q src/novel_forge/modules/platform_strategy src/novel_forge/api/routers/platform_strategy.py src/novel_forge/modules/planning_context.py src/novel_forge/modules/outline src/novel_forge/modules/chapter_plan src/novel_forge/schemas` | Platform Strategy OS、API、Planning Context、Outline/ChapterPlan、schema 语法/导入检查。 | OK |
+| `python3 -m unittest tests/unit/test_platform_strategy_os.py` | 默认平台策略库、同题材跨平台策略差异、开篇/章节门禁、留存风险、发布适配、反馈回流、planning context 注入、API smoke。 | 4 tests OK，用时约 1.9s |
+| `python3 -m unittest tests/unit/test_product_api_routes.py` | Product API 路由注册回归，包含 `/product/platform-strategy/*`。 | 1 test OK，用时约 20.3s |
+| `python3 -m unittest tests/unit/test_context_and_production_chain.py` | Planning Context / Outline / ChapterPlan 生产链路回归。 | 12 tests OK，用时约 67.0s |
+| `python3 -m unittest tests/unit/test_schemas.py` | 新平台策略 asset schema 注册与通用 schema 回归。 | 17 tests OK |
+| `python3 -m unittest tests.integration.test_pipeline` | 样例 pipeline 二次复跑幂等回归，覆盖 Platform Strategy Pack 进入 Planning Context 后不新增随机平台资产。 | 1 test OK，用时 444.668s |
+| `python3 -m unittest discover -s tests -p 'test_*.py'` | 全量 Python unittest discover，覆盖 MKAOS、Canon Graph、Loop、Agent、Publish、Platform Strategy 和 pipeline。 | 311 tests OK，用时 1035.242s，skipped=1 |
+| `npm --prefix web/admin test` | Admin 前端路由/架构回归。 | 9 tests，8 pass，1 skip |
+| `npm --prefix web/admin run build` | Admin Next.js production build。 | OK，44 static routes generated |
+
+Implementation note: an intermediate full-discover run exposed non-idempotent `platform_strategy_pack` ids because `make_id()` adds a random suffix. The final implementation uses deterministic platform strategy pack ids, and the post-fix pipeline/full-discover runs above passed.

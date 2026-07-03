@@ -41,6 +41,7 @@
 | Agent Center | AgentTask / AgentRun / AgentHandoff / capability registry / center snapshot / issue dispatch | `src/novel_forge/modules/agent_scheduler/service.py`, `src/novel_forge/api/routers/agents.py` |
 | UI 可编辑控制台 | Canon、Character、Arc、Foreshadowing、ReviewIssue、Longform Recap、LoopRun、Agent Center、Publish Gate、Feedback Console | `web/admin/app/*/page.tsx`, `web/admin/tests/feature-architecture.test.mjs` |
 | Publish / Feedback 闭环 | Publish Gate、Release Package、ReviewIssue/MKAOS risk 阻断、Reader Feedback、Backflow Plan、MKAOS weight update | `src/novel_forge/modules/audit/service.py`, `src/novel_forge/modules/feedback/service.py`, `tests/unit/test_publish_feedback_loop.py` |
+| Platform Strategy OS | 起点/番茄/飞卢/晋江/知乎盐选/微信读书出版向平台策略包、节奏规则、开篇/章节门禁、留存风险、发布适配、反馈回流 | `src/novel_forge/modules/platform_strategy/service.py`, `tests/unit/test_platform_strategy_os.py` |
 | Provider hard-stop | token/cost/timeout/cancel proof，hard-stop 后不 silent retry/fallback | `src/novel_forge/modules/runtime_policy/service.py`, `tests/unit/test_provider_hard_stop_proof.py` |
 | 12 章压力测试 | MKAOS、Context Builder、ReviewIssue、LoopRun、Longform Recap、Publish Gate、Release Package 同链路证明 | `tests/integration/test_novel_os_12_chapter_industrial_pressure.py` |
 
@@ -53,8 +54,8 @@
 | Loop Kernel | review -> revision -> re-review -> publish gate 主链已默认进入 LoopRun；非主链 operation 分批迁移 | P2 |
 | UI 领域表单 | 当前是最小可编辑控制台，专用表单、批量治理、血缘图仍不足 | P1/P2 |
 | Provider fallback | hard-stop 后 fail closed 已证明，但显式 fallback 策略尚未治理化 | P1 |
-| Publishing adapters | 外部平台发布 adapter 仍是受限边界，平台回执 schema 需深化 | P2 |
-| Feedback metrics | reader feedback 已闭环，平台指标/留存/评论 schema 仍较薄 | P2 |
+| Publishing adapters | Platform Strategy OS 已有平台发布适配契约；外部真实平台 API 和回执 schema 仍需深化 | P2 |
+| Feedback metrics | Platform retention/backflow 已建 first slice；真实平台指标导入、评论热度和回执仍需深化 | P2 |
 | 长链压力 | 12 章已证明，50/100 章仍应保持 opt-in 慢测试 | P2 |
 
 ## 3. 详细功能文档
@@ -541,7 +542,54 @@ UI：
 - `tests/unit/test_publish_feedback_loop.py`
 - `tests/unit/test_publishing_center.py`
 
-### 3.11 Runtime / Provider / Cost / Rollback
+### 3.11 Platform Strategy OS
+
+功能：
+
+- 默认平台策略库：起点、番茄、飞卢、晋江、知乎盐选、微信读书/出版向；
+- `PlatformProfile`；
+- `PlatformRhythmRule`；
+- `PlatformOpeningGate`；
+- `PlatformChapterGate`；
+- `PlatformRetentionRisk`；
+- `PlatformPublishAdapter`；
+- `PlatformFeedbackBackflow`；
+- `PlatformStrategyPack`；
+- 同题材多平台策略包构建；
+- 开篇门禁；
+- 章节门禁；
+- 平台留存风险评估；
+- 发布适配契约；
+- 平台反馈回流映射；
+- planning context 注入；
+- Outline / ChapterPlan fallback 读取平台节奏、必需 beat、风险控制和字数预算。
+
+核心 API：
+
+- `GET /product/platform-strategy/assets`
+- `POST /product/platform-strategy/defaults`
+- `POST /product/platform-strategy/pack`
+- `POST /product/platform-strategy/opening-gate`
+- `POST /product/platform-strategy/chapter-gate`
+- `POST /product/platform-strategy/retention-risk`
+- `POST /product/platform-strategy/publish-adapter`
+- `POST /product/platform-strategy/feedback-backflow`
+
+核心文件：
+
+- `src/novel_forge/modules/platform_strategy/service.py`
+- `src/novel_forge/api/routers/platform_strategy.py`
+- `src/novel_forge/modules/planning_context.py`
+- `src/novel_forge/modules/outline/service.py`
+- `src/novel_forge/modules/chapter_plan/service.py`
+
+测试：
+
+- `tests/unit/test_platform_strategy_os.py`
+- `tests/unit/test_product_api_routes.py`
+- `tests/unit/test_context_and_production_chain.py`
+
+### 3.12 Runtime / Provider / Cost / Rollback
 
 功能：
 

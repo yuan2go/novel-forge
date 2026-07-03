@@ -216,12 +216,17 @@ def _normalize_chapter_plan_packet(packet: dict[str, Any], planning_context: dic
     creative_strategy = planning_context.get("creative_strategy", {}) if isinstance(planning_context.get("creative_strategy", {}), dict) else {}
     strategy_content = creative_strategy.get("content", {}) if isinstance(creative_strategy.get("content", {}), dict) else {}
     strategy_constraints = creative_strategy.get("constraints", []) if isinstance(creative_strategy.get("constraints", []), list) else []
+    platform_strategy = planning_context.get("platform_strategy", {}).get("content", {}) if isinstance(planning_context.get("platform_strategy", {}), dict) else {}
+    chapter_strategy = platform_strategy.get("chapter_strategy", {}) if isinstance(platform_strategy.get("chapter_strategy", {}), dict) else {}
+    validation_policy = platform_strategy.get("validation_policy", {}) if isinstance(platform_strategy.get("validation_policy", {}), dict) else {}
+    platform_constraints = _dedupe([*_strings(chapter_strategy.get("required_beats")), *_strings(validation_policy.get("blocking_if_missing"))])
     continuity_checks = _strings(packet.get("continuity_checks")) or planning_context.get("continuity", {}).get("constraints", [])
     feedback_constraints = _strings(packet.get("feedback_constraints")) or planning_context.get("feedback", {}).get("constraints", [])
     risk_controls = _dedupe(
         [
             *_strings(packet.get("risk_controls")),
             *[f"creative strategy: {item}" for item in strategy_constraints[:8]],
+            *[f"platform strategy: {item}" for item in platform_constraints[:8]],
         ]
     )
     return {
@@ -235,9 +240,9 @@ def _normalize_chapter_plan_packet(packet: dict[str, Any], planning_context: dic
         "quality_targets": _dedupe([str(item) for item in quality_targets if str(item).strip()]),
         "reader_promise": str(packet.get("reader_promise") or strategy_content.get("reader_promise") or "").strip(),
         "volume_goal": str(packet.get("volume_goal") or _first_strategy_value(strategy_content.get("volume_goals")) or "").strip(),
-        "pleasure_beats": _strings(packet.get("pleasure_beats")) or _strings(strategy_content.get("pleasure_rhythm")),
+        "pleasure_beats": _strings(packet.get("pleasure_beats")) or _strings(strategy_content.get("pleasure_rhythm")) or _strings(chapter_strategy.get("required_beats")),
         "long_hook_progress": _strings(packet.get("long_hook_progress")) or _strings(strategy_content.get("long_hooks")),
-        "platform_pacing": _strings(packet.get("platform_pacing")) or _strings(strategy_content.get("platform_pacing")),
+        "platform_pacing": _strings(packet.get("platform_pacing")) or _strings(strategy_content.get("platform_pacing")) or _strings(chapter_strategy.get("beat_cadence")),
         "creative_strategy_constraints": _dedupe([str(item) for item in strategy_constraints if str(item).strip()]),
         "continuity_checks": _dedupe([str(item) for item in continuity_checks if str(item).strip()]),
         "feedback_constraints": _dedupe([str(item) for item in feedback_constraints if str(item).strip()]),
@@ -263,6 +268,10 @@ def _fallback_chapter_plan_packet(
     creative_strategy = planning_context.get("creative_strategy", {}) if isinstance(planning_context.get("creative_strategy", {}), dict) else {}
     strategy_content = creative_strategy.get("content", {}) if isinstance(creative_strategy.get("content", {}), dict) else {}
     strategy_constraints = creative_strategy.get("constraints", []) if isinstance(creative_strategy.get("constraints", []), list) else []
+    platform_strategy = planning_context.get("platform_strategy", {}).get("content", {}) if isinstance(planning_context.get("platform_strategy", {}), dict) else {}
+    chapter_strategy = platform_strategy.get("chapter_strategy", {}) if isinstance(platform_strategy.get("chapter_strategy", {}), dict) else {}
+    validation_policy = platform_strategy.get("validation_policy", {}) if isinstance(platform_strategy.get("validation_policy", {}), dict) else {}
+    platform_constraints = _dedupe([*_strings(chapter_strategy.get("required_beats")), *_strings(validation_policy.get("blocking_if_missing"))])
     act = _act_for_chapter(outline, target_chapter)
     carry_hook = str(carry_forward.get("previous_hook", "") or "").strip()
     reader_promise = str(strategy_content.get("reader_promise") or "deliver a clear genre promise with visible pressure, payoff, and next-hook momentum")
@@ -296,7 +305,7 @@ def _fallback_chapter_plan_packet(
         "quality_targets": quality_targets,
         "reader_promise": reader_promise,
         "volume_goal": volume_goal,
-        "pleasure_beats": _strings(strategy_content.get("pleasure_rhythm")) or [
+        "pleasure_beats": _strings(strategy_content.get("pleasure_rhythm")) or _strings(chapter_strategy.get("required_beats")) or [
             "open pressure",
             "visible choice",
             "cost disclosure",
@@ -304,8 +313,8 @@ def _fallback_chapter_plan_packet(
             "next hook",
         ],
         "long_hook_progress": _strings(strategy_content.get("long_hooks")) or ["seed or advance one long hook without premature payoff"],
-        "platform_pacing": _strings(strategy_content.get("platform_pacing")) or ["keep chapter objective and hook visible"],
-        "creative_strategy_constraints": _dedupe([str(item) for item in strategy_constraints if str(item).strip()]),
+        "platform_pacing": _strings(strategy_content.get("platform_pacing")) or _strings(chapter_strategy.get("beat_cadence")) or ["keep chapter objective and hook visible"],
+        "creative_strategy_constraints": _dedupe([str(item) for item in [*strategy_constraints, *[f"platform strategy: {item}" for item in platform_constraints[:8]]] if str(item).strip()]),
         "continuity_checks": continuity_checks,
         "feedback_constraints": feedback_constraints,
         "risk_controls": [
@@ -313,6 +322,7 @@ def _fallback_chapter_plan_packet(
             "do not bypass project quality standard",
             "do not contradict continuity bible",
             *[f"creative strategy: {item}" for item in strategy_constraints[:8]],
+            *[f"platform strategy: {item}" for item in platform_constraints[:8]],
         ],
         "tags": ["deterministic-fallback"],
     }
@@ -351,9 +361,19 @@ def _word_budget(value: Any, planning_context: dict[str, Any]) -> dict[str, int]
             "min": _positive_chapter(value.get("min") or 1800),
             "max": _positive_chapter(value.get("max") or 3200),
         }
+    platform_strategy = planning_context.get("platform_strategy", {}).get("content", {}) if isinstance(planning_context.get("platform_strategy", {}), dict) else {}
+    chapter_strategy = platform_strategy.get("chapter_strategy", {}) if isinstance(platform_strategy.get("chapter_strategy", {}), dict) else {}
+    strategy_budget = chapter_strategy.get("word_budget", {}) if isinstance(chapter_strategy.get("word_budget", {}), dict) else {}
+    if strategy_budget:
+        target = _positive_chapter(strategy_budget.get("ideal") or strategy_budget.get("target") or 2500)
+        return {
+            "target": target,
+            "min": _positive_chapter(strategy_budget.get("min") or int(target * 0.72)),
+            "max": _positive_chapter(strategy_budget.get("max") or int(target * 1.28)),
+        }
     platform = planning_context.get("profiles", {}).get("platform_profile", {}) if isinstance(planning_context.get("profiles", {}), dict) else {}
     content = platform.get("content", {}) if isinstance(platform.get("content", {}), dict) else {}
-    chapter_length = content.get("chapter_length") if isinstance(content.get("chapter_length"), dict) else {}
+    chapter_length = content.get("chapter_length") if isinstance(content.get("chapter_length"), dict) else content.get("chapter_length_range") if isinstance(content.get("chapter_length_range"), dict) else {}
     target = _positive_chapter(chapter_length.get("target") or chapter_length.get("recommended") or 2500)
     return {
         "target": target,

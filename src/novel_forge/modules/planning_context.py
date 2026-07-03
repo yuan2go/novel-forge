@@ -9,6 +9,7 @@ from novel_forge.modules.production_context import (
     profile_reference_ids,
     quality_dimensions_from_context,
 )
+from novel_forge.modules.platform_strategy import build_platform_strategy_pack
 from novel_forge.storage.local import LocalStorage
 
 FEEDBACK_TYPES = {"feedback_insight", "reader_sentiment_report"}
@@ -31,11 +32,14 @@ def build_planning_context(
     workspace_feedback = _workspace_feedback_constraints(storage, production_context)
     feedback_constraints = _dedupe([*_feedback_constraints(feedback_assets), *workspace_feedback["constraints"]])
     continuity_constraints = _continuity_constraints(production_context, continuity_assets)
+    platform_strategy = _platform_strategy_context(storage, production_context, chapter=chapter)
     references = [
         *profile_reference_ids(production_context),
         *_asset_references(feedback_assets),
         *_asset_references(continuity_assets),
         *workspace_feedback["references"],
+        platform_strategy.get("path", ""),
+        platform_strategy.get("id", ""),
     ]
     return {
         "production_context": production_context,
@@ -53,6 +57,7 @@ def build_planning_context(
             "content": _profile_content(production_context, "creative_strategy_profile"),
             "constraints": _creative_strategy_constraints(production_context),
         },
+        "platform_strategy": platform_strategy,
         "continuity": {
             "profile_id": _profile_id(production_context, "continuity_bible"),
             "assets": [_asset_summary(asset) for asset in continuity_assets],
@@ -70,6 +75,7 @@ def build_planning_context(
             "quality_standard": bool(_profile_id(production_context, "quality_standard_profile")),
             "continuity": bool(_profile_id(production_context, "continuity_bible") or continuity_assets),
             "feedback": bool(feedback_assets or workspace_feedback["constraints"]),
+            "platform_strategy": bool(platform_strategy.get("id")),
             "preflight_ready": production_context.get("preflight", {}).get("ready", False),
             "warnings": production_context.get("preflight", {}).get("warnings", []),
         },
@@ -88,6 +94,8 @@ def planning_context_metadata(context: dict[str, Any]) -> dict[str, Any]:
         "genre_market_profile_id": _profile_id(production_context, "genre_market_profile"),
         "creative_strategy_profile_id": _profile_id(production_context, "creative_strategy_profile"),
         "quality_standard_profile_id": _profile_id(production_context, "quality_standard_profile"),
+        "platform_strategy_pack_id": str(context.get("platform_strategy", {}).get("id", "")),
+        "platform_strategy_pack_path": str(context.get("platform_strategy", {}).get("path", "")),
         "style_profile_id": _profile_id(production_context, "style_profile"),
         "style_blend_preset_id": _profile_id(production_context, "style_blend_preset"),
         "continuity_bible_id": _profile_id(production_context, "continuity_bible"),
@@ -265,6 +273,38 @@ def _profile_id(production_context: dict[str, Any], asset_type: str) -> str:
     profiles = production_context.get("profiles", {}) if isinstance(production_context.get("profiles", {}), dict) else {}
     profile = profiles.get(asset_type)
     return str(profile.get("id", "")) if isinstance(profile, dict) else ""
+
+
+def _platform_strategy_context(storage: LocalStorage, production_context: dict[str, Any], *, chapter: int | None) -> dict[str, Any]:
+    project = production_context.get("project", {}) if isinstance(production_context.get("project", {}), dict) else {}
+    config = production_context.get("project_config", {}) if isinstance(production_context.get("project_config", {}), dict) else {}
+    platform_profile = _profile_content(production_context, "platform_profile")
+    platform = str(config.get("target_platform") or platform_profile.get("platform_id") or platform_profile.get("platform_name") or "qidian")
+    genre = str(config.get("genre") or "")
+    try:
+        pack = build_platform_strategy_pack(
+            storage,
+            {
+                "project_id": str(project.get("project_id") or "local-system"),
+                "workspace_path": str(project.get("workspace_path") or ""),
+                "platform": platform,
+                "genre": genre,
+                "topic": str(project.get("title") or config.get("title") or "Project"),
+                "chapter": chapter,
+                "persist": True,
+            },
+        )
+    except Exception as exc:
+        return {"id": "", "path": "", "content": {}, "warning": str(exc)}
+    asset = pack.get("asset", {}) if isinstance(pack.get("asset"), dict) else {}
+    content = asset.get("content", {}) if isinstance(asset.get("content"), dict) else {}
+    return {
+        "id": str(asset.get("id", "")),
+        "path": str(pack.get("path", "")),
+        "platform_id": str(content.get("platform_id", "")),
+        "platform_name": str(content.get("platform_name", "")),
+        "content": _trim(content, max_items=16, max_text=500),
+    }
 
 
 def _asset_references(assets: list[dict[str, Any]]) -> list[str]:

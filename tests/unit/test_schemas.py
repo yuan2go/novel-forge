@@ -46,7 +46,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 184)
+        self.assertEqual(len(SCHEMA_CLASSES), 191)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("source_chunk", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
@@ -70,6 +70,13 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("batch_task_item", SCHEMA_CLASSES)
         self.assertIn("claude_code_handoff", SCHEMA_CLASSES)
         self.assertIn("platform_profile", SCHEMA_CLASSES)
+        self.assertIn("platform_rhythm_rule", SCHEMA_CLASSES)
+        self.assertIn("platform_opening_gate", SCHEMA_CLASSES)
+        self.assertIn("platform_chapter_gate", SCHEMA_CLASSES)
+        self.assertIn("platform_retention_risk", SCHEMA_CLASSES)
+        self.assertIn("platform_publish_adapter", SCHEMA_CLASSES)
+        self.assertIn("platform_feedback_backflow", SCHEMA_CLASSES)
+        self.assertIn("platform_strategy_pack", SCHEMA_CLASSES)
         self.assertIn("genre_market_profile", SCHEMA_CLASSES)
         self.assertIn("creative_strategy_profile", SCHEMA_CLASSES)
         self.assertIn("style_profile", SCHEMA_CLASSES)
