@@ -19,7 +19,9 @@ from novel_forge.modules.agent_runs import (
 )
 from novel_forge.modules.agent_scheduler import (
     agent_center_snapshot,
+    create_agent_task,
     dispatch_agent_run,
+    dispatch_revision_task_from_issue,
     list_agent_dispatch_queue,
     list_agent_operation_contracts,
     recover_agent_dispatch,
@@ -45,6 +47,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     AgentSchedulerRequest = models["AgentSchedulerRequest"]
     AgentDispatchRequest = models["AgentDispatchRequest"]
     AgentDispatchRecoverRequest = models["AgentDispatchRecoverRequest"]
+    AgentTaskCreateRequest = models["AgentTaskCreateRequest"]
+    AgentTaskFromIssueRequest = models["AgentTaskFromIssueRequest"]
 
     @router.get("/product/agents/runs")
     def agent_runs(
@@ -238,6 +242,43 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ) -> dict[str, Any]:
         try:
             return agent_center_snapshot(LocalStorage(app_settings.root), project_id=project_id, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/agents/tasks")
+    def agent_task_create_endpoint(request: AgentTaskCreateRequest) -> dict[str, Any]:
+        try:
+            return create_agent_task(
+                LocalStorage(app_settings.root),
+                agent_type=request.agent_type,
+                operation=request.operation,
+                input_assets=request.input_assets,
+                output_targets=request.output_targets,
+                status=request.status,
+                project_id=request.project_id,
+                workspace_path=request.workspace_path,
+                linked_loop_run_path=request.linked_loop_run_path,
+                linked_context_bundle_path=request.linked_context_bundle_path,
+                linked_review_issue_path=request.linked_review_issue_path,
+                linked_revision_task_path=request.linked_revision_task_path,
+                evidence=request.evidence,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/agents/tasks/from-issue")
+    def agent_task_from_issue_endpoint(request: AgentTaskFromIssueRequest) -> dict[str, Any]:
+        try:
+            return dispatch_revision_task_from_issue(
+                LocalStorage(app_settings.root),
+                request.issue_ref,
+                agent_type=request.agent_type,
+                operation=request.operation,
+                token_budget=request.token_budget,
+                priority=request.priority,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

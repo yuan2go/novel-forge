@@ -85,6 +85,15 @@
 | `python3 -m unittest tests/unit/test_context_builder_mkaos_flow.py tests/unit/test_mkaos_isolation.py` | Context Builder/MKAOS source isolation 回归。 | 6 tests OK |
 | `python3 -m unittest tests.integration.test_longform_quality_gate_e2e` | 既有 longform quality gate E2E 回归。 | 1 test OK |
 
+## Phase 8
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m compileall -q src/novel_forge/modules/agent_scheduler src/novel_forge/api src/novel_forge/schemas` | Agent Center、API、schema 语法/导入检查。 | OK |
+| `python3 -m unittest tests/unit/test_agent_scheduler.py tests/unit/test_schemas.py tests/unit/test_product_api_routes.py tests/unit/test_loop_kernel.py tests/unit/test_review_issue.py` | AgentTask、ReviewIssue -> RevisionTask/AgentRun/DispatchQueue、Loop/Context/Issue 聚合、RAG 隔离、API route、schema 和相邻模块回归。 | 33 tests OK |
+| `npm --prefix web/admin test` | Agent Center UI 扩展后的 admin 架构测试。 | 7 pass, 1 Playwright smoke skipped |
+| `npm --prefix web/admin run build` | Agent Center UI 扩展后的 Next.js production build。 | OK |
+
 ## 待最终全量运行
 
 最终 Phase 12 必须重新运行：

@@ -54,6 +54,13 @@ export type AgentCenterSnapshot = {
   health_score?: number;
   readiness_checks?: Array<Record<string, unknown>>;
   run_graph?: Record<string, unknown>;
+  agent_tasks?: Array<Record<string, unknown>>;
+  loop_runs?: Array<Record<string, unknown>>;
+  context_bundles?: Array<Record<string, unknown>>;
+  review_issues?: Array<Record<string, unknown>>;
+  revision_tasks?: Array<Record<string, unknown>>;
+  handoffs?: Array<Record<string, unknown>>;
+  runtime_links?: Record<string, unknown>;
   gate_timeline?: Array<Record<string, unknown>>;
   checkpoints?: Array<Record<string, unknown>>;
   budget_burn?: Record<string, unknown>;
@@ -252,6 +259,16 @@ export function dispatchAgentRun(payload: {
     expected_output_assets: payload.expected_output_assets || [],
     max_attempts: payload.max_attempts ?? 3,
     priority: payload.priority ?? 100
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function dispatchAgentTaskFromIssue(issueRef: string, priority = 40) {
+  return postJson("/product/agents/tasks/from-issue", {
+    issue_ref: issueRef,
+    agent_type: "review",
+    operation: "fix_review_issue",
+    token_budget: 1200,
+    priority
   }) as Promise<Record<string, unknown>>;
 }
 

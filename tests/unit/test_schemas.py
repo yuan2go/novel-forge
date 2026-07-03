@@ -8,6 +8,7 @@ from novel_forge.schemas import (
     AgentContract,
     AgentDispatchQueue,
     AgentRun,
+    AgentTask,
     AnalysisConversionReport,
     CanonGraphSnapshot,
     ChapterAuditReport,
@@ -45,7 +46,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 181)
+        self.assertEqual(len(SCHEMA_CLASSES), 182)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("source_chunk", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
@@ -108,6 +109,7 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("node_run", SCHEMA_CLASSES)
         self.assertIn("change_impact_report", SCHEMA_CLASSES)
         self.assertIn("agent_contract", SCHEMA_CLASSES)
+        self.assertIn("agent_task", SCHEMA_CLASSES)
         self.assertIn("agent_run", SCHEMA_CLASSES)
         self.assertIn("agent_checkpoint", SCHEMA_CLASSES)
         self.assertIn("agent_event", SCHEMA_CLASSES)

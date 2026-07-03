@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.modules.agent_runs import list_agent_runs, record_agent_budget, record_agent_checkpoint, record_agent_gate, start_agent_run
 from novel_forge.modules.agent_scheduler import (
     agent_center_snapshot,
+    dispatch_revision_task_from_issue,
     dispatch_agent_run,
     list_agent_dispatch_queue,
     list_agent_operation_contracts,
@@ -16,9 +17,12 @@ from novel_forge.modules.agent_scheduler import (
     scheduler_status,
 )
 from novel_forge.modules.continuity_graph import create_continuity_graph_snapshot
+from novel_forge.modules.loop_kernel import run_loop
+from novel_forge.modules.review_issue import create_review_issue
 from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs
 from novel_forge.schemas import ChapterPlan, ContextBundle, DraftChapter
 from novel_forge.storage.local import LocalStorage
+from novel_forge.storage.rag_context import generation_context_policy
 
 
 class AgentSchedulerTests(unittest.TestCase):
@@ -59,6 +63,64 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertTrue(snapshot["run_graph"]["nodes"])
             self.assertEqual(snapshot["budget_burn"]["token_used"], 120)
             self.assertTrue(snapshot["gate_timeline"])
+
+    def test_agent_center_links_tasks_loops_context_and_review_issues(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Agent Center draft",
+                    content={"chapter": 1, "text": "原创章节文本，用于 Agent Center 串联测试。", "copyright_boundary": "project-owned test fixture"},
+                    metadata={"project_id": "agent-center-p"},
+                ),
+            )
+            draft = storage.read_asset(draft_path)
+            loop = run_loop(
+                storage,
+                {
+                    "loop_type": "chapter_review",
+                    "target_path": str(draft_path.relative_to(storage.root)),
+                    "project_id": "agent-center-p",
+                    "steps": [{"step_type": "quality_gate", "operation": "quality_passed", "token_estimate": 1, "cost_estimate": 0.0}],
+                },
+            )
+            issue = create_review_issue(
+                storage,
+                {
+                    "project_id": "agent-center-p",
+                    "target_asset_id": draft.id,
+                    "target_asset_type": "draft_chapter",
+                    "target_asset_path": str(draft_path.relative_to(storage.root)),
+                    "issue_type": "canon_conflict",
+                    "severity": "critical",
+                    "message": "Agent Center must dispatch a governed revision task.",
+                    "fix_suggestion": "Create a revision task and route it through the editor agent.",
+                },
+            )
+
+            dispatch = dispatch_revision_task_from_issue(storage, issue["path"], token_budget=777, priority=12)
+            snapshot = agent_center_snapshot(storage, project_id="agent-center-p")
+
+            self.assertEqual(dispatch["status"], "queued")
+            self.assertTrue(dispatch["revision_task_path"])
+            self.assertGreaterEqual(snapshot["summary"]["agent_task_count"], 1)
+            self.assertGreaterEqual(snapshot["summary"]["agent_run_count"], 1)
+            self.assertGreaterEqual(snapshot["summary"]["loop_run_count"], 1)
+            self.assertGreaterEqual(snapshot["summary"]["context_bundle_count"], 1)
+            self.assertGreaterEqual(snapshot["summary"]["review_issue_count"], 1)
+            self.assertGreaterEqual(snapshot["summary"]["revision_task_count"], 1)
+            self.assertTrue(snapshot["runtime_links"]["agent_task_to_run"])
+            self.assertTrue(snapshot["runtime_links"]["agent_task_to_review_issue"])
+            self.assertTrue(snapshot["runtime_links"]["agent_task_to_revision_task"])
+            self.assertTrue(snapshot["runtime_links"]["loop_to_context_bundle"])
+            self.assertTrue(any(node.get("type") == "agent_task" for node in snapshot["run_graph"]["nodes"]))
+            self.assertTrue(any(node.get("type") == "loop_run" for node in snapshot["run_graph"]["nodes"]))
+            self.assertTrue(any(edge.get("type") == "task_run" for edge in snapshot["run_graph"]["edges"]))
+            task_asset = storage.read_json(storage.root / dispatch["agent_task_path"])
+            self.assertFalse(generation_context_policy(task_asset)["eligible"])
+            self.assertEqual(storage.read_json(storage.root / loop["loop_run_path"])["metadata"]["project_id"], "agent-center-p")
 
     def test_strict_scheduler_requires_active_budget_policy(self):
         with tempfile.TemporaryDirectory() as tmp:

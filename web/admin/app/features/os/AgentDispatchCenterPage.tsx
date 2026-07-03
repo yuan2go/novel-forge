@@ -6,6 +6,7 @@ import { FeatureShell } from "../../shared/feature-shell";
 import type { AgentEventRow, AgentRunRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import {
+  dispatchAgentTaskFromIssue,
   dispatchAgentRun,
   loadAgentCenterSnapshot,
   loadAgentDispatchData,
@@ -31,6 +32,7 @@ export function AgentDispatchCenterPage() {
   const [workflowRunId, setWorkflowRunId] = useState("");
   const [workflowNodeId, setWorkflowNodeId] = useState("");
   const [expectedOutputs, setExpectedOutputs] = useState("");
+  const [reviewIssuePath, setReviewIssuePath] = useState("");
   const [schedulerResult, setSchedulerResult] = useState<Record<string, unknown> | null>(null);
   const [dispatchResult, setDispatchResult] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
@@ -80,6 +82,12 @@ export function AgentDispatchCenterPage() {
   const failedQueue = queue.filter((row) => ["dead_letter", "waiting_human", "retry_scheduled"].includes(String(row.status || "")));
   const runGraphNodes = ((agentCenter?.run_graph as Record<string, unknown> | undefined)?.nodes as Array<Record<string, unknown>> | undefined) || [];
   const runGraphEdges = ((agentCenter?.run_graph as Record<string, unknown> | undefined)?.edges as Array<Record<string, unknown>> | undefined) || [];
+  const agentTasks = agentCenter?.agent_tasks || [];
+  const loopRuns = agentCenter?.loop_runs || [];
+  const contextBundles = agentCenter?.context_bundles || [];
+  const reviewIssues = agentCenter?.review_issues || [];
+  const revisionTasks = agentCenter?.revision_tasks || [];
+  const runtimeLinks = agentCenter?.runtime_links || {};
 
   return (
     <FeatureShell title="Agent Dispatch Center" subtitle="让 prepared AgentRun 进入 queue，由 scheduler lease/claim/retry/recover 执行，并留下 checkpoint、gate、budget 和 trace 证据。" eyebrow="OS Runtime">
@@ -93,6 +101,7 @@ export function AgentDispatchCenterPage() {
         <Metric label="Acked" value={String(byStatus.acked ?? 0)} />
         <Metric label="Waiting" value={String(byStatus.waiting_human ?? 0)} />
         <Metric label="Lease" value={String(lease.status ?? "missing")} />
+        <Metric label="Agent Tasks" value={String(agentTasks.length)} />
         <Metric label="Health" value={String(agentCenter?.health_score ?? 0)} />
       </section>
 
@@ -178,6 +187,91 @@ export function AgentDispatchCenterPage() {
           <span className="badge">nodes {runGraphNodes.length}</span>
           <span className="badge">edges {runGraphEdges.length}</span>
           <span className="badge">budget {String((agentCenter?.budget_burn || {}).total_cost ?? 0)}</span>
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Agent Tasks" icon={<ListChecks size={18} />} />
+          <DataTable
+            emptyText="暂无 AgentTask"
+            columns={["Agent", "Operation", "状态", "Run", "Issue", "RevisionTask"]}
+            rows={agentTasks.slice(0, 60).map((row) => [
+              String(row.agent_type || "-"),
+              String(row.operation || "-"),
+              <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-task-status`}>{String(row.status || "-")}</span>,
+              pathCell(String(row.agent_run_path || "-"), `${String(row.path)}-task-run`),
+              pathCell(String(row.linked_review_issue_path || "-"), `${String(row.path)}-task-issue`),
+              pathCell(String(row.linked_revision_task_path || "-"), `${String(row.path)}-task-revision`)
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="Runtime Links" icon={<Activity size={18} />} />
+          <pre className="jsonPreview">{compactJson(runtimeLinks, 1800)}</pre>
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Loop / Context" icon={<Activity size={18} />} />
+          <DataTable
+            emptyText="暂无 LoopRun / ContextBundle"
+            columns={["Loop", "状态", "Stop", "Context", "Budget"]}
+            rows={loopRuns.slice(0, 40).map((row) => [
+              String(row.loop_type || row.operation || "-"),
+              <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-loop-status`}>{String(row.status || "-")}</span>,
+              String(row.stop_condition || "-"),
+              pathCell(String(row.context_bundle_path || "-"), `${String(row.path)}-loop-context`),
+              compactJson(row.budget_used || {}, 100)
+            ])}
+          />
+          <DataTable
+            emptyText="暂无 ContextBundle"
+            columns={["Bundle", "Task", "Target", "Token", "MKAOS"]}
+            rows={contextBundles.slice(0, 20).map((row) => [
+              pathCell(String(row.path || "-"), `${String(row.path)}-context`),
+              String(row.task_type || "-"),
+              `${String(row.target_asset_type || "-")} / ${String(row.target_asset_id || "-")}`,
+              String(row.token_estimate ?? "-"),
+              String(row.mkaos_pack_id || "-")
+            ])}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="Review Issues / Revision Tasks" icon={<ShieldCheck size={18} />} />
+          <div className="formGrid">
+            <input value={reviewIssuePath} onChange={(event) => setReviewIssuePath(event.target.value)} placeholder="review_issue path or issue_id" />
+            <button className="primaryButton" disabled={busy || !reviewIssuePath} onClick={() => runAction(() => dispatchAgentTaskFromIssue(reviewIssuePath), "ReviewIssue 已派发为 AgentTask", setDispatchResult)}>
+              <Play size={16} />Dispatch Issue
+            </button>
+          </div>
+          <DataTable
+            emptyText="暂无 ReviewIssue"
+            columns={["类型", "严重级别", "Blocking", "Target", "Action"]}
+            rows={reviewIssues.slice(0, 50).map((row) => [
+              String(row.issue_type || "-"),
+              <span className={statusClass(String(row.severity || ""))} key={`${String(row.path)}-issue-severity`}>{String(row.severity || "-")}</span>,
+              String(row.blocking ?? false),
+              String(row.target_asset_id || "-"),
+              row.path ? (
+                <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => dispatchAgentTaskFromIssue(String(row.path || "")), "ReviewIssue 已派发为 AgentTask", setDispatchResult)} key={`${String(row.path)}-dispatch-issue`}>
+                  Dispatch
+                </button>
+              ) : "-"
+            ])}
+          />
+          <DataTable
+            emptyText="暂无 RevisionTask"
+            columns={["Task", "Stage", "Issues", "Draft", "Path"]}
+            rows={revisionTasks.slice(0, 30).map((row) => [
+              String(row.task_id || "-"),
+              String(row.stage || row.status || "-"),
+              String(row.issue_count ?? 0),
+              pathCell(String(row.source_draft_path || "-"), `${String(row.path)}-revision-draft`),
+              pathCell(String(row.path || "-"), `${String(row.path)}-revision-path`)
+            ])}
+          />
         </div>
       </section>
 

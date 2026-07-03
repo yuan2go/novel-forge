@@ -609,6 +609,11 @@ class AgentContract(BaseAsset):
 
 
 @dataclass
+class AgentTask(BaseAsset):
+    type: str = "agent_task"
+
+
+@dataclass
 class AgentRun(BaseAsset):
     type: str = "agent_run"
 
@@ -1040,6 +1045,7 @@ SCHEMA_CLASSES = {
         ProjectWorkspaceState,
         ChangeImpactReport,
         AgentContract,
+        AgentTask,
         AgentRun,
         AgentCheckpoint,
         AgentEvent,

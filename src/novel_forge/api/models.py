@@ -545,6 +545,29 @@ class AgentDispatchRecoverRequest(BaseModel):
     reason: str = "manual recovery"
 
 
+class AgentTaskCreateRequest(BaseModel):
+    agent_type: str
+    operation: str
+    input_assets: list[str] = Field(default_factory=list)
+    output_targets: list[dict[str, Any]] = Field(default_factory=list)
+    status: str = "planned"
+    project_id: str = ""
+    workspace_path: str = ""
+    linked_loop_run_path: str = ""
+    linked_context_bundle_path: str = ""
+    linked_review_issue_path: str = ""
+    linked_revision_task_path: str = ""
+    evidence: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentTaskFromIssueRequest(BaseModel):
+    issue_ref: str
+    agent_type: str = "review"
+    operation: str = "fix_review_issue"
+    token_budget: int = 1200
+    priority: int = 40
+
+
 class EditorPatchRequest(BaseModel):
     draft_path: str
     instructions: str = ""
@@ -1323,6 +1346,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AgentSchedulerRequest": AgentSchedulerRequest,
         "AgentDispatchRequest": AgentDispatchRequest,
         "AgentDispatchRecoverRequest": AgentDispatchRecoverRequest,
+        "AgentTaskCreateRequest": AgentTaskCreateRequest,
+        "AgentTaskFromIssueRequest": AgentTaskFromIssueRequest,
         "EditorPatchRequest": EditorPatchRequest,
         "EditorPatchApplyRequest": EditorPatchApplyRequest,
         "DraftDiffReportRequest": DraftDiffReportRequest,

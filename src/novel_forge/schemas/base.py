@@ -404,6 +404,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "allowed_write_types",
         "quality_gates",
     ],
+    "agent_task": ["task_id", "agent_type", "operation", "status", "input_assets", "output_targets", "created_at"],
     "agent_run": [
         "run_id",
         "agent_type",

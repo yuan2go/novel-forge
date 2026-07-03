@@ -76,6 +76,7 @@ GENERATION_RAG_BLOCKED_TYPES = {
     "published_fiction_analysis_report",
     "classic_literary_analysis_report",
     "agent_run",
+    "agent_task",
     "agent_checkpoint",
     "agent_budget",
     "agent_gate",

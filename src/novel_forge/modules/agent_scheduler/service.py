@@ -13,13 +13,15 @@ from novel_forge.modules.agent_runs import (
     execute_agent_run_once,
     record_agent_checkpoint,
     record_agent_event,
+    start_agent_run,
     update_agent_run_status,
 )
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.operation_checkpoint import operation_checkpoint_schema
 from novel_forge.modules.production_context import filter_project_safe_references
+from novel_forge.modules.review_issue import review_issue_to_revision_task_candidate
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, release_scheduler_lease, scheduler_lease_status
-from novel_forge.schemas import AgentDispatchQueue, AgentRollbackReport, validate_common_fields
+from novel_forge.schemas import AgentDispatchQueue, AgentRollbackReport, AgentTask, RevisionTask, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 QUEUE_STATUSES = {"queued", "claimed", "running", "waiting_human", "acked", "retry_scheduled", "dead_letter", "cancelled"}
@@ -461,6 +463,125 @@ def list_agent_operation_contracts() -> list[dict[str, Any]]:
     return OPERATION_REGISTRY.list_contracts()
 
 
+def create_agent_task(
+    storage: LocalStorage,
+    *,
+    agent_type: str,
+    operation: str,
+    input_assets: list[str | Path] | None = None,
+    output_targets: list[dict[str, Any]] | None = None,
+    status: str = "planned",
+    project_id: str = "",
+    workspace_path: str = "",
+    linked_loop_run_path: str = "",
+    linked_context_bundle_path: str = "",
+    linked_review_issue_path: str = "",
+    linked_revision_task_path: str = "",
+    evidence: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    storage.ensure_layout()
+    inputs = [_asset_ref(storage, item) for item in input_assets or []]
+    task_id = make_id("agent_task", f"{agent_type}-{operation}-{project_id}-{utc_now()}")
+    content = {
+        "task_id": task_id,
+        "agent_type": str(agent_type or "agent"),
+        "operation": str(operation or "run"),
+        "status": str(status or "planned"),
+        "input_assets": inputs,
+        "output_targets": output_targets or [],
+        "linked_loop_run_path": linked_loop_run_path,
+        "linked_context_bundle_path": linked_context_bundle_path,
+        "linked_review_issue_path": linked_review_issue_path,
+        "linked_revision_task_path": linked_revision_task_path,
+        "agent_run_path": "",
+        "dispatch_queue_path": "",
+        "evidence": evidence or {},
+        "created_at": utc_now(),
+        "updated_at": utc_now(),
+    }
+    asset = AgentTask(
+        title=f"{content['agent_type']} task: {content['operation']}",
+        source=linked_review_issue_path or linked_revision_task_path or linked_loop_run_path or project_id,
+        tags=["agent-task", content["agent_type"], content["operation"], content["status"]],
+        content=content,
+        metadata={
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "agent_type": content["agent_type"],
+            "operation": content["operation"],
+            "asset_status": content["status"],
+            "use_in_generation_rag": False,
+        },
+        references=filter_project_safe_references(
+            storage,
+            project_id,
+            _dedupe([*[row.get("id", "") for row in inputs], *[row.get("path", "") for row in inputs], linked_loop_run_path, linked_context_bundle_path, linked_review_issue_path, linked_revision_task_path]),
+        ),
+    )
+    _ensure_valid(asset.to_dict())
+    path = storage.write_asset("runs", asset)
+    return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
+
+
+def dispatch_revision_task_from_issue(
+    storage: LocalStorage,
+    issue_ref: str | Path,
+    *,
+    agent_type: str = "review",
+    operation: str = "fix_review_issue",
+    token_budget: int = 1200,
+    priority: int = 40,
+) -> dict[str, Any]:
+    issue_path, issue = _find_review_issue_asset(storage, issue_ref)
+    content = issue.get("content", {}) if isinstance(issue.get("content", {}), dict) else {}
+    metadata = issue.get("metadata", {}) if isinstance(issue.get("metadata", {}), dict) else {}
+    project_id = str(metadata.get("project_id") or content.get("project_id") or "")
+    workspace_path = str(metadata.get("workspace_path") or content.get("workspace_path") or "")
+    issue_display_path = _display_path(storage.root, issue_path)
+    candidate = review_issue_to_revision_task_candidate({"content": content})
+    revision_task = _create_revision_task_from_review_issue(storage, issue_path=issue_path, issue=issue, candidate=candidate)
+    task = create_agent_task(
+        storage,
+        agent_type=agent_type,
+        operation=operation,
+        input_assets=[issue_display_path],
+        output_targets=[{**candidate, "revision_task_path": revision_task["path"]}],
+        status="queued",
+        project_id=project_id,
+        workspace_path=workspace_path,
+        linked_review_issue_path=issue_display_path,
+        linked_revision_task_path=revision_task["path"],
+        evidence={"dispatch_source": "agent_center", "revision_task_candidate": candidate},
+    )
+    run = start_agent_run(
+        storage,
+        agent_key=agent_type,
+        operation=operation,
+        input_assets=[issue_display_path],
+        status="prepared",
+        workspace_path=workspace_path or None,
+        token_budget=token_budget,
+        evidence={
+            "agent_task_path": task["path"],
+            "review_issue_path": issue_display_path,
+            "revision_task_path": revision_task["path"],
+            "revision_task_candidate": candidate,
+            "expected_output_assets": [],
+        },
+    )
+    queue = dispatch_agent_run(storage, agent_run_path=run["path"], expected_output_assets=[], priority=priority)
+    _update_agent_task_links(storage, task["path"], status="queued", agent_run_path=run["path"], dispatch_queue_path=queue["path"])
+    return {
+        "status": "queued",
+        "agent_task_path": task["path"],
+        "agent_run_path": run["path"],
+        "dispatch_queue_path": queue["path"],
+        "review_issue_path": issue_display_path,
+        "revision_task_path": revision_task["path"],
+        "revision_task_candidate": candidate,
+    }
+
+
 def agent_center_snapshot(
     storage: LocalStorage,
     *,
@@ -475,20 +596,41 @@ def agent_center_snapshot(
     """
 
     storage.ensure_layout()
-    queue = list_agent_dispatch_queue(storage, project_id=project_id, limit=limit)
     contracts = list_agent_operation_contracts()
+    tasks = _agent_center_assets(storage, "agent_task", project_id=project_id, limit=limit)
+    linked_run_paths = _task_linked_paths(tasks, "agent_run_path")
+    linked_queue_paths = _task_linked_paths(tasks, "dispatch_queue_path")
+    queue = list_agent_dispatch_queue(storage, project_id=project_id, limit=limit)
+    if project_id and linked_queue_paths:
+        linked_queue = [row for row in list_agent_dispatch_queue(storage, limit=limit) if str(row.get("path", "")) in linked_queue_paths]
+        queue = _merge_queue_rows(queue, linked_queue)
     runs = _agent_center_assets(storage, "agent_run", project_id=project_id, limit=limit)
+    if project_id and linked_run_paths:
+        runs = _merge_asset_rows(runs, _agent_center_assets_by_paths(storage, linked_run_paths, asset_type="agent_run"))
     events = _agent_center_assets(storage, "agent_event", project_id=project_id, limit=limit)
     checkpoints = _agent_center_assets(storage, "agent_checkpoint", project_id=project_id, limit=limit)
     gates = _agent_center_assets(storage, "agent_gate", project_id=project_id, limit=limit)
     budgets = _agent_center_assets(storage, "agent_budget", project_id=project_id, limit=limit)
     failures = _agent_center_assets(storage, "agent_failure_report", project_id=project_id, limit=limit)
     rollbacks = _agent_center_assets(storage, "agent_rollback_report", project_id=project_id, limit=limit)
+    handoffs = _agent_center_assets(storage, "agent_handoff", project_id=project_id, limit=limit)
+    loops = _agent_center_category_assets(storage, "loops", {"loop_run"}, project_id=project_id, limit=limit)
+    linked_context_paths = _task_linked_paths(loops, "context_bundle_path")
+    contexts = _agent_center_category_assets(storage, "contexts", {"context_bundle"}, project_id=project_id, limit=limit)
+    if project_id and linked_context_paths:
+        contexts = _merge_asset_rows(contexts, _agent_center_assets_by_paths(storage, linked_context_paths, asset_type="context_bundle"))
+    review_issues = _agent_center_category_assets(storage, "reviews", {"review_issue"}, project_id=project_id, limit=limit)
+    revision_tasks = _agent_center_category_assets(storage, "reviews", {"revision_task"}, project_id=project_id, limit=limit)
     by_status: dict[str, int] = {}
     for row in queue:
         by_status[str(row.get("status", ""))] = by_status.get(str(row.get("status", "")), 0) + 1
     blocked_queue = [row for row in queue if str(row.get("status", "")) in {"waiting_human", "dead_letter", "retry_scheduled", "cancelled"}]
+    task_rows = [_agent_task_row(row) for row in tasks]
     run_rows = [_agent_run_summary(row) for row in runs]
+    loop_rows = [_loop_run_row(row) for row in loops]
+    context_rows = [_context_bundle_row(row) for row in contexts]
+    review_issue_rows = [_review_issue_row(row) for row in review_issues]
+    revision_task_rows = [_revision_task_row(row) for row in revision_tasks]
     checkpoint_rows = [_agent_checkpoint_row(row) for row in checkpoints]
     gate_rows = [_agent_gate_row(row) for row in gates]
     budget_summary = _budget_coverage(budgets)
@@ -500,6 +642,9 @@ def agent_center_snapshot(
         _agent_center_check("checkpoints", bool(checkpoints), "Agent checkpoints exist", "run scheduler or execute_agent_run_once with checkpointing"),
         _agent_center_check("gates", bool(gates), "Agent gate evidence exists", "record permission/schema/budget gates"),
         _agent_center_check("budgets", bool(budgets), "Agent budget evidence exists", "attach token/cost budgets to AgentRun"),
+        _agent_center_check("context_bundles", bool(contexts), "ContextBundle evidence is visible to Agent Center", "route agent work through Context Builder"),
+        _agent_center_check("review_issues", bool(review_issues) or not revision_tasks, "ReviewIssue evidence is visible or no revision task exists", "persist issues before dispatching revision tasks"),
+        _agent_center_check("loop_runs", bool(loops) or not tasks, "LoopRun evidence is visible or no agent task requires a loop", "run Loop Kernel for governed generation/review work"),
         _agent_center_check("rollback", bool(rollbacks) or not failures, "Rollback evidence exists or no failures need rollback", "create rollback report for failed agent outputs"),
     ]
     status = "blocked" if blocked_queue or failures else "warning" if any(check["status"] == "warning" for check in readiness_checks) else "ready"
@@ -511,7 +656,13 @@ def agent_center_snapshot(
         "summary": {
             "health_score": health_score,
             "agent_run_count": len(runs),
+            "agent_task_count": len(tasks),
             "queue_count": len(queue),
+            "loop_run_count": len(loops),
+            "context_bundle_count": len(contexts),
+            "review_issue_count": len(review_issues),
+            "revision_task_count": len(revision_tasks),
+            "handoff_count": len(handoffs),
             "blocked_queue_count": len(blocked_queue),
             "checkpoint_count": len(checkpoints),
             "gate_count": len(gates),
@@ -522,7 +673,14 @@ def agent_center_snapshot(
             "queue_by_status": by_status,
         },
         "readiness_checks": readiness_checks,
-        "run_graph": _agent_run_graph(run_rows, queue),
+        "run_graph": _agent_run_graph(run_rows, queue, tasks=task_rows, loops=loop_rows),
+        "agent_tasks": task_rows[:120],
+        "loop_runs": loop_rows[:120],
+        "context_bundles": context_rows[:120],
+        "review_issues": review_issue_rows[:120],
+        "revision_tasks": revision_task_rows[:120],
+        "handoffs": [_agent_asset_compact(row) for row in handoffs[:120]],
+        "runtime_links": _agent_runtime_links(task_rows, run_rows, loop_rows, context_rows, review_issue_rows, revision_task_rows),
         "gate_timeline": gate_rows[:120],
         "checkpoints": checkpoint_rows[:120],
         "budget_burn": budget_summary,
@@ -530,7 +688,7 @@ def agent_center_snapshot(
         "dead_letter_queue": [row for row in blocked_queue if str(row.get("status", "")) == "dead_letter"][:80],
         "rollback_preview": rollback_rows[:80],
         "sla_duration": _agent_sla_duration_rows(run_rows),
-        "evidence_drawer": _agent_evidence_drawer(events, checkpoints, gates, budgets, failures, rollbacks)[:160],
+        "evidence_drawer": _agent_evidence_drawer(events, checkpoints, gates, budgets, failures, rollbacks, tasks, loops, contexts, review_issues, revision_tasks, handoffs)[:220],
         "operation_coverage": contracts,
         "blocked_queue": blocked_queue[:80],
         "runs": run_rows[:80],
@@ -1966,6 +2124,133 @@ def _input_paths(agent_run: dict[str, Any]) -> list[str]:
     return _dedupe(paths)
 
 
+def _asset_ref(storage: LocalStorage, item: str | Path) -> dict[str, Any]:
+    path = resolve_path(storage.root, item)
+    try:
+        data = storage.read_json(path)
+    except Exception:
+        return {"id": str(item), "type": "", "path": str(item), "title": ""}
+    if not isinstance(data, dict):
+        return {"id": str(item), "type": "", "path": str(item), "title": ""}
+    return {
+        "id": str(data.get("id", "")),
+        "type": str(data.get("type", "")),
+        "path": _display_path(storage.root, path),
+        "title": str(data.get("title") or data.get("name") or ""),
+    }
+
+
+def _find_review_issue_asset(storage: LocalStorage, issue_ref: str | Path) -> tuple[Path, dict[str, Any]]:
+    direct = resolve_path(storage.root, issue_ref)
+    if direct.exists():
+        data = storage.read_json(direct)
+        if isinstance(data, dict) and data.get("type") == "review_issue":
+            return direct, data
+    wanted = str(issue_ref)
+    for path in storage.list_json("reviews"):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != "review_issue":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        candidates = {
+            str(data.get("id", "")),
+            str(content.get("issue_id", "")),
+            _display_path(storage.root, path),
+        }
+        if wanted in candidates:
+            return path, data
+    raise FileNotFoundError(f"review_issue not found: {issue_ref}")
+
+
+def _create_revision_task_from_review_issue(
+    storage: LocalStorage,
+    *,
+    issue_path: Path,
+    issue: dict[str, Any],
+    candidate: dict[str, Any],
+) -> dict[str, Any]:
+    content = issue.get("content", {}) if isinstance(issue.get("content", {}), dict) else {}
+    metadata = issue.get("metadata", {}) if isinstance(issue.get("metadata", {}), dict) else {}
+    project_id = str(metadata.get("project_id") or content.get("project_id") or "")
+    workspace_path = str(metadata.get("workspace_path") or content.get("workspace_path") or "")
+    issue_id = str(content.get("issue_id") or issue.get("id") or "")
+    issue_display_path = _display_path(storage.root, issue_path)
+    now = utc_now()
+    task_id = make_id("revision_task", f"agent-center-{issue_id}-{now}")
+    review_path = str(content.get("review_report_path") or metadata.get("review_report_path") or issue_display_path)
+    draft_path = str(content.get("target_asset_path") or candidate.get("target_asset_path") or "")
+    task_content = {
+        "task_id": task_id,
+        "review_id": str(content.get("review_report_id") or ""),
+        "review_path": review_path,
+        "source_draft_id": str(content.get("target_asset_id") or candidate.get("target_asset_id") or ""),
+        "source_draft_path": draft_path,
+        "issue_indexes": [0],
+        "review_issue_ids": [issue_id],
+        "issues": [
+            {
+                "issue_id": issue_id,
+                "issue_type": content.get("issue_type", candidate.get("issue_type", "")),
+                "severity": content.get("severity", candidate.get("severity", "")),
+                "message": content.get("message", ""),
+                "fix_suggestion": content.get("fix_suggestion", candidate.get("instructions", "")),
+                "blocking": bool(content.get("blocking", candidate.get("blocking", False))),
+                "review_issue_path": issue_display_path,
+            }
+        ],
+        "status": "open",
+        "stage": "agent_center_dispatch",
+        "outputs": {"revision_task_candidate": candidate},
+        "created_at": now,
+        "updated_at": now,
+    }
+    asset = RevisionTask(
+        title=f"Revision task for {issue_id or issue.get('title', 'review issue')}",
+        source=issue_id,
+        tags=["revision", "task", "review-issue", "agent-center"],
+        content=task_content,
+        metadata={
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "source_review_issue_path": issue_display_path,
+            "source_draft_path": draft_path,
+            "agent_center_dispatch": True,
+        },
+        references=filter_project_safe_references(
+            storage,
+            project_id,
+            _dedupe([issue_id, issue_display_path, review_path, draft_path]),
+        ),
+    )
+    _ensure_valid(asset.to_dict())
+    path = storage.write_asset("reviews", asset)
+    return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
+
+
+def _update_agent_task_links(storage: LocalStorage, task_ref: str | Path, **updates: Any) -> dict[str, Any]:
+    path = resolve_path(storage.root, task_ref)
+    data = storage.read_json(path)
+    if not isinstance(data, dict) or data.get("type") != "agent_task":
+        raise ValueError("task_ref must point to an agent_task asset")
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    for key, value in updates.items():
+        if value is None:
+            continue
+        content[key] = _display_path(storage.root, resolve_path(storage.root, value)) if key.endswith("_path") and str(value).strip() else value
+    content["updated_at"] = utc_now()
+    if content.get("status"):
+        metadata["asset_status"] = content["status"]
+        tags = [str(tag) for tag in data.get("tags", []) if str(tag).strip()]
+        tags = [tag for tag in tags if tag not in QUEUE_STATUSES and tag not in {"planned", "running", "succeeded", "failed"}]
+        data["tags"] = _dedupe([*tags, str(content["status"])])
+    data["content"] = content
+    data["metadata"] = metadata
+    data["updated_at"] = utc_now()
+    _write_json_validated(storage, path, data)
+    return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
+
+
 def _primary_input_path(agent_run: dict[str, Any]) -> str:
     paths = _input_paths(agent_run)
     return paths[0] if paths else ""
@@ -2085,6 +2370,202 @@ def _agent_center_assets(storage: LocalStorage, asset_type: str, *, project_id: 
     return rows
 
 
+def _task_linked_paths(tasks: list[dict[str, Any]], field: str) -> set[str]:
+    paths: set[str] = set()
+    for task in tasks:
+        content = task.get("content", {}) if isinstance(task.get("content", {}), dict) else {}
+        value = str(content.get(field, "")).strip()
+        if value:
+            paths.add(value)
+    return paths
+
+
+def _agent_center_assets_by_paths(storage: LocalStorage, paths: set[str], *, asset_type: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in paths:
+        try:
+            path = resolve_path(storage.root, item)
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != asset_type:
+            continue
+        data["_path"] = _display_path(storage.root, path)
+        rows.append(data)
+    return rows
+
+
+def _merge_asset_rows(primary: list[dict[str, Any]], extra: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for row in [*primary, *extra]:
+        key = str(row.get("_path") or row.get("path") or row.get("id") or "")
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        rows.append(row)
+    return rows
+
+
+def _merge_queue_rows(primary: list[dict[str, Any]], extra: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for row in [*primary, *extra]:
+        key = str(row.get("path") or row.get("dispatch_id") or "")
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        rows.append(row)
+    return rows
+
+
+def _agent_center_category_assets(storage: LocalStorage, category: str, asset_types: set[str], *, project_id: str | None, limit: int) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in reversed(storage.list_json(category)):
+        data = _read_json_safe(storage, path)
+        if data.get("type") not in asset_types:
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if project_id and str(metadata.get("project_id") or content.get("project_id") or "") != project_id:
+            continue
+        data["_path"] = _display_path(storage.root, path)
+        rows.append(data)
+        if len(rows) >= max(1, int(limit or 300)):
+            break
+    return rows
+
+
+def _agent_task_row(row: dict[str, Any]) -> dict[str, Any]:
+    compact = _agent_asset_compact(row)
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    compact.update(
+        {
+            "task_id": content.get("task_id", row.get("id", "")),
+            "agent_type": content.get("agent_type", ""),
+            "operation": content.get("operation", ""),
+            "input_assets": content.get("input_assets", []) if isinstance(content.get("input_assets", []), list) else [],
+            "output_targets": content.get("output_targets", []) if isinstance(content.get("output_targets", []), list) else [],
+            "agent_run_path": content.get("agent_run_path", ""),
+            "dispatch_queue_path": content.get("dispatch_queue_path", ""),
+            "linked_loop_run_path": content.get("linked_loop_run_path", ""),
+            "linked_context_bundle_path": content.get("linked_context_bundle_path", ""),
+            "linked_review_issue_path": content.get("linked_review_issue_path", ""),
+            "linked_revision_task_path": content.get("linked_revision_task_path", ""),
+        }
+    )
+    return compact
+
+
+def _loop_run_row(row: dict[str, Any]) -> dict[str, Any]:
+    compact = _agent_asset_compact(row)
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    compact.update(
+        {
+            "loop_run_id": content.get("loop_run_id", row.get("id", "")),
+            "loop_type": content.get("loop_type", ""),
+            "stop_condition": content.get("stop_condition", ""),
+            "context_bundle_path": content.get("context_bundle_path", ""),
+            "report_path": content.get("report_path", ""),
+            "budget_used": content.get("budget_used", {}) if isinstance(content.get("budget_used", {}), dict) else {},
+        }
+    )
+    return compact
+
+
+def _context_bundle_row(row: dict[str, Any]) -> dict[str, Any]:
+    compact = _agent_asset_compact(row)
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    compact.update(
+        {
+            "context_bundle_id": content.get("context_bundle_id", row.get("id", "")),
+            "target_asset_id": content.get("target_asset_id", ""),
+            "target_asset_type": content.get("target_asset_type", ""),
+            "task_type": content.get("task_type", ""),
+            "token_estimate": content.get("token_estimate", 0),
+            "mkaos_pack_id": content.get("mkaos_pack_id", ""),
+        }
+    )
+    return compact
+
+
+def _review_issue_row(row: dict[str, Any]) -> dict[str, Any]:
+    compact = _agent_asset_compact(row)
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    compact.update(
+        {
+            "issue_id": content.get("issue_id", row.get("id", "")),
+            "issue_type": content.get("issue_type", ""),
+            "severity": content.get("severity", ""),
+            "blocking": bool(content.get("blocking")),
+            "target_asset_id": content.get("target_asset_id", ""),
+            "message": content.get("message", ""),
+            "revision_task_candidate": content.get("revision_task_candidate", {}) if isinstance(content.get("revision_task_candidate", {}), dict) else {},
+        }
+    )
+    return compact
+
+
+def _revision_task_row(row: dict[str, Any]) -> dict[str, Any]:
+    compact = _agent_asset_compact(row)
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    compact.update(
+        {
+            "task_id": content.get("task_id", row.get("id", "")),
+            "source_draft_id": content.get("source_draft_id", ""),
+            "source_draft_path": content.get("source_draft_path", ""),
+            "issue_count": len(content.get("issues", []) if isinstance(content.get("issues", []), list) else []),
+            "stage": content.get("stage", ""),
+        }
+    )
+    return compact
+
+
+def _agent_runtime_links(
+    tasks: list[dict[str, Any]],
+    runs: list[dict[str, Any]],
+    loops: list[dict[str, Any]],
+    contexts: list[dict[str, Any]],
+    review_issues: list[dict[str, Any]],
+    revision_tasks: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "agent_task_to_run": [
+            {"agent_task_path": task.get("path", ""), "agent_run_path": task.get("agent_run_path", "")}
+            for task in tasks
+            if task.get("agent_run_path")
+        ],
+        "agent_task_to_review_issue": [
+            {"agent_task_path": task.get("path", ""), "review_issue_path": task.get("linked_review_issue_path", "")}
+            for task in tasks
+            if task.get("linked_review_issue_path")
+        ],
+        "agent_task_to_revision_task": [
+            {"agent_task_path": task.get("path", ""), "revision_task_path": task.get("linked_revision_task_path", "")}
+            for task in tasks
+            if task.get("linked_revision_task_path")
+        ],
+        "loop_to_context_bundle": [
+            {"loop_run_path": loop.get("path", ""), "context_bundle_path": loop.get("context_bundle_path", "")}
+            for loop in loops
+            if loop.get("context_bundle_path")
+        ],
+        "issue_to_revision_task_candidates": [
+            {"review_issue_path": issue.get("path", ""), "candidate": issue.get("revision_task_candidate", {})}
+            for issue in review_issues
+            if issue.get("revision_task_candidate")
+        ],
+        "counts": {
+            "agent_tasks": len(tasks),
+            "agent_runs": len(runs),
+            "loop_runs": len(loops),
+            "context_bundles": len(contexts),
+            "review_issues": len(review_issues),
+            "revision_tasks": len(revision_tasks),
+        },
+    }
+
+
 def _agent_asset_compact(row: dict[str, Any]) -> dict[str, Any]:
     content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
     metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
@@ -2147,13 +2628,33 @@ def _agent_gate_row(row: dict[str, Any]) -> dict[str, Any]:
     return compact
 
 
-def _agent_run_graph(runs: list[dict[str, Any]], queue: list[dict[str, Any]]) -> dict[str, Any]:
+def _agent_run_graph(
+    runs: list[dict[str, Any]],
+    queue: list[dict[str, Any]],
+    *,
+    tasks: list[dict[str, Any]] | None = None,
+    loops: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    tasks = tasks or []
+    loops = loops or []
     nodes = []
+    for row in tasks:
+        nodes.append(
+            {
+                "id": row.get("task_id") or row.get("path"),
+                "path": row.get("path", ""),
+                "type": "agent_task",
+                "agent_type": row.get("agent_type", ""),
+                "operation": row.get("operation", ""),
+                "status": row.get("status", ""),
+            }
+        )
     for row in runs:
         nodes.append(
             {
                 "id": row.get("run_id") or row.get("path"),
                 "path": row.get("path", ""),
+                "type": "agent_run",
                 "agent_type": row.get("agent_key", ""),
                 "operation": row.get("operation", ""),
                 "status": row.get("status", ""),
@@ -2162,8 +2663,29 @@ def _agent_run_graph(runs: list[dict[str, Any]], queue: list[dict[str, Any]]) ->
                 "cost_estimate": row.get("cost_estimate", 0),
             }
         )
+    for row in loops:
+        nodes.append(
+            {
+                "id": row.get("loop_run_id") or row.get("path"),
+                "path": row.get("path", ""),
+                "type": "loop_run",
+                "operation": row.get("loop_type", ""),
+                "status": row.get("status", ""),
+                "stop_condition": row.get("stop_condition", ""),
+            }
+        )
     run_paths = {str(row.get("path", "")): str(row.get("run_id") or row.get("path", "")) for row in runs}
+    task_ids = {str(row.get("path", "")): str(row.get("task_id") or row.get("path", "")) for row in tasks}
+    loop_ids = {str(row.get("path", "")): str(row.get("loop_run_id") or row.get("path", "")) for row in loops}
     edges = []
+    for row in tasks:
+        task_id = str(row.get("task_id") or row.get("path", ""))
+        agent_path = str(row.get("agent_run_path", ""))
+        if task_id and agent_path in run_paths:
+            edges.append({"from": task_id, "to": run_paths[agent_path], "type": "task_run", "status": row.get("status", "")})
+        loop_path = str(row.get("linked_loop_run_path", ""))
+        if task_id and loop_path in loop_ids:
+            edges.append({"from": loop_ids[loop_path], "to": task_id, "type": "loop_task", "status": row.get("status", "")})
     for row in queue:
         agent_path = str(row.get("agent_run_path", ""))
         if agent_path in run_paths:
@@ -2175,6 +2697,10 @@ def _agent_run_graph(runs: list[dict[str, Any]], queue: list[dict[str, Any]]) ->
                     "status": row.get("status", ""),
                 }
             )
+        for task in tasks:
+            if str(task.get("dispatch_queue_path", "")) == str(row.get("path", "")):
+                task_id = task_ids.get(str(task.get("path", "")), str(task.get("task_id") or task.get("path", "")))
+                edges.append({"from": task_id, "to": str(row.get("dispatch_id") or row.get("path", "")), "type": "task_dispatch", "status": row.get("status", "")})
     return {"nodes": nodes, "edges": edges}
 
 
@@ -2204,9 +2730,10 @@ def _agent_evidence_drawer(
     budgets: list[dict[str, Any]],
     failures: list[dict[str, Any]],
     rollbacks: list[dict[str, Any]],
+    *extra_sources: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    for source in [events, checkpoints, gates, budgets, failures, rollbacks]:
+    for source in [events, checkpoints, gates, budgets, failures, rollbacks, *extra_sources]:
         for row in source:
             compact = _agent_asset_compact(row)
             compact["summary"] = compact.get("title") or compact.get("operation") or compact.get("id")
@@ -2381,6 +2908,12 @@ def _write_json_validated(storage: LocalStorage, path: Path, data: dict[str, Any
     if errors:
         raise ValueError("; ".join(errors))
     storage.write_json(path, data)
+
+
+def _ensure_valid(data: dict[str, Any]) -> None:
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
 
 
 def _display_path(root: Path, path: Path) -> str:

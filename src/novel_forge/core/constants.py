@@ -210,6 +210,7 @@ ASSET_DIR_BY_TYPE = {
     "batch_task_item": "runs",
     "change_impact_report": "continuity",
     "agent_contract": "runs",
+    "agent_task": "runs",
     "agent_run": "runs",
     "agent_checkpoint": "runs",
     "agent_event": "runs",
