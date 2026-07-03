@@ -20,6 +20,15 @@ Completed a focused P1 governance pass for five requested areas:
 
 Added a unified graph builder and conflict checker across Canon, Character, Arc, Foreshadowing, WorldRule, and Fact assets. Conflict checks produce ReviewIssue candidates and can persist them through the existing ReviewIssue service.
 
+The graph now includes deterministic reasoning:
+
+- inferred relationship edges for identity, alias, arc, payoff, foreshadowing, and WorldRule constraints;
+- identity clusters across Canon and Character state assets;
+- graph-level lifecycle, alias, foreshadowing, arc-payoff, and weak-rule issues;
+- path explanation queries through `/product/canon-graph/paths`;
+- direct reasoning checks through `/product/canon-graph/reason`;
+- schema-compatible `canon_graph_snapshot` persistence with violations and event graph projection.
+
 Current checks include:
 
 - forbidden canon alias;
@@ -85,7 +94,7 @@ Attempted but interrupted:
 
 | Risk | Priority | Next Step |
 |---|---|---|
-| Canon conflict semantics are rule/string based, not full causal inference. | P1 | Add Canon Graph semantic scorer and chapter-state comparison. |
+| Canon conflict semantics are deterministic and field-backed, not full causal temporal inference. | P1 | Add chapter-event extraction and optional approved semantic scorer behind provider hard-stop. |
 | Main-chain LoopRun does not yet call provider-backed review/revision by default. | P1 | Add policy-controlled provider execution behind hard-stop and fallback approval. |
 | UI typed editor still stores JSON-backed assets. | P2 | Add list-row editors for entities, clues, and issues. |
 | Provider fallback approval has no expiry enforcement yet. | P2 | Enforce `expires_at` in `resolve_provider_fallback`. |

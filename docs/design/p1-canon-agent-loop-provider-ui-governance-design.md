@@ -22,6 +22,8 @@ Public functions:
 
 - `build_canon_graph`
 - `query_canon_graph`
+- `query_canon_graph_paths`
+- `reason_canon_graph`
 - `check_canon_graph_conflicts`
 - `persist_canon_graph_issues`
 
@@ -29,10 +31,20 @@ API:
 
 - `GET /product/canon-graph/query`
 - `GET /product/canon-graph/snapshot`
+- `POST /product/canon-graph/reason`
+- `POST /product/canon-graph/paths`
 - `POST /product/canon-graph/check`
 - `POST /product/canon-graph/issues`
 
 Conflict output is normalized as ReviewIssue candidates and persisted through `persist_issue_candidates`. This keeps blocking behavior aligned with existing publish gate and release package gates.
+
+The graph now includes a deterministic reasoning layer:
+
+- `same_identity`, `alias_of`, `forbids_alias`, `participates_in_arc`, `requires_payoff`, `forbids_expansion`, `points_to_truth`, `supports_arc_payoff`, `constrains`, and `forbids_term` edges.
+- Identity clusters across Canon and Character assets.
+- Graph-level reasoning issues for lifecycle state conflicts, forbidden alias reuse, orphan/overdue foreshadowing, uncovered arc payoffs, and weak WorldRule definitions.
+- BFS path explanations for Canon/Character/Arc/Foreshadowing/WorldRule relationships.
+- `canon_graph_snapshot` persistence remains schema-compatible through `entities`, `relationships`, `state_machines`, `lifecycle_threads`, `event_graph`, and `violations`.
 
 ## Agent Operations
 
@@ -118,5 +130,5 @@ New and updated tests:
 - No graph database migration.
 - No replacement of Novel KG.
 - No autonomous provider fallback.
-- No full semantic inference engine for canon contradictions.
+- No graph database migration or model-assisted semantic inference engine. Current reasoning is deterministic and evidence-backed.
 - No full visual graph editor in this slice.

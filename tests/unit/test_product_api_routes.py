@@ -61,6 +61,8 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/agents/center",
                 "/product/canon-graph/query",
                 "/product/canon-graph/snapshot",
+                "/product/canon-graph/reason",
+                "/product/canon-graph/paths",
                 "/product/canon-graph/check",
                 "/product/canon-graph/issues",
                 "/product/assets/detail",

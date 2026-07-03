@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Query, Request
 
 from novel_forge.api.routers.context import ProductRouterContext
-from novel_forge.modules.canon_graph import build_canon_graph, check_canon_graph_conflicts, persist_canon_graph_issues, query_canon_graph
+from novel_forge.modules.canon_graph import build_canon_graph, check_canon_graph_conflicts, persist_canon_graph_issues, query_canon_graph, query_canon_graph_paths, reason_canon_graph
 from novel_forge.storage.local import LocalStorage
 
 
@@ -35,6 +35,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.get("/product/canon-graph/snapshot")
     def canon_graph_snapshot(project_id: str | None = None, workspace_path: str | None = None, persist: bool = False) -> dict[str, Any]:
         return build_canon_graph(LocalStorage(app_settings.root), project_id=project_id, workspace_path=workspace_path, persist=persist)
+
+    @router.post("/product/canon-graph/reason")
+    async def canon_graph_reason(request: Request) -> dict[str, Any]:
+        return reason_canon_graph(LocalStorage(app_settings.root), await request.json())
+
+    @router.post("/product/canon-graph/paths")
+    async def canon_graph_paths(request: Request) -> dict[str, Any]:
+        return query_canon_graph_paths(LocalStorage(app_settings.root), await request.json())
 
     @router.post("/product/canon-graph/check")
     async def canon_graph_check(request: Request) -> dict[str, Any]:

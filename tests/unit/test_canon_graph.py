@@ -5,9 +5,9 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.canon_graph import build_canon_graph, check_canon_graph_conflicts, persist_canon_graph_issues, query_canon_graph
+from novel_forge.modules.canon_graph import build_canon_graph, check_canon_graph_conflicts, persist_canon_graph_issues, query_canon_graph, query_canon_graph_paths, reason_canon_graph
 from novel_forge.modules.longform_stability import create_arc_plan, create_canon_database
-from novel_forge.schemas import DraftChapter, ForeshadowingGraph, WorldBible
+from novel_forge.schemas import CharacterStateLedger, DraftChapter, ForeshadowingGraph, WorldBible
 from novel_forge.storage.local import LocalStorage
 
 
@@ -25,8 +25,34 @@ class CanonGraphTests(unittest.TestCase):
             self.assertTrue(graph["summary"]["coverage"]["arc"])
             self.assertTrue(graph["summary"]["coverage"]["foreshadowing"])
             self.assertTrue(graph["summary"]["coverage"]["world_rule"])
+            self.assertIn("same_identity", graph["summary"]["edge_relation_counts"])
             self.assertGreaterEqual(query["match_count"], 1)
             self.assertEqual(query["matches"][0]["canonical_name"], "阿照")
+
+    def test_reasoning_snapshot_and_paths_explain_graph_conflicts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            _seed_governance_assets(storage, project_id="canon-p")
+
+            graph = build_canon_graph(storage, project_id="canon-p", persist=True)
+            reason = reason_canon_graph(storage, {"project_id": "canon-p", "current_chapter": 4})
+            persisted_reason = reason_canon_graph(storage, {"project_id": "canon-p", "current_chapter": 4, "persist_snapshot": True})
+            paths = query_canon_graph_paths(storage, {"project_id": "canon-p", "source": "竹筹", "target": "旧税契卷", "max_depth": 3})
+            snapshot = storage.read_json(storage.root / graph["path"])
+            reason_snapshot = storage.read_json(storage.root / persisted_reason["snapshot_path"])
+
+            self.assertEqual(snapshot["type"], "canon_graph_snapshot")
+            for key in ["entities", "relationships", "state_machines", "lifecycle_threads", "event_graph", "violations"]:
+                self.assertIn(key, snapshot["content"])
+                self.assertIn(key, reason_snapshot["content"])
+            self.assertEqual(reason["status"], "blocked")
+            self.assertEqual(reason["reasoning"]["current_chapter"], 4)
+            self.assertEqual(len(reason_snapshot["content"]["violations"]), reason["reasoning"]["issue_count"])
+            self.assertTrue(any(issue["reason_type"] == "entity_status_conflict" for issue in reason["reasoning"]["issues"]))
+            self.assertTrue(any(item["obligation_type"] == "arc_required_payoff" for item in reason["reasoning"]["obligations"]))
+            self.assertGreaterEqual(paths["path_count"], 1)
+            self.assertTrue(any(edge["relation"] == "supports_arc_payoff" for edge in paths["paths"][0]["edges"]))
 
     def test_canon_graph_conflicts_convert_to_review_issues(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -82,6 +108,19 @@ def _seed_governance_assets(storage: LocalStorage, *, project_id: str) -> None:
         required_payoffs=["解释竹筹来源"],
         forbidden_expansion=["无关宗门线"],
         project_id=project_id,
+    )
+    storage.write_asset(
+        "continuity",
+        CharacterStateLedger(
+            title="Character state ledger",
+            content={
+                "ledger_id": "ledger-unit",
+                "chapter_no": 2,
+                "characters": [{"character_id": "azhao", "canonical_name": "阿照", "status": "dead", "debt_ledger": {}}],
+                "created_at": "2026-07-03T00:00:00Z",
+            },
+            metadata={"project_id": project_id},
+        ),
     )
     storage.write_asset(
         "continuity",

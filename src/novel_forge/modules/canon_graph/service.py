@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections import deque
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,20 @@ CANON_GRAPH_ASSET_TYPES = {
 }
 
 NODE_TYPES = {"canon_entity", "character", "arc", "foreshadowing", "world_rule", "fact"}
+ACTIVE_STATUSES = {"active", "alive", "canon", "open", "running", "生效", "存活", "活跃"}
+INACTIVE_STATUSES = {"dead", "deceased", "inactive", "retired", "死亡", "失效", "dropped", "closed"}
+REASONING_RELATIONS = {
+    "same_identity",
+    "alias_of",
+    "forbids_alias",
+    "participates_in_arc",
+    "requires_payoff",
+    "forbids_expansion",
+    "points_to_truth",
+    "supports_arc_payoff",
+    "constrains",
+    "forbids_term",
+}
 
 
 def build_canon_graph(
@@ -52,14 +67,27 @@ def build_canon_graph(
         nodes.extend(asset_nodes)
         edges.extend(asset_edges)
         references.append(_display_path(storage.root, path))
+    graph_nodes = _dedupe_nodes(nodes)[:limit]
+    graph_edges = _dedupe_edges(edges)
+    inferred_edges = _infer_reasoning_edges(graph_nodes, graph_edges)
+    graph_edges = _dedupe_edges([*graph_edges, *inferred_edges])
+    reasoning = _reason_over_graph(
+        graph_nodes,
+        graph_edges,
+        current_chapter=_positive_int_or_none(None),
+        project_id=project_id or "",
+        workspace_path=workspace_path or "",
+    )
     graph = {
         "status": "ready",
         "graph_id": make_id("canon_graph", project_id or workspace_path or "global"),
         "project_id": project_id or "",
         "workspace_path": workspace_path or "",
-        "nodes": _dedupe_nodes(nodes)[:limit],
-        "edges": _dedupe_edges(edges),
-        "summary": _summary(nodes, edges),
+        "nodes": graph_nodes,
+        "edges": graph_edges,
+        "adjacency": _adjacency(graph_edges),
+        "reasoning": reasoning,
+        "summary": _summary(graph_nodes, graph_edges, reasoning=reasoning),
         "references": _dedupe(references),
         "built_at": utc_now(),
     }
@@ -68,6 +96,66 @@ def build_canon_graph(
         graph["path"] = result["path"]
         graph["asset"] = result["asset"]
     return graph
+
+
+def reason_canon_graph(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    current_chapter = _positive_int_or_none(payload.get("current_chapter") or payload.get("chapter"))
+    persist_snapshot = bool(payload.get("persist_snapshot", False))
+    graph = build_canon_graph(
+        storage,
+        project_id=str(payload.get("project_id") or "") or None,
+        workspace_path=str(payload.get("workspace_path") or "") or None,
+        limit=max(100, min(2000, int(payload.get("limit", 1000) or 1000))),
+    )
+    reasoning = _reason_over_graph(
+        graph["nodes"],
+        graph["edges"],
+        current_chapter=current_chapter,
+        project_id=graph.get("project_id", ""),
+        workspace_path=graph.get("workspace_path", ""),
+    )
+    graph["reasoning"] = reasoning
+    graph["summary"] = _summary(graph["nodes"], graph["edges"], reasoning=reasoning)
+    snapshot_path = ""
+    if persist_snapshot:
+        snapshot = _write_snapshot(storage, graph)
+        snapshot_path = snapshot["path"]
+    return {
+        "status": "blocked" if reasoning["blocking_issue_count"] else "warning" if reasoning["issue_count"] else "passed",
+        "graph_id": graph["graph_id"],
+        "project_id": graph.get("project_id", ""),
+        "workspace_path": graph.get("workspace_path", ""),
+        "reasoning": reasoning,
+        "summary": graph["summary"],
+        "snapshot_path": snapshot_path,
+        "built_at": graph["built_at"],
+    }
+
+
+def query_canon_graph_paths(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    graph = build_canon_graph(
+        storage,
+        project_id=str(payload.get("project_id") or "") or None,
+        workspace_path=str(payload.get("workspace_path") or "") or None,
+        limit=max(100, min(2000, int(payload.get("limit", 1000) or 1000))),
+    )
+    source_ref = str(payload.get("source") or payload.get("source_ref") or "").strip()
+    target_ref = str(payload.get("target") or payload.get("target_ref") or "").strip()
+    max_depth = max(1, min(8, int(payload.get("max_depth", 4) or 4)))
+    relation_filter = {str(item).strip() for item in payload.get("relations", []) if str(item).strip()} if isinstance(payload.get("relations", []), list) else set()
+    source_ids = _resolve_node_refs(graph["nodes"], source_ref)
+    target_ids = _resolve_node_refs(graph["nodes"], target_ref)
+    paths = _shortest_paths(graph["nodes"], graph["edges"], source_ids=source_ids, target_ids=target_ids, max_depth=max_depth, relation_filter=relation_filter)
+    return {
+        "status": "ready",
+        "source": source_ref,
+        "target": target_ref,
+        "source_node_ids": source_ids,
+        "target_node_ids": target_ids,
+        "paths": paths,
+        "path_count": len(paths),
+        "graph_summary": graph["summary"],
+    }
 
 
 def query_canon_graph(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -89,7 +177,7 @@ def query_canon_graph(storage: LocalStorage, payload: dict[str, Any]) -> dict[st
         aliases = " ".join(str(item) for item in node.get("aliases", []) if str(item).strip()).lower() if isinstance(node.get("aliases", []), list) else ""
         if query and query not in haystack and query not in aliases:
             continue
-        rows.append({**node, "matched_query": query})
+        rows.append({**node, "matched_query": query, "degree": _node_degree(graph["edges"], str(node.get("id", "")))})
         if len(rows) >= limit:
             break
     return {
@@ -122,7 +210,7 @@ def check_canon_graph_conflicts(storage: LocalStorage, payload: dict[str, Any]) 
         artifact_text = artifact_text or _asset_text(asset.to_dict())
         evidence_refs.append(_display_path(storage.root, path))
     graph = build_canon_graph(storage, project_id=project_id or None, workspace_path=workspace_path or None)
-    conflicts = _conflicts_from_graph(
+    artifact_conflicts = _conflicts_from_graph(
         graph,
         artifact_text=artifact_text,
         target_asset_id=target_asset_id or "unknown-target",
@@ -132,6 +220,22 @@ def check_canon_graph_conflicts(storage: LocalStorage, payload: dict[str, Any]) 
         workspace_path=workspace_path,
         evidence_refs=evidence_refs,
     )
+    graph_reasoning = _reason_over_graph(
+        graph["nodes"],
+        graph["edges"],
+        current_chapter=_positive_int_or_none(payload.get("current_chapter") or payload.get("chapter")),
+        project_id=project_id or "local-system",
+        workspace_path=workspace_path,
+    )
+    graph_conflicts = _reasoning_issues_to_candidates(
+        graph_reasoning.get("issues", []),
+        target_asset_id=target_asset_id or "unknown-target",
+        target_asset_type=target_asset_type or "artifact",
+        target_asset_path=target_path,
+        project_id=project_id or "local-system",
+        workspace_path=workspace_path,
+    )
+    conflicts = _dedupe_issues([*artifact_conflicts, *graph_conflicts])
     severity_rank = {"critical": 4, "high": 3, "medium": 2, "low": 1, "info": 0}
     max_severity = max((severity_rank.get(str(item.get("severity", "medium")), 2) for item in conflicts), default=0)
     return {
@@ -139,7 +243,10 @@ def check_canon_graph_conflicts(storage: LocalStorage, payload: dict[str, Any]) 
         "blocking": any(item.get("blocking") for item in conflicts),
         "max_severity": next((key for key, value in severity_rank.items() if value == max_severity), "info"),
         "conflicts": conflicts,
+        "artifact_conflicts": artifact_conflicts,
+        "graph_conflicts": graph_conflicts,
         "issue_candidates": conflicts,
+        "reasoning": graph_reasoning,
         "graph_summary": graph["summary"],
         "checked_asset_types": sorted({str(node.get("source_asset_type", "")) for node in graph["nodes"] if str(node.get("source_asset_type", "")).strip()}),
         "references": graph["references"],
@@ -419,6 +526,259 @@ def _conflicts_from_graph(
     return _dedupe_issues(conflicts)
 
 
+def _infer_reasoning_edges(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    inferred: list[dict[str, Any]] = []
+    identity_index: dict[str, list[dict[str, Any]]] = {}
+    for node in nodes:
+        for key in _identity_keys(node):
+            identity_index.setdefault(key, []).append(node)
+    for rows in identity_index.values():
+        for index, source in enumerate(rows):
+            for target in rows[index + 1 :]:
+                if source.get("id") != target.get("id"):
+                    inferred.append(_edge(str(source["id"]), str(target["id"]), "same_identity", "canonical identity key"))
+
+    canonical_index = {_normal_key(node.get("canonical_name") or node.get("name")): node for node in nodes if str(node.get("canonical_name") or node.get("name") or "").strip()}
+    for node in nodes:
+        for alias in _strings(node.get("aliases")):
+            target = canonical_index.get(_normal_key(alias))
+            if target and target.get("id") != node.get("id"):
+                inferred.append(_edge(str(node["id"]), str(target["id"]), "alias_of", f"alias {alias} matches canonical node"))
+        for alias in _strings(node.get("forbidden_aliases")):
+            inferred.append(_edge(str(node["id"]), f"literal:forbidden_alias:{_slug(alias)}", "forbids_alias", alias))
+
+    character_nodes = [node for node in nodes if node.get("node_type") == "character"]
+    arc_nodes = [node for node in nodes if node.get("node_type") == "arc"]
+    clue_nodes = [node for node in nodes if node.get("node_type") == "foreshadowing"]
+    rule_nodes = [node for node in nodes if node.get("node_type") == "world_rule"]
+
+    for arc in arc_nodes:
+        arc_text = _node_text(arc, keys=["name", "arc_question", "protagonist_goal", "villain_goal"])
+        for character in character_nodes:
+            if _node_mentions(arc_text, character):
+                inferred.append(_edge(str(character["id"]), str(arc["id"]), "participates_in_arc", "character mentioned in arc goal/question"))
+        for payoff in _strings(arc.get("required_payoffs")):
+            inferred.append(_edge(str(arc["id"]), f"literal:payoff:{_slug(payoff)}", "requires_payoff", payoff))
+            for clue in clue_nodes:
+                clue_text = _node_text(clue, keys=["name", "target_truth"])
+                if _semantic_overlap(payoff, clue_text):
+                    inferred.append(_edge(str(clue["id"]), str(arc["id"]), "supports_arc_payoff", payoff))
+        for term in _strings(arc.get("forbidden_expansion")):
+            inferred.append(_edge(str(arc["id"]), f"literal:forbidden_expansion:{_slug(term)}", "forbids_expansion", term))
+
+    for rule in rule_nodes:
+        rule_text = _node_text(rule, keys=["name", "description"])
+        for term in _strings(rule.get("forbidden_terms")):
+            inferred.append(_edge(str(rule["id"]), f"literal:forbidden_term:{_slug(term)}", "forbids_term", term))
+        for target in [*character_nodes, *arc_nodes, *clue_nodes]:
+            if _node_mentions(rule_text, target) or any(_semantic_overlap(term, _node_text(target, keys=["name", "arc_question", "target_truth"])) for term in _strings(rule.get("required_terms"))):
+                inferred.append(_edge(str(rule["id"]), str(target["id"]), "constrains", "world rule mentions target"))
+
+    return _dedupe_edges(inferred)
+
+
+def _reason_over_graph(
+    nodes: list[dict[str, Any]],
+    edges: list[dict[str, Any]],
+    *,
+    current_chapter: int | None,
+    project_id: str,
+    workspace_path: str,
+) -> dict[str, Any]:
+    issues: list[dict[str, Any]] = []
+    obligations: list[dict[str, Any]] = []
+    inferences: list[dict[str, Any]] = []
+    identity_clusters = _identity_clusters(nodes)
+    for cluster in identity_clusters:
+        statuses = {str(node.get("status") or "").lower() for node in cluster["nodes"] if str(node.get("status") or "").strip()}
+        if statuses & ACTIVE_STATUSES and statuses & INACTIVE_STATUSES:
+            issues.append(
+                _graph_issue(
+                    "entity_status_conflict",
+                    "high",
+                    f"identity cluster has contradictory lifecycle statuses: {', '.join(sorted(statuses))}",
+                    "Resolve Canon/Character state before generation or create an explicit canon patch.",
+                    nodes=cluster["nodes"],
+                    blocking=True,
+                    issue_type="canon_conflict",
+                    project_id=project_id,
+                    workspace_path=workspace_path,
+                )
+            )
+        if len(cluster["nodes"]) > 1:
+            inferences.append({"inference": "same_identity_cluster", "identity_key": cluster["identity_key"], "node_ids": [node["id"] for node in cluster["nodes"]]})
+
+    canonical_names = {_normal_key(node.get("canonical_name") or node.get("name")): node for node in nodes if str(node.get("canonical_name") or node.get("name") or "").strip()}
+    for node in nodes:
+        for alias in _strings(node.get("forbidden_aliases")):
+            other = canonical_names.get(_normal_key(alias))
+            if other and other.get("id") != node.get("id"):
+                issues.append(
+                    _graph_issue(
+                        "forbidden_alias_reused_as_canon",
+                        "high",
+                        f"forbidden alias is also registered as a canonical node: {alias}",
+                        "Rename one identity or update forbidden_aliases with an approved canon patch.",
+                        nodes=[node, other],
+                        blocking=True,
+                        issue_type="canon_conflict",
+                        project_id=project_id,
+                        workspace_path=workspace_path,
+                    )
+                )
+
+    clue_nodes = [node for node in nodes if node.get("node_type") == "foreshadowing"]
+    for clue in clue_nodes:
+        clue_name = str(clue.get("name") or clue.get("entity_id") or "")
+        if not str(clue.get("target_truth") or "").strip():
+            issues.append(
+                _graph_issue(
+                    "foreshadowing_orphan",
+                    "high",
+                    f"foreshadowing clue has no target truth: {clue_name}",
+                    "Bind the clue to a target_truth or close it before publication.",
+                    nodes=[clue],
+                    blocking=True,
+                    issue_type="foreshadowing_drop",
+                    project_id=project_id,
+                    workspace_path=workspace_path,
+                )
+            )
+        planned = _positive_int_or_none(clue.get("planned_payoff_chapter"))
+        status = str(clue.get("status") or "").lower()
+        if current_chapter and planned and planned < current_chapter and status in ACTIVE_STATUSES:
+            issues.append(
+                _graph_issue(
+                    "foreshadowing_overdue",
+                    "high",
+                    f"foreshadowing clue is overdue at chapter {current_chapter}: {clue_name}",
+                    "Pay off, defer, or explicitly close the clue.",
+                    nodes=[clue],
+                    blocking=True,
+                    issue_type="foreshadowing_drop",
+                    project_id=project_id,
+                    workspace_path=workspace_path,
+                )
+            )
+
+    clue_texts = [_node_text(clue, keys=["name", "target_truth"]) for clue in clue_nodes]
+    for arc in [node for node in nodes if node.get("node_type") == "arc"]:
+        for payoff in _strings(arc.get("required_payoffs")):
+            covered = any(_semantic_overlap(payoff, text) for text in clue_texts)
+            obligations.append(
+                {
+                    "obligation_type": "arc_required_payoff",
+                    "status": "covered" if covered else "open",
+                    "arc_id": arc.get("id", ""),
+                    "payoff": payoff,
+                    "evidence_refs": [arc.get("source_asset_path", "")],
+                }
+            )
+            if not covered:
+                issues.append(
+                    _graph_issue(
+                        "arc_payoff_uncovered",
+                        "medium",
+                        f"arc required payoff has no supporting foreshadowing edge: {payoff}",
+                        "Add a foreshadowing clue/target_truth or update the arc plan.",
+                        nodes=[arc],
+                        blocking=False,
+                        issue_type="plot_logic_gap",
+                        project_id=project_id,
+                        workspace_path=workspace_path,
+                    )
+                )
+
+    for rule in [node for node in nodes if node.get("node_type") == "world_rule"]:
+        if not _strings(rule.get("forbidden_terms")) and not _strings(rule.get("required_terms")):
+            issues.append(
+                _graph_issue(
+                    "weak_world_rule",
+                    "low",
+                    f"world rule has no machine-checkable terms: {rule.get('name')}",
+                    "Add forbidden_terms or required_terms so production gates can reason over the rule.",
+                    nodes=[rule],
+                    blocking=False,
+                    issue_type="canon_conflict",
+                    project_id=project_id,
+                    workspace_path=workspace_path,
+                )
+            )
+
+    issues = _dedupe_graph_issues(issues)
+    return {
+        "reasoning_version": "canon-graph-reasoner-v1",
+        "current_chapter": current_chapter,
+        "issue_count": len(issues),
+        "blocking_issue_count": len([issue for issue in issues if issue.get("blocking")]),
+        "issues": issues,
+        "obligations": obligations,
+        "inferences": inferences,
+        "edge_relation_counts": _edge_relation_counts(edges),
+        "identity_cluster_count": len(identity_clusters),
+        "identity_clusters": [{key: value for key, value in cluster.items() if key != "nodes"} for cluster in identity_clusters],
+        "created_at": utc_now(),
+    }
+
+
+def _reasoning_issues_to_candidates(
+    issues: list[dict[str, Any]],
+    *,
+    target_asset_id: str,
+    target_asset_type: str,
+    target_asset_path: str,
+    project_id: str,
+    workspace_path: str,
+) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for issue in issues:
+        severity = str(issue.get("severity") or "medium")
+        candidate = _issue_candidate(
+            issue_type=str(issue.get("issue_type") or "canon_conflict"),
+            severity=severity,
+            message=str(issue.get("message") or ""),
+            fix_suggestion=str(issue.get("fix_suggestion") or ""),
+            target_asset_id=target_asset_id,
+            target_asset_type=target_asset_type,
+            target_asset_path=target_asset_path,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            evidence_refs=_strings(issue.get("evidence_refs")),
+            source_issue=issue,
+        )
+        candidate["blocking"] = bool(issue.get("blocking", candidate.get("blocking", False)))
+        candidates.append(candidate)
+    return candidates
+
+
+def _graph_issue(
+    reason_type: str,
+    severity: str,
+    message: str,
+    fix_suggestion: str,
+    *,
+    nodes: list[dict[str, Any]],
+    blocking: bool,
+    issue_type: str,
+    project_id: str,
+    workspace_path: str,
+) -> dict[str, Any]:
+    return {
+        "reason_type": reason_type,
+        "issue_type": issue_type,
+        "severity": severity,
+        "blocking": blocking,
+        "message": message,
+        "fix_suggestion": fix_suggestion,
+        "node_ids": [str(node.get("id", "")) for node in nodes if str(node.get("id", "")).strip()],
+        "node_types": sorted({str(node.get("node_type", "")) for node in nodes if str(node.get("node_type", "")).strip()}),
+        "evidence_refs": _dedupe([str(node.get("source_asset_path", "")) for node in nodes]),
+        "project_id": project_id,
+        "workspace_path": workspace_path,
+        "source_system": "canon_graph.reasoner",
+    }
+
+
 def _issue_candidate(
     *,
     issue_type: str,
@@ -452,6 +812,7 @@ def _issue_candidate(
 
 
 def _write_snapshot(storage: LocalStorage, graph: dict[str, Any]) -> dict[str, Any]:
+    projection = _schema_projection(graph)
     asset = CanonGraphSnapshot(
         title="Unified Canon Graph snapshot",
         tags=["canon-graph", "snapshot", "unified-canon"],
@@ -459,8 +820,16 @@ def _write_snapshot(storage: LocalStorage, graph: dict[str, Any]) -> dict[str, A
             "snapshot_id": graph["graph_id"],
             "project_id": graph["project_id"],
             "workspace_path": graph["workspace_path"],
+            "entities": projection["entities"],
+            "relationships": projection["relationships"],
+            "state_machines": projection["state_machines"],
+            "lifecycle_threads": projection["lifecycle_threads"],
+            "event_graph": projection["event_graph"],
+            "violations": projection["violations"],
             "nodes": graph["nodes"],
             "edges": graph["edges"],
+            "adjacency": graph.get("adjacency", {}),
+            "reasoning": graph.get("reasoning", {}),
             "summary": graph["summary"],
             "built_at": graph["built_at"],
             "created_at": utc_now(),
@@ -550,6 +919,207 @@ def _strings(value: Any) -> list[str]:
     return []
 
 
+def _identity_keys(node: dict[str, Any]) -> list[str]:
+    keys = []
+    for value in [node.get("entity_id"), node.get("canonical_name"), node.get("name"), *_strings(node.get("aliases"))]:
+        normalized = _normal_key(value)
+        if normalized:
+            keys.append(normalized)
+    return _dedupe(keys)
+
+
+def _identity_clusters(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    index: dict[str, list[dict[str, Any]]] = {}
+    for node in nodes:
+        if node.get("node_type") not in {"character", "canon_entity"}:
+            continue
+        for key in _identity_keys(node):
+            index.setdefault(key, []).append(node)
+    clusters: list[dict[str, Any]] = []
+    seen_sets: set[tuple[str, ...]] = set()
+    for key, rows in index.items():
+        ids = tuple(sorted(str(row.get("id", "")) for row in rows))
+        if len(rows) <= 1 or ids in seen_sets:
+            continue
+        seen_sets.add(ids)
+        clusters.append(
+            {
+                "identity_key": key,
+                "node_ids": list(ids),
+                "canonical_names": _dedupe([str(row.get("canonical_name") or row.get("name") or "") for row in rows]),
+                "statuses": _dedupe([str(row.get("status") or "") for row in rows]),
+                "nodes": rows,
+            }
+        )
+    return clusters
+
+
+def _normal_key(value: Any) -> str:
+    return "".join(ch.lower() for ch in str(value or "").strip() if not ch.isspace())
+
+
+def _node_text(node: dict[str, Any], *, keys: list[str]) -> str:
+    values: list[str] = []
+    for key in keys:
+        value = node.get(key)
+        if isinstance(value, list):
+            values.extend(str(item) for item in value)
+        elif value is not None:
+            values.append(str(value))
+    return " ".join(item for item in values if item.strip())
+
+
+def _node_mentions(text: str, node: dict[str, Any]) -> bool:
+    if not text:
+        return False
+    for value in [node.get("canonical_name"), node.get("name"), *_strings(node.get("aliases"))]:
+        item = str(value or "").strip()
+        if item and item in text:
+            return True
+    return False
+
+
+def _semantic_overlap(left: str, right: str) -> bool:
+    left_norm = _normal_key(left)
+    right_norm = _normal_key(right)
+    if not left_norm or not right_norm:
+        return False
+    if left_norm in right_norm or right_norm in left_norm:
+        return True
+    left_tokens = _semantic_tokens(left)
+    right_tokens = _semantic_tokens(right)
+    return len(left_tokens & right_tokens) >= 1
+
+
+def _semantic_tokens(value: str) -> set[str]:
+    raw = str(value or "").replace("，", " ").replace("。", " ").replace("、", " ").replace("；", " ")
+    tokens = {item.strip().lower() for item in raw.split() if len(item.strip()) >= 2}
+    compact = _normal_key(value)
+    tokens.update({compact[index : index + 2] for index in range(max(0, len(compact) - 1)) if compact[index : index + 2].strip()})
+    return tokens
+
+
+def _adjacency(edges: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    rows: dict[str, list[dict[str, Any]]] = {}
+    for edge in edges:
+        source = str(edge.get("source", ""))
+        if not source:
+            continue
+        rows.setdefault(source, []).append({"target": edge.get("target", ""), "relation": edge.get("relation", ""), "evidence": edge.get("evidence", "")})
+    return rows
+
+
+def _node_degree(edges: list[dict[str, Any]], node_id: str) -> dict[str, int]:
+    outgoing = len([edge for edge in edges if str(edge.get("source", "")) == node_id])
+    incoming = len([edge for edge in edges if str(edge.get("target", "")) == node_id])
+    return {"incoming": incoming, "outgoing": outgoing, "total": incoming + outgoing}
+
+
+def _edge_relation_counts(edges: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for edge in edges:
+        relation = str(edge.get("relation") or "")
+        counts[relation] = counts.get(relation, 0) + 1
+    return counts
+
+
+def _resolve_node_refs(nodes: list[dict[str, Any]], ref: str) -> list[str]:
+    if not ref:
+        return []
+    wanted = _normal_key(ref)
+    matches = []
+    for node in nodes:
+        values = [node.get("id"), node.get("entity_id"), node.get("canonical_name"), node.get("name"), node.get("source_asset_path"), *_strings(node.get("aliases"))]
+        if any(_normal_key(value) == wanted or (wanted and wanted in _normal_key(value)) for value in values):
+            matches.append(str(node.get("id", "")))
+    return _dedupe(matches)
+
+
+def _shortest_paths(
+    nodes: list[dict[str, Any]],
+    edges: list[dict[str, Any]],
+    *,
+    source_ids: list[str],
+    target_ids: list[str],
+    max_depth: int,
+    relation_filter: set[str],
+) -> list[dict[str, Any]]:
+    node_index = {str(node.get("id", "")): node for node in nodes}
+    edge_index: dict[str, list[dict[str, Any]]] = {}
+    for edge in edges:
+        relation = str(edge.get("relation") or "")
+        if relation_filter and relation not in relation_filter:
+            continue
+        source = str(edge.get("source", ""))
+        target = str(edge.get("target", ""))
+        if not source or not target:
+            continue
+        edge_index.setdefault(source, []).append(edge)
+        edge_index.setdefault(target, []).append({**edge, "source": target, "target": source, "reversed": True})
+    targets = set(target_ids)
+    paths: list[dict[str, Any]] = []
+    for source_id in source_ids:
+        queue: deque[tuple[str, list[dict[str, Any]]]] = deque([(source_id, [])])
+        seen = {source_id}
+        while queue and len(paths) < 20:
+            current, path_edges = queue.popleft()
+            if len(path_edges) > max_depth:
+                continue
+            if current in targets and path_edges:
+                node_ids = [source_id, *[str(edge.get("target", "")) for edge in path_edges]]
+                paths.append(
+                    {
+                        "node_ids": node_ids,
+                        "nodes": [_path_node(node_index, node_id) for node_id in node_ids],
+                        "edges": path_edges,
+                        "length": len(path_edges),
+                    }
+                )
+                continue
+            if len(path_edges) >= max_depth:
+                continue
+            for edge in edge_index.get(current, []):
+                target = str(edge.get("target", ""))
+                if not target or target in seen:
+                    continue
+                seen.add(target)
+                queue.append((target, [*path_edges, edge]))
+    return paths
+
+
+def _path_node(node_index: dict[str, dict[str, Any]], node_id: str) -> dict[str, Any]:
+    node = node_index.get(node_id, {})
+    return {"id": node_id, "node_type": node.get("node_type", "literal"), "name": node.get("canonical_name") or node.get("name") or node_id}
+
+
+def _dedupe_graph_issues(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for issue in issues:
+        key = (str(issue.get("reason_type", "")), str(issue.get("message", "")), ",".join(_strings(issue.get("node_ids"))))
+        if key not in seen:
+            seen.add(key)
+            result.append(issue)
+    return result
+
+
+def _schema_projection(graph: dict[str, Any]) -> dict[str, Any]:
+    nodes = graph.get("nodes", []) if isinstance(graph.get("nodes", []), list) else []
+    edges = graph.get("edges", []) if isinstance(graph.get("edges", []), list) else []
+    reasoning = graph.get("reasoning", {}) if isinstance(graph.get("reasoning", {}), dict) else {}
+    return {
+        "entities": [node for node in nodes if node.get("node_type") in {"canon_entity", "character", "fact"}],
+        "relationships": edges,
+        "state_machines": {
+            "identity_clusters": reasoning.get("identity_clusters", []),
+            "edge_relation_counts": reasoning.get("edge_relation_counts", {}),
+        },
+        "lifecycle_threads": [node for node in nodes if node.get("node_type") == "foreshadowing"],
+        "event_graph": [edge for edge in edges if edge.get("relation") in REASONING_RELATIONS],
+        "violations": reasoning.get("issues", []),
+    }
+
+
 def _term_hit(term: str, text: str) -> bool:
     term = term.strip()
     if not term:
@@ -558,6 +1128,14 @@ def _term_hit(term: str, text: str) -> bool:
         return True
     compact = term.replace("不要", "").replace("禁止", "").replace("不许", "").strip()
     return bool(compact and compact in text)
+
+
+def _positive_int_or_none(value: Any) -> int | None:
+    try:
+        integer = int(value)
+    except (TypeError, ValueError):
+        return None
+    return integer if integer > 0 else None
 
 
 def _slug(value: Any) -> str:
@@ -617,9 +1195,10 @@ def _dedupe(values: list[str]) -> list[str]:
     return result
 
 
-def _summary(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> dict[str, Any]:
+def _summary(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], *, reasoning: dict[str, Any] | None = None) -> dict[str, Any]:
     by_type: dict[str, int] = {}
     by_source: dict[str, int] = {}
+    reasoning_payload = reasoning if isinstance(reasoning, dict) else {}
     for node in nodes:
         by_type[str(node.get("node_type", ""))] = by_type.get(str(node.get("node_type", "")), 0) + 1
         by_source[str(node.get("source_asset_type", ""))] = by_source.get(str(node.get("source_asset_type", "")), 0) + 1
@@ -628,6 +1207,10 @@ def _summary(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> dict[s
         "edge_count": len(edges),
         "by_node_type": by_type,
         "by_source_asset_type": by_source,
+        "edge_relation_counts": _edge_relation_counts(edges),
+        "reasoning_issue_count": int(reasoning_payload.get("issue_count", 0) or 0),
+        "reasoning_blocking_issue_count": int(reasoning_payload.get("blocking_issue_count", 0) or 0),
+        "reasoning_obligation_count": len(reasoning_payload.get("obligations", []) if isinstance(reasoning_payload.get("obligations", []), list) else []),
         "coverage": {node_type: by_type.get(node_type, 0) > 0 for node_type in sorted(NODE_TYPES)},
     }
 
