@@ -117,6 +117,32 @@ describe("Novel Forge admin feature architecture", () => {
     }
   });
 
+  it("has routed Novel OS editable consoles for longform governance", () => {
+    const navigation = read("app/shared/navigation.tsx");
+    for (const token of ["agent_center", "canon_console", "character_console", "arc_console", "foreshadowing_console", "review_issue_console", "longform_recap", "loop_runs", "publish_gate_console", "feedback_console"]) {
+      assert.match(navigation, new RegExp(token));
+    }
+    for (const path of [
+      "app/features/os/EditableAssetConsolePage.tsx",
+      "app/agent-center/page.tsx",
+      "app/canon-console/page.tsx",
+      "app/character-console/page.tsx",
+      "app/arc-console/page.tsx",
+      "app/foreshadowing-console/page.tsx",
+      "app/review-issues/page.tsx",
+      "app/longform-recap/page.tsx",
+      "app/loop-runs/page.tsx",
+      "app/publish-gate/page.tsx",
+      "app/feedback-console/page.tsx"
+    ]) {
+      assert.equal(existsSync(join(root, path)), true, `${path} should exist`);
+    }
+    const editable = read("app/features/os/EditableAssetConsolePage.tsx");
+    for (const token of ["saveAssetContent", "createCreativeAsset", "Asset List", "Editable Content", "Lineage"]) {
+      assert.match(editable, new RegExp(token));
+    }
+  });
+
   it("exposes asset graph, publishing calendar, version registry, and impact visualization in source", () => {
     const assets = read("app/features/assets/AssetsCenterPage.tsx");
     assert.match(assets, /loadAssetGraph/);

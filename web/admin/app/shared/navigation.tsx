@@ -36,7 +36,15 @@ export type NavItemKey =
   | "projects"
   | "os_console"
   | "workflow_runtime"
+  | "agent_center"
   | "agent_dispatch"
+  | "canon_console"
+  | "character_console"
+  | "arc_console"
+  | "foreshadowing_console"
+  | "review_issue_console"
+  | "longform_recap"
+  | "loop_runs"
   | "novel_kg_workbench"
   | "trace_timeline"
   | "cost_dashboard"
@@ -66,7 +74,9 @@ export type NavItemKey =
   | "review_center"
   | "originality_center"
   | "publishing_center"
+  | "publish_gate_console"
   | "reader_feedback"
+  | "feedback_console"
   | "production_control"
   | "change_impact"
   | "model_evaluation"
@@ -105,8 +115,16 @@ export const navGroups: NavGroup[] = [
     items: [
       { key: "os_console", label: "OS 控制台", description: "Novel Operating System 总览", href: "/os", icon: <Activity size={17} /> },
       { key: "workflow_runtime", label: "Workflow Runtime", description: "DAG、ready queue 和 resume 控制台", href: "/workflow-runtime", icon: <Workflow size={17} /> },
+      { key: "agent_center", label: "Agent Center", description: "AgentTask、Loop、Issue 和运行证据", href: "/agent-center", icon: <ListChecks size={17} /> },
       { key: "agent_dispatch", label: "Agent Dispatch", description: "Agent queue、lease、recover 和 contract", href: "/agent-dispatch", icon: <ListChecks size={17} /> },
+      { key: "canon_console", label: "Canon Console", description: "正典、事实账本和设定规则", href: "/canon-console", icon: <BookOpenCheck size={17} /> },
+      { key: "character_console", label: "Character Console", description: "人物卡和人物状态账本", href: "/character-console", icon: <BookMarked size={17} /> },
+      { key: "arc_console", label: "Arc Console", description: "长篇主线、阶段弧线和章节状态", href: "/arc-console", icon: <GitPullRequest size={17} /> },
+      { key: "foreshadowing_console", label: "Foreshadowing", description: "伏笔线程、伏笔图谱和回收状态", href: "/foreshadowing-console", icon: <Network size={17} /> },
       { key: "novel_kg_workbench", label: "Novel KG Workbench", description: "实体、关系、路径、影响和 KG gate", href: "/novel-kg", icon: <Network size={17} /> },
+      { key: "review_issue_console", label: "Review Issues", description: "阻断问题、修订任务和 rework", href: "/review-issues", icon: <ShieldCheck size={17} /> },
+      { key: "longform_recap", label: "Longform Recap", description: "长篇复盘报告和治理写回", href: "/longform-recap", icon: <BookOpenCheck size={17} /> },
+      { key: "loop_runs", label: "Loop Runs", description: "LoopRun、step、checkpoint 和 report", href: "/loop-runs", icon: <Route size={17} /> },
       { key: "trace_timeline", label: "Trace Timeline", description: "统一 trace/span 时间线", href: "/trace-timeline", icon: <Route size={17} /> },
       { key: "cost_dashboard", label: "Cost Dashboard", description: "成本账本、模型调用和预算告警", href: "/cost-dashboard", icon: <CreditCard size={17} /> },
       { key: "invalidation_map", label: "Invalidation Map", description: "变更影响、KG dirty 和下游失效", href: "/invalidation", icon: <GitPullRequest size={17} /> },
@@ -153,7 +171,9 @@ export const navGroups: NavGroup[] = [
       { key: "review_center", label: "审稿中心", description: "审稿和修订闭环", href: "/review", icon: <CheckCircle2 size={17} /> },
       { key: "originality_center", label: "原创性保护", description: "原创风险与质量门禁", href: "/quality?tab=originality", icon: <ShieldCheck size={17} /> },
       { key: "publishing_center", label: "发布中心", description: "发布前门禁和 release package", href: "/quality?tab=publishing", icon: <Send size={17} /> },
-      { key: "reader_feedback", label: "读者反馈", description: "评论导入和策略回写", href: "/feedback", icon: <MessageSquareText size={17} /> }
+      { key: "publish_gate_console", label: "Publish Gate", description: "发布门禁和 release package 控制台", href: "/publish-gate", icon: <Send size={17} /> },
+      { key: "reader_feedback", label: "读者反馈", description: "评论导入和策略回写", href: "/feedback", icon: <MessageSquareText size={17} /> },
+      { key: "feedback_console", label: "Feedback Console", description: "读者反馈、编辑反馈和回写证据", href: "/feedback-console", icon: <MessageSquareText size={17} /> }
     ]
   },
   {

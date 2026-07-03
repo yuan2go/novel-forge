@@ -94,6 +94,13 @@
 | `npm --prefix web/admin test` | Agent Center UI 扩展后的 admin 架构测试。 | 7 pass, 1 Playwright smoke skipped |
 | `npm --prefix web/admin run build` | Agent Center UI 扩展后的 Next.js production build。 | OK |
 
+## Phase 9
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `npm --prefix web/admin test` | Novel OS 可编辑控制台 route、导航和可复用编辑组件架构测试。 | 8 pass, 1 Playwright smoke skipped |
+| `npm --prefix web/admin run build` | 新增 Canon/Character/Arc/Foreshadowing/ReviewIssue/Recap/Loop/Agent/Publish/Feedback 控制台 route 的 Next.js production build。 | OK，44 routes generated |
+
 ## 待最终全量运行
 
 最终 Phase 12 必须重新运行：
