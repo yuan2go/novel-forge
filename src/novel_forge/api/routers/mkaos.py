@@ -48,6 +48,30 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/mkaos/query/knowledge")
+    @router.post("/api/mkaos/query/knowledge")
+    def query_knowledge(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return mkaos_service.query_knowledge(storage(), payload)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/convert/assets")
+    @router.post("/api/mkaos/convert/assets")
+    def convert_assets(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return mkaos_service.convert_assets(storage(), payload)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/convert/rules")
+    @router.post("/api/mkaos/convert/rules")
+    def convert_rules(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return mkaos_service.convert_rules(storage(), payload)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/sources")
     @router.post("/api/mkaos/sources")
     def create_source(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:

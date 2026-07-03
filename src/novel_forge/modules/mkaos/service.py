@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, envelope_response
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.schemas import (
     KnowledgeCard,
@@ -134,6 +136,7 @@ def import_source_document(storage: LocalStorage, payload: dict[str, Any]) -> di
     source_uri = str(payload.get("source_uri") or payload.get("source") or title).strip()
     project_id = str(payload.get("project_id") or "local-system").strip()
     workspace_path = str(payload.get("workspace_path") or "").strip()
+    os_envelope = _mkaos_envelope(storage, payload, operation="mkaos.source_import", asset_type="source_document", project_id=project_id, task_type="source_import")
     rights = payload.get("rights") if isinstance(payload.get("rights"), dict) else {}
     rights = {
         "authorization": str(rights.get("authorization") or payload.get("rights_authorization") or "unknown"),
@@ -163,6 +166,7 @@ def import_source_document(storage: LocalStorage, payload: dict[str, Any]) -> di
             "source_kind": source_kind,
             "content_hash": content_hash,
             "run_metadata": run_metadata("mkaos.import_source", SourceDocument(title=title, source=source_uri, content={"text": text[:200]})),
+            **envelope_asset_metadata(os_envelope),
         },
     )
     _ensure_valid(asset.to_dict())
@@ -181,6 +185,7 @@ def rebuild_source_chunks(storage: LocalStorage, source_ref: str | Path) -> dict
     written: list[dict[str, Any]] = []
     project_id = str(source.get("metadata", {}).get("project_id") or "local-system")
     workspace_path = str(source.get("metadata", {}).get("workspace_path") or "")
+    source_envelope_meta = envelope_asset_metadata(source.get("metadata", {}).get("os_envelope") if isinstance(source.get("metadata", {}), dict) else {})
     source_rel = _display_path(storage.root, source_path)
     for index, chunk_text in enumerate(chunk_texts):
         content_hash = _hash_text(chunk_text)
@@ -209,6 +214,7 @@ def rebuild_source_chunks(storage: LocalStorage, source_ref: str | Path) -> dict
                 "content_hash": content_hash,
                 "source_asset_path": source_rel,
                 "evidence_layer_only": True,
+                **source_envelope_meta,
             },
             references=[str(source.get("id", "")), source_rel],
         )
@@ -296,6 +302,7 @@ def create_knowledge_card(storage: LocalStorage, payload: dict[str, Any]) -> dic
     core = str(payload.get("core_explanation") or payload.get("explanation") or "abstract reusable knowledge principle").strip()
     project_id = str(payload.get("project_id") or "local-system").strip()
     workspace_path = str(payload.get("workspace_path") or "").strip()
+    os_envelope = _mkaos_envelope(storage, payload, operation="mkaos.knowledge_create", asset_type="knowledge_card", project_id=project_id, task_type="knowledge_create")
     status = str(payload.get("status") or "active").strip()
     risk_level = str(payload.get("risk_level") or "low").strip()
     content = {
@@ -334,6 +341,7 @@ def create_knowledge_card(storage: LocalStorage, payload: dict[str, Any]) -> dic
             "source_chunk_ids": source_chunk_ids,
             "copyright_boundary": "abstract structure knowledge card derived from source evidence; no raw source expression for prose",
             "run_metadata": run_metadata("mkaos.create_knowledge_card", KnowledgeCard(title=concept_name, content={"principles": [core]})),
+            **envelope_asset_metadata(os_envelope),
         },
         references=filter_project_safe_references(storage, project_id, source_chunk_ids),
     )
@@ -346,6 +354,8 @@ def update_knowledge_card(storage: LocalStorage, knowledge_ref: str | Path, patc
     path, data = _find_asset(storage, knowledge_ref, asset_type="knowledge_card", categories=["knowledge"])
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    project_id = str(patch.get("project_id") or metadata.get("project_id") or "local-system")
+    os_envelope = _mkaos_envelope(storage, patch, operation="mkaos.knowledge_update", asset_type="knowledge_card", project_id=project_id, task_type="knowledge_update")
     for key, value in patch.items():
         if key in {"metadata", "content"}:
             continue
@@ -356,6 +366,7 @@ def update_knowledge_card(storage: LocalStorage, knowledge_ref: str | Path, patc
         metadata.update(patch["metadata"])
     if isinstance(patch.get("content"), dict):
         content.update(patch["content"])
+    metadata.update(envelope_asset_metadata(os_envelope))
     data["content"] = content
     data["metadata"] = metadata
     data["updated_at"] = utc_now()
@@ -376,6 +387,8 @@ def list_knowledge_cards(storage: LocalStorage, *, project_id: str | None = None
 def create_usage_binding(storage: LocalStorage, knowledge_ref: str | Path, payload: dict[str, Any]) -> dict[str, Any]:
     _, knowledge = _find_asset(storage, knowledge_ref, asset_type="knowledge_card", categories=["knowledge"])
     flow = _valid_flow(str(payload.get("flow") or ""))
+    project_id = str(knowledge.get("metadata", {}).get("project_id") or "local-system")
+    os_envelope = _mkaos_envelope(storage, payload, operation="mkaos.usage_binding_create", asset_type="knowledge_usage_binding", project_id=project_id, task_type=flow)
     content = {
         "knowledge_id": str(knowledge.get("id", "")),
         "flow": flow,
@@ -404,6 +417,7 @@ def create_usage_binding(storage: LocalStorage, knowledge_ref: str | Path, paylo
             "enabled": content["enabled"],
             "risk_level": content["risk_level"],
             "run_metadata": run_metadata("mkaos.create_usage_binding", KnowledgeUsageBinding(title=f"{knowledge.get('id')} {flow}", content=content)),
+            **envelope_asset_metadata(os_envelope),
         },
         references=_dedupe([str(knowledge.get("id", "")), content["review_rule_id"], content["template_id"]]),
     )
@@ -415,11 +429,15 @@ def create_usage_binding(storage: LocalStorage, knowledge_ref: str | Path, paylo
 def update_usage_binding(storage: LocalStorage, binding_ref: str | Path, patch: dict[str, Any]) -> dict[str, Any]:
     path, data = _find_asset(storage, binding_ref, asset_type="knowledge_usage_binding", categories=["knowledge"])
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    project_id = str(patch.get("project_id") or metadata.get("project_id") or "local-system")
+    os_envelope = _mkaos_envelope(storage, patch, operation="mkaos.usage_binding_update", asset_type="knowledge_usage_binding", project_id=project_id, task_type=str(patch.get("flow") or content.get("flow") or "usage_binding"))
     for key, value in patch.items():
         if key == "flow":
             value = _valid_flow(str(value))
         content[key] = value
     data["content"] = content
+    data["metadata"] = {**metadata, **envelope_asset_metadata(os_envelope)}
     data["updated_at"] = utc_now()
     errors = validate_common_fields(data)
     if errors:
@@ -459,6 +477,8 @@ def create_rule_card(storage: LocalStorage, payload: dict[str, Any]) -> dict[str
     if not rule_name:
         raise ValueError("rule_name must not be empty")
     applicable_flows = [_valid_flow(item) for item in _strings(payload.get("applicable_flows"))] or ["review"]
+    project_id = str(payload.get("project_id") or "local-system")
+    os_envelope = _mkaos_envelope(storage, payload, operation="mkaos.rule_create", asset_type="rule_card", project_id=project_id, task_type="rule_create")
     content = {
         "rule_name": rule_name,
         "rule_type": str(payload.get("rule_type") or "review").strip(),
@@ -477,12 +497,13 @@ def create_rule_card(storage: LocalStorage, payload: dict[str, Any]) -> dict[str
         tags=["mkaos", "rule-card", content["rule_type"], content["severity"]],
         content=content,
         metadata={
-            "project_id": str(payload.get("project_id") or "local-system"),
+            "project_id": project_id,
             "workspace_path": str(payload.get("workspace_path") or ""),
             "mkaos": True,
             "use_in_generation_rag": False,
             "risk_level": content["severity"],
             "run_metadata": run_metadata("mkaos.create_rule_card", RuleCard(title=rule_name, content=content)),
+            **envelope_asset_metadata(os_envelope),
         },
     )
     _ensure_valid(asset.to_dict())
@@ -504,6 +525,8 @@ def create_template_card(storage: LocalStorage, payload: dict[str, Any]) -> dict
     if not template_name:
         raise ValueError("template_name must not be empty")
     applicable_flows = [_valid_flow(item) for item in _strings(payload.get("applicable_flows"))] if payload.get("applicable_flows") else ["outline", "chapter_outline"]
+    project_id = str(payload.get("project_id") or "local-system")
+    os_envelope = _mkaos_envelope(storage, payload, operation="mkaos.template_create", asset_type="template_card", project_id=project_id, task_type="template_create")
     content = {
         "template_name": template_name,
         "template_type": str(payload.get("template_type") or "story_mechanism").strip(),
@@ -520,12 +543,13 @@ def create_template_card(storage: LocalStorage, payload: dict[str, Any]) -> dict
         tags=["mkaos", "template-card", content["template_type"]],
         content=content,
         metadata={
-            "project_id": str(payload.get("project_id") or "local-system"),
+            "project_id": project_id,
             "workspace_path": str(payload.get("workspace_path") or ""),
             "mkaos": True,
             "use_in_generation_rag": False,
             "copyright_boundary": "abstract reusable template only; no protected expression",
             "run_metadata": run_metadata("mkaos.create_template_card", TemplateCard(title=template_name, content=content)),
+            **envelope_asset_metadata(os_envelope),
         },
     )
     _ensure_valid(asset.to_dict())
@@ -553,6 +577,15 @@ def build_knowledge_pack(storage: LocalStorage, payload: dict[str, Any]) -> dict
     task_id = str(payload.get("task_id") or f"{flow}-{project_id}-{chapter_id or 'project'}")
     current_goal = str(payload.get("current_goal") or payload.get("goal") or "").strip()
     budget = _knowledge_budget(flow, payload.get("knowledge_budget"))
+    os_envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.pack_build",
+        asset_type="knowledge_pack",
+        project_id=project_id,
+        task_type=flow,
+        token_budget=budget,
+    )
     bindings = list_usage_bindings(storage, flow=flow, enabled=True, limit=500)
     knowledge_items: list[dict[str, Any]] = []
     for binding in bindings:
@@ -619,6 +652,7 @@ def build_knowledge_pack(storage: LocalStorage, payload: dict[str, Any]) -> dict
             "chapter_id": chapter_id,
             "source_isolation": "no_source_chunk_raw_text_in_prose_pack",
             "run_metadata": run_metadata("mkaos.build_knowledge_pack", KnowledgePack(title=f"{flow} pack", content=content)),
+            **envelope_asset_metadata(os_envelope),
         },
         references=filter_project_safe_references(storage, project_id, _dedupe([item.get("knowledge_id", "") for item in knowledge_items])),
     )
@@ -737,6 +771,9 @@ def validate_canon_conflict(storage: LocalStorage, payload: dict[str, Any]) -> d
 
 def record_usage_event(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
     knowledge_ids = _strings(payload.get("knowledge_ids")) or [str(payload.get("knowledge_id") or "")]
+    project_id = str(payload.get("project_id") or "local-system")
+    flow = _valid_flow(str(payload.get("flow") or "review"))
+    os_envelope = _mkaos_envelope(storage, payload, operation="mkaos.usage_event_record", asset_type="knowledge_usage_event", project_id=project_id, task_type=flow)
     events: list[dict[str, Any]] = []
     for knowledge_id in [item for item in knowledge_ids if item]:
         event_id = make_id("knowledge_usage_event", f"{knowledge_id}-{payload.get('knowledge_pack_id', '')}-{utc_now()}")
@@ -744,8 +781,8 @@ def record_usage_event(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
             "event_id": event_id,
             "knowledge_id": knowledge_id,
             "knowledge_pack_id": str(payload.get("knowledge_pack_id") or ""),
-            "project_id": str(payload.get("project_id") or "local-system"),
-            "flow": _valid_flow(str(payload.get("flow") or "review")),
+            "project_id": project_id,
+            "flow": flow,
             "target_artifact_id": str(payload.get("target_artifact_id") or ""),
             "chapter_id": str(payload.get("chapter_id") or ""),
             "agent_name": str(payload.get("agent_name") or "mkaos-adapter"),
@@ -770,6 +807,7 @@ def record_usage_event(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
                 "use_in_generation_rag": False,
                 "flow": content["flow"],
                 "knowledge_pack_id": content["knowledge_pack_id"],
+                **envelope_asset_metadata(os_envelope),
             },
             references=_dedupe([knowledge_id, content["knowledge_pack_id"], content["target_artifact_id"]]),
         )
@@ -827,14 +865,17 @@ def record_review_feedback(storage: LocalStorage, payload: dict[str, Any]) -> di
     knowledge_id = str(payload.get("knowledge_id") or "").strip()
     if not knowledge_id:
         raise ValueError("knowledge_id is required")
+    project_id = str(payload.get("project_id") or "local-system")
+    flow = str(payload.get("flow") or "review")
+    os_envelope = _mkaos_envelope(storage, payload, operation="mkaos.feedback_review", asset_type="knowledge_quality_score", project_id=project_id, task_type=flow)
     delta = _feedback_delta(payload)
     return _record_quality_score(
         storage,
         knowledge_id=knowledge_id,
-        flow=str(payload.get("flow") or "review"),
+        flow=flow,
         delta=delta,
         reason=str(payload.get("reason") or "review_feedback"),
-        metadata={"feedback": payload},
+        metadata={"feedback": payload, **envelope_asset_metadata(os_envelope)},
     )
 
 
@@ -845,6 +886,8 @@ def apply_weight_update(storage: LocalStorage, payload: dict[str, Any]) -> dict[
     path, data = _find_asset(storage, knowledge_ref, asset_type="knowledge_card", categories=["knowledge"])
     knowledge_id = str(data.get("id", ""))
     flow = str(payload.get("flow") or "review")
+    project_id = str(payload.get("project_id") or data.get("metadata", {}).get("project_id") or "local-system")
+    os_envelope = _mkaos_envelope(storage, payload, operation="mkaos.feedback_weight_update", asset_type="knowledge_card", project_id=project_id, task_type=flow)
     delta = _feedback_delta(payload)
     if payload.get("deprecated") or str(payload.get("action") or "") == "deprecated":
         delta = min(delta, -0.5)
@@ -862,6 +905,7 @@ def apply_weight_update(storage: LocalStorage, payload: dict[str, Any]) -> dict[
     content["status"] = status
     metadata["weight"] = next_weight
     metadata["asset_status"] = status
+    metadata.update(envelope_asset_metadata(os_envelope))
     data["content"] = content
     data["metadata"] = metadata
     data["updated_at"] = utc_now()
@@ -872,7 +916,7 @@ def apply_weight_update(storage: LocalStorage, payload: dict[str, Any]) -> dict[
         flow=flow,
         delta=delta,
         reason=str(payload.get("reason") or "weight_update"),
-        metadata={"previous_weight": previous_weight, "next_weight": next_weight, "status": status, "payload": payload},
+        metadata={"previous_weight": previous_weight, "next_weight": next_weight, "status": status, "payload": payload, **envelope_asset_metadata(os_envelope)},
     )
     return {"knowledge": {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}, "quality_score": score, "delta": delta, "status": status}
 
@@ -894,6 +938,126 @@ def list_risk_knowledge(storage: LocalStorage, *, project_id: str | None = None,
         if status in {"deprecated", "needs_review"} or risk in {"high", "critical"} or row.get("id") in risky_ids:
             result.append({**row, "risk_reasons": _risk_reasons(row, risky_ids)})
     return result
+
+
+def query_knowledge(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    flow = str(payload.get("flow") or payload.get("task_type") or "").strip()
+    envelope = _mkaos_envelope(storage, payload, operation="mkaos.query_knowledge", asset_type="knowledge_query", project_id=project_id, task_type=flow or "query")
+    rows = list_knowledge_cards(storage, project_id=project_id if project_id != "local-system" else None, include_deprecated=bool(payload.get("include_deprecated", False)), limit=int(payload.get("limit", 100) or 100))
+    binding_by_knowledge: dict[str, list[dict[str, Any]]] = {}
+    if flow:
+        for binding in list_usage_bindings(storage, flow=_valid_flow(flow) if flow in MKAOS_FLOWS else None, enabled=True, limit=1000):
+            binding_project = str(binding.get("metadata", {}).get("project_id") or "")
+            if not _project_scope_matches(binding_project, project_id):
+                continue
+            binding_by_knowledge.setdefault(str(binding.get("content", {}).get("knowledge_id", "")), []).append(binding)
+        rows = [row for row in rows if row.get("id") in binding_by_knowledge]
+    discipline = str(payload.get("discipline") or "").strip().lower()
+    if discipline:
+        rows = [row for row in rows if discipline in str(row.get("content", {}).get("discipline", "")).lower()]
+    query_text = str(payload.get("query") or payload.get("task_goal") or "").strip().lower()
+    if query_text:
+        terms = [term for term in re.split(r"\s+", query_text) if term]
+        rows = [row for row in rows if _knowledge_matches_terms(row, terms)]
+    scored = [_query_row(row, binding_by_knowledge.get(str(row.get("id", "")), [])) for row in rows]
+    scored.sort(key=lambda row: (-float(row.get("selection_score", 0.0)), str(row.get("title", ""))))
+    return envelope_response(
+        {
+            "items": scored[: int(payload.get("limit", 100) or 100)],
+            "count": min(len(scored), int(payload.get("limit", 100) or 100)),
+            "total_candidates": len(scored),
+            "filters": {"project_id": project_id, "flow": flow, "discipline": discipline, "query": query_text},
+        },
+        envelope,
+    )
+
+
+def convert_assets(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    envelope = _mkaos_envelope(storage, payload, operation="mkaos.convert_assets", asset_type="knowledge_card", project_id=project_id, task_type=str(payload.get("task_type") or "convert_assets"))
+    if payload.get("text") or payload.get("content"):
+        source = import_source_document(storage, {**payload, "os_envelope": payload.get("os_envelope") or payload.get("envelope")})
+        chunks = source["chunks"]
+    else:
+        source_ref = str(payload.get("source_id") or payload.get("source_path") or payload.get("source_ref") or "")
+        if not source_ref:
+            raise ValueError("source_id, source_path, source_ref, or text is required")
+        chunks = list_source_chunks(storage, source_ref, project_id=project_id if project_id != "local-system" else None)
+        if not chunks:
+            chunks = rebuild_source_chunks(storage, source_ref)["chunks"]
+    concepts = payload.get("concepts") if isinstance(payload.get("concepts"), list) else []
+    if not concepts:
+        concepts = [{"concept_name": payload.get("concept_name") or "Converted knowledge", "core_explanation": payload.get("core_explanation") or "Abstract reusable knowledge converted from source evidence."}]
+    knowledge: list[dict[str, Any]] = []
+    chunk_ids = [str(chunk.get("id", "")) for chunk in chunks if str(chunk.get("id", "")).strip()]
+    for item in concepts:
+        if not isinstance(item, dict):
+            continue
+        knowledge.append(
+            create_knowledge_card(
+                storage,
+                {
+                    **item,
+                    "source_chunk_ids": item.get("source_chunk_ids") or chunk_ids[: int(item.get("chunk_limit", 3) or 3)],
+                    "project_id": project_id,
+                    "workspace_path": payload.get("workspace_path", ""),
+                    "os_envelope": payload.get("os_envelope") or payload.get("envelope"),
+                    "environment": payload.get("environment", ""),
+                    "bypass_reason": payload.get("bypass_reason", ""),
+                    "source_policy": payload.get("source_policy", {}),
+                },
+            )
+        )
+    return envelope_response({"knowledge": knowledge, "chunk_count": len(chunks), "source_chunk_ids": chunk_ids}, envelope)
+
+
+def convert_rules(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    envelope = _mkaos_envelope(storage, payload, operation="mkaos.convert_rules", asset_type="rule_card", project_id=project_id, task_type=str(payload.get("task_type") or "convert_rules"))
+    knowledge_ref = str(payload.get("knowledge_id") or payload.get("knowledge_ref") or "").strip()
+    if not knowledge_ref:
+        raise ValueError("knowledge_id or knowledge_ref is required")
+    _, knowledge = _find_asset(storage, knowledge_ref, asset_type="knowledge_card", categories=["knowledge"])
+    content = knowledge.get("content", {}) if isinstance(knowledge.get("content", {}), dict) else {}
+    concept = str(content.get("concept_name") or knowledge.get("title") or knowledge_ref)
+    rule = create_rule_card(
+        storage,
+        {
+            "rule_name": str(payload.get("rule_name") or f"{concept} 有效性规则"),
+            "rule_type": str(payload.get("rule_type") or "knowledge_effectiveness"),
+            "trigger_condition": str(payload.get("trigger_condition") or f"{concept} 进入生成或审稿"),
+            "check_items": payload.get("check_items") or ["知识必须改变角色选择、代价或审稿判断"],
+            "severity": str(payload.get("severity") or "medium"),
+            "blocking": bool(payload.get("blocking", False)),
+            "fix_suggestion": str(payload.get("fix_suggestion") or "把知识改写为行动、冲突、物件或审稿规则。"),
+            "applicable_flows": payload.get("applicable_flows") or ["review"],
+            "project_id": project_id,
+            "workspace_path": payload.get("workspace_path", ""),
+            "os_envelope": payload.get("os_envelope") or payload.get("envelope"),
+            "environment": payload.get("environment", ""),
+            "bypass_reason": payload.get("bypass_reason", ""),
+            "source_policy": payload.get("source_policy", {}),
+        },
+    )
+    template = None
+    if payload.get("create_template"):
+        template = create_template_card(
+            storage,
+            {
+                "template_name": str(payload.get("template_name") or f"{concept} 场景模板"),
+                "template_type": "knowledge_application",
+                "structure": payload.get("structure") or ["pressure", "choice", "cost", "payoff"],
+                "applicable_flows": payload.get("template_flows") or ["outline", "chapter_outline"],
+                "project_id": project_id,
+                "workspace_path": payload.get("workspace_path", ""),
+                "os_envelope": payload.get("os_envelope") or payload.get("envelope"),
+                "environment": payload.get("environment", ""),
+                "bypass_reason": payload.get("bypass_reason", ""),
+                "source_policy": payload.get("source_policy", {}),
+            },
+        )
+    return envelope_response({"rule": rule, "template": template}, envelope)
 
 
 def run_minimal_acceptance_fixture(storage: LocalStorage) -> dict[str, Any]:
@@ -1075,6 +1239,83 @@ def _review_adapter(content: dict[str, Any]) -> dict[str, Any]:
         "platform_risk_checks": ["platform rhythm", "reader promise", "review risk"],
         "anti_encyclopedia_checks": _rule_names(rules, {"anti_encyclopedia"}),
         "issue_contract": ["rule_id", "rule_name", "severity", "blocking", "message", "fix_suggestion", "rollback_level"],
+    }
+
+
+def _mkaos_envelope(
+    storage: LocalStorage,
+    payload: dict[str, Any],
+    *,
+    operation: str,
+    asset_type: str,
+    project_id: str,
+    task_type: str,
+    token_budget: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    envelope_payload = payload.get("os_envelope") if isinstance(payload.get("os_envelope"), dict) else payload.get("envelope") if isinstance(payload.get("envelope"), dict) else None
+    source_policy = payload.get("source_policy") if isinstance(payload.get("source_policy"), dict) else {
+        "raw_source_text_allowed": False,
+        "generation_rag_allowed": False,
+        "source_chunk_raw_text_allowed": False,
+    }
+    return enforce_os_envelope(
+        storage,
+        envelope_payload=envelope_payload,
+        operation=operation,
+        project_id=project_id,
+        task_type=str(payload.get("task_type") or task_type or operation),
+        asset_type=asset_type,
+        actor_type=str(payload.get("actor_type") or "mkaos_service"),
+        actor_id=str(payload.get("actor_id") or ""),
+        source="mkaos",
+        context_bundle_id=str(payload.get("context_bundle_id") or ""),
+        trace_id=str(payload.get("trace_id") or ""),
+        provider=str(payload.get("provider") or ""),
+        model=str(payload.get("model") or ""),
+        token_budget=token_budget,
+        source_policy=source_policy,
+        environment=str(payload.get("environment") or ""),
+        bypass_reason=str(payload.get("bypass_reason") or ""),
+    )
+
+
+def _knowledge_matches_terms(row: dict[str, Any], terms: list[str]) -> bool:
+    if not terms:
+        return True
+    haystack = json.dumps(
+        {
+            "title": row.get("title", ""),
+            "tags": row.get("tags", []),
+            "content": row.get("content", {}),
+        },
+        ensure_ascii=False,
+    ).lower()
+    return all(term in haystack for term in terms)
+
+
+def _query_row(row: dict[str, Any], bindings: list[dict[str, Any]]) -> dict[str, Any]:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+    quality = _float(content.get("quality_score", metadata.get("quality_score", 0.7)), 0.7)
+    weight = _float(content.get("weight", metadata.get("weight", 1.0)), 1.0)
+    priority_bonus = 0.0
+    if bindings:
+        best_priority = min(int(binding.get("content", {}).get("priority", 100) or 100) for binding in bindings)
+        priority_bonus = max(0.0, (100 - best_priority) / 100)
+    return {
+        "id": row.get("id", ""),
+        "path": row.get("path", ""),
+        "title": row.get("title", ""),
+        "concept_name": content.get("concept_name", row.get("title", "")),
+        "discipline": content.get("discipline", ""),
+        "knowledge_type": content.get("knowledge_type", ""),
+        "status": content.get("status", metadata.get("asset_status", "")),
+        "risk_level": content.get("risk_level", metadata.get("risk_level", "")),
+        "quality_score": quality,
+        "weight": weight,
+        "binding_count": len(bindings),
+        "selection_score": round((quality * weight) + priority_bonus, 4),
+        "source_chunk_ids": content.get("source_chunk_ids", []),
     }
 
 
@@ -1327,6 +1568,7 @@ def _record_quality_score(storage: LocalStorage, *, knowledge_id: str, flow: str
         knowledge_meta = {}
     project_id = str(metadata.get("project_id") or knowledge_meta.get("project_id") or "local-system")
     workspace_path = str(metadata.get("workspace_path") or knowledge_meta.get("workspace_path") or "")
+    os_envelope_meta = envelope_asset_metadata(metadata.get("os_envelope") if isinstance(metadata.get("os_envelope"), dict) else {})
     content = {
         "score_id": score_id,
         "knowledge_id": knowledge_id,
@@ -1342,7 +1584,7 @@ def _record_quality_score(storage: LocalStorage, *, knowledge_id: str, flow: str
         source=knowledge_id,
         tags=["mkaos", "knowledge-quality-score", flow],
         content=content,
-        metadata={"project_id": project_id, "workspace_path": workspace_path, "mkaos": True, "use_in_generation_rag": False, "delta": delta},
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "mkaos": True, "use_in_generation_rag": False, "delta": delta, **os_envelope_meta},
         references=[knowledge_id],
     )
     _ensure_valid(asset.to_dict())

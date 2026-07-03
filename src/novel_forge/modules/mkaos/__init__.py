@@ -18,6 +18,7 @@ from .service import (
     list_usage_bindings,
     list_usage_events,
     pack_prompt_preview,
+    query_knowledge,
     rebuild_source_chunks,
     record_review_feedback,
     record_pack_usage_for_artifact,
@@ -27,6 +28,8 @@ from .service import (
     update_usage_binding,
     validate_artifact,
     validate_canon_conflict,
+    convert_assets,
+    convert_rules,
 )
 
 __all__ = [
@@ -49,6 +52,7 @@ __all__ = [
     "list_usage_bindings",
     "list_usage_events",
     "pack_prompt_preview",
+    "query_knowledge",
     "rebuild_source_chunks",
     "record_review_feedback",
     "record_pack_usage_for_artifact",
@@ -58,4 +62,6 @@ __all__ = [
     "update_usage_binding",
     "validate_artifact",
     "validate_canon_conflict",
+    "convert_assets",
+    "convert_rules",
 ]
