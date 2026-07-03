@@ -11,18 +11,19 @@ from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.review_issue import blocking_review_issues, review_issues_to_gate_issues
 from novel_forge.modules.runtime_ledger import record_trace_span
-from novel_forge.schemas import LoopCheckpoint, LoopReport, LoopRun, LoopStep, validate_common_fields
+from novel_forge.schemas import DraftChapter, LoopCheckpoint, LoopReport, LoopRun, LoopStep, ReviewReport, RevisionPlan, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 LOOP_STATES = {"planned", "running", "waiting_human", "succeeded", "failed", "cancelled"}
 LOOP_TERMINAL_STATES = {"succeeded", "failed", "cancelled"}
-LOOP_TYPES = {"chapter_review", "outline_revision", "longform_recap"}
+LOOP_TYPES = {"chapter_review", "outline_revision", "longform_recap", "review_revision_publish"}
 LOOP_STOP_CONDITIONS = {"quality_passed", "blocking_issue", "budget_exceeded", "provider_timeout", "human_required"}
 
 LOOP_CONTEXT_FLOW = {
     "chapter_review": "review",
     "outline_revision": "revision",
     "longform_recap": "recap",
+    "review_revision_publish": "review",
 }
 
 DEFAULT_LOOP_STEPS = {
@@ -42,9 +43,18 @@ DEFAULT_LOOP_STEPS = {
         {"step_type": "review_issue_gate", "operation": "check_blocking_review_issues", "token_estimate": 30, "cost_estimate": 0.0},
         {"step_type": "recap_report", "operation": "prepare_recap_report", "token_estimate": 160, "cost_estimate": 0.0},
     ],
+    "review_revision_publish": [
+        {"step_type": "context_build", "operation": "build_context", "token_estimate": 140, "cost_estimate": 0.0},
+        {"step_type": "review_run", "operation": "create_structured_review", "token_estimate": 180, "cost_estimate": 0.0},
+        {"step_type": "review_issue_gate", "operation": "check_blocking_review_issues", "token_estimate": 30, "cost_estimate": 0.0},
+        {"step_type": "revision_plan", "operation": "create_revision_plan", "token_estimate": 160, "cost_estimate": 0.0},
+        {"step_type": "revision_apply", "operation": "apply_revision_candidate", "token_estimate": 220, "cost_estimate": 0.0},
+        {"step_type": "re_review", "operation": "create_re_review", "token_estimate": 160, "cost_estimate": 0.0},
+        {"step_type": "publish_gate", "operation": "create_publish_gate_report", "token_estimate": 120, "cost_estimate": 0.0},
+    ],
 }
 
-DEFAULT_BUDGET = {"max_steps": 6, "max_tokens": 4000, "max_cost": 1.0, "max_duration_seconds": 1800}
+DEFAULT_BUDGET = {"max_steps": 8, "max_tokens": 4000, "max_cost": 1.0, "max_duration_seconds": 1800}
 
 
 def run_loop(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -88,6 +98,7 @@ def run_loop(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
     stop_condition = ""
     blocking_rows: list[dict[str, Any]] = []
     stop_message = ""
+    loop_outputs: dict[str, Any] = {}
 
     for index, step in enumerate(steps):
         usage["duration_seconds"] = int((_utc_now_dt() - started_at).total_seconds())
@@ -181,6 +192,45 @@ def run_loop(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
                 stop_message = f"blocked by {len(blocking_rows)} active ReviewIssue(s)"
                 break
 
+        side_effect = _execute_loop_step_side_effect(
+            storage,
+            payload,
+            loop_type=loop_type,
+            step=step,
+            loop_outputs=loop_outputs,
+            target=target,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            context_result=context_result,
+            envelope=envelope,
+        )
+        if isinstance(side_effect.get("outputs"), dict):
+            loop_outputs.update(side_effect["outputs"])
+        if side_effect.get("status") == "failed":
+            step_result = _write_step_and_checkpoint(
+                storage,
+                run_path=run_path,
+                loop_run_id=run["asset"]["content"]["loop_run_id"],
+                loop_type=loop_type,
+                step_index=index,
+                step=step,
+                status="failed",
+                stop_condition=str(side_effect.get("stop_condition") or "blocking_issue"),
+                usage=usage,
+                target=target,
+                context_result=context_result,
+                project_id=project_id,
+                workspace_path=workspace_path,
+                envelope=envelope,
+                message=str(side_effect.get("message") or ""),
+                side_effect=side_effect,
+            )
+            step_paths.append(step_result["step_path"])
+            checkpoint_paths.append(step_result["checkpoint_path"])
+            stop_condition = str(side_effect.get("stop_condition") or "blocking_issue")
+            stop_message = str(side_effect.get("message") or "loop step failed")
+            break
+
         usage = _add_step_usage(usage, step)
         budget_message = _budget_stop_condition(usage, budget)
         step_status = "failed" if budget_message else "succeeded"
@@ -200,7 +250,8 @@ def run_loop(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
             project_id=project_id,
             workspace_path=workspace_path,
             envelope=envelope,
-            message=budget_message,
+            message=budget_message or str(side_effect.get("message") or ""),
+            side_effect=side_effect,
         )
         step_paths.append(step_result["step_path"])
         checkpoint_paths.append(step_result["checkpoint_path"])
@@ -230,6 +281,7 @@ def run_loop(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
         step_paths=step_paths,
         checkpoint_paths=checkpoint_paths,
         blocking_rows=blocking_rows,
+        loop_outputs=loop_outputs,
     )
     _update_loop_run(
         storage,
@@ -244,6 +296,7 @@ def run_loop(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
             "checkpoint_paths": checkpoint_paths,
             "report_path": report["path"],
             "blocking_review_issue_count": len(blocking_rows),
+            "outputs": loop_outputs,
         },
     )
     _record_loop_span(storage, envelope=envelope, loop_type=loop_type, status=status, run_path=run_path, report_path=report["path"], project_id=project_id, workspace_path=workspace_path)
@@ -258,6 +311,7 @@ def run_loop(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
         "context_bundle_path": context_result.get("path", ""),
         "budget_used": usage,
         "blocking_review_issues": review_issues_to_gate_issues(blocking_rows),
+        "outputs": loop_outputs,
         "envelope": envelope,
         "asset": updated,
         "report": report["asset"],
@@ -394,6 +448,7 @@ def _write_step_and_checkpoint(
     envelope: dict[str, Any],
     message: str = "",
     blocking_rows: list[dict[str, Any]] | None = None,
+    side_effect: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     now = utc_now()
     loop_step_id = make_id("loop_step", f"{loop_run_id}-{step_index}-{step.get('operation', '')}-{now}")
@@ -415,6 +470,7 @@ def _write_step_and_checkpoint(
             "token_estimate": int(step.get("token_estimate", 0) or 0),
             "cost_estimate": float(step.get("cost_estimate", 0.0) or 0.0),
         },
+        "side_effect": side_effect or {},
         "started_at": now,
         "finished_at": now,
         "created_at": now,
@@ -511,6 +567,7 @@ def _write_report(
     step_paths: list[str],
     checkpoint_paths: list[str],
     blocking_rows: list[dict[str, Any]],
+    loop_outputs: dict[str, Any],
 ) -> dict[str, Any]:
     asset = LoopReport(
         title=f"{loop_type} loop report: {status}",
@@ -528,6 +585,7 @@ def _write_report(
             "context_bundle_id": context_result.get("id", ""),
             "context_bundle_path": context_result.get("path", ""),
             "blocking_review_issues": review_issues_to_gate_issues(blocking_rows),
+            "outputs": loop_outputs,
             "recommendation": _report_recommendation(stop_condition),
             "created_at": utc_now(),
         },
@@ -551,6 +609,232 @@ def _write_report(
     _ensure_valid(asset.to_dict())
     path = storage.write_asset("loops", asset)
     return {"path": _display_path(storage.root, path), "asset": asset.to_dict()}
+
+
+def _execute_loop_step_side_effect(
+    storage: LocalStorage,
+    payload: dict[str, Any],
+    *,
+    loop_type: str,
+    step: dict[str, Any],
+    loop_outputs: dict[str, Any],
+    target: dict[str, Any],
+    project_id: str,
+    workspace_path: str,
+    context_result: dict[str, Any],
+    envelope: dict[str, Any],
+) -> dict[str, Any]:
+    if loop_type != "review_revision_publish":
+        return {}
+    step_type = str(step.get("step_type") or "")
+    try:
+        if step_type == "context_build":
+            return {"status": "succeeded", "message": "context bundle attached to review-revision-publish loop", "outputs": {"context_bundle_path": context_result.get("path", ""), "context_bundle_id": context_result.get("id", "")}}
+        if step_type == "review_run":
+            return _loop_review_run(storage, payload, target=target, project_id=project_id, workspace_path=workspace_path, context_result=context_result, envelope=envelope)
+        if step_type == "revision_plan":
+            return _loop_revision_plan(storage, payload, target=target, project_id=project_id, workspace_path=workspace_path, loop_outputs=loop_outputs, envelope=envelope)
+        if step_type == "revision_apply":
+            return _loop_revision_apply(storage, payload, target=target, project_id=project_id, workspace_path=workspace_path, loop_outputs=loop_outputs, envelope=envelope)
+        if step_type == "re_review":
+            return _loop_re_review(storage, payload, target=target, project_id=project_id, workspace_path=workspace_path, loop_outputs=loop_outputs, envelope=envelope)
+        if step_type == "publish_gate":
+            return _loop_publish_gate(storage, payload, target=target, workspace_path=workspace_path, loop_outputs=loop_outputs)
+    except Exception as exc:
+        return {"status": "failed", "stop_condition": "blocking_issue", "message": str(exc), "outputs": {}}
+    return {}
+
+
+def _loop_review_run(
+    storage: LocalStorage,
+    payload: dict[str, Any],
+    *,
+    target: dict[str, Any],
+    project_id: str,
+    workspace_path: str,
+    context_result: dict[str, Any],
+    envelope: dict[str, Any],
+) -> dict[str, Any]:
+    existing = str(payload.get("review_path") or "").strip()
+    if existing:
+        return {"status": "succeeded", "message": "existing review report attached", "outputs": {"review_report_path": _display_path(storage.root, resolve_path(storage.root, existing))}}
+    draft_path = _required_loop_target_path(target)
+    draft = storage.read_asset(resolve_path(storage.root, draft_path))
+    initial_issues = payload.get("initial_issues", []) if isinstance(payload.get("initial_issues", []), list) else []
+    asset = ReviewReport(
+        title=f"Loop review for {draft.title or draft.id}",
+        source=draft.id,
+        tags=["review", "loop-kernel", "review-revision-publish"],
+        content={
+            "rubric": "loop_kernel_main_chain_review",
+            "summary": "Loop Kernel structured review for governed review-revision-publish chain.",
+            "target_asset_id": draft.id,
+            "target_asset_path": draft_path,
+            "context_bundle_id": context_result.get("id", ""),
+            "context_bundle_path": context_result.get("path", ""),
+            "issues": initial_issues,
+            "review_issue_summary": {"issue_count": len(initial_issues), "blocking_count": 0},
+            "os_envelope_id": envelope.get("envelope_id", ""),
+            "created_at": utc_now(),
+        },
+        score=float(payload.get("review_score", 84.0) or 84.0),
+        strengths=["structured loop entry preserves traceable draft context"],
+        weaknesses=["operator should replace deterministic review with provider-backed review when ready"],
+        issues=initial_issues,
+        risk_level="medium" if initial_issues else "low",
+        revision_suggestions=["apply controlled revision plan before publish gate"],
+        next_action="revise",
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "context_bundle_path": context_result.get("path", ""), **envelope_asset_metadata(envelope)},
+        references=filter_project_safe_references(storage, project_id, [draft.id, draft_path, context_result.get("path", "")]),
+    )
+    _ensure_valid(asset.to_dict())
+    path = storage.write_asset("reviews", asset)
+    return {"status": "succeeded", "message": "structured review report created", "outputs": {"review_report_path": _display_path(storage.root, path)}}
+
+
+def _loop_revision_plan(
+    storage: LocalStorage,
+    payload: dict[str, Any],
+    *,
+    target: dict[str, Any],
+    project_id: str,
+    workspace_path: str,
+    loop_outputs: dict[str, Any],
+    envelope: dict[str, Any],
+) -> dict[str, Any]:
+    review_path = str(loop_outputs.get("review_report_path") or payload.get("review_path") or "").strip()
+    if not review_path:
+        raise ValueError("revision_plan step requires review_report_path")
+    review = storage.read_json(resolve_path(storage.root, review_path))
+    review_content = review.get("content", {}) if isinstance(review.get("content", {}), dict) else {}
+    steps = payload.get("revision_steps", []) if isinstance(payload.get("revision_steps", []), list) else []
+    if not steps:
+        steps = [str(item) for item in review.get("revision_suggestions", []) if str(item).strip()] or ["tighten continuity and preserve chapter hook"]
+    asset = RevisionPlan(
+        title=f"Loop revision plan for {review.get('title') or review.get('id')}",
+        source=str(review.get("id", "")),
+        tags=["revision", "loop-kernel", "review-revision-publish"],
+        content={
+            "steps": steps,
+            "target_score": max(88, int(float(review.get("score", 0) or 0)) + 4),
+            "must_preserve": ["project-owned prose", "canon boundaries", "chapter hook"],
+            "review_report_path": review_path,
+            "source_draft_path": target.get("path", ""),
+            "review_issues": review_content.get("issues", []),
+            "os_envelope_id": envelope.get("envelope_id", ""),
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, **envelope_asset_metadata(envelope)},
+        references=filter_project_safe_references(storage, project_id, [str(review.get("id", "")), review_path, target.get("asset_id", ""), target.get("path", "")]),
+    )
+    _ensure_valid(asset.to_dict())
+    path = storage.write_asset("reviews", asset)
+    return {"status": "succeeded", "message": "revision plan created", "outputs": {"revision_plan_path": _display_path(storage.root, path)}}
+
+
+def _loop_revision_apply(
+    storage: LocalStorage,
+    payload: dict[str, Any],
+    *,
+    target: dict[str, Any],
+    project_id: str,
+    workspace_path: str,
+    loop_outputs: dict[str, Any],
+    envelope: dict[str, Any],
+) -> dict[str, Any]:
+    draft_path = _required_loop_target_path(target)
+    draft = storage.read_asset(resolve_path(storage.root, draft_path))
+    content = dict(draft.content if isinstance(draft.content, dict) else {})
+    content["revision_lineage"] = {
+        "source_draft_id": draft.id,
+        "source_draft_path": draft_path,
+        "revision_plan_path": loop_outputs.get("revision_plan_path", ""),
+        "mode": "loop_kernel_controlled_candidate",
+        "created_at": utc_now(),
+    }
+    content["revision_applied"] = True
+    asset = DraftChapter(
+        title=f"Loop revised {draft.title or draft.id}",
+        source=draft.id,
+        tags=[*draft.tags, "revised", "loop-kernel"],
+        content=content,
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "source_draft_path": draft_path, **envelope_asset_metadata(envelope)},
+        references=filter_project_safe_references(storage, project_id, [draft.id, draft_path, str(loop_outputs.get("revision_plan_path", ""))]),
+    )
+    _ensure_valid(asset.to_dict())
+    path = storage.write_asset("drafts", asset)
+    return {"status": "succeeded", "message": "controlled revision candidate created", "outputs": {"final_draft_path": _display_path(storage.root, path), "draft_version_path": _display_path(storage.root, path)}}
+
+
+def _loop_re_review(
+    storage: LocalStorage,
+    payload: dict[str, Any],
+    *,
+    target: dict[str, Any],
+    project_id: str,
+    workspace_path: str,
+    loop_outputs: dict[str, Any],
+    envelope: dict[str, Any],
+) -> dict[str, Any]:
+    draft_path = str(loop_outputs.get("final_draft_path") or target.get("path") or "").strip()
+    if not draft_path:
+        raise ValueError("re_review step requires final_draft_path")
+    draft = storage.read_asset(resolve_path(storage.root, draft_path))
+    asset = ReviewReport(
+        title=f"Loop re-review for {draft.title or draft.id}",
+        source=draft.id,
+        tags=["review", "re-review", "loop-kernel"],
+        content={
+            "rubric": "loop_kernel_main_chain_re_review",
+            "summary": "Loop Kernel re-review after controlled revision candidate.",
+            "target_asset_id": draft.id,
+            "target_asset_path": draft_path,
+            "source_review_path": loop_outputs.get("review_report_path", ""),
+            "revision_plan_path": loop_outputs.get("revision_plan_path", ""),
+            "issues": [],
+            "created_at": utc_now(),
+            "os_envelope_id": envelope.get("envelope_id", ""),
+        },
+        score=float(payload.get("re_review_score", 90.0) or 90.0),
+        strengths=["revision candidate is traceable to review and plan"],
+        weaknesses=[],
+        issues=[],
+        risk_level="low",
+        revision_suggestions=[],
+        next_action="publish_gate",
+        metadata={"project_id": project_id, "workspace_path": workspace_path, **envelope_asset_metadata(envelope)},
+        references=filter_project_safe_references(storage, project_id, [draft.id, draft_path, str(loop_outputs.get("revision_plan_path", ""))]),
+    )
+    _ensure_valid(asset.to_dict())
+    path = storage.write_asset("reviews", asset)
+    return {"status": "succeeded", "message": "re-review report created", "outputs": {"re_review_path": _display_path(storage.root, path)}}
+
+
+def _loop_publish_gate(storage: LocalStorage, payload: dict[str, Any], *, target: dict[str, Any], workspace_path: str, loop_outputs: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.audit import create_publish_gate_report
+
+    draft_path = str(loop_outputs.get("final_draft_path") or target.get("path") or "").strip()
+    if not draft_path:
+        raise ValueError("publish_gate step requires final_draft_path")
+    path = create_publish_gate_report(
+        storage,
+        draft_path,
+        workspace_path=workspace_path or None,
+        human_override=bool(payload.get("human_override", False)),
+        envelope=payload.get("envelope") if isinstance(payload.get("envelope"), dict) else None,
+        environment=str(payload.get("environment") or ""),
+        source_policy=payload.get("source_policy") if isinstance(payload.get("source_policy"), dict) else None,
+    )
+    data = storage.read_json(path)
+    decision = str(data.get("content", {}).get("decision", "")) if isinstance(data.get("content", {}), dict) else ""
+    return {"status": "succeeded", "message": f"publish gate created: {decision}", "outputs": {"publish_gate_report_path": _display_path(storage.root, path), "publish_decision": decision}}
+
+
+def _required_loop_target_path(target: dict[str, Any]) -> str:
+    value = str(target.get("path") or "").strip()
+    if not value:
+        raise ValueError("review_revision_publish loop requires target draft path")
+    return value
 
 
 def _resolve_context_bundle(

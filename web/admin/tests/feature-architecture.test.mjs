@@ -138,9 +138,11 @@ describe("Novel Forge admin feature architecture", () => {
       assert.equal(existsSync(join(root, path)), true, `${path} should exist`);
     }
     const editable = read("app/features/os/EditableAssetConsolePage.tsx");
-    for (const token of ["saveAssetContent", "createCreativeAsset", "Asset List", "Editable Content", "Lineage"]) {
+    for (const token of ["saveAssetContent", "createCreativeAsset", "Asset List", "Editable Content", "Lineage", "Domain Governance Editor", "Bulk Governance Tools", "canon_database", "character_state_ledger", "arc_plan", "foreshadowing_graph", "review_issue"]) {
       assert.match(editable, new RegExp(token));
     }
+    const osApi = read("app/features/os/api.ts");
+    assert.match(osApi, /\/product\/review-issues\/status/);
   });
 
   it("exposes asset graph, publishing calendar, version registry, and impact visualization in source", () => {

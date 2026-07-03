@@ -1736,6 +1736,56 @@ def _operation_specs() -> list[AgentOperationSpec]:
             required_tool="read_asset",
             sla_seconds=120,
         ),
+        AgentOperationSpec(
+            operation="build-context-bundle",
+            aliases=("context-build", "context_builder", "build-context"),
+            runner=_run_build_context_bundle,
+            agent_key="context",
+            input_types=(),
+            output_types=("context_bundle",),
+            required_tool="write_context_bundle",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="check-canon-graph",
+            aliases=("canon-graph-check", "canon-conflict-check"),
+            runner=_run_check_canon_graph,
+            agent_key="continuity",
+            input_types=(),
+            output_types=("canon_graph_snapshot", "review_issue"),
+            required_tool="write_review_issue",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="run-review-revision-publish-loop",
+            aliases=("review-revision-publish-loop", "main-review-loop"),
+            runner=_run_review_revision_publish_loop,
+            agent_key="workflow",
+            input_types=("draft_chapter", "draft_version"),
+            output_types=("loop_run", "loop_report", "review_report", "revision_plan", "publish_gate_report"),
+            required_tool="run_validation",
+            sla_seconds=900,
+        ),
+        AgentOperationSpec(
+            operation="preview-provider-fallback",
+            aliases=("provider-fallback-preview",),
+            runner=_run_preview_provider_fallback,
+            agent_key="model_evaluation",
+            input_types=(),
+            output_types=("gate_result", "model_route_resolution"),
+            required_tool="write_gate_result",
+            sla_seconds=120,
+        ),
+        AgentOperationSpec(
+            operation="approve-provider-fallback",
+            aliases=("provider-fallback-approval",),
+            runner=_run_approve_provider_fallback,
+            agent_key="model_evaluation",
+            input_types=("gate_result",),
+            output_types=("gate_result",),
+            required_tool="write_gate_result",
+            sla_seconds=120,
+        ),
     ]
 
 
@@ -2114,6 +2164,87 @@ def _run_hybrid_retrieve(storage: LocalStorage, queue_item: dict[str, Any], agen
         limit=int(evidence.get("limit", 12) or 12),
         levels=[str(item) for item in evidence.get("levels", [])] if isinstance(evidence.get("levels", []), list) else [],
         persist=True,
+    )
+
+
+def _run_build_context_bundle(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.context_builder import build_flow_context_bundle
+
+    evidence = _evidence(agent_run)
+    target_path = str(evidence.get("target_path") or _primary_input_path(agent_run))
+    if not target_path:
+        raise ValueError("build-context-bundle requires target_path or one input asset")
+    budget = evidence.get("budget", {}) if isinstance(evidence.get("budget", {}), dict) else {}
+    return build_flow_context_bundle(
+        storage,
+        target_path,
+        flow=str(evidence.get("flow") or evidence.get("task_type") or "prose"),
+        project_id=_project_id(agent_run),
+        workspace_path=_workspace_path(agent_run),
+        chapter_id=str(evidence.get("chapter_id") or ""),
+        current_goal=str(evidence.get("current_goal") or "agent context build"),
+        query=str(evidence.get("query") or ""),
+        top_k=int(evidence.get("top_k", 8) or 8),
+        token_budget=int(budget.get("max_tokens", evidence.get("token_budget", 4000)) or 4000),
+        source_policy=evidence.get("source_policy", {}) if isinstance(evidence.get("source_policy", {}), dict) else {},
+    )
+
+
+def _run_check_canon_graph(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.canon_graph import persist_canon_graph_issues
+
+    evidence = _evidence(agent_run)
+    payload = {
+        **evidence,
+        "target_path": evidence.get("target_path") or _primary_input_path(agent_run),
+        "project_id": _project_id(agent_run) or evidence.get("project_id", ""),
+        "workspace_path": _workspace_path(agent_run) or evidence.get("workspace_path", ""),
+    }
+    return persist_canon_graph_issues(storage, payload)
+
+
+def _run_review_revision_publish_loop(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.loop_kernel import run_loop
+
+    evidence = _evidence(agent_run)
+    return run_loop(
+        storage,
+        {
+            **evidence,
+            "loop_type": "review_revision_publish",
+            "target_path": evidence.get("target_path") or _primary_input_path(agent_run),
+            "project_id": _project_id(agent_run) or evidence.get("project_id", ""),
+            "workspace_path": _workspace_path(agent_run) or evidence.get("workspace_path", ""),
+            "bypass_reason": str(evidence.get("bypass_reason") or "agent center governed local loop"),
+        },
+    )
+
+
+def _run_preview_provider_fallback(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.provider_fallback import preview_provider_fallback
+
+    evidence = _evidence(agent_run)
+    return preview_provider_fallback(
+        storage,
+        {
+            **evidence,
+            "project_id": _project_id(agent_run) or evidence.get("project_id", ""),
+            "workspace_path": _workspace_path(agent_run) or evidence.get("workspace_path", ""),
+        },
+    )
+
+
+def _run_approve_provider_fallback(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.provider_fallback import approve_provider_fallback
+
+    evidence = _evidence(agent_run)
+    return approve_provider_fallback(
+        storage,
+        {
+            **evidence,
+            "project_id": _project_id(agent_run) or evidence.get("project_id", ""),
+            "workspace_path": _workspace_path(agent_run) or evidence.get("workspace_path", ""),
+        },
     )
 
 

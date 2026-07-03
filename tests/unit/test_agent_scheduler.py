@@ -26,6 +26,20 @@ from novel_forge.storage.rag_context import generation_context_policy
 
 
 class AgentSchedulerTests(unittest.TestCase):
+    def test_operation_contracts_cover_governed_post_mkaos_operations(self):
+        contracts = {row["operation"]: row for row in list_agent_operation_contracts()}
+
+        for operation in [
+            "build-context-bundle",
+            "check-canon-graph",
+            "run-review-revision-publish-loop",
+            "preview-provider-fallback",
+            "approve-provider-fallback",
+        ]:
+            self.assertIn(operation, contracts)
+            self.assertEqual(contracts[operation]["runner_kind"], "local_service")
+            self.assertTrue(contracts[operation]["required_tools"])
+
     def test_agent_center_snapshot_exposes_evidence_cockpit_fields(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

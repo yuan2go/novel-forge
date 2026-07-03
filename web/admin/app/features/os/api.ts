@@ -435,6 +435,14 @@ export function updateReviewIssue(reviewPath: string, issueIndex: number, status
   });
 }
 
+export function updateReviewIssueAssetStatus(issueRef: string, status: string, note?: string) {
+  return fetchJson<Record<string, unknown>>("/product/review-issues/status", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ issue_ref: issueRef, status, note: note || "domain governance console" })
+  });
+}
+
 export function runReview(draftPath: string, workspacePath?: string) {
   return postJson("/product/reviews/run", {
     draft_path: draftPath,

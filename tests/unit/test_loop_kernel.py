@@ -126,6 +126,33 @@ class LoopKernelTests(unittest.TestCase):
             self.assertEqual(result["status"], "succeeded")
             self.assertEqual(result["envelope"]["status"], "enforced")
 
+    def test_review_revision_publish_loop_writes_main_chain_outputs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft_path = _draft(storage, project_id="loop-main")
+
+            result = run_loop(
+                storage,
+                {
+                    "loop_type": "review_revision_publish",
+                    "target_path": str(draft_path.relative_to(storage.root)),
+                    "project_id": "loop-main",
+                    "budget": {"max_steps": 8, "max_tokens": 4000, "max_cost": 1.0, "max_duration_seconds": 60},
+                },
+            )
+            outputs = result["outputs"]
+            report_outputs = result["report"]["content"]["outputs"]
+
+            self.assertEqual(result["status"], "succeeded")
+            for key in ["review_report_path", "revision_plan_path", "final_draft_path", "re_review_path", "publish_gate_report_path"]:
+                self.assertTrue(outputs[key], key)
+                self.assertTrue((storage.root / outputs[key]).exists(), key)
+                self.assertEqual(outputs[key], report_outputs[key])
+            self.assertEqual(storage.read_json(storage.root / outputs["review_report_path"])["type"], "review_report")
+            self.assertEqual(storage.read_json(storage.root / outputs["revision_plan_path"])["type"], "revision_plan")
+            self.assertEqual(storage.read_json(storage.root / outputs["publish_gate_report_path"])["type"], "publish_gate_report")
+
 
 def _draft(storage: LocalStorage, *, project_id: str) -> Path:
     return storage.write_asset(
