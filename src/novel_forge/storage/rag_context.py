@@ -68,6 +68,7 @@ COPYRIGHT_RISK_ORDER = {"low": 0, "medium": 1, "unknown": 1, "high": 2}
 COPYRIGHT_BLOCKING_RISKS = {"high"}
 GENERATION_RAG_BLOCKED_TYPES = {
     "source_document",
+    "source_chunk",
     "cleaned_text",
     "decomposition_report",
     "common_novel_analysis_report",

@@ -556,7 +556,7 @@ def build_knowledge_pack(storage: LocalStorage, payload: dict[str, Any]) -> dict
     bindings = list_usage_bindings(storage, flow=flow, enabled=True, limit=500)
     knowledge_items: list[dict[str, Any]] = []
     for binding in bindings:
-        item = _pack_item_from_binding(storage, binding, flow, genre=genre, platform=platform)
+        item = _pack_item_from_binding(storage, binding, flow, genre=genre, platform=platform, project_id=project_id)
         if item:
             knowledge_items.append(item)
     knowledge_items.sort(key=lambda item: (int(item.get("priority", 100)), -float(item.get("weight", 1.0))))
@@ -1078,14 +1078,19 @@ def _review_adapter(content: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _pack_item_from_binding(storage: LocalStorage, binding: dict[str, Any], flow: str, *, genre: str, platform: str) -> dict[str, Any] | None:
+def _pack_item_from_binding(storage: LocalStorage, binding: dict[str, Any], flow: str, *, genre: str, platform: str, project_id: str = "") -> dict[str, Any] | None:
     content = binding.get("content", {})
+    binding_project_id = str(binding.get("metadata", {}).get("project_id") or "")
+    if not _project_scope_matches(binding_project_id, project_id):
+        return None
     knowledge_id = str(content.get("knowledge_id") or "")
     if not knowledge_id:
         return None
     try:
         _, knowledge = _find_asset(storage, knowledge_id, asset_type="knowledge_card", categories=["knowledge"])
     except FileNotFoundError:
+        return None
+    if not _project_scope_matches(str(knowledge.get("metadata", {}).get("project_id") or ""), project_id):
         return None
     if _knowledge_status(knowledge) in {"deprecated"}:
         return None
@@ -1121,6 +1126,16 @@ def _pack_item_from_binding(storage: LocalStorage, binding: dict[str, Any], flow
         "priority": content.get("priority", 100),
         "risk_level": content.get("risk_level", kcontent.get("risk_level", "low")),
     }
+
+
+def _project_scope_matches(asset_project_id: str, requested_project_id: str) -> bool:
+    requested = str(requested_project_id or "").strip()
+    asset_project = str(asset_project_id or "").strip()
+    if not requested or requested == "local-system":
+        return True
+    if not asset_project or asset_project == "local-system":
+        return True
+    return asset_project == requested
 
 
 def _write_pack_item_assets(storage: LocalStorage, pack: KnowledgePack, items: list[dict[str, Any]]) -> list[str]:
