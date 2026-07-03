@@ -23,7 +23,7 @@
 | `python3 -m unittest tests.integration.test_pipeline` | 1 test OK |
 | `python3 -m unittest tests.unit.test_longform_recap_agent tests.unit.test_loop_kernel tests.unit.test_publish_feedback_loop tests.unit.test_provider_hard_stop_proof tests.integration.test_novel_os_12_chapter_industrial_pressure` | 13 tests OK |
 | `npm --prefix web/admin test` | 8 pass, 1 Playwright smoke skipped |
-| `npm --prefix web/admin run build` | OK, 44 routes generated |
+| `npm --prefix web/admin run build` | OK, 45 routes generated |
 
 ## 2. 工程能力分层
 
@@ -42,6 +42,7 @@
 | UI 可编辑控制台 | Canon、Character、Arc、Foreshadowing、ReviewIssue、Longform Recap、LoopRun、Agent Center、Publish Gate、Feedback Console | `web/admin/app/*/page.tsx`, `web/admin/tests/feature-architecture.test.mjs` |
 | Publish / Feedback 闭环 | Publish Gate、Release Package、ReviewIssue/MKAOS risk 阻断、Reader Feedback、Backflow Plan、MKAOS weight update | `src/novel_forge/modules/audit/service.py`, `src/novel_forge/modules/feedback/service.py`, `tests/unit/test_publish_feedback_loop.py` |
 | Platform Strategy OS | 起点/番茄/飞卢/晋江/知乎盐选/微信读书出版向平台策略包、节奏规则、开篇/章节门禁、留存风险、发布适配、反馈回流 | `src/novel_forge/modules/platform_strategy/service.py`, `tests/unit/test_platform_strategy_os.py` |
+| Editor-in-Chief Console | 聚合 Canon / Character / Arc / Foreshadowing / ReviewIssue / Recap / Loop / Agent / Publish Gate，给出可继续生产、暂停修复或可发布的总编判断 | `src/novel_forge/modules/editor_chief/service.py`, `web/admin/app/features/os/EditorChiefConsolePage.tsx`, `tests/unit/test_editor_chief_console.py` |
 | Provider hard-stop | token/cost/timeout/cancel proof，hard-stop 后不 silent retry/fallback | `src/novel_forge/modules/runtime_policy/service.py`, `tests/unit/test_provider_hard_stop_proof.py` |
 | 12 章压力测试 | MKAOS、Context Builder、ReviewIssue、LoopRun、Longform Recap、Publish Gate、Release Package 同链路证明 | `tests/integration/test_novel_os_12_chapter_industrial_pressure.py` |
 
@@ -589,7 +590,41 @@ UI：
 - `tests/unit/test_product_api_routes.py`
 - `tests/unit/test_context_and_production_chain.py`
 
-### 3.12 Runtime / Provider / Cost / Rollback
+### 3.12 Editor-in-Chief Console
+
+功能：
+
+- 全书健康度、风险等级、可继续生产 / 暂停修复 / 可发布判断；
+- 主线 Arc Progress 与 Canon Graph 偏移报警；
+- Character Drift、人物负债、动机/状态风险聚合；
+- Foreshadowing Graph、未回收伏笔、过期伏笔、失效伏笔聚合；
+- 最近 10 章 Pattern Similarity、Motif Budget、Reader Fatigue 聚合；
+- Next-10-Chapter Strategy；
+- Blocking ReviewIssue + RevisionTask 必修队列；
+- Publish Gate + Platform Fit 发布判断；
+- 一屏跳转 Canon、Character、Arc、Foreshadowing、ReviewIssue、Longform Recap、LoopRun、Agent Center、Publish Gate。
+
+核心 API：
+
+- `GET /product/editor-chief/snapshot`
+
+UI：
+
+- `/editor-chief`
+
+核心文件：
+
+- `src/novel_forge/modules/editor_chief/service.py`
+- `src/novel_forge/api/routers/editor_chief.py`
+- `web/admin/app/features/os/EditorChiefConsolePage.tsx`
+
+测试：
+
+- `tests/unit/test_editor_chief_console.py`
+- `tests/unit/test_product_api_routes.py`
+- `web/admin/tests/feature-architecture.test.mjs`
+
+### 3.13 Runtime / Provider / Cost / Rollback
 
 功能：
 
@@ -741,12 +776,13 @@ UI：
 
 ## 4. Web 控制台路由总览
 
-当前 admin build 生成 44 个 route。核心功能路由：
+当前 admin build 生成 45 个 route。核心功能路由：
 
 | 路由 | 功能 |
 | -- | -- |
 | `/` | 本地小说工厂入口 |
 | `/projects` | 项目管理 |
+| `/editor-chief` | 总编控制台 |
 | `/mkaos` | MKAOS 管理台 |
 | `/context` | Context Builder |
 | `/production` | 生产链 |

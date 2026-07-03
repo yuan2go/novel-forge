@@ -100,6 +100,23 @@ export type LongformStabilityDashboard = {
   created_at: string;
 };
 
+export type EditorChiefSnapshot = {
+  status: string;
+  generated_at: string;
+  project: Record<string, unknown>;
+  executive_decision: Record<string, unknown>;
+  overall_health: Record<string, unknown>;
+  arc_progress: Record<string, unknown>;
+  character_drift: Record<string, unknown>;
+  foreshadowing: Record<string, unknown>;
+  recent_fatigue: Record<string, unknown>;
+  next_10_chapter_strategy: Record<string, unknown>;
+  blocking_repair_queue: Record<string, unknown>;
+  publish_and_platform_fit: Record<string, unknown>;
+  control_links: Record<string, string>;
+  evidence: Record<string, unknown>;
+};
+
 export type LongformControlAssetPayload = {
   asset_type: "canon_database" | "arc_plan" | "foreshadowing_graph" | "character_state_ledger" | "villain_operation_plan";
   title?: string;
@@ -220,6 +237,16 @@ export function loadAgentCenterSnapshot(projectId?: string) {
   const params = new URLSearchParams({ limit: "300" });
   if (projectId) params.set("project_id", projectId);
   return fetchJson<AgentCenterSnapshot>(`/product/agents/center?${params.toString()}`);
+}
+
+export function loadEditorChiefSnapshot(projectId?: string, workspacePath?: string) {
+  const params = new URLSearchParams({ limit: "700" });
+  if (projectId) params.set("project_id", projectId);
+  if (workspacePath) params.set("workspace_path", workspacePath);
+  return Promise.all([
+    fetchJson<ProjectRow[]>("/product/projects"),
+    fetchJson<EditorChiefSnapshot>(`/product/editor-chief/snapshot?${params.toString()}`)
+  ]);
 }
 
 export function runAgentSchedulerTick(projectId?: string, iterations = 1) {

@@ -35,6 +35,7 @@ export type NavItemKey =
   | "workbench"
   | "projects"
   | "os_console"
+  | "editor_chief_console"
   | "workflow_runtime"
   | "agent_center"
   | "agent_dispatch"
@@ -114,6 +115,7 @@ export const navGroups: NavGroup[] = [
     label: "OS Runtime",
     items: [
       { key: "os_console", label: "OS 控制台", description: "Novel Operating System 总览", href: "/os", icon: <Activity size={17} /> },
+      { key: "editor_chief_console", label: "总编控制台", description: "全书健康、主线、人物、伏笔、疲劳和发布判断", href: "/editor-chief", icon: <BookOpenCheck size={17} /> },
       { key: "workflow_runtime", label: "Workflow Runtime", description: "DAG、ready queue 和 resume 控制台", href: "/workflow-runtime", icon: <Workflow size={17} /> },
       { key: "agent_center", label: "Agent Center", description: "AgentTask、Loop、Issue 和运行证据", href: "/agent-center", icon: <ListChecks size={17} /> },
       { key: "agent_dispatch", label: "Agent Dispatch", description: "Agent queue、lease、recover 和 contract", href: "/agent-dispatch", icon: <ListChecks size={17} /> },

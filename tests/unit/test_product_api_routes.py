@@ -59,6 +59,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/agents/recover",
                 "/product/agents/operation-contracts",
                 "/product/agents/center",
+                "/product/editor-chief/snapshot",
                 "/product/canon-graph/query",
                 "/product/canon-graph/snapshot",
                 "/product/canon-graph/reason",
@@ -203,6 +204,7 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(client.get("/product/tasks").status_code, 200)
             self.assertEqual(client.get("/product/system/health").status_code, 200)
             self.assertEqual(client.get("/product/agents/center").status_code, 200)
+            self.assertEqual(client.get("/product/editor-chief/snapshot").status_code, 200)
             self.assertEqual(client.get("/product/runtime/policy/surface-coverage").status_code, 200)
             self.assertEqual(client.get("/product/runtime/provider-hard-stop-evidence").status_code, 200)
             self.assertEqual(client.get("/product/longform-stability/dashboard").status_code, 200)

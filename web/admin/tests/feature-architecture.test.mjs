@@ -36,12 +36,13 @@ describe("Novel Forge admin feature architecture", () => {
 
   it("has routed Novel OS runtime consoles wired to real runtime APIs", () => {
     const navigation = read("app/shared/navigation.tsx");
-    for (const token of ["OS Runtime", "workflow_runtime", "agent_dispatch", "trace_timeline", "cost_dashboard", "invalidation_map", "review_rework_board", "longform_stability"]) {
+    for (const token of ["OS Runtime", "editor_chief_console", "workflow_runtime", "agent_dispatch", "trace_timeline", "cost_dashboard", "invalidation_map", "review_rework_board", "longform_stability"]) {
       assert.match(navigation, new RegExp(token));
     }
 
     for (const path of [
       "app/os/page.tsx",
+      "app/editor-chief/page.tsx",
       "app/workflow-runtime/page.tsx",
       "app/agent-dispatch/page.tsx",
       "app/novel-kg/page.tsx",
@@ -51,6 +52,7 @@ describe("Novel Forge admin feature architecture", () => {
       "app/review-rework/page.tsx",
       "app/longform-stability/page.tsx",
       "app/features/os/OperatingSystemConsolePage.tsx",
+      "app/features/os/EditorChiefConsolePage.tsx",
       "app/features/os/WorkflowRuntimeConsolePage.tsx",
       "app/features/os/AgentDispatchCenterPage.tsx",
       "app/features/os/TraceTimelinePage.tsx",
@@ -88,9 +90,15 @@ describe("Novel Forge admin feature architecture", () => {
       "/product/longform-stability/acceptance",
       "/product/longform-stability/control-asset",
       "/product/longform-stability/calibrate",
-      "/product/agents/center"
+      "/product/agents/center",
+      "/product/editor-chief/snapshot"
     ]) {
       assert.match(osApi, new RegExp(endpoint.replaceAll("/", "\\/")));
+    }
+
+    const editorChiefConsole = read("app/features/os/EditorChiefConsolePage.tsx");
+    for (const token of ["这本书现在健康吗", "主线是否偏了", "人物是否崩了", "伏笔是否乱了", "最近10章是否疲劳", "下10章应该怎么写", "哪些问题必须先修", "是否可以发布"]) {
+      assert.match(editorChiefConsole, new RegExp(token));
     }
 
     const workflowConsole = read("app/features/os/WorkflowRuntimeConsolePage.tsx");

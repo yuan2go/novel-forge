@@ -25,6 +25,7 @@ import {
 import { formatMoney } from "./helpers";
 
 const consoleLinks = [
+  { href: "/editor-chief", label: "Editor-in-Chief Console", icon: <BookOpenCheck size={18} />, description: "全书健康、主线偏移、人物崩坏、伏笔风险、疲劳和发布判断。" },
   { href: "/workflow-runtime", label: "Workflow Runtime Console", icon: <Workflow size={18} />, description: "DAG、ready queue、processor contract、execute/resume/control。" },
   { href: "/agent-dispatch", label: "Agent Dispatch Center", icon: <Activity size={18} />, description: "dispatch queue、lease、operation contract、retry/recover。" },
   { href: "/novel-kg", label: "Novel KG Workbench", icon: <Network size={18} />, description: "实体、关系、时间线、伏笔、冲突和强门禁。" },

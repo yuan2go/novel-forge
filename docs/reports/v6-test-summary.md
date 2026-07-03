@@ -161,3 +161,13 @@ Phase 12 要求的 Python、integration、新增工业化 proof、前端 test �
 | `npm --prefix web/admin run build` | Admin Next.js production build。 | OK，44 static routes generated |
 
 Implementation note: an intermediate full-discover run exposed non-idempotent `platform_strategy_pack` ids because `make_id()` adds a random suffix. The final implementation uses deterministic platform strategy pack ids, and the post-fix pipeline/full-discover runs above passed.
+
+## Editor-in-Chief Console
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m compileall -q src/novel_forge/modules/editor_chief src/novel_forge/api/routers/editor_chief.py` | 总编聚合服务和 API router 语法/导入检查。 | OK |
+| `python3 -m unittest tests/unit/test_editor_chief_console.py` | 总编 snapshot、阻断判定、Next-10 strategy、API smoke。 | 2 tests OK，用时约 1.3s |
+| `python3 -m unittest tests/unit/test_product_api_routes.py` | Product API 路由注册回归，包含 `/product/editor-chief/snapshot`。 | 1 test OK，用时约 19.2s |
+| `npm --prefix web/admin test` | Admin 前端路由/架构回归，包含 `/editor-chief` 和总编问题分区。 | 9 tests，8 pass，1 skip |
+| `npm --prefix web/admin run build` | Admin Next.js production build。 | OK，45 static routes generated |
