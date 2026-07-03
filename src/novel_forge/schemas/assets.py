@@ -409,6 +409,26 @@ class ReviewIssue(BaseAsset):
 
 
 @dataclass
+class LoopRun(BaseAsset):
+    type: str = "loop_run"
+
+
+@dataclass
+class LoopStep(BaseAsset):
+    type: str = "loop_step"
+
+
+@dataclass
+class LoopCheckpoint(BaseAsset):
+    type: str = "loop_checkpoint"
+
+
+@dataclass
+class LoopReport(BaseAsset):
+    type: str = "loop_report"
+
+
+@dataclass
 class RevisionTask(BaseAsset):
     type: str = "revision_task"
 
@@ -975,6 +995,10 @@ SCHEMA_CLASSES = {
         DraftDiffReport,
         ReviewReport,
         ReviewIssue,
+        LoopRun,
+        LoopStep,
+        LoopCheckpoint,
+        LoopReport,
         RevisionTask,
         RevisionPlan,
         QualityScoreReport,

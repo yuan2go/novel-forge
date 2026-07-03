@@ -60,6 +60,19 @@
 | `python3 -m unittest tests/unit/test_longform_stability.py` | longform publish gate 回归。 | 8 tests OK |
 | `python3 -m unittest tests.integration.test_pipeline` | 旧 pipeline 集成链路不回归。 | 1 test OK，用时 405.552s |
 
+## Phase 6
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m compileall -q src/novel_forge/modules/loop_kernel src/novel_forge/schemas src/novel_forge/api/routers/loops.py src/novel_forge/api/routers/__init__.py` | Loop Kernel、schema、API router 语法/导入检查。 | OK |
+| `python3 -m unittest tests/unit/test_loop_kernel.py` | LoopRun/LoopStep/Checkpoint/Report、Context Builder 接入、ReviewIssue 阻断、budget stop、OS Envelope fail closed。 | 4 tests OK |
+| `python3 -m unittest tests/unit/test_schemas.py` | 新 Loop 资产 schema 注册与通用 schema 回归。 | 17 tests OK |
+| `python3 -m unittest tests/unit/test_product_api_routes.py` | Product API 路由注册回归。 | 1 test OK |
+| `python3 -m unittest tests/unit/test_mkaos_isolation.py` | RAG/source leakage 回归；Loop runtime assets 不进入 generation RAG。 | 4 tests OK |
+| `python3 -m unittest tests/unit/test_context_builder_mkaos_flow.py tests/unit/test_mkaos.py tests/unit/test_review_issue.py` | Context Builder/MKAOS/ReviewIssue 相邻回归。 | 10 tests OK |
+| `python3 -m unittest tests/unit/test_workflow_executor.py` | 旧 workflow executor 回归，确认 Loop Kernel 未替换或破坏 workflow 层。 | 27 tests OK |
+| `python3 -m unittest tests.integration.test_pipeline` | 旧 pipeline 集成链路不回归。 | 1 test OK，用时 410.099s |
+
 ## 待最终全量运行
 
 最终 Phase 12 必须重新运行：

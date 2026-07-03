@@ -23,6 +23,7 @@ from novel_forge.schemas import (
     GenerationRun,
     ChangeImpactReport,
     LocalSettingsProfile,
+    LoopRun,
     NovelKGSnapshot,
     NodeRun,
     OriginalityReport,
@@ -43,7 +44,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 176)
+        self.assertEqual(len(SCHEMA_CLASSES), 180)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("source_chunk", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
@@ -56,6 +57,10 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("knowledge_quality_score", SCHEMA_CLASSES)
         self.assertIn("review_report", SCHEMA_CLASSES)
         self.assertIn("review_issue", SCHEMA_CLASSES)
+        self.assertIn("loop_run", SCHEMA_CLASSES)
+        self.assertIn("loop_step", SCHEMA_CLASSES)
+        self.assertIn("loop_checkpoint", SCHEMA_CLASSES)
+        self.assertIn("loop_report", SCHEMA_CLASSES)
         self.assertIn("project_workspace_state", SCHEMA_CLASSES)
         self.assertIn("task_dead_letter", SCHEMA_CLASSES)
         self.assertIn("batch_task_item", SCHEMA_CLASSES)
