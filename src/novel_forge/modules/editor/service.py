@@ -17,6 +17,7 @@ from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.production_chain import create_draft_version, create_generation_run
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.review_issue import assert_no_blocking_review_issues
 from novel_forge.schemas import DraftChapter, DraftDiffReport, EditorPatch, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -242,6 +243,7 @@ def execute_revision_plan(
     production_context = build_production_context(storage, draft, input_path=draft_file, workspace_path=str(project.get("workspace_path", "")))
     project_id = str(project.get("project_id", ""))
     workspace = str(project.get("workspace_path", ""))
+    assert_no_blocking_review_issues(storage, target_asset_id=draft.id, project_id=project_id or None, gate="canonical_chapter")
     before_text = str(draft.content.get("text", ""))
     with AgentExecutionContext(
         storage,

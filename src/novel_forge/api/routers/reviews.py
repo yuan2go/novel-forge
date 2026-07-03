@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 from novel_forge.api import product as _product_services
 from novel_forge.api.routers._bindings import bind_product_symbols
 from novel_forge.api.routers.context import ProductRouterContext
+from novel_forge.modules.review_issue import create_review_issue, list_review_issues, update_review_issue_status as update_review_issue_asset_status
 from novel_forge.modules.revision import run_review_rework_loop
 
 bind_product_symbols(globals(), _product_services)
@@ -69,6 +70,41 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def update_review_issue_endpoint(request: ReviewIssueStatusRequest) -> dict[str, Any]:
         try:
             return update_review_issue_status(LocalStorage(app_settings.root), _model_data(request))
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/review-issues")
+    def list_review_issue_assets(
+        project_id: str | None = None,
+        target_asset_id: str | None = None,
+        status: str | None = None,
+        blocking: bool | None = None,
+        limit: int = 200,
+    ) -> list[dict[str, Any]]:
+        try:
+            return list_review_issues(LocalStorage(app_settings.root), project_id=project_id, target_asset_id=target_asset_id, status=status, blocking=blocking, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/review-issues")
+    async def create_review_issue_endpoint(request: Request) -> dict[str, Any]:
+        try:
+            return create_review_issue(LocalStorage(app_settings.root), await request.json())
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/product/review-issues/status")
+    async def update_review_issue_asset_endpoint(request: Request) -> dict[str, Any]:
+        try:
+            payload = await request.json()
+            return update_review_issue_asset_status(
+                LocalStorage(app_settings.root),
+                payload.get("issue_ref") or payload.get("issue_id") or payload.get("path") or "",
+                status=str(payload.get("status") or ""),
+                note=str(payload.get("note") or ""),
+            )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:

@@ -404,6 +404,11 @@ class ReviewReport(BaseAsset):
 
 
 @dataclass
+class ReviewIssue(BaseAsset):
+    type: str = "review_issue"
+
+
+@dataclass
 class RevisionTask(BaseAsset):
     type: str = "revision_task"
 
@@ -969,6 +974,7 @@ SCHEMA_CLASSES = {
         EditorPatch,
         DraftDiffReport,
         ReviewReport,
+        ReviewIssue,
         RevisionTask,
         RevisionPlan,
         QualityScoreReport,

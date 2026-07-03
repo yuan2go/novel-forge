@@ -11,6 +11,7 @@ from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.longform_stability import create_revision_task_from_gate, evaluate_longform_stability_gate
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
+from novel_forge.modules.review_issue import assert_no_blocking_review_issues, blocking_review_issues, review_issues_to_gate_issues
 from novel_forge.modules.semantic_enhancement import analyze_story_semantics
 from novel_forge.modules.standards import create_quality_score_report
 from novel_forge.modules.style import create_style_review_report
@@ -222,9 +223,13 @@ def create_publish_gate_report(
     for key, value in longform_gate.get("gates", {}).items():
         gate_data["gates"][f"longform_{key}"] = bool(value)
     gate_data["blocking_issues"].extend(longform_gate.get("blocking_issues", []))
+    related_asset_ids = _related_review_issue_asset_ids(target.to_dict())
+    review_issue_rows = blocking_review_issues(storage, target_asset_id=target.id, project_id=str(project.get("project_id", "")) or None, related_asset_ids=related_asset_ids)
+    gate_data["blocking_issues"].extend(review_issues_to_gate_issues(review_issue_rows))
+    gate_data["gates"]["review_issue_blocking_clear"] = not review_issue_rows
     blocking = gate_data["blocking_issues"]
     decision = "ready"
-    if any(issue.get("severity") == "high" for issue in blocking):
+    if any(issue.get("severity") in {"high", "critical"} for issue in blocking):
         decision = "blocked"
     elif blocking:
         decision = "needs_revision"
@@ -239,6 +244,7 @@ def create_publish_gate_report(
             "gates": gate_data["gates"],
             "decision": decision,
             "blocking_issues": blocking,
+            "review_issue_paths": [row.get("path", "") for row in review_issue_rows],
             "required_reports": {
                 "chapter_audit_report_path": _display_path(storage.root, Path(audit_path)),
                 "longform_stability_reports": longform_gate.get("required_reports", {}),
@@ -307,6 +313,13 @@ def create_release_package(
     gate = _read_asset_dict(storage, gate_path)
     decision = gate.get("content", {}).get("decision", "blocked") if isinstance(gate.get("content", {}), dict) else "blocked"
     status = "ready" if decision == "ready" else "blocked"
+    assert_no_blocking_review_issues(
+        storage,
+        target_asset_id=target.id,
+        project_id=str(project.get("project_id", "")) or None,
+        related_asset_ids=_related_review_issue_asset_ids(target.to_dict()),
+        gate="release_package",
+    )
     text = _asset_text(target)
     release_version = make_id("release_version", f"{target.id}:{channel}:{utc_now()}")
     asset = ReleasePackage(
@@ -374,6 +387,19 @@ def _release_platform_rules(context: dict[str, Any], channel: str) -> dict[str, 
         "min_hook_score": config.get("publish_min_hook_score", 0.7),
         "max_risk_level": config.get("publish_max_risk_level", "medium"),
     }
+
+
+def _related_review_issue_asset_ids(asset: dict[str, Any]) -> list[str]:
+    metadata = asset.get("metadata", {}) if isinstance(asset.get("metadata", {}), dict) else {}
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    return _dedupe(
+        [
+            str(asset.get("source") or ""),
+            str(metadata.get("previous_draft_id") or ""),
+            str(content.get("source_draft_id") or ""),
+            str(content.get("target_draft_id") or ""),
+        ]
+    )
 
 
 def _candidate_source_assets(storage: LocalStorage, target: dict[str, Any], context: dict[str, Any]) -> list[dict[str, Any]]:

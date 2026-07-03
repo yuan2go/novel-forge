@@ -43,6 +43,23 @@
 | `python3 -m unittest tests/unit/test_mkaos_os_envelope.py` | OS Envelope 回归。 | 5 tests OK |
 | `python3 -m unittest tests.integration.test_pipeline` | 旧 pipeline 集成链路不回归。 | 1 test OK，用时 406.239s |
 
+## Phase 5
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m compileall -q src/novel_forge/modules/review_issue src/novel_forge/modules/review src/novel_forge/modules/audit src/novel_forge/modules/editor src/novel_forge/schemas src/novel_forge/api/routers/reviews.py` | ReviewIssue 相关模块语法/导入检查。 | OK |
+| `python3 -m unittest tests/unit/test_review_issue.py` | MKAOS/Canon issue 持久化，release package 和 canonical/final draft 阻断证明。 | 3 tests OK |
+| `python3 -m unittest tests/unit/test_schemas.py` | 新 `review_issue` schema 注册与通用 schema 回归。 | 17 tests OK |
+| `python3 -m unittest tests/unit/test_product_api_routes.py` | API 路由注册回归。 | 1 test OK |
+| `python3 -m unittest tests/unit/test_mkaos.py` | MKAOS P0 回归。 | 5 tests OK |
+| `python3 -m unittest tests/unit/test_module_services.py` | 主模块服务链路回归。 | 10 tests OK，用时约 59.0s |
+| `python3 -m unittest tests/unit/test_context_builder_mkaos_flow.py` | Context Builder / MKAOS flow 回归。 | 2 tests OK |
+| `python3 -m unittest tests/unit/test_mkaos_isolation.py` | source isolation 回归。 | 4 tests OK |
+| `python3 -m unittest tests/unit/test_postgres_migrations.py` | migration chain 回归。 | 2 tests OK |
+| `python3 -m unittest tests/unit/test_publishing_center.py` | publishing center 无阻断旧路径回归。 | 1 test OK |
+| `python3 -m unittest tests/unit/test_longform_stability.py` | longform publish gate 回归。 | 8 tests OK |
+| `python3 -m unittest tests.integration.test_pipeline` | 旧 pipeline 集成链路不回归。 | 1 test OK，用时 405.552s |
+
 ## 待最终全量运行
 
 最终 Phase 12 必须重新运行：

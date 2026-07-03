@@ -177,6 +177,7 @@ ASSET_DIR_BY_TYPE = {
     "editor_patch": "drafts",
     "draft_diff_report": "drafts",
     "review_report": "reviews",
+    "review_issue": "reviews",
     "revision_task": "reviews",
     "revision_plan": "reviews",
     "reader_feedback": "feedback",

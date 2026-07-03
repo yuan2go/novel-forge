@@ -15,6 +15,7 @@ from novel_forge.modules.audit import create_chapter_audit_report, create_origin
 from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.mkaos import record_pack_usage_for_artifact, validate_artifact as validate_mkaos_artifact
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, quality_dimensions_from_context
+from novel_forge.modules.review_issue import persist_review_issues_for_report
 from novel_forge.modules.standards import create_quality_score_report, evaluate_quality_standard
 from novel_forge.modules.style import create_style_review_report
 from novel_forge.schemas import ReviewReport
@@ -170,6 +171,12 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
             ),
         )
         review_path = storage.write_asset("reviews", asset)
+        review_issue_summary = persist_review_issues_for_report(
+            storage,
+            review_path,
+            issues=issues,
+            target_asset_path=draft_path_for_reports,
+        )
         _record_mkaos_usage(
             storage,
             mkaos_pack,
@@ -214,7 +221,13 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
             metadata["style_review_report_path"] = str(style_path.relative_to(storage.root))
             metadata["originality_report_path"] = str(originality_path.relative_to(storage.root))
             metadata["chapter_audit_report_path"] = str(chapter_audit_path.relative_to(storage.root))
+            metadata["review_issue_ids"] = review_issue_summary.get("issue_ids", [])
+            metadata["review_issue_paths"] = review_issue_summary.get("issue_paths", [])
+            metadata["blocking_review_issue_count"] = review_issue_summary.get("blocking_count", 0)
             review_data["metadata"] = metadata
+            content = review_data.get("content", {}) if isinstance(review_data.get("content", {}), dict) else {}
+            content["review_issue_summary"] = review_issue_summary
+            review_data["content"] = content
             references = [str(item) for item in review_data.get("references", []) if str(item).strip()]
             for linked in [
                 storage.read_json(quality_path).get("id", ""),

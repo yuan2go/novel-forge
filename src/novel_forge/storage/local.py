@@ -36,6 +36,7 @@ NOVEL_KG_SOURCE_TYPES = {
     "draft_version",
     "chapter_audit_report",
     "review_report",
+    "review_issue",
     "revision_task",
     "revision_plan",
     "canon_graph_snapshot",

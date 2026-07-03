@@ -301,6 +301,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "editor_patch": ["target_draft_id", "target_draft_path", "operations", "status", "created_at"],
     "draft_diff_report": ["base_draft_id", "target_draft_id", "diff_summary", "operations", "created_at"],
     "review_report": ["rubric", "summary"],
+    "review_issue": ["issue_id", "issue_type", "severity", "blocking", "status", "target_asset_id", "message", "created_at"],
     "revision_task": ["task_id", "review_path", "source_draft_path", "issue_indexes", "issues", "status", "created_at"],
     "revision_plan": ["steps", "target_score", "must_preserve"],
     "reader_feedback": ["rows"],
@@ -659,6 +660,8 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         errors.extend(_validate_project_workspace_state_content(content))
     if asset_type == "review_report" and isinstance(content, dict):
         errors.extend(_validate_review_report_content(content))
+    if asset_type == "review_issue" and isinstance(content, dict):
+        errors.extend(_validate_review_issue_content(content))
     if asset_type == "revision_task" and isinstance(content, dict):
         errors.extend(_validate_revision_task_content(content))
     if asset_type == "platform_profile" and isinstance(content, dict):
@@ -1155,6 +1158,34 @@ def _validate_review_report_content(content: dict[str, Any]) -> list[str]:
             for key in ["average", "minimum", "maximum", "spread"]:
                 if key in score_summary and not isinstance(score_summary.get(key), (int, float)):
                     errors.append(f"review_report score_summary.{key} must be numeric")
+    return errors
+
+
+def _validate_review_issue_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if content.get("issue_type") not in {
+        "mkaos_conflict",
+        "canon_conflict",
+        "character_drift",
+        "foreshadowing_drop",
+        "plot_logic_gap",
+        "pacing_collapse",
+        "ai_style",
+        "repetition",
+        "platform_policy_risk",
+        "source_leakage",
+        "context_budget_overflow",
+    }:
+        errors.append("review_issue issue_type is not allowed")
+    if content.get("severity") not in {"info", "low", "medium", "high", "critical"}:
+        errors.append("review_issue severity must be info, low, medium, high, or critical")
+    if content.get("status") not in {"open", "acknowledged", "in_revision", "resolved", "waived", "closed"}:
+        errors.append("review_issue status must be open, acknowledged, in_revision, resolved, waived, or closed")
+    if not isinstance(content.get("blocking"), bool):
+        errors.append("review_issue blocking must be a boolean")
+    evidence_refs = content.get("evidence_refs", [])
+    if evidence_refs is not None and not isinstance(evidence_refs, list):
+        errors.append("review_issue evidence_refs must be a list")
     return errors
 
 
