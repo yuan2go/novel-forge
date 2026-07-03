@@ -586,13 +586,23 @@ def build_knowledge_pack(storage: LocalStorage, payload: dict[str, Any]) -> dict
         task_type=flow,
         token_budget=budget,
     )
+    selector_policy = _selector_policy(payload, os_envelope, budget)
     bindings = list_usage_bindings(storage, flow=flow, enabled=True, limit=500)
     knowledge_items: list[dict[str, Any]] = []
+    selector_rejections: list[dict[str, Any]] = []
     for binding in bindings:
-        item = _pack_item_from_binding(storage, binding, flow, genre=genre, platform=platform, project_id=project_id)
-        if item:
+        item = _pack_item_from_binding(storage, binding, flow, genre=genre, platform=platform, project_id=project_id, selector_policy=selector_policy)
+        if item and item.get("selector_decision", {}).get("selected", True):
             knowledge_items.append(item)
-    knowledge_items.sort(key=lambda item: (int(item.get("priority", 100)), -float(item.get("weight", 1.0))))
+        elif item:
+            selector_rejections.append({
+                "knowledge_id": item.get("knowledge_id", ""),
+                "binding_id": item.get("binding_id", ""),
+                "concept_name": item.get("concept_name", ""),
+                "reason": item.get("selector_decision", {}).get("reason", "selector_rejected"),
+                "risk_level": item.get("risk_level", ""),
+            })
+    knowledge_items = _select_pack_items(knowledge_items, flow=flow, budget=budget)
     if flow == "prose":
         required_items = [item for item in knowledge_items if item.get("item_role") == "required"]
         optional_items = [item for item in knowledge_items if item.get("item_role") == "optional"]
@@ -628,6 +638,8 @@ def build_knowledge_pack(storage: LocalStorage, payload: dict[str, Any]) -> dict
         "review_rules": rule_rows,
         "style_constraints": style_constraints,
         "knowledge_budget": budget,
+        "selector_policy": selector_policy,
+        "selector_rejections": selector_rejections,
         "risk_warnings": risk_warnings,
         "output_contract": output_contract,
         "pack_items": knowledge_items,
@@ -735,38 +747,108 @@ def validate_artifact(storage: LocalStorage, payload: dict[str, Any]) -> dict[st
 
 
 def validate_canon_conflict(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
-    text = str(payload.get("artifact_text") or payload.get("text") or "")
-    project_id = str(payload.get("project_id") or "local-system")
-    canon = payload.get("canon") if isinstance(payload.get("canon"), dict) else _canon_context(storage, project_id)
-    facts = canon.get("facts", []) if isinstance(canon.get("facts", []), list) else []
-    facts.extend(canon.get("entities", []) if isinstance(canon.get("entities", []), list) else [])
-    claims = payload.get("claims", []) if isinstance(payload.get("claims", []), list) else []
+    return check_canon_conflict(storage, payload)
+
+
+def check_canon_conflict(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    check_input = _canon_conflict_check_input(storage, payload)
+    text = str(check_input.get("artifact_text") or "")
+    canon = check_input.get("canon", {}) if isinstance(check_input.get("canon", {}), dict) else {}
+    facts = _canon_facts(canon)
+    claims = check_input.get("claims", []) if isinstance(check_input.get("claims", []), list) else []
     issues: list[dict[str, Any]] = []
     for claim in claims:
         if not isinstance(claim, dict):
             continue
-        entity = str(claim.get("entity") or claim.get("name") or "").strip()
+        entity = str(claim.get("entity") or claim.get("name") or claim.get("canonical_name") or claim.get("arc_id") or claim.get("thread_id") or "").strip()
         key = str(claim.get("key") or claim.get("field") or "status").strip()
         value = str(claim.get("value") or "").strip()
         for fact in facts:
             if not isinstance(fact, dict):
                 continue
-            fact_entity = str(fact.get("entity") or fact.get("name") or fact.get("canonical_name") or "").strip()
-            fact_value = str(fact.get(key) or fact.get("status") or fact.get("state") or "").strip()
+            fact_entity = _canon_fact_name(fact)
+            fact_value = _canon_fact_value(fact, key)
             if entity and fact_entity and entity == fact_entity and value and fact_value and value != fact_value:
-                issues.append(_issue("rule_canon_conflict", "Canon 冲突检查", "critical", True, f"{entity} 的 {key}={value} 与 Canon={fact_value} 冲突。", "创建正典变更任务或回滚冲突产物。", "artifact"))
+                issues.append(
+                    _canon_issue(
+                        f"{entity} 的 {key}={value} 与 Canon={fact_value} 冲突。",
+                        "创建正典变更任务或回滚冲突产物。",
+                        dimension=str(fact.get("canon_dimension") or claim.get("dimension") or "canon"),
+                        evidence_refs=_canon_evidence_refs(fact, canon),
+                    )
+                )
     for fact in facts:
         if not isinstance(fact, dict):
             continue
-        name = str(fact.get("canonical_name") or fact.get("name") or fact.get("entity") or "").strip()
+        name = _canon_fact_name(fact)
         status = str(fact.get("status") or fact.get("state") or "").strip().lower()
         if not name or not text:
             continue
         if status in {"alive", "存活", "在世"} and name in text and any(term in text for term in ["死了", "死亡", "尸体", "被杀"]):
-            issues.append(_issue("rule_canon_conflict", "Canon 冲突检查", "critical", True, f"{name} 被 Canon 标记为存活，但文本出现死亡声明。", "回滚死亡声明或提交正典变更。", "artifact"))
+            issues.append(
+                _canon_issue(
+                    f"{name} 被 Canon 标记为存活，但文本出现死亡声明。",
+                    "回滚死亡声明或提交正典变更。",
+                    dimension=str(fact.get("canon_dimension") or "character"),
+                    evidence_refs=_canon_evidence_refs(fact, canon),
+                )
+            )
         if status in {"dead", "死亡", "已死"} and name in text and any(term in text for term in ["还活着", "现身", "开口说"]):
-            issues.append(_issue("rule_canon_conflict", "Canon 冲突检查", "critical", True, f"{name} 被 Canon 标记为死亡，但文本出现存活行动。", "改为回忆、伪装或提交正典变更。", "artifact"))
-    return {"passed": not issues, "issues": issues, "canon_source": canon.get("source", "payload_or_project_stub")}
+            issues.append(
+                _canon_issue(
+                    f"{name} 被 Canon 标记为死亡，但文本出现存活行动。",
+                    "改为回忆、伪装或提交正典变更。",
+                    dimension=str(fact.get("canon_dimension") or "character"),
+                    evidence_refs=_canon_evidence_refs(fact, canon),
+                )
+            )
+    for rule in canon.get("rules", []) if isinstance(canon.get("rules", []), list) else []:
+        if not isinstance(rule, dict) or not text:
+            continue
+        for term in _strings(rule.get("forbidden_terms")):
+            if term and term in text:
+                issues.append(
+                    _canon_issue(
+                        f"文本命中世界规则禁用项：{term}。",
+                        str(rule.get("fix_suggestion") or "改写为符合世界规则的行动或提交 world rule 变更。"),
+                        dimension="world_rule",
+                        evidence_refs=_canon_evidence_refs(rule, canon),
+                    )
+                )
+    issue_candidates = [canon_conflict_to_issue_candidate(issue, check_input) for issue in issues]
+    return {
+        "passed": not issues,
+        "issues": issues,
+        "issue_candidates": issue_candidates,
+        "input": {
+            "project_id": check_input.get("project_id", ""),
+            "target_asset_id": check_input.get("target_asset_id", ""),
+            "target_asset_type": check_input.get("target_asset_type", ""),
+            "claim_count": len(claims),
+        },
+        "canon_source": canon.get("source", "payload_or_project_stub"),
+        "checked_asset_types": canon.get("checked_asset_types", []),
+        "references": canon.get("references", []),
+    }
+
+
+def canon_conflict_to_issue_candidate(issue: dict[str, Any], check_input: dict[str, Any] | None = None) -> dict[str, Any]:
+    check_input = check_input or {}
+    return {
+        "issue_type": "canon_conflict",
+        "source_system": "mkaos.canon_conflict",
+        "severity": str(issue.get("severity") or "critical"),
+        "blocking": bool(issue.get("blocking", True)),
+        "message": str(issue.get("message") or ""),
+        "fix_suggestion": str(issue.get("fix_suggestion") or ""),
+        "target_asset_id": str(check_input.get("target_asset_id") or ""),
+        "target_asset_type": str(check_input.get("target_asset_type") or "artifact"),
+        "project_id": str(check_input.get("project_id") or "local-system"),
+        "dimension": str(issue.get("dimension") or "canon"),
+        "evidence_refs": issue.get("evidence_refs", []) if isinstance(issue.get("evidence_refs", []), list) else [],
+        "source_issue": issue,
+        "status": "open",
+    }
 
 
 def record_usage_event(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -1319,7 +1401,16 @@ def _query_row(row: dict[str, Any], bindings: list[dict[str, Any]]) -> dict[str,
     }
 
 
-def _pack_item_from_binding(storage: LocalStorage, binding: dict[str, Any], flow: str, *, genre: str, platform: str, project_id: str = "") -> dict[str, Any] | None:
+def _pack_item_from_binding(
+    storage: LocalStorage,
+    binding: dict[str, Any],
+    flow: str,
+    *,
+    genre: str,
+    platform: str,
+    project_id: str = "",
+    selector_policy: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
     content = binding.get("content", {})
     binding_project_id = str(binding.get("metadata", {}).get("project_id") or "")
     if not _project_scope_matches(binding_project_id, project_id):
@@ -1341,7 +1432,7 @@ def _pack_item_from_binding(storage: LocalStorage, binding: dict[str, Any], flow
     if not _platform_matches(kcontent.get("applicable_platforms", []), platform):
         return None
     role = _pack_role_from_binding(content, flow)
-    return {
+    item = {
         "knowledge_id": knowledge_id,
         "binding_id": binding.get("id", ""),
         "item_role": role,
@@ -1367,6 +1458,133 @@ def _pack_item_from_binding(storage: LocalStorage, binding: dict[str, Any], flow
         "priority": content.get("priority", 100),
         "risk_level": content.get("risk_level", kcontent.get("risk_level", "low")),
     }
+    item["selector_decision"] = _selector_decision(storage, item, knowledge, binding, flow=flow, selector_policy=selector_policy or {})
+    item["selection_score"] = item["selector_decision"]["selection_score"]
+    item["quality_adjusted_score"] = item["selector_decision"]["quality_adjusted_score"]
+    item["estimated_tokens"] = item["selector_decision"]["estimated_tokens"]
+    return item
+
+
+def _selector_policy(payload: dict[str, Any], os_envelope: dict[str, Any], budget: dict[str, Any]) -> dict[str, Any]:
+    envelope_source_policy = os_envelope.get("source_policy", {}) if isinstance(os_envelope, dict) else {}
+    source_policy = payload.get("source_policy") if isinstance(payload.get("source_policy"), dict) else envelope_source_policy
+    excluded_risks = set(_strings(payload.get("exclude_risk_levels")))
+    excluded_risks.update(_strings(source_policy.get("exclude_risk_levels") if isinstance(source_policy, dict) else None))
+    excluded_risks.update(_strings(source_policy.get("blocked_risk_levels") if isinstance(source_policy, dict) else None))
+    if isinstance(source_policy, dict) and source_policy.get("exclude_high_risk"):
+        excluded_risks.update(["high", "critical"])
+    if isinstance(source_policy, dict) and source_policy.get("exclude_critical_risk"):
+        excluded_risks.add("critical")
+    return {
+        "version": "selector-v2",
+        "scoring": ["project_scope", "task_type", "usage_binding", "priority", "quality_score", "feedback_delta", "weight", "risk_level", "token_budget", "recency"],
+        "source_policy": source_policy if isinstance(source_policy, dict) else {},
+        "exclude_risk_levels": sorted({_normalize_risk_level(item) for item in excluded_risks if str(item).strip()}),
+        "max_items": int(budget.get("max_items", 0) or 0),
+        "max_selector_tokens": int((payload.get("knowledge_budget") if isinstance(payload.get("knowledge_budget"), dict) else {}).get("max_selector_tokens", 0) or 0),
+    }
+
+
+def _selector_decision(
+    storage: LocalStorage,
+    item: dict[str, Any],
+    knowledge: dict[str, Any],
+    binding: dict[str, Any],
+    *,
+    flow: str,
+    selector_policy: dict[str, Any],
+) -> dict[str, Any]:
+    risk_level = _normalize_risk_level(str(item.get("risk_level") or "low"))
+    excluded_risks = set(_strings(selector_policy.get("exclude_risk_levels")))
+    estimated_tokens = _estimate_pack_item_tokens(item)
+    if risk_level in excluded_risks:
+        return {
+            "selected": False,
+            "reason": "risk_excluded_by_source_policy",
+            "selection_score": 0.0,
+            "quality_adjusted_score": 0.0,
+            "estimated_tokens": estimated_tokens,
+            "risk_level": risk_level,
+        }
+    base_quality = _float(item.get("quality_score"), 0.7)
+    feedback_delta = _quality_feedback_delta(storage, str(item.get("knowledge_id") or ""), flow)
+    quality_adjusted = min(1.0, max(0.0, base_quality + feedback_delta))
+    weight = max(0.0, _float(item.get("weight"), 1.0))
+    priority = int(item.get("priority", 100) or 100)
+    priority_bonus = max(0.0, (100 - min(priority, 100)) / 100)
+    risk_penalty = {"low": 0.0, "medium": 0.05, "high": 0.2, "critical": 0.45}.get(risk_level, 0.0)
+    recency_bonus = _recency_bonus(knowledge)
+    role_bonus = 0.2 if item.get("item_role") in {"required", "review_rule"} else 0.0
+    score = max(0.0, (quality_adjusted * weight) + priority_bonus + recency_bonus + role_bonus - risk_penalty)
+    return {
+        "selected": True,
+        "reason": "selected",
+        "selection_score": round(score, 4),
+        "quality_adjusted_score": round(quality_adjusted, 4),
+        "feedback_delta": round(feedback_delta, 4),
+        "estimated_tokens": estimated_tokens,
+        "risk_level": risk_level,
+        "priority": priority,
+        "weight": round(weight, 4),
+        "recency_bonus": round(recency_bonus, 4),
+    }
+
+
+def _select_pack_items(items: list[dict[str, Any]], *, flow: str, budget: dict[str, Any]) -> list[dict[str, Any]]:
+    role_rank = {
+        "required": 0,
+        "review_rule": 0,
+        "constraint": 1,
+        "canon_context": 1,
+        "style_constraint": 2,
+        "optional": 3,
+        "risk_warning": 4,
+        "forbidden": 5,
+    }
+    ranked = sorted(
+        items,
+        key=lambda item: (
+            role_rank.get(str(item.get("item_role") or "optional"), 3),
+            -float(item.get("selection_score", 0.0) or 0.0),
+            int(item.get("priority", 100) or 100),
+            str(item.get("knowledge_id", "")),
+        ),
+    )
+    max_items = int(budget.get("max_items", 0) or 0)
+    if max_items > 0:
+        ranked = ranked[:max_items]
+    return ranked
+
+
+def _quality_feedback_delta(storage: LocalStorage, knowledge_id: str, flow: str) -> float:
+    if not knowledge_id:
+        return 0.0
+    rows = _list_assets(storage, "knowledge", "knowledge_quality_score", limit=500)
+    deltas = [
+        _float(row.get("content", {}).get("delta"), 0.0)
+        for row in rows
+        if str(row.get("content", {}).get("knowledge_id") or "") == knowledge_id
+        and (not row.get("content", {}).get("flow") or str(row.get("content", {}).get("flow")) == flow)
+    ]
+    return round(max(-0.5, min(0.5, sum(deltas))), 4)
+
+
+def _estimate_pack_item_tokens(item: dict[str, Any]) -> int:
+    text = " ".join(
+        str(item.get(key) or "")
+        for key in ["concept_name", "core_explanation", "constraint_text", "output_form", "prompt_fragment"]
+    )
+    return max(1, int(len(text) / 4) + 1)
+
+
+def _recency_bonus(asset: dict[str, Any]) -> float:
+    value = str(asset.get("updated_at") or asset.get("created_at") or "")
+    return 0.02 if value else 0.0
+
+
+def _normalize_risk_level(value: str) -> str:
+    normalized = str(value or "low").strip().lower()
+    return normalized if normalized in {"low", "medium", "high", "critical"} else "low"
 
 
 def _project_scope_matches(asset_project_id: str, requested_project_id: str) -> bool:
@@ -1493,11 +1711,12 @@ def _output_contract(flow: str) -> dict[str, Any]:
 
 def _canon_context(storage: LocalStorage, project_id: str) -> dict[str, Any]:
     rows = _list_assets(storage, "continuity", "canon_database", project_id=project_id if project_id != "local-system" else None, limit=20)
-    if not rows:
-        return {"source": "stub", "facts": [], "entities": [], "rules": [], "warnings": ["canon_database not found; stub used"]}
     facts: list[Any] = []
     entities: list[Any] = []
     rules: list[Any] = []
+    arcs: list[Any] = []
+    foreshadowing: list[Any] = []
+    characters: list[Any] = []
     refs: list[str] = []
     for row in rows:
         content = row.get("content", {})
@@ -1505,7 +1724,151 @@ def _canon_context(storage: LocalStorage, project_id: str) -> dict[str, Any]:
         entities.extend(content.get("entities", []) if isinstance(content.get("entities", []), list) else [])
         rules.extend(content.get("rules", []) if isinstance(content.get("rules", []), list) else [])
         refs.append(row.get("path", ""))
-    return {"source": "canon_database", "facts": facts, "entities": entities, "rules": rules, "references": refs}
+    checked_asset_types = ["canon_database"] if rows else []
+    for row in _list_assets(storage, "characters", "character_card", project_id=project_id if project_id != "local-system" else None, limit=100):
+        content = row.get("content", {})
+        characters.append({
+            "entity": content.get("canonical_name") or content.get("name") or row.get("title"),
+            "canonical_name": content.get("canonical_name") or content.get("name") or row.get("title"),
+            "status": content.get("status") or content.get("state") or row.get("status") or "",
+            "role": content.get("role", ""),
+            "source_asset_id": row.get("id", ""),
+            "source_asset_path": row.get("path", ""),
+            "canon_dimension": "character",
+        })
+        refs.append(row.get("path", ""))
+    if characters:
+        checked_asset_types.append("character_card")
+    for row in _list_assets(storage, "continuity", "character_state_ledger", project_id=project_id if project_id != "local-system" else None, limit=50):
+        for character in row.get("content", {}).get("characters", []) if isinstance(row.get("content", {}).get("characters", []), list) else []:
+            if isinstance(character, dict):
+                characters.append({**character, "source_asset_id": row.get("id", ""), "source_asset_path": row.get("path", ""), "canon_dimension": "character"})
+        refs.append(row.get("path", ""))
+    for row in _list_assets(storage, "continuity", "fact_ledger", project_id=project_id if project_id != "local-system" else None, limit=50):
+        for fact in row.get("content", {}).get("facts", []) if isinstance(row.get("content", {}).get("facts", []), list) else []:
+            if isinstance(fact, dict):
+                facts.append({**fact, "source_asset_id": row.get("id", ""), "source_asset_path": row.get("path", ""), "canon_dimension": "fact"})
+        refs.append(row.get("path", ""))
+    for row in _list_assets(storage, "continuity", "arc_plan", project_id=project_id if project_id != "local-system" else None, limit=50):
+        content = row.get("content", {})
+        arcs.append({**content, "entity": content.get("arc_id") or content.get("title") or row.get("title"), "source_asset_id": row.get("id", ""), "source_asset_path": row.get("path", ""), "canon_dimension": "arc"})
+        refs.append(row.get("path", ""))
+    if arcs:
+        checked_asset_types.append("arc_plan")
+    for row in _list_assets(storage, "continuity", "foreshadowing_thread", project_id=project_id if project_id != "local-system" else None, limit=100):
+        content = row.get("content", {})
+        foreshadowing.append({**content, "entity": content.get("thread_id") or content.get("setup") or row.get("title"), "source_asset_id": row.get("id", ""), "source_asset_path": row.get("path", ""), "canon_dimension": "foreshadowing"})
+        refs.append(row.get("path", ""))
+    if foreshadowing:
+        checked_asset_types.append("foreshadowing_thread")
+    for row in _list_assets(storage, "continuity", "continuity_bible", project_id=project_id if project_id != "local-system" else None, limit=20):
+        content = row.get("content", {})
+        entities.extend(content.get("entities", []) if isinstance(content.get("entities", []), list) else [])
+        rules.extend(content.get("worldview_rules", []) if isinstance(content.get("worldview_rules", []), list) else [])
+        rules.extend(content.get("constraints", []) if isinstance(content.get("constraints", []), list) else [])
+        refs.append(row.get("path", ""))
+    for row in _list_assets(storage, "continuity", "power_scale_rule", project_id=project_id if project_id != "local-system" else None, limit=50):
+        content = row.get("content", {})
+        rules.append({**content, "source_asset_id": row.get("id", ""), "source_asset_path": row.get("path", ""), "canon_dimension": "world_rule"})
+        refs.append(row.get("path", ""))
+    if rules:
+        checked_asset_types.append("world_rule")
+    source = "canon_asset_context" if checked_asset_types else "stub"
+    warnings = [] if checked_asset_types else ["canon_database not found; stub used"]
+    return {
+        "source": source,
+        "facts": facts,
+        "entities": entities,
+        "characters": characters,
+        "arcs": arcs,
+        "foreshadowing": foreshadowing,
+        "rules": rules,
+        "references": _dedupe(refs),
+        "checked_asset_types": _dedupe(checked_asset_types),
+        "warnings": warnings,
+    }
+
+
+def _canon_conflict_check_input(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    project_canon = _canon_context(storage, project_id)
+    canon = _merge_canon_context(project_canon, payload.get("canon") if isinstance(payload.get("canon"), dict) else {})
+    if isinstance(payload.get("characters"), list):
+        canon = {**canon, "characters": [*canon.get("characters", []), *payload["characters"]]}
+    if isinstance(payload.get("arcs"), list):
+        canon = {**canon, "arcs": [*canon.get("arcs", []), *payload["arcs"]]}
+    if isinstance(payload.get("foreshadowing"), list):
+        canon = {**canon, "foreshadowing": [*canon.get("foreshadowing", []), *payload["foreshadowing"]]}
+    if isinstance(payload.get("world_rules"), list):
+        canon = {**canon, "rules": [*canon.get("rules", []), *payload["world_rules"]]}
+    return {
+        "project_id": project_id,
+        "target_asset_id": str(payload.get("target_asset_id") or payload.get("artifact_id") or ""),
+        "target_asset_type": str(payload.get("target_asset_type") or payload.get("artifact_type") or "artifact"),
+        "artifact_text": str(payload.get("artifact_text") or payload.get("text") or ""),
+        "claims": payload.get("claims", []) if isinstance(payload.get("claims", []), list) else [],
+        "canon": canon,
+    }
+
+
+def _merge_canon_context(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    merged = {**base, **{key: value for key, value in override.items() if key not in {"facts", "entities", "characters", "arcs", "foreshadowing", "rules", "references", "checked_asset_types"}}}
+    for key in ["facts", "entities", "characters", "arcs", "foreshadowing", "rules", "references", "checked_asset_types"]:
+        values: list[Any] = []
+        values.extend(base.get(key, []) if isinstance(base.get(key, []), list) else [])
+        values.extend(override.get(key, []) if isinstance(override.get(key, []), list) else [])
+        merged[key] = _dedupe(values) if all(isinstance(item, str) for item in values) else values
+    if override.get("source"):
+        merged["source"] = f"{base.get('source', 'stub')}+payload"
+    return merged
+
+
+def _canon_facts(canon: dict[str, Any]) -> list[dict[str, Any]]:
+    facts: list[dict[str, Any]] = []
+    for key, dimension in [
+        ("facts", "fact"),
+        ("entities", "canon"),
+        ("characters", "character"),
+        ("arcs", "arc"),
+        ("foreshadowing", "foreshadowing"),
+    ]:
+        for item in canon.get(key, []) if isinstance(canon.get(key, []), list) else []:
+            if isinstance(item, dict):
+                facts.append({**item, "canon_dimension": item.get("canon_dimension") or dimension})
+    return facts
+
+
+def _canon_fact_name(fact: dict[str, Any]) -> str:
+    for key in ["entity", "canonical_name", "name", "title", "arc_id", "thread_id", "fact_id"]:
+        value = str(fact.get(key) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _canon_fact_value(fact: dict[str, Any], key: str) -> str:
+    for candidate in [key, "status", "state", "value"]:
+        value = str(fact.get(candidate) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _canon_evidence_refs(fact: dict[str, Any], canon: dict[str, Any]) -> list[str]:
+    refs = [str(fact.get("source_asset_id") or ""), str(fact.get("source_asset_path") or "")]
+    refs.extend(str(ref) for ref in canon.get("references", []) if str(ref).strip())
+    return _dedupe([ref for ref in refs if ref])
+
+
+def _canon_issue(message: str, fix_suggestion: str, *, dimension: str, evidence_refs: list[str]) -> dict[str, Any]:
+    issue = _issue("rule_canon_conflict", "Canon 冲突检查", "critical", True, message, fix_suggestion, "artifact")
+    issue.update({
+        "issue_type": "canon_conflict",
+        "source_system": "mkaos.canon_conflict",
+        "dimension": dimension,
+        "evidence_refs": evidence_refs,
+    })
+    return issue
 
 
 def _anti_encyclopedia_issues(storage: LocalStorage, text: str) -> list[dict[str, Any]]:
