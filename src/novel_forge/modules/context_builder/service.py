@@ -55,6 +55,7 @@ CONTEXT_TYPE_BUCKETS = {
     "chapter_plan_version": ["previous_summaries"],
     "draft_chapter": ["previous_summaries"],
     "revision_plan": ["previous_summaries"],
+    "longform_recap_report": ["previous_summaries"],
     "knowledge_card": ["knowledge_cards"],
     "material_card": ["material_cards"],
     "commercial_pattern": ["material_cards"],

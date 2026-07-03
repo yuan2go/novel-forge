@@ -73,6 +73,18 @@
 | `python3 -m unittest tests/unit/test_workflow_executor.py` | 旧 workflow executor 回归，确认 Loop Kernel 未替换或破坏 workflow 层。 | 27 tests OK |
 | `python3 -m unittest tests.integration.test_pipeline` | 旧 pipeline 集成链路不回归。 | 1 test OK，用时 410.099s |
 
+## Phase 7
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m compileall -q src/novel_forge/modules/longform_recap src/novel_forge/modules/context_builder src/novel_forge/modules/longform_stability src/novel_forge/schemas src/novel_forge/api/routers/longform_recap.py src/novel_forge/api/routers/__init__.py` | Longform Recap Agent、Context Builder、Longform Stability、schema、API router 语法/导入检查。 | OK |
+| `python3 -m unittest tests/unit/test_longform_recap_agent.py` | 12 章 recap 触发、Loop/Context/ReviewIssue/MKAOS 接入、治理写回、下一章 context 读取和 raw_text 隔离。 | 2 tests OK，用时约 14.8s |
+| `python3 -m unittest tests/unit/test_schemas.py` | 新 `longform_recap_report` schema 注册与通用 schema 回归。 | 17 tests OK |
+| `python3 -m unittest tests/unit/test_product_api_routes.py` | Product API 路由注册回归。 | 1 test OK |
+| `python3 -m unittest tests/unit/test_longform_stability.py tests/unit/test_loop_kernel.py` | 既有 longform stability 和 Loop Kernel 回归。 | 12 tests OK |
+| `python3 -m unittest tests/unit/test_context_builder_mkaos_flow.py tests/unit/test_mkaos_isolation.py` | Context Builder/MKAOS source isolation 回归。 | 6 tests OK |
+| `python3 -m unittest tests.integration.test_longform_quality_gate_e2e` | 既有 longform quality gate E2E 回归。 | 1 test OK |
+
 ## 待最终全量运行
 
 最终 Phase 12 必须重新运行：

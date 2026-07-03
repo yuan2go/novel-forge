@@ -84,6 +84,7 @@ LONGFORM_ASSET_TYPES = {
     "platform_adapter_report",
     "reward_ledger",
     "review_score_system_report",
+    "longform_recap_report",
     "publish_gate_report",
     "revision_task",
     "model_call_log",

@@ -164,6 +164,7 @@ ASSET_DIR_BY_TYPE = {
     "publishing_log": "publishing",
     "local_ops_drill_report": "runs",
     "long_chain_acceptance_report": "runs",
+    "longform_recap_report": "continuity",
     "context_build_plan": "contexts",
     "context_bundle": "contexts",
     "rag_quality_report": "contexts",

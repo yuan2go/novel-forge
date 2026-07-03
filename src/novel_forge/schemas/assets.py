@@ -327,6 +327,11 @@ class LongFormMacroPlan(BaseAsset):
 
 
 @dataclass
+class LongformRecapReport(BaseAsset):
+    type: str = "longform_recap_report"
+
+
+@dataclass
 class Outline(BaseAsset):
     type: str = "outline"
 
@@ -980,6 +985,7 @@ SCHEMA_CLASSES = {
         WritingTemplate,
         CraftTemplate,
         LongFormMacroPlan,
+        LongformRecapReport,
         Outline,
         OutlineVersion,
         ChapterPlan,

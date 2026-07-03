@@ -24,6 +24,7 @@ from novel_forge.schemas import (
     ChangeImpactReport,
     LocalSettingsProfile,
     LoopRun,
+    LongformRecapReport,
     NovelKGSnapshot,
     NodeRun,
     OriginalityReport,
@@ -44,7 +45,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 180)
+        self.assertEqual(len(SCHEMA_CLASSES), 181)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("source_chunk", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
@@ -130,6 +131,7 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("publishing_log", SCHEMA_CLASSES)
         self.assertIn("local_ops_drill_report", SCHEMA_CLASSES)
         self.assertIn("long_chain_acceptance_report", SCHEMA_CLASSES)
+        self.assertIn("longform_recap_report", SCHEMA_CLASSES)
         self.assertIn("chapter_continuity_report", SCHEMA_CLASSES)
         self.assertIn("continuity_graph_snapshot", SCHEMA_CLASSES)
         self.assertIn("canon_graph_snapshot", SCHEMA_CLASSES)
