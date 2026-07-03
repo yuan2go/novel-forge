@@ -440,12 +440,12 @@ def build_flow_context_bundle(
 ) -> dict[str, Any]:
     target_file = resolve_path(storage.root, target_path)
     profile = context_profile or FLOW_CONTEXT_PROFILES.get(flow, "chapter_generation")
-    policy = {
+    policy = dict(source_policy or {})
+    policy.update({
         "source_chunk_raw_text_allowed": False,
         "runtime_assets_in_generation_rag_allowed": False,
         "exclude_raw_sources": True,
-        **(source_policy or {}),
-    }
+    })
     if existing_context_bundle_path:
         bundle_file = resolve_path(storage.root, existing_context_bundle_path)
         bundle_asset = storage.read_asset(bundle_file)

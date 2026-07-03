@@ -755,7 +755,7 @@ def _is_missing(value: Any) -> bool:
 
 def _validate_mkaos_content(asset_type: str, content: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    flows = {"outline", "chapter_outline", "prose", "review"}
+    flows = {"outline", "chapter_outline", "prose", "review", "revision", "recap", "publish", "feedback"}
     item_roles = {
         "required",
         "optional",
@@ -769,7 +769,7 @@ def _validate_mkaos_content(asset_type: str, content: dict[str, Any]) -> list[st
     if asset_type in {"knowledge_usage_binding", "knowledge_pack", "knowledge_pack_item", "knowledge_usage_event", "knowledge_quality_score"}:
         flow = str(content.get("flow", "") or "")
         if flow and flow not in flows:
-            errors.append("MKAOS flow must be outline, chapter_outline, prose, or review")
+            errors.append("MKAOS flow must be outline, chapter_outline, prose, review, revision, recap, publish, or feedback")
     if asset_type == "knowledge_pack_item" and str(content.get("item_role", "")) not in item_roles:
         errors.append("knowledge_pack_item item_role is invalid")
     if asset_type == "rule_card":

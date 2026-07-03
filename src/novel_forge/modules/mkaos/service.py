@@ -25,7 +25,7 @@ from novel_forge.schemas import (
 )
 from novel_forge.storage.local import LocalStorage
 
-MKAOS_FLOWS = {"outline", "chapter_outline", "prose", "review"}
+MKAOS_FLOWS = {"outline", "chapter_outline", "prose", "review", "revision", "recap", "publish", "feedback"}
 PACK_ITEM_ROLES = {
     "required",
     "optional",
@@ -2072,7 +2072,7 @@ def _stable_asset_id(prefix: str, *parts: str) -> str:
 
 def _valid_flow(flow: str) -> str:
     if flow not in MKAOS_FLOWS:
-        raise ValueError("flow must be outline, chapter_outline, prose, or review")
+        raise ValueError("flow must be outline, chapter_outline, prose, review, revision, recap, publish, or feedback")
     return flow
 
 
@@ -2120,11 +2120,29 @@ def _knowledge_status(data: dict[str, Any]) -> str:
 
 
 def _default_usage_type(flow: str) -> str:
-    return {"outline": "required", "chapter_outline": "required", "prose": "optional", "review": "review_rule"}[flow]
+    return {
+        "outline": "required",
+        "chapter_outline": "required",
+        "prose": "optional",
+        "review": "review_rule",
+        "revision": "revision_constraint",
+        "recap": "recap_control",
+        "publish": "publish_gate",
+        "feedback": "feedback_signal",
+    }[flow]
 
 
 def _default_input_role(flow: str) -> str:
-    return {"outline": "required", "chapter_outline": "required", "prose": "optional", "review": "review_rule"}[flow]
+    return {
+        "outline": "required",
+        "chapter_outline": "required",
+        "prose": "optional",
+        "review": "review_rule",
+        "revision": "revision_constraint",
+        "recap": "recap_memory",
+        "publish": "risk_check",
+        "feedback": "weight_signal",
+    }[flow]
 
 
 def _default_output_form(flow: str) -> str:
@@ -2133,6 +2151,10 @@ def _default_output_form(flow: str) -> str:
         "chapter_outline": "scene conflict",
         "prose": "action/dialogue/object/scene",
         "review": "review issue contract",
+        "revision": "revision constraint",
+        "recap": "longform stability memory",
+        "publish": "publish gate risk item",
+        "feedback": "selection weight signal",
     }[flow]
 
 

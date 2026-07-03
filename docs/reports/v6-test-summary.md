@@ -112,6 +112,16 @@
 | `npm --prefix web/admin test` | 反馈中心闭环入口和 API client 契约测试。 | 8 pass, 1 Playwright smoke skipped |
 | `npm --prefix web/admin run build` | 反馈中心闭环 UI 后的 Next.js production build。 | OK，44 routes generated |
 
+## Phase 11
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m compileall -q src/novel_forge/modules/context_builder src/novel_forge/modules/mkaos src/novel_forge/schemas tests/integration/test_novel_os_12_chapter_industrial_pressure.py tests/unit/test_provider_hard_stop_proof.py` | Context Builder、MKAOS flow 扩展、schema 和新增压力/proof 测试语法/导入检查。 | OK |
+| `python3 -m unittest tests.unit.test_provider_hard_stop_proof` | Provider hard-stop token/cost/timeout/cancel 证据、failed call、no silent retry/fallback proof。 | 2 tests OK |
+| `python3 -m unittest tests.integration.test_novel_os_12_chapter_industrial_pressure` | 12 章 Novel OS 工业化压力测试：MKAOS、Context Builder、ReviewIssue、LoopRun、Longform Recap、Publish Gate、Release Package、source leakage。 | 1 test OK，用时约 33.7s |
+| `python3 -m unittest tests.unit.test_mkaos tests.unit.test_schemas tests.unit.test_context_builder_mkaos_flow tests.unit.test_longform_recap_agent tests.unit.test_loop_kernel tests.unit.test_publish_feedback_loop tests.unit.test_provider_hard_stop_proof` | MKAOS/schema/Context Builder/Longform Recap/Loop/Publish/Provider proof 相邻回归。 | 36 tests OK，用时约 35.0s |
+| `python3 -m unittest tests.unit.test_provider_runtime_guard tests.unit.test_runtime_policy` | Provider runtime guard 和 runtime policy hard-stop/report 既有回归。 | 17 tests OK |
+
 ## 待最终全量运行
 
 最终 Phase 12 必须重新运行：
@@ -124,4 +134,12 @@ npm --prefix web/admin test
 npm --prefix web/admin run build
 ```
 
-并追加 longform / loop / publish gate / provider hard-stop 新增测试命令。
+并追加：
+
+```bash
+python3 -m unittest tests.unit.test_longform_recap_agent
+python3 -m unittest tests.unit.test_loop_kernel
+python3 -m unittest tests.unit.test_publish_feedback_loop
+python3 -m unittest tests.unit.test_provider_hard_stop_proof
+python3 -m unittest tests.integration.test_novel_os_12_chapter_industrial_pressure
+```
