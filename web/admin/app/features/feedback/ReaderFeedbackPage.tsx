@@ -5,13 +5,15 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { FeedbackAssetRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { applyFeedbackStrategy, createFeedbackInsight, createOperationalSnapshot, createSentimentReport, importFeedbackBatch, loadFeedbackData } from "./api";
+import { applyFeedbackStrategy, createFeedbackInsight, createOperationalSnapshot, createSentimentReport, importFeedbackBatch, loadFeedbackData, runPublishFeedbackLoop } from "./api";
 
 export function ReaderFeedbackPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [feedbackAssets, setFeedbackAssets] = useState<FeedbackAssetRow[]>([]);
   const [projectId, setProjectId] = useState("");
   const [inputPath, setInputPath] = useState("");
+  const [releasePackagePath, setReleasePackagePath] = useState("");
+  const [publishLoopResult, setPublishLoopResult] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -37,12 +39,13 @@ export function ReaderFeedbackPage() {
     setProjectId(nextProjectId || projectRows[0]?.project_id || "");
   }
 
-  async function runAction(action: () => Promise<unknown>, message: string) {
+  async function runAction(action: () => Promise<unknown>, message: string, after?: (result: unknown) => void) {
     setBusy(true);
     setNotice("");
     setError("");
     try {
-      await action();
+      const result = await action();
+      after?.(result);
       setNotice(message);
       await refresh();
     } catch (caught) {
@@ -97,6 +100,37 @@ export function ReaderFeedbackPage() {
             <button className="secondaryButton" disabled={busy || !feedbackRows.length} onClick={() => runAction(() => createFeedbackInsight(feedbackRows[0]?.path), "反馈洞察已生成")}>反馈洞察</button>
             <button className="secondaryButton" disabled={busy || !latestSentiment} onClick={() => runAction(() => applyFeedbackStrategy(latestSentiment?.path || "", selectedProject?.path), "下一章策略已回写")}>回写策略</button>
           </div>
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="发布反馈闭环" icon={<ListChecks size={18} />} />
+          <div className="formGrid">
+            <input value={releasePackagePath} onChange={(event) => setReleasePackagePath(event.target.value)} placeholder="Release package path" />
+            <button
+              className="primaryButton"
+              disabled={busy || !feedbackRows.length}
+              onClick={() => runAction(
+                () => runPublishFeedbackLoop({
+                  feedbackPaths: feedbackRows.slice(0, 24).map((row) => row.path),
+                  projectId,
+                  workspacePath: selectedProject?.path,
+                  releasePackagePath
+                }),
+                "发布反馈闭环已生成",
+                (result) => setPublishLoopResult(result as Record<string, unknown>)
+              )}
+            >
+              闭环回写
+            </button>
+          </div>
+          <p className="previewText">汇总读者反馈、生成回流计划，并把可追溯的权重更新写回 MKAOS。</p>
+          {publishLoopResult ? (
+            <div className="summaryBand">
+              <Metric label="状态" value={String(publishLoopResult.status ?? "unknown")} />
+              <Metric label="MKAOS 回写" value={String(publishLoopResult.mkaos_weight_update_count ?? 0)} />
+              <Metric label="修订候选" value={String(publishLoopResult.revision_task_proposal_count ?? 0)} />
+            </div>
+          ) : null}
         </div>
       </section>
 

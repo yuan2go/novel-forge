@@ -46,3 +46,19 @@ export function createOperationalSnapshot(feedbackPaths: string[], projectId?: s
     workspace_path: workspacePath || null
   });
 }
+
+export function runPublishFeedbackLoop(payload: {
+  feedbackPaths: string[];
+  projectId?: string;
+  workspacePath?: string;
+  releasePackagePath?: string;
+}) {
+  return postJson("/product/feedback/publish-loop", {
+    feedback_paths: payload.feedbackPaths,
+    project_id: payload.projectId || null,
+    workspace_path: payload.workspacePath || null,
+    release_package_path: payload.releasePackagePath || null,
+    apply_mkaos_weight_update: true,
+    require_human_gate: true
+  });
+}

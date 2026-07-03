@@ -989,6 +989,15 @@ class FeedbackBackflowApplyRequest(BaseModel):
     note: str = ""
 
 
+class PublishFeedbackLoopRequest(BaseModel):
+    feedback_paths: list[str] = Field(default_factory=list)
+    project_id: str | None = None
+    workspace_path: str | None = None
+    release_package_path: str | None = None
+    apply_mkaos_weight_update: bool = True
+    require_human_gate: bool = True
+
+
 class OperationalMetricSnapshotRequest(BaseModel):
     feedback_paths: list[str] = Field(default_factory=list)
     project_id: str | None = None
@@ -1094,6 +1103,9 @@ class PublishGateRequest(BaseModel):
     workspace_path: str | None = None
     chapter_audit_path: str | None = None
     human_override: bool = False
+    envelope: dict[str, Any] = Field(default_factory=dict)
+    environment: str = ""
+    source_policy: dict[str, Any] = Field(default_factory=dict)
 
 
 class ReleasePackageRequest(BaseModel):
@@ -1102,6 +1114,9 @@ class ReleasePackageRequest(BaseModel):
     publish_gate_path: str | None = None
     channel: str = "local"
     human_override: bool = False
+    envelope: dict[str, Any] = Field(default_factory=dict)
+    environment: str = ""
+    source_policy: dict[str, Any] = Field(default_factory=dict)
 
 
 class PublishingPlanRequest(BaseModel):
@@ -1400,6 +1415,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "FeedbackStrategyApplyRequest": FeedbackStrategyApplyRequest,
         "FeedbackBackflowPlanRequest": FeedbackBackflowPlanRequest,
         "FeedbackBackflowApplyRequest": FeedbackBackflowApplyRequest,
+        "PublishFeedbackLoopRequest": PublishFeedbackLoopRequest,
         "OperationalMetricSnapshotRequest": OperationalMetricSnapshotRequest,
         "ProjectMetricSnapshotRequest": ProjectMetricSnapshotRequest,
         "RuntimeCostSnapshotRequest": RuntimeCostSnapshotRequest,

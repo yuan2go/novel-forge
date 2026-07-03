@@ -182,6 +182,9 @@ describe("Novel Forge admin feature architecture", () => {
     const kgApi = read("app/features/kg/api.ts");
     assert.match(kgApi, /\/product\/novel-kg\/semantic-extraction/);
     assert.match(kgApi, /\/product\/novel-kg\/identity-resolution/);
+
+    const feedbackApi = read("app/features/feedback/api.ts");
+    assert.match(feedbackApi, /\/product\/feedback\/publish-loop/);
   });
 
   it("wires industrial deep workbench panels for analysis, context, editor, production, evaluation, and control", () => {

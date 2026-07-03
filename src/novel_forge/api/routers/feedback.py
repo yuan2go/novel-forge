@@ -12,6 +12,7 @@ from novel_forge.modules.feedback import (
     create_operational_metric_snapshot,
     create_reader_sentiment_report,
     list_feedback_assets,
+    process_publish_feedback_loop,
 )
 from novel_forge.modules.feedback_backflow import apply_feedback_backflow_plan, create_feedback_backflow_plan
 from novel_forge.storage.local import LocalStorage
@@ -28,6 +29,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     FeedbackStrategyApplyRequest = models["FeedbackStrategyApplyRequest"]
     FeedbackBackflowPlanRequest = models["FeedbackBackflowPlanRequest"]
     FeedbackBackflowApplyRequest = models["FeedbackBackflowApplyRequest"]
+    PublishFeedbackLoopRequest = models["PublishFeedbackLoopRequest"]
     OperationalMetricSnapshotRequest = models["OperationalMetricSnapshotRequest"]
 
     @router.get("/product/feedback/assets")
@@ -127,6 +129,23 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 plan_path=request.plan_path,
                 confirmed=request.confirmed,
                 note=request.note,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/feedback/publish-loop")
+    def feedback_publish_loop_endpoint(request: PublishFeedbackLoopRequest) -> dict[str, Any]:
+        try:
+            return process_publish_feedback_loop(
+                LocalStorage(app_settings.root),
+                feedback_paths=request.feedback_paths,
+                project_id=request.project_id,
+                workspace_path=request.workspace_path,
+                release_package_path=request.release_package_path,
+                apply_mkaos_weight_update=request.apply_mkaos_weight_update,
+                require_human_gate=request.require_human_gate,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

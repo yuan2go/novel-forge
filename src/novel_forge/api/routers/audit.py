@@ -84,6 +84,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 workspace_path=request.workspace_path,
                 chapter_audit_path=request.chapter_audit_path,
                 human_override=request.human_override,
+                envelope=request.envelope or None,
+                environment=request.environment,
+                source_policy=request.source_policy or None,
             )
             return {"path": str(path.relative_to(storage.root)), "publish_gate_report_path": str(path.relative_to(storage.root))}
         except FileNotFoundError as exc:
@@ -102,6 +105,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 publish_gate_path=request.publish_gate_path,
                 channel=request.channel,
                 human_override=request.human_override,
+                envelope=request.envelope or None,
+                environment=request.environment,
+                source_policy=request.source_policy or None,
             )
             return {"path": str(path.relative_to(storage.root)), "release_package_path": str(path.relative_to(storage.root))}
         except FileNotFoundError as exc:

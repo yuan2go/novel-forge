@@ -379,6 +379,103 @@ def create_operational_metric_snapshot(
         return result
 
 
+def process_publish_feedback_loop(
+    storage: LocalStorage,
+    *,
+    feedback_paths: list[str | Path] | None = None,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+    release_package_path: str | Path | None = None,
+    apply_mkaos_weight_update: bool = True,
+    require_human_gate: bool = True,
+) -> dict[str, Any]:
+    feedback_assets = _selected_feedback_assets(storage, feedback_paths or [], project_id=project_id)
+    if not feedback_assets:
+        raise FileNotFoundError("no reader_feedback assets found for publish feedback loop")
+    resolved_project_id = project_id or str(feedback_assets[0].get("metadata", {}).get("project_id", ""))
+    workspace = workspace_path or _first_workspace(feedback_assets)
+    feedback_asset_paths = [item["path"] for item in feedback_assets]
+    sentiment = create_reader_sentiment_report(
+        storage,
+        feedback_paths=feedback_asset_paths,
+        project_id=resolved_project_id or None,
+        workspace_path=workspace or None,
+    )
+    from novel_forge.modules.feedback_backflow import create_feedback_backflow_plan
+    from novel_forge.modules.mkaos import apply_weight_update, list_usage_events
+
+    backflow = create_feedback_backflow_plan(
+        storage,
+        feedback_paths=feedback_asset_paths,
+        project_id=resolved_project_id or None,
+        workspace_path=workspace or None,
+        require_human_gate=require_human_gate,
+    )
+    sentiment_content = sentiment.get("asset", {}).get("content", {}) if isinstance(sentiment.get("asset", {}), dict) else {}
+    mkaos_updates: list[dict[str, Any]] = []
+    if apply_mkaos_weight_update:
+        usage_events = list_usage_events(storage, project_id=resolved_project_id or None, limit=20)
+        delta = _feedback_mkaos_delta(sentiment_content)
+        seen: set[str] = set()
+        for event in usage_events:
+            content = event.get("content", {}) if isinstance(event.get("content", {}), dict) else {}
+            knowledge_id = str(content.get("knowledge_id") or "").strip()
+            if not knowledge_id or knowledge_id in seen:
+                continue
+            seen.add(knowledge_id)
+            mkaos_updates.append(
+                apply_weight_update(
+                    storage,
+                    {
+                        "knowledge_id": knowledge_id,
+                        "project_id": resolved_project_id or "local-system",
+                        "flow": str(content.get("flow") or "review"),
+                        "delta": delta,
+                        "reason": "publish_feedback_loop",
+                        "feedback_paths": feedback_asset_paths,
+                        "release_package_path": str(release_package_path or ""),
+                    },
+                )
+            )
+            if len(mkaos_updates) >= 5:
+                break
+    insight = FeedbackInsight(
+        title="Publish feedback loop insight",
+        source=str(release_package_path or sentiment.get("path") or ""),
+        tags=["feedback", "publish-loop", "mkaos-weight-update" if mkaos_updates else "no-mkaos-update"],
+        content={
+            "signals": sentiment_content.get("recommendations", []) if isinstance(sentiment_content.get("recommendations", []), list) else [],
+            "average_rating": sentiment_content.get("average_rating", 0),
+            "next_generation_constraints": sentiment_content.get("next_generation_constraints", []),
+            "sentiment_report_path": sentiment.get("path", ""),
+            "backflow_plan_path": backflow.get("path", ""),
+            "feedback_asset_paths": feedback_asset_paths,
+            "release_package_path": str(release_package_path or ""),
+            "mkaos_weight_updates": mkaos_updates,
+            "revision_task_proposals": backflow.get("proposals", []),
+            "human_gate": {"required": require_human_gate, "status": "waiting" if require_human_gate else "not_required"},
+            "status": "waiting_human" if require_human_gate else "ready",
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": resolved_project_id or "", "workspace_path": workspace or "", "workflow": "publish-feedback-loop"},
+        references=filter_project_safe_references(
+            storage,
+            resolved_project_id or "",
+            _dedupe([str(release_package_path or ""), sentiment.get("path", ""), backflow.get("path", ""), *feedback_asset_paths]),
+        ),
+    )
+    result = _write(storage, insight)
+    return {
+        "status": insight.content["status"],
+        "path": result["path"],
+        "asset": result["asset"],
+        "sentiment_report_path": sentiment.get("path", ""),
+        "backflow_plan_path": backflow.get("path", ""),
+        "mkaos_weight_update_count": len(mkaos_updates),
+        "revision_task_proposal_count": len(backflow.get("proposals", [])),
+    }
+
+
 def apply_feedback_strategy_to_workspace(
     storage: LocalStorage,
     report_path: str | Path,
@@ -756,6 +853,21 @@ def _next_chapter_strategy(adjustment_plan: dict[str, Any], follow_read_risk: di
         "focus_character": heated,
         "risk_level": follow_read_risk.get("level", "unknown"),
     }
+
+
+def _feedback_mkaos_delta(sentiment_content: dict[str, Any]) -> float:
+    average = sentiment_content.get("average_rating", 0)
+    try:
+        average_rating = float(average or 0)
+    except (TypeError, ValueError):
+        average_rating = 0.0
+    follow = sentiment_content.get("follow_read_risk", {}) if isinstance(sentiment_content.get("follow_read_risk", {}), dict) else {}
+    level = str(follow.get("level") or "").lower()
+    if level == "high" or (average_rating and average_rating < 3.0):
+        return -0.1
+    if level == "medium" or (average_rating and average_rating < 3.8):
+        return -0.04
+    return 0.03
 
 
 def _cluster_labels(clusters: list[dict[str, Any]], *, polarity: str) -> list[str]:

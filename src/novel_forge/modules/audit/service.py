@@ -9,7 +9,10 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
+from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.longform_stability import create_revision_task_from_gate, evaluate_longform_stability_gate
+from novel_forge.modules.mkaos import list_risk_knowledge
+from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.modules.review_issue import assert_no_blocking_review_issues, blocking_review_issues, review_issues_to_gate_issues
 from novel_forge.modules.semantic_enhancement import analyze_story_semantics
@@ -210,14 +213,58 @@ def create_publish_gate_report(
     workspace_path: str | None = None,
     chapter_audit_path: str | Path | None = None,
     human_override: bool = False,
+    envelope: dict[str, Any] | None = None,
+    environment: str = "",
+    source_policy: dict[str, Any] | None = None,
 ) -> Path:
     path = resolve_path(storage.root, draft_path)
     target = storage.read_asset(path)
     context = build_production_context(storage, target, input_path=path, workspace_path=workspace_path)
     project = context["project"]
+    resolved_source_policy = _publish_source_policy(source_policy)
+    _assert_publish_envelope_before_side_effect(
+        storage,
+        envelope=envelope,
+        environment=environment,
+        project_id=str(project.get("project_id", "")),
+        asset_type="publish_gate_report",
+        source_policy=resolved_source_policy,
+        operation="publishing.publish_gate",
+    )
+    publish_context = build_flow_context_bundle(
+        storage,
+        path,
+        flow="publish",
+        project_id=str(project.get("project_id", "")),
+        workspace_path=str(project.get("workspace_path", "")),
+        chapter_id=str(target.content.get("chapter", "")) if isinstance(target.content, dict) else "",
+        current_goal="publish gate",
+        token_budget=4000,
+        source_policy=resolved_source_policy,
+    )
+    context_bundle = publish_context.get("asset", {}) if isinstance(publish_context.get("asset", {}), dict) else {}
+    context_bundle_id = str(context_bundle.get("id", ""))
+    os_envelope = enforce_os_envelope(
+        storage,
+        envelope_payload=envelope,
+        operation="publishing.publish_gate",
+        project_id=str(project.get("project_id", "")),
+        task_type="publish",
+        asset_type="publish_gate_report",
+        actor_type="publishing_service",
+        source="audit.create_publish_gate_report",
+        context_bundle_id=context_bundle_id,
+        source_policy=resolved_source_policy,
+        environment=environment,
+        bypass_reason="publish gate local compatibility path",
+        require_for_production=True,
+    )
     audit_path = resolve_path(storage.root, chapter_audit_path) if chapter_audit_path else create_chapter_audit_report(storage, path, workspace_path=workspace_path)
     audit = _read_asset_dict(storage, audit_path)
     gate_data = _publish_gates(audit, context)
+    mkaos_risk = _mkaos_risk_summary(storage, str(project.get("project_id", "")))
+    gate_data["gates"]["mkaos_risk_clear"] = not mkaos_risk["blocking"]
+    gate_data["blocking_issues"].extend(mkaos_risk["blocking_issues"])
     longform_gate = evaluate_longform_stability_gate(storage, path, workspace_path=workspace_path)
     gate_data["gates"]["longform_stability_passed"] = bool(longform_gate.get("passed"))
     for key, value in longform_gate.get("gates", {}).items():
@@ -253,6 +300,16 @@ def create_publish_gate_report(
             "human_override": bool(human_override),
             "preflight": context.get("preflight", {}),
             "longform_stability": longform_gate,
+            "context_bundle_id": context_bundle_id,
+            "context_bundle_path": str(publish_context.get("path", "")),
+            "mkaos_risk": mkaos_risk,
+            "source_isolation": {
+                "source_chunk_raw_text_allowed": False,
+                "runtime_assets_in_generation_rag_allowed": False,
+                "raw_source_text_allowed": False,
+                "context_bundle_path": str(publish_context.get("path", "")),
+            },
+            "os_envelope_id": os_envelope.get("envelope_id", ""),
         },
         metadata={
             "workflow": "publish-gate",
@@ -260,11 +317,14 @@ def create_publish_gate_report(
             "workspace_path": project.get("workspace_path", ""),
             "created_at": utc_now(),
             "risk_level": "high" if decision == "blocked" else ("medium" if decision == "needs_revision" else "low"),
+            **envelope_asset_metadata(os_envelope),
+            "context_bundle_id": context_bundle_id,
+            "context_bundle_path": str(publish_context.get("path", "")),
         },
         references=filter_project_safe_references(
             storage,
             str(project.get("project_id", "")),
-            _dedupe([target.id, _asset_id(audit), *context.get("profile_references", [])]),
+            _dedupe([target.id, _asset_id(audit), str(publish_context.get("path", "")), *context.get("profile_references", [])]),
         ),
     )
     with AgentExecutionContext(
@@ -299,20 +359,55 @@ def create_release_package(
     publish_gate_path: str | Path | None = None,
     channel: str = "local",
     human_override: bool = False,
+    envelope: dict[str, Any] | None = None,
+    environment: str = "",
+    source_policy: dict[str, Any] | None = None,
 ) -> Path:
     path = resolve_path(storage.root, draft_path)
     target = storage.read_asset(path)
     context = build_production_context(storage, target, input_path=path, workspace_path=workspace_path)
     project = context["project"]
+    resolved_source_policy = _publish_source_policy(source_policy)
+    _assert_publish_envelope_before_side_effect(
+        storage,
+        envelope=envelope,
+        environment=environment,
+        project_id=str(project.get("project_id", "")),
+        asset_type="release_package",
+        source_policy=resolved_source_policy,
+        operation="publishing.release_package",
+    )
     gate_path = resolve_path(storage.root, publish_gate_path) if publish_gate_path else create_publish_gate_report(
         storage,
         path,
         workspace_path=workspace_path,
         human_override=human_override,
+        envelope=envelope,
+        environment=environment,
+        source_policy=resolved_source_policy,
     )
     gate = _read_asset_dict(storage, gate_path)
     decision = gate.get("content", {}).get("decision", "blocked") if isinstance(gate.get("content", {}), dict) else "blocked"
+    if decision == "blocked" and _gate_has_mkaos_blocker(gate):
+        raise ValueError("release_package blocked by MKAOS high/critical risk")
     status = "ready" if decision == "ready" else "blocked"
+    gate_content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
+    gate_envelope = gate.get("metadata", {}).get("os_envelope", {}) if isinstance(gate.get("metadata", {}), dict) and isinstance(gate.get("metadata", {}).get("os_envelope", {}), dict) else {}
+    os_envelope = enforce_os_envelope(
+        storage,
+        envelope_payload=envelope or gate_envelope,
+        operation="publishing.release_package",
+        project_id=str(project.get("project_id", "")),
+        task_type="publish",
+        asset_type="release_package",
+        actor_type="publishing_service",
+        source="audit.create_release_package",
+        context_bundle_id=str(gate_content.get("context_bundle_id", "")),
+        source_policy=resolved_source_policy,
+        environment=environment or str(gate_envelope.get("environment", "")),
+        bypass_reason="release package local compatibility path",
+        require_for_production=True,
+    )
     assert_no_blocking_review_issues(
         storage,
         target_asset_id=target.id,
@@ -347,6 +442,23 @@ def create_release_package(
             "draft_path": _display_path(storage.root, path),
             "publish_gate_report_path": _display_path(storage.root, Path(gate_path)),
             "platform_rules": _release_platform_rules(context, channel or "local"),
+            "known_risks": gate_content.get("blocking_issues", []),
+            "review_report": gate_content.get("required_reports", {}),
+            "context_bundle_id": gate_content.get("context_bundle_id", ""),
+            "context_bundle_path": gate_content.get("context_bundle_path", ""),
+            "mkaos_risk": gate_content.get("mkaos_risk", {}),
+            "source_isolation": {
+                "source_chunk_raw_text_allowed": False,
+                "runtime_assets_in_generation_rag_allowed": False,
+                "raw_source_text_allowed": False,
+                "release_package_raw_text_included": False,
+            },
+            "rollback_snapshot": {
+                "draft_path": _display_path(storage.root, path),
+                "publish_gate_report_path": _display_path(storage.root, Path(gate_path)),
+                "created_at": utc_now(),
+            },
+            "os_envelope_id": os_envelope.get("envelope_id", ""),
             "created_at": utc_now(),
         },
         metadata={
@@ -355,6 +467,7 @@ def create_release_package(
             "workspace_path": project.get("workspace_path", ""),
             "created_at": utc_now(),
             "risk_level": "low" if status == "ready" else "high",
+            **envelope_asset_metadata(os_envelope),
         },
         references=filter_project_safe_references(storage, str(project.get("project_id", "")), _dedupe([target.id, _asset_id(gate)])),
     )
@@ -387,6 +500,88 @@ def _release_platform_rules(context: dict[str, Any], channel: str) -> dict[str, 
         "min_hook_score": config.get("publish_min_hook_score", 0.7),
         "max_risk_level": config.get("publish_max_risk_level", "medium"),
     }
+
+
+def _publish_source_policy(source_policy: dict[str, Any] | None = None) -> dict[str, Any]:
+    policy = dict(source_policy or {})
+    policy.update({
+        "raw_source_text_allowed": False,
+        "source_chunk_raw_text_allowed": False,
+        "runtime_assets_in_generation_rag_allowed": False,
+        "generation_rag_allowed": True,
+        "exclude_raw_sources": True,
+    })
+    return policy
+
+
+def _assert_publish_envelope_before_side_effect(
+    storage: LocalStorage,
+    *,
+    envelope: dict[str, Any] | None,
+    environment: str,
+    project_id: str,
+    asset_type: str,
+    source_policy: dict[str, Any],
+    operation: str,
+) -> None:
+    if str(environment or "").lower() not in {"production", "prod", "operating_system", "strict"}:
+        return
+    enforce_os_envelope(
+        storage,
+        envelope_payload=envelope,
+        operation=operation,
+        project_id=project_id,
+        task_type="publish",
+        asset_type=asset_type,
+        actor_type="publishing_service",
+        source="audit.production_preflight",
+        source_policy=source_policy,
+        environment=environment,
+        require_for_production=True,
+        record_trace=False,
+    )
+
+
+def _mkaos_risk_summary(storage: LocalStorage, project_id: str) -> dict[str, Any]:
+    rows = list_risk_knowledge(storage, project_id=project_id or None, limit=200)
+    blocking_rows = [
+        row
+        for row in rows
+        if str((row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}).get("risk_level") or (row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}).get("risk_level") or "").lower()
+        in {"high", "critical"}
+    ]
+    issues = [
+        {
+            "dimension": "mkaos_risk",
+            "severity": str((row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}).get("risk_level") or (row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}).get("risk_level") or "high"),
+            "message": f"MKAOS risky knowledge requires review before publish: {row.get('title') or row.get('id')}",
+            "recommendation": "resolve, deprecate, or lower-risk the knowledge card before building a release package",
+            "knowledge_id": row.get("id", ""),
+            "path": row.get("path", ""),
+        }
+        for row in blocking_rows
+    ]
+    return {
+        "risk_count": len(rows),
+        "blocking": bool(blocking_rows),
+        "blocking_count": len(blocking_rows),
+        "blocking_issues": issues,
+        "risk_items": [
+            {
+                "id": row.get("id", ""),
+                "path": row.get("path", ""),
+                "title": row.get("title", ""),
+                "risk_reasons": row.get("risk_reasons", []),
+            }
+            for row in rows[:20]
+        ],
+    }
+
+
+def _gate_has_mkaos_blocker(gate: dict[str, Any]) -> bool:
+    content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
+    mkaos_risk = content.get("mkaos_risk", {}) if isinstance(content.get("mkaos_risk", {}), dict) else {}
+    return bool(mkaos_risk.get("blocking"))
 
 
 def _related_review_issue_asset_ids(asset: dict[str, Any]) -> list[str]:

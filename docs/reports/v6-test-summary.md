@@ -101,6 +101,17 @@
 | `npm --prefix web/admin test` | Novel OS 可编辑控制台 route、导航和可复用编辑组件架构测试。 | 8 pass, 1 Playwright smoke skipped |
 | `npm --prefix web/admin run build` | 新增 Canon/Character/Arc/Foreshadowing/ReviewIssue/Recap/Loop/Agent/Publish/Feedback 控制台 route 的 Next.js production build。 | OK，44 routes generated |
 
+## Phase 10
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m compileall -q src/novel_forge/modules/audit src/novel_forge/modules/feedback src/novel_forge/api tests/unit/test_publish_feedback_loop.py` | Publish/Feedback 服务、API 和专项测试语法/导入检查。 | OK |
+| `python3 -m unittest tests/unit/test_publish_feedback_loop.py` | Publish Gate envelope/context/source isolation、production fail-closed、MKAOS risk 阻断 release、feedback -> MKAOS weight 回写。 | 4 tests OK，用时约 7.7s |
+| `python3 -m unittest tests/unit/test_publishing_center.py tests/unit/test_review_issue.py tests/unit/test_mkaos.py tests/unit/test_product_api_routes.py` | Publishing/ReviewIssue/MKAOS/API 相邻回归。 | 10 tests OK |
+| `python3 -m unittest tests/unit/test_longform_stability.py tests/unit/test_loop_kernel.py` | Longform stability 与 Loop Kernel 相邻回归。 | 12 tests OK |
+| `npm --prefix web/admin test` | 反馈中心闭环入口和 API client 契约测试。 | 8 pass, 1 Playwright smoke skipped |
+| `npm --prefix web/admin run build` | 反馈中心闭环 UI 后的 Next.js production build。 | OK，44 routes generated |
+
 ## 待最终全量运行
 
 最终 Phase 12 必须重新运行：

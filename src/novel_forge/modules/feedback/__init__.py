@@ -6,6 +6,7 @@ from novel_forge.modules.feedback.service import (
     create_reader_sentiment_report,
     import_feedback,
     list_feedback_assets,
+    process_publish_feedback_loop,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "create_reader_sentiment_report",
     "import_feedback",
     "list_feedback_assets",
+    "process_publish_feedback_loop",
 ]
