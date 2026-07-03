@@ -122,24 +122,17 @@
 | `python3 -m unittest tests.unit.test_mkaos tests.unit.test_schemas tests.unit.test_context_builder_mkaos_flow tests.unit.test_longform_recap_agent tests.unit.test_loop_kernel tests.unit.test_publish_feedback_loop tests.unit.test_provider_hard_stop_proof` | MKAOS/schema/Context Builder/Longform Recap/Loop/Publish/Provider proof 相邻回归。 | 36 tests OK，用时约 35.0s |
 | `python3 -m unittest tests.unit.test_provider_runtime_guard tests.unit.test_runtime_policy` | Provider runtime guard 和 runtime policy hard-stop/report 既有回归。 | 17 tests OK |
 
-## 待最终全量运行
+## Phase 12
 
-最终 Phase 12 必须重新运行：
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m unittest tests/unit/test_mkaos.py` | MKAOS P0 最终回归。 | 5 tests OK，用时 1.297s |
+| `python3 -m unittest discover -s tests -p 'test_*.py'` | 最终全量 Python unittest discover。 | 297 tests OK，用时 976.219s，skipped=1 |
+| `python3 -m unittest tests.integration.test_pipeline` | 旧主 pipeline 集成验收独立回归。 | 1 test OK，用时 408.557s |
+| `python3 -m unittest tests.unit.test_longform_recap_agent tests.unit.test_loop_kernel tests.unit.test_publish_feedback_loop tests.unit.test_provider_hard_stop_proof tests.integration.test_novel_os_12_chapter_industrial_pressure` | 新增长篇/loop/publish/provider/12 章压力测试独立回归。 | 13 tests OK，用时 60.311s |
+| `npm --prefix web/admin test` | Admin 架构/路由/UI smoke 单测。 | 8 pass, 1 Playwright smoke skipped |
+| `npm --prefix web/admin run build` | Admin Next.js production build。 | OK，44 routes generated |
 
-```bash
-python3 -m unittest tests/unit/test_mkaos.py
-python3 -m unittest discover -s tests -p 'test_*.py'
-python3 -m unittest tests.integration.test_pipeline
-npm --prefix web/admin test
-npm --prefix web/admin run build
-```
+## 最终结论
 
-并追加：
-
-```bash
-python3 -m unittest tests.unit.test_longform_recap_agent
-python3 -m unittest tests.unit.test_loop_kernel
-python3 -m unittest tests.unit.test_publish_feedback_loop
-python3 -m unittest tests.unit.test_provider_hard_stop_proof
-python3 -m unittest tests.integration.test_novel_os_12_chapter_industrial_pressure
-```
+Phase 12 要求的 Python、integration、新增工业化 proof、前端 test 和 build 均已运行并通过。Playwright browser smoke 保持项目既有可选跳过策略。
