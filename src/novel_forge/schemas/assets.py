@@ -122,6 +122,16 @@ class KnowledgeQualityScore(BaseAsset):
 
 
 @dataclass
+class KnowledgeGraphSnapshot(BaseAsset):
+    type: str = "knowledge_graph_snapshot"
+
+
+@dataclass
+class KnowledgeLearningSnapshot(BaseAsset):
+    type: str = "knowledge_learning_snapshot"
+
+
+@dataclass
 class MaterialCard(BaseAsset):
     type: str = "material_card"
 
@@ -949,6 +959,8 @@ SCHEMA_CLASSES = {
         KnowledgePackItem,
         KnowledgeUsageEvent,
         KnowledgeQualityScore,
+        KnowledgeGraphSnapshot,
+        KnowledgeLearningSnapshot,
         MaterialCard,
         AssetCollection,
         PlatformProfile,

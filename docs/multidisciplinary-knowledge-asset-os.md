@@ -489,6 +489,18 @@ knowledge-feedback-service
 knowledge-regression-service
 ```
 
+当前 v6 实现补充：
+
+1. `knowledge_graph_snapshot`：把 Knowledge Card、Rule Card、Template Card、Usage Binding、Usage Event、Quality Score、Source Chunk evidence ref 统一为多学科知识图谱节点和边。
+2. `knowledge_learning_snapshot`：聚合 usage effect、review feedback、reader feedback 和 quality delta，生成可解释的 boost / reduce / review / quarantine 建议。
+3. 图谱不包含 `source_chunk.raw_text` 或 `source_chunk.clean_text`，仅保留 source chunk id、hash、source document id 和抽象知识字段。
+4. 学习默认只出建议；只有调用方显式传入 `apply_updates: true` 时才通过 MKAOS weight update 写回，保持 selector 行为可审计。
+5. 新增 API：
+   - `POST /product/mkaos/knowledge-graph/build`
+   - `POST /product/mkaos/knowledge-graph/query`
+   - `POST /product/mkaos/knowledge-graph/paths`
+   - `POST /product/mkaos/learning/effects`
+
 ---
 
 ## 12. 验收标准

@@ -56,6 +56,38 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/mkaos/knowledge-graph/build")
+    @router.post("/api/mkaos/knowledge-graph/build")
+    def build_knowledge_graph(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return mkaos_service.build_knowledge_graph(storage(), payload)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/knowledge-graph/query")
+    @router.post("/api/mkaos/knowledge-graph/query")
+    def query_knowledge_graph(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return mkaos_service.query_knowledge_graph(storage(), payload)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/knowledge-graph/paths")
+    @router.post("/api/mkaos/knowledge-graph/paths")
+    def query_knowledge_graph_paths(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return mkaos_service.query_knowledge_graph_paths(storage(), payload)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/learning/effects")
+    @router.post("/api/mkaos/learning/effects")
+    def learn_from_knowledge_effects(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return mkaos_service.learn_from_knowledge_effects(storage(), payload)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/convert/assets")
     @router.post("/api/mkaos/convert/assets")
     def convert_assets(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:

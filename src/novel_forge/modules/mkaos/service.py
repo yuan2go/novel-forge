@@ -12,6 +12,8 @@ from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.schemas import (
     KnowledgeCard,
+    KnowledgeGraphSnapshot,
+    KnowledgeLearningSnapshot,
     KnowledgePack,
     KnowledgePackItem,
     KnowledgeQualityScore,
@@ -1142,6 +1144,192 @@ def convert_rules(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, A
     return envelope_response({"rule": rule, "template": template}, envelope)
 
 
+def build_knowledge_graph(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    flow = str(payload.get("flow") or payload.get("task_type") or "").strip()
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.knowledge_graph_build",
+        asset_type="knowledge_graph_snapshot",
+        project_id=project_id,
+        task_type=flow or "knowledge_graph",
+    )
+    content = _knowledge_graph_content(
+        storage,
+        project_id=project_id,
+        flow=flow,
+        discipline=str(payload.get("discipline") or ""),
+        include_deprecated=bool(payload.get("include_deprecated", False)),
+        limit=int(payload.get("limit", 500) or 500),
+    )
+    content["envelope_id"] = envelope.get("envelope_id", "")
+    content["trace_id"] = envelope.get("trace_id", "")
+    if bool(payload.get("persist", False)):
+        path = _persist_knowledge_graph_snapshot(storage, content, envelope)
+        content["path"] = _display_path(storage.root, path)
+        content["asset_id"] = storage.read_json(path).get("id", "")
+    return envelope_response(content, envelope)
+
+
+def query_knowledge_graph(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    flow = str(payload.get("flow") or payload.get("task_type") or "").strip()
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.knowledge_graph_query",
+        asset_type="knowledge_graph_query",
+        project_id=project_id,
+        task_type=flow or "knowledge_graph_query",
+    )
+    graph = _knowledge_graph_content(
+        storage,
+        project_id=project_id,
+        flow=flow,
+        discipline=str(payload.get("discipline") or ""),
+        include_deprecated=bool(payload.get("include_deprecated", False)),
+        limit=int(payload.get("limit", 500) or 500),
+    )
+    terms = [term for term in re.split(r"\s+", str(payload.get("query") or payload.get("term") or "").strip().lower()) if term]
+    node_by_id = {str(node.get("id")): node for node in graph["nodes"]}
+    if terms:
+        matched_ids = {node_id for node_id, node in node_by_id.items() if _graph_node_matches_terms(node, terms)}
+    else:
+        node_types = set(_strings(payload.get("node_types")))
+        matched_ids = {
+            node_id
+            for node_id, node in node_by_id.items()
+            if not node_types or str(node.get("node_type") or "") in node_types
+        }
+    include_neighbors = int(payload.get("include_neighbors", 1) or 0)
+    visible_ids = set(matched_ids)
+    visible_edges: list[dict[str, Any]] = []
+    for _ in range(max(0, include_neighbors)):
+        for edge in graph["edges"]:
+            source = str(edge.get("source") or "")
+            target = str(edge.get("target") or "")
+            if source in visible_ids or target in visible_ids:
+                visible_ids.update([source, target])
+    for edge in graph["edges"]:
+        if str(edge.get("source") or "") in visible_ids and str(edge.get("target") or "") in visible_ids:
+            visible_edges.append(edge)
+    result = {
+        "graph_id": graph["graph_id"],
+        "project_id": graph["project_id"],
+        "query": " ".join(terms),
+        "matched_node_ids": sorted(matched_ids),
+        "nodes": [node_by_id[node_id] for node_id in sorted(visible_ids) if node_id in node_by_id],
+        "edges": visible_edges,
+        "summary": graph["summary"],
+        "source_isolation": graph["source_isolation"],
+    }
+    return envelope_response(result, envelope)
+
+
+def query_knowledge_graph_paths(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    flow = str(payload.get("flow") or payload.get("task_type") or "").strip()
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.knowledge_graph_paths",
+        asset_type="knowledge_graph_path_query",
+        project_id=project_id,
+        task_type=flow or "knowledge_graph_paths",
+    )
+    graph = _knowledge_graph_content(
+        storage,
+        project_id=project_id,
+        flow=flow,
+        discipline=str(payload.get("discipline") or ""),
+        include_deprecated=bool(payload.get("include_deprecated", False)),
+        limit=int(payload.get("limit", 500) or 500),
+    )
+    source = str(payload.get("source") or payload.get("source_id") or "").strip()
+    target = str(payload.get("target") or payload.get("target_id") or "").strip()
+    if not source or not target:
+        raise ValueError("source and target are required")
+    max_depth = max(1, int(payload.get("max_depth", 4) or 4))
+    paths = _find_graph_paths(graph, source, target, max_depth=max_depth)
+    return envelope_response(
+        {
+            "graph_id": graph["graph_id"],
+            "project_id": project_id,
+            "source": source,
+            "target": target,
+            "max_depth": max_depth,
+            "paths": paths,
+            "path_count": len(paths),
+            "source_isolation": graph["source_isolation"],
+        },
+        envelope,
+    )
+
+
+def learn_from_knowledge_effects(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    flow = str(payload.get("flow") or payload.get("task_type") or "").strip()
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.knowledge_effect_learning",
+        asset_type="knowledge_learning_snapshot",
+        project_id=project_id,
+        task_type=flow or "knowledge_effect_learning",
+    )
+    snapshot = _knowledge_learning_content(
+        storage,
+        project_id=project_id,
+        flow=flow,
+        discipline=str(payload.get("discipline") or ""),
+        include_deprecated=bool(payload.get("include_deprecated", False)),
+        learning_rate=_float(payload.get("learning_rate"), 0.25),
+        limit=int(payload.get("limit", 500) or 500),
+    )
+    applied_updates: list[dict[str, Any]] = []
+    if bool(payload.get("apply_updates", False)):
+        min_delta = abs(_float(payload.get("min_apply_delta"), 0.03))
+        for item in snapshot["learning_items"]:
+            delta = _float(item.get("recommended_weight_delta"), 0.0)
+            if abs(delta) < min_delta:
+                continue
+            update = apply_weight_update(
+                storage,
+                {
+                    "project_id": project_id,
+                    "knowledge_id": item["knowledge_id"],
+                    "flow": item.get("flow") or flow or "review",
+                    "delta": delta,
+                    "reason": "knowledge_effect_learning",
+                    "os_envelope": payload.get("os_envelope") or payload.get("envelope"),
+                    "environment": payload.get("environment", ""),
+                    "bypass_reason": payload.get("bypass_reason", ""),
+                    "source_policy": payload.get("source_policy", {}),
+                },
+            )
+            updated_content = update.get("knowledge", {}).get("asset", {}).get("content", {})
+            applied_updates.append(
+                {
+                    "knowledge_id": item["knowledge_id"],
+                    "concept_name": item["concept_name"],
+                    "flow": item.get("flow") or flow or "review",
+                    "applied_delta": delta,
+                    "next_weight": updated_content.get("weight"),
+                    "status": update.get("status", ""),
+                    "quality_score_path": update.get("quality_score", {}).get("path", ""),
+                }
+            )
+    snapshot["applied_updates"] = applied_updates
+    snapshot["envelope_id"] = envelope.get("envelope_id", "")
+    snapshot["trace_id"] = envelope.get("trace_id", "")
+    if bool(payload.get("persist", True)) or applied_updates:
+        path = _persist_knowledge_learning_snapshot(storage, snapshot, envelope)
+        snapshot["path"] = _display_path(storage.root, path)
+        snapshot["asset_id"] = storage.read_json(path).get("id", "")
+    return envelope_response(snapshot, envelope)
+
+
 def run_minimal_acceptance_fixture(storage: LocalStorage) -> dict[str, Any]:
     source = import_source_document(
         storage,
@@ -1399,6 +1587,635 @@ def _query_row(row: dict[str, Any], bindings: list[dict[str, Any]]) -> dict[str,
         "selection_score": round((quality * weight) + priority_bonus, 4),
         "source_chunk_ids": content.get("source_chunk_ids", []),
     }
+
+
+def _knowledge_graph_content(
+    storage: LocalStorage,
+    *,
+    project_id: str,
+    flow: str = "",
+    discipline: str = "",
+    include_deprecated: bool = False,
+    limit: int = 500,
+) -> dict[str, Any]:
+    project_filter = project_id if project_id != "local-system" else None
+    valid_flow = flow if flow in MKAOS_FLOWS else ""
+    knowledge_rows = list_knowledge_cards(storage, project_id=project_filter, include_deprecated=include_deprecated, limit=limit)
+    if discipline:
+        needle = discipline.strip().lower()
+        knowledge_rows = [row for row in knowledge_rows if needle in str(row.get("content", {}).get("discipline", "")).lower()]
+    knowledge_ids = {str(row.get("id") or "") for row in knowledge_rows}
+    bindings = [
+        row
+        for row in list_usage_bindings(storage, flow=valid_flow or None, enabled=True, limit=2000)
+        if str(row.get("content", {}).get("knowledge_id") or "") in knowledge_ids
+        and _project_scope_matches(str(row.get("metadata", {}).get("project_id") or ""), project_id)
+    ]
+    usage_events = list_usage_events(storage, project_id=project_filter, flow=valid_flow or None, limit=3000)
+    quality_scores = _list_quality_scores(storage, project_id=project_filter, flow=valid_flow or None, limit=3000)
+    rule_rows = [
+        row
+        for row in list_rule_cards(storage, flow=valid_flow or None, enabled=True, limit=500)
+        if _project_scope_matches(str(row.get("metadata", {}).get("project_id") or ""), project_id)
+    ]
+    template_rows = [
+        row
+        for row in list_template_cards(storage, flow=valid_flow or None, enabled=True, limit=500)
+        if _project_scope_matches(str(row.get("metadata", {}).get("project_id") or ""), project_id)
+    ]
+    nodes: dict[str, dict[str, Any]] = {}
+    edges: dict[str, dict[str, Any]] = {}
+
+    def add_node(node: dict[str, Any]) -> None:
+        nodes[str(node["id"])] = node
+
+    def add_edge(source: str, target: str, relation: str, **attrs: Any) -> None:
+        if source not in nodes or target not in nodes:
+            return
+        edge_id = _stable_asset_id("mkaos_edge", source, relation, target)
+        edges[edge_id] = {
+            "id": edge_id,
+            "source": source,
+            "target": target,
+            "relation": relation,
+            "attributes": _safe_graph_attrs(attrs),
+        }
+
+    for flow_name in sorted(MKAOS_FLOWS):
+        if valid_flow and flow_name != valid_flow:
+            continue
+        add_node({"id": f"flow:{flow_name}", "node_type": "flow", "label": flow_name, "attributes": {"flow": flow_name}})
+
+    for row in knowledge_rows:
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        knowledge_id = str(row.get("id") or "")
+        node_id = f"knowledge:{knowledge_id}"
+        knowledge_flow = valid_flow or _first_knowledge_flow(knowledge_id, bindings, usage_events, quality_scores)
+        metrics = _knowledge_learning_metrics(knowledge_id, usage_events, quality_scores, knowledge_flow)
+        add_node(
+            {
+                "id": node_id,
+                "node_type": "knowledge_card",
+                "asset_id": knowledge_id,
+                "path": row.get("path", ""),
+                "label": str(content.get("concept_name") or row.get("title") or knowledge_id),
+                "attributes": _safe_graph_attrs(
+                    {
+                        "project_id": metadata.get("project_id") or content.get("project_id") or project_id,
+                        "discipline": content.get("discipline", ""),
+                        "sub_discipline": content.get("sub_discipline", ""),
+                        "knowledge_type": content.get("knowledge_type", ""),
+                        "status": content.get("status", metadata.get("asset_status", "")),
+                        "risk_level": content.get("risk_level", metadata.get("risk_level", "")),
+                        "quality_score": _float(content.get("quality_score", metadata.get("quality_score", 0.7)), 0.7),
+                        "weight": _float(content.get("weight", metadata.get("weight", 1.0)), 1.0),
+                        "confidence": _float(content.get("confidence"), 0.7),
+                        "source_chunk_ids": content.get("source_chunk_ids", []),
+                        "usage_count": metrics["usage_count"],
+                        "observed_effect_count": metrics["observed_effect_count"],
+                        "avg_effect_score": metrics["avg_effect_score"],
+                        "feedback_delta": metrics["feedback_delta"],
+                    }
+                ),
+            }
+        )
+        discipline_name = str(content.get("discipline") or "general").strip() or "general"
+        discipline_id = f"discipline:{discipline_name}"
+        add_node({"id": discipline_id, "node_type": "discipline", "label": discipline_name, "attributes": {"discipline": discipline_name}})
+        add_edge(node_id, discipline_id, "classified_as")
+        for chunk_id in _strings(content.get("source_chunk_ids")):
+            chunk_node = _source_chunk_graph_node(storage, chunk_id)
+            if chunk_node:
+                add_node(chunk_node)
+                add_edge(chunk_node["id"], node_id, "evidence_for", evidence_ref=chunk_id)
+
+    rule_by_id: dict[str, dict[str, Any]] = {}
+    for row in rule_rows:
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        node_id = f"rule:{row.get('id')}"
+        rule_by_id[str(row.get("id") or "")] = row
+        add_node(
+            {
+                "id": node_id,
+                "node_type": "rule_card",
+                "asset_id": row.get("id", ""),
+                "path": row.get("path", ""),
+                "label": str(content.get("rule_name") or row.get("title") or row.get("id")),
+                "attributes": _safe_graph_attrs(
+                    {
+                        "rule_type": content.get("rule_type", ""),
+                        "severity": content.get("severity", ""),
+                        "blocking": bool(content.get("blocking", False)),
+                        "applicable_flows": content.get("applicable_flows", []),
+                    }
+                ),
+            }
+        )
+        for flow_name in _strings(content.get("applicable_flows")):
+            if valid_flow and flow_name != valid_flow:
+                continue
+            add_edge(f"flow:{flow_name}", node_id, "governed_by_rule", severity=content.get("severity", ""))
+
+    template_by_id: dict[str, dict[str, Any]] = {}
+    for row in template_rows:
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        node_id = f"template:{row.get('id')}"
+        template_by_id[str(row.get("id") or "")] = row
+        add_node(
+            {
+                "id": node_id,
+                "node_type": "template_card",
+                "asset_id": row.get("id", ""),
+                "path": row.get("path", ""),
+                "label": str(content.get("template_name") or row.get("title") or row.get("id")),
+                "attributes": _safe_graph_attrs(
+                    {
+                        "template_type": content.get("template_type", ""),
+                        "applicable_flows": content.get("applicable_flows", []),
+                        "usage_constraints": content.get("usage_constraints", []),
+                    }
+                ),
+            }
+        )
+        for flow_name in _strings(content.get("applicable_flows")):
+            if valid_flow and flow_name != valid_flow:
+                continue
+            add_edge(f"flow:{flow_name}", node_id, "uses_template", template_type=content.get("template_type", ""))
+
+    for binding in bindings:
+        content = binding.get("content", {}) if isinstance(binding.get("content", {}), dict) else {}
+        knowledge_id = str(content.get("knowledge_id") or "")
+        flow_name = str(content.get("flow") or "")
+        knowledge_node_id = f"knowledge:{knowledge_id}"
+        flow_node_id = f"flow:{flow_name}"
+        add_edge(
+            knowledge_node_id,
+            flow_node_id,
+            "bound_to_flow",
+            binding_id=binding.get("id", ""),
+            usage_type=content.get("usage_type", ""),
+            input_role=content.get("input_role", ""),
+            output_form=content.get("output_form", ""),
+            priority=content.get("priority", 100),
+        )
+        rule_id = str(content.get("review_rule_id") or "")
+        if rule_id and rule_id in rule_by_id:
+            add_edge(knowledge_node_id, f"rule:{rule_id}", "validated_by_rule", binding_id=binding.get("id", ""))
+        template_id = str(content.get("template_id") or "")
+        if template_id and template_id in template_by_id:
+            add_edge(knowledge_node_id, f"template:{template_id}", "instantiates_template", binding_id=binding.get("id", ""))
+
+    observed_pairs: set[tuple[str, str]] = set()
+    for event in usage_events:
+        content = event.get("content", {}) if isinstance(event.get("content", {}), dict) else {}
+        knowledge_id = str(content.get("knowledge_id") or "")
+        flow_name = str(content.get("flow") or "")
+        if knowledge_id in knowledge_ids and (not valid_flow or flow_name == valid_flow):
+            observed_pairs.add((knowledge_id, flow_name))
+    for score in quality_scores:
+        content = score.get("content", {}) if isinstance(score.get("content", {}), dict) else {}
+        knowledge_id = str(content.get("knowledge_id") or "")
+        flow_name = str(content.get("flow") or "")
+        if knowledge_id in knowledge_ids and (not valid_flow or flow_name == valid_flow):
+            observed_pairs.add((knowledge_id, flow_name))
+    for knowledge_id, flow_name in observed_pairs:
+        metrics = _knowledge_learning_metrics(knowledge_id, usage_events, quality_scores, flow_name)
+        add_edge(
+            f"knowledge:{knowledge_id}",
+            f"flow:{flow_name}",
+            "effect_observed",
+            usage_count=metrics["usage_count"],
+            observed_effect_count=metrics["observed_effect_count"],
+            avg_effect_score=metrics["avg_effect_score"],
+            feedback_delta=metrics["feedback_delta"],
+            negative_signal_count=metrics["negative_signal_count"],
+        )
+
+    node_list = sorted(nodes.values(), key=lambda item: (str(item.get("node_type", "")), str(item.get("label", "")), str(item.get("id", ""))))
+    edge_list = sorted(edges.values(), key=lambda item: (str(item.get("relation", "")), str(item.get("source", "")), str(item.get("target", ""))))
+    graph_id = _stable_asset_id("knowledge_graph", project_id, valid_flow or "all", str(len(node_list)), str(len(edge_list)))
+    return {
+        "graph_id": graph_id,
+        "project_id": project_id,
+        "flow": valid_flow,
+        "version": "mkaos-knowledge-graph-v1",
+        "nodes": node_list,
+        "edges": edge_list,
+        "summary": _knowledge_graph_summary(node_list, edge_list),
+        "source_isolation": {
+            "raw_source_text_included": False,
+            "source_chunk_ids_only": True,
+            "clean_source_text_included": False,
+            "graph_contains_abstract_knowledge_only": True,
+        },
+        "created_at": utc_now(),
+    }
+
+
+def _persist_knowledge_graph_snapshot(storage: LocalStorage, content: dict[str, Any], envelope: dict[str, Any]) -> Path:
+    graph_id = str(content.get("graph_id") or make_id("knowledge_graph", utc_now()))
+    asset = KnowledgeGraphSnapshot(
+        id=graph_id,
+        title=f"MKAOS knowledge graph {content.get('project_id')} {content.get('flow') or 'all'}",
+        source="mkaos-knowledge-graph",
+        tags=["mkaos", "knowledge-graph", "multidisciplinary", str(content.get("flow") or "all")],
+        content=content,
+        metadata={
+            "project_id": content.get("project_id", ""),
+            "mkaos": True,
+            "use_in_generation_rag": False,
+            "source_isolation": "no_raw_source_text",
+            "run_metadata": run_metadata("mkaos.build_knowledge_graph", KnowledgeGraphSnapshot(title="knowledge graph", content={"nodes": [], "edges": []})),
+            **envelope_asset_metadata(envelope),
+        },
+        references=_dedupe([str(node.get("asset_id") or "") for node in content.get("nodes", []) if str(node.get("asset_id") or "").strip()]),
+    )
+    _ensure_valid(asset.to_dict())
+    return storage.write_asset("knowledge", asset)
+
+
+def _persist_knowledge_learning_snapshot(storage: LocalStorage, content: dict[str, Any], envelope: dict[str, Any]) -> Path:
+    learning_id = str(content.get("learning_id") or make_id("knowledge_learning", utc_now()))
+    asset = KnowledgeLearningSnapshot(
+        id=learning_id,
+        title=f"MKAOS learning snapshot {content.get('project_id')} {content.get('flow') or 'all'}",
+        source="mkaos-knowledge-effect-learning",
+        tags=["mkaos", "knowledge-learning", "feedback-learning", str(content.get("flow") or "all")],
+        content=content,
+        metadata={
+            "project_id": content.get("project_id", ""),
+            "mkaos": True,
+            "use_in_generation_rag": False,
+            "source_isolation": "no_raw_source_text",
+            "run_metadata": run_metadata("mkaos.learn_from_knowledge_effects", KnowledgeLearningSnapshot(title="knowledge learning", content={"learning_items": []})),
+            **envelope_asset_metadata(envelope),
+        },
+        references=_dedupe([str(item.get("knowledge_id") or "") for item in content.get("learning_items", []) if str(item.get("knowledge_id") or "").strip()]),
+    )
+    _ensure_valid(asset.to_dict())
+    return storage.write_asset("knowledge", asset)
+
+
+def _knowledge_learning_content(
+    storage: LocalStorage,
+    *,
+    project_id: str,
+    flow: str = "",
+    discipline: str = "",
+    include_deprecated: bool = False,
+    learning_rate: float = 0.25,
+    limit: int = 500,
+) -> dict[str, Any]:
+    project_filter = project_id if project_id != "local-system" else None
+    valid_flow = flow if flow in MKAOS_FLOWS else ""
+    knowledge_rows = list_knowledge_cards(storage, project_id=project_filter, include_deprecated=include_deprecated, limit=limit)
+    if discipline:
+        needle = discipline.strip().lower()
+        knowledge_rows = [row for row in knowledge_rows if needle in str(row.get("content", {}).get("discipline", "")).lower()]
+    knowledge_ids = {str(row.get("id") or "") for row in knowledge_rows}
+    usage_events = [
+        row
+        for row in list_usage_events(storage, project_id=project_filter, flow=valid_flow or None, limit=3000)
+        if str(row.get("content", {}).get("knowledge_id") or "") in knowledge_ids
+    ]
+    quality_scores = [
+        row
+        for row in _list_quality_scores(storage, project_id=project_filter, flow=valid_flow or None, limit=3000)
+        if str(row.get("content", {}).get("knowledge_id") or "") in knowledge_ids
+    ]
+    bindings = [
+        row
+        for row in list_usage_bindings(storage, flow=valid_flow or None, enabled=True, limit=2000)
+        if str(row.get("content", {}).get("knowledge_id") or "") in knowledge_ids
+        and _project_scope_matches(str(row.get("metadata", {}).get("project_id") or ""), project_id)
+    ]
+    learning_items: list[dict[str, Any]] = []
+    for row in knowledge_rows:
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        knowledge_id = str(row.get("id") or "")
+        candidate_flows = {valid_flow} if valid_flow else set()
+        candidate_flows.update(str(binding.get("content", {}).get("flow") or "") for binding in bindings if str(binding.get("content", {}).get("knowledge_id") or "") == knowledge_id)
+        candidate_flows.update(str(event.get("content", {}).get("flow") or "") for event in usage_events if str(event.get("content", {}).get("knowledge_id") or "") == knowledge_id)
+        candidate_flows.update(str(score.get("content", {}).get("flow") or "") for score in quality_scores if str(score.get("content", {}).get("knowledge_id") or "") == knowledge_id)
+        for item_flow in sorted(flow for flow in candidate_flows if flow) or [valid_flow or "review"]:
+            metrics = _knowledge_learning_metrics(knowledge_id, usage_events, quality_scores, item_flow)
+            current_weight = _float(content.get("weight", metadata.get("weight", 1.0)), 1.0)
+            current_quality = _float(content.get("quality_score", metadata.get("quality_score", 0.7)), 0.7)
+            risk_level = _normalize_risk_level(str(content.get("risk_level") or metadata.get("risk_level") or "low"))
+            recommended_delta = _recommended_learning_delta(metrics, risk_level=risk_level, learning_rate=learning_rate)
+            action = _recommended_learning_action(metrics, recommended_delta, risk_level=risk_level, status=str(content.get("status") or metadata.get("asset_status") or "active"))
+            learning_items.append(
+                {
+                    "knowledge_id": knowledge_id,
+                    "concept_name": str(content.get("concept_name") or row.get("title") or knowledge_id),
+                    "flow": item_flow,
+                    "discipline": content.get("discipline", ""),
+                    "knowledge_type": content.get("knowledge_type", ""),
+                    "status": content.get("status", metadata.get("asset_status", "")),
+                    "risk_level": risk_level,
+                    "quality_score": current_quality,
+                    "current_weight": current_weight,
+                    "learned_weight": max(0.0, round(current_weight + recommended_delta, 4)),
+                    "recommended_weight_delta": recommended_delta,
+                    "recommended_action": action,
+                    "confidence": _learning_confidence(metrics),
+                    "usage_count": metrics["usage_count"],
+                    "observed_effect_count": metrics["observed_effect_count"],
+                    "avg_effect_score": metrics["avg_effect_score"],
+                    "feedback_delta": metrics["feedback_delta"],
+                    "negative_signal_count": metrics["negative_signal_count"],
+                    "positive_signal_count": metrics["positive_signal_count"],
+                    "evidence_refs": _dedupe([knowledge_id, *[str(event.get("id") or "") for event in metrics["events"][:5]], *[str(score.get("id") or "") for score in metrics["quality_scores"][:5]]]),
+                }
+            )
+    recommendations = [
+        {
+            "knowledge_id": item["knowledge_id"],
+            "concept_name": item["concept_name"],
+            "flow": item["flow"],
+            "action": item["recommended_action"],
+            "weight_delta": item["recommended_weight_delta"],
+            "reason": _learning_recommendation_reason(item),
+        }
+        for item in learning_items
+        if item["recommended_action"] not in {"observe", "keep"}
+    ]
+    return {
+        "learning_id": _stable_asset_id("knowledge_learning", project_id, valid_flow or "all", str(len(learning_items)), str(len(recommendations))),
+        "project_id": project_id,
+        "flow": valid_flow,
+        "version": "mkaos-effect-learning-v1",
+        "learning_items": learning_items,
+        "recommendations": recommendations,
+        "applied_updates": [],
+        "source_metrics": {
+            "knowledge_count": len(knowledge_rows),
+            "usage_event_count": len(usage_events),
+            "quality_score_count": len(quality_scores),
+            "binding_count": len(bindings),
+            "recommendation_count": len(recommendations),
+        },
+        "source_isolation": {"raw_source_text_included": False, "source_chunk_ids_only": True, "event_payloads_aggregated_only": True},
+        "created_at": utc_now(),
+    }
+
+
+def _knowledge_learning_metrics(
+    knowledge_id: str,
+    usage_events: list[dict[str, Any]],
+    quality_scores: list[dict[str, Any]],
+    flow: str,
+) -> dict[str, Any]:
+    events = [
+        row
+        for row in usage_events
+        if str(row.get("content", {}).get("knowledge_id") or "") == knowledge_id
+        and (not flow or str(row.get("content", {}).get("flow") or "") == flow)
+    ]
+    scores = [
+        row
+        for row in quality_scores
+        if str(row.get("content", {}).get("knowledge_id") or "") == knowledge_id
+        and (not flow or str(row.get("content", {}).get("flow") or "") == flow)
+    ]
+    observed_effect_scores: list[float] = []
+    negative_signal_count = 0
+    positive_signal_count = 0
+    for event in events:
+        content = event.get("content", {}) if isinstance(event.get("content", {}), dict) else {}
+        review_result = content.get("review_result") if isinstance(content.get("review_result"), dict) else {}
+        reader_feedback = content.get("reader_feedback") if isinstance(content.get("reader_feedback"), dict) else {}
+        effect = _float(content.get("effect_score"), 0.0)
+        if effect != 0.0 or review_result or reader_feedback:
+            observed_effect_scores.append(max(0.0, min(1.0, effect)))
+        if effect >= 0.7 or review_result.get("passed") or reader_feedback.get("sentiment") in {"positive", "delighted"}:
+            positive_signal_count += 1
+        if effect < 0.2 and (effect != 0.0 or review_result or reader_feedback):
+            negative_signal_count += 1
+        if review_result.get("anti_encyclopedia_hit") or review_result.get("canon_conflict_hit"):
+            negative_signal_count += 1
+        rating = _float(reader_feedback.get("rating"), -1.0)
+        if 0 <= rating < 3:
+            negative_signal_count += 1
+        elif rating >= 4:
+            positive_signal_count += 1
+    feedback_delta = round(sum(_float(row.get("content", {}).get("delta"), 0.0) for row in scores), 4)
+    positive_signal_count += len([row for row in scores if _float(row.get("content", {}).get("delta"), 0.0) > 0])
+    negative_signal_count += len([row for row in scores if _float(row.get("content", {}).get("delta"), 0.0) < 0])
+    avg_effect = None if not observed_effect_scores else round(sum(observed_effect_scores) / len(observed_effect_scores), 4)
+    return {
+        "events": events,
+        "quality_scores": scores,
+        "usage_count": len(events),
+        "quality_score_count": len(scores),
+        "observed_effect_count": len(observed_effect_scores),
+        "avg_effect_score": avg_effect,
+        "feedback_delta": feedback_delta,
+        "negative_signal_count": negative_signal_count,
+        "positive_signal_count": positive_signal_count,
+    }
+
+
+def _recommended_learning_delta(metrics: dict[str, Any], *, risk_level: str, learning_rate: float) -> float:
+    has_signal = metrics["observed_effect_count"] > 0 or metrics["quality_score_count"] > 0
+    if not has_signal:
+        return 0.0
+    effect_basis = _float(metrics.get("avg_effect_score"), 0.5)
+    delta = (effect_basis - 0.5) * learning_rate
+    delta += _float(metrics.get("feedback_delta"), 0.0) * min(1.0, learning_rate * 2)
+    delta += (int(metrics.get("positive_signal_count", 0)) - int(metrics.get("negative_signal_count", 0))) * 0.02
+    if risk_level in {"high", "critical"}:
+        delta -= 0.05 if risk_level == "high" else 0.15
+    return round(max(-0.4, min(0.4, delta)), 4)
+
+
+def _recommended_learning_action(metrics: dict[str, Any], delta: float, *, risk_level: str, status: str) -> str:
+    if status == "deprecated":
+        return "do_not_select"
+    if risk_level == "critical":
+        return "quarantine"
+    if int(metrics.get("negative_signal_count", 0)) >= 2:
+        return "review"
+    if delta >= 0.03:
+        return "boost"
+    if delta <= -0.03:
+        return "reduce"
+    if metrics["usage_count"] == 0 and metrics["quality_score_count"] == 0:
+        return "observe"
+    return "keep"
+
+
+def _learning_confidence(metrics: dict[str, Any]) -> str:
+    signal_count = int(metrics.get("observed_effect_count", 0)) + int(metrics.get("quality_score_count", 0))
+    if signal_count >= 5:
+        return "high"
+    if signal_count >= 2:
+        return "medium"
+    if signal_count == 1:
+        return "low"
+    return "none"
+
+
+def _learning_recommendation_reason(item: dict[str, Any]) -> str:
+    if item["recommended_action"] == "quarantine":
+        return "critical risk knowledge should be excluded until reviewed"
+    if item["recommended_action"] == "review":
+        return "negative effect or feedback signals exceeded review threshold"
+    if item["recommended_action"] == "boost":
+        return "observed effect or feedback delta supports stronger selection"
+    if item["recommended_action"] == "reduce":
+        return "observed effect or feedback delta supports weaker selection"
+    if item["recommended_action"] == "do_not_select":
+        return "knowledge is deprecated"
+    return "no action"
+
+
+def _list_quality_scores(storage: LocalStorage, *, project_id: str | None = None, flow: str | None = None, limit: int = 1000) -> list[dict[str, Any]]:
+    rows = _list_assets(storage, "knowledge", "knowledge_quality_score", project_id=project_id, limit=limit)
+    if flow:
+        rows = [row for row in rows if str(row.get("content", {}).get("flow", "")) == flow]
+    return rows
+
+
+def _knowledge_graph_summary(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> dict[str, Any]:
+    node_counts: dict[str, int] = {}
+    relation_counts: dict[str, int] = {}
+    discipline_counts: dict[str, int] = {}
+    for node in nodes:
+        node_type = str(node.get("node_type") or "unknown")
+        node_counts[node_type] = node_counts.get(node_type, 0) + 1
+        if node_type == "knowledge_card":
+            discipline = str(node.get("attributes", {}).get("discipline") or "general")
+            discipline_counts[discipline] = discipline_counts.get(discipline, 0) + 1
+    for edge in edges:
+        relation = str(edge.get("relation") or "unknown")
+        relation_counts[relation] = relation_counts.get(relation, 0) + 1
+    return {
+        "node_count": len(nodes),
+        "edge_count": len(edges),
+        "coverage": node_counts,
+        "discipline_counts": discipline_counts,
+        "edge_relation_counts": relation_counts,
+        "reasoning_affordances": ["discipline traversal", "flow binding", "rule/template reuse", "effect learning", "evidence lineage"],
+    }
+
+
+def _source_chunk_graph_node(storage: LocalStorage, chunk_id: str) -> dict[str, Any] | None:
+    try:
+        _, chunk = _find_asset(storage, chunk_id, asset_type="source_chunk", categories=["raw"])
+    except FileNotFoundError:
+        return None
+    content = chunk.get("content", {}) if isinstance(chunk.get("content", {}), dict) else {}
+    metadata = chunk.get("metadata", {}) if isinstance(chunk.get("metadata", {}), dict) else {}
+    return {
+        "id": f"source_chunk:{chunk_id}",
+        "node_type": "source_chunk",
+        "asset_id": chunk_id,
+        "label": f"source chunk {content.get('chunk_index', '')}".strip(),
+        "attributes": _safe_graph_attrs(
+            {
+                "source_document_id": content.get("source_document_id", ""),
+                "chunk_index": content.get("chunk_index", 0),
+                "content_hash": content.get("content_hash", ""),
+                "project_id": metadata.get("project_id", ""),
+            }
+        ),
+    }
+
+
+def _first_knowledge_flow(
+    knowledge_id: str,
+    bindings: list[dict[str, Any]],
+    usage_events: list[dict[str, Any]],
+    quality_scores: list[dict[str, Any]],
+) -> str:
+    for rows in [bindings, usage_events, quality_scores]:
+        for row in rows:
+            content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+            if str(content.get("knowledge_id") or "") == knowledge_id and str(content.get("flow") or ""):
+                return str(content.get("flow") or "")
+    return "review"
+
+
+def _graph_node_matches_terms(node: dict[str, Any], terms: list[str]) -> bool:
+    haystack = json.dumps(
+        {
+            "id": node.get("id", ""),
+            "label": node.get("label", ""),
+            "node_type": node.get("node_type", ""),
+            "asset_id": node.get("asset_id", ""),
+            "attributes": node.get("attributes", {}),
+        },
+        ensure_ascii=False,
+    ).lower()
+    return all(term in haystack for term in terms)
+
+
+def _find_graph_paths(graph: dict[str, Any], source: str, target: str, *, max_depth: int) -> list[dict[str, Any]]:
+    node_by_id = {str(node.get("id")): node for node in graph.get("nodes", [])}
+    source_ids = _resolve_graph_node_ids(node_by_id, source)
+    target_ids = _resolve_graph_node_ids(node_by_id, target)
+    if not source_ids or not target_ids:
+        return []
+    adjacency: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+    for edge in graph.get("edges", []):
+        source_id = str(edge.get("source") or "")
+        target_id = str(edge.get("target") or "")
+        adjacency.setdefault(source_id, []).append((target_id, edge))
+        adjacency.setdefault(target_id, []).append((source_id, edge))
+    paths: list[dict[str, Any]] = []
+    queue: list[tuple[str, list[str], list[dict[str, Any]]]] = [(node_id, [node_id], []) for node_id in source_ids]
+    while queue and len(paths) < 10:
+        node_id, node_path, edge_path = queue.pop(0)
+        if node_id in target_ids and edge_path:
+            paths.append(
+                {
+                    "nodes": [node_by_id[item] for item in node_path if item in node_by_id],
+                    "edges": edge_path,
+                    "relation_path": [str(edge.get("relation") or "") for edge in edge_path],
+                    "explanation": " -> ".join(str(node_by_id[item].get("label") or item) for item in node_path if item in node_by_id),
+                }
+            )
+            continue
+        if len(edge_path) >= max_depth:
+            continue
+        for next_id, edge in adjacency.get(node_id, []):
+            if next_id in node_path:
+                continue
+            queue.append((next_id, [*node_path, next_id], [*edge_path, edge]))
+    return paths
+
+
+def _resolve_graph_node_ids(node_by_id: dict[str, dict[str, Any]], value: str) -> set[str]:
+    needle = value.strip().lower()
+    matches: set[str] = set()
+    for node_id, node in node_by_id.items():
+        aliases = {
+            node_id.lower(),
+            str(node.get("asset_id") or "").lower(),
+            str(node.get("label") or "").lower(),
+        }
+        if needle in aliases or needle in str(node.get("label") or "").lower():
+            matches.add(node_id)
+    return matches
+
+
+def _safe_graph_attrs(value: dict[str, Any]) -> dict[str, Any]:
+    return _strip_source_text_fields(value) if isinstance(value, dict) else {}
+
+
+def _strip_source_text_fields(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): _strip_source_text_fields(item)
+            for key, item in value.items()
+            if str(key) not in {"raw_text", "clean_text", "text", "content_text", "source_text"}
+        }
+    if isinstance(value, list):
+        return [_strip_source_text_fields(item) for item in value]
+    return value
 
 
 def _pack_item_from_binding(

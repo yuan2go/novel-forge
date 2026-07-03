@@ -136,3 +136,12 @@
 ## 最终结论
 
 Phase 12 要求的 Python、integration、新增工业化 proof、前端 test 和 build 均已运行并通过。Playwright browser smoke 保持项目既有可选跳过策略。
+
+## Post-MKAOS Knowledge Graph / Learning
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m unittest tests/unit/test_mkaos_knowledge_graph_learning.py` | MKAOS 多学科知识图谱、路径查询、效果反馈学习、显式权重回写、API smoke、source isolation。 | 3 tests OK，用时约 0.9s |
+| `python3 -m unittest tests/unit/test_mkaos.py tests/unit/test_mkaos_selector_canon.py tests/unit/test_mkaos_os_envelope.py tests/unit/test_mkaos_knowledge_graph_learning.py` | MKAOS P0、selector/canon、OS Envelope、图谱/学习相邻回归。 | 16 tests OK，用时约 2.2s |
+| `python3 -m unittest tests/unit/test_schemas.py` | 新 `knowledge_graph_snapshot`、`knowledge_learning_snapshot` schema 注册与通用 schema 回归。 | 17 tests OK |
+| `python3 -m unittest discover -s tests -p 'test_*.py'` | 全量 Python unittest discover 回归。 | 307 tests OK，用时 934.118s，skipped=1 |

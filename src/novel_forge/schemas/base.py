@@ -106,6 +106,8 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "knowledge_pack_item": ["knowledge_pack_id", "item_role", "flow", "payload"],
     "knowledge_usage_event": ["event_id", "knowledge_id", "knowledge_pack_id", "project_id", "flow", "agent_name", "used_as", "created_at"],
     "knowledge_quality_score": ["score_id", "knowledge_id", "flow", "delta", "reason", "created_at"],
+    "knowledge_graph_snapshot": ["graph_id", "project_id", "nodes", "edges", "summary", "source_isolation"],
+    "knowledge_learning_snapshot": ["learning_id", "project_id", "learning_items", "recommendations", "applied_updates", "source_metrics"],
     "material_card": ["usable_patterns", "do_not_copy"],
     "asset_collection": ["purpose", "asset_paths"],
     "platform_profile": [
@@ -739,6 +741,8 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
         "knowledge_pack_item",
         "knowledge_usage_event",
         "knowledge_quality_score",
+        "knowledge_graph_snapshot",
+        "knowledge_learning_snapshot",
     } and isinstance(content, dict):
         errors.extend(_validate_mkaos_content(asset_type, content))
 
@@ -792,6 +796,27 @@ def _validate_mkaos_content(asset_type: str, content: dict[str, Any]) -> list[st
                 errors.append(f"knowledge_pack {key} must be a list")
         if content.get("flow") == "prose" and _contains_key(content, "raw_text"):
             errors.append("prose knowledge_pack must not contain source chunk raw_text")
+    if asset_type == "knowledge_graph_snapshot":
+        for key in ["nodes", "edges"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"knowledge_graph_snapshot {key} must be a list")
+        if not isinstance(content.get("summary"), dict):
+            errors.append("knowledge_graph_snapshot summary must be an object")
+        source_isolation = content.get("source_isolation")
+        if not isinstance(source_isolation, dict):
+            errors.append("knowledge_graph_snapshot source_isolation must be an object")
+        elif source_isolation.get("raw_source_text_included") is not False:
+            errors.append("knowledge_graph_snapshot must not include raw source text")
+        if _contains_key(content, "raw_text"):
+            errors.append("knowledge_graph_snapshot must not contain source chunk raw_text")
+    if asset_type == "knowledge_learning_snapshot":
+        for key in ["learning_items", "recommendations", "applied_updates"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"knowledge_learning_snapshot {key} must be a list")
+        if not isinstance(content.get("source_metrics"), dict):
+            errors.append("knowledge_learning_snapshot source_metrics must be an object")
+        if _contains_key(content, "raw_text"):
+            errors.append("knowledge_learning_snapshot must not contain source chunk raw_text")
     return errors
 
 

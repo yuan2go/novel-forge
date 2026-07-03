@@ -107,6 +107,8 @@ UI：
 - Rule Card / Template Card；
 - Knowledge Pack 构建；
 - Query / Convert；
+- Multidisciplinary Knowledge Graph；
+- Effect Feedback Learning Snapshot；
 - Artifact validation；
 - Canon conflict check；
 - Usage event；
@@ -130,6 +132,10 @@ UI：
 
 - `GET /product/mkaos/overview`
 - `POST /product/mkaos/query/knowledge`
+- `POST /product/mkaos/knowledge-graph/build`
+- `POST /product/mkaos/knowledge-graph/query`
+- `POST /product/mkaos/knowledge-graph/paths`
+- `POST /product/mkaos/learning/effects`
 - `POST /product/mkaos/convert/assets`
 - `POST /product/mkaos/convert/rules`
 - `POST /product/mkaos/sources`
@@ -166,6 +172,7 @@ UI：
 - `tests/unit/test_mkaos_isolation.py`
 - `tests/unit/test_mkaos_os_envelope.py`
 - `tests/unit/test_mkaos_selector_canon.py`
+- `tests/unit/test_mkaos_knowledge_graph_learning.py`
 
 ### 3.3 Context Builder 与 RAG 隔离
 
