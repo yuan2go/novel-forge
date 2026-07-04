@@ -38,6 +38,7 @@ MKAOS has been upgraded from a P0 knowledge governance base into a first-slice K
 | 28. Acceptance Suite | Complete first slice | `run_mkaos_acceptance_suite` covers import, span, candidate, knowledge, pack, issue, revision, feedback, learning, lineage, debug, regression. |
 | 29. web/admin UI | Complete first slice | MKAOS console now includes source evidence, quality dashboard, pack debugger, lightweight graph canvas, knowledge evolution, lineage, mutation, regression, and acceptance panels. |
 | 30. Knowledge evolution loop | Complete first slice | `run_knowledge_evolution_cycle` orchestrates graph snapshot, effect learning, review-rule candidates, hot-template backflow, reader-feedback aggregation, and low-effect elimination recommendations. |
+| 31. Professional book import run | Complete first slice | `run_professional_book_import` parses text/Markdown and optional PDF/EPUB/DOCX files, creates section-aware chunks, evidence spans, batch extraction candidates, rule/template candidates, approval queue items, and candidate graph relations. |
 
 ## Key Files
 
@@ -88,12 +89,14 @@ Selector decisions and knowledge pack mutation audits now use stable ids for rep
 - Deep semantic conflict review is now explicit through `run_semantic_conflict_review`, which combines graph reasoning, deterministic semantic profiles, model-judge opt-in results, confidence, and `requires_model_review`.
 - Human approval first slice now exists through `knowledge_governance_approval` assets and create/list/resolve APIs. Evolution can create approval requests for rule activation, template activation, and low-effect quarantine; applying still requires explicit approval.
 - Graph Explorer now returns deterministic clusters, layout positions, sampling policy, and path animation frames while remaining dependency-free and source-text safe.
+- Professional book import now has a complete first slice: section-aware chunking, evidence spans, full-book batch extraction, candidate approval queue, rule/template candidate generation, and relation auto-linking.
 
 ## Remaining Risks
 
 - Real model-judge and extraction providers remain opt-in; default implementation validates provider outputs locally but does not call external services.
 - Knowledge evolution defaults to advisory mode. `guarded_auto` can apply safe promotions/quarantine, and a first-slice approval asset/API exists; full approval inbox, policy routing, reviewer assignment, and SLA remain P2.
 - UI graph visualization is dependency-free and now has Graph Explorer sampling, clustering, layout metadata, and path frames; large-scale graph search, animated exploration, graph diff, and community detection remain P2.
+- PDF / EPUB / DOCX professional-book parsing is dependency-optional; robust parser quality validation and rich TOC/footnote/table handling remain P2.
 - Full “越写越强” proof still needs longer multi-chapter production telemetry and real reader feedback volume beyond synthetic/local fixtures.
 
 ## Current Distance To A Full Knowledge Asset OS

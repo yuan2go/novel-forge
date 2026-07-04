@@ -2592,6 +2592,108 @@ def import_source_with_pipeline(storage: LocalStorage, payload: dict[str, Any]) 
     return {"import_report": {**report, "path": _display_path(storage.root, path), "asset_id": asset.id}, "source": result}
 
 
+def run_professional_book_import(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    """Import a professional book into the evidence layer and create reviewable knowledge assets.
+
+    The run is intentionally conservative: source text remains evidence-only,
+    generated knowledge/rule/template outputs are candidates, and activation is
+    routed through governance approvals.
+    """
+
+    project_id = str(payload.get("project_id") or "local-system")
+    title = str(payload.get("title") or payload.get("name") or "Professional Book").strip()
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.professional_book_import_run",
+        asset_type="professional_book_import_run",
+        project_id=project_id,
+        task_type="professional_book_import",
+    )
+    parsed = _parse_professional_book_input(storage, payload)
+    if not parsed["text"].strip():
+        raise ValueError("professional book import requires text or a readable file")
+    structured_chunks = _section_aware_chunks(parsed["sections"], target_chars=int(payload.get("target_chars", 900) or 900))
+    import_result = import_source_document(
+        storage,
+        {
+            **payload,
+            "project_id": project_id,
+            "title": title,
+            "text": parsed["text"],
+            "source_kind": "professional_book",
+            "rights": {
+                **(payload.get("rights") if isinstance(payload.get("rights"), dict) else {}),
+                "allow_downstream_generation": False,
+                "copyright_boundary": "professional book evidence only; abstract extraction required",
+            },
+            "os_envelope": payload.get("os_envelope") or payload.get("envelope"),
+            "environment": payload.get("environment", ""),
+            "bypass_reason": payload.get("bypass_reason", ""),
+        },
+    )
+    source_id = str(import_result["asset"].get("id") or "")
+    section_chunks = _replace_source_chunks_with_sections(storage, source_id, structured_chunks)
+    spans = _create_spans_for_structured_chunks(storage, section_chunks, project_id)
+    extraction = _run_professional_book_batch_extraction(storage, project_id, section_chunks, spans, payload)
+    rule_candidates = _generate_professional_book_rule_candidates(storage, project_id, extraction["knowledge_candidates"], payload)
+    template_candidates = _generate_professional_book_template_candidates(storage, project_id, extraction["knowledge_candidates"], payload)
+    approval_queue = _create_professional_book_approval_queue(storage, project_id, extraction["knowledge_candidates"], rule_candidates, template_candidates, payload)
+    relation_report = _auto_link_professional_book_relations(storage, project_id, extraction["knowledge_candidates"], rule_candidates, template_candidates, payload)
+    graph = _response_data(build_knowledge_graph_explorer(storage, {"project_id": project_id, "persist": bool(payload.get("persist_graph", True))}))
+    content = {
+        "import_run_id": _stable_asset_id("professional_book_import_run", project_id, title, source_id, str(len(section_chunks))),
+        "project_id": project_id,
+        "title": title,
+        "source_document_id": source_id,
+        "parser_report": parsed["parser_report"],
+        "section_count": len(parsed["sections"]),
+        "chunk_count": len(section_chunks),
+        "evidence_span_count": len(spans),
+        "extraction_run": extraction["extraction_run"],
+        "candidate_counts": {
+            "knowledge_card_candidate": len(extraction["knowledge_candidates"]),
+            "rule_card_candidate": len(rule_candidates),
+            "template_card_candidate": len(template_candidates),
+        },
+        "approval_queue": approval_queue,
+        "relation_report": relation_report,
+        "graph_explorer": {
+            "explorer_report_id": graph.get("explorer_report_id", ""),
+            "summary": graph.get("summary", {}),
+            "cluster_count": len(graph.get("clusters", [])),
+        },
+        "source_policy": _source_kind_policy("professional_book"),
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False, "evidence_layer_only": True},
+        "created_at": utc_now(),
+        "envelope_id": envelope.get("envelope_id", ""),
+        "trace_id": envelope.get("trace_id", ""),
+    }
+    asset = _base_asset(
+        "professional_book_import_run",
+        asset_id=content["import_run_id"],
+        title=f"Professional book import {title}",
+        source=source_id,
+        tags=["mkaos", "professional-book-import", "book-import-run"],
+        content=content,
+        metadata={"project_id": project_id, "mkaos": True, "use_in_generation_rag": False, **envelope_asset_metadata(envelope)},
+        references=_dedupe(
+            [
+                source_id,
+                *[str(row.get("id") or "") for row in section_chunks],
+                *[str(row.get("asset", {}).get("id") or "") for row in spans],
+                *[str(item.get("asset", {}).get("id") or "") for item in extraction["knowledge_candidates"]],
+                *[str(item.get("candidate_id") or "") for item in rule_candidates],
+                *[str(item.get("candidate_id") or "") for item in template_candidates],
+            ]
+        ),
+    )
+    path = storage.write_asset("runs", asset)
+    content["path"] = _display_path(storage.root, path)
+    content["asset_id"] = asset.id
+    return envelope_response(content, envelope)
+
+
 def extract_knowledge_candidates(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
     source_chunk_ids = _strings(payload.get("source_chunk_ids"))
     if not source_chunk_ids and payload.get("source_document_id"):
@@ -4437,6 +4539,12 @@ def _apply_governance_approval_action(storage: LocalStorage, approval_content: d
     action_type = str(approval_content.get("action_type") or "")
     action_payload = approval_content.get("action_payload") if isinstance(approval_content.get("action_payload"), dict) else {}
     project_id = str(approval_content.get("project_id") or payload.get("project_id") or "local-system")
+    if action_type == "approve_knowledge_candidate":
+        candidate_id = str(action_payload.get("candidate_id") or "")
+        if not candidate_id:
+            return {"applied": False, "reason": "missing_candidate_id"}
+        approved = approve_knowledge_candidate(storage, candidate_id, {"project_id": project_id, "actor": payload.get("actor") or "operator"})
+        return {"applied": True, "asset_type": "knowledge_card", "asset_id": approved["knowledge"]["asset"]["id"], "candidate_id": candidate_id, "path": approved["knowledge"]["path"]}
     if action_type == "activate_rule":
         rule_payload = action_payload.get("rule_payload") if isinstance(action_payload.get("rule_payload"), dict) else {}
         if not rule_payload and action_payload.get("candidate_id"):
@@ -5883,6 +5991,472 @@ def _source_kind_policy(source_kind: str) -> dict[str, Any]:
             "recommended_extraction": ["knowledge_card_candidate"],
         },
     )
+
+
+def _parse_professional_book_input(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    explicit_text = str(payload.get("text") or payload.get("content") or "")
+    file_path = str(payload.get("file_path") or payload.get("path") or "").strip()
+    source_format = str(payload.get("source_format") or payload.get("format") or "").strip().lower()
+    parser_report = {
+        "parser_id": "mkaos.professional_book_parser.v1",
+        "source_format": source_format or "text",
+        "status": "parsed",
+        "warnings": [],
+        "optional_dependency_required": "",
+        "file_path": file_path,
+    }
+    text = explicit_text
+    if not text and file_path:
+        path = Path(file_path)
+        if not path.is_absolute():
+            path = Path(storage.root) / file_path
+        suffix = path.suffix.lower().lstrip(".")
+        source_format = source_format or suffix or "text"
+        parser_report["source_format"] = source_format
+        text, file_warnings, dependency = _read_professional_book_file(path, source_format)
+        parser_report["warnings"].extend(file_warnings)
+        parser_report["optional_dependency_required"] = dependency
+        parser_report["status"] = "parsed" if text else "unsupported_or_empty"
+    sections = _parse_markdown_or_book_sections(text, source_format=source_format or parser_report["source_format"])
+    parser_report["section_count"] = len(sections)
+    parser_report["text_hash"] = _hash_text(text)
+    parser_report["source_isolation"] = {"raw_text_included": False, "clean_text_included": False, "parser_report_hash_only": True}
+    return {"text": text, "sections": sections, "parser_report": parser_report}
+
+
+def _read_professional_book_file(path: Path, source_format: str) -> tuple[str, list[str], str]:
+    warnings: list[str] = []
+    dependency = ""
+    if not path.exists():
+        return "", [f"file not found: {path}"], ""
+    if source_format in {"txt", "text", "md", "markdown"}:
+        return path.read_text(encoding="utf-8"), warnings, ""
+    if source_format == "pdf":
+        try:
+            from pypdf import PdfReader  # type: ignore
+        except Exception:
+            return "", ["PDF parser unavailable; install optional dependency pypdf to parse PDF files"], "pypdf"
+        reader = PdfReader(str(path))
+        pages = [(page.extract_text() or "") for page in reader.pages]
+        return "\n\n".join(pages), warnings, ""
+    if source_format == "docx":
+        try:
+            import docx  # type: ignore
+        except Exception:
+            return "", ["DOCX parser unavailable; install optional dependency python-docx to parse DOCX files"], "python-docx"
+        document = docx.Document(str(path))
+        return "\n\n".join(paragraph.text for paragraph in document.paragraphs if paragraph.text.strip()), warnings, ""
+    if source_format == "epub":
+        try:
+            from ebooklib import epub  # type: ignore
+        except Exception:
+            return "", ["EPUB parser unavailable; install optional dependency ebooklib to parse EPUB files"], "ebooklib"
+        book = epub.read_epub(str(path))
+        parts: list[str] = []
+        for item in book.get_items():
+            if hasattr(item, "get_content"):
+                raw = item.get_content()
+                if isinstance(raw, bytes):
+                    parts.append(re.sub(r"<[^>]+>", " ", raw.decode("utf-8", errors="ignore")))
+        return "\n\n".join(parts), warnings, ""
+    return "", [f"unsupported professional book source_format: {source_format}"], ""
+
+
+def _parse_markdown_or_book_sections(text: str, *, source_format: str) -> list[dict[str, Any]]:
+    lines = str(text or "").splitlines()
+    sections: list[dict[str, Any]] = []
+    current_title = "Front Matter"
+    current_level = 1
+    current_lines: list[str] = []
+
+    def flush() -> None:
+        nonlocal current_lines
+        body = clean_source_text("\n".join(current_lines))
+        if body:
+            sections.append(
+                {
+                    "section_index": len(sections),
+                    "title": current_title,
+                    "level": current_level,
+                    "text": body,
+                    "page_start": None,
+                    "page_end": None,
+                    "chapter_title": current_title if current_level <= 2 else "",
+                    "section_title": current_title,
+                    "source_format": source_format or "text",
+                }
+            )
+        current_lines = []
+
+    heading_pattern = re.compile(r"^(#{1,6})\s+(.+)$")
+    chapter_pattern = re.compile(r"^\s*(第[一二三四五六七八九十百千万\d]+[章节篇卷部].*|chapter\s+\d+.*)$", re.IGNORECASE)
+    for line in lines:
+        stripped = line.strip()
+        heading = heading_pattern.match(stripped)
+        chapter = chapter_pattern.match(stripped)
+        if heading or chapter:
+            flush()
+            if heading:
+                current_level = len(heading.group(1))
+                current_title = heading.group(2).strip()
+            else:
+                current_level = 1
+                current_title = stripped
+            continue
+        current_lines.append(line)
+    flush()
+    if not sections and text.strip():
+        sections.append(
+            {
+                "section_index": 0,
+                "title": "Professional Book",
+                "level": 1,
+                "text": clean_source_text(text),
+                "page_start": None,
+                "page_end": None,
+                "chapter_title": "Professional Book",
+                "section_title": "Professional Book",
+                "source_format": source_format or "text",
+            }
+        )
+    return sections
+
+
+def _section_aware_chunks(sections: list[dict[str, Any]], *, target_chars: int) -> list[dict[str, Any]]:
+    chunks: list[dict[str, Any]] = []
+    for section in sections:
+        paragraphs = [part.strip() for part in re.split(r"\n\s*\n", str(section.get("text") or "")) if part.strip()]
+        current: list[str] = []
+        current_len = 0
+        paragraph_start = 0
+        for index, paragraph in enumerate(paragraphs):
+            if current and current_len + len(paragraph) > target_chars:
+                chunk_text = "\n\n".join(current)
+                chunks.append(_structured_chunk(section, chunk_text, len(chunks), paragraph_start, index - 1))
+                current = []
+                current_len = 0
+                paragraph_start = index
+            current.append(paragraph)
+            current_len += len(paragraph)
+        if current:
+            chunks.append(_structured_chunk(section, "\n\n".join(current), len(chunks), paragraph_start, paragraph_start + len(current) - 1))
+    return chunks
+
+
+def _structured_chunk(section: dict[str, Any], text: str, chunk_index: int, paragraph_start: int, paragraph_end: int) -> dict[str, Any]:
+    return {
+        "chunk_index": chunk_index,
+        "text": text,
+        "section_index": int(section.get("section_index", 0) or 0),
+        "section_title": str(section.get("section_title") or section.get("title") or ""),
+        "chapter_title": str(section.get("chapter_title") or section.get("title") or ""),
+        "page_start": section.get("page_start"),
+        "page_end": section.get("page_end"),
+        "paragraph_start": paragraph_start,
+        "paragraph_end": paragraph_end,
+        "content_hash": _hash_text(text),
+    }
+
+
+def _replace_source_chunks_with_sections(storage: LocalStorage, source_ref: str | Path, structured_chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    source_path, source = _find_asset(storage, source_ref, asset_type="source_document", categories=["raw"])
+    source_id = str(source.get("id") or "")
+    project_id = str(source.get("metadata", {}).get("project_id") or "local-system")
+    workspace_path = str(source.get("metadata", {}).get("workspace_path") or "")
+    source_rel = _display_path(storage.root, source_path)
+    written: list[dict[str, Any]] = []
+    for chunk in structured_chunks:
+        chunk_text = str(chunk.get("text") or "")
+        asset = SourceChunk(
+            title=f"{source.get('title') or source_id} {chunk.get('section_title') or 'section'} chunk {int(chunk.get('chunk_index', 0)) + 1}",
+            source=source_id,
+            tags=["mkaos", "source-chunk", "professional-book", "section-aware", f"chunk-{int(chunk.get('chunk_index', 0)) + 1}"],
+            content={
+                "source_document_id": source_id,
+                "source_document_path": source_rel,
+                "chunk_index": int(chunk.get("chunk_index", 0) or 0),
+                "raw_text": chunk_text,
+                "clean_text": chunk_text,
+                "content_hash": str(chunk.get("content_hash") or _hash_text(chunk_text)),
+                "clean_status": "cleaned",
+                "section_aware": True,
+                "section_index": chunk.get("section_index"),
+                "section_title": chunk.get("section_title"),
+                "chapter_title": chunk.get("chapter_title"),
+                "page_start": chunk.get("page_start"),
+                "page_end": chunk.get("page_end"),
+                "paragraph_start": chunk.get("paragraph_start"),
+                "paragraph_end": chunk.get("paragraph_end"),
+            },
+            metadata={
+                "project_id": project_id,
+                "workspace_path": workspace_path,
+                "mkaos": True,
+                "use_in_generation_rag": False,
+                "content_hash": str(chunk.get("content_hash") or _hash_text(chunk_text)),
+                "source_asset_path": source_rel,
+                "evidence_layer_only": True,
+                "section_aware": True,
+            },
+            references=[source_id, source_rel],
+        )
+        asset.id = _stable_asset_id("source_chunk", source_id, str(chunk.get("chunk_index", 0)), str(chunk.get("content_hash") or ""))
+        path = storage.write_asset("raw", asset)
+        written.append(_asset_row(storage, path, storage.read_json(path)))
+    content = source.get("content", {}) if isinstance(source.get("content"), dict) else {}
+    source["content"] = {
+        **content,
+        "structured_chunk_count": len(written),
+        "structured_section_count": len({str(item.get("content", {}).get("section_index") or "") for item in written}),
+        "professional_book_import_ready": True,
+        "last_section_chunked_at": utc_now(),
+    }
+    source["updated_at"] = utc_now()
+    storage.write_json(source_path, source)
+    return written
+
+
+def _create_spans_for_structured_chunks(storage: LocalStorage, chunks: list[dict[str, Any]], project_id: str) -> list[dict[str, Any]]:
+    spans: list[dict[str, Any]] = []
+    for row in chunks:
+        content = row.get("content", {}) if isinstance(row.get("content"), dict) else {}
+        spans.append(
+            create_evidence_span(
+                storage,
+                str(row.get("id") or ""),
+                {
+                    "project_id": project_id,
+                    "page_start": content.get("page_start"),
+                    "page_end": content.get("page_end"),
+                    "chapter_title": content.get("chapter_title"),
+                    "section_title": content.get("section_title"),
+                    "paragraph_start": content.get("paragraph_start"),
+                    "paragraph_end": content.get("paragraph_end"),
+                    "extractor_id": "mkaos.professional_book_import",
+                    "extraction_method": "section_aware_deterministic",
+                },
+            )
+        )
+    return spans
+
+
+def _run_professional_book_batch_extraction(
+    storage: LocalStorage,
+    project_id: str,
+    chunks: list[dict[str, Any]],
+    spans: list[dict[str, Any]],
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    limit = int(payload.get("max_extraction_chunks", 30) or 30)
+    selected_chunks = chunks[:limit]
+    candidates: list[dict[str, Any]] = []
+    section_reports: list[dict[str, Any]] = []
+    for row in selected_chunks:
+        content = row.get("content", {}) if isinstance(row.get("content"), dict) else {}
+        goal = _professional_book_extraction_goal(content)
+        result = extract_knowledge_candidates(
+            storage,
+            {
+                **payload,
+                "project_id": project_id,
+                "source_chunk_ids": [str(row.get("id") or "")],
+                "extraction_goal": goal,
+                "target_disciplines": _professional_book_disciplines(content),
+                "target_flows": ["outline", "chapter_outline", "prose", "review"],
+                "limit": 1,
+                "provider_mode": payload.get("provider_mode") or "local_deterministic",
+                "provider_opt_in": bool(payload.get("provider_opt_in", False)),
+            },
+        )
+        candidates.extend(result.get("candidates", []))
+        section_reports.append(
+            {
+                "source_chunk_id": row.get("id", ""),
+                "section_title": content.get("section_title", ""),
+                "candidate_count": len(result.get("candidates", [])),
+                "provider": result.get("provider", {}),
+            }
+        )
+    extraction_run = {
+        "extraction_run_id": _stable_asset_id("professional_book_extraction_run", project_id, str(len(selected_chunks)), str(len(candidates))),
+        "selected_chunk_count": len(selected_chunks),
+        "candidate_count": len(candidates),
+        "section_reports": section_reports,
+        "evidence_span_ids": [str(span.get("asset", {}).get("id") or "") for span in spans],
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False},
+    }
+    asset = _base_asset(
+        "professional_book_extraction_run",
+        asset_id=extraction_run["extraction_run_id"],
+        title="Professional book batch extraction",
+        source=project_id,
+        tags=["mkaos", "professional-book", "batch-extraction"],
+        content=extraction_run,
+        metadata={"project_id": project_id, "mkaos": True, "use_in_generation_rag": False},
+        references=_dedupe([str(row.get("id") or "") for row in selected_chunks]),
+    )
+    path = storage.write_asset("runs", asset)
+    extraction_run["path"] = _display_path(storage.root, path)
+    extraction_run["asset_id"] = asset.id
+    return {"extraction_run": extraction_run, "knowledge_candidates": candidates}
+
+
+def _professional_book_extraction_goal(chunk_content: dict[str, Any]) -> str:
+    section = str(chunk_content.get("section_title") or chunk_content.get("chapter_title") or "专业知识")
+    text = str(chunk_content.get("clean_text") or "")
+    if any(term in text for term in ["证据", "推理", "因果", "线索"]):
+        return f"{section} -> 逻辑证据链知识"
+    if any(term in text for term in ["制度", "权力", "资源", "组织"]):
+        return f"{section} -> 制度冲突机制"
+    if any(term in text for term in ["心理", "动机", "选择", "行为"]):
+        return f"{section} -> 人物动机机制"
+    return f"{section} -> 可迁移专业知识"
+
+
+def _professional_book_disciplines(chunk_content: dict[str, Any]) -> list[str]:
+    text = str(chunk_content.get("clean_text") or "")
+    disciplines: list[str] = []
+    if any(term in text for term in ["制度", "权力", "资源", "组织"]):
+        disciplines.append("制度学")
+    if any(term in text for term in ["证据", "推理", "因果", "线索"]):
+        disciplines.append("逻辑学")
+    if any(term in text for term in ["心理", "动机", "选择", "行为"]):
+        disciplines.append("心理学")
+    return disciplines or ["专业知识"]
+
+
+def _generate_professional_book_rule_candidates(storage: LocalStorage, project_id: str, knowledge_candidates: list[dict[str, Any]], payload: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for item in knowledge_candidates[: int(payload.get("max_rule_candidates", 8) or 8)]:
+        content = item.get("asset", {}).get("content", {}) if isinstance(item.get("asset"), dict) else {}
+        concept = str(content.get("concept_name") or "专业知识")
+        rule_payload = {
+            "project_id": project_id,
+            "rule_name": f"{concept} 应用边界检查",
+            "rule_type": "professional_book_application",
+            "trigger_condition": f"{concept} 被用于小说生产",
+            "check_items": ["必须转成人物行动或冲突", "不得出现来源原文表达", "必须保留 evidence span id"],
+            "severity": "high",
+            "blocking": False,
+            "fix_suggestion": "把专业知识转为选择、代价、阻碍、线索或审稿检查。",
+            "applicable_flows": ["outline", "chapter_outline", "prose", "review"],
+        }
+        candidates.append(_persist_rule_card_candidate(storage, project_id, {"knowledge_id": content.get("candidate_id", ""), "concept_name": concept, "tags": ["professional_book"], "severity": "high"}, rule_payload))
+    return candidates
+
+
+def _generate_professional_book_template_candidates(storage: LocalStorage, project_id: str, knowledge_candidates: list[dict[str, Any]], payload: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for item in knowledge_candidates[: int(payload.get("max_template_candidates", 8) or 8)]:
+        content = item.get("asset", {}).get("content", {}) if isinstance(item.get("asset"), dict) else {}
+        template_item = {
+            "knowledge_id": str(content.get("candidate_id") or ""),
+            "concept_name": str(content.get("concept_name") or "专业知识"),
+            "flow": "chapter_outline",
+            "platform": str(payload.get("platform") or ""),
+            "genre": str(payload.get("genre") or ""),
+            "source": "professional_book_import",
+            "template_structure": {"beats": ["professional mechanism", "character pressure", "choice cost", "scene proof", "review check"]},
+        }
+        candidates.append(_persist_template_card_candidate(storage, project_id, template_item, "chapter_outline"))
+    return candidates
+
+
+def _create_professional_book_approval_queue(
+    storage: LocalStorage,
+    project_id: str,
+    knowledge_candidates: list[dict[str, Any]],
+    rule_candidates: list[dict[str, Any]],
+    template_candidates: list[dict[str, Any]],
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    approvals: list[dict[str, Any]] = []
+    for item in knowledge_candidates[: int(payload.get("max_approval_items", 20) or 20)]:
+        asset = item.get("asset", {}) if isinstance(item.get("asset"), dict) else {}
+        approval = create_governance_approval(
+            storage,
+            {
+                **payload,
+                "project_id": project_id,
+                "approval_type": "approve_knowledge_candidate",
+                "action_type": "approve_knowledge_candidate",
+                "risk_level": "medium",
+                "reason": f"Review professional book knowledge candidate: {asset.get('title') or asset.get('id')}",
+                "action_payload": {"candidate_id": asset.get("id", ""), "candidate_type": "knowledge_card_candidate"},
+                "references": [str(asset.get("id") or "")],
+            },
+        )
+        approvals.append({"approval_id": approval["asset"]["id"], "action_type": "approve_knowledge_candidate", "status": "pending", "path": approval["path"]})
+    for candidate in [*rule_candidates, *template_candidates]:
+        action_type = "activate_rule" if candidate.get("rule_payload") else "activate_template"
+        approval = create_governance_approval(
+            storage,
+            {
+                **payload,
+                "project_id": project_id,
+                "approval_type": action_type,
+                "action_type": action_type,
+                "risk_level": "medium",
+                "reason": f"Review professional book {action_type}: {candidate.get('rule_name') or candidate.get('template_name') or candidate.get('candidate_id')}",
+                "action_payload": {"candidate_id": candidate.get("candidate_id", ""), "rule_payload": candidate.get("rule_payload", {}), "template_payload": candidate.get("template_payload", {})},
+                "references": [str(candidate.get("candidate_id") or "")],
+            },
+        )
+        approvals.append({"approval_id": approval["asset"]["id"], "action_type": action_type, "status": "pending", "path": approval["path"]})
+    return {"queue_id": _stable_asset_id("professional_book_approval_queue", project_id, str(len(approvals))), "status": "pending", "approval_count": len(approvals), "approvals": approvals}
+
+
+def _auto_link_professional_book_relations(
+    storage: LocalStorage,
+    project_id: str,
+    knowledge_candidates: list[dict[str, Any]],
+    rule_candidates: list[dict[str, Any]],
+    template_candidates: list[dict[str, Any]],
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    created: list[dict[str, Any]] = []
+    candidate_ids = [str(item.get("asset", {}).get("id") or "") for item in knowledge_candidates if isinstance(item.get("asset"), dict)]
+    for left, right in zip(candidate_ids, candidate_ids[1:]):
+        if left and right:
+            created.append(_create_professional_book_candidate_relation(storage, project_id, left, right, "supports", [left, right], confidence=0.62))
+    for rule in rule_candidates:
+        kid = str(rule.get("candidate_id") or "")
+        if kid and candidate_ids:
+            created.append(_create_professional_book_candidate_relation(storage, project_id, candidate_ids[0], kid, "validated_by_rule", [kid], confidence=0.58))
+    for template in template_candidates:
+        kid = str(template.get("candidate_id") or "")
+        if kid and candidate_ids:
+            created.append(_create_professional_book_candidate_relation(storage, project_id, candidate_ids[0], kid, "used_by_template", [kid], confidence=0.58))
+    return {"relation_count": len(created), "relation_ids": [str(item.get("asset", {}).get("id") or "") for item in created], "source_isolation": {"raw_text_included": False, "clean_text_included": False}}
+
+
+def _create_professional_book_candidate_relation(storage: LocalStorage, project_id: str, source_id: str, target_id: str, relation_type: str, evidence_refs: list[str], *, confidence: float) -> dict[str, Any]:
+    relation_id = _stable_asset_id("knowledge_relation", "professional_book_candidate", source_id, relation_type, target_id)
+    content = {
+        "relation_id": relation_id,
+        "source_knowledge_id": source_id,
+        "target_knowledge_id": target_id,
+        "relation_type": relation_type,
+        "strength": 0.55,
+        "confidence": _clamp01(confidence),
+        "evidence_refs": _dedupe(evidence_refs),
+        "explanation": "Auto-linked during professional book import; relation must be reviewed before production activation.",
+        "candidate_relation": True,
+        "created_at": utc_now(),
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False},
+    }
+    asset = _base_asset(
+        "knowledge_relation",
+        asset_id=relation_id,
+        title=f"{relation_type}: {source_id} -> {target_id}",
+        source=source_id,
+        tags=["mkaos", "knowledge-relation", "professional-book-candidate", relation_type],
+        content=content,
+        metadata={"project_id": project_id, "mkaos": True, "use_in_generation_rag": False, "candidate_relation": True},
+        references=_dedupe([source_id, target_id, *evidence_refs]),
+    )
+    path = storage.write_asset("knowledge", asset)
+    return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
 
 
 def _duplicate_chunk_count(storage: LocalStorage, chunks: list[str]) -> int:

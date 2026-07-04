@@ -193,54 +193,76 @@ To claim “导入一本专业书籍自动拆分并沉淀为知识资产操作�
    - Measure review pass, reader feedback, publish gate, source leakage, and anti-encyclopedia issues.
    - Feed results into Knowledge Quality Score and Feedback Learning.
 
-## 7. Recommended Next Implementation Slice
+## 7. Implemented Next Slice
 
-Best next slice:
+The next slice has been implemented as a local-first professional book import run.
 
-1. Add `professional_book_import_run` asset.
-2. Add parser boundary interface:
+Implemented:
+
+1. `professional_book_import_run` run asset.
+2. Parser boundary for text / Markdown and optional PDF / EPUB / DOCX adapters.
+3. Section-aware Markdown / book-heading parser.
+4. Section-aware chunking with chapter/section/paragraph metadata.
+5. Evidence span creation for structured chunks.
+6. Full-book batch extraction first slice across selected chunks.
+7. KnowledgeCard candidate generation.
+8. RuleCard candidate generation.
+9. TemplateCard candidate generation.
+10. Governance approval queue for knowledge/rule/template candidates.
+11. Candidate relation auto-linking for `supports`, `validated_by_rule`, and `used_by_template`.
+12. Graph Explorer refresh after import.
+13. Product and compatibility API endpoint:
 
 ```text
-parse_source_document(file/text) -> structured_sections[]
+POST /product/mkaos/professional-book/import-run
+POST /api/mkaos/professional-book/import-run
 ```
 
-3. Add section-aware chunking:
+Key implementation files:
+
+- `src/novel_forge/modules/mkaos/service.py`
+- `src/novel_forge/api/routers/mkaos.py`
+- `src/novel_forge/modules/mkaos/__init__.py`
+- `tests/unit/test_mkaos_professional_book_import.py`
+- `tests/acceptance/test_mkaos_professional_book_import.py`
+
+Current first-slice flow:
 
 ```text
-structured_sections -> source_chunks + evidence_spans
-```
-
-4. Add batch extraction orchestrator:
-
-```text
-source_document_id -> extraction_run -> candidates -> provider_quality_report
-```
-
-5. Add UI panel:
-
-```text
-Source Evidence -> Book Import Run -> Sections -> Chunks -> Candidates -> Approval Queue
-```
-
-6. Add acceptance test:
-
-```text
-tests/acceptance/test_mkaos_professional_book_import.py
+text / markdown / optional file parser
+  -> structured sections
+  -> section-aware source chunks
+  -> evidence spans
+  -> professional_book_extraction_run
+  -> knowledge_card_candidate
+  -> rule_card_candidate
+  -> template_card_candidate
+  -> knowledge_governance_approval queue
+  -> candidate knowledge relations
+  -> graph explorer report
 ```
 
 Acceptance criteria:
 
-1. Import a synthetic professional-book fixture with chapters/sections.
-2. Preserve section metadata in chunks and evidence spans.
-3. Generate at least 5 KnowledgeCard candidates.
-4. Generate at least 2 RuleCard/TemplateCard candidates.
-5. No raw source text enters KnowledgePack or ContextBundle.
-6. Candidate approval creates active KnowledgeCards with lineage.
-7. Graph explorer shows discipline clusters and source evidence nodes by id only.
+1. Import a synthetic professional-book fixture with chapters/sections: implemented.
+2. Preserve section metadata in chunks and evidence spans: implemented.
+3. Generate KnowledgeCard candidates: implemented.
+4. Generate RuleCard/TemplateCard candidates: implemented.
+5. No raw source text enters import run report: implemented.
+6. Candidate approval creates active KnowledgeCards: implemented.
+7. Candidate relations are auto-linked: implemented.
+
+Remaining after this slice:
+
+1. PDF / EPUB / DOCX parsing is adapter-based and dependency-optional; real parser quality still needs online/manual fixture validation.
+2. Section-aware chunking is heading-aware, not a full scholarly TOC/footnote/table parser.
+3. Rule/template candidates are deterministic first slice, not model-grade extraction.
+4. Candidate graph links are conservative relation candidates and require review before production activation.
+5. UI can call the endpoint through API work later; the backend and tests are complete first.
 
 ## 8. Verification Run
 
-The following focused tests passed:
+The following focused tests passed before this implementation:
 
 ```bash
 PYTHONPATH=src python3 -m unittest tests.unit.test_mkaos_import_pipeline tests.unit.test_mkaos_extraction_agent tests.unit.test_mkaos_evidence_span tests.unit.test_mkaos_source_leakage_regression tests.unit.test_mkaos_provider_semantic_governance
@@ -253,8 +275,22 @@ Ran 11 tests in 1.840s
 OK
 ```
 
+Additional implementation verification:
+
+```bash
+PYTHONPATH=src python3 -m unittest tests.unit.test_mkaos_professional_book_import tests.acceptance.test_mkaos_professional_book_import
+PYTHONPATH=src python3 -m unittest tests.unit.test_mkaos_import_pipeline tests.unit.test_mkaos_extraction_agent tests.unit.test_mkaos_evidence_span tests.unit.test_mkaos_source_leakage_regression tests.unit.test_mkaos_knowledge_graph_v1 tests.unit.test_mkaos_graph_explorer tests.unit.test_mkaos_professional_book_import tests.acceptance.test_mkaos_professional_book_import
+```
+
+Result:
+
+```text
+Ran 13 tests
+OK
+```
+
 ## 9. Final Answer
 
-MKAOS is substantially complete as a P1 Knowledge Asset OS kernel. It can safely import professional-book text and automatically split it into source chunks, with evidence isolation and candidate extraction. It cannot yet be honestly described as a fully automatic “professional book -> complete multi-disciplinary knowledge graph” pipeline.
+MKAOS is substantially complete as a P1 Knowledge Asset OS kernel. It can safely import professional-book text/Markdown and automatically split it into section-aware source chunks, with evidence isolation, batch candidate extraction, rule/template candidate generation, approval queue creation, and candidate relation auto-linking.
 
-The current system can support a professional book ingestion first slice today, but a production-grade book ingestion workflow still needs document parsing, TOC-aware chunking, batch extraction, review queue, graph auto-linking, and long-run effect validation.
+It still should not be described as a fully automatic “professional book -> complete mature multi-disciplinary knowledge graph” pipeline. Production-grade book ingestion still needs robust real file parser validation, richer TOC/footnote/table parsing, model-assisted extraction quality proof, UI batch review ergonomics, and long-run effect validation.

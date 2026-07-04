@@ -535,6 +535,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/mkaos/professional-book/import-run")
+    @router.post("/api/mkaos/professional-book/import-run")
+    def professional_book_import_run(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.run_professional_book_import(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/extraction/candidates")
     @router.post("/api/mkaos/extraction/candidates")
     def extraction_candidates(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
