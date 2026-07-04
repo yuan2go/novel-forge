@@ -934,6 +934,22 @@ def check_canon_conflict(storage: LocalStorage, payload: dict[str, Any]) -> dict
                         evidence_refs=_canon_evidence_refs(rule, canon),
                     )
                 )
+    graph_result: dict[str, Any] = {}
+    if bool(payload.get("enable_semantic_graph") or payload.get("use_canon_graph") or payload.get("semantic_graph")):
+        graph_result = _canon_semantic_graph_conflict_result(storage, payload, check_input)
+        for conflict in graph_result.get("conflicts", []):
+            if not isinstance(conflict, dict):
+                continue
+            issues.append(
+                _canon_issue(
+                    str(conflict.get("message") or conflict.get("explanation") or "Canon graph semantic conflict."),
+                    str(conflict.get("fix_suggestion") or conflict.get("recommendation") or "Resolve the semantic canon graph conflict."),
+                    severity=str(conflict.get("severity") or "critical"),
+                    blocking=bool(conflict.get("blocking", True)),
+                    dimension=str(conflict.get("dimension") or conflict.get("reason_type") or "canon_graph"),
+                    evidence_refs=_strings(conflict.get("evidence_refs")),
+                )
+            )
     issue_candidates = [canon_conflict_to_issue_candidate(issue, check_input) for issue in issues]
     return {
         "passed": not issues,
@@ -946,9 +962,66 @@ def check_canon_conflict(storage: LocalStorage, payload: dict[str, Any]) -> dict
             "claim_count": len(claims),
         },
         "canon_source": canon.get("source", "payload_or_project_stub"),
+        "semantic_graph": graph_result,
         "checked_asset_types": canon.get("checked_asset_types", []),
         "references": canon.get("references", []),
     }
+
+
+def check_canon_semantic_graph_conflict(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.canon_semantic_graph_conflict",
+        asset_type="canon_semantic_graph_conflict_report",
+        project_id=project_id,
+        task_type="canon_semantic_graph_conflict",
+    )
+    explicit = check_canon_conflict(storage, {**payload, "enable_semantic_graph": False})
+    graph_result = _canon_semantic_graph_conflict_result(storage, payload, _canon_conflict_check_input(storage, payload))
+    issues = [*explicit.get("issues", [])]
+    for conflict in graph_result.get("conflicts", []):
+        issues.append(
+            _canon_issue(
+                str(conflict.get("message") or conflict.get("explanation") or "Canon graph semantic conflict."),
+                str(conflict.get("fix_suggestion") or conflict.get("recommendation") or "Resolve the semantic canon graph conflict."),
+                severity=str(conflict.get("severity") or "critical"),
+                blocking=bool(conflict.get("blocking", True)),
+                dimension=str(conflict.get("dimension") or conflict.get("reason_type") or "canon_graph"),
+                evidence_refs=_strings(conflict.get("evidence_refs")),
+            )
+        )
+    issue_candidates = [canon_conflict_to_issue_candidate(issue, _canon_conflict_check_input(storage, payload)) for issue in issues]
+    content = {
+        "semantic_canon_report_id": _stable_asset_id("canon_semantic_graph_conflict", project_id, str(len(issues)), str(graph_result.get("status", ""))),
+        "project_id": project_id,
+        "passed": not issues,
+        "issues": issues,
+        "issue_candidates": issue_candidates,
+        "explicit_check": {"issue_count": len(explicit.get("issues", [])), "passed": explicit.get("passed", False)},
+        "graph_check": graph_result,
+        "reasoning_mode": "explicit_claims_plus_canon_graph_reasoning",
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False},
+        "created_at": utc_now(),
+        "envelope_id": envelope.get("envelope_id", ""),
+        "trace_id": envelope.get("trace_id", ""),
+    }
+    if bool(payload.get("persist", True)):
+        asset = _base_asset(
+            "canon_semantic_graph_conflict_report",
+            asset_id=content["semantic_canon_report_id"],
+            title="MKAOS canon semantic graph conflict report",
+            source=str(payload.get("target_asset_id") or payload.get("target_path") or project_id),
+            tags=["mkaos", "canon-semantic-graph", "blocked" if issues else "passed"],
+            content=content,
+            metadata={"project_id": project_id, "mkaos": True, "use_in_generation_rag": False, **envelope_asset_metadata(envelope)},
+            references=_dedupe(_strings(graph_result.get("references"))),
+        )
+        path = storage.write_asset("runs", asset)
+        content["path"] = _display_path(storage.root, path)
+        content["asset_id"] = asset.id
+    return envelope_response(content, envelope)
 
 
 def canon_conflict_to_issue_candidate(issue: dict[str, Any], check_input: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -1498,6 +1571,226 @@ def learn_from_knowledge_effects(storage: LocalStorage, payload: dict[str, Any])
         snapshot["path"] = _display_path(storage.root, path)
         snapshot["asset_id"] = storage.read_json(path).get("id", "")
     return envelope_response(snapshot, envelope)
+
+
+def run_knowledge_abstraction_quality_benchmark(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.abstraction_quality_benchmark",
+        asset_type="knowledge_abstraction_quality_benchmark",
+        project_id=project_id,
+        task_type="abstraction_quality_benchmark",
+    )
+    fixtures = payload.get("fixtures") if isinstance(payload.get("fixtures"), list) else _default_abstraction_benchmark_fixtures()
+    threshold = _float(payload.get("quality_threshold"), 0.72)
+    source_reports: list[dict[str, Any]] = []
+    candidate_reports: list[dict[str, Any]] = []
+    for fixture in fixtures[: int(payload.get("max_sources", 9) or 9)]:
+        if not isinstance(fixture, dict):
+            continue
+        source_kind = str(fixture.get("source_kind") or "manual_note")
+        title = str(fixture.get("title") or source_kind)
+        text = str(fixture.get("text") or "")
+        if source_kind == "professional_book":
+            imported = _response_data(
+                run_professional_book_import(
+                    storage,
+                    {
+                        **payload,
+                        "project_id": project_id,
+                        "title": title,
+                        "source_format": fixture.get("source_format") or "markdown",
+                        "text": text,
+                        "target_chars": int(payload.get("target_chars", 500) or 500),
+                        "max_extraction_chunks": int(payload.get("max_extraction_chunks", 3) or 3),
+                        "persist_graph": False,
+                    },
+                )
+            )
+            source_reports.append({"source_kind": source_kind, "title": title, "source_document_id": imported.get("source_document_id", ""), "candidate_count": imported.get("candidate_counts", {}).get("knowledge_card_candidate", 0), "text_hash": _hash_text(text)})
+            for approval in imported.get("approval_queue", {}).get("approvals", []):
+                if approval.get("action_type") == "approve_knowledge_candidate":
+                    try:
+                        _, approval_asset = _find_asset(storage, str(approval.get("approval_id")), asset_type="knowledge_governance_approval", categories=["runs"])
+                        candidate_id = str(approval_asset.get("content", {}).get("action_payload", {}).get("candidate_id") or "")
+                        _, candidate = _find_asset(storage, candidate_id, asset_type="knowledge_card_candidate", categories=["knowledge"])
+                        candidate_reports.append(_abstraction_candidate_quality_report(candidate, source_kind=source_kind, source_text=text))
+                    except FileNotFoundError:
+                        continue
+        else:
+            imported = import_source_with_pipeline(storage, {"project_id": project_id, "title": title, "source_kind": source_kind, "text": text})
+            source = imported.get("source", {})
+            source_id = str(source.get("asset", {}).get("id") or "")
+            extraction = extract_knowledge_candidates(
+                storage,
+                {
+                    "project_id": project_id,
+                    "source_document_id": source_id,
+                    "extraction_goal": str(fixture.get("extraction_goal") or "可迁移创作机制"),
+                    "target_disciplines": fixture.get("target_disciplines") or _source_kind_policy(source_kind)["default_disciplines"],
+                    "target_flows": fixture.get("target_flows") or ["outline", "chapter_outline", "prose", "review"],
+                    "limit": int(payload.get("max_candidates_per_source", 3) or 3),
+                },
+            )
+            source_reports.append({"source_kind": source_kind, "title": title, "source_document_id": source_id, "candidate_count": extraction.get("candidate_count", 0), "text_hash": _hash_text(text)})
+            for candidate in extraction.get("candidates", []):
+                asset = candidate.get("asset", {}) if isinstance(candidate.get("asset"), dict) else {}
+                candidate_reports.append(_abstraction_candidate_quality_report(asset, source_kind=source_kind, source_text=text))
+    passed_candidates = [row for row in candidate_reports if row.get("passed")]
+    coverage = sorted({row.get("source_kind", "") for row in source_reports if row.get("source_kind")})
+    avg_score = round(sum(_float(row.get("overall_score"), 0.0) for row in candidate_reports) / max(1, len(candidate_reports)), 4)
+    content = {
+        "benchmark_id": _stable_asset_id("knowledge_abstraction_quality_benchmark", project_id, str(len(source_reports)), str(len(candidate_reports)), str(avg_score)),
+        "project_id": project_id,
+        "version": "mkaos-abstraction-quality-benchmark-v1",
+        "source_reports": source_reports,
+        "candidate_reports": candidate_reports,
+        "summary": {
+            "source_count": len(source_reports),
+            "candidate_count": len(candidate_reports),
+            "passed_candidate_count": len(passed_candidates),
+            "pass_rate": round(len(passed_candidates) / max(1, len(candidate_reports)), 4),
+            "average_score": avg_score,
+            "source_kind_coverage": coverage,
+            "quality_threshold": threshold,
+        },
+        "passed": bool(candidate_reports) and avg_score >= threshold and len(coverage) >= min(3, len(fixtures)),
+        "recommendations": _abstraction_benchmark_recommendations(candidate_reports, threshold),
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False, "text_hash_only": True},
+        "created_at": utc_now(),
+        "envelope_id": envelope.get("envelope_id", ""),
+        "trace_id": envelope.get("trace_id", ""),
+    }
+    asset = _base_asset(
+        "knowledge_abstraction_quality_benchmark",
+        asset_id=content["benchmark_id"],
+        title="MKAOS abstraction quality benchmark",
+        source="mkaos-abstraction-quality",
+        tags=["mkaos", "abstraction-quality", "benchmark", "passed" if content["passed"] else "needs-review"],
+        content=content,
+        metadata={"project_id": project_id, "mkaos": True, "use_in_generation_rag": False, **envelope_asset_metadata(envelope)},
+        references=_dedupe([str(row.get("candidate_id") or "") for row in candidate_reports]),
+    )
+    path = storage.write_asset("runs", asset)
+    content["path"] = _display_path(storage.root, path)
+    content["asset_id"] = asset.id
+    return envelope_response(content, envelope)
+
+
+def run_longitudinal_knowledge_effect_learning(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    flow = _valid_flow(str(payload.get("flow") or "prose"))
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.longitudinal_effect_learning",
+        asset_type="knowledge_longitudinal_learning_report",
+        project_id=project_id,
+        task_type=flow,
+    )
+    observations = payload.get("observations") if isinstance(payload.get("observations"), list) else []
+    learning_rate = _float(payload.get("learning_rate"), 0.25)
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    generated_events: list[str] = []
+    for observation in observations:
+        if not isinstance(observation, dict):
+            continue
+        knowledge_ids = _strings(observation.get("knowledge_ids")) or [str(observation.get("knowledge_id") or "")]
+        effect_score = _longitudinal_effect_score(observation)
+        if bool(payload.get("record_usage_events", True)):
+            usage = record_usage_event(
+                storage,
+                {
+                    "project_id": project_id,
+                    "flow": observation.get("flow") or flow,
+                    "knowledge_ids": knowledge_ids,
+                    "knowledge_pack_id": observation.get("knowledge_pack_id") or _stable_asset_id("longitudinal_pack", project_id, str(observation.get("chapter_id") or ""), ",".join(knowledge_ids)),
+                    "target_artifact_id": observation.get("artifact_id") or observation.get("target_artifact_id") or "",
+                    "chapter_id": observation.get("chapter_id", ""),
+                    "agent_name": "mkaos.longitudinal_learning",
+                    "used_as": "longitudinal_observation",
+                    "effect_score": effect_score,
+                    "review_result": {"passed": effect_score >= 0.62, "quality_score": observation.get("quality_score"), "issue_tags": observation.get("issue_tags", [])},
+                    "reader_feedback": {"sentiment": _longitudinal_sentiment(observation), "rating": observation.get("reader_rating")},
+                    "os_envelope": payload.get("os_envelope") or payload.get("envelope"),
+                    "environment": payload.get("environment", ""),
+                    "bypass_reason": payload.get("bypass_reason", ""),
+                },
+            )
+            generated_events.extend(str(row.get("id") or "") for row in usage.get("events", []))
+        for knowledge_id in [item for item in knowledge_ids if item]:
+            grouped.setdefault(knowledge_id, []).append({**observation, "effect_score": effect_score})
+    learning_items: list[dict[str, Any]] = []
+    recommendations: list[dict[str, Any]] = []
+    applied_updates: list[dict[str, Any]] = []
+    for knowledge_id, rows in sorted(grouped.items()):
+        aggregate = _longitudinal_aggregate(rows, learning_rate=learning_rate)
+        item = {"knowledge_id": knowledge_id, **aggregate}
+        learning_items.append(item)
+        if aggregate["recommended_action"] not in {"observe", "keep"}:
+            rec = {
+                "knowledge_id": knowledge_id,
+                "action": aggregate["recommended_action"],
+                "weight_delta": aggregate["recommended_weight_delta"],
+                "reason": aggregate["reason"],
+                "platform": aggregate.get("platform", ""),
+                "genre": aggregate.get("genre", ""),
+                "confidence": aggregate["confidence"],
+            }
+            recommendations.append(rec)
+            if bool(payload.get("apply_updates", False)):
+                applied = apply_weight_update(
+                    storage,
+                    {
+                        "project_id": project_id,
+                        "knowledge_id": knowledge_id,
+                        "flow": flow,
+                        "delta": rec["weight_delta"],
+                        "reason": "longitudinal_effect_learning",
+                        "feedback": rec,
+                        "os_envelope": payload.get("os_envelope") or payload.get("envelope"),
+                        "environment": payload.get("environment", ""),
+                        "bypass_reason": payload.get("bypass_reason", ""),
+                    },
+                )
+                applied_updates.append({"knowledge_id": knowledge_id, "path": applied["knowledge"]["path"], "next_weight": applied["knowledge"]["asset"].get("content", {}).get("weight")})
+    content = {
+        "longitudinal_learning_id": _stable_asset_id("knowledge_longitudinal_learning", project_id, flow, str(len(observations)), str(len(recommendations))),
+        "project_id": project_id,
+        "flow": flow,
+        "version": "mkaos-longitudinal-effect-learning-v1",
+        "observation_count": len(observations),
+        "learning_items": learning_items,
+        "recommendations": recommendations,
+        "applied_updates": applied_updates,
+        "generated_usage_event_ids": generated_events,
+        "source_metrics": {
+            "knowledge_count": len(grouped),
+            "chapter_count": len({str(row.get("chapter_id") or "") for row in observations if isinstance(row, dict)}),
+            "platform_count": len({str(row.get("platform") or "") for row in observations if isinstance(row, dict) and row.get("platform")}),
+            "genre_count": len({str(row.get("genre") or "") for row in observations if isinstance(row, dict) and row.get("genre")}),
+        },
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False, "observations_aggregated_only": True},
+        "created_at": utc_now(),
+        "envelope_id": envelope.get("envelope_id", ""),
+        "trace_id": envelope.get("trace_id", ""),
+    }
+    asset = _base_asset(
+        "knowledge_longitudinal_learning_report",
+        asset_id=content["longitudinal_learning_id"],
+        title="MKAOS longitudinal effect learning",
+        source="mkaos-longitudinal-learning",
+        tags=["mkaos", "longitudinal-learning", flow],
+        content=content,
+        metadata={"project_id": project_id, "mkaos": True, "use_in_generation_rag": False, **envelope_asset_metadata(envelope)},
+        references=_dedupe([*grouped.keys(), *generated_events]),
+    )
+    path = storage.write_asset("runs", asset)
+    content["path"] = _display_path(storage.root, path)
+    content["asset_id"] = asset.id
+    return envelope_response(content, envelope)
 
 
 def run_knowledge_evolution_cycle(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -5512,8 +5805,8 @@ def _canon_evidence_refs(fact: dict[str, Any], canon: dict[str, Any]) -> list[st
     return _dedupe([ref for ref in refs if ref])
 
 
-def _canon_issue(message: str, fix_suggestion: str, *, dimension: str, evidence_refs: list[str]) -> dict[str, Any]:
-    issue = _issue("rule_canon_conflict", "Canon 冲突检查", "critical", True, message, fix_suggestion, "artifact")
+def _canon_issue(message: str, fix_suggestion: str, *, dimension: str, evidence_refs: list[str], severity: str = "critical", blocking: bool = True) -> dict[str, Any]:
+    issue = _issue("rule_canon_conflict", "Canon 冲突检查", severity, blocking, message, fix_suggestion, "artifact")
     issue.update({
         "issue_type": "canon_conflict",
         "source_system": "mkaos.canon_conflict",
@@ -5991,6 +6284,218 @@ def _source_kind_policy(source_kind: str) -> dict[str, Any]:
             "recommended_extraction": ["knowledge_card_candidate"],
         },
     )
+
+
+def _default_abstraction_benchmark_fixtures() -> list[dict[str, Any]]:
+    return [
+        {
+            "source_kind": "professional_book",
+            "title": "制度知识专业书样例",
+            "source_format": "markdown",
+            "text": "# 制度与冲突\n\n制度会改变资源分配，权力结构让一方获利，另一方承担代价。创作中必须转成人物行动、选择代价和场景阻碍。",
+            "target_disciplines": ["制度学"],
+        },
+        {
+            "source_kind": "webnovel_analysis",
+            "title": "网文节奏拆解样例",
+            "text": "高留存章节通常把目标、阻碍、反转和收益压缩在短周期内，知识必须转成钩子、行动压力和爽点兑现。",
+            "target_disciplines": ["叙事学"],
+        },
+        {
+            "source_kind": "classic_novel_analysis",
+            "title": "名著人物机制样例",
+            "text": "人物弧光不是概念说明，而是在关系债务、价值选择和不可逆代价中逐步改变。",
+            "target_disciplines": ["文学"],
+        },
+    ]
+
+
+def _abstraction_candidate_quality_report(candidate: dict[str, Any], *, source_kind: str, source_text: str) -> dict[str, Any]:
+    content = candidate.get("content", {}) if isinstance(candidate.get("content"), dict) else candidate
+    explanation = str(content.get("core_explanation") or "")
+    concept = str(content.get("concept_name") or candidate.get("title") or "")
+    flows = _strings(content.get("target_flows"))
+    raw_overlap = _candidate_contains_source_expression(explanation, {"clean_text": source_text, "raw_text": source_text})
+    abstraction = _quality_keyword_score(explanation, ["机制", "抽象", "原则", "转成", "可迁移", "创作"])
+    transferability = _quality_keyword_score(explanation, ["人物", "行动", "冲突", "选择", "代价", "场景", "线索", "钩子"])
+    actionability = _quality_keyword_score(explanation, ["必须", "用于", "转为", "生成", "检查", "阻碍", "兑现"])
+    anti_encyclopedia = 1.0 - min(0.65, _quality_keyword_score(explanation, ["定义", "是指", "概念解释", "百科", "资料卡"]) * 0.65)
+    flow_coverage = min(1.0, len(flows) / 3) if flows else 0.35
+    source_safety = 0.0 if raw_overlap else 1.0
+    overall = round((abstraction * 0.22 + transferability * 0.24 + actionability * 0.2 + anti_encyclopedia * 0.14 + flow_coverage * 0.1 + source_safety * 0.1), 4)
+    return {
+        "candidate_id": str(candidate.get("id") or content.get("candidate_id") or ""),
+        "source_kind": source_kind,
+        "concept_name": concept,
+        "overall_score": overall,
+        "passed": overall >= 0.72 and not raw_overlap,
+        "dimensions": {
+            "abstraction_score": round(abstraction, 4),
+            "transferability_score": round(transferability, 4),
+            "actionability_score": round(actionability, 4),
+            "anti_encyclopedia_score": round(anti_encyclopedia, 4),
+            "flow_coverage_score": round(flow_coverage, 4),
+            "source_safety_score": round(source_safety, 4),
+        },
+        "issues": _abstraction_candidate_issues(overall, raw_overlap, flows, explanation),
+        "source_text_hash": _hash_text(source_text),
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False},
+    }
+
+
+def _quality_keyword_score(text: str, keywords: list[str]) -> float:
+    compact = str(text or "")
+    if not compact:
+        return 0.0
+    hits = len([keyword for keyword in keywords if keyword in compact])
+    length_bonus = 0.2 if len(compact) >= 24 else 0.0
+    return min(1.0, hits / max(1, min(4, len(keywords))) + length_bonus)
+
+
+def _abstraction_candidate_issues(score: float, raw_overlap: bool, flows: list[str], explanation: str) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    if raw_overlap:
+        issues.append({"issue_type": "source_expression_overlap", "severity": "critical", "message": "candidate overlaps with source expression"})
+    if score < 0.72:
+        issues.append({"issue_type": "low_transferable_mechanism_score", "severity": "medium", "message": "candidate is not yet a stable transferable creative mechanism"})
+    if not flows:
+        issues.append({"issue_type": "missing_flow_coverage", "severity": "low", "message": "candidate does not identify target production flows"})
+    if any(term in explanation for term in ["定义", "是指", "百科", "资料卡"]) and not any(term in explanation for term in ["行动", "冲突", "选择", "代价"]):
+        issues.append({"issue_type": "anti_encyclopedia_risk", "severity": "medium", "message": "candidate remains explanatory rather than actionized"})
+    return issues
+
+
+def _abstraction_benchmark_recommendations(candidate_reports: list[dict[str, Any]], threshold: float) -> list[str]:
+    if not candidate_reports:
+        return ["add source fixtures before claiming abstraction quality"]
+    recommendations: list[str] = []
+    failed = [row for row in candidate_reports if not row.get("passed")]
+    if failed:
+        recommendations.append("route failed candidates to human review or model-assisted extraction quality gate")
+    if any(any(issue.get("issue_type") == "source_expression_overlap" for issue in row.get("issues", [])) for row in candidate_reports):
+        recommendations.append("tighten source-expression sanitizer before approving candidates")
+    avg = sum(_float(row.get("overall_score"), 0.0) for row in candidate_reports) / max(1, len(candidate_reports))
+    if avg < threshold:
+        recommendations.append("increase abstraction examples and target flow hints for extraction")
+    return recommendations or ["benchmark passed; keep accumulating real-book and reader-feedback fixtures"]
+
+
+def _canon_semantic_graph_conflict_result(storage: LocalStorage, payload: dict[str, Any], check_input: dict[str, Any]) -> dict[str, Any]:
+    try:
+        from novel_forge.modules.canon_graph import check_canon_graph_conflicts
+    except Exception as exc:
+        return {"status": "unavailable", "conflicts": [], "issue_candidates": [], "references": [], "error": str(exc)}
+    graph_payload = {
+        **payload,
+        "project_id": str(check_input.get("project_id") or payload.get("project_id") or "local-system"),
+        "artifact_text": str(check_input.get("artifact_text") or payload.get("artifact_text") or payload.get("text") or ""),
+        "target_asset_id": str(check_input.get("target_asset_id") or payload.get("target_asset_id") or ""),
+        "target_asset_type": str(check_input.get("target_asset_type") or payload.get("target_asset_type") or "artifact"),
+    }
+    result = check_canon_graph_conflicts(storage, graph_payload)
+    return {
+        "status": result.get("status", "passed"),
+        "blocking": bool(result.get("blocking", False)),
+        "conflicts": result.get("conflicts", []),
+        "issue_candidates": result.get("issue_candidates", []),
+        "reasoning": result.get("reasoning", {}),
+        "graph_summary": result.get("graph_summary", {}),
+        "checked_asset_types": result.get("checked_asset_types", []),
+        "references": result.get("references", []),
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False},
+    }
+
+
+def _longitudinal_effect_score(observation: dict[str, Any]) -> float:
+    quality = _score01(observation.get("quality_score"), scale100=True)
+    review = _score01(observation.get("review_score"), scale100=True)
+    completion = _score01(observation.get("completion_rate"))
+    retention = _score01(observation.get("retention_rate") or observation.get("follow_rate"))
+    platform = _score01(observation.get("platform_retention") or observation.get("platform_fit_score"))
+    reader = _score01(observation.get("reader_rating"), scale5=True)
+    base = sum([quality * 0.24, review * 0.16, completion * 0.18, retention * 0.2, platform * 0.12, reader * 0.1])
+    issue_tags = set(_strings(observation.get("issue_tags")))
+    penalty = 0.0
+    if {"source_leakage", "canon_conflict"} & issue_tags:
+        penalty += 0.35
+    if {"anti_encyclopedia", "ai_style", "pacing"} & issue_tags:
+        penalty += 0.12
+    return round(max(0.0, min(1.0, base - penalty)), 4)
+
+
+def _score01(value: Any, *, scale100: bool = False, scale5: bool = False) -> float:
+    if value is None or value == "":
+        return 0.5
+    numeric = _float(value, 0.5)
+    if scale100 and numeric > 1:
+        numeric = numeric / 100
+    if scale5 and numeric > 1:
+        numeric = numeric / 5
+    return max(0.0, min(1.0, numeric))
+
+
+def _longitudinal_sentiment(observation: dict[str, Any]) -> str:
+    effect = _longitudinal_effect_score(observation)
+    if effect >= 0.68:
+        return "positive"
+    if effect <= 0.38:
+        return "negative"
+    return "neutral"
+
+
+def _longitudinal_aggregate(rows: list[dict[str, Any]], *, learning_rate: float) -> dict[str, Any]:
+    scores = [_float(row.get("effect_score"), 0.5) for row in rows]
+    avg = sum(scores) / max(1, len(scores))
+    negative_count = len([score for score in scores if score < 0.38])
+    positive_count = len([score for score in scores if score >= 0.68])
+    issue_tags = [tag for row in rows for tag in _strings(row.get("issue_tags"))]
+    delta = round(max(-0.5, min(0.5, (avg - 0.5) * learning_rate + (positive_count - negative_count) * 0.02)), 4)
+    action = "keep"
+    if "source_leakage" in issue_tags:
+        action = "quarantine"
+        delta = min(delta, -0.35)
+    elif "canon_conflict" in issue_tags:
+        action = "review"
+        delta = min(delta, -0.18)
+    elif negative_count >= 2 or avg < 0.35:
+        action = "reduce"
+    elif positive_count >= 2 and avg >= 0.68:
+        action = "boost"
+    elif not rows:
+        action = "observe"
+    return {
+        "observation_count": len(rows),
+        "avg_effect_score": round(avg, 4),
+        "negative_signal_count": negative_count,
+        "positive_signal_count": positive_count,
+        "recommended_weight_delta": delta,
+        "recommended_action": action,
+        "reason": _longitudinal_reason(action, avg, issue_tags),
+        "platform": _dominant_value(rows, "platform"),
+        "genre": _dominant_value(rows, "genre"),
+        "confidence": "high" if len(rows) >= 5 else "medium" if len(rows) >= 2 else "low",
+    }
+
+
+def _longitudinal_reason(action: str, avg: float, issue_tags: list[str]) -> str:
+    if action == "quarantine":
+        return "source leakage appeared in longitudinal observations"
+    if action == "review":
+        return "canon conflict appeared in longitudinal observations"
+    if action == "reduce":
+        return f"average downstream effect is low ({avg:.2f})"
+    if action == "boost":
+        return f"average downstream effect is strong ({avg:.2f})"
+    return "insufficient or neutral longitudinal effect"
+
+
+def _dominant_value(rows: list[dict[str, Any]], key: str) -> str:
+    counts: dict[str, int] = {}
+    for row in rows:
+        value = str(row.get(key) or "")
+        if value:
+            counts[value] = counts.get(value, 0) + 1
+    return sorted(counts.items(), key=lambda item: (-item[1], item[0]))[0][0] if counts else ""
 
 
 def _parse_professional_book_input(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:

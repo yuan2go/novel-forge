@@ -39,6 +39,9 @@ MKAOS has been upgraded from a P0 knowledge governance base into a first-slice K
 | 29. web/admin UI | Complete first slice | MKAOS console now includes source evidence, quality dashboard, pack debugger, lightweight graph canvas, knowledge evolution, lineage, mutation, regression, and acceptance panels. |
 | 30. Knowledge evolution loop | Complete first slice | `run_knowledge_evolution_cycle` orchestrates graph snapshot, effect learning, review-rule candidates, hot-template backflow, reader-feedback aggregation, and low-effect elimination recommendations. |
 | 31. Professional book import run | Complete first slice | `run_professional_book_import` parses text/Markdown and optional PDF/EPUB/DOCX files, creates section-aware chunks, evidence spans, batch extraction candidates, rule/template candidates, approval queue items, and candidate graph relations. |
+| 32. Abstraction quality benchmark | Complete first slice | `run_knowledge_abstraction_quality_benchmark` tests professional book, webnovel analysis, and classic analysis sources for transferable mechanism quality, actionability, anti-encyclopedia safety, flow coverage, and source overlap. |
+| 33. Canon semantic graph bridge | Complete first slice | `check_canon_semantic_graph_conflict` combines explicit MKAOS canon checks with Canon Graph reasoning and returns ReviewIssue-compatible issue candidates. |
+| 34. Longitudinal effect learning | Complete first slice | `run_longitudinal_knowledge_effect_learning` aggregates chapter quality, review scores, reader completion/ratings, platform retention, issue tags, and usage evidence into weight recommendations and optional updates. |
 
 ## Key Files
 
@@ -90,6 +93,9 @@ Selector decisions and knowledge pack mutation audits now use stable ids for rep
 - Human approval first slice now exists through `knowledge_governance_approval` assets and create/list/resolve APIs. Evolution can create approval requests for rule activation, template activation, and low-effect quarantine; applying still requires explicit approval.
 - Graph Explorer now returns deterministic clusters, layout positions, sampling policy, and path animation frames while remaining dependency-free and source-text safe.
 - Professional book import now has a complete first slice: section-aware chunking, evidence spans, full-book batch extraction, candidate approval queue, rule/template candidate generation, and relation auto-linking.
+- Knowledge abstraction quality is now measurable through a benchmark report across professional books, webnovel analysis, and classic-novel analysis fixtures; this is not yet a claim of real corpus stability.
+- Canon conflict can now opt into Canon Graph semantic reasoning through MKAOS and produce ReviewIssue candidates with graph evidence.
+- Knowledge effect learning now has a longitudinal report path that combines quality, reader, platform, and review signals over chapters instead of only single feedback deltas.
 
 ## Remaining Risks
 
@@ -97,7 +103,9 @@ Selector decisions and knowledge pack mutation audits now use stable ids for rep
 - Knowledge evolution defaults to advisory mode. `guarded_auto` can apply safe promotions/quarantine, and a first-slice approval asset/API exists; full approval inbox, policy routing, reviewer assignment, and SLA remain P2.
 - UI graph visualization is dependency-free and now has Graph Explorer sampling, clustering, layout metadata, and path frames; large-scale graph search, animated exploration, graph diff, and community detection remain P2.
 - PDF / EPUB / DOCX professional-book parsing is dependency-optional; robust parser quality validation and rich TOC/footnote/table handling remain P2.
-- Full “越写越强” proof still needs longer multi-chapter production telemetry and real reader feedback volume beyond synthetic/local fixtures.
+- Full “越写越强” proof still needs longer multi-chapter production telemetry and real reader feedback volume beyond synthetic/local fixtures, although the longitudinal aggregation path now exists.
+- Abstraction quality benchmark uses local deterministic fixtures by default; large-scale professional-book, webnovel, and classic-novel corpus proof remains P2.
+- Canon semantic graph reasoning is integrated, but deeper semantic ambiguity still needs opt-in model judge or richer graph inference.
 
 ## Current Distance To A Full Knowledge Asset OS
 

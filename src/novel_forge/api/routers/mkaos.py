@@ -127,6 +127,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/mkaos/learning/longitudinal")
+    @router.post("/api/mkaos/learning/longitudinal")
+    def longitudinal_learning(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.run_longitudinal_knowledge_effect_learning(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/evolution/run")
     @router.post("/api/mkaos/evolution/run")
     def run_knowledge_evolution(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
@@ -363,6 +371,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def validate_canon(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
         return _mkaos_response(mkaos_service.validate_canon_conflict(storage(), payload))
 
+    @router.post("/product/mkaos/validate/canon-semantic-graph")
+    @router.post("/api/mkaos/validate/canon-semantic-graph")
+    def validate_canon_semantic_graph(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.check_canon_semantic_graph_conflict(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/conflicts/check")
     @router.post("/api/mkaos/conflicts/check")
     def conflicts_check(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
@@ -426,6 +442,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.get("/api/mkaos/quality/high-copyright-risk")
     def high_copyright_risk(project_id: str | None = None, threshold: float = 0.7) -> list[dict[str, Any]]:
         return mkaos_service.list_high_copyright_risk_knowledge(storage(), project_id=project_id, threshold=threshold)
+
+    @router.post("/product/mkaos/quality/abstraction-benchmark")
+    @router.post("/api/mkaos/quality/abstraction-benchmark")
+    def abstraction_benchmark(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.run_knowledge_abstraction_quality_benchmark(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.post("/product/mkaos/relations")
     @router.post("/api/mkaos/relations")
