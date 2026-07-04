@@ -7,6 +7,7 @@ import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import {
   buildKnowledgePack,
   buildKnowledgeGraph,
+  buildKnowledgeGraphExplorer,
   createKnowledgeCard,
   createUsageBinding,
   importMkaosSource,
@@ -298,11 +299,11 @@ export function MkaosConsolePage() {
         <div className="panel">
           <PanelHeader title="Knowledge Graph" icon={<GitBranch size={18} />} />
           <button className="primaryButton" disabled={busy} onClick={() => runAction(async () => {
-            const graph = await buildKnowledgeGraph();
+            const graph = await buildKnowledgeGraphExplorer().catch(() => buildKnowledgeGraph());
             setGraphData(graph as Record<string, any>);
             setGraphSummary((graph as any).summary ?? null);
             return graph;
-          }, "Knowledge Graph 已刷新")}>刷新图谱</button>
+          }, "Knowledge Graph Explorer 已刷新")}>刷新图谱</button>
           <DataTable
             emptyText="暂无图谱摘要"
             columns={["Nodes", "Edges", "Knowledge", "Flows"]}
@@ -396,13 +397,15 @@ export function MkaosConsolePage() {
                 <Metric label="规则候选" value={String(evolution.review_rule_evolution?.candidates?.length ?? 0)} />
                 <Metric label="模板候选" value={String(evolution.hot_template_backflow?.candidates?.length ?? 0)} />
                 <Metric label="淘汰建议" value={String(evolution.low_effect_elimination?.recommendations?.length ?? 0)} />
+                <Metric label="待审批" value={String(evolution.approval_workflow?.approval_count ?? 0)} />
               </>
             ) : <Metric label="状态" value="未运行" />}
           </section>
           <pre className="jsonPreview">{evolution ? JSON.stringify({
             graph: evolution.graph_snapshot?.summary,
             feedback: evolution.reader_feedback_backflow,
-            governance: evolution.governance_policy
+            governance: evolution.governance_policy,
+            approvals: evolution.approval_workflow?.approvals?.slice?.(0, 5) ?? []
           }, null, 2) : "No evolution report"}</pre>
         </div>
 
@@ -493,13 +496,21 @@ function GraphPreview({ graph }: { graph: Record<string, any> | null }) {
   const edges = allEdges.slice(0, 16);
   const nodeCoverage = graph?.summary?.coverage ?? {};
   const edgeCoverage = graph?.summary?.edge_relation_counts ?? {};
+  const clusters = Array.isArray(graph?.clusters) ? graph?.clusters : [];
+  const frames = Array.isArray(graph?.path_animation_frames) ? graph?.path_animation_frames : [];
+  const layoutPositions = graph?.layout?.positions ?? {};
   if (!allNodes.length) {
     return <p className="mutedText">暂无图谱路径；刷新后会显示知识、学科、流程、规则和模板的 first-slice 可视化。</p>;
   }
   const positions = new Map<string, { x: number; y: number }>();
   nodes.forEach((node: any, index: number) => {
-    const angle = (Math.PI * 2 * index) / Math.max(1, nodes.length);
-    positions.set(String(node.id), { x: 160 + Math.cos(angle) * 118, y: 120 + Math.sin(angle) * 78 });
+    const serverPosition = layoutPositions[String(node.id)];
+    if (serverPosition) {
+      positions.set(String(node.id), { x: Number(serverPosition.x) / 3, y: Number(serverPosition.y) / 3 });
+    } else {
+      const angle = (Math.PI * 2 * index) / Math.max(1, nodes.length);
+      positions.set(String(node.id), { x: 160 + Math.cos(angle) * 118, y: 120 + Math.sin(angle) * 78 });
+    }
   });
   return (
     <div className="mkaosGraphExplorer">
@@ -508,7 +519,18 @@ function GraphPreview({ graph }: { graph: Record<string, any> | null }) {
         <Metric label="Edges" value={`${edges.length}/${allEdges.length}`} />
         <Metric label="Knowledge" value={String(nodeCoverage.knowledge_card ?? 0)} />
         <Metric label="Relations" value={String(Object.keys(edgeCoverage).length)} />
+        <Metric label="Clusters" value={String(clusters.length)} />
       </div>
+      <DataTable
+        emptyText="暂无 Cluster Layout"
+        columns={["Cluster Layout", "Nodes", "Type", "Path Frames"]}
+        rows={clusters.slice(0, 6).map((cluster: any, index: number) => [
+          String(cluster.label || cluster.cluster_id || "-"),
+          String(Array.isArray(cluster.node_ids) ? cluster.node_ids.length : 0),
+          String(cluster.node_type || "-"),
+          index === 0 ? String(frames.length) : "-"
+        ])}
+      />
       <svg className="mkaosGraphCanvas" viewBox="0 0 320 240" role="img" aria-label="MKAOS knowledge graph preview">
         {edges.map((edge: any) => {
           const source = positions.get(String(edge.source));
@@ -537,6 +559,16 @@ function GraphPreview({ graph }: { graph: Record<string, any> | null }) {
           const edge = Object.entries(edgeCoverage)[index] ?? ["-", "-"];
           return [nodeType, String(count), String(edge[0]), String(edge[1])];
         })}
+      />
+      <DataTable
+        emptyText="暂无路径帧"
+        columns={["Path Frames", "Relation", "Source", "Target"]}
+        rows={frames.slice(0, 6).map((frame: any) => [
+          String(frame.frame ?? "-"),
+          String(frame.relation ?? "-"),
+          String(frame.source_label ?? frame.source ?? "-").slice(0, 18),
+          String(frame.target_label ?? frame.target ?? "-").slice(0, 18)
+        ])}
       />
     </div>
   );

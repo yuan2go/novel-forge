@@ -95,6 +95,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/mkaos/knowledge-graph/explorer")
+    @router.post("/api/mkaos/knowledge-graph/explorer")
+    def build_knowledge_graph_explorer(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.build_knowledge_graph_explorer(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/knowledge-graph/query")
     @router.post("/api/mkaos/knowledge-graph/query")
     def query_knowledge_graph(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
@@ -124,6 +132,27 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def run_knowledge_evolution(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
         try:
             return _mkaos_response(mkaos_service.run_knowledge_evolution_cycle(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/governance/approvals")
+    @router.post("/api/mkaos/governance/approvals")
+    def create_governance_approval(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.create_governance_approval(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/mkaos/governance/approvals")
+    @router.get("/api/mkaos/governance/approvals")
+    def list_governance_approvals(project_id: str | None = None, status: str | None = None) -> list[dict[str, Any]]:
+        return mkaos_service.list_governance_approvals(storage(), project_id=project_id, status=status)
+
+    @router.post("/product/mkaos/governance/approvals/{approval_id}/resolve")
+    @router.post("/api/mkaos/governance/approvals/{approval_id}/resolve")
+    def resolve_governance_approval(approval_id: str, payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.resolve_governance_approval(storage(), approval_id, payload))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -342,6 +371,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/mkaos/conflicts/semantic-review")
+    @router.post("/api/mkaos/conflicts/semantic-review")
+    def semantic_conflict_review(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.run_semantic_conflict_review(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/cross-discipline/fusion")
     @router.post("/api/mkaos/cross-discipline/fusion")
     def cross_discipline_fusion(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
@@ -511,6 +548,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def extraction_provider_quality(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
         try:
             return _mkaos_response(mkaos_service.validate_extraction_provider_quality(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/provider/e2e-probe")
+    @router.post("/api/mkaos/provider/e2e-probe")
+    def provider_e2e_probe(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.run_mkaos_provider_e2e_probe(storage(), payload))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

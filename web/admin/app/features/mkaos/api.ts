@@ -119,6 +119,10 @@ export function buildKnowledgeGraph() {
   return postJson("/product/mkaos/knowledge-graph/build", { persist: true }).then(unwrapMkaos);
 }
 
+export function buildKnowledgeGraphExplorer() {
+  return postJson("/product/mkaos/knowledge-graph/explorer", { persist: true, max_nodes: 80, max_frames: 32 }).then(unwrapMkaos);
+}
+
 export function queryLineage(knowledgeId: string) {
   return postJson("/product/mkaos/lineage/query", { knowledge_id: knowledgeId }).then(unwrapMkaos);
 }
@@ -143,6 +147,7 @@ export function runKnowledgeAssetOsAcceptance() {
 export function runKnowledgeEvolution() {
   return postJson("/product/mkaos/evolution/run", {
     persist_graph: true,
+    create_approval_requests: true,
     apply_updates: false,
     apply_rule_updates: false,
     apply_template_updates: false,

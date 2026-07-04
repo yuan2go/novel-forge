@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 from pathlib import Path
@@ -1302,6 +1303,45 @@ def build_knowledge_graph(storage: LocalStorage, payload: dict[str, Any]) -> dic
     return envelope_response(content, envelope)
 
 
+def build_knowledge_graph_explorer(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    flow = str(payload.get("flow") or payload.get("task_type") or "").strip()
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.knowledge_graph_explorer",
+        asset_type="knowledge_graph_explorer_report",
+        project_id=project_id,
+        task_type=flow or "knowledge_graph_explorer",
+    )
+    graph = _knowledge_graph_content(
+        storage,
+        project_id=project_id,
+        flow=flow,
+        discipline=str(payload.get("discipline") or ""),
+        include_deprecated=bool(payload.get("include_deprecated", False)),
+        limit=int(payload.get("limit", 500) or 500),
+    )
+    explorer = _knowledge_graph_explorer_content(graph, max_nodes=int(payload.get("max_nodes", 80) or 80), max_frames=int(payload.get("max_frames", 32) or 32))
+    explorer["envelope_id"] = envelope.get("envelope_id", "")
+    explorer["trace_id"] = envelope.get("trace_id", "")
+    if bool(payload.get("persist", False)):
+        asset = _base_asset(
+            "knowledge_graph_explorer_report",
+            asset_id=explorer["explorer_report_id"],
+            title=f"MKAOS graph explorer {project_id} {flow or 'all'}",
+            source="mkaos-knowledge-graph-explorer",
+            tags=["mkaos", "knowledge-graph-explorer", flow or "all"],
+            content=explorer,
+            metadata={"project_id": project_id, "mkaos": True, "use_in_generation_rag": False, **envelope_asset_metadata(envelope)},
+            references=_dedupe([str(node.get("asset_id") or "") for node in explorer.get("nodes", []) if str(node.get("asset_id") or "").strip()]),
+        )
+        path = storage.write_asset("runs", asset)
+        explorer["path"] = _display_path(storage.root, path)
+        explorer["asset_id"] = asset.id
+    return envelope_response(explorer, envelope)
+
+
 def query_knowledge_graph(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
     project_id = str(payload.get("project_id") or "local-system")
     flow = str(payload.get("flow") or payload.get("task_type") or "").strip()
@@ -1517,6 +1557,15 @@ def run_knowledge_evolution_cycle(storage: LocalStorage, payload: dict[str, Any]
     rule_evolution = _evolve_review_rules_from_learning(storage, project_id, flow, learning, attributions, governance_payload)
     template_backflow = _backflow_templates_from_learning(storage, project_id, flow, learning, governance_payload)
     elimination = _low_effect_knowledge_elimination(storage, project_id, flow, learning, governance_payload)
+    approval_workflow = _create_evolution_approval_requests(
+        storage,
+        project_id,
+        flow,
+        rule_evolution,
+        template_backflow,
+        elimination,
+        governance_payload,
+    )
     content = {
         "evolution_report_id": _stable_asset_id(
             "knowledge_evolution_report",
@@ -1551,6 +1600,7 @@ def run_knowledge_evolution_cycle(storage: LocalStorage, payload: dict[str, Any]
             "top_tags": _top_feedback_tags(attributions),
         },
         "low_effect_elimination": elimination,
+        "approval_workflow": approval_workflow,
         "governance_policy": {
             "default_mode": "advisory",
             "evolution_mode": evolution_mode,
@@ -1564,6 +1614,8 @@ def run_knowledge_evolution_cycle(storage: LocalStorage, payload: dict[str, Any]
             "apply_elimination": bool(payload.get("apply_elimination", False)),
             "production_fail_closed": production,
             "automatic_destructive_actions_require_guarded_policy": True,
+            "human_approval_available": True,
+            "human_approval_requested": bool(approval_workflow.get("approval_count", 0)),
         },
         "source_isolation": {"raw_text_included": False, "clean_text_included": False, "evidence_refs_only": True},
         "created_at": utc_now(),
@@ -1590,6 +1642,198 @@ def run_knowledge_evolution_cycle(storage: LocalStorage, payload: dict[str, Any]
     path = storage.write_asset("runs", asset)
     content["path"] = _display_path(storage.root, path)
     content["asset_id"] = asset.id
+    return envelope_response(content, envelope)
+
+
+def create_governance_approval(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    action_type = str(payload.get("action_type") or payload.get("approval_type") or "governance_action")
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.governance_approval_create",
+        asset_type="knowledge_governance_approval",
+        project_id=project_id,
+        task_type=action_type,
+    )
+    content = {
+        "approval_id": str(payload.get("approval_id") or _stable_asset_id("knowledge_governance_approval", project_id, action_type, json.dumps(payload.get("action_payload", {}), ensure_ascii=False, sort_keys=True))),
+        "project_id": project_id,
+        "flow": str(payload.get("flow") or ""),
+        "approval_type": str(payload.get("approval_type") or action_type),
+        "action_type": action_type,
+        "status": "pending",
+        "risk_level": str(payload.get("risk_level") or "medium"),
+        "reason": str(payload.get("reason") or ""),
+        "requested_by": str(payload.get("actor") or "mkaos"),
+        "source_report_id": str(payload.get("source_report_id") or ""),
+        "action_payload": payload.get("action_payload") if isinstance(payload.get("action_payload"), dict) else {},
+        "decision": {},
+        "applied_result": {},
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False},
+        "created_at": utc_now(),
+        "envelope_id": envelope.get("envelope_id", ""),
+        "trace_id": envelope.get("trace_id", ""),
+    }
+    asset = _base_asset(
+        "knowledge_governance_approval",
+        asset_id=content["approval_id"],
+        title=f"MKAOS approval {content['action_type']}",
+        source=content["source_report_id"] or "mkaos-governance",
+        tags=["mkaos", "governance-approval", "pending", content["action_type"]],
+        content=content,
+        metadata={"project_id": project_id, "mkaos": True, "asset_status": "pending", "use_in_generation_rag": False, **envelope_asset_metadata(envelope)},
+        references=_dedupe(_strings(payload.get("references"))),
+    )
+    path = storage.write_asset("runs", asset)
+    return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
+
+
+def list_governance_approvals(storage: LocalStorage, *, project_id: str | None = None, status: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+    rows = _list_assets(storage, "runs", "knowledge_governance_approval", project_id=project_id, limit=limit)
+    if status:
+        rows = [row for row in rows if str(row.get("content", {}).get("status") or "") == status]
+    return rows
+
+
+def resolve_governance_approval(storage: LocalStorage, approval_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    path, approval = _find_asset(storage, approval_id, asset_type="knowledge_governance_approval", categories=["runs"])
+    content = approval.get("content", {}) if isinstance(approval.get("content"), dict) else {}
+    status = str(payload.get("status") or payload.get("decision") or "approved").strip().lower()
+    if status not in {"approved", "rejected"}:
+        raise ValueError("governance approval status must be approved or rejected")
+    content["status"] = status
+    content["decision"] = {
+        "status": status,
+        "actor": str(payload.get("actor") or "operator"),
+        "reason": str(payload.get("reason") or ""),
+        "decided_at": utc_now(),
+    }
+    applied: dict[str, Any] = {}
+    if status == "approved" and bool(payload.get("apply", False)):
+        applied = _apply_governance_approval_action(storage, content, payload)
+        content["status"] = "applied" if applied.get("applied", False) else "approved"
+    content["applied_result"] = applied
+    approval["content"] = _strip_source_text_fields(content)
+    metadata = approval.get("metadata", {}) if isinstance(approval.get("metadata"), dict) else {}
+    metadata["asset_status"] = content["status"]
+    approval["metadata"] = metadata
+    approval["updated_at"] = utc_now()
+    storage.write_json(path, approval)
+    record_mkaos_mutation(
+        storage,
+        asset_type="knowledge_governance_approval",
+        asset_id=str(approval.get("id") or approval_id),
+        mutation_type="status_change",
+        previous_payload={},
+        new_payload=approval,
+        reason="resolve_governance_approval",
+        actor=str(payload.get("actor") or "operator"),
+        trace_id=str(payload.get("trace_id") or content.get("trace_id") or ""),
+    )
+    return {"path": _display_path(storage.root, path), "asset": storage.read_json(path), "applied": applied}
+
+
+def run_mkaos_provider_e2e_probe(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.provider_e2e_probe",
+        asset_type="mkaos_provider_e2e_probe_report",
+        project_id=project_id,
+        task_type=str(payload.get("task_type") or "provider_e2e_probe"),
+    )
+    provider = payload.get("provider") if isinstance(payload.get("provider"), dict) else {}
+    provider_mode = str(payload.get("provider_mode") or provider.get("mode") or "mock")
+    probe_type = str(payload.get("probe_type") or "both")
+    opt_in = bool(payload.get("provider_opt_in") or provider.get("opt_in") or os.environ.get("NOVEL_FORGE_MKAOS_PROVIDER_E2E") == "1")
+    online_requested = provider_mode in {"online", "external", "model"} or bool(payload.get("online", False))
+    online_enabled = os.environ.get("NOVEL_FORGE_MKAOS_PROVIDER_E2E") == "1"
+    model_probe: dict[str, Any] = {"requested": probe_type in {"both", "model_judge"}, "status": "not_requested"}
+    extraction_probe: dict[str, Any] = {"requested": probe_type in {"both", "extraction_provider"}, "status": "not_requested"}
+    if not opt_in:
+        status = "opt_in_required"
+    elif online_requested and not online_enabled:
+        status = "online_disabled"
+    else:
+        status = "completed"
+    if model_probe["requested"]:
+        if status == "completed":
+            model_payload = payload.get("model_judge_payload") if isinstance(payload.get("model_judge_payload"), dict) else {}
+            model_result = payload.get("model_judge_result") if isinstance(payload.get("model_judge_result"), dict) else model_payload.get("model_judge_result") if isinstance(model_payload.get("model_judge_result"), dict) else {"conflicts": []}
+            model_report = detect_knowledge_conflicts(
+                storage,
+                {
+                    **model_payload,
+                    "project_id": project_id,
+                    "persist": False,
+                    "enable_model_judge": True,
+                    "model_judge_opt_in": True,
+                    "model_judge_result": model_result,
+                },
+            )
+            model_probe = {"requested": True, "status": "completed", "blocking_count": model_report.get("blocking_count", 0), "conflict_count": len(model_report.get("conflicts", [])), "model_judge": model_report.get("model_judge", {})}
+        else:
+            model_probe = {"requested": True, "status": status}
+    if extraction_probe["requested"]:
+        if status == "completed":
+            extraction_payload = payload.get("extraction_payload") if isinstance(payload.get("extraction_payload"), dict) else {}
+            candidates = extraction_payload.get("candidates") if isinstance(extraction_payload.get("candidates"), list) else payload.get("mock_provider_candidates") if isinstance(payload.get("mock_provider_candidates"), list) else []
+            quality = _response_data(
+                validate_extraction_provider_quality(
+                    storage,
+                    {
+                        **extraction_payload,
+                        "project_id": project_id,
+                        "provider_mode": "model_assisted",
+                        "provider_status": "mock_provider_ready" if provider_mode == "mock" else "external_provider_ready",
+                        "provider_opt_in": True,
+                        "candidates": candidates,
+                        "persist": False,
+                    },
+                )
+            )
+            extraction_probe = {"requested": True, "status": "completed", "passed": quality.get("passed", False), "average_quality_score": quality.get("average_quality_score", 0), "issue_count": len(quality.get("issues", [])), "quality_report": quality}
+        else:
+            extraction_probe = {"requested": True, "status": status}
+    passed = status == "completed" and all(
+        not probe.get("requested") or probe.get("status") == "completed" and probe.get("passed", True) is not False
+        for probe in [model_probe, extraction_probe]
+    )
+    content = {
+        "probe_report_id": _stable_asset_id("mkaos_provider_e2e_probe", project_id, provider_mode, probe_type, status),
+        "project_id": project_id,
+        "provider": provider.get("name") or payload.get("provider_name") or "mock_or_local",
+        "provider_mode": provider_mode,
+        "probe_type": probe_type,
+        "opt_in": opt_in,
+        "online_requested": online_requested,
+        "online_enabled": online_enabled,
+        "status": status,
+        "passed": passed,
+        "model_judge_probe": model_probe,
+        "extraction_provider_probe": extraction_probe,
+        "network_policy": "no_external_call_without_NOVEL_FORGE_MKAOS_PROVIDER_E2E",
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False},
+        "created_at": utc_now(),
+        "envelope_id": envelope.get("envelope_id", ""),
+        "trace_id": envelope.get("trace_id", ""),
+    }
+    if bool(payload.get("persist", True)):
+        asset = _base_asset(
+            "mkaos_provider_e2e_probe_report",
+            asset_id=content["probe_report_id"],
+            title="MKAOS provider E2E probe",
+            source="mkaos-provider-e2e",
+            tags=["mkaos", "provider-e2e", status],
+            content=content,
+            metadata={"project_id": project_id, "mkaos": True, "use_in_generation_rag": False, **envelope_asset_metadata(envelope)},
+            references=_dedupe(_strings(payload.get("references"))),
+        )
+        path = storage.write_asset("runs", asset)
+        content["path"] = _display_path(storage.root, path)
+        content["asset_id"] = asset.id
     return envelope_response(content, envelope)
 
 
@@ -2024,6 +2268,69 @@ def detect_knowledge_conflicts(storage: LocalStorage, payload: dict[str, Any]) -
         report["path"] = _display_path(storage.root, path)
         report["asset_id"] = asset.id
     return report
+
+
+def run_semantic_conflict_review(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.semantic_conflict_review",
+        asset_type="semantic_conflict_review_report",
+        project_id=project_id,
+        task_type=str(payload.get("task_type") or payload.get("flow") or "semantic_conflict_review"),
+    )
+    base_report = detect_knowledge_conflicts(storage, {**payload, "project_id": project_id, "persist": False})
+    items = payload.get("knowledge_items") if isinstance(payload.get("knowledge_items"), list) else []
+    if not items and payload.get("knowledge_pack_id"):
+        try:
+            pack = get_knowledge_pack(storage, str(payload.get("knowledge_pack_id")))["asset"]
+            items = pack.get("content", {}).get("pack_items", [])
+        except FileNotFoundError:
+            items = []
+    judgments = _semantic_conflict_judgments(items, payload)
+    all_conflicts = [*base_report.get("conflicts", []), *judgments["conflicts"]]
+    confidence = _semantic_review_confidence(base_report, judgments, payload)
+    requires_model_review = bool(payload.get("require_model_review", False)) or confidence < 0.7 or any(item.get("severity") in {"high", "critical"} for item in all_conflicts)
+    model_judge = _model_judge_conflict_result(payload)
+    if model_judge.get("status") == "completed":
+        requires_model_review = False
+    content = {
+        "semantic_review_id": _stable_asset_id("semantic_conflict_review", project_id, str(payload.get("flow") or ""), str(len(all_conflicts)), str(confidence)),
+        "project_id": project_id,
+        "flow": str(payload.get("flow") or ""),
+        "reasoning_mode": "graph_plus_deterministic_semantic_first_slice",
+        "semantic_dimensions": ["platform_rhythm", "narrative_mode", "evidence_logic", "exposition_mode", "canon_policy", "source_policy"],
+        "semantic_judgments": judgments["judgments"],
+        "conflicts": all_conflicts,
+        "blocking_count": len([item for item in all_conflicts if item.get("blocking")]),
+        "confidence": confidence,
+        "requires_model_review": requires_model_review,
+        "model_judge": model_judge,
+        "limitations": [
+            "deep semantic understanding still requires opt-in external model judge or stronger graph reasoning",
+            "deterministic review is designed to fail closed on clear high-risk patterns, not to replace editorial judgment",
+        ],
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False},
+        "created_at": utc_now(),
+        "envelope_id": envelope.get("envelope_id", ""),
+        "trace_id": envelope.get("trace_id", ""),
+    }
+    if bool(payload.get("persist", True)):
+        asset = _base_asset(
+            "semantic_conflict_review_report",
+            asset_id=content["semantic_review_id"],
+            title="MKAOS semantic conflict review",
+            source="mkaos-semantic-conflict-review",
+            tags=["mkaos", "semantic-conflict-review", "needs-model-review" if requires_model_review else "reviewed"],
+            content=content,
+            metadata={"project_id": project_id, "mkaos": True, "use_in_generation_rag": False, **envelope_asset_metadata(envelope)},
+            references=_dedupe([str(item.get("knowledge_id") or "") for item in items if isinstance(item, dict)]),
+        )
+        path = storage.write_asset("runs", asset)
+        content["path"] = _display_path(storage.root, path)
+        content["asset_id"] = asset.id
+    return envelope_response(content, envelope)
 
 
 def attribute_reader_feedback_to_knowledge(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -3139,6 +3446,113 @@ def _semantic_pair_conflicts(items: list[dict[str, Any]], *, production: bool) -
     return conflicts
 
 
+def _semantic_conflict_judgments(items: list[dict[str, Any]], payload: dict[str, Any]) -> dict[str, Any]:
+    judgments: list[dict[str, Any]] = []
+    conflicts: list[dict[str, Any]] = []
+    profiles: list[dict[str, Any]] = []
+    production = _mkaos_payload_is_production(payload)
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        profile = _semantic_item_profile(item)
+        profiles.append(profile)
+        judgments.append(
+            {
+                "knowledge_id": profile["knowledge_id"],
+                "platform_rhythm": profile["platform_rhythm"],
+                "narrative_mode": profile["narrative_mode"],
+                "evidence_logic": profile["evidence_logic"],
+                "exposition_mode": profile["exposition_mode"],
+                "canon_policy": profile["canon_policy"],
+                "confidence": profile["confidence"],
+            }
+        )
+    for index, left in enumerate(profiles):
+        for right in profiles[index + 1 :]:
+            pair_conflicts = _semantic_profile_conflicts(left, right, production=production)
+            conflicts.extend(pair_conflicts)
+    return {"judgments": judgments, "conflicts": conflicts}
+
+
+def _semantic_item_profile(item: dict[str, Any]) -> dict[str, Any]:
+    text = json.dumps(_strip_source_text_fields(item), ensure_ascii=False).lower()
+    rhythm = "neutral"
+    if any(term in text for term in ["快节奏", "强情绪", "反转", "打脸", "爽点", "番茄", "飞卢"]):
+        rhythm = "fast_payoff"
+    if any(term in text for term in ["出版", "文学质感", "慢热", "结构完整", "语言稳定"]):
+        rhythm = "literary_slow_burn" if rhythm == "neutral" else "mixed"
+    narrative_mode = "actionized" if any(term in text for term in ["行动", "冲突", "选择", "代价", "场景", "钩子"]) else "unclear"
+    exposition_mode = "expository" if any(term in text for term in ["百科", "资料卡", "说明性", "设定详解", "解释"]) else "abstracted"
+    evidence_logic = "fair_clue" if any(term in text for term in ["公平线索", "可复盘", "证据链", "因果"]) else "unspecified"
+    if any(term in text for term in ["突然反转", "莫名", "神秘解决", "天降"]):
+        evidence_logic = "arbitrary_twist" if evidence_logic == "unspecified" else "mixed"
+    canon_policy = "canon_bound" if any(term in text for term in ["canon", "设定事实", "世界规则", "人物状态", "连续性"]) else "unbound"
+    positive_signals = len([value for value in [rhythm, narrative_mode, exposition_mode, evidence_logic, canon_policy] if value not in {"neutral", "unclear", "unspecified", "unbound"}])
+    return {
+        "knowledge_id": str(item.get("knowledge_id") or ""),
+        "platform_rhythm": rhythm,
+        "narrative_mode": narrative_mode,
+        "exposition_mode": exposition_mode,
+        "evidence_logic": evidence_logic,
+        "canon_policy": canon_policy,
+        "confidence": round(min(0.92, 0.42 + positive_signals * 0.12), 4),
+    }
+
+
+def _semantic_profile_conflicts(left: dict[str, Any], right: dict[str, Any], *, production: bool) -> list[dict[str, Any]]:
+    left_id = str(left.get("knowledge_id") or "")
+    right_id = str(right.get("knowledge_id") or "")
+    result: list[dict[str, Any]] = []
+    rhythms = {left.get("platform_rhythm"), right.get("platform_rhythm")}
+    if {"fast_payoff", "literary_slow_burn"} <= rhythms or "mixed" in rhythms:
+        result.append(
+            _knowledge_conflict(
+                "knowledge_vs_platform",
+                "high",
+                production,
+                [left_id, right_id],
+                "Semantic rhythm profile mixes fast-payoff platform logic with literary slow-burn publishing logic.",
+                "Choose a platform-specific path or split the pack before production.",
+            )
+        )
+    evidence_modes = {left.get("evidence_logic"), right.get("evidence_logic")}
+    if {"fair_clue", "arbitrary_twist"} <= evidence_modes or "mixed" in evidence_modes:
+        result.append(
+            _knowledge_conflict(
+                "knowledge_vs_task_goal",
+                "high",
+                production,
+                [left_id, right_id],
+                "Semantic evidence profile mixes fair clue chain with arbitrary twist resolution.",
+                "Preserve evidence positions or route the twist through a reviewed clue path.",
+            )
+        )
+    if "expository" in {left.get("exposition_mode"), right.get("exposition_mode")} and "actionized" not in {left.get("narrative_mode"), right.get("narrative_mode")}:
+        result.append(
+            _knowledge_conflict(
+                "knowledge_vs_task_goal",
+                "medium",
+                False,
+                [left_id, right_id],
+                "Semantic profile is exposition-heavy without a paired actionized narrative mode.",
+                "Add an action/conflict conversion rule before prose use.",
+            )
+        )
+    return result
+
+
+def _semantic_review_confidence(base_report: dict[str, Any], judgments: dict[str, Any], payload: dict[str, Any]) -> float:
+    judgment_rows = judgments.get("judgments") if isinstance(judgments.get("judgments"), list) else []
+    if not judgment_rows:
+        return 0.0
+    avg = sum(_float(item.get("confidence"), 0.0) for item in judgment_rows) / len(judgment_rows)
+    if base_report.get("model_judge", {}).get("status") == "completed" or _model_judge_conflict_result(payload).get("status") == "completed":
+        avg = max(avg, 0.9)
+    if base_report.get("reasoning_trace"):
+        avg = min(0.95, avg + 0.08)
+    return round(max(0.0, min(1.0, avg)), 4)
+
+
 def _provider_extraction_opted_in(payload: dict[str, Any]) -> bool:
     provider = payload.get("provider") if isinstance(payload.get("provider"), dict) else {}
     return bool(payload.get("provider_opt_in") or provider.get("opt_in") or os.environ.get("NOVEL_FORGE_MKAOS_EXTRACTION_PROVIDER") == "1")
@@ -3954,6 +4368,124 @@ def _low_effect_knowledge_elimination(storage: LocalStorage, project_id: str, fl
     return {"mode": mode, "recommendations": recommendations, "applied": applied}
 
 
+def _create_evolution_approval_requests(
+    storage: LocalStorage,
+    project_id: str,
+    flow: str,
+    rule_evolution: dict[str, Any],
+    template_backflow: dict[str, Any],
+    elimination: dict[str, Any],
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    if not (bool(payload.get("create_approval_requests", False)) or str(payload.get("evolution_mode") or "") == "human_approval"):
+        return {"mode": "not_requested", "approval_count": 0, "approvals": []}
+    approvals: list[dict[str, Any]] = []
+    for candidate in rule_evolution.get("candidates", []) if isinstance(rule_evolution.get("candidates"), list) else []:
+        action_payload = {"candidate_id": str(candidate.get("candidate_id") or ""), "rule_payload": candidate.get("rule_payload") if isinstance(candidate.get("rule_payload"), dict) else {}}
+        approval = create_governance_approval(
+            storage,
+            {
+                **payload,
+                "project_id": project_id,
+                "flow": flow,
+                "approval_type": "activate_rule",
+                "action_type": "activate_rule",
+                "risk_level": "medium",
+                "reason": f"Review rule candidate from MKAOS learning: {candidate.get('rule_name') or candidate.get('candidate_id')}",
+                "action_payload": action_payload,
+                "references": [str(candidate.get("candidate_id") or "")],
+            },
+        )
+        approvals.append({"approval_id": approval["asset"]["id"], "action_type": "activate_rule", "status": "pending", "path": approval["path"]})
+    for candidate in template_backflow.get("candidates", []) if isinstance(template_backflow.get("candidates"), list) else []:
+        action_payload = {"candidate_id": str(candidate.get("candidate_id") or ""), "template_payload": candidate.get("template_payload") if isinstance(candidate.get("template_payload"), dict) else {}}
+        approval = create_governance_approval(
+            storage,
+            {
+                **payload,
+                "project_id": project_id,
+                "flow": flow,
+                "approval_type": "activate_template",
+                "action_type": "activate_template",
+                "risk_level": "low",
+                "reason": f"Template candidate from MKAOS learning: {candidate.get('template_name') or candidate.get('candidate_id')}",
+                "action_payload": action_payload,
+                "references": [str(candidate.get("candidate_id") or ""), str(candidate.get("source_knowledge_id") or "")],
+            },
+        )
+        approvals.append({"approval_id": approval["asset"]["id"], "action_type": "activate_template", "status": "pending", "path": approval["path"]})
+    for recommendation in elimination.get("recommendations", []) if isinstance(elimination.get("recommendations"), list) else []:
+        approval = create_governance_approval(
+            storage,
+            {
+                **payload,
+                "project_id": project_id,
+                "flow": flow,
+                "approval_type": "status_change",
+                "action_type": "quarantine_knowledge" if recommendation.get("recommended_status") == "quarantined" else "change_knowledge_status",
+                "risk_level": "high" if recommendation.get("recommended_status") in {"quarantined", "do_not_select"} else "medium",
+                "reason": str(recommendation.get("reason") or "low effect knowledge recommendation"),
+                "action_payload": recommendation,
+                "references": [str(recommendation.get("knowledge_id") or "")],
+            },
+        )
+        approvals.append({"approval_id": approval["asset"]["id"], "action_type": approval["asset"]["content"].get("action_type", ""), "status": "pending", "path": approval["path"]})
+    return {"mode": "human_approval", "approval_count": len(approvals), "approvals": approvals}
+
+
+def _apply_governance_approval_action(storage: LocalStorage, approval_content: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
+    action_type = str(approval_content.get("action_type") or "")
+    action_payload = approval_content.get("action_payload") if isinstance(approval_content.get("action_payload"), dict) else {}
+    project_id = str(approval_content.get("project_id") or payload.get("project_id") or "local-system")
+    if action_type == "activate_rule":
+        rule_payload = action_payload.get("rule_payload") if isinstance(action_payload.get("rule_payload"), dict) else {}
+        if not rule_payload and action_payload.get("candidate_id"):
+            _, candidate = _find_asset(storage, str(action_payload.get("candidate_id")), asset_type="rule_card_candidate", categories=["quality_standards"])
+            rule_payload = candidate.get("content", {}).get("rule_payload", {}) if isinstance(candidate.get("content"), dict) else {}
+        if not rule_payload:
+            return {"applied": False, "reason": "missing_rule_payload"}
+        created = create_rule_card(storage, {**rule_payload, "project_id": project_id, "enabled": True, "actor": payload.get("actor") or "operator"})
+        return {"applied": True, "asset_type": "rule_card", "asset_id": created["asset"]["id"], "path": created["path"]}
+    if action_type == "activate_template":
+        template_payload = action_payload.get("template_payload") if isinstance(action_payload.get("template_payload"), dict) else {}
+        source_knowledge_id = str(template_payload.get("source_knowledge_id") or action_payload.get("source_knowledge_id") or "")
+        if not template_payload and action_payload.get("candidate_id"):
+            _, candidate = _find_asset(storage, str(action_payload.get("candidate_id")), asset_type="template_card_candidate", categories=["templates"])
+            template_payload = candidate.get("content", {}) if isinstance(candidate.get("content"), dict) else {}
+            source_knowledge_id = str(template_payload.get("source_knowledge_id") or "")
+        if source_knowledge_id:
+            created = knowledge_to_application_template(storage, source_knowledge_id, {"project_id": project_id, "flow": str(template_payload.get("flow") or approval_content.get("flow") or "outline")})
+            return {"applied": True, "asset_type": "template_card", "asset_id": created["asset"]["id"], "path": created["path"]}
+        created = create_template_card(
+            storage,
+            {
+                "project_id": project_id,
+                "template_name": str(template_payload.get("template_name") or "MKAOS approved application template"),
+                "template_type": str(template_payload.get("template_type") or "outline_template"),
+                "structure": template_payload.get("output_structure") or ["pressure", "choice", "cost", "hook"],
+                "usage_constraints": template_payload.get("forbidden_usage") or ["no raw source expression", "no encyclopedia paragraph"],
+                "applicable_flows": [str(template_payload.get("flow") or approval_content.get("flow") or "outline")],
+            },
+        )
+        return {"applied": True, "asset_type": "template_card", "asset_id": created["asset"]["id"], "path": created["path"]}
+    if action_type in {"quarantine_knowledge", "change_knowledge_status"}:
+        knowledge_id = str(action_payload.get("knowledge_id") or "")
+        if not knowledge_id:
+            return {"applied": False, "reason": "missing_knowledge_id"}
+        changed = change_knowledge_status(
+            storage,
+            knowledge_id,
+            {
+                "status": str(action_payload.get("recommended_status") or "needs_review"),
+                "reason": str(action_payload.get("reason") or "approved_governance_action"),
+                "actor": payload.get("actor") or "operator",
+                "trace_id": payload.get("trace_id") or approval_content.get("trace_id") or "",
+            },
+        )
+        return {"applied": True, "asset_type": "knowledge_card", "asset_id": changed["asset"]["id"], "status": changed["asset"]["content"].get("status", ""), "path": changed["path"]}
+    return {"applied": False, "reason": f"unsupported_action:{action_type}"}
+
+
 def _rule_payload_from_evolution_signal(project_id: str, flow: str, signal: dict[str, Any]) -> dict[str, Any]:
     tags = set(_strings(signal.get("tags")))
     rule_type = "knowledge_effectiveness"
@@ -4048,7 +4580,14 @@ def _persist_rule_card_candidate(storage: LocalStorage, project_id: str, signal:
         references=_dedupe([str(signal.get("knowledge_id") or "")]),
     )
     path = storage.write_asset("quality_standards", asset)
-    return {"candidate_id": candidate_id, "path": _display_path(storage.root, path), "rule_name": rule_payload["rule_name"], "rule_type": rule_payload["rule_type"], "status": "needs_review"}
+    return {
+        "candidate_id": candidate_id,
+        "path": _display_path(storage.root, path),
+        "rule_name": rule_payload["rule_name"],
+        "rule_type": rule_payload["rule_type"],
+        "rule_payload": rule_payload,
+        "status": "needs_review",
+    }
 
 
 def _persist_template_card_candidate(storage: LocalStorage, project_id: str, item: dict[str, Any], flow: str) -> dict[str, Any]:
@@ -4082,7 +4621,15 @@ def _persist_template_card_candidate(storage: LocalStorage, project_id: str, ite
         references=_dedupe([content["source_knowledge_id"]]),
     )
     path = storage.write_asset("templates", asset)
-    return {"candidate_id": candidate_id, "path": _display_path(storage.root, path), "template_name": content["template_name"], "template_type": content["template_type"], "status": "needs_review"}
+    return {
+        "candidate_id": candidate_id,
+        "path": _display_path(storage.root, path),
+        "template_name": content["template_name"],
+        "template_type": content["template_type"],
+        "source_knowledge_id": content["source_knowledge_id"],
+        "template_payload": content,
+        "status": "needs_review",
+    }
 
 
 def _top_feedback_tags(attributions: list[dict[str, Any]], limit: int = 8) -> list[dict[str, Any]]:
@@ -4115,6 +4662,99 @@ def _knowledge_graph_summary(nodes: list[dict[str, Any]], edges: list[dict[str, 
         "reasoning_affordances": ["discipline traversal", "flow binding", "rule/template reuse", "effect learning", "evidence lineage"],
     }
 
+
+def _knowledge_graph_explorer_content(graph: dict[str, Any], *, max_nodes: int, max_frames: int) -> dict[str, Any]:
+    nodes = graph.get("nodes") if isinstance(graph.get("nodes"), list) else []
+    edges = graph.get("edges") if isinstance(graph.get("edges"), list) else []
+    sampled_nodes = nodes[: max(1, max_nodes)]
+    sampled_ids = {str(node.get("id") or "") for node in sampled_nodes}
+    sampled_edges = [edge for edge in edges if str(edge.get("source") or "") in sampled_ids and str(edge.get("target") or "") in sampled_ids]
+    node_by_id = {str(node.get("id") or ""): node for node in sampled_nodes}
+    clusters: dict[str, dict[str, Any]] = {}
+    for node in sampled_nodes:
+        node_type = str(node.get("node_type") or "unknown")
+        attrs = node.get("attributes", {}) if isinstance(node.get("attributes"), dict) else {}
+        if node_type == "knowledge_card":
+            cluster_id = f"discipline:{attrs.get('discipline') or 'general'}"
+        else:
+            cluster_id = node_type
+        cluster = clusters.setdefault(cluster_id, {"cluster_id": cluster_id, "label": cluster_id.replace("discipline:", ""), "node_type": node_type, "node_ids": []})
+        cluster["node_ids"].append(str(node.get("id") or ""))
+    sorted_clusters = sorted(clusters.values(), key=lambda item: (str(item.get("node_type") or ""), str(item.get("label") or "")))
+    layout = _deterministic_cluster_layout(sampled_nodes, sorted_clusters)
+    frames = _graph_path_animation_frames(sampled_edges[: max(0, max_frames)], node_by_id)
+    explorer_id = _stable_asset_id(
+        "knowledge_graph_explorer",
+        str(graph.get("graph_id") or ""),
+        str(len(sampled_nodes)),
+        str(len(sampled_edges)),
+        str(len(sorted_clusters)),
+    )
+    return {
+        "explorer_report_id": explorer_id,
+        "graph_id": graph.get("graph_id", ""),
+        "project_id": graph.get("project_id", ""),
+        "flow": graph.get("flow", ""),
+        "version": "mkaos-graph-explorer-v2",
+        "summary": graph.get("summary", {}),
+        "nodes": sampled_nodes,
+        "edges": sampled_edges,
+        "clusters": sorted_clusters,
+        "layout": layout,
+        "path_animation_frames": frames,
+        "large_graph_policy": {
+            "total_nodes": len(nodes),
+            "total_edges": len(edges),
+            "sampled_nodes": len(sampled_nodes),
+            "sampled_edges": len(sampled_edges),
+            "max_nodes": max_nodes,
+            "max_frames": max_frames,
+            "layout_mode": "deterministic_clustered_radial",
+        },
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False, "evidence_nodes_ids_only": True},
+        "created_at": utc_now(),
+    }
+
+
+def _deterministic_cluster_layout(nodes: list[dict[str, Any]], clusters: list[dict[str, Any]]) -> dict[str, Any]:
+    cluster_count = max(1, len(clusters))
+    cluster_centers: dict[str, dict[str, float]] = {}
+    positions: dict[str, dict[str, float | str]] = {}
+    for cluster_index, cluster in enumerate(clusters):
+        angle = (3.141592653589793 * 2 * cluster_index) / cluster_count
+        center = {"x": round(500 + 320 * math.cos(angle), 2), "y": round(360 + 220 * math.sin(angle), 2)}
+        cluster_id = str(cluster.get("cluster_id") or "")
+        cluster_centers[cluster_id] = center
+        node_ids = [str(item) for item in cluster.get("node_ids", []) if str(item)]
+        node_count = max(1, len(node_ids))
+        for node_index, node_id in enumerate(node_ids):
+            inner_angle = (3.141592653589793 * 2 * node_index) / node_count
+            positions[node_id] = {
+                "x": round(center["x"] + 52 * math.cos(inner_angle), 2),
+                "y": round(center["y"] + 38 * math.sin(inner_angle), 2),
+                "cluster_id": cluster_id,
+            }
+    return {"mode": "deterministic_clustered_radial", "cluster_centers": cluster_centers, "positions": positions}
+
+
+def _graph_path_animation_frames(edges: list[dict[str, Any]], node_by_id: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    frames: list[dict[str, Any]] = []
+    for index, edge in enumerate(edges):
+        source = node_by_id.get(str(edge.get("source") or ""), {})
+        target = node_by_id.get(str(edge.get("target") or ""), {})
+        frames.append(
+            {
+                "frame": index + 1,
+                "edge_id": str(edge.get("id") or f"{edge.get('source')}-{edge.get('target')}-{edge.get('relation')}"),
+                "relation": str(edge.get("relation") or ""),
+                "source": str(edge.get("source") or ""),
+                "target": str(edge.get("target") or ""),
+                "source_label": str(source.get("label") or edge.get("source") or ""),
+                "target_label": str(target.get("label") or edge.get("target") or ""),
+                "explanation": f"{source.get('label') or edge.get('source')} --{edge.get('relation')}--> {target.get('label') or edge.get('target')}",
+            }
+        )
+    return frames
 
 def _source_chunk_graph_node(storage: LocalStorage, chunk_id: str) -> dict[str, Any] | None:
     try:

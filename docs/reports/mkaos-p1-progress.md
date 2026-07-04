@@ -84,12 +84,16 @@ Selector decisions and knowledge pack mutation audits now use stable ids for rep
 - web/admin graph remains dependency-free, but the console now includes a lightweight SVG graph canvas instead of summary-only tables.
 - Knowledge asset evolution now exists as an auditable orchestration cycle instead of disconnected learning primitives.
 - Follow-up hardening added transitive graph conflict inference, extraction provider quality reports, guarded automatic rule/template promotion and quarantine, and a larger Graph Explorer first slice.
+- Provider E2E is now represented by `run_mkaos_provider_e2e_probe`: without explicit opt-in it reports `opt_in_required`; with mock opt-in it validates model-judge and extraction-provider output without network calls.
+- Deep semantic conflict review is now explicit through `run_semantic_conflict_review`, which combines graph reasoning, deterministic semantic profiles, model-judge opt-in results, confidence, and `requires_model_review`.
+- Human approval first slice now exists through `knowledge_governance_approval` assets and create/list/resolve APIs. Evolution can create approval requests for rule activation, template activation, and low-effect quarantine; applying still requires explicit approval.
+- Graph Explorer now returns deterministic clusters, layout positions, sampling policy, and path animation frames while remaining dependency-free and source-text safe.
 
 ## Remaining Risks
 
 - Real model-judge and extraction providers remain opt-in; default implementation validates provider outputs locally but does not call external services.
-- Knowledge evolution defaults to advisory mode. `guarded_auto` can apply safe promotions/quarantine, but full human approval workflow remains P2.
-- UI graph visualization is dependency-free and now has Graph Explorer sampling/distribution; clustering, search filters, path animation, and graph diff remain P2.
+- Knowledge evolution defaults to advisory mode. `guarded_auto` can apply safe promotions/quarantine, and a first-slice approval asset/API exists; full approval inbox, policy routing, reviewer assignment, and SLA remain P2.
+- UI graph visualization is dependency-free and now has Graph Explorer sampling, clustering, layout metadata, and path frames; large-scale graph search, animated exploration, graph diff, and community detection remain P2.
 - Full “越写越强” proof still needs longer multi-chapter production telemetry and real reader feedback volume beyond synthetic/local fixtures.
 
 ## Current Distance To A Full Knowledge Asset OS
