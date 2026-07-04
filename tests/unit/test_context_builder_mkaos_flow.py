@@ -97,6 +97,15 @@ class ContextBuilderMkaosFlowTests(unittest.TestCase):
                     current_goal="draft production chapter",
                     environment="production",
                 )
+            card = create_knowledge_card(
+                storage,
+                {
+                    "project_id": "ctx-prod",
+                    "concept_name": "生产门禁",
+                    "core_explanation": "生产模式必须带可追溯知识包。",
+                },
+            )
+            create_usage_binding(storage, card["asset"]["id"], {"flow": "prose", "usage_type": "optional", "input_role": "optional", "priority": 10})
 
             result = build_flow_context_bundle(
                 storage,

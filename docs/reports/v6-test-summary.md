@@ -171,3 +171,11 @@ Implementation note: an intermediate full-discover run exposed non-idempotent `p
 | `python3 -m unittest tests/unit/test_product_api_routes.py` | Product API 路由注册回归，包含 `/product/editor-chief/snapshot`。 | 1 test OK，用时约 19.2s |
 | `npm --prefix web/admin test` | Admin 前端路由/架构回归，包含 `/editor-chief` 和总编问题分区。 | 9 tests，8 pass，1 skip |
 | `npm --prefix web/admin run build` | Admin Next.js production build。 | OK，45 static routes generated |
+
+## MKAOS Pack Fail-Closed Policy
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m unittest tests.unit.test_mkaos_fail_closed_policy` | MKAOS pack 构建失败策略：production/strict/operating_system 阻断、compat warning、缺 context/pack id、prose 空 pack、source isolation 阻断。 | 7 tests OK，用时约 0.7s |
+| `python3 -m unittest tests.unit.test_context_builder_mkaos_flow tests.unit.test_mkaos_isolation tests.unit.test_mkaos_os_envelope` | Context Builder / MKAOS isolation / OS Envelope 相邻回归。 | 13 tests OK，用时约 24.7s |
+| `python3 -m unittest tests.unit.test_publish_feedback_loop tests.unit.test_loop_kernel tests.unit.test_longform_recap_agent tests.unit.test_context_and_production_chain tests.unit.test_mkaos_fail_closed_policy` | Publish、Loop、Longform、生产链路与新增 fail-closed 策略回归。 | 32 tests OK，用时约 101.1s |

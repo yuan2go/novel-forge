@@ -86,7 +86,7 @@ def run_loop(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
     run_path = run["path"]
     _update_loop_run(storage, run_path, {"status": "running", "started_at": utc_now(), "trace_id": envelope["trace_id"]})
 
-    context_result = _resolve_context_bundle(storage, payload, loop_type=loop_type, target=target, project_id=project_id, workspace_path=workspace_path)
+    context_result = _resolve_context_bundle(storage, payload, loop_type=loop_type, target=target, project_id=project_id, workspace_path=workspace_path, envelope=envelope)
     if context_result.get("path"):
         _update_loop_run(storage, run_path, {"context_bundle_path": context_result["path"], "context_bundle_id": context_result.get("id", "")})
 
@@ -1152,6 +1152,7 @@ def _resolve_context_bundle(
     target: dict[str, Any],
     project_id: str,
     workspace_path: str,
+    envelope: dict[str, Any],
 ) -> dict[str, Any]:
     existing = str(payload.get("context_bundle_path") or "").strip()
     if existing:
@@ -1172,6 +1173,8 @@ def _resolve_context_bundle(
         current_goal=str(payload.get("current_goal") or loop_type),
         token_budget=int(_normalize_budget(payload.get("budget") if isinstance(payload.get("budget"), dict) else {}).get("max_tokens", 4000)),
         source_policy=_source_policy(payload),
+        environment=str(payload.get("environment") or envelope.get("environment") or ""),
+        os_envelope=envelope,
     )
     asset = result.get("asset", {}) if isinstance(result.get("asset", {}), dict) else {}
     return {"path": str(result.get("path") or ""), "id": str(asset.get("id") or ""), "asset": asset}

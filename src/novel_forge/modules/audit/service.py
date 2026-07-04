@@ -241,6 +241,8 @@ def create_publish_gate_report(
         current_goal="publish gate",
         token_budget=4000,
         source_policy=resolved_source_policy,
+        environment=environment,
+        os_envelope=envelope,
     )
     context_bundle = publish_context.get("asset", {}) if isinstance(publish_context.get("asset", {}), dict) else {}
     context_bundle_id = str(context_bundle.get("id", ""))

@@ -8,6 +8,12 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.mkaos import build_knowledge_pack
+from novel_forge.modules.mkaos.pack_policy import (
+    mkaos_pack_warning_fallback,
+    resolve_mkaos_pack_policy,
+    should_block_mkaos_pack_failure,
+    validate_mkaos_pack_result,
+)
 from novel_forge.modules.novel_kg import build_novel_kg_context
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import record_trace_span
@@ -469,23 +475,37 @@ def build_flow_context_bundle(
         )
         context_bundle = create_context_bundle(storage, context_plan["path"])
         bundle_file = resolve_path(storage.root, context_bundle["path"])
-    mkaos_pack = build_knowledge_pack(
-        storage,
-        {
-            "flow": _mkaos_flow_for_context(flow),
-            "task_id": f"{flow}-{project_id or 'local'}-{chapter_id or 'project'}",
-            "project_id": project_id or "local-system",
-            "workspace_path": workspace_path,
-            "genre": genre,
-            "platform": platform,
-            "chapter_id": chapter_id,
-            "current_goal": current_goal,
-            "knowledge_budget": {"max_core_knowledge": 3 if flow == "prose" else 8},
-            "source_policy": policy,
-            "environment": environment,
-            "os_envelope": os_envelope or {},
-        },
-    )
+    pack_policy = resolve_mkaos_pack_policy(flow, environment=environment)
+    try:
+        mkaos_pack = build_knowledge_pack(
+            storage,
+            {
+                "flow": _mkaos_flow_for_context(flow),
+                "task_id": f"{flow}-{project_id or 'local'}-{chapter_id or 'project'}",
+                "project_id": project_id or "local-system",
+                "workspace_path": workspace_path,
+                "genre": genre,
+                "platform": platform,
+                "chapter_id": chapter_id,
+                "current_goal": current_goal,
+                "knowledge_budget": {"max_core_knowledge": 3 if flow == "prose" else 8},
+                "source_policy": policy,
+                "environment": environment,
+                "os_envelope": os_envelope or {},
+            },
+        )
+    except Exception as exc:
+        if should_block_mkaos_pack_failure(pack_policy, exc):
+            raise ValueError(f"MKAOS pack build failed in production for {flow}: {exc}") from exc
+        mkaos_pack = mkaos_pack_warning_fallback(
+            storage,
+            flow=flow,
+            project_id=project_id or "local-system",
+            workspace_path=workspace_path,
+            target_path=target_file,
+            policy=pack_policy,
+            warning=f"MKAOS pack build warning fallback for {flow}: {exc}",
+        )
     bundle_data = storage.read_json(bundle_file)
     if not isinstance(bundle_data, dict):
         raise ValueError("context_bundle asset JSON must be an object")
@@ -493,6 +513,17 @@ def build_flow_context_bundle(
     metadata = bundle_data.get("metadata", {}) if isinstance(bundle_data.get("metadata", {}), dict) else {}
     mkaos_content = _mkaos_pack_content(mkaos_pack)
     _assert_flow_context_source_isolated(flow, content, mkaos_content)
+    mkaos_pack = validate_mkaos_pack_result(
+        storage,
+        flow=flow,
+        mkaos_pack=mkaos_pack,
+        project_id=project_id or "local-system",
+        workspace_path=workspace_path,
+        target_path=target_file,
+        environment=environment,
+        context_bundle_path=_display_path(storage.root, bundle_file),
+    )
+    mkaos_content = _mkaos_pack_content(mkaos_pack)
     context_id = str(bundle_data.get("id", ""))
     mkaos_asset = mkaos_pack.get("asset", {}) if isinstance(mkaos_pack.get("asset", {}), dict) else {}
     source_asset_ids = [str(item) for item in content.get("source_asset_ids", []) if str(item).strip()] if isinstance(content.get("source_asset_ids", []), list) else []
@@ -508,6 +539,9 @@ def build_flow_context_bundle(
             "mkaos_pack_id": str(mkaos_asset.get("id", "")),
             "mkaos_pack_path": str(mkaos_pack.get("path", "")),
             "mkaos_pack_warning": str(mkaos_pack.get("warning", "")),
+            "mkaos_pack_policy": mkaos_pack.get("mkaos_pack_policy") or (mkaos_asset.get("metadata", {}) if isinstance(mkaos_asset.get("metadata", {}), dict) else {}).get("mkaos_pack_policy", {}),
+            "mkaos_runtime_policy_warning_path": str(mkaos_pack.get("runtime_policy_warning_path", "")),
+            "mkaos_pack_trace_span_path": str(mkaos_pack.get("trace_span_path", "")),
             "mkaos_knowledge_pack": mkaos_content,
             "mkaos_knowledge_pack_id": str(mkaos_asset.get("id", "")),
             "mkaos_knowledge_pack_path": str(mkaos_pack.get("path", "")),
@@ -534,6 +568,9 @@ def build_flow_context_bundle(
             "mkaos_pack_id": str(mkaos_asset.get("id", "")),
             "mkaos_pack_path": str(mkaos_pack.get("path", "")),
             "mkaos_warning": str(mkaos_pack.get("warning", "")),
+            "mkaos_pack_policy": mkaos_pack.get("mkaos_pack_policy") or (mkaos_asset.get("metadata", {}) if isinstance(mkaos_asset.get("metadata", {}), dict) else {}).get("mkaos_pack_policy", {}),
+            "mkaos_runtime_policy_warning_path": str(mkaos_pack.get("runtime_policy_warning_path", "")),
+            "mkaos_pack_trace_span_path": str(mkaos_pack.get("trace_span_path", "")),
             "trace_id": str(metadata.get("trace_id") or context_id),
         }
     )

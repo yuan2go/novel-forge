@@ -100,6 +100,8 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
         current_goal="longform recap governance",
         token_budget=int(payload.get("token_budget", 4000) or 4000),
         source_policy={"source_chunk_raw_text_allowed": False, "runtime_assets_in_generation_rag_allowed": False},
+        environment=str(payload.get("environment") or ""),
+        os_envelope=payload.get("envelope") if isinstance(payload.get("envelope"), dict) else None,
     )
     loop = run_loop(
         storage,

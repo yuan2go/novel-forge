@@ -2187,6 +2187,8 @@ def _run_build_context_bundle(storage: LocalStorage, queue_item: dict[str, Any],
         top_k=int(evidence.get("top_k", 8) or 8),
         token_budget=int(budget.get("max_tokens", evidence.get("token_budget", 4000)) or 4000),
         source_policy=evidence.get("source_policy", {}) if isinstance(evidence.get("source_policy", {}), dict) else {},
+        environment=str(evidence.get("environment") or ""),
+        os_envelope=evidence.get("os_envelope") if isinstance(evidence.get("os_envelope"), dict) else evidence.get("envelope") if isinstance(evidence.get("envelope"), dict) else None,
     )
 
 

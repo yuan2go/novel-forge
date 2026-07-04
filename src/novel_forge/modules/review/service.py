@@ -13,8 +13,7 @@ from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, run_metadata
 from novel_forge.modules.audit import create_chapter_audit_report, create_originality_report
 from novel_forge.modules.context_builder import build_flow_context_bundle
-from novel_forge.modules.mkaos import record_pack_usage_for_artifact, validate_artifact as validate_mkaos_artifact
-from novel_forge.modules.os_envelope import is_production_environment
+from novel_forge.modules.mkaos import build_mkaos_flow_context_with_policy, mkaos_pack_metadata, record_pack_usage_for_artifact, validate_artifact as validate_mkaos_artifact
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, quality_dimensions_from_context
 from novel_forge.modules.review_issue import persist_review_issues_for_report
 from novel_forge.modules.standards import create_quality_score_report, evaluate_quality_standard
@@ -124,6 +123,8 @@ def review(
                 "mkaos_knowledge_pack": _pack_content(mkaos_pack),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
                 "mkaos_knowledge_pack_warning": mkaos_pack.get("warning", ""),
+                "mkaos_pack_policy": mkaos_pack_metadata(mkaos_pack)["mkaos_pack_policy"],
+                "mkaos_runtime_policy_warning_path": mkaos_pack_metadata(mkaos_pack)["mkaos_runtime_policy_warning_path"],
                 "mkaos_validation": mkaos_validation,
                 "agent_run_path": agent_run.path,
                 "model_output": result,
@@ -148,6 +149,7 @@ def review(
                 "mkaos_knowledge_pack_id": mkaos_pack.get("asset", {}).get("id", ""),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
                 "mkaos_warning": mkaos_pack.get("warning", ""),
+                **mkaos_pack_metadata(mkaos_pack),
                 "mkaos_validation_passed": mkaos_validation.get("passed", False),
                 **retrieval_metadata(retrieved_context),
                 "run_metadata": run_metadata(
@@ -551,29 +553,37 @@ def _build_mkaos_pack(
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    try:
-        flow_context = build_flow_context_bundle(
-            storage,
-            target_path,
-            flow=flow,
-            project_id=project_id or "local-system",
-            workspace_path=workspace_path,
-            genre=genre,
-            platform=platform,
-            chapter_id=chapter_id,
-            current_goal=current_goal,
-            query=current_goal,
-            token_budget=5000,
-            context_profile="review",
-            environment=environment,
-            os_envelope=os_envelope,
-        )
-        pack = flow_context["mkaos_pack"]
-        return {**pack, "context_bundle": flow_context["context_bundle"], "context_bundle_path": flow_context["path"], "context_plan": flow_context["context_plan"]}
-    except Exception as exc:
-        if is_production_environment(environment):
-            raise ValueError(f"MKAOS pack build failed in production for {flow}: {exc}") from exc
-        return {"path": "", "asset": {"content": {}}, "warning": str(exc)}
+    return build_mkaos_flow_context_with_policy(
+        storage,
+        flow=flow,
+        project_id=project_id or "local-system",
+        workspace_path=workspace_path,
+        target_path=target_path,
+        environment=environment,
+        builder=lambda: _pack_from_flow_context(
+            build_flow_context_bundle(
+                storage,
+                target_path,
+                flow=flow,
+                project_id=project_id or "local-system",
+                workspace_path=workspace_path,
+                genre=genre,
+                platform=platform,
+                chapter_id=chapter_id,
+                current_goal=current_goal,
+                query=current_goal,
+                token_budget=5000,
+                context_profile="review",
+                environment=environment,
+                os_envelope=os_envelope,
+            )
+        ),
+    )
+
+
+def _pack_from_flow_context(flow_context: dict[str, Any]) -> dict[str, Any]:
+    pack = flow_context["mkaos_pack"]
+    return {**pack, "context_bundle": flow_context["context_bundle"], "context_bundle_path": flow_context["path"], "context_plan": flow_context["context_plan"]}
 
 
 def _pack_content(pack: dict[str, Any]) -> dict[str, Any]:
