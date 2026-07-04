@@ -1,0 +1,106 @@
+# MKAOS P1 Progress
+
+## Current Baseline
+
+MKAOS has been upgraded from a P0 knowledge governance base into a first-slice Knowledge Asset OS kernel for Novel OS. The implementation remains local-first and uses LocalStorage assets, OS Envelope enforcement, Context Builder pack policy, ReviewIssue integration, and web/admin.
+
+## Completed In This Pass
+
+| Phase | Status | Implementation |
+| --- | --- | --- |
+| 1. Fail-closed policy | Complete | Existing `pack_policy.py` remains the shared fail-closed helper; regression coverage was re-run. |
+| 2. Agent Context Contract | Complete baseline | Existing Context Builder/AgentRun contract tests remain passing. |
+| 3. Selector v2 | Complete first slice | Task goal, discipline, platform, genre, quality dimensions, risk, status, priority, weight, budget, and feedback delta now contribute to selector decisions. |
+| 4. Quality Score subdimensions | Complete first slice | Knowledge cards store quality dimensions and overall quality. Recalculation writes mutation audit. |
+| 5. KnowledgeRelation / Graph v1 | Complete first slice | `knowledge_relation` assets support relation edges in graph snapshots. |
+| 6. Cross-discipline fusion | Complete first slice | Fusion paths produce abstract story applications without source text. |
+| 7. Knowledge conflict detector | Complete graph first slice | Source policy, risk, status, relation contradiction/forbids/requires, platform, task, canon-result, and opt-in model-judge result conflicts are checked. |
+| 8. Feedback Learning v1 | Complete first slice | Existing learning snapshot can recommend/apply weight updates; weight updates now write mutation audit. |
+| 9. Reader feedback attribution | Complete first slice | Deterministic feedback classification maps reader signals to knowledge candidates. |
+| 10. MKAOS issue -> ReviewIssue | Complete first slice | MKAOS issues can persist as ReviewIssue and become RevisionTask candidates. |
+| 11. Source Evidence Span | Complete first slice | Evidence spans capture page/section/paragraph/sentence/char metadata and hash only. |
+| 12. Lineage Audit | Complete first slice | Lineage report traces source/knowledge/binding/pack/context/usage/issue/feedback/mutation. |
+| 13. Versioning | Complete first slice | Knowledge versions support list, diff, and rollback with audit. |
+| 14. Mutation Audit | Complete first slice | Create/update/weight/status/rollback actions write sanitized audit assets. |
+| 15. Pack Debugger | Complete first slice | Debug reports explain selected/rejected items, budget, score, quality, feedback, and risks. |
+| 16. Import Pipeline | Complete first slice | Source-kind policies, dry run, duplicate count, import report. |
+| 17. Extraction Agent | Complete first slice | Deterministic candidate generation and approval flow. Model-assisted extraction is explicitly opt-in and mock/provider candidates are source-expression checked. |
+| 18. Application Template | Complete first slice | Knowledge can be converted into template cards with anti-copy rules. |
+| 19. Anti-Encyclopedia | Complete first slice | Detector expanded with regression examples and rewrite suggestions. |
+| 20. Knowledge-to-Revision Task | Complete first slice | MKAOS ReviewIssue can produce blocking RevisionTask candidates. |
+| 21. Platform weights | Complete first slice | Selector reports platform weight source and uses platform-specific weights. |
+| 22. Genre weights | Complete first slice | Selector uses genre-specific weights with global fallback. |
+| 23. Status lifecycle | Complete first slice | deprecated/quarantined/do_not_select are excluded; needs_review is excluded in production. |
+| 24. Impact analysis | Complete first slice | Knowledge changes can report affected packs, contexts, issues, releases, rebuilds, and rechecks. |
+| 25. API envelope/errors | Complete compatibility layer | MKAOS POST/PATCH mutation responses now return the standard `success/request_id/trace_id/envelope_id/data/error/warnings` shape while retaining legacy top-level fields for old clients. Product middleware blocks production mutation without envelope. |
+| 26. Source leakage regression | Complete first slice | Tests prove source evidence does not enter pack/preview/graph payloads as source text. |
+| 27. Regression Case Center | Complete first slice | Regression cases and suite runner persist reports. |
+| 28. Acceptance Suite | Complete first slice | `run_mkaos_acceptance_suite` covers import, span, candidate, knowledge, pack, issue, revision, feedback, learning, lineage, debug, regression. |
+| 29. web/admin UI | Complete first slice | MKAOS console now includes source evidence, quality dashboard, pack debugger, lightweight graph canvas, knowledge evolution, lineage, mutation, regression, and acceptance panels. |
+| 30. Knowledge evolution loop | Complete first slice | `run_knowledge_evolution_cycle` orchestrates graph snapshot, effect learning, review-rule candidates, hot-template backflow, reader-feedback aggregation, and low-effect elimination recommendations. |
+
+## Key Files
+
+- `src/novel_forge/modules/mkaos/service.py`
+- `src/novel_forge/modules/mkaos/__init__.py`
+- `src/novel_forge/api/routers/mkaos.py`
+- `tests/unit/test_mkaos_*`
+- `tests/acceptance/test_mkaos_knowledge_asset_os.py`
+- `web/admin/app/features/mkaos/api.ts`
+- `web/admin/app/features/mkaos/MkaosConsolePage.tsx`
+
+## Verification
+
+Passed:
+
+```bash
+PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_*.py'
+PYTHONPATH=src python3 -m unittest tests.unit.test_mkaos tests.unit.test_mkaos_fail_closed_policy tests.unit.test_mkaos_agent_context_contract tests.unit.test_agent_operation_mkaos_coverage tests.unit.test_mkaos_selector_v2 tests.unit.test_mkaos_quality_score tests.unit.test_mkaos_knowledge_graph_v1 tests.unit.test_mkaos_conflict_detector tests.unit.test_mkaos_feedback_learning_v1 tests.unit.test_mkaos_source_leakage_regression tests.acceptance.test_mkaos_knowledge_asset_os
+PYTHONPATH=src python3 -m unittest tests.unit.test_mkaos_selector_v2 tests.unit.test_mkaos_quality_score tests.unit.test_mkaos_knowledge_graph_v1 tests.unit.test_mkaos_cross_discipline_fusion tests.unit.test_mkaos_conflict_detector tests.unit.test_mkaos_feedback_learning_v1 tests.unit.test_mkaos_reader_feedback_attribution tests.unit.test_mkaos_review_issue_integration tests.unit.test_mkaos_evidence_span tests.unit.test_mkaos_lineage_audit tests.unit.test_mkaos_versioning tests.unit.test_mkaos_mutation_audit tests.unit.test_mkaos_pack_debugger tests.unit.test_mkaos_import_pipeline tests.unit.test_mkaos_extraction_agent tests.unit.test_mkaos_application_template tests.unit.test_mkaos_anti_encyclopedia tests.unit.test_mkaos_revision_task_integration tests.unit.test_mkaos_platform_specific_weight tests.unit.test_mkaos_genre_specific_weight tests.unit.test_mkaos_status_lifecycle tests.unit.test_mkaos_pack_impact_analysis tests.unit.test_mkaos_api_envelope tests.unit.test_mkaos_source_leakage_regression tests.unit.test_mkaos_regression_center tests.acceptance.test_mkaos_knowledge_asset_os
+PYTHONPATH=src python3 -m unittest tests.integration.test_pipeline
+npm --prefix web/admin test
+npm --prefix web/admin run build
+```
+
+Latest results:
+
+- Previous Python discover: 399 tests passed, 2 skipped, 1586.770s.
+- Current MKAOS focused regression: 62 tests passed, 100.148s.
+- Current targeted evolution/envelope/provider/conflict tests: 14 tests passed, 2.115s.
+- Current pipeline integration: passed, 600.329s.
+- Current web/admin test: 9 passed, 1 optional Playwright smoke skipped.
+- Current web/admin lint: passed.
+- Current web/admin build: passed.
+
+## Idempotency Note
+
+Selector decisions and knowledge pack mutation audits now use stable ids for repeatable pack builds. This preserves sample pipeline second-run idempotency while still keeping auditable selector/debug output.
+
+## Latest Risk Closure
+
+- P0 `/api/mkaos` mutation compatibility remains, but responses now expose the standard envelope shape and legacy fields together.
+- Conflict detector is still deterministic by default, but graph reasoning now handles `contradicts`, `forbids`, and missing `requires`; model judge input is accepted only through explicit opt-in.
+- Extraction Agent remains local-first by default. Model-assisted extraction records opt-in state and rejects or sanitizes source-like provider candidates.
+- web/admin graph remains dependency-free, but the console now includes a lightweight SVG graph canvas instead of summary-only tables.
+- Knowledge asset evolution now exists as an auditable orchestration cycle instead of disconnected learning primitives.
+
+## Remaining Risks
+
+- Deep semantic conflict detection still depends on future model-judge or richer graph-inference adapters; the current implementation consumes opt-in judge results but does not call a real provider by default.
+- Real provider extraction remains opt-in and unverified against external model quality; default tests intentionally stay deterministic/local.
+- Knowledge evolution defaults to advisory mode. Automatic rule activation, template activation, and low-effect status changes require explicit apply flags.
+- UI graph visualization is intentionally lightweight; large graph exploration, filtering, clustering, and path animation remain P2.
+- Full “越写越强” proof still needs longer multi-chapter production telemetry and real reader feedback volume beyond synthetic/local fixtures.
+
+## Current Distance To A Full Knowledge Asset OS
+
+MKAOS now satisfies the local-first kernel requirements: source evidence isolation, abstract knowledge assets, graph relations, selector/pack explainability, usage and feedback learning, ReviewIssue integration, mutation/version/lineage audit, regression cases, and an operations console.
+
+The remaining gap is no longer “knowledge base vs OS” at the P1 level; it is operational maturity:
+
+1. Rich graph inference across Canon/Character/Arc/Foreshadowing/WorldRule and MKAOS relations.
+2. Real model-judge adapters under Runtime Policy and provider hard-stop.
+3. Larger feedback corpus and platform-specific statistically meaningful learning.
+4. Human approval workflow for rule/template promotion and knowledge quarantine.
+5. Large-scale UI graph workbench with advanced filtering and diff.
+6. Long-horizon acceptance showing multiple chapters improving selection quality over time.

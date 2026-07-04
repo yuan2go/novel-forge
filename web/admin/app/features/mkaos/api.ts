@@ -1,5 +1,12 @@
 import { fetchJson, postJson } from "../../shared/api";
 
+function unwrapMkaos<T = any>(payload: T): T {
+  if (payload && typeof payload === "object" && (payload as any).success === true && "data" in (payload as any)) {
+    return (payload as any).data as T;
+  }
+  return payload;
+}
+
 export type MkaosRow = {
   path: string;
   id: string;
@@ -37,7 +44,7 @@ export function importMkaosSource(title: string, text: string) {
       copyright_boundary: "operator supplied MKAOS source for abstract knowledge extraction",
       allow_downstream_generation: false
     }
-  });
+  }).then(unwrapMkaos);
 }
 
 export function createKnowledgeCard(body: {
@@ -54,7 +61,7 @@ export function createKnowledgeCard(body: {
     source_chunk_ids: body.sourceChunkIds,
     confidence: 0.75,
     source_reliability: 0.7
-  });
+  }).then(unwrapMkaos);
 }
 
 export function patchKnowledge(id: string, body: Record<string, unknown>) {
@@ -62,7 +69,7 @@ export function patchKnowledge(id: string, body: Record<string, unknown>) {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
-  });
+  }).then(unwrapMkaos);
 }
 
 export function createUsageBinding(knowledgeId: string, body: {
@@ -79,7 +86,7 @@ export function createUsageBinding(knowledgeId: string, body: {
     output_form: body.outputForm,
     constraint_text: body.constraintText,
     priority: body.flow === "prose" ? 30 : 10
-  });
+  }).then(unwrapMkaos);
 }
 
 export function patchUsageBinding(id: string, body: Record<string, unknown>) {
@@ -87,7 +94,7 @@ export function patchUsageBinding(id: string, body: Record<string, unknown>) {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
-  });
+  }).then(unwrapMkaos);
 }
 
 export function buildKnowledgePack(flow: string, goal: string) {
@@ -97,13 +104,48 @@ export function buildKnowledgePack(flow: string, goal: string) {
     genre: "历史",
     platform: "local",
     chapter_id: flow === "outline" ? "" : "1"
-  });
+  }).then(unwrapMkaos);
 }
 
 export function loadPackPreview(packId: string) {
   return fetchJson<{ preview: string; source_isolation: Record<string, unknown> }>(`/product/mkaos/packs/${encodeURIComponent(packId)}/prompt-preview`);
 }
 
+export function loadPackDebug(packId: string) {
+  return fetchJson<Record<string, any>>(`/product/mkaos/packs/${encodeURIComponent(packId)}/debug`);
+}
+
+export function buildKnowledgeGraph() {
+  return postJson("/product/mkaos/knowledge-graph/build", { persist: true }).then(unwrapMkaos);
+}
+
+export function queryLineage(knowledgeId: string) {
+  return postJson("/product/mkaos/lineage/query", { knowledge_id: knowledgeId }).then(unwrapMkaos);
+}
+
+export function loadMutations(assetId?: string) {
+  const query = assetId ? `?asset_id=${encodeURIComponent(assetId)}` : "";
+  return fetchJson<MkaosRow[]>(`/product/mkaos/mutations${query}`);
+}
+
+export function runRegressionSuite() {
+  return postJson("/product/mkaos/regression/run", { create_default_fixtures: true }).then(unwrapMkaos);
+}
+
 export function runMinimalAcceptance() {
-  return postJson("/product/mkaos/acceptance/minimal", {});
+  return postJson("/product/mkaos/acceptance/minimal", {}).then(unwrapMkaos);
+}
+
+export function runKnowledgeAssetOsAcceptance() {
+  return postJson("/product/mkaos/acceptance/knowledge-asset-os", {}).then(unwrapMkaos);
+}
+
+export function runKnowledgeEvolution() {
+  return postJson("/product/mkaos/evolution/run", {
+    persist_graph: true,
+    apply_updates: false,
+    apply_rule_updates: false,
+    apply_template_updates: false,
+    apply_elimination: false
+  }).then(unwrapMkaos);
 }

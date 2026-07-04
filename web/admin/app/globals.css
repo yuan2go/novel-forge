@@ -687,6 +687,15 @@ th {
   white-space: pre-wrap;
 }
 
+.mkaosGraphCanvas {
+  width: 100%;
+  min-height: 220px;
+  margin-top: 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
 .buttonRow {
   display: flex;
   flex-wrap: wrap;

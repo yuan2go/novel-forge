@@ -197,6 +197,21 @@ describe("Novel Forge admin feature architecture", () => {
     assert.match(feedbackApi, /\/product\/feedback\/publish-loop/);
     assert.match(feedbackApi, /\/product\/feedback\/reader-simulation/);
     assert.match(feedbackApi, /\/product\/feedback\/real-backflow/);
+
+    const mkaosApi = read("app/features/mkaos/api.ts");
+    for (const endpoint of ["/product/mkaos/packs", "/product/mkaos/knowledge-graph/build", "/product/mkaos/evolution/run", "/product/mkaos/lineage/query", "/product/mkaos/mutations", "/product/mkaos/regression/run", "/product/mkaos/acceptance/knowledge-asset-os"]) {
+      assert.match(mkaosApi, new RegExp(endpoint.replaceAll("/", "\\/")));
+    }
+    assert.match(mkaosApi, /unwrapMkaos/);
+  });
+
+  it("upgrades the MKAOS console into a knowledge asset operations workbench", () => {
+    const mkaosConsole = read("app/features/mkaos/MkaosConsolePage.tsx");
+    for (const token of ["Source Evidence 原文层默认折叠", "Quality Dashboard", "Pack Debugger", "Knowledge Graph", "Knowledge Evolution", "Lineage Audit", "Regression Cases", "MKAOS Acceptance", "operator-only evidence", "mkaosGraphCanvas"]) {
+      assert.match(mkaosConsole, new RegExp(token));
+    }
+    const globals = read("app/globals.css");
+    assert.match(globals, /\.mkaosGraphCanvas/);
   });
 
   it("wires industrial deep workbench panels for analysis, context, editor, production, evaluation, and control", () => {

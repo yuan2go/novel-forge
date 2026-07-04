@@ -1,19 +1,26 @@
 "use client";
 
-import { BookOpenCheck, Database, FileText, GitPullRequest, ListChecks, ShieldAlert, ShieldCheck, Workflow } from "lucide-react";
+import { BookOpenCheck, Bug, Database, FileText, GitBranch, GitPullRequest, ListChecks, ShieldAlert, ShieldCheck, Sparkles, Workflow } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import {
   buildKnowledgePack,
+  buildKnowledgeGraph,
   createKnowledgeCard,
   createUsageBinding,
   importMkaosSource,
   loadMkaosOverview,
+  loadMutations,
+  loadPackDebug,
   loadPackPreview,
   patchKnowledge,
   patchUsageBinding,
+  queryLineage,
+  runKnowledgeEvolution,
+  runKnowledgeAssetOsAcceptance,
   runMinimalAcceptance,
+  runRegressionSuite,
   type MkaosOverview,
   type MkaosRow
 } from "./api";
@@ -34,7 +41,15 @@ export function MkaosConsolePage() {
   const [packFlow, setPackFlow] = useState("outline");
   const [packGoal, setPackGoal] = useState("构造 MKAOS P0 知识调用闭环");
   const [packPreview, setPackPreview] = useState("");
+  const [packDebug, setPackDebug] = useState<Record<string, any> | null>(null);
+  const [graphSummary, setGraphSummary] = useState<Record<string, any> | null>(null);
+  const [graphData, setGraphData] = useState<Record<string, any> | null>(null);
+  const [lineage, setLineage] = useState<Record<string, any> | null>(null);
+  const [mutations, setMutations] = useState<MkaosRow[]>([]);
+  const [evolution, setEvolution] = useState<Record<string, any> | null>(null);
+  const [regression, setRegression] = useState<Record<string, any> | null>(null);
   const [acceptance, setAcceptance] = useState<Record<string, boolean> | null>(null);
+  const [p1Acceptance, setP1Acceptance] = useState<Record<string, any> | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -79,6 +94,20 @@ export function MkaosConsolePage() {
   const ruleRows = overview?.rules ?? [];
   const usageRows = overview?.usage_events ?? [];
   const sourceRows = overview?.sources ?? [];
+  const qualityDashboard = useMemo(() => {
+    const statusCounts = knowledgeRows.reduce<Record<string, number>>((acc, row) => {
+      const status = String(row.status || row.content.status || "verified");
+      acc[status] = (acc[status] ?? 0) + 1;
+      return acc;
+    }, {});
+    const qualityValues = knowledgeRows
+      .map((row) => Number(row.content.overall_quality_score ?? row.content.quality_score ?? 0))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    const averageQuality = qualityValues.length ? qualityValues.reduce((sum, value) => sum + value, 0) / qualityValues.length : 0;
+    const highRisk = knowledgeRows.filter((row) => ["high", "critical"].includes(String(row.risk_level || row.content.risk_level || ""))).length;
+    const lowEffect = knowledgeRows.filter((row) => Number(row.content.overall_quality_score ?? row.content.quality_score ?? 1) < 0.5).length;
+    return { statusCounts, averageQuality, highRisk, lowEffect };
+  }, [knowledgeRows]);
 
   return (
     <FeatureShell title="MKAOS 知识资产操作系统" subtitle="来源、知识卡、流程绑定、Knowledge Pack、审稿规则、使用留痕和反馈回写。">
@@ -122,6 +151,10 @@ export function MkaosConsolePage() {
               <span className="pathText" key={row.path}>{row.path}</span>
             ])}
           />
+          <details className="jsonPreview">
+            <summary>Source Evidence 原文层默认折叠</summary>
+            <p className="mutedText">operator-only evidence 仅用于溯源审计；Knowledge Pack、Context Bundle、正文 prompt 默认只使用 source ids、evidence hash 和抽象知识。</p>
+          </details>
         </div>
 
         <div className="panel">
@@ -212,7 +245,9 @@ export function MkaosConsolePage() {
               onClick={() => runAction(async () => {
                 const pack = await buildKnowledgePack(packFlow, packGoal);
                 const preview = await loadPackPreview(String((pack as any).asset?.id ?? ""));
+                const debug = await loadPackDebug(String((pack as any).asset?.id ?? ""));
                 setPackPreview(preview.preview);
+                setPackDebug(debug);
                 return pack;
               }, "Knowledge Pack 已构造")}
             >
@@ -220,6 +255,92 @@ export function MkaosConsolePage() {
             </button>
           </div>
           <pre className="jsonPreview">{packPreview || "No pack preview"}</pre>
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Quality Dashboard" icon={<Sparkles size={18} />} />
+          <section className="summaryBand">
+            <Metric label="平均质量" value={qualityDashboard.averageQuality ? qualityDashboard.averageQuality.toFixed(2) : "0.00"} />
+            <Metric label="高风险知识" value={String(qualityDashboard.highRisk)} />
+            <Metric label="低效果知识" value={String(qualityDashboard.lowEffect)} />
+            <Metric label="Needs Review" value={String(qualityDashboard.statusCounts.needs_review ?? 0)} />
+          </section>
+          <DataTable
+            emptyText="暂无质量数据"
+            columns={["状态", "数量"]}
+            rows={Object.entries(qualityDashboard.statusCounts).map(([status, count]) => [status, String(count)])}
+          />
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="Pack Debugger" icon={<Bug size={18} />} />
+          <DataTable
+            emptyText="先构造一个 Knowledge Pack"
+            columns={["选中", "拒绝", "预算", "阻断风险"]}
+            rows={packDebug ? [[
+              String(Array.isArray(packDebug.selected_items) ? packDebug.selected_items.length : 0),
+              String(Array.isArray(packDebug.rejected_items) ? packDebug.rejected_items.length : 0),
+              `${packDebug.budget_usage?.estimated_tokens ?? 0} tokens`,
+              String(Array.isArray(packDebug.blocking_risks) ? packDebug.blocking_risks.length : 0)
+            ]] : []}
+          />
+          <pre className="jsonPreview">{packDebug ? JSON.stringify({
+            selected: packDebug.selected_items?.map((item: any) => item.concept_name),
+            rejected: packDebug.rejected_items?.map((item: any) => ({ knowledge_id: item.knowledge_id, reason: item.reason })),
+            source_isolation: packDebug.source_isolation_result
+          }, null, 2) : "No debug report"}</pre>
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Knowledge Graph" icon={<GitBranch size={18} />} />
+          <button className="primaryButton" disabled={busy} onClick={() => runAction(async () => {
+            const graph = await buildKnowledgeGraph();
+            setGraphData(graph as Record<string, any>);
+            setGraphSummary((graph as any).summary ?? null);
+            return graph;
+          }, "Knowledge Graph 已刷新")}>刷新图谱</button>
+          <DataTable
+            emptyText="暂无图谱摘要"
+            columns={["Nodes", "Edges", "Knowledge", "Flows"]}
+            rows={graphSummary ? [[
+              String(graphSummary.node_count ?? 0),
+              String(graphSummary.edge_count ?? 0),
+              String(graphSummary.coverage?.knowledge_card ?? 0),
+              String(graphSummary.coverage?.flow ?? 0)
+            ]] : []}
+          />
+          <GraphPreview graph={graphData} />
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="Lineage Audit" icon={<ListChecks size={18} />} />
+          <button className="primaryButton" disabled={busy || !selectedKnowledge?.id} onClick={() => runAction(async () => {
+            const report = await queryLineage(selectedKnowledge?.id ?? "");
+            setLineage(report as Record<string, any>);
+            const rows = await loadMutations(selectedKnowledge?.id ?? "");
+            setMutations(rows);
+            return report;
+          }, "Lineage Audit 已生成")}>查看当前知识链路</button>
+          <DataTable
+            emptyText="暂无 lineage report"
+            columns={["Knowledge", "Packs", "Issues", "Feedback", "Mutations"]}
+            rows={lineage ? [[
+              String(lineage.knowledge_ids?.length ?? 0),
+              String(lineage.knowledge_packs?.length ?? 0),
+              String(lineage.review_issues?.length ?? 0),
+              String(lineage.feedback_attributions?.length ?? 0),
+              String(mutations.length)
+            ]] : []}
+          />
+          <pre className="jsonPreview">{lineage ? JSON.stringify({
+            knowledge: lineage.knowledge_ids,
+            consistency: lineage.consistency_checks,
+            references: lineage.references?.slice?.(0, 8) ?? []
+          }, null, 2) : "No lineage selected"}</pre>
         </div>
       </section>
 
@@ -256,6 +377,36 @@ export function MkaosConsolePage() {
 
       <section className="workspaceGrid">
         <div className="panel">
+          <PanelHeader title="Knowledge Evolution" icon={<Sparkles size={18} />} />
+          <button
+            className="primaryButton"
+            disabled={busy}
+            onClick={() => runAction(async () => {
+              const result = await runKnowledgeEvolution();
+              setEvolution(result as Record<string, any>);
+              return result;
+            }, "知识资产进化循环已生成")}
+          >
+            运行进化循环
+          </button>
+          <section className="summaryBand">
+            {evolution ? (
+              <>
+                <Metric label="学习建议" value={String(evolution.learning_snapshot?.recommendation_count ?? 0)} />
+                <Metric label="规则候选" value={String(evolution.review_rule_evolution?.candidates?.length ?? 0)} />
+                <Metric label="模板候选" value={String(evolution.hot_template_backflow?.candidates?.length ?? 0)} />
+                <Metric label="淘汰建议" value={String(evolution.low_effect_elimination?.recommendations?.length ?? 0)} />
+              </>
+            ) : <Metric label="状态" value="未运行" />}
+          </section>
+          <pre className="jsonPreview">{evolution ? JSON.stringify({
+            graph: evolution.graph_snapshot?.summary,
+            feedback: evolution.reader_feedback_backflow,
+            governance: evolution.governance_policy
+          }, null, 2) : "No evolution report"}</pre>
+        </div>
+
+        <div className="panel">
           <PanelHeader title="知识风险列表" icon={<ShieldAlert size={18} />} />
           <DataTable
             emptyText="暂无风险知识"
@@ -270,7 +421,31 @@ export function MkaosConsolePage() {
         </div>
 
         <div className="panel">
-          <PanelHeader title="P0 验收样例" icon={<BookOpenCheck size={18} />} />
+          <PanelHeader title="Regression Cases" icon={<BookOpenCheck size={18} />} />
+          <button
+            className="primaryButton"
+            disabled={busy}
+            onClick={() => runAction(async () => {
+              const result = await runRegressionSuite();
+              setRegression(result as Record<string, any>);
+              return result;
+            }, "MKAOS regression suite 已运行")}
+          >
+            运行回归套件
+          </button>
+          <div className="summaryBand">
+            {regression ? (
+              <>
+                <Metric label="Cases" value={String(regression.summary?.case_count ?? 0)} />
+                <Metric label="Passed" value={String(regression.summary?.passed ?? 0)} />
+                <Metric label="Failed" value={String(regression.summary?.failed ?? 0)} />
+              </>
+            ) : <Metric label="状态" value="未运行" />}
+          </div>
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="MKAOS Acceptance" icon={<BookOpenCheck size={18} />} />
           <button
             className="primaryButton"
             disabled={busy}
@@ -287,8 +462,62 @@ export function MkaosConsolePage() {
               <Metric label={key} value={String(value)} key={key} />
             )) : <Metric label="状态" value="未运行" />}
           </div>
+          <button
+            className="secondaryButton"
+            disabled={busy}
+            onClick={() => runAction(async () => {
+              const result = await runKnowledgeAssetOsAcceptance();
+              setP1Acceptance(result as Record<string, any>);
+              return result;
+            }, "P1 Knowledge Asset OS 验收已运行")}
+          >
+            运行 P1 验收
+          </button>
+          {p1Acceptance ? (
+            <div className="summaryBand">
+              <Metric label="P1" value={String(Boolean(p1Acceptance.passed))} />
+              <Metric label="Issues" value={String(p1Acceptance.validation_issue_count ?? 0)} />
+              <Metric label="Regressions" value={String(p1Acceptance.regression_summary?.failed ?? 0)} />
+            </div>
+          ) : null}
         </div>
       </section>
     </FeatureShell>
+  );
+}
+
+function GraphPreview({ graph }: { graph: Record<string, any> | null }) {
+  const nodes = Array.isArray(graph?.nodes) ? graph?.nodes.slice(0, 10) : [];
+  const edges = Array.isArray(graph?.edges) ? graph?.edges.slice(0, 16) : [];
+  if (!nodes.length) {
+    return <p className="mutedText">暂无图谱路径；刷新后会显示知识、学科、流程、规则和模板的 first-slice 可视化。</p>;
+  }
+  const positions = new Map<string, { x: number; y: number }>();
+  nodes.forEach((node: any, index: number) => {
+    const angle = (Math.PI * 2 * index) / Math.max(1, nodes.length);
+    positions.set(String(node.id), { x: 160 + Math.cos(angle) * 118, y: 120 + Math.sin(angle) * 78 });
+  });
+  return (
+    <svg className="mkaosGraphCanvas" viewBox="0 0 320 240" role="img" aria-label="MKAOS knowledge graph preview">
+      {edges.map((edge: any) => {
+        const source = positions.get(String(edge.source));
+        const target = positions.get(String(edge.target));
+        if (!source || !target) return null;
+        return <line key={edge.id || `${edge.source}-${edge.target}`} x1={source.x} y1={source.y} x2={target.x} y2={target.y} stroke="var(--line)" strokeWidth="1.2" />;
+      })}
+      {nodes.map((node: any) => {
+        const position = positions.get(String(node.id)) ?? { x: 0, y: 0 };
+        const type = String(node.node_type || "");
+        const fill = type === "knowledge_card" ? "var(--accent)" : type === "discipline" ? "var(--ok-text)" : type === "flow" ? "var(--warn-text)" : "var(--muted)";
+        return (
+          <g key={node.id}>
+            <circle cx={position.x} cy={position.y} r={type === "knowledge_card" ? 10 : 7} fill={fill} />
+            <text x={position.x} y={position.y + 22} textAnchor="middle" fontSize="9" fill="var(--text-muted)">
+              {String(node.label || node.id).slice(0, 12)}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
