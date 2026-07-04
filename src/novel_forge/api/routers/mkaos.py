@@ -506,6 +506,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/mkaos/extraction/provider-quality")
+    @router.post("/api/mkaos/extraction/provider-quality")
+    def extraction_provider_quality(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.validate_extraction_provider_quality(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/extraction/candidates/{candidate_id}/approve")
     @router.post("/api/mkaos/extraction/candidates/{candidate_id}/approve")
     def approve_candidate(candidate_id: str, payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:

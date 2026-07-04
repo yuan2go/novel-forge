@@ -1503,9 +1503,20 @@ def run_knowledge_evolution_cycle(storage: LocalStorage, payload: dict[str, Any]
     )
     learning = _response_data(learning_response)
     attributions = _list_assets(storage, "feedback", "knowledge_feedback_attribution", project_id=project_id if project_id != "local-system" else None, limit=1000)
-    rule_evolution = _evolve_review_rules_from_learning(storage, project_id, flow, learning, attributions, payload)
-    template_backflow = _backflow_templates_from_learning(storage, project_id, flow, learning, payload)
-    elimination = _low_effect_knowledge_elimination(storage, project_id, flow, learning, payload)
+    production = _mkaos_payload_is_production(payload)
+    evolution_mode = str(payload.get("evolution_mode") or ("production_guarded" if production and payload.get("auto_apply_policy") else "advisory"))
+    auto_apply_safe_actions = evolution_mode in {"guarded_auto", "production_guarded"} or bool(payload.get("auto_apply_safe_actions", False))
+    governance_payload = {
+        **payload,
+        "evolution_mode": evolution_mode,
+        "auto_apply_safe_actions": auto_apply_safe_actions,
+        "auto_rule_activation_threshold": _float(payload.get("auto_rule_activation_threshold"), 0.65),
+        "auto_template_activation_threshold": _float(payload.get("auto_template_activation_threshold"), 0.7),
+        "auto_elimination_threshold": int(payload.get("auto_elimination_threshold", 3) or 3),
+    }
+    rule_evolution = _evolve_review_rules_from_learning(storage, project_id, flow, learning, attributions, governance_payload)
+    template_backflow = _backflow_templates_from_learning(storage, project_id, flow, learning, governance_payload)
+    elimination = _low_effect_knowledge_elimination(storage, project_id, flow, learning, governance_payload)
     content = {
         "evolution_report_id": _stable_asset_id(
             "knowledge_evolution_report",
@@ -1542,11 +1553,17 @@ def run_knowledge_evolution_cycle(storage: LocalStorage, payload: dict[str, Any]
         "low_effect_elimination": elimination,
         "governance_policy": {
             "default_mode": "advisory",
+            "evolution_mode": evolution_mode,
+            "auto_apply_safe_actions": auto_apply_safe_actions,
+            "auto_rule_activation_threshold": governance_payload["auto_rule_activation_threshold"],
+            "auto_template_activation_threshold": governance_payload["auto_template_activation_threshold"],
+            "auto_elimination_threshold": governance_payload["auto_elimination_threshold"],
             "apply_weight_updates": bool(payload.get("apply_updates", False)),
             "apply_rule_updates": bool(payload.get("apply_rule_updates", False)),
             "apply_template_updates": bool(payload.get("apply_template_updates", False)),
             "apply_elimination": bool(payload.get("apply_elimination", False)),
-            "production_fail_closed": _mkaos_payload_is_production(payload),
+            "production_fail_closed": production,
+            "automatic_destructive_actions_require_guarded_policy": True,
         },
         "source_isolation": {"raw_text_included": False, "clean_text_included": False, "evidence_refs_only": True},
         "created_at": utc_now(),
@@ -1953,6 +1970,10 @@ def detect_knowledge_conflicts(storage: LocalStorage, payload: dict[str, Any]) -
             conflict["graph_evidence"] = {"relation_asset_id": relation.get("id", ""), "relation_type": relation_type, "confidence": content.get("confidence", 0.7)}
             conflicts.append(conflict)
             reasoning_trace.append({"reasoning": "graph_relation", "relation_type": relation_type, "source": left, "target": right, "result": "missing_required_knowledge"})
+    inferred_conflicts = _infer_graph_conflicts(graph_relations, by_id, production=production)
+    conflicts.extend(inferred_conflicts)
+    if inferred_conflicts:
+        reasoning_trace.append({"reasoning": "graph_inference", "conflict_count": len(inferred_conflicts), "result": "inferred_conflicts"})
     platform = str(payload.get("platform") or "")
     task_goal = str(payload.get("task_goal") or "")
     for item in items:
@@ -1961,6 +1982,10 @@ def detect_knowledge_conflicts(storage: LocalStorage, payload: dict[str, Any]) -
             conflicts.append(_knowledge_conflict("knowledge_vs_platform", "medium", False, [str(item.get("knowledge_id") or "")], "Publishing platform conflicts with high-density fast-payoff template.", "Lower commercial rhythm density for publishing flow."))
         if task_goal and "悬疑" in task_goal and "百科" in text:
             conflicts.append(_knowledge_conflict("knowledge_vs_task_goal", "medium", False, [str(item.get("knowledge_id") or "")], "Task goal needs suspense but knowledge is explanatory.", "Convert to clue, contradiction, or delayed evidence."))
+    semantic_conflicts = _semantic_pair_conflicts(items, production=production)
+    conflicts.extend(semantic_conflicts)
+    if semantic_conflicts:
+        reasoning_trace.append({"reasoning": "semantic_rule_inference", "conflict_count": len(semantic_conflicts), "result": "semantic_conflicts"})
     canon_result = payload.get("canon_conflict_result") if isinstance(payload.get("canon_conflict_result"), dict) else {}
     for issue in canon_result.get("issues", []) if isinstance(canon_result.get("issues", []), list) else []:
         conflicts.append(_knowledge_conflict("knowledge_vs_canon", str(issue.get("severity") or "critical"), bool(issue.get("blocking", True)), [], str(issue.get("message") or "Canon conflict."), str(issue.get("fix_suggestion") or "Resolve canon conflict first.")))
@@ -2312,13 +2337,99 @@ def extract_knowledge_candidates(storage: LocalStorage, payload: dict[str, Any])
         asset = _base_asset("knowledge_card_candidate", asset_id=candidate_id, title=concept, source=chunk_id, tags=["mkaos", "knowledge-candidate", "needs-review", provider_mode], content=candidate_content, metadata={"project_id": str(payload.get("project_id") or chunk.get("metadata", {}).get("project_id") or "local-system"), "mkaos": True, "asset_status": "needs_review", "use_in_generation_rag": False, "provider_mode": provider_mode, "provider_status": provider_status}, references=[chunk_id, span["asset"]["id"]])
         path = storage.write_asset("knowledge", asset)
         candidates.append({"path": _display_path(storage.root, path), "asset": storage.read_json(path)})
+    provider_quality = {}
+    if provider_mode == "model_assisted" or provider_status.startswith("mock_provider") or provider_status == "provider_opted_in_no_candidates":
+        provider_quality = _response_data(
+            validate_extraction_provider_quality(
+                storage,
+                {
+                    **payload,
+                    "provider_mode": provider_mode,
+                    "provider_status": provider_status,
+                    "source_chunk_ids": source_chunk_ids,
+                    "candidates": [item["asset"]["content"] for item in candidates],
+                    "persist": bool(payload.get("persist_provider_quality", True)),
+                },
+            )
+        )
+        if provider_quality and not provider_quality.get("passed", False):
+            provider_status = "quality_failed" if provider_opt_in else provider_status
     return {
         "candidates": candidates,
         "candidate_count": len(candidates),
-        "provider": {"mode": provider_mode, "status": provider_status, "opt_in": provider_opt_in, "warnings": _dedupe(provider_warnings)},
+        "provider": {"mode": provider_mode, "status": provider_status, "opt_in": provider_opt_in, "warnings": _dedupe(provider_warnings), "quality_report": provider_quality},
         "warnings": _dedupe(provider_warnings),
         "source_isolation": {"raw_text_included": False, "clean_text_included": False},
     }
+
+
+def validate_extraction_provider_quality(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(payload.get("project_id") or "local-system")
+    envelope = _mkaos_envelope(
+        storage,
+        payload,
+        operation="mkaos.extraction_provider_quality",
+        asset_type="knowledge_extraction_provider_quality_report",
+        project_id=project_id,
+        task_type=str(payload.get("task_type") or "extraction_provider_quality"),
+    )
+    candidates = payload.get("candidates") if isinstance(payload.get("candidates"), list) else []
+    candidate_refs = _strings(payload.get("candidate_refs"))
+    for ref in candidate_refs:
+        try:
+            _, candidate = _find_asset(storage, ref, asset_type="knowledge_card_candidate", categories=["knowledge"])
+            content = candidate.get("content", {}) if isinstance(candidate.get("content"), dict) else {}
+            candidates.append(content)
+        except FileNotFoundError:
+            continue
+    source_chunks = []
+    for chunk_id in _strings(payload.get("source_chunk_ids")):
+        try:
+            _, chunk = _find_asset(storage, chunk_id, asset_type="source_chunk", categories=["raw"])
+            source_chunks.append(chunk.get("content", {}) if isinstance(chunk.get("content"), dict) else {})
+        except FileNotFoundError:
+            continue
+    reports = [_provider_candidate_quality(candidate, source_chunks) for candidate in candidates if isinstance(candidate, dict)]
+    avg_score = round(sum(item["quality_score"] for item in reports) / max(1, len(reports)), 4)
+    threshold = _float(payload.get("quality_threshold"), 0.72)
+    issues = [issue for report in reports for issue in report["issues"]]
+    opt_in = _provider_extraction_opted_in(payload)
+    if not opt_in and str(payload.get("provider_mode") or "") == "model_assisted":
+        issues.append({"issue_type": "provider_opt_in_required", "severity": "high", "message": "model-assisted extraction requires explicit provider opt-in"})
+    content = {
+        "quality_report_id": _stable_asset_id("knowledge_extraction_provider_quality", project_id, str(payload.get("provider_mode") or ""), str(len(reports)), str(len(issues))),
+        "project_id": project_id,
+        "provider_mode": str(payload.get("provider_mode") or "local_deterministic"),
+        "provider_status": str(payload.get("provider_status") or ""),
+        "provider": str(payload.get("provider_name") or payload.get("model") or "mock_or_local"),
+        "opt_in": opt_in,
+        "candidate_count": len(reports),
+        "average_quality_score": avg_score,
+        "quality_threshold": threshold,
+        "passed": bool(reports) and avg_score >= threshold and not any(issue["severity"] in {"high", "critical"} for issue in issues),
+        "candidate_reports": reports,
+        "issues": issues,
+        "recommendations": _provider_quality_recommendations(issues, avg_score, threshold),
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False, "source_chunks_checked_by_hash_only": True},
+        "created_at": utc_now(),
+        "envelope_id": envelope.get("envelope_id", ""),
+        "trace_id": envelope.get("trace_id", ""),
+    }
+    if bool(payload.get("persist", True)):
+        asset = _base_asset(
+            "knowledge_extraction_provider_quality_report",
+            asset_id=content["quality_report_id"],
+            title="MKAOS extraction provider quality report",
+            source="mkaos-extraction-provider-quality",
+            tags=["mkaos", "extraction-provider-quality", content["provider_mode"], "passed" if content["passed"] else "needs-review"],
+            content=content,
+            metadata={"project_id": project_id, "mkaos": True, "use_in_generation_rag": False, **envelope_asset_metadata(envelope)},
+            references=_dedupe([*candidate_refs, *_strings(payload.get("source_chunk_ids"))]),
+        )
+        path = storage.write_asset("runs", asset)
+        content["path"] = _display_path(storage.root, path)
+        content["asset_id"] = asset.id
+    return envelope_response(content, envelope)
 
 
 def approve_knowledge_candidate(storage: LocalStorage, candidate_ref: str | Path, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -2916,6 +3027,118 @@ def _model_judge_conflict_result(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _infer_graph_conflicts(graph_relations: list[dict[str, Any]], selected_by_id: dict[str, dict[str, Any]], *, production: bool) -> list[dict[str, Any]]:
+    selected = set(selected_by_id)
+    if not selected:
+        return []
+    supportive_edges: dict[str, set[str]] = {}
+    blocking_edges: dict[str, list[tuple[str, str, dict[str, Any]]]] = {}
+    for relation in graph_relations:
+        content = relation.get("content", {}) if isinstance(relation.get("content"), dict) else {}
+        left = str(content.get("source_knowledge_id") or "")
+        right = str(content.get("target_knowledge_id") or "")
+        relation_type = str(content.get("relation_type") or "")
+        if not left or not right:
+            continue
+        if relation_type in {"supports", "requires", "refines", "generalizes", "specializes", "causes"}:
+            supportive_edges.setdefault(left, set()).add(right)
+        if relation_type in {"contradicts", "forbids"}:
+            blocking_edges.setdefault(left, []).append((right, relation_type, relation))
+    conflicts: list[dict[str, Any]] = []
+    for source_id in sorted(selected):
+        reachable = _reachable_knowledge_ids(source_id, supportive_edges, max_depth=3)
+        for intermediate in sorted(reachable):
+            for target_id, relation_type, relation in blocking_edges.get(intermediate, []):
+                if target_id not in selected or target_id == source_id:
+                    continue
+                severity = "critical" if relation_type == "forbids" else "high"
+                conflict = _knowledge_conflict(
+                    "knowledge_vs_knowledge",
+                    severity,
+                    True if production or severity == "critical" else False,
+                    [source_id, intermediate, target_id],
+                    f"{source_id} implies {intermediate}, which {relation_type} selected knowledge {target_id}.",
+                    "Resolve the inferred graph path or split the pack into separate knowledge paths.",
+                )
+                conflict["graph_evidence"] = {
+                    "inference": "transitive_support_to_blocking_relation",
+                    "intermediate_knowledge_id": intermediate,
+                    "blocking_relation_type": relation_type,
+                    "relation_asset_id": relation.get("id", ""),
+                }
+                conflicts.append(conflict)
+    dedup: dict[str, dict[str, Any]] = {}
+    for conflict in conflicts:
+        dedup[str(conflict.get("conflict_id") or "")] = conflict
+    return list(dedup.values())
+
+
+def _reachable_knowledge_ids(source_id: str, edges: dict[str, set[str]], *, max_depth: int) -> set[str]:
+    visited: set[str] = set()
+    frontier = [(source_id, 0)]
+    while frontier:
+        current, depth = frontier.pop(0)
+        if depth >= max_depth:
+            continue
+        for target in sorted(edges.get(current, set())):
+            if target in visited:
+                continue
+            visited.add(target)
+            frontier.append((target, depth + 1))
+    return visited
+
+
+def _semantic_pair_conflicts(items: list[dict[str, Any]], *, production: bool) -> list[dict[str, Any]]:
+    rules = [
+        {
+            "left": {"快节奏", "强情绪", "反转密度", "强爽点", "打脸"},
+            "right": {"文学质感", "慢热", "结构完整", "语言稳定", "出版向"},
+            "severity": "high",
+            "explanation": "Fast-payoff rhythm conflicts with literary/publishing rhythm in the same production pack.",
+            "recommendation": "Choose a platform-specific rhythm path before generation.",
+        },
+        {
+            "left": {"百科", "设定详解", "资料卡", "说明性"},
+            "right": {"低门槛", "动作化", "强钩子", "番茄"},
+            "severity": "medium",
+            "explanation": "Expository knowledge conflicts with low-barrier actionized platform strategy.",
+            "recommendation": "Convert the knowledge to action, obstacle, scene state, or hook.",
+        },
+        {
+            "left": {"公平线索", "可复盘", "证据链"},
+            "right": {"突然反转", "神秘解决", "莫名"},
+            "severity": "high",
+            "explanation": "Fair clue chain conflicts with arbitrary twist resolution.",
+            "recommendation": "Add evidence positions or downgrade the arbitrary twist template.",
+        },
+    ]
+    prepared = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        text = json.dumps(_strip_source_text_fields(item), ensure_ascii=False)
+        prepared.append((str(item.get("knowledge_id") or ""), text))
+    conflicts: list[dict[str, Any]] = []
+    for index, (left_id, left_text) in enumerate(prepared):
+        for right_id, right_text in prepared[index + 1 :]:
+            pair_text = f"{left_text}\n{right_text}"
+            for rule in rules:
+                if any(term in pair_text for term in rule["left"]) and any(term in pair_text for term in rule["right"]):
+                    severity = str(rule["severity"])
+                    conflicts.append(
+                        _knowledge_conflict(
+                            "knowledge_vs_task_goal",
+                            severity,
+                            production and severity in {"high", "critical"},
+                            [left_id, right_id],
+                            str(rule["explanation"]),
+                            str(rule["recommendation"]),
+                        )
+                    )
+                    break
+    return conflicts
+
+
 def _provider_extraction_opted_in(payload: dict[str, Any]) -> bool:
     provider = payload.get("provider") if isinstance(payload.get("provider"), dict) else {}
     return bool(payload.get("provider_opt_in") or provider.get("opt_in") or os.environ.get("NOVEL_FORGE_MKAOS_EXTRACTION_PROVIDER") == "1")
@@ -2936,6 +3159,67 @@ def _candidate_contains_source_expression(candidate_text: str, source_content: d
                 if candidate[index : index + size] in source_text:
                     return True
     return False
+
+
+def _provider_candidate_quality(candidate: dict[str, Any], source_chunks: list[dict[str, Any]]) -> dict[str, Any]:
+    candidate_id = str(candidate.get("candidate_id") or candidate.get("knowledge_id") or "")
+    concept = str(candidate.get("concept_name") or "")
+    explanation = str(candidate.get("core_explanation") or "")
+    issues: list[dict[str, Any]] = []
+    score = 1.0
+    if not concept:
+        issues.append({"issue_type": "missing_concept_name", "severity": "medium", "message": "candidate concept_name is required"})
+        score -= 0.15
+    if len(explanation.strip()) < 16:
+        issues.append({"issue_type": "weak_abstraction", "severity": "medium", "message": "candidate core_explanation is too short to validate transferability"})
+        score -= 0.2
+    if not _strings(candidate.get("target_flows")):
+        issues.append({"issue_type": "missing_target_flows", "severity": "low", "message": "target_flows missing; candidate cannot be bound automatically"})
+        score -= 0.08
+    if not _strings(candidate.get("target_disciplines")):
+        issues.append({"issue_type": "missing_target_disciplines", "severity": "low", "message": "target_disciplines missing; graph classification will be weak"})
+        score -= 0.06
+    abstraction = candidate.get("abstraction_check") if isinstance(candidate.get("abstraction_check"), dict) else {}
+    if abstraction.get("raw_expression_included"):
+        issues.append({"issue_type": "source_expression_included", "severity": "critical", "message": "candidate abstraction check detected source-like expression"})
+        score -= 0.5
+    for source_content in source_chunks:
+        if _candidate_contains_source_expression(explanation, source_content):
+            issues.append({"issue_type": "source_expression_overlap", "severity": "critical", "message": "candidate overlaps with source expression"})
+            score -= 0.5
+            break
+    confidence = _float(candidate.get("confidence"), 0.5)
+    if confidence < 0.55:
+        issues.append({"issue_type": "low_provider_confidence", "severity": "medium", "message": "provider confidence below acceptance threshold"})
+        score -= 0.12
+    if str(candidate.get("copyright_risk") or "").lower() in {"high", "critical"}:
+        issues.append({"issue_type": "copyright_risk", "severity": "high", "message": "candidate copyright risk is too high for automatic promotion"})
+        score -= 0.25
+    return {
+        "candidate_id": candidate_id,
+        "concept_name": concept,
+        "quality_score": _clamp01(score),
+        "confidence": confidence,
+        "passed": score >= 0.72 and not any(issue["severity"] in {"high", "critical"} for issue in issues),
+        "issues": issues,
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False},
+    }
+
+
+def _provider_quality_recommendations(issues: list[dict[str, Any]], avg_score: float, threshold: float) -> list[str]:
+    if not issues and avg_score >= threshold:
+        return ["provider candidates are eligible for human review or guarded approval"]
+    recommendations = []
+    issue_types = {str(issue.get("issue_type") or "") for issue in issues}
+    if {"source_expression_included", "source_expression_overlap"} & issue_types:
+        recommendations.append("reject source-like candidate text and rerun abstraction")
+    if "provider_opt_in_required" in issue_types:
+        recommendations.append("enable provider only through explicit Runtime Policy opt-in")
+    if {"missing_target_flows", "missing_target_disciplines"} & issue_types:
+        recommendations.append("require provider output to include flow and discipline classification")
+    if avg_score < threshold:
+        recommendations.append("keep candidates in needs_review until quality score improves")
+    return _dedupe(recommendations)
 
 
 def _mkaos_envelope(
@@ -3577,12 +3861,13 @@ def _evolve_review_rules_from_learning(
         if signature in seen:
             continue
         seen.add(signature)
-        if bool(payload.get("apply_rule_updates", False)):
+        if bool(payload.get("apply_rule_updates", False)) or _rule_auto_apply_allowed(signal, rule_payload, payload):
             created = create_rule_card(storage, {**rule_payload, "enabled": True, "os_envelope": payload.get("os_envelope") or payload.get("envelope"), "environment": payload.get("environment", ""), "source_policy": payload.get("source_policy", {})})
-            applied.append({"asset_id": created["asset"]["id"], "rule_name": rule_payload["rule_name"], "path": created["path"]})
+            applied.append({"asset_id": created["asset"]["id"], "rule_name": rule_payload["rule_name"], "path": created["path"], "auto_applied": not bool(payload.get("apply_rule_updates", False))})
         else:
             candidates.append(_persist_rule_card_candidate(storage, project_id, signal, rule_payload))
-    return {"mode": "apply" if payload.get("apply_rule_updates") else "candidate", "signals": signals, "candidates": candidates, "applied": applied}
+    mode = "apply" if payload.get("apply_rule_updates") else "guarded_auto" if applied and payload.get("auto_apply_safe_actions") else "candidate"
+    return {"mode": mode, "signals": signals, "candidates": candidates, "applied": applied}
 
 
 def _backflow_templates_from_learning(
@@ -3606,9 +3891,9 @@ def _backflow_templates_from_learning(
         if signature in seen:
             continue
         seen.add(signature)
-        if bool(payload.get("apply_template_updates", False)) and knowledge_id:
+        if knowledge_id and (bool(payload.get("apply_template_updates", False)) or _template_auto_apply_allowed(item, payload)):
             created = knowledge_to_application_template(storage, knowledge_id, {"project_id": project_id, "flow": flow or str(item.get("flow") or "outline")})
-            applied.append({"asset_id": created["asset"]["id"], "template_name": created["asset"]["content"].get("template_name", ""), "path": created["path"]})
+            applied.append({"asset_id": created["asset"]["id"], "template_name": created["asset"]["content"].get("template_name", ""), "path": created["path"], "auto_applied": not bool(payload.get("apply_template_updates", False))})
         else:
             candidates.append(_persist_template_card_candidate(storage, project_id, item, flow))
     hot_templates = payload.get("hot_deconstruction_templates") if isinstance(payload.get("hot_deconstruction_templates"), list) else []
@@ -3625,7 +3910,8 @@ def _backflow_templates_from_learning(
             "template_structure": hot.get("template_structure") if isinstance(hot.get("template_structure"), dict) else {},
         }
         candidates.append(_persist_template_card_candidate(storage, project_id, item, item["flow"]))
-    return {"mode": "apply" if payload.get("apply_template_updates") else "candidate", "candidates": candidates, "applied": applied}
+    mode = "apply" if payload.get("apply_template_updates") else "guarded_auto" if applied and payload.get("auto_apply_safe_actions") else "candidate"
+    return {"mode": mode, "candidates": candidates, "applied": applied}
 
 
 def _low_effect_knowledge_elimination(storage: LocalStorage, project_id: str, flow: str, learning: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
@@ -3661,10 +3947,11 @@ def _low_effect_knowledge_elimination(storage: LocalStorage, project_id: str, fl
             "avg_effect_score": avg_effect,
         }
         recommendations.append(recommendation)
-        if bool(payload.get("apply_elimination", False)) and recommendation["knowledge_id"]:
+        if recommendation["knowledge_id"] and (bool(payload.get("apply_elimination", False)) or _elimination_auto_apply_allowed(recommendation, payload)):
             changed = change_knowledge_status(storage, str(recommendation["knowledge_id"]), {"status": status_action, "reason": "knowledge_evolution_low_effect", "actor": "mkaos_evolution", "trace_id": str(payload.get("trace_id") or "")})
-            applied.append({"knowledge_id": recommendation["knowledge_id"], "status": changed["asset"]["content"].get("status", ""), "path": changed["path"]})
-    return {"mode": "apply" if payload.get("apply_elimination") else "recommendation", "recommendations": recommendations, "applied": applied}
+            applied.append({"knowledge_id": recommendation["knowledge_id"], "status": changed["asset"]["content"].get("status", ""), "path": changed["path"], "auto_applied": not bool(payload.get("apply_elimination", False))})
+    mode = "apply" if payload.get("apply_elimination") else "guarded_auto" if applied and payload.get("auto_apply_safe_actions") else "recommendation"
+    return {"mode": mode, "recommendations": recommendations, "applied": applied}
 
 
 def _rule_payload_from_evolution_signal(project_id: str, flow: str, signal: dict[str, Any]) -> dict[str, Any]:
@@ -3700,6 +3987,44 @@ def _rule_payload_from_evolution_signal(project_id: str, flow: str, signal: dict
         "fix_suggestion": fix_suggestion,
         "applicable_flows": [flow or str(signal.get("flow") or "review")],
     }
+
+
+def _rule_auto_apply_allowed(signal: dict[str, Any], rule_payload: dict[str, Any], payload: dict[str, Any]) -> bool:
+    if not bool(payload.get("auto_apply_safe_actions", False)):
+        return False
+    severity = str(rule_payload.get("severity") or signal.get("severity") or "medium")
+    rule_type = str(rule_payload.get("rule_type") or "")
+    if severity == "critical":
+        return False
+    return rule_type in {"anti_encyclopedia", "chapter_rhythm", "payoff_density", "causal_chain", "source_isolation", "knowledge_effectiveness"}
+
+
+def _template_auto_apply_allowed(item: dict[str, Any], payload: dict[str, Any]) -> bool:
+    if not bool(payload.get("auto_apply_safe_actions", False)):
+        return False
+    confidence = str(item.get("confidence") or "")
+    usage_count = int(item.get("usage_count", 0) or 0)
+    avg_effect = item.get("avg_effect_score")
+    threshold = _float(payload.get("auto_template_activation_threshold"), 0.7)
+    if confidence == "none":
+        return False
+    if avg_effect is not None and _float(avg_effect, 0.0) >= threshold:
+        return True
+    return usage_count >= 2 and str(item.get("recommended_action") or "") == "boost"
+
+
+def _elimination_auto_apply_allowed(recommendation: dict[str, Any], payload: dict[str, Any]) -> bool:
+    if not bool(payload.get("auto_apply_safe_actions", False)):
+        return False
+    threshold = int(payload.get("auto_elimination_threshold", 3) or 3)
+    recommended_status = str(recommendation.get("recommended_status") or "")
+    negative_count = int(recommendation.get("negative_signal_count", 0) or 0)
+    avg_effect = recommendation.get("avg_effect_score")
+    if recommended_status not in {"quarantined", "do_not_select"}:
+        return False
+    if negative_count >= threshold:
+        return True
+    return avg_effect is not None and _float(avg_effect, 0.5) <= 0.15 and int(recommendation.get("usage_count", 0) or 0) >= threshold
 
 
 def _persist_rule_card_candidate(storage: LocalStorage, project_id: str, signal: dict[str, Any], rule_payload: dict[str, Any]) -> dict[str, Any]:

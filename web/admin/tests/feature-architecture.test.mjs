@@ -207,11 +207,12 @@ describe("Novel Forge admin feature architecture", () => {
 
   it("upgrades the MKAOS console into a knowledge asset operations workbench", () => {
     const mkaosConsole = read("app/features/mkaos/MkaosConsolePage.tsx");
-    for (const token of ["Source Evidence 原文层默认折叠", "Quality Dashboard", "Pack Debugger", "Knowledge Graph", "Knowledge Evolution", "Lineage Audit", "Regression Cases", "MKAOS Acceptance", "operator-only evidence", "mkaosGraphCanvas"]) {
+    for (const token of ["Source Evidence 原文层默认折叠", "Quality Dashboard", "Pack Debugger", "Knowledge Graph", "Knowledge Evolution", "Graph Explorer", "Lineage Audit", "Regression Cases", "MKAOS Acceptance", "operator-only evidence", "mkaosGraphCanvas", "mkaosGraphExplorer"]) {
       assert.match(mkaosConsole, new RegExp(token));
     }
     const globals = read("app/globals.css");
     assert.match(globals, /\.mkaosGraphCanvas/);
+    assert.match(globals, /\.mkaosGraphExplorer/);
   });
 
   it("wires industrial deep workbench panels for analysis, context, editor, production, evaluation, and control", () => {

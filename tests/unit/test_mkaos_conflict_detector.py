@@ -113,3 +113,58 @@ class MkaosConflictDetectorTests(MkaosP1TestCase):
         )
         self.assertEqual(judged["model_judge"]["status"], "completed")
         self.assertTrue(any(item.get("judge_source") == "model_judge" for item in judged["conflicts"]))
+
+    def test_transitive_graph_inference_and_semantic_rules(self):
+        seeded = self.seed_knowledge_system()
+        history_id = seeded["history"]["asset"]["id"]
+        mystery_id = seeded["mystery"]["asset"]["id"]
+        rhythm = mkaos.create_knowledge_card(
+            self.storage,
+            {
+                "project_id": self.project_id,
+                "concept_name": "快节奏强爽点",
+                "discipline": "平台策略",
+                "core_explanation": "快节奏、强情绪、反转密度和强爽点适合低门槛平台。",
+            },
+        )
+        literary = mkaos.create_knowledge_card(
+            self.storage,
+            {
+                "project_id": self.project_id,
+                "concept_name": "出版向文学质感",
+                "discipline": "出版策略",
+                "core_explanation": "文学质感、慢热推进、结构完整和语言稳定适合出版向。",
+            },
+        )
+        support = mkaos.create_knowledge_card(
+            self.storage,
+            {
+                "project_id": self.project_id,
+                "concept_name": "制度推理支撑",
+                "discipline": "历史制度",
+                "core_explanation": "制度冲突支撑证据链推理。",
+            },
+        )
+        mkaos.create_knowledge_relation(
+            self.storage,
+            {"project_id": self.project_id, "source_knowledge_id": history_id, "target_knowledge_id": support["asset"]["id"], "relation_type": "supports"},
+        )
+        mkaos.create_knowledge_relation(
+            self.storage,
+            {"project_id": self.project_id, "source_knowledge_id": support["asset"]["id"], "target_knowledge_id": mystery_id, "relation_type": "forbids"},
+        )
+        result = mkaos.detect_knowledge_conflicts(
+            self.storage,
+            {
+                "project_id": self.project_id,
+                "environment": "production",
+                "knowledge_items": [
+                    {"knowledge_id": history_id, "concept_name": "制度冲突", "core_explanation": "制度冲突支撑推理", "status": "verified"},
+                    {"knowledge_id": mystery_id, "concept_name": "证据链", "core_explanation": "公平线索可复盘", "status": "verified"},
+                    {"knowledge_id": rhythm["asset"]["id"], "concept_name": "快节奏强爽点", "core_explanation": "快节奏 强情绪 反转密度 强爽点", "status": "verified"},
+                    {"knowledge_id": literary["asset"]["id"], "concept_name": "出版向文学质感", "core_explanation": "文学质感 慢热 结构完整 语言稳定 出版向", "status": "verified"},
+                ],
+            },
+        )
+        self.assertTrue(any(item.get("graph_evidence", {}).get("inference") == "transitive_support_to_blocking_relation" for item in result["conflicts"]))
+        self.assertTrue(any(item["explanation"].startswith("Fast-payoff") for item in result["conflicts"]))

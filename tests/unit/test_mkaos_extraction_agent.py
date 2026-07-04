@@ -46,6 +46,55 @@ class MkaosExtractionAgentTests(MkaosP1TestCase):
             },
         )
         candidate = result["candidates"][0]["asset"]["content"]
-        self.assertEqual(result["provider"]["status"], "mock_provider_ready")
+        self.assertEqual(result["provider"]["status"], "quality_failed")
         self.assertFalse(candidate["abstraction_check"]["passed"])
         self.assertNotIn("历史制度会改变资源分配", candidate["core_explanation"])
+
+    def test_provider_quality_report_scores_model_assisted_candidates(self):
+        seeded = self.seed_knowledge_system()
+        result = mkaos.extract_knowledge_candidates(
+            self.storage,
+            {
+                "project_id": self.project_id,
+                "source_chunk_ids": [seeded["chunk_id"]],
+                "provider_mode": "model_assisted",
+                "provider_opt_in": True,
+                "target_disciplines": ["历史制度"],
+                "target_flows": ["outline", "prose"],
+                "mock_provider_candidates": [
+                    {
+                        "concept_name": "制度压力转行动",
+                        "core_explanation": "把制度变化抽象为角色目标受阻、利益交换和行动代价。",
+                        "target_disciplines": ["历史制度"],
+                        "target_flows": ["outline", "prose"],
+                        "confidence": 0.86,
+                    }
+                ],
+            },
+        )
+        report = result["provider"]["quality_report"]
+        self.assertTrue(report["passed"])
+        self.assertGreaterEqual(report["average_quality_score"], 0.72)
+        self.assertFalse(report["source_isolation"]["raw_text_included"])
+
+        direct = mkaos.validate_extraction_provider_quality(
+            self.storage,
+            {
+                "project_id": self.project_id,
+                "provider_mode": "model_assisted",
+                "provider_opt_in": True,
+                "source_chunk_ids": [seeded["chunk_id"]],
+                "candidates": [
+                    {
+                        "candidate_id": "bad",
+                        "concept_name": "原文风险",
+                        "core_explanation": "历史制度会改变资源分配。叙事爽点需要选择代价。",
+                        "target_disciplines": ["历史制度"],
+                        "target_flows": ["outline"],
+                        "confidence": 0.9,
+                    }
+                ],
+            },
+        )
+        self.assertFalse(direct["data"]["passed"])
+        self.assertTrue(any(issue["issue_type"] == "source_expression_overlap" for issue in direct["data"]["issues"]))

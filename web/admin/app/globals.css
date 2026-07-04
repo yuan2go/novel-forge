@@ -696,6 +696,12 @@ th {
   background: #f8fafc;
 }
 
+.mkaosGraphExplorer {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
 .buttonRow {
   display: flex;
   flex-wrap: wrap;

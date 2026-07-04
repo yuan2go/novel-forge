@@ -65,6 +65,7 @@ from .service import (
     update_usage_binding,
     validate_artifact,
     validate_canon_conflict,
+    validate_extraction_provider_quality,
     convert_assets,
     convert_rules,
 )
@@ -144,6 +145,7 @@ __all__ = [
     "update_usage_binding",
     "validate_artifact",
     "validate_canon_conflict",
+    "validate_extraction_provider_quality",
     "convert_assets",
     "convert_rules",
     "MkaosPackPolicyError",

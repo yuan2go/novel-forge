@@ -487,9 +487,13 @@ export function MkaosConsolePage() {
 }
 
 function GraphPreview({ graph }: { graph: Record<string, any> | null }) {
-  const nodes = Array.isArray(graph?.nodes) ? graph?.nodes.slice(0, 10) : [];
-  const edges = Array.isArray(graph?.edges) ? graph?.edges.slice(0, 16) : [];
-  if (!nodes.length) {
+  const allNodes = Array.isArray(graph?.nodes) ? graph?.nodes : [];
+  const allEdges = Array.isArray(graph?.edges) ? graph?.edges : [];
+  const nodes = allNodes.slice(0, 10);
+  const edges = allEdges.slice(0, 16);
+  const nodeCoverage = graph?.summary?.coverage ?? {};
+  const edgeCoverage = graph?.summary?.edge_relation_counts ?? {};
+  if (!allNodes.length) {
     return <p className="mutedText">暂无图谱路径；刷新后会显示知识、学科、流程、规则和模板的 first-slice 可视化。</p>;
   }
   const positions = new Map<string, { x: number; y: number }>();
@@ -498,26 +502,42 @@ function GraphPreview({ graph }: { graph: Record<string, any> | null }) {
     positions.set(String(node.id), { x: 160 + Math.cos(angle) * 118, y: 120 + Math.sin(angle) * 78 });
   });
   return (
-    <svg className="mkaosGraphCanvas" viewBox="0 0 320 240" role="img" aria-label="MKAOS knowledge graph preview">
-      {edges.map((edge: any) => {
-        const source = positions.get(String(edge.source));
-        const target = positions.get(String(edge.target));
-        if (!source || !target) return null;
-        return <line key={edge.id || `${edge.source}-${edge.target}`} x1={source.x} y1={source.y} x2={target.x} y2={target.y} stroke="var(--line)" strokeWidth="1.2" />;
-      })}
-      {nodes.map((node: any) => {
-        const position = positions.get(String(node.id)) ?? { x: 0, y: 0 };
-        const type = String(node.node_type || "");
-        const fill = type === "knowledge_card" ? "var(--accent)" : type === "discipline" ? "var(--ok-text)" : type === "flow" ? "var(--warn-text)" : "var(--muted)";
-        return (
-          <g key={node.id}>
-            <circle cx={position.x} cy={position.y} r={type === "knowledge_card" ? 10 : 7} fill={fill} />
-            <text x={position.x} y={position.y + 22} textAnchor="middle" fontSize="9" fill="var(--text-muted)">
-              {String(node.label || node.id).slice(0, 12)}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+    <div className="mkaosGraphExplorer">
+      <div className="summaryBand">
+        <Metric label="Graph Explorer" value={`${nodes.length}/${allNodes.length} nodes`} />
+        <Metric label="Edges" value={`${edges.length}/${allEdges.length}`} />
+        <Metric label="Knowledge" value={String(nodeCoverage.knowledge_card ?? 0)} />
+        <Metric label="Relations" value={String(Object.keys(edgeCoverage).length)} />
+      </div>
+      <svg className="mkaosGraphCanvas" viewBox="0 0 320 240" role="img" aria-label="MKAOS knowledge graph preview">
+        {edges.map((edge: any) => {
+          const source = positions.get(String(edge.source));
+          const target = positions.get(String(edge.target));
+          if (!source || !target) return null;
+          return <line key={edge.id || `${edge.source}-${edge.target}`} x1={source.x} y1={source.y} x2={target.x} y2={target.y} stroke="var(--line)" strokeWidth="1.2" />;
+        })}
+        {nodes.map((node: any) => {
+          const position = positions.get(String(node.id)) ?? { x: 0, y: 0 };
+          const type = String(node.node_type || "");
+          const fill = type === "knowledge_card" ? "var(--accent)" : type === "discipline" ? "var(--ok-text)" : type === "flow" ? "var(--warn-text)" : "var(--muted)";
+          return (
+            <g key={node.id}>
+              <circle cx={position.x} cy={position.y} r={type === "knowledge_card" ? 10 : 7} fill={fill} />
+              <text x={position.x} y={position.y + 22} textAnchor="middle" fontSize="9" fill="var(--muted)">
+                {String(node.label || node.id).slice(0, 12)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <DataTable
+        emptyText="暂无图谱分布"
+        columns={["Node Type", "Count", "Edge Type", "Count"]}
+        rows={Object.entries(nodeCoverage).slice(0, 6).map(([nodeType, count], index) => {
+          const edge = Object.entries(edgeCoverage)[index] ?? ["-", "-"];
+          return [nodeType, String(count), String(edge[0]), String(edge[1])];
+        })}
+      />
+    </div>
   );
 }

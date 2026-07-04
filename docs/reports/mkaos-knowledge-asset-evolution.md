@@ -18,6 +18,15 @@ This pass moves MKAOS closer to a knowledge asset operating system: knowledge sh
 | Provider opt-in boundary | Conflict model judge and extraction provider modes are local-first. Opt-in is required before mock/provider results are accepted. | `_model_judge_conflict_result`, `extract_knowledge_candidates` |
 | UI operations view | MKAOS console adds a lightweight graph canvas and Knowledge Evolution panel. | `web/admin/app/features/mkaos/MkaosConsolePage.tsx` |
 
+## Follow-up Hardening
+
+| Previous Risk | Hardening |
+| --- | --- |
+| Deep semantic conflicts needed a model judge or stronger graph reasoning. | Conflict detection now runs transitive graph inference: selected knowledge that supports/requires an intermediate node that forbids/contradicts another selected node becomes a structured conflict. Deterministic semantic-pair rules cover platform rhythm, anti-encyclopedia pressure, and mystery clue-chain conflicts. Model judge remains opt-in. |
+| Extraction provider had no real quality validation path. | `validate_extraction_provider_quality` scores model-assisted candidates for schema completeness, flow/discipline classification, confidence, copyright risk, and source-expression overlap. `extract_knowledge_candidates` records this report when provider mode is used. |
+| Automatic rule/template activation and knowledge isolation required explicit apply flags only. | `run_knowledge_evolution_cycle` now supports `evolution_mode=guarded_auto` and production guarded policy. It can auto-apply safe rule/template promotions and quarantine high-confidence low-effect knowledge while recording `auto_applied` evidence. |
+| Large-scale graph UI was summary/table only. | MKAOS UI now includes a dependency-free Graph Explorer with graph sampling counts, SVG preview, node type distribution, and relation distribution. |
+
 ## Operating Policy
 
 Default mode is advisory:
@@ -34,6 +43,12 @@ Explicit apply flags:
 - `apply_rule_updates`: create enabled rule cards;
 - `apply_template_updates`: create active templates;
 - `apply_elimination`: apply status changes for low-effect knowledge.
+
+Guarded automation:
+
+- `evolution_mode=guarded_auto`: automatically activates safe rule/template promotions and low-effect quarantine when deterministic thresholds are met.
+- `evolution_mode=production_guarded`: production-friendly guarded automation, still requiring OS Envelope and runtime policy.
+- Real external providers remain opt-in; default tests do not call external services.
 
 ## Remaining Gap
 

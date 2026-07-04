@@ -83,13 +83,13 @@ Selector decisions and knowledge pack mutation audits now use stable ids for rep
 - Extraction Agent remains local-first by default. Model-assisted extraction records opt-in state and rejects or sanitizes source-like provider candidates.
 - web/admin graph remains dependency-free, but the console now includes a lightweight SVG graph canvas instead of summary-only tables.
 - Knowledge asset evolution now exists as an auditable orchestration cycle instead of disconnected learning primitives.
+- Follow-up hardening added transitive graph conflict inference, extraction provider quality reports, guarded automatic rule/template promotion and quarantine, and a larger Graph Explorer first slice.
 
 ## Remaining Risks
 
-- Deep semantic conflict detection still depends on future model-judge or richer graph-inference adapters; the current implementation consumes opt-in judge results but does not call a real provider by default.
-- Real provider extraction remains opt-in and unverified against external model quality; default tests intentionally stay deterministic/local.
-- Knowledge evolution defaults to advisory mode. Automatic rule activation, template activation, and low-effect status changes require explicit apply flags.
-- UI graph visualization is intentionally lightweight; large graph exploration, filtering, clustering, and path animation remain P2.
+- Real model-judge and extraction providers remain opt-in; default implementation validates provider outputs locally but does not call external services.
+- Knowledge evolution defaults to advisory mode. `guarded_auto` can apply safe promotions/quarantine, but full human approval workflow remains P2.
+- UI graph visualization is dependency-free and now has Graph Explorer sampling/distribution; clustering, search filters, path animation, and graph diff remain P2.
 - Full “越写越强” proof still needs longer multi-chapter production telemetry and real reader feedback volume beyond synthetic/local fixtures.
 
 ## Current Distance To A Full Knowledge Asset OS

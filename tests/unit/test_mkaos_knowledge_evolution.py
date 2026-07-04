@@ -97,3 +97,53 @@ class MkaosKnowledgeEvolutionTests(MkaosP1TestCase):
         self.assertTrue(report["data"]["low_effect_elimination"]["applied"])
         updated = next(row for row in mkaos.list_knowledge_cards(self.storage, project_id=self.project_id, include_deprecated=True) if row["id"] == risky_id)
         self.assertIn(updated["content"]["status"], {"needs_review", "quarantined"})
+
+    def test_guarded_auto_policy_promotes_safe_assets_and_quarantines_repeated_failures(self):
+        seeded = self.seed_knowledge_system()
+        history_id = seeded["history"]["asset"]["id"]
+        risky_id = seeded["risky"]["asset"]["id"]
+        for index in range(2):
+            mkaos.record_usage_event(
+                self.storage,
+                {
+                    "project_id": self.project_id,
+                    "knowledge_id": history_id,
+                    "knowledge_pack_id": "pack-hot",
+                    "flow": "prose",
+                    "agent_name": "DraftAgent",
+                    "used_as": "constraint",
+                    "effect_score": 0.9,
+                    "target_artifact_id": f"good-{index}",
+                },
+            )
+        for index in range(3):
+            mkaos.record_usage_event(
+                self.storage,
+                {
+                    "project_id": self.project_id,
+                    "knowledge_id": risky_id,
+                    "knowledge_pack_id": "pack-risk",
+                    "flow": "prose",
+                    "agent_name": "DraftAgent",
+                    "used_as": "constraint",
+                    "effect_score": 0.05,
+                    "reader_feedback": {"sentiment": "negative", "rating": 1},
+                    "target_artifact_id": f"bad-{index}",
+                },
+            )
+        mkaos.attribute_reader_feedback_to_knowledge(
+            self.storage,
+            {"project_id": self.project_id, "feedback_text": "设定太多，节奏慢", "candidate_knowledge_ids": [risky_id]},
+        )
+
+        report = mkaos.run_knowledge_evolution_cycle(
+            self.storage,
+            {"project_id": self.project_id, "flow": "prose", "evolution_mode": "guarded_auto"},
+        )["data"]
+
+        self.assertEqual(report["governance_policy"]["evolution_mode"], "guarded_auto")
+        self.assertTrue(report["review_rule_evolution"]["applied"])
+        self.assertTrue(report["hot_template_backflow"]["applied"])
+        self.assertTrue(report["low_effect_elimination"]["applied"])
+        updated = next(row for row in mkaos.list_knowledge_cards(self.storage, project_id=self.project_id, include_deprecated=True) if row["id"] == risky_id)
+        self.assertEqual(updated["content"]["status"], "quarantined")
