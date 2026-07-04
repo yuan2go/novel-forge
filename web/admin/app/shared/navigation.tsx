@@ -41,6 +41,7 @@ export type NavItemKey =
   | "agent_registry"
   | "agent_dispatch"
   | "audit_log"
+  | "permission_center"
   | "canon_console"
   | "character_console"
   | "arc_console"
@@ -125,6 +126,7 @@ export const navGroups: NavGroup[] = [
       { key: "agent_registry", label: "Agent Registry", description: "Agent 元数据、生命周期和调度资格", href: "/agent-registry", icon: <ListChecks size={17} /> },
       { key: "agent_dispatch", label: "Agent Dispatch", description: "Agent queue、lease、recover 和 contract", href: "/agent-dispatch", icon: <ListChecks size={17} /> },
       { key: "audit_log", label: "Audit Log", description: "治理级 audit trail 和证据导出", href: "/audit-log", icon: <FileSearch size={17} /> },
+      { key: "permission_center", label: "Permission Center", description: "agent/tool/source/publish/bypass 权限和人工审批", href: "/permission-center", icon: <ShieldCheck size={17} /> },
       { key: "canon_console", label: "Canon Console", description: "正典、事实账本和设定规则", href: "/canon-console", icon: <BookOpenCheck size={17} /> },
       { key: "character_console", label: "Character Console", description: "人物卡和人物状态账本", href: "/character-console", icon: <BookMarked size={17} /> },
       { key: "arc_console", label: "Arc Console", description: "长篇主线、阶段弧线和章节状态", href: "/arc-console", icon: <GitPullRequest size={17} /> },

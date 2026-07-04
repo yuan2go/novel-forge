@@ -5,11 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import {
+  createPermissionPolicy,
   createAnalyticsSnapshot,
+  evaluatePermission,
   exportAuditPackage,
   loadAgentRegistry,
   loadAnalyticsDashboard,
   loadAuditLog,
+  loadPermissionCenter,
   loadRetrievalStatus,
   rebuildDirtyIndex,
   syncAgentRegistry,
@@ -145,6 +148,139 @@ export function AuditLogPage() {
               <span className={statusClass(String(content.status || ""))} key={`${event.path}-status`}>{String(content.status || "-")}</span>,
               String(content.trace_id || "-"),
               <span className="pathText" key={`${event.path}-path`}>{event.path || "-"}</span>
+            ];
+          })}
+        />
+      </section>
+    </FeatureShell>
+  );
+}
+
+export function PermissionCenterPage() {
+  const [snapshot, setSnapshot] = useState<Record<string, unknown>>({});
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+
+  async function refresh() {
+    setSnapshot(await loadPermissionCenter());
+  }
+
+  async function run(action: () => Promise<unknown>, message: string) {
+    setNotice("");
+    setError("");
+    try {
+      await action();
+      setNotice(message);
+      await refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  useEffect(() => {
+    refresh().catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)));
+  }, []);
+
+  const summary = asRecord(snapshot.summary);
+  const policies = asArray(snapshot.policies).map(asRecord);
+  const gates = asArray(snapshot.human_approval_gates).map(asRecord);
+  const decisions = asArray(snapshot.decisions).map(asRecord);
+  return (
+    <FeatureShell title="Permission Center" subtitle="agent/tool/source/publish/bypass 权限、human approval gate 和 audit 强绑定。" eyebrow="OS Governance">
+      <Notice notice={notice} error={error} />
+      <section className="summaryBand manuscriptSummary">
+        <Metric label="Status" value={String(snapshot.status || "-")} />
+        <Metric label="Policies" value={String(summary.policy_count ?? policies.length)} />
+        <Metric label="Pending Gates" value={String(summary.pending_gate_count ?? 0)} />
+        <Metric label="Decisions" value={String(summary.decision_count ?? decisions.length)} />
+        <Metric label="Audit Required" value={summary.audit_required === false ? "no" : "yes"} />
+      </section>
+      <section className="panel">
+        <PanelHeader title="Permission Operations" icon={<ShieldCheck size={18} />} />
+        <div className="studioActions">
+          <button
+            className="primaryButton"
+            onClick={() => run(() => createPermissionPolicy({
+              scope: "publish",
+              subject_type: "agent",
+              subject_id: "publishing-agent",
+              resource_type: "release_package",
+              resource_id: "*",
+              actions: ["release"],
+              environment: "production",
+              requires_human_approval: true,
+              reason: "production publish requires editor approval"
+            }), "Publish permission policy 已创建。")}
+          >
+            <CheckCircle2 size={16} />Create Publish Policy
+          </button>
+          <button
+            className="secondaryButton"
+            onClick={() => run(() => evaluatePermission({
+              scope: "publish",
+              action: "release",
+              subject_type: "agent",
+              subject_id: "publishing-agent",
+              resource_type: "release_package",
+              resource_id: "release-ui",
+              environment: "production"
+            }), "Production publish permission 已评估。")}
+          >
+            Evaluate Publish
+          </button>
+          <button className="secondaryButton" onClick={() => refresh().catch((caught) => setError(caught instanceof Error ? caught.message : String(caught)))}>Refresh</button>
+        </div>
+      </section>
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Policies" icon={<ListChecks size={18} />} />
+          <DataTable
+            emptyText="暂无 permission policy"
+            columns={["Scope", "Subject", "Resource", "Actions", "Approval", "Path"]}
+            rows={policies.slice(0, 80).map((row) => {
+              const content = asRecord(row.content);
+              return [
+                String(content.scope || "-"),
+                `${String(content.subject_type || "*")} / ${String(content.subject_id || "*")}`,
+                `${String(content.resource_type || "*")} / ${String(content.resource_id || "*")}`,
+                String(asArray(content.actions).join(", ") || "-"),
+                String(content.requires_human_approval ? "required" : "no"),
+                <span className="pathText" key={`${String(row.path)}-policy-path`}>{String(row.path || "-")}</span>
+              ];
+            })}
+          />
+        </div>
+        <div className="panel">
+          <PanelHeader title="Human Approval Gates" icon={<ShieldCheck size={18} />} />
+          <DataTable
+            emptyText="暂无 human approval gate"
+            columns={["Scope", "Action", "状态", "Reason", "Path"]}
+            rows={gates.slice(0, 80).map((row) => {
+              const content = asRecord(row.content);
+              return [
+                String(content.scope || "-"),
+                String(content.action || "-"),
+                <span className={statusClass(String(content.status || ""))} key={`${String(row.path)}-gate-status`}>{String(content.status || "-")}</span>,
+                String(content.reason || "-"),
+                <span className="pathText" key={`${String(row.path)}-gate-path`}>{String(row.path || "-")}</span>
+              ];
+            })}
+          />
+        </div>
+      </section>
+      <section className="panel">
+        <PanelHeader title="Recent Decisions" icon={<FileSearch size={18} />} />
+        <DataTable
+          emptyText="暂无 permission decision"
+          columns={["Scope", "Action", "状态", "Reason", "Path"]}
+          rows={decisions.slice(0, 80).map((row) => {
+            const content = asRecord(row.content);
+            return [
+              String(content.scope || "-"),
+              String(content.action || "-"),
+              <span className={statusClass(String(content.status || ""))} key={`${String(row.path)}-decision-status`}>{String(content.status || "-")}</span>,
+              String(content.reason || "-"),
+              <span className="pathText" key={`${String(row.path)}-decision-path`}>{String(row.path || "-")}</span>
             ];
           })}
         />

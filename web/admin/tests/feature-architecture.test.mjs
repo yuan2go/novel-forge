@@ -70,6 +70,11 @@ describe("Novel Forge admin feature architecture", () => {
       "/product/workflow/scheduler/tick",
       "/product/agents/scheduler/queue",
       "/product/agents/scheduler/tick",
+      "/product/agents/operation-coverage",
+      "/product/agents/hard-stop-dashboard",
+      "/product/agents/dag",
+      "/product/agents/rollback-rehearsal",
+      "/product/agents/dead-letter-repair",
       "/product/runtime/trace-timeline",
       "/product/runtime/cost-ledger",
       "/product/runtime/cost-dashboard",
@@ -105,7 +110,7 @@ describe("Novel Forge admin feature architecture", () => {
     assert.match(workflowConsole, /DAG Graph/);
 
     const agentConsole = read("app/features/os/AgentDispatchCenterPage.tsx");
-    for (const token of ["Run Graph", "Gate Timeline", "Checkpoint List", "Budget Burn", "Dead-letter Queue", "Rollback Preview", "SLA \\/ Duration", "Evidence Drawer", "Operation Coverage"]) {
+    for (const token of ["Agent Center v2 Control", "Run Graph", "Gate Timeline", "Checkpoint List", "Budget Burn", "Dead-letter Queue", "Rollback Preview", "Rollback Rehearsal", "Repair Dead Letter", "SLA \\/ Duration", "Evidence Drawer", "Operation Coverage Full"]) {
       assert.match(agentConsole, new RegExp(token));
     }
 
@@ -127,12 +132,13 @@ describe("Novel Forge admin feature architecture", () => {
 
   it("has routed Novel OS editable consoles for longform governance", () => {
     const navigation = read("app/shared/navigation.tsx");
-    for (const token of ["agent_center", "canon_console", "character_console", "arc_console", "foreshadowing_console", "review_issue_console", "longform_recap", "loop_runs", "publish_gate_console", "feedback_console"]) {
+    for (const token of ["agent_center", "permission_center", "canon_console", "character_console", "arc_console", "foreshadowing_console", "review_issue_console", "longform_recap", "loop_runs", "publish_gate_console", "feedback_console"]) {
       assert.match(navigation, new RegExp(token));
     }
     for (const path of [
       "app/features/os/EditableAssetConsolePage.tsx",
       "app/agent-center/page.tsx",
+      "app/permission-center/page.tsx",
       "app/canon-console/page.tsx",
       "app/character-console/page.tsx",
       "app/arc-console/page.tsx",
@@ -151,6 +157,14 @@ describe("Novel Forge admin feature architecture", () => {
     }
     const osApi = read("app/features/os/api.ts");
     assert.match(osApi, /\/product\/review-issues\/status/);
+    const governanceApi = read("app/features/governance/api.ts");
+    for (const endpoint of ["/product/permission-center/snapshot", "/product/permission-center/policies", "/product/permission-center/evaluate"]) {
+      assert.match(governanceApi, new RegExp(endpoint.replaceAll("/", "\\/")));
+    }
+    const governancePages = read("app/features/governance/GovernancePages.tsx");
+    for (const token of ["Permission Center", "human approval gate", "agent/tool/source/publish/bypass", "Evaluate Publish"]) {
+      assert.match(governancePages, new RegExp(token));
+    }
   });
 
   it("exposes asset graph, publishing calendar, version registry, and impact visualization in source", () => {

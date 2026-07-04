@@ -9,8 +9,9 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.audit_log import record_audit_event
 from novel_forge.modules.review_issue import persist_issue_candidates
-from novel_forge.schemas import CanonGraphSnapshot, validate_common_fields
+from novel_forge.schemas import BaseAsset, CanonGraphSnapshot, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 CANON_GRAPH_ASSET_TYPES = {
@@ -257,6 +258,321 @@ def persist_canon_graph_issues(storage: LocalStorage, payload: dict[str, Any]) -
     result = check_canon_graph_conflicts(storage, payload)
     summary = persist_issue_candidates(storage, result["issue_candidates"], source_system="canon_graph")
     return {"status": result["status"], "check": result, "review_issue_summary": summary}
+
+
+def diff_canon_graph(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    """Compare two Canon Graph snapshots with stable node keys.
+
+    Node ids include source asset ids, so graph diff uses semantic keys
+    (node_type/entity_id/name) to detect meaningful canon changes across
+    regenerated snapshots.
+    """
+
+    storage.ensure_layout()
+    before = _graph_from_snapshot_or_current(
+        storage,
+        str(payload.get("baseline_snapshot_path") or payload.get("before_snapshot_path") or ""),
+        project_id=str(payload.get("project_id") or "") or None,
+        workspace_path=str(payload.get("workspace_path") or "") or None,
+    )
+    after = _graph_from_snapshot_or_current(
+        storage,
+        str(payload.get("candidate_snapshot_path") or payload.get("after_snapshot_path") or ""),
+        project_id=str(payload.get("project_id") or "") or None,
+        workspace_path=str(payload.get("workspace_path") or "") or None,
+    )
+    before_nodes = {_node_stable_key(node): node for node in before.get("nodes", []) if _node_stable_key(node)}
+    after_nodes = {_node_stable_key(node): node for node in after.get("nodes", []) if _node_stable_key(node)}
+    added_keys = sorted(set(after_nodes) - set(before_nodes))
+    removed_keys = sorted(set(before_nodes) - set(after_nodes))
+    changed: list[dict[str, Any]] = []
+    for key in sorted(set(before_nodes) & set(after_nodes)):
+        changes = _node_field_diff(before_nodes[key], after_nodes[key])
+        if changes:
+            changed.append({"node_key": key, "before": _node_public(before_nodes[key]), "after": _node_public(after_nodes[key]), "changed_fields": changes})
+    before_edges = {_edge_key(edge): edge for edge in before.get("edges", []) if _edge_key(edge)}
+    after_edges = {_edge_key(edge): edge for edge in after.get("edges", []) if _edge_key(edge)}
+    added_edges = [_edge_public(after_edges[key]) for key in sorted(set(after_edges) - set(before_edges))]
+    removed_edges = [_edge_public(before_edges[key]) for key in sorted(set(before_edges) - set(after_edges))]
+    changed_terms = _dedupe(
+        [
+            *[str(after_nodes[key].get("name") or after_nodes[key].get("canonical_name") or after_nodes[key].get("entity_id") or "") for key in added_keys],
+            *[str(before_nodes[key].get("name") or before_nodes[key].get("canonical_name") or before_nodes[key].get("entity_id") or "") for key in removed_keys],
+            *[str(row.get("after", {}).get("name") or row.get("after", {}).get("canonical_name") or row.get("node_key") or "") for row in changed],
+        ]
+    )
+    impact = locate_canon_graph_impacted_chapters(
+        storage,
+        {
+            "project_id": payload.get("project_id") or after.get("project_id") or before.get("project_id") or "",
+            "workspace_path": payload.get("workspace_path") or after.get("workspace_path") or before.get("workspace_path") or "",
+            "keywords": changed_terms,
+        },
+    )
+    report = {
+        "status": "changed" if added_keys or removed_keys or changed or added_edges or removed_edges else "unchanged",
+        "diff_id": make_id("canon_graph_diff", f"{before.get('graph_id', 'before')}->{after.get('graph_id', 'after')}"),
+        "project_id": payload.get("project_id") or after.get("project_id") or before.get("project_id") or "",
+        "workspace_path": payload.get("workspace_path") or after.get("workspace_path") or before.get("workspace_path") or "",
+        "before_graph_id": before.get("graph_id", ""),
+        "after_graph_id": after.get("graph_id", ""),
+        "added_nodes": [_node_public(after_nodes[key]) for key in added_keys],
+        "removed_nodes": [_node_public(before_nodes[key]) for key in removed_keys],
+        "changed_nodes": changed,
+        "added_edges": added_edges,
+        "removed_edges": removed_edges,
+        "impact": impact,
+        "summary": {
+            "added_node_count": len(added_keys),
+            "removed_node_count": len(removed_keys),
+            "changed_node_count": len(changed),
+            "added_edge_count": len(added_edges),
+            "removed_edge_count": len(removed_edges),
+            "impacted_chapter_count": impact["summary"]["impacted_chapter_count"],
+        },
+        "created_at": utc_now(),
+    }
+    if payload.get("persist", True):
+        written = _write_base_asset(
+            storage,
+            "continuity",
+            "canon_graph_diff_report",
+            "Canon Graph diff report",
+            ["canon-graph", "diff", report["status"]],
+            report,
+            references=_dedupe([str(payload.get("baseline_snapshot_path") or ""), str(payload.get("candidate_snapshot_path") or ""), *impact.get("references", [])]),
+        )
+        report["path"] = written["path"]
+    return report
+
+
+def propagate_canon_graph_conflicts(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    check = check_canon_graph_conflicts(storage, payload)
+    issue_terms = _dedupe(
+        [
+            *[str(issue.get("source_issue", {}).get("name") or issue.get("source_issue", {}).get("canonical_name") or issue.get("source_issue_id") or "") for issue in check.get("conflicts", []) if isinstance(issue, dict)],
+            *[str(node_id).split(":")[-1] for issue in check.get("reasoning", {}).get("issues", []) if isinstance(issue, dict) for node_id in issue.get("node_ids", [])],
+        ]
+    )
+    impact = locate_canon_graph_impacted_chapters(
+        storage,
+        {
+            "project_id": payload.get("project_id") or check.get("project_id") or "",
+            "workspace_path": payload.get("workspace_path") or "",
+            "keywords": issue_terms,
+            "limit": payload.get("impact_limit", 300),
+        },
+    )
+    persisted = {}
+    if payload.get("persist_issues", False) and check.get("issue_candidates"):
+        persisted = persist_issue_candidates(storage, check["issue_candidates"], source_system="canon_graph.propagation")
+    report = {
+        "status": "blocked" if check.get("blocking") else "warning" if check.get("conflicts") else "passed",
+        "propagation_id": make_id("canon_conflict_propagation", utc_now()),
+        "check": check,
+        "impact": impact,
+        "review_issue_summary": persisted,
+        "summary": {
+            "conflict_count": len(check.get("conflicts", [])),
+            "blocking": bool(check.get("blocking")),
+            "impacted_chapter_count": impact["summary"]["impacted_chapter_count"],
+            "review_issue_count": int(persisted.get("created_count", 0) or persisted.get("issue_count", 0) or 0) if persisted else 0,
+        },
+        "created_at": utc_now(),
+    }
+    if payload.get("persist", True):
+        written = _write_base_asset(
+            storage,
+            "continuity",
+            "canon_conflict_propagation_report",
+            "Canon conflict propagation report",
+            ["canon-graph", "conflict-propagation", report["status"]],
+            report,
+            references=_dedupe([*check.get("references", []), *impact.get("references", [])]),
+        )
+        report["path"] = written["path"]
+    return report
+
+
+def create_canon_change_approval(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    project_id = str(payload.get("project_id") or "")
+    workspace_path = str(payload.get("workspace_path") or "")
+    diff = diff_canon_graph(storage, {**payload, "persist": False}) if (payload.get("baseline_snapshot_path") or payload.get("candidate_snapshot_path")) else {}
+    impact = diff.get("impact") if isinstance(diff.get("impact"), dict) else locate_canon_graph_impacted_chapters(storage, payload)
+    approval_id = make_id("canon_change_approval", f"{project_id}-{payload.get('change_type', 'canon-change')}-{utc_now()}")
+    trace_id = str(payload.get("trace_id") or make_id("trace", approval_id))
+    content = {
+        "approval_id": approval_id,
+        "status": "pending",
+        "requires_human_approval": True,
+        "change_type": str(payload.get("change_type") or "canon_change"),
+        "proposal": payload.get("proposal", {}) if isinstance(payload.get("proposal", {}), dict) else {"description": str(payload.get("proposal") or "")},
+        "proposed_patch": payload.get("proposed_patch", {}) if isinstance(payload.get("proposed_patch", {}), dict) else {},
+        "diff": diff,
+        "impact": impact,
+        "risk_level": "high" if impact.get("summary", {}).get("impacted_chapter_count", 0) else "medium",
+        "actor": str(payload.get("actor") or "operator"),
+        "trace_id": trace_id,
+        "created_at": utc_now(),
+        "resolved_at": "",
+        "resolution": {},
+    }
+    written = _write_base_asset(
+        storage,
+        "continuity",
+        "canon_change_approval",
+        "Canon change approval",
+        ["canon-graph", "approval", "pending"],
+        content,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        references=_dedupe([str(payload.get("baseline_snapshot_path") or ""), str(payload.get("candidate_snapshot_path") or ""), *impact.get("references", [])]),
+    )
+    audit = record_audit_event(
+        storage,
+        event_type="canon_graph",
+        action="canon_change_approval.created",
+        actor_type="human" if str(payload.get("actor_type") or "operator") == "human" else "operator",
+        actor_id=str(payload.get("actor") or "operator"),
+        target={"asset_type": "canon_change_approval", "approval_id": approval_id},
+        project_id=project_id,
+        trace_id=trace_id,
+        output_refs=[written["path"]],
+        status="waiting_human",
+        blocking=True,
+        metadata={"risk_level": content["risk_level"]},
+    )
+    return {"status": "waiting_human", "path": written["path"], "asset": written["asset"], "audit_event_path": audit["path"], "approval": content}
+
+
+def resolve_canon_change_approval(storage: LocalStorage, approval_ref: str | Path, payload: dict[str, Any]) -> dict[str, Any]:
+    path = _resolve_asset_by_type(storage, approval_ref, "canon_change_approval", category="continuity")
+    data = storage.read_json(path)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    decision = str(payload.get("decision") or payload.get("status") or "").strip().lower()
+    if decision not in {"approved", "rejected"}:
+        raise ValueError("canon change approval decision must be approved or rejected")
+    content["status"] = decision
+    content["resolved_at"] = utc_now()
+    trace_id = str(payload.get("trace_id") or content.get("trace_id") or make_id("trace", str(content.get("approval_id") or utc_now())))
+    content["resolution"] = {
+        "decision": decision,
+        "actor": str(payload.get("actor") or "operator"),
+        "reason": str(payload.get("reason") or ""),
+        "trace_id": trace_id,
+    }
+    data["content"] = content
+    data["metadata"] = {**(data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}), "asset_status": decision, "status": decision}
+    data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], decision])
+    data["updated_at"] = utc_now()
+    storage.write_json(path, data)
+    patch_written = {}
+    if decision == "approved" and isinstance(content.get("proposed_patch"), dict) and content.get("proposed_patch"):
+        proposed_patch = content.get("proposed_patch", {}) if isinstance(content.get("proposed_patch", {}), dict) else {}
+        patch_written = _write_base_asset(
+            storage,
+            "continuity",
+            "canon_patch",
+            "Approved canon patch",
+            ["canon-graph", "canon-patch", "approved"],
+            {
+                "patch_id": make_id("canon_patch", content.get("approval_id", utc_now())),
+                "approval_id": content.get("approval_id", ""),
+                "target_draft_id": str(proposed_patch.get("target_draft_id") or content.get("target_draft_id") or "canon-change-approval"),
+                "target_draft_path": str(proposed_patch.get("target_draft_path") or ""),
+                "chapter": _positive_int_or_none(proposed_patch.get("chapter")) or 0,
+                "status": "accepted",
+                "proposed_events": proposed_patch.get("proposed_events", []) if isinstance(proposed_patch.get("proposed_events", []), list) else [],
+                "entity_updates": proposed_patch.get("entity_updates", proposed_patch.get("characters", [])) if isinstance(proposed_patch.get("entity_updates", proposed_patch.get("characters", [])), list) else [],
+                "thread_updates": proposed_patch.get("thread_updates", []) if isinstance(proposed_patch.get("thread_updates", []), list) else [],
+                "relationship_updates": proposed_patch.get("relationship_updates", []) if isinstance(proposed_patch.get("relationship_updates", []), list) else [],
+                "apply_plan": {
+                    "mode": "human_approved_canon_graph_change",
+                    "source_approval_id": content.get("approval_id", ""),
+                    "writes": ["canon_patch.status", "canon_database|character_state_ledger|arc_plan|foreshadowing_graph|world_rule"],
+                    "rollback": "restore JSON backup or reject the accepted canon_patch before apply",
+                },
+                "human_gate": {"required": True, "status": "approved", "approved_by": str(payload.get("actor") or "operator"), "approval_id": content.get("approval_id", "")},
+                "patch": proposed_patch,
+                "created_at": utc_now(),
+            },
+            project_id=str(data.get("metadata", {}).get("project_id") or content.get("project_id") or ""),
+            workspace_path=str(data.get("metadata", {}).get("workspace_path") or content.get("workspace_path") or ""),
+            references=[_display_path(storage.root, path)],
+        )
+    audit = record_audit_event(
+        storage,
+        event_type="canon_graph",
+        action=f"canon_change_approval.{decision}",
+        actor_type="human",
+        actor_id=str(payload.get("actor") or "operator"),
+        target={"asset_type": "canon_change_approval", "approval_id": content.get("approval_id", "")},
+        project_id=str(data.get("metadata", {}).get("project_id", "")),
+        trace_id=trace_id,
+        input_refs=[_display_path(storage.root, path)],
+        output_refs=[patch_written.get("path", "")] if patch_written else [],
+        status="succeeded" if decision == "approved" else "rejected",
+        blocking=False,
+        metadata={"decision": decision},
+    )
+    return {"status": decision, "path": _display_path(storage.root, path), "asset": data, "canon_patch": patch_written, "audit_event_path": audit["path"]}
+
+
+def locate_canon_graph_impacted_chapters(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    project_id = str(payload.get("project_id") or "")
+    workspace_path = str(payload.get("workspace_path") or "")
+    keyword_items = [str(item) for item in payload.get("keywords", []) if str(item).strip()] if isinstance(payload.get("keywords", []), list) else []
+    keywords = _dedupe([*keyword_items, str(payload.get("keyword") or "")])
+    for node in payload.get("nodes", []) if isinstance(payload.get("nodes", []), list) else []:
+        if isinstance(node, dict):
+            keywords.extend([str(node.get("name") or ""), str(node.get("canonical_name") or ""), str(node.get("entity_id") or "")])
+    keywords = _dedupe(keywords)
+    limit = max(1, min(1000, int(payload.get("limit", 300) or 300)))
+    target_types = {"draft_chapter", "chapter_plan", "chapter_plan_version", "review_report", "publish_gate_report", "release_package", "longform_recap_report"}
+    rows: list[dict[str, Any]] = []
+    references: list[str] = []
+    if not keywords:
+        return {"status": "empty", "keywords": [], "impacted_chapters": [], "references": [], "summary": {"impacted_chapter_count": 0, "asset_count": 0}}
+    for category in ["drafts", "chapter_plans", "reviews", "publishing", "continuity"]:
+        for path in reversed(storage.list_json(category)):
+            data = _read_json_safe(storage, path)
+            if not data or data.get("type") not in target_types:
+                continue
+            if not _project_matches(data, project_id=project_id or None, workspace_path=workspace_path or None):
+                continue
+            text = _asset_search_text(data)
+            matched = [term for term in keywords if term and _term_hit(term, text)]
+            if not matched:
+                continue
+            row = {
+                "path": _display_path(storage.root, path),
+                "asset_id": str(data.get("id", "")),
+                "asset_type": str(data.get("type", "")),
+                "chapter_no": _chapter_no_from_asset(data),
+                "matched_terms": matched[:12],
+                "risk": "needs_recheck" if data.get("type") in {"draft_chapter", "release_package", "publish_gate_report"} else "needs_review",
+            }
+            rows.append(row)
+            references.append(row["path"])
+            if len(rows) >= limit:
+                break
+        if len(rows) >= limit:
+            break
+    chapter_numbers = sorted({int(row["chapter_no"]) for row in rows if isinstance(row.get("chapter_no"), int)})
+    return {
+        "status": "found" if rows else "none",
+        "keywords": keywords,
+        "impacted_chapters": rows,
+        "references": _dedupe(references),
+        "summary": {
+            "impacted_chapter_count": len(chapter_numbers),
+            "asset_count": len(rows),
+            "chapter_numbers": chapter_numbers,
+            "critical_asset_count": len([row for row in rows if row["asset_type"] in {"draft_chapter", "release_package", "publish_gate_report"}]),
+        },
+    }
 
 
 def _nodes_from_asset(storage: LocalStorage, path: Path, data: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -1182,6 +1498,163 @@ def _dedupe_issues(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
             seen.add(key)
             result.append(issue)
     return result
+
+
+def _graph_from_snapshot_or_current(
+    storage: LocalStorage,
+    snapshot_path: str,
+    *,
+    project_id: str | None,
+    workspace_path: str | None,
+) -> dict[str, Any]:
+    if snapshot_path:
+        data = _read_json_safe(storage, resolve_path(storage.root, snapshot_path))
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        nodes = content.get("nodes", []) if isinstance(content.get("nodes", []), list) else []
+        edges = content.get("edges", []) if isinstance(content.get("edges", []), list) else []
+        return {
+            "graph_id": str(content.get("snapshot_id") or data.get("id") or snapshot_path),
+            "project_id": str(content.get("project_id") or data.get("metadata", {}).get("project_id", "")),
+            "workspace_path": str(content.get("workspace_path") or data.get("metadata", {}).get("workspace_path", "")),
+            "nodes": nodes,
+            "edges": edges,
+            "summary": content.get("summary", {}) if isinstance(content.get("summary", {}), dict) else _summary(nodes, edges),
+            "references": data.get("references", []) if isinstance(data.get("references", []), list) else [],
+        }
+    return build_canon_graph(storage, project_id=project_id, workspace_path=workspace_path)
+
+
+def _node_stable_key(node: dict[str, Any]) -> str:
+    node_type = str(node.get("node_type") or node.get("source_asset_type") or "").strip()
+    entity_id = str(node.get("entity_id") or "").strip()
+    name = str(node.get("canonical_name") or node.get("name") or "").strip()
+    source_type = str(node.get("source_asset_type") or "").strip()
+    if not node_type and not (entity_id or name):
+        return ""
+    return "|".join([node_type, source_type, _normal_key(entity_id or name)])
+
+
+def _node_field_diff(before: dict[str, Any], after: dict[str, Any]) -> list[dict[str, Any]]:
+    fields = [
+        "status",
+        "canonical_name",
+        "name",
+        "role",
+        "arc_question",
+        "protagonist_goal",
+        "villain_goal",
+        "target_truth",
+        "planned_payoff_chapter",
+        "forbidden_terms",
+        "required_terms",
+        "required_payoffs",
+        "forbidden_expansion",
+    ]
+    changes: list[dict[str, Any]] = []
+    for field in fields:
+        before_value = before.get(field)
+        after_value = after.get(field)
+        if before_value != after_value:
+            changes.append({"field": field, "before": before_value, "after": after_value})
+    return changes
+
+
+def _node_public(node: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in node.items() if key not in {"raw"}}
+
+
+def _edge_key(edge: dict[str, Any]) -> str:
+    return "|".join([str(edge.get("source", "")), str(edge.get("target", "")), str(edge.get("relation", ""))])
+
+
+def _edge_public(edge: dict[str, Any]) -> dict[str, Any]:
+    return {key: edge.get(key, "") for key in ["source", "target", "relation", "evidence"] if key in edge}
+
+
+def _asset_search_text(data: dict[str, Any]) -> str:
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    safe_parts: list[str] = [str(data.get("title") or ""), str(data.get("name") or ""), str(data.get("type") or "")]
+
+    def visit(value: Any) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key in {"raw_text", "clean_text", "source_text"}:
+                    continue
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+        elif isinstance(value, (str, int, float, bool)):
+            safe_parts.append(str(value))
+
+    visit(content)
+    visit({key: value for key, value in metadata.items() if key not in {"raw_text", "clean_text"}})
+    return "\n".join(safe_parts)
+
+
+def _chapter_no_from_asset(data: dict[str, Any]) -> int | str:
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    for key in ["chapter_no", "chapter", "chapter_number"]:
+        value = content.get(key)
+        parsed = _positive_int_or_none(value)
+        if parsed:
+            return parsed
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    for key in ["chapter_no", "chapter", "chapter_number"]:
+        parsed = _positive_int_or_none(metadata.get(key))
+        if parsed:
+            return parsed
+    return ""
+
+
+def _write_base_asset(
+    storage: LocalStorage,
+    category: str,
+    asset_type: str,
+    title: str,
+    tags: list[str],
+    content: dict[str, Any],
+    *,
+    project_id: str = "",
+    workspace_path: str = "",
+    references: list[str] | None = None,
+) -> dict[str, Any]:
+    asset = BaseAsset(
+        type=asset_type,
+        title=title,
+        tags=tags,
+        content=content,
+        metadata={
+            "project_id": project_id or str(content.get("project_id") or ""),
+            "workspace_path": workspace_path or str(content.get("workspace_path") or ""),
+            "use_in_generation_rag": False,
+            "asset_status": str(content.get("status") or tags[-1] if tags else "active"),
+        },
+        references=filter_project_safe_references(storage, project_id or str(content.get("project_id") or ""), references or []),
+    )
+    data = asset.to_dict()
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset(category, asset)
+    return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
+
+
+def _resolve_asset_by_type(storage: LocalStorage, value: str | Path, asset_type: str, *, category: str) -> Path:
+    candidate = resolve_path(storage.root, value)
+    if candidate.exists():
+        data = _read_json_safe(storage, candidate)
+        if data.get("type") == asset_type:
+            return candidate
+    for path in reversed(storage.list_json(category)):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != asset_type:
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if str(data.get("id", "")) == str(value) or str(content.get("approval_id", "")) == str(value):
+            return path
+    raise FileNotFoundError(f"{asset_type} not found: {value}")
 
 
 def _dedupe(values: list[str]) -> list[str]:

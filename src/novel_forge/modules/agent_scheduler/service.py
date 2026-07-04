@@ -23,7 +23,7 @@ from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.review_issue import review_issue_to_revision_task_candidate
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, release_scheduler_lease, scheduler_lease_status
-from novel_forge.schemas import AgentDispatchQueue, AgentRollbackReport, AgentTask, RevisionTask, validate_common_fields
+from novel_forge.schemas import AgentDispatchQueue, AgentRollbackReport, AgentTask, BaseAsset, RevisionTask, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 QUEUE_STATUSES = {"queued", "claimed", "running", "waiting_human", "acked", "retry_scheduled", "dead_letter", "cancelled"}
@@ -592,6 +592,184 @@ def mkaos_agent_operation_coverage_report() -> dict[str, Any]:
     }
 
 
+def create_agent_dag(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    nodes = _dag_nodes(payload.get("nodes", []))
+    edges = _dag_edges(payload.get("edges", []), nodes)
+    validation = _validate_dag(nodes, edges)
+    dag_id = make_id("agent_dag", f"{payload.get('project_id', '')}:{payload.get('name', 'agent-dag')}:{utc_now()}")
+    content = {
+        "dag_id": dag_id,
+        "name": str(payload.get("name") or "Agent DAG"),
+        "status": "blocked" if validation["cycle_detected"] else "ready",
+        "nodes": nodes,
+        "edges": edges,
+        "topological_order": validation["topological_order"],
+        "cycle_detected": validation["cycle_detected"],
+        "operation_coverage": agent_operation_coverage_full_report(storage, project_id=str(payload.get("project_id") or "")),
+        "created_at": utc_now(),
+    }
+    written = _write_base_run_asset(
+        storage,
+        "agent_dag",
+        content["name"],
+        ["agent-center-v2", "dag", content["status"]],
+        content,
+        project_id=str(payload.get("project_id") or ""),
+        workspace_path=str(payload.get("workspace_path") or ""),
+        references=_dedupe([str(node.get("agent_run_path", "")) for node in nodes]),
+    )
+    return {**written, "status": content["status"], "validation": validation}
+
+
+def agent_operation_coverage_full_report(storage: LocalStorage, *, project_id: str = "") -> dict[str, Any]:
+    contracts = list_agent_operation_contracts()
+    contract_by_op = {str(row.get("operation", "")): row for row in contracts}
+    registry_entries = _agent_center_assets(storage, "agent_registry_entry", project_id=project_id or None, limit=1000)
+    queue = list_agent_dispatch_queue(storage, project_id=project_id or None, limit=1000)
+    runs = _agent_center_assets(storage, "agent_run", project_id=project_id or None, limit=1000)
+    operations = sorted({*[str(row.get("operation", "")) for row in contracts], *CORE_MKAOS_CONTEXT_OPERATIONS.keys()})
+    rows: list[dict[str, Any]] = []
+    for operation in operations:
+        contract = contract_by_op.get(operation, {})
+        queue_hits = [row for row in queue if str(row.get("operation", "")) == operation]
+        run_hits = [row for row in runs if str((row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}).get("operation", "")) == operation]
+        rows.append(
+            {
+                "operation": operation,
+                "registered": bool(contract),
+                "runner_kind": str(contract.get("runner_kind", "")),
+                "agent_key": str(contract.get("agent_key", "")),
+                "mkaos_context_policy": CORE_MKAOS_CONTEXT_OPERATIONS.get(operation, "optional"),
+                "queued_count": len(queue_hits),
+                "run_count": len(run_hits),
+                "dead_letter_count": len([row for row in queue_hits if str(row.get("status", "")) == "dead_letter"]),
+                "waiting_human_count": len([row for row in queue_hits if str(row.get("status", "")) == "waiting_human"]),
+                "hard_stop_ui_visible": True,
+                "rollback_rehearsal_supported": bool(contract),
+                "dead_letter_repair_supported": True,
+            }
+        )
+    missing = [row for row in rows if not row["registered"] and row["mkaos_context_policy"] == "required"]
+    status = "blocked" if missing else "ready"
+    return {
+        "status": status,
+        "project_id": project_id,
+        "summary": {
+            "operation_count": len(rows),
+            "registered_count": len([row for row in rows if row["registered"]]),
+            "missing_required_count": len(missing),
+            "agent_registry_entry_count": len(registry_entries),
+            "dead_letter_count": sum(int(row["dead_letter_count"]) for row in rows),
+        },
+        "operations": rows,
+        "missing_required_operations": missing,
+        "created_at": utc_now(),
+    }
+
+
+def agent_hard_stop_dashboard(storage: LocalStorage, *, project_id: str = "", workspace_path: str = "") -> dict[str, Any]:
+    from novel_forge.modules.runtime_policy import provider_hard_stop_evidence_report
+
+    provider = provider_hard_stop_evidence_report(storage, project_id=project_id or None, workspace_path=workspace_path or None)
+    gates = _agent_center_assets(storage, "agent_gate", project_id=project_id or None, limit=400)
+    failures = _agent_center_assets(storage, "agent_failure_report", project_id=project_id or None, limit=400)
+    hard_stop_gates = [row for row in gates if "provider_" in str(row.get("content", {}))]
+    return {
+        "status": "blocked" if provider.get("status") != "passed" else "ready",
+        "project_id": project_id,
+        "provider_hard_stop_evidence": provider,
+        "hard_stop_gates": [_agent_gate_row(row) for row in hard_stop_gates[:120]],
+        "recent_failures": [_agent_asset_compact(row) for row in failures[:80]],
+        "summary": {
+            "provider_status": provider.get("status", ""),
+            "hard_stop_gate_count": len(hard_stop_gates),
+            "failure_count": len(failures),
+            "fail_closed": True,
+            "silent_fallback_allowed": False,
+        },
+    }
+
+
+def rehearse_agent_rollback(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    queue_ref = str(payload.get("queue_path") or "")
+    agent_run_ref = str(payload.get("agent_run_path") or "")
+    queue_data: dict[str, Any] = {}
+    run_data: dict[str, Any] = {}
+    if queue_ref:
+        queue_path = _resolve_queue(storage, queue_ref)
+        queue_data = _read_json_safe(storage, queue_path)
+        agent_run_ref = agent_run_ref or str((queue_data.get("content", {}) if isinstance(queue_data.get("content", {}), dict) else {}).get("agent_run_path", ""))
+    if agent_run_ref:
+        run_path = _resolve_agent_run(storage, agent_run_ref)
+        run_data = _read_json_safe(storage, run_path)
+    run_content = run_data.get("content", {}) if isinstance(run_data.get("content", {}), dict) else {}
+    operation = _canonical_operation(str(run_content.get("operation") or (queue_data.get("content", {}) if isinstance(queue_data.get("content", {}), dict) else {}).get("operation", "")))
+    spec = OPERATION_REGISTRY.specs.get(operation)
+    payload_outputs = [str(item) for item in payload.get("output_assets", []) if str(item).strip()] if isinstance(payload.get("output_assets", []), list) else []
+    output_assets = _dedupe([*[str(item.get("path", "")) for item in run_content.get("output_assets", []) if isinstance(item, dict)], *payload_outputs])
+    rehearsal = {
+        "rehearsal_id": make_id("agent_rollback_rehearsal", f"{operation}:{utc_now()}"),
+        "status": "ready",
+        "apply": False,
+        "operation": operation,
+        "agent_run_path": agent_run_ref,
+        "queue_path": queue_ref,
+        "rollback_strategy": spec.rollback_strategy if spec else str(payload.get("rollback_strategy") or "mark_outputs_rolled_back"),
+        "target_asset_paths": output_assets,
+        "would_mark_assets": [{"path": path, "exists": _path_exists(storage, path)} for path in output_assets],
+        "manual_required": (spec.rollback_strategy if spec else "") in {"manual_reconciliation_required", "rollback_patch_available"},
+        "created_at": utc_now(),
+    }
+    written = _write_base_run_asset(
+        storage,
+        "agent_rollback_rehearsal",
+        f"Agent rollback rehearsal {operation or 'unknown'}",
+        ["agent-center-v2", "rollback-rehearsal", "dry-run"],
+        rehearsal,
+        project_id=str((run_data.get("metadata", {}) if isinstance(run_data.get("metadata", {}), dict) else {}).get("project_id") or payload.get("project_id") or ""),
+        workspace_path=str((run_data.get("metadata", {}) if isinstance(run_data.get("metadata", {}), dict) else {}).get("workspace_path") or payload.get("workspace_path") or ""),
+        references=_dedupe([queue_ref, agent_run_ref, *output_assets]),
+    )
+    return {**written, "rehearsal": rehearsal}
+
+
+def repair_dead_letter_dispatch(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    reason = str(payload.get("reason") or "agent center v2 dead letter repair")
+    queue_ref = str(payload.get("queue_path") or payload.get("dispatch_queue_path") or "")
+    if not queue_ref:
+        raise ValueError("queue_path is required for dead letter repair")
+    before_path = _resolve_queue(storage, queue_ref)
+    before = _read_json_safe(storage, before_path)
+    before_status = str((before.get("content", {}) if isinstance(before.get("content", {}), dict) else {}).get("status", ""))
+    if before_status != "dead_letter" and not payload.get("force", False):
+        raise ValueError("dead letter repair requires queue status dead_letter unless force=true")
+    rehearsal = rehearse_agent_rollback(storage, {"queue_path": _display_path(storage.root, before_path), "project_id": payload.get("project_id") or ""})
+    recovered = recover_agent_dispatch(storage, queue_path=_display_path(storage.root, before_path), reason=reason)
+    report = {
+        "repair_id": make_id("dead_letter_repair", f"{queue_ref}:{utc_now()}"),
+        "status": "queued",
+        "before_status": before_status,
+        "queue_path": _display_path(storage.root, before_path),
+        "recovered_queue": recovered,
+        "rollback_rehearsal_path": rehearsal.get("path", ""),
+        "reason": reason,
+        "created_at": utc_now(),
+    }
+    written = _write_base_run_asset(
+        storage,
+        "agent_dead_letter_repair",
+        "Agent dead letter repair",
+        ["agent-center-v2", "dead-letter-repair", "queued"],
+        report,
+        project_id=str(payload.get("project_id") or recovered.get("project_id") or ""),
+        workspace_path=str(payload.get("workspace_path") or ""),
+        references=[_display_path(storage.root, before_path), rehearsal.get("path", "")],
+    )
+    return {**written, "repair": report}
+
+
 def create_agent_task(
     storage: LocalStorage,
     *,
@@ -778,8 +956,14 @@ def agent_center_snapshot(
     ]
     status = "blocked" if blocked_queue or failures else "warning" if any(check["status"] == "warning" for check in readiness_checks) else "ready"
     recommendations = _agent_center_recommendations(status, blocked_queue, failures, readiness_checks)
+    operation_coverage_full = agent_operation_coverage_full_report(storage, project_id=project_id or "")
+    hard_stop_dashboard = agent_hard_stop_dashboard(storage, project_id=project_id or "")
+    rollback_rehearsals = _agent_center_assets(storage, "agent_rollback_rehearsal", project_id=project_id, limit=limit)
+    dead_letter_repairs = _agent_center_assets(storage, "agent_dead_letter_repair", project_id=project_id, limit=limit)
+    agent_dags = _agent_center_assets(storage, "agent_dag", project_id=project_id, limit=limit)
     return {
         "status": status,
+        "agent_center_version": "v2",
         "project_id": project_id or "",
         "health_score": health_score,
         "summary": {
@@ -816,6 +1000,11 @@ def agent_center_snapshot(
         "retry_controls": [row for row in blocked_queue if str(row.get("status", "")) in {"waiting_human", "retry_scheduled", "dead_letter"}][:80],
         "dead_letter_queue": [row for row in blocked_queue if str(row.get("status", "")) == "dead_letter"][:80],
         "rollback_preview": rollback_rows[:80],
+        "rollback_rehearsals": [_agent_asset_compact(row) for row in rollback_rehearsals[:80]],
+        "dead_letter_repairs": [_agent_asset_compact(row) for row in dead_letter_repairs[:80]],
+        "agent_dags": [_agent_asset_compact(row) for row in agent_dags[:80]],
+        "operation_coverage_full": operation_coverage_full,
+        "hard_stop_dashboard": hard_stop_dashboard,
         "sla_duration": _agent_sla_duration_rows(run_rows),
         "evidence_drawer": _agent_evidence_drawer(events, checkpoints, gates, budgets, failures, rollbacks, tasks, loops, contexts, review_issues, revision_tasks, handoffs)[:220],
         "operation_coverage": contracts,
@@ -3355,6 +3544,108 @@ def _agent_center_recommendations(status: str, blocked_queue: list[dict[str, Any
     if status == "ready" and not recommendations:
         recommendations.append("Agent Center evidence is ready for broader autonomous operation coverage")
     return recommendations
+
+
+def _dag_nodes(value: Any) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for index, item in enumerate(value if isinstance(value, list) else [], start=1):
+        if not isinstance(item, dict):
+            continue
+        node_id = str(item.get("id") or item.get("node_id") or item.get("operation") or f"node-{index}").strip()
+        operation = _canonical_operation(str(item.get("operation") or node_id))
+        rows.append(
+            {
+                "id": node_id,
+                "operation": operation,
+                "agent_key": str(item.get("agent_key") or item.get("agent_type") or ""),
+                "depends_on": _dedupe([str(dep) for dep in item.get("depends_on", [])]) if isinstance(item.get("depends_on", []), list) else [],
+                "agent_run_path": str(item.get("agent_run_path") or ""),
+                "status": str(item.get("status") or "planned"),
+                "mkaos_context_required": CORE_MKAOS_CONTEXT_OPERATIONS.get(operation) == "required",
+            }
+        )
+    return rows
+
+
+def _dag_edges(value: Any, nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    node_ids = {str(node.get("id", "")) for node in nodes}
+    rows: list[dict[str, Any]] = []
+    for item in value if isinstance(value, list) else []:
+        if isinstance(item, dict):
+            source = str(item.get("source") or item.get("from") or "").strip()
+            target = str(item.get("target") or item.get("to") or "").strip()
+        elif isinstance(item, (list, tuple)) and len(item) >= 2:
+            source, target = str(item[0]), str(item[1])
+        else:
+            continue
+        if source in node_ids and target in node_ids:
+            rows.append({"source": source, "target": target, "relation": "precedes"})
+    for node in nodes:
+        target = str(node.get("id", ""))
+        for source in node.get("depends_on", []) if isinstance(node.get("depends_on", []), list) else []:
+            if source in node_ids and target in node_ids:
+                rows.append({"source": source, "target": target, "relation": "depends_on"})
+    return _dedupe_dag_edges(rows)
+
+
+def _validate_dag(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> dict[str, Any]:
+    node_ids = [str(node.get("id", "")) for node in nodes]
+    incoming = {node_id: 0 for node_id in node_ids}
+    outgoing: dict[str, list[str]] = {node_id: [] for node_id in node_ids}
+    for edge in edges:
+        source = str(edge.get("source", ""))
+        target = str(edge.get("target", ""))
+        if source not in outgoing or target not in incoming:
+            continue
+        outgoing[source].append(target)
+        incoming[target] += 1
+    ready = sorted([node_id for node_id, count in incoming.items() if count == 0])
+    order: list[str] = []
+    while ready:
+        node_id = ready.pop(0)
+        order.append(node_id)
+        for target in sorted(outgoing.get(node_id, [])):
+            incoming[target] -= 1
+            if incoming[target] == 0:
+                ready.append(target)
+    cycle = len(order) != len(node_ids)
+    return {"ok": not cycle, "cycle_detected": cycle, "topological_order": order, "node_count": len(nodes), "edge_count": len(edges), "errors": ["agent DAG contains a cycle"] if cycle else []}
+
+
+def _dedupe_dag_edges(edges: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for edge in edges:
+        key = (str(edge.get("source", "")), str(edge.get("target", "")))
+        if key[0] and key[1] and key not in seen:
+            seen.add(key)
+            result.append(edge)
+    return result
+
+
+def _write_base_run_asset(
+    storage: LocalStorage,
+    asset_type: str,
+    title: str,
+    tags: list[str],
+    content: dict[str, Any],
+    *,
+    project_id: str = "",
+    workspace_path: str = "",
+    references: list[str] | None = None,
+) -> dict[str, Any]:
+    asset = BaseAsset(
+        type=asset_type,
+        title=title,
+        tags=tags,
+        content=content,
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "asset_status": str(content.get("status") or ""), "use_in_generation_rag": False},
+        references=filter_project_safe_references(storage, project_id, references or []),
+    )
+    data = asset.to_dict()
+    _ensure_valid(data)
+    path = storage.write_asset("runs", asset)
+    return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
 
 
 def _tool_name_for_output(output_types: list[str]) -> str:

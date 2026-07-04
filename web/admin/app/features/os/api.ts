@@ -50,6 +50,7 @@ export type AgentOperationContracts = {
 
 export type AgentCenterSnapshot = {
   status?: string;
+  agent_center_version?: string;
   summary?: Record<string, unknown>;
   health_score?: number;
   readiness_checks?: Array<Record<string, unknown>>;
@@ -70,6 +71,11 @@ export type AgentCenterSnapshot = {
   sla_duration?: Array<Record<string, unknown>>;
   evidence_drawer?: Array<Record<string, unknown>>;
   operation_coverage?: Array<Record<string, unknown>>;
+  operation_coverage_full?: Record<string, unknown>;
+  hard_stop_dashboard?: Record<string, unknown>;
+  rollback_rehearsals?: Array<Record<string, unknown>>;
+  dead_letter_repairs?: Array<Record<string, unknown>>;
+  agent_dags?: Array<Record<string, unknown>>;
   recommendations?: string[];
 };
 
@@ -240,6 +246,19 @@ export function loadAgentCenterSnapshot(projectId?: string) {
   return fetchJson<AgentCenterSnapshot>(`/product/agents/center?${params.toString()}`);
 }
 
+export function loadAgentOperationCoverage(projectId?: string) {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  return fetchJson<Record<string, unknown>>(`/product/agents/operation-coverage?${params.toString()}`);
+}
+
+export function loadAgentHardStopDashboard(projectId?: string, workspacePath?: string) {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  if (workspacePath) params.set("workspace_path", workspacePath);
+  return fetchJson<Record<string, unknown>>(`/product/agents/hard-stop-dashboard?${params.toString()}`);
+}
+
 export function loadEditorChiefSnapshot(projectId?: string, workspacePath?: string) {
   const params = new URLSearchParams({ limit: "700" });
   if (projectId) params.set("project_id", projectId);
@@ -267,6 +286,32 @@ export function recoverAgentDispatch(queuePath: string) {
   return postJson("/product/agents/recover", {
     queue_path: queuePath,
     reason: "os agent dispatch center recovery"
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function repairDeadLetterDispatch(queuePath: string) {
+  return postJson("/product/agents/dead-letter-repair", {
+    queue_path: queuePath,
+    reason: "os agent center v2 dead letter repair"
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function rehearseAgentRollback(queuePath: string) {
+  return postJson("/product/agents/rollback-rehearsal", {
+    queue_path: queuePath
+  }) as Promise<Record<string, unknown>>;
+}
+
+export function createAgentDag(projectId?: string) {
+  return postJson("/product/agents/dag", {
+    project_id: projectId || "",
+    name: "review -> revision -> publish gate",
+    nodes: [
+      { id: "draft", operation: "draft" },
+      { id: "review", operation: "review", depends_on: ["draft"] },
+      { id: "revision", operation: "revise", depends_on: ["review"] },
+      { id: "publish_gate", operation: "create-publish-gate-report", depends_on: ["revision"] }
+    ]
   }) as Promise<Record<string, unknown>>;
 }
 

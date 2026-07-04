@@ -8,9 +8,12 @@ import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import {
   dispatchAgentTaskFromIssue,
   dispatchAgentRun,
+  createAgentDag,
   loadAgentCenterSnapshot,
   loadAgentDispatchData,
   recoverAgentDispatch,
+  repairDeadLetterDispatch,
+  rehearseAgentRollback,
   runAgentSchedulerTick,
   type AgentCenterSnapshot
 } from "./api";
@@ -88,6 +91,13 @@ export function AgentDispatchCenterPage() {
   const reviewIssues = agentCenter?.review_issues || [];
   const revisionTasks = agentCenter?.revision_tasks || [];
   const runtimeLinks = agentCenter?.runtime_links || {};
+  const operationCoverageFull = (agentCenter?.operation_coverage_full || {}) as Record<string, unknown>;
+  const hardStopDashboard = (agentCenter?.hard_stop_dashboard || {}) as Record<string, unknown>;
+  const rollbackRehearsals = agentCenter?.rollback_rehearsals || [];
+  const deadLetterRepairs = agentCenter?.dead_letter_repairs || [];
+  const agentDags = agentCenter?.agent_dags || [];
+  const coverageOps = ((operationCoverageFull.operations as Array<Record<string, unknown>> | undefined) || []);
+  const hardStopSummary = (hardStopDashboard.summary || {}) as Record<string, unknown>;
 
   return (
     <FeatureShell title="Agent Dispatch Center" subtitle="让 prepared AgentRun 进入 queue，由 scheduler lease/claim/retry/recover 执行，并留下 checkpoint、gate、budget 和 trace 证据。" eyebrow="OS Runtime">
@@ -103,6 +113,23 @@ export function AgentDispatchCenterPage() {
         <Metric label="Lease" value={String(lease.status ?? "missing")} />
         <Metric label="Agent Tasks" value={String(agentTasks.length)} />
         <Metric label="Health" value={String(agentCenter?.health_score ?? 0)} />
+        <Metric label="Center" value={String(agentCenter?.agent_center_version || "v1")} />
+      </section>
+
+      <section className="panel">
+        <PanelHeader title="Agent Center v2 Control" icon={<ShieldCheck size={18} />} />
+        <div className="studioActions">
+          <button className="primaryButton" disabled={busy} onClick={() => runAction(() => createAgentDag(projectId), "Agent DAG 已创建", setDispatchResult)}><ListChecks size={16} />Create Review DAG</button>
+          <button className="secondaryButton" disabled={busy || !failedQueue[0]?.path} onClick={() => runAction(() => rehearseAgentRollback(String(failedQueue[0]?.path || "")), "Rollback rehearsal 已生成", setDispatchResult)}>Rollback Rehearsal</button>
+          <button className="secondaryButton" disabled={busy || !failedQueue.find((row) => String(row.status || "") === "dead_letter")?.path} onClick={() => runAction(() => repairDeadLetterDispatch(String(failedQueue.find((row) => String(row.status || "") === "dead_letter")?.path || "")), "Dead-letter repair 已执行", setDispatchResult)}>Repair Dead Letter</button>
+        </div>
+        <div className="summaryBand">
+          <Metric label="Hard-stop" value={String(hardStopSummary.provider_status || hardStopDashboard.status || "-")} />
+          <Metric label="Fail Closed" value={hardStopSummary.fail_closed === false ? "no" : "yes"} />
+          <Metric label="Silent Fallback" value={hardStopSummary.silent_fallback_allowed === true ? "allowed" : "blocked"} />
+          <Metric label="Full Coverage" value={String((operationCoverageFull.summary as Record<string, unknown> | undefined)?.registered_count ?? 0)} />
+          <Metric label="DAGs" value={String(agentDags.length)} />
+        </div>
       </section>
 
       <section className="panel">
@@ -330,27 +357,46 @@ export function AgentDispatchCenterPage() {
 
       <section className="workspaceGrid">
         <div className="panel">
-          <PanelHeader title="Dead-letter Queue" icon={<Activity size={18} />} />
+          <PanelHeader title="Dead-letter Queue / Repair" icon={<Activity size={18} />} />
           <DataTable
             emptyText="暂无 dead-letter"
-            columns={["Operation", "错误", "Path"]}
+            columns={["Operation", "错误", "Path", "Repair"]}
             rows={(agentCenter?.dead_letter_queue || []).slice(0, 50).map((row) => [
               String(row.operation || "-"),
               String(row.last_error || row.error || "-"),
-              pathCell(String(row.path || "-"), `${String(row.path)}-dead-letter`)
+              pathCell(String(row.path || "-"), `${String(row.path)}-dead-letter`),
+              row.path ? (
+                <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => repairDeadLetterDispatch(String(row.path || "")), "Dead-letter repair 已执行", setDispatchResult)} key={`${String(row.path)}-repair`}>
+                  Repair
+                </button>
+              ) : "-"
             ])}
           />
         </div>
         <div className="panel">
-          <PanelHeader title="Rollback Preview" icon={<RotateCcw size={18} />} />
+          <PanelHeader title="Rollback Preview / Rehearsal" icon={<RotateCcw size={18} />} />
           <DataTable
             emptyText="暂无 rollback preview"
-            columns={["Operation", "Strategy", "状态", "Path"]}
+            columns={["Operation", "Strategy", "状态", "Path", "Rehearse"]}
             rows={(agentCenter?.rollback_preview || []).slice(0, 50).map((row) => [
               String(row.operation || "-"),
               String(row.strategy || row.rollback_strategy || "-"),
               <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-rollback-status`}>{String(row.status || "-")}</span>,
-              pathCell(String(row.path || "-"), `${String(row.path)}-rollback`)
+              pathCell(String(row.path || "-"), `${String(row.path)}-rollback`),
+              failedQueue[0]?.path ? (
+                <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => rehearseAgentRollback(String(failedQueue[0]?.path || "")), "Rollback rehearsal 已生成", setDispatchResult)} key={`${String(row.path)}-rehearse`}>
+                  Rehearse
+                </button>
+              ) : "-"
+            ])}
+          />
+          <DataTable
+            emptyText="暂无 rollback rehearsal"
+            columns={["Status", "Operation", "Path"]}
+            rows={rollbackRehearsals.slice(0, 20).map((row) => [
+              <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-rehearsal-status`}>{String(row.status || "-")}</span>,
+              String(row.operation || row.type || "-"),
+              pathCell(String(row.path || "-"), `${String(row.path)}-rehearsal`)
             ])}
           />
         </div>
@@ -371,17 +417,22 @@ export function AgentDispatchCenterPage() {
           />
         </div>
         <div className="panel">
-          <PanelHeader title="Operation Coverage" icon={<ListChecks size={18} />} />
+          <PanelHeader title="Operation Coverage Full" icon={<ListChecks size={18} />} />
           <DataTable
             emptyText="暂无 operation coverage"
-            columns={["Operation", "Runner", "Checkpoint", "Rollback"]}
-            rows={(agentCenter?.operation_coverage || []).slice(0, 80).map((row) => [
+            columns={["Operation", "Runner", "MKAOS", "Runs", "Dead Letters"]}
+            rows={(coverageOps.length ? coverageOps : (agentCenter?.operation_coverage || [])).slice(0, 80).map((row) => [
               String(row.operation || "-"),
               String(row.runner_kind || row.runner || "-"),
-              String(row.checkpoint_strategy || "-"),
-              String(row.rollback_strategy || "-")
+              String(row.mkaos_context_policy || row.checkpoint_strategy || "-"),
+              String(row.run_count ?? "-"),
+              String(row.dead_letter_count ?? "-")
             ])}
           />
+          <div className="pillRow">
+            <span className="badge">missing required {String((operationCoverageFull.summary as Record<string, unknown> | undefined)?.missing_required_count ?? 0)}</span>
+            <span className="badge">repairs {deadLetterRepairs.length}</span>
+          </div>
         </div>
       </section>
 

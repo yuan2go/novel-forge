@@ -1,5 +1,8 @@
 from novel_forge.modules.agent_scheduler.service import (
+    agent_hard_stop_dashboard,
     agent_center_snapshot,
+    agent_operation_coverage_full_report,
+    create_agent_dag,
     create_agent_task,
     dispatch_agent_run,
     dispatch_revision_task_from_issue,
@@ -8,13 +11,18 @@ from novel_forge.modules.agent_scheduler.service import (
     list_agent_operation_contracts,
     mkaos_agent_operation_coverage_report,
     recover_agent_dispatch,
+    repair_dead_letter_dispatch,
+    rehearse_agent_rollback,
     run_agent_scheduler_loop,
     run_agent_scheduler_tick,
     scheduler_status,
 )
 
 __all__ = [
+    "agent_hard_stop_dashboard",
     "agent_center_snapshot",
+    "agent_operation_coverage_full_report",
+    "create_agent_dag",
     "create_agent_task",
     "dispatch_agent_run",
     "dispatch_revision_task_from_issue",
@@ -23,6 +31,8 @@ __all__ = [
     "list_agent_operation_contracts",
     "mkaos_agent_operation_coverage_report",
     "recover_agent_dispatch",
+    "repair_dead_letter_dispatch",
+    "rehearse_agent_rollback",
     "run_agent_scheduler_loop",
     "run_agent_scheduler_tick",
     "scheduler_status",

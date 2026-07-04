@@ -65,3 +65,15 @@ export function syncAnalytics() {
 export function createAnalyticsSnapshot() {
   return postJson("/product/analytics/dashboard-snapshot", {});
 }
+
+export function loadPermissionCenter() {
+  return fetchJson<Record<string, unknown>>("/product/permission-center/snapshot?limit=300");
+}
+
+export function createPermissionPolicy(payload: Record<string, unknown>) {
+  return postJson("/product/permission-center/policies", payload);
+}
+
+export function evaluatePermission(payload: Record<string, unknown>) {
+  return postJson("/product/permission-center/evaluate", payload);
+}

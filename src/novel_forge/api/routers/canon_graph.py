@@ -5,7 +5,19 @@ from typing import Any
 from fastapi import APIRouter, Query, Request
 
 from novel_forge.api.routers.context import ProductRouterContext
-from novel_forge.modules.canon_graph import build_canon_graph, check_canon_graph_conflicts, persist_canon_graph_issues, query_canon_graph, query_canon_graph_paths, reason_canon_graph
+from novel_forge.modules.canon_graph import (
+    build_canon_graph,
+    check_canon_graph_conflicts,
+    create_canon_change_approval,
+    diff_canon_graph,
+    locate_canon_graph_impacted_chapters,
+    persist_canon_graph_issues,
+    propagate_canon_graph_conflicts,
+    query_canon_graph,
+    query_canon_graph_paths,
+    reason_canon_graph,
+    resolve_canon_change_approval,
+)
 from novel_forge.storage.local import LocalStorage
 
 
@@ -51,5 +63,25 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.post("/product/canon-graph/issues")
     async def canon_graph_issues(request: Request) -> dict[str, Any]:
         return persist_canon_graph_issues(LocalStorage(app_settings.root), await request.json())
+
+    @router.post("/product/canon-graph/diff")
+    async def canon_graph_diff(request: Request) -> dict[str, Any]:
+        return diff_canon_graph(LocalStorage(app_settings.root), await request.json())
+
+    @router.post("/product/canon-graph/propagate-conflicts")
+    async def canon_graph_propagate_conflicts(request: Request) -> dict[str, Any]:
+        return propagate_canon_graph_conflicts(LocalStorage(app_settings.root), await request.json())
+
+    @router.post("/product/canon-graph/impact-chapters")
+    async def canon_graph_impact_chapters(request: Request) -> dict[str, Any]:
+        return locate_canon_graph_impacted_chapters(LocalStorage(app_settings.root), await request.json())
+
+    @router.post("/product/canon-graph/approvals")
+    async def canon_graph_create_approval(request: Request) -> dict[str, Any]:
+        return create_canon_change_approval(LocalStorage(app_settings.root), await request.json())
+
+    @router.post("/product/canon-graph/approvals/{approval_id}/resolve")
+    async def canon_graph_resolve_approval(approval_id: str, request: Request) -> dict[str, Any]:
+        return resolve_canon_change_approval(LocalStorage(app_settings.root), approval_id, await request.json())
 
     return router

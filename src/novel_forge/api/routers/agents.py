@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.agent_runs import (
@@ -18,13 +18,18 @@ from novel_forge.modules.agent_runs import (
     update_agent_run_status,
 )
 from novel_forge.modules.agent_scheduler import (
+    agent_hard_stop_dashboard,
     agent_center_snapshot,
+    agent_operation_coverage_full_report,
+    create_agent_dag,
     create_agent_task,
     dispatch_agent_run,
     dispatch_revision_task_from_issue,
     list_agent_dispatch_queue,
     list_agent_operation_contracts,
     recover_agent_dispatch,
+    repair_dead_letter_dispatch,
+    rehearse_agent_rollback,
     run_agent_scheduler_loop,
     run_agent_scheduler_tick,
     scheduler_status,
@@ -235,6 +240,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def agent_operation_contracts_endpoint() -> dict[str, Any]:
         return {"contracts": list_agent_operation_contracts()}
 
+    @router.get("/product/agents/operation-coverage")
+    def agent_operation_coverage_endpoint(project_id: str | None = None) -> dict[str, Any]:
+        try:
+            return agent_operation_coverage_full_report(LocalStorage(app_settings.root), project_id=project_id or "")
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/agents/hard-stop-dashboard")
+    def agent_hard_stop_dashboard_endpoint(project_id: str | None = None, workspace_path: str | None = None) -> dict[str, Any]:
+        try:
+            return agent_hard_stop_dashboard(LocalStorage(app_settings.root), project_id=project_id or "", workspace_path=workspace_path or "")
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.get("/product/agents/center")
     def agent_center_endpoint(
         project_id: str | None = None,
@@ -263,6 +282,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 linked_revision_task_path=request.linked_revision_task_path,
                 evidence=request.evidence,
             )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/agents/dag")
+    async def agent_dag_endpoint(request: Request) -> dict[str, Any]:
+        try:
+            return create_agent_dag(LocalStorage(app_settings.root), await request.json())
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -306,6 +332,24 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def agent_dispatch_recover_endpoint(request: AgentDispatchRecoverRequest) -> dict[str, Any]:
         try:
             return recover_agent_dispatch(LocalStorage(app_settings.root), queue_path=request.queue_path, reason=request.reason)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/agents/rollback-rehearsal")
+    async def agent_rollback_rehearsal_endpoint(request: Request) -> dict[str, Any]:
+        try:
+            return rehearse_agent_rollback(LocalStorage(app_settings.root), await request.json())
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/agents/dead-letter-repair")
+    async def agent_dead_letter_repair_endpoint(request: Request) -> dict[str, Any]:
+        try:
+            return repair_dead_letter_dispatch(LocalStorage(app_settings.root), await request.json())
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
