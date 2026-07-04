@@ -7,6 +7,7 @@ from fastapi import APIRouter, Body, HTTPException
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules import mkaos as mkaos_service
+from novel_forge.modules import mkaos_converters, mkaos_ingestion, mkaos_quality
 from novel_forge.storage.local import LocalStorage
 
 
@@ -177,6 +178,99 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def convert_rules(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
         try:
             return _mkaos_response(mkaos_service.convert_rules(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/ingestion/repositories")
+    @router.post("/api/mkaos/ingestion/repositories")
+    def create_ingestion_repository(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_ingestion.create_repository(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/mkaos/ingestion/repositories")
+    @router.get("/api/mkaos/ingestion/repositories")
+    def ingestion_repositories(project_id: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
+        return mkaos_ingestion.list_repositories(storage(), project_id=project_id, limit=limit)
+
+    @router.post("/product/mkaos/ingestion/repositories/{repository_id}/scan")
+    @router.post("/api/mkaos/ingestion/repositories/{repository_id}/scan")
+    def scan_ingestion_repository(repository_id: str, payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_ingestion.scan_repository(storage(), repository_id, payload))
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/ingestion/repositories/{repository_id}/import")
+    @router.post("/api/mkaos/ingestion/repositories/{repository_id}/import")
+    def import_ingestion_repository(repository_id: str, payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_ingestion.import_repository(storage(), repository_id, payload))
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/mkaos/ingestion/jobs")
+    @router.get("/api/mkaos/ingestion/jobs")
+    def ingestion_jobs(project_id: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
+        return mkaos_ingestion.list_ingestion_jobs(storage(), project_id=project_id, limit=limit)
+
+    @router.get("/product/mkaos/books")
+    @router.get("/api/mkaos/books")
+    def books(project_id: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
+        return mkaos_ingestion.list_books(storage(), project_id=project_id, limit=limit)
+
+    @router.get("/product/mkaos/books/{book_id}/chapters")
+    @router.get("/api/mkaos/books/{book_id}/chapters")
+    def book_chapters(book_id: str, limit: int = 500) -> list[dict[str, Any]]:
+        return mkaos_ingestion.list_book_chapters(storage(), book_id, limit=limit)
+
+    @router.get("/product/mkaos/parallel-pairs")
+    @router.get("/api/mkaos/parallel-pairs")
+    def parallel_pairs(project_id: str | None = None, book_id: str | None = None, limit: int = 500) -> list[dict[str, Any]]:
+        return mkaos_ingestion.list_parallel_pairs(storage(), project_id=project_id, book_id=book_id, limit=limit)
+
+    @router.post("/product/mkaos/extraction/jobs")
+    @router.post("/api/mkaos/extraction/jobs")
+    def extraction_jobs(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_ingestion.create_extraction_job(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/convert/creative-assets")
+    @router.post("/api/mkaos/convert/creative-assets")
+    def convert_creative_assets(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_converters.convert_creative_assets(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/quality/evaluate-extraction")
+    @router.post("/api/mkaos/quality/evaluate-extraction")
+    def evaluate_extraction_quality(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_quality.evaluate_extraction_quality(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/quality/check-leakage")
+    @router.post("/api/mkaos/quality/check-leakage")
+    def check_leakage(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_quality.check_quote_leakage(payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/quality/gate-knowledge-pack")
+    @router.post("/api/mkaos/quality/gate-knowledge-pack")
+    def gate_knowledge_pack(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_quality.gate_knowledge_pack(storage(), payload))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

@@ -61,6 +61,15 @@ RELATION_TYPES = {
     "validated_by_rule",
     "used_by_template",
     "effect_observed",
+    "derived_from",
+    "abstracted_to",
+    "converted_to",
+    "used_in",
+    "blocked_by_gate",
+    "improved_by_feedback",
+    "hurt_by_feedback",
+    "supports_flow",
+    "violates_originality_boundary",
 }
 PACK_ITEM_ROLES = {
     "required",

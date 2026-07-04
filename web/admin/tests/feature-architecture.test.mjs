@@ -229,6 +229,38 @@ describe("Novel Forge admin feature architecture", () => {
     assert.match(globals, /\.mkaosGraphExplorer/);
   });
 
+  it("wires MKAOS ingestion and creative extraction workbench routes", () => {
+    for (const path of [
+      "app/features/mkaos/MkaosIngestionPages.tsx",
+      "app/mkaos/import/page.tsx",
+      "app/mkaos/repositories/page.tsx",
+      "app/mkaos/books/page.tsx",
+      "app/mkaos/extraction-jobs/page.tsx",
+      "app/mkaos/creative-assets/page.tsx",
+      "app/mkaos/quality/page.tsx"
+    ]) {
+      assert.equal(existsSync(join(root, path)), true, `${path} should exist`);
+    }
+    const mkaosApi = read("app/features/mkaos/api.ts");
+    for (const endpoint of [
+      "/product/mkaos/ingestion/repositories",
+      "/product/mkaos/ingestion/jobs",
+      "/product/mkaos/books",
+      "/product/mkaos/parallel-pairs",
+      "/product/mkaos/extraction/jobs",
+      "/product/mkaos/convert/creative-assets",
+      "/product/mkaos/quality/evaluate-extraction",
+      "/product/mkaos/quality/check-leakage",
+      "/product/mkaos/quality/gate-knowledge-pack"
+    ]) {
+      assert.match(mkaosApi, new RegExp(endpoint.replaceAll("/", "\\/")));
+    }
+    const ingestionPage = read("app/features/mkaos/MkaosIngestionPages.tsx");
+    for (const token of ["titleForMode", "Parallel Pairs", "Creative Assets", "Extraction Quality Gate", "raw source text 只进入 evidence layer"]) {
+      assert.match(ingestionPage, new RegExp(token));
+    }
+  });
+
   it("wires industrial deep workbench panels for analysis, context, editor, production, evaluation, and control", () => {
     const analysis = read("app/features/analysis/AnalysisCenterPage.tsx");
     for (const token of ["语义深度评分", "模式可视化", "semantic_depth"]) {

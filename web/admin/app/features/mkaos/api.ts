@@ -154,3 +154,80 @@ export function runKnowledgeEvolution() {
     apply_elimination: false
   }).then(unwrapMkaos);
 }
+
+export function createMkaosRepository(body: { name: string; localPath: string; sourceUri?: string; sourceType?: string }) {
+  return postJson("/product/mkaos/ingestion/repositories", {
+    name: body.name,
+    local_path: body.localPath,
+    source_uri: body.sourceUri || body.localPath,
+    source_type: body.sourceType || "professional_book",
+    source_kind: body.localPath ? "local_folder" : "github_repo",
+    rights: {
+      copyright_boundary: "evidence_only",
+      allow_downstream_generation: false,
+      raw_text_allowed_for_prose: false
+    }
+  }).then(unwrapMkaos);
+}
+
+export function loadMkaosRepositories() {
+  return fetchJson<MkaosRow[]>("/product/mkaos/ingestion/repositories");
+}
+
+export function scanMkaosRepository(repositoryId: string) {
+  return postJson(`/product/mkaos/ingestion/repositories/${encodeURIComponent(repositoryId)}/scan`, {}).then(unwrapMkaos);
+}
+
+export function importMkaosRepository(repositoryId: string) {
+  return postJson(`/product/mkaos/ingestion/repositories/${encodeURIComponent(repositoryId)}/import`, {}).then(unwrapMkaos);
+}
+
+export function loadMkaosIngestionJobs() {
+  return fetchJson<MkaosRow[]>("/product/mkaos/ingestion/jobs");
+}
+
+export function loadMkaosBooks() {
+  return fetchJson<MkaosRow[]>("/product/mkaos/books");
+}
+
+export function loadMkaosBookChapters(bookId: string) {
+  return fetchJson<MkaosRow[]>(`/product/mkaos/books/${encodeURIComponent(bookId)}/chapters`);
+}
+
+export function loadMkaosParallelPairs() {
+  return fetchJson<MkaosRow[]>("/product/mkaos/parallel-pairs");
+}
+
+export function runMkaosExtractionJob(body: { sourceType: string; bookId?: string; text?: string }) {
+  return postJson("/product/mkaos/extraction/jobs", {
+    source_type: body.sourceType,
+    book_id: body.bookId,
+    text: body.text,
+    bypass_reason: "web-admin-local-ingestion"
+  }).then(unwrapMkaos);
+}
+
+export function convertMkaosCreativeAssets(knowledgeIds: string[], dryRun = true) {
+  return postJson("/product/mkaos/convert/creative-assets", {
+    knowledge_ids: knowledgeIds,
+    dry_run: dryRun
+  }).then(unwrapMkaos);
+}
+
+export function evaluateMkaosExtraction() {
+  return postJson("/product/mkaos/quality/evaluate-extraction", {}).then(unwrapMkaos);
+}
+
+export function checkMkaosLeakage(candidateText: string, sourceText: string) {
+  return postJson("/product/mkaos/quality/check-leakage", {
+    candidate_text: candidateText,
+    source_text: sourceText
+  }).then(unwrapMkaos);
+}
+
+export function gateMkaosKnowledgePack(knowledgePack: Record<string, any>) {
+  return postJson("/product/mkaos/quality/gate-knowledge-pack", {
+    knowledge_pack: knowledgePack,
+    flow: "prose"
+  }).then(unwrapMkaos);
+}
