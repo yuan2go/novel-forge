@@ -62,3 +62,38 @@ export function runPublishFeedbackLoop(payload: {
     require_human_gate: true
   });
 }
+
+export function createReaderSimulation(payload: {
+  draftPath?: string;
+  chapterText?: string;
+  projectId?: string;
+  workspacePath?: string;
+  platform?: string;
+  chapter?: number;
+}) {
+  return postJson("/product/feedback/reader-simulation", {
+    draft_path: payload.draftPath || null,
+    chapter_text: payload.chapterText || null,
+    project_id: payload.projectId || null,
+    workspace_path: payload.workspacePath || null,
+    platform: payload.platform || "qidian",
+    chapter: payload.chapter || null
+  });
+}
+
+export function runRealFeedbackBackflow(payload: {
+  metrics: Record<string, unknown>;
+  projectId?: string;
+  workspacePath?: string;
+  platform?: string;
+  releasePackagePath?: string;
+}) {
+  return postJson("/product/feedback/real-backflow", {
+    metrics: payload.metrics,
+    project_id: payload.projectId || null,
+    workspace_path: payload.workspacePath || null,
+    platform: payload.platform || "qidian",
+    release_package_path: payload.releasePackagePath || null,
+    apply_mkaos_weight_update: true
+  });
+}

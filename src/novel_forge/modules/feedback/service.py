@@ -9,7 +9,19 @@ from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import record_trace_span
-from novel_forge.schemas import FeedbackImportBatch, FeedbackInsight, OperationalMetricSnapshot, ReaderFeedback, ReaderSentimentReport, validate_common_fields
+from novel_forge.schemas import (
+    FeedbackImportBatch,
+    FeedbackInsight,
+    OperationalMetricSnapshot,
+    ReaderFeedback,
+    ReaderFeedbackBackflowReport,
+    ReaderSentimentReport,
+    ReaderSimulationReport,
+    ReviewRulePack,
+    TopicSeed,
+    WritingTemplate,
+    validate_common_fields,
+)
 from novel_forge.storage.local import LocalStorage
 
 
@@ -18,8 +30,62 @@ FEEDBACK_TYPES = {
     "reader_feedback",
     "feedback_insight",
     "reader_sentiment_report",
+    "reader_simulation_report",
     "operational_metric_snapshot",
+    "reader_feedback_backflow_report",
 }
+
+
+READER_AGENT_PERSONAS: list[dict[str, Any]] = [
+    {
+        "persona_id": "shuangwen_reader",
+        "name": "爽文读者",
+        "focus": ["爽点够不够", "节奏拖不拖", "即时反馈"],
+        "positive_keywords": ["爽", "打脸", "奖励", "赢", "碾压", "反杀", "升级", "收益", "突破"],
+        "negative_keywords": ["拖", "憋屈", "铺垫", "压抑", "没爽点", "无聊"],
+        "gap_label": "爽点缺口",
+    },
+    {
+        "persona_id": "mystery_reader",
+        "name": "悬疑读者",
+        "focus": ["线索公平", "谜题吸引力", "反转可信"],
+        "positive_keywords": ["线索", "证据", "谜", "真相", "反转", "伏笔", "嫌疑", "推理"],
+        "negative_keywords": ["硬转", "没证据", "糊弄", "漏洞", "看不懂"],
+        "gap_label": "谜题缺口",
+    },
+    {
+        "persona_id": "qidian_veteran",
+        "name": "起点老读者",
+        "focus": ["主线成长", "付费价值", "世界观稳定"],
+        "positive_keywords": ["成长", "主线", "世界", "规则", "境界", "资源", "势力", "长期"],
+        "negative_keywords": ["主线散", "设定乱", "水", "停滞", "掉线"],
+        "gap_label": "长线价值缺口",
+    },
+    {
+        "persona_id": "fanqie_reader",
+        "name": "番茄读者",
+        "focus": ["强情绪", "强反转", "低阅读门槛"],
+        "positive_keywords": ["反转", "情绪", "痛点", "误会", "爽", "立刻", "短", "直接"],
+        "negative_keywords": ["慢", "复杂", "设定多", "门槛", "看不懂"],
+        "gap_label": "情绪刺激缺口",
+    },
+    {
+        "persona_id": "relationship_reader",
+        "name": "女频/关系向读者",
+        "focus": ["人物关系", "情绪拉扯", "人设吸引力"],
+        "positive_keywords": ["关系", "心动", "误会", "选择", "动机", "拉扯", "情绪", "人设"],
+        "negative_keywords": ["工具人", "没动机", "尴尬", "无感", "人设崩"],
+        "gap_label": "关系张力缺口",
+    },
+    {
+        "persona_id": "editor_reader",
+        "name": "编辑视角",
+        "focus": ["商业价值", "开篇留存", "平台适配"],
+        "positive_keywords": ["钩子", "留存", "冲突", "卖点", "期待", "平台", "节奏", "价值"],
+        "negative_keywords": ["开局慢", "定位弱", "卖点弱", "风险", "不适配"],
+        "gap_label": "商业留存缺口",
+    },
+]
 
 
 def import_feedback(storage: LocalStorage, input_path: str) -> Path:
@@ -78,7 +144,12 @@ def list_feedback_assets(
                 "sentiment_distribution": content.get("sentiment_distribution", {}),
                 "character_heat": content.get("character_heat", []),
                 "follow_read_risk": content.get("follow_read_risk", {}),
+                "read_metrics": content.get("read_metrics", {}),
+                "engagement_metrics": content.get("engagement_metrics", {}),
+                "chapter_dropoffs": content.get("chapter_dropoffs", []),
                 "next_chapter_strategy": content.get("next_chapter_strategy", {}),
+                "reader_simulation": content.get("aggregate", {}),
+                "target_updates": content.get("target_updates", {}),
                 "recommendation": _feedback_recommendation(content),
                 "status": content.get("status", metadata.get("asset_status", "")),
                 "updated_at": data.get("updated_at", ""),
@@ -377,6 +448,237 @@ def create_operational_metric_snapshot(
         )
         run.succeed(output_assets=[result["path"]])
         return result
+
+
+def create_reader_simulation_report(
+    storage: LocalStorage,
+    *,
+    draft_path: str | Path | None = None,
+    chapter_text: str | None = None,
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+    platform: str = "qidian",
+    chapter: int | None = None,
+) -> dict[str, Any]:
+    source = _reader_simulation_source(storage, draft_path=draft_path, chapter_text=chapter_text)
+    project = project_scope_from_asset(
+        storage,
+        source["asset"] or {"metadata": {"project_id": project_id or ""}},
+        workspace_path=workspace_path,
+    )
+    resolved_project_id = project_id or str(project.get("project_id") or "local-system")
+    workspace = workspace_path or str(project.get("workspace_path") or "")
+    text = source["text"]
+    if not text.strip():
+        raise ValueError("chapter_text or draft content is required for reader simulation")
+    with AgentExecutionContext(
+        storage,
+        agent_key="feedback",
+        skill="reader-feedback",
+        operation="create-reader-simulation-report",
+        input_assets=[source["path"]] if source["path"] else [],
+        output_types=["reader_simulation_report"],
+        workspace_path=workspace,
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_draft_or_explicit_text")
+        personas = [_simulate_reader_persona(persona, text, platform=platform) for persona in READER_AGENT_PERSONAS]
+        aggregate = _aggregate_reader_simulation(personas)
+        simulation_id = make_id("reader_simulation", f"{resolved_project_id}-{platform}-{chapter or source['chapter']}-{len(text)}")
+        asset = ReaderSimulationReport(
+            id=simulation_id,
+            title=f"Reader simulation {platform} {chapter or source['chapter'] or ''}".strip(),
+            source=source["path"] or "explicit-chapter-text",
+            tags=["feedback", "reader-simulation", platform, aggregate["dropout_risk"]],
+            content={
+                "simulation_id": simulation_id,
+                "project_id": resolved_project_id,
+                "workspace_path": workspace,
+                "platform": platform,
+                "chapter": chapter or source["chapter"],
+                "source_path": source["path"],
+                "source_policy": {
+                    "source_chunk_raw_text_allowed": False,
+                    "source_document_raw_text_allowed": False,
+                    "accepted_inputs": ["draft_chapter.text", "explicit_project_text"],
+                },
+                "personas": personas,
+                "aggregate": aggregate,
+                "created_at": utc_now(),
+            },
+            metadata={
+                "project_id": resolved_project_id,
+                "workspace_path": workspace,
+                "workflow": "prepublish-reader-simulation",
+                "platform": platform,
+                "risk_level": aggregate["dropout_risk"],
+                "use_in_generation_rag": False,
+            },
+            references=filter_project_safe_references(storage, resolved_project_id, _dedupe([source["path"], workspace])),
+        )
+        run.guard("write_reader_simulation_report", "reader_simulation_report")
+        result = _write(storage, asset)
+        _record_feedback_span(
+            storage,
+            trace_id=resolved_project_id,
+            name="create_reader_simulation_report",
+            path=result["path"],
+            project_id=resolved_project_id,
+            workspace_path=workspace,
+            attributes={"platform": platform, "predicted_score": aggregate["predicted_score"], "dropout_risk": aggregate["dropout_risk"]},
+        )
+        run.succeed(output_assets=[result["path"]])
+        return result
+
+
+def process_real_feedback_backflow(
+    storage: LocalStorage,
+    *,
+    metrics: dict[str, Any],
+    project_id: str | None = None,
+    workspace_path: str | None = None,
+    platform: str = "qidian",
+    release_package_path: str | Path | None = None,
+    apply_mkaos_weight_update: bool = True,
+) -> dict[str, Any]:
+    if not isinstance(metrics, dict) or not metrics:
+        raise ValueError("metrics object is required")
+    resolved_project_id = project_id or str(metrics.get("project_id") or "local-system")
+    workspace = workspace_path or str(metrics.get("workspace_path") or "")
+    normalized = _normalize_real_feedback_metrics(metrics)
+    signals = _real_feedback_signals(normalized)
+    with AgentExecutionContext(
+        storage,
+        agent_key="feedback",
+        skill="reader-feedback",
+        operation="process-real-feedback-backflow",
+        input_assets=[str(release_package_path)] if release_package_path else [],
+        output_types=[
+            "operational_metric_snapshot",
+            "platform_feedback_backflow",
+            "review_rule_pack",
+            "topic_seed",
+            "writing_template",
+            "reader_feedback_backflow_report",
+        ],
+        workspace_path=workspace,
+        sla_seconds=300,
+    ) as run:
+        run.guard("normalize_platform_metrics")
+        snapshot = _real_feedback_metric_snapshot(
+            storage,
+            resolved_project_id,
+            workspace,
+            platform,
+            normalized,
+            signals,
+            release_package_path=release_package_path,
+        )
+        snapshot_result = _write(storage, snapshot)
+        from novel_forge.modules.platform_strategy import create_platform_feedback_backflow
+
+        run.guard("write_platform_feedback_backflow", "platform_feedback_backflow")
+        platform_backflow = create_platform_feedback_backflow(
+            storage,
+            {
+                "platform": platform,
+                "project_id": resolved_project_id,
+                "workspace_path": workspace,
+                "signals": signals["labels"],
+            },
+        )
+        run.guard("write_feedback_learning_assets")
+        learning_assets = _write_feedback_learning_assets(
+            storage,
+            project_id=resolved_project_id,
+            workspace_path=workspace,
+            platform=platform,
+            normalized=normalized,
+            signals=signals,
+            snapshot_path=snapshot_result["path"],
+        )
+        mkaos_updates = _apply_real_feedback_mkaos_updates(
+            storage,
+            project_id=resolved_project_id,
+            normalized=normalized,
+            signals=signals,
+            source_path=snapshot_result["path"],
+            enabled=apply_mkaos_weight_update,
+        )
+        target_updates = {
+            "mkaos_weight": {
+                "status": "updated" if mkaos_updates else ("skipped" if not apply_mkaos_weight_update else "no_usage_events"),
+                "updates": mkaos_updates,
+            },
+            "platform_strategy": {"status": "updated", "path": platform_backflow.get("path", "")},
+            "review_rules": {"status": "updated", "path": learning_assets["review_rule_pack_path"]},
+            "topic_library": {"status": "updated", "path": learning_assets["topic_seed_path"]},
+            "character_templates": {"status": "updated", "path": learning_assets["character_template_path"]},
+            "rhythm_templates": {"status": "updated", "path": learning_assets["rhythm_template_path"]},
+        }
+        report_id = make_id("reader_feedback_backflow", f"{resolved_project_id}-{platform}-{snapshot_result['path']}")
+        report = ReaderFeedbackBackflowReport(
+            id=report_id,
+            title=f"Reader feedback backflow {platform}",
+            source=str(release_package_path or snapshot_result["path"]),
+            tags=["feedback", "real-feedback-backflow", platform, signals["risk_level"]],
+            content={
+                "backflow_report_id": report_id,
+                "project_id": resolved_project_id,
+                "workspace_path": workspace,
+                "platform": platform,
+                "metric_snapshot_path": snapshot_result["path"],
+                "platform_backflow_path": platform_backflow.get("path", ""),
+                "target_updates": target_updates,
+                "signals": signals,
+                "normalized_metrics": normalized,
+                "release_package_path": str(release_package_path or ""),
+                "created_at": utc_now(),
+            },
+            metadata={
+                "project_id": resolved_project_id,
+                "workspace_path": workspace,
+                "workflow": "real-feedback-backflow",
+                "risk_level": signals["risk_level"],
+                "use_in_generation_rag": False,
+            },
+            references=filter_project_safe_references(
+                storage,
+                resolved_project_id,
+                _dedupe(
+                    [
+                        snapshot_result["path"],
+                        platform_backflow.get("path", ""),
+                        *learning_assets["paths"],
+                        str(release_package_path or ""),
+                        workspace,
+                    ]
+                ),
+            ),
+        )
+        run.guard("write_reader_feedback_backflow_report", "reader_feedback_backflow_report")
+        report_result = _write(storage, report)
+        _record_feedback_span(
+            storage,
+            trace_id=resolved_project_id,
+            name="process_real_feedback_backflow",
+            path=report_result["path"],
+            project_id=resolved_project_id,
+            workspace_path=workspace,
+            attributes={"platform": platform, "risk_level": signals["risk_level"], "mkaos_update_count": len(mkaos_updates)},
+        )
+        run.succeed(output_assets=[report_result["path"], snapshot_result["path"], platform_backflow.get("path", ""), *learning_assets["paths"]])
+        return {
+            "status": "ready",
+            "path": report_result["path"],
+            "asset": report_result["asset"],
+            "metric_snapshot_path": snapshot_result["path"],
+            "platform_backflow_path": platform_backflow.get("path", ""),
+            "learning_asset_paths": learning_assets["paths"],
+            "mkaos_weight_update_count": len(mkaos_updates),
+            "risk_level": signals["risk_level"],
+            "target_updates": target_updates,
+        }
 
 
 def process_publish_feedback_loop(
@@ -1045,6 +1347,517 @@ def _operational_recommendations(
     if heat:
         recommendations.append(f"preserve visible pressure or payoff for high-heat character {heat[0].get('character')}")
     return _dedupe(recommendations or ["collect more operational feedback before changing the outline"])
+
+
+def _reader_simulation_source(
+    storage: LocalStorage,
+    *,
+    draft_path: str | Path | None,
+    chapter_text: str | None,
+) -> dict[str, Any]:
+    if draft_path:
+        path = resolve_path(storage.root, draft_path)
+        data = storage.read_json(path)
+        if not isinstance(data, dict):
+            raise ValueError("draft_path must point to a JSON asset")
+        asset_type = data.get("type")
+        if asset_type in {"source_document", "source_chunk"}:
+            raise ValueError("reader simulation must not use source_document or source_chunk raw text")
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        text = str(content.get("text") or content.get("chapter_text") or content.get("draft") or "")
+        return {
+            "path": _display_path(storage.root, path),
+            "asset": data,
+            "text": text,
+            "chapter": content.get("chapter"),
+        }
+    return {"path": "", "asset": None, "text": str(chapter_text or ""), "chapter": None}
+
+
+def _simulate_reader_persona(persona: dict[str, Any], text: str, *, platform: str) -> dict[str, Any]:
+    positive_hits = _text_keyword_count(text, persona.get("positive_keywords", []))
+    negative_hits = _text_keyword_count(text, persona.get("negative_keywords", []))
+    length = len(text.strip())
+    length_penalty = 0
+    if length < 450:
+        length_penalty = 8
+    elif length > 6500:
+        length_penalty = 6
+    structure_bonus = 4 if any(term in text for term in ["但是", "突然", "然而", "没想到", "与此同时", "决定"]) else 0
+    hook_bonus = 5 if any(term in text[-180:] for term in ["？", "!", "！", "真相", "下一步", "决定", "门外", "来人"]) else 0
+    platform_bonus = 4 if _platform_persona_match(platform, str(persona.get("persona_id", ""))) else 0
+    score = _clamp(58 + positive_hits * 5 - negative_hits * 7 - length_penalty + structure_bonus + hook_bonus + platform_bonus, 0, 100)
+    risk = _risk_from_score(score)
+    focus = persona.get("focus", []) if isinstance(persona.get("focus"), list) else []
+    gap = "" if score >= 78 else f"{persona.get('gap_label', 'reader gap')}: {focus[0] if focus else 'reader motivation'} needs clearer payoff"
+    suggestions = _persona_revision_suggestions(persona, score, risk)
+    return {
+        "persona_id": persona.get("persona_id", ""),
+        "persona_name": persona.get("name", ""),
+        "focus": focus,
+        "predicted_score": score,
+        "dropout_risk": risk,
+        "follow_read_motivation": _follow_read_motivation(persona, score),
+        "pleasure_gap": gap,
+        "next_chapter_expectation": _next_expectation_for_persona(persona, platform),
+        "revision_suggestions": suggestions,
+        "signals": {
+            "positive_keyword_hits": positive_hits,
+            "negative_keyword_hits": negative_hits,
+            "length": length,
+            "structure_bonus": structure_bonus,
+            "hook_bonus": hook_bonus,
+            "platform_bonus": platform_bonus,
+        },
+    }
+
+
+def _aggregate_reader_simulation(personas: list[dict[str, Any]]) -> dict[str, Any]:
+    scores = [float(item.get("predicted_score", 0)) for item in personas]
+    average = round(sum(scores) / len(scores), 2) if scores else 0.0
+    risk_order = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+    risk = max((str(item.get("dropout_risk", "unknown")) for item in personas), key=lambda value: risk_order.get(value, -1), default="unknown")
+    gaps = _dedupe([str(item.get("pleasure_gap", "")) for item in personas if str(item.get("pleasure_gap", "")).strip()])
+    expectations = _dedupe([str(item.get("next_chapter_expectation", "")) for item in personas if str(item.get("next_chapter_expectation", "")).strip()])
+    suggestions = _dedupe([str(suggestion) for item in personas for suggestion in item.get("revision_suggestions", []) if str(suggestion).strip()])
+    return {
+        "predicted_score": average,
+        "dropout_risk": risk,
+        "reader_count": len(personas),
+        "pleasure_gaps": gaps[:8],
+        "next_chapter_expectations": expectations[:8],
+        "revision_suggestions": suggestions[:10],
+        "recommendation": "block release and revise" if risk in {"high", "critical"} else "revise before publish" if risk == "medium" else "ready for gate review",
+    }
+
+
+def _normalize_real_feedback_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
+    comments = _normalize_comments(metrics.get("comments", []))
+    negative_keywords = [str(item).strip() for item in metrics.get("negative_keywords", []) if str(item).strip()] if isinstance(metrics.get("negative_keywords", []), list) else []
+    drop_points = _normalize_drop_points(metrics.get("chapter_drop_points", metrics.get("drop_points", [])))
+    return {
+        "completion_rate": _normalize_rate(_metric_float(metrics, "completion_rate", "read_completion_rate", "finish_rate")),
+        "follow_read_rate": _normalize_rate(_metric_float(metrics, "follow_read_rate", "retention_rate", "next_chapter_rate")),
+        "comment_count": int(_metric_float(metrics, "comment_count", "comments_count") or len(comments)),
+        "favorites": int(_metric_float(metrics, "favorites", "favorite_count", "收藏")),
+        "bookshelf_adds": int(_metric_float(metrics, "bookshelf_adds", "bookshelf_add_count", "加书架")),
+        "reward_count": int(_metric_float(metrics, "reward_count", "rewards", "打赏")),
+        "reward_amount": round(_metric_float(metrics, "reward_amount", "reward_total"), 2),
+        "reads": int(_metric_float(metrics, "reads", "read_count", "阅读")),
+        "average_rating": round(_metric_float(metrics, "average_rating", "rating"), 2),
+        "comments": comments,
+        "negative_keywords": negative_keywords,
+        "chapter_drop_points": drop_points,
+        "character_mentions": metrics.get("character_mentions", {}),
+        "raw_metric_keys": sorted(str(key) for key in metrics.keys()),
+    }
+
+
+def _real_feedback_signals(normalized: dict[str, Any]) -> dict[str, Any]:
+    comments = normalized.get("comments", []) if isinstance(normalized.get("comments", []), list) else []
+    comment_text = "\n".join(str(item) for item in comments)
+    negative_keywords = normalized.get("negative_keywords", []) if isinstance(normalized.get("negative_keywords", []), list) else []
+    negative_hits = _text_keyword_count(comment_text, [*negative_keywords, *[term for terms in NEGATIVE_KEYWORDS.values() for term in terms]])
+    negative_ratio = round(min(1.0, negative_hits / max(1, len(comments) or 1)), 4)
+    labels: list[str] = []
+    if normalized.get("completion_rate", 0) and normalized.get("completion_rate", 0) < 0.55:
+        labels.append("completion_rate_low")
+    if normalized.get("follow_read_rate", 0) and normalized.get("follow_read_rate", 0) < 0.45:
+        labels.append("follow_read_rate_low")
+    if negative_keywords or negative_ratio >= 0.25:
+        labels.append("negative_comment_keywords")
+    high_drop_points = [point for point in normalized.get("chapter_drop_points", []) if point.get("risk") in {"high", "critical"} or point.get("drop_rate", 0) >= 0.3]
+    if high_drop_points:
+        labels.append("chapter_drop_point")
+    if normalized.get("bookshelf_adds", 0) or normalized.get("favorites", 0):
+        labels.append("collection_signal")
+    risk_score = 0
+    risk_score += 30 if "completion_rate_low" in labels else 0
+    risk_score += 28 if "follow_read_rate_low" in labels else 0
+    risk_score += min(24, int(negative_ratio * 60))
+    risk_score += 18 if high_drop_points else 0
+    risk_score -= 8 if "collection_signal" in labels else 0
+    risk_level = "critical" if risk_score >= 78 else "high" if risk_score >= 55 else "medium" if risk_score >= 30 else "low"
+    recommendations = _dedupe(
+        [
+            "repair chapter drop-off before widening plot scope" if high_drop_points else "",
+            "move payoff and conflict earlier in the next chapter" if "completion_rate_low" in labels else "",
+            "strengthen next-chapter promise and paid value" if "follow_read_rate_low" in labels else "",
+            "update review rules with reader toxicity and comprehension checks" if "negative_comment_keywords" in labels else "",
+            "preserve the current topic promise while tuning rhythm" if "collection_signal" in labels else "",
+        ]
+    )
+    return {
+        "labels": labels or ["stable_feedback_signal"],
+        "risk_score": _clamp(risk_score, 0, 100),
+        "risk_level": risk_level,
+        "negative_ratio": negative_ratio,
+        "high_drop_points": high_drop_points,
+        "recommendations": recommendations or ["keep monitoring real feedback before changing production strategy"],
+    }
+
+
+def _real_feedback_metric_snapshot(
+    storage: LocalStorage,
+    project_id: str,
+    workspace_path: str,
+    platform: str,
+    normalized: dict[str, Any],
+    signals: dict[str, Any],
+    *,
+    release_package_path: str | Path | None,
+) -> OperationalMetricSnapshot:
+    snapshot_id = make_id("operational_metric_snapshot", f"{project_id}-{platform}-{utc_now()}")
+    return OperationalMetricSnapshot(
+        id=snapshot_id,
+        title=f"Real feedback metrics {platform}",
+        source=str(release_package_path or "real-feedback-import"),
+        tags=["feedback", "real-metrics", platform, signals["risk_level"]],
+        content={
+            "project_id": project_id,
+            "snapshot_at": utc_now(),
+            "read_metrics": {
+                "total_reads": normalized["reads"],
+                "completion_rate": normalized["completion_rate"],
+                "average_completion_rate": normalized["completion_rate"],
+                "follow_read_rate": normalized["follow_read_rate"],
+                "average_rating": normalized["average_rating"],
+            },
+            "engagement_metrics": {
+                "comment_count": normalized["comment_count"],
+                "favorite_count": normalized["favorites"],
+                "bookshelf_add_count": normalized["bookshelf_adds"],
+                "reward_count": normalized["reward_count"],
+                "reward_amount": normalized["reward_amount"],
+                "negative_ratio": signals["negative_ratio"],
+            },
+            "character_heat": _character_heat_from_real_metrics(normalized),
+            "chapter_dropoffs": normalized["chapter_drop_points"],
+            "recommendations": signals["recommendations"],
+            "follow_read_risk": {"level": signals["risk_level"], "score": signals["risk_score"], "negative_ratio": signals["negative_ratio"]},
+            "signal_labels": signals["labels"],
+            "row_count": normalized["comment_count"],
+        },
+        metadata={
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "workflow": "real-feedback-metrics",
+            "platform": platform,
+            "risk_level": signals["risk_level"],
+            "use_in_generation_rag": False,
+        },
+        references=filter_project_safe_references(storage, project_id, [str(release_package_path or ""), workspace_path]),
+    )
+
+
+def _write_feedback_learning_assets(
+    storage: LocalStorage,
+    *,
+    project_id: str,
+    workspace_path: str,
+    platform: str,
+    normalized: dict[str, Any],
+    signals: dict[str, Any],
+    snapshot_path: str,
+) -> dict[str, Any]:
+    suffix = f"{project_id}-{platform}-{signals['risk_level']}"
+    review_rule_id = make_id("review_rule_pack", f"reader-feedback-{suffix}")
+    review_rule = ReviewRulePack(
+        id=review_rule_id,
+        title=f"Reader feedback review rules {platform}",
+        source=snapshot_path,
+        tags=["feedback-backflow", "review-rules", platform],
+        content={
+            "rule_pack_id": review_rule_id,
+            "name": f"Reader feedback retention rules {platform}",
+            "dimensions": {
+                "reader_retention": {"weight": 0.4, "threshold": 75},
+                "platform_fit": {"weight": 0.25, "threshold": 72},
+                "comprehension": {"weight": 0.2, "threshold": 70},
+                "payoff_density": {"weight": 0.15, "threshold": 70},
+            },
+            "checks": [
+                {"id": "completion_repair", "dimension": "reader_retention", "rule": "if completion or follow-read falls below threshold, next chapter must open with conflict and payoff"},
+                {"id": "negative_keyword_repair", "dimension": "comprehension", "rule": "negative keywords must map to explicit revision tasks before publish gate"},
+                {"id": "drop_point_repair", "dimension": "payoff_density", "rule": "chapter drop points must be reviewed for exposition length and delayed payoff"},
+            ],
+            "severity_policy": {"critical": ["follow_read_rate_low", "chapter_drop_point"], "high": ["completion_rate_low", "negative_comment_keywords"]},
+            "feedback_source": {"metric_snapshot_path": snapshot_path, "signals": signals["labels"]},
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "use_in_generation_rag": False},
+        references=[snapshot_path],
+    )
+    topic_id = make_id("topic_seed", f"reader-feedback-topic-{suffix}")
+    topic_seed = TopicSeed(
+        id=topic_id,
+        title=f"Reader feedback topic adjustment {platform}",
+        source=snapshot_path,
+        tags=["feedback-backflow", "topic-library", platform],
+        content={
+            "logline": "反馈驱动的题材承诺校准：保留当前卖点，优先修复真实读者掉点。",
+            "reader_attraction": signals["recommendations"],
+            "differentiation": f"{platform} feedback calibrated promise with completion={normalized['completion_rate']} follow={normalized['follow_read_rate']}",
+            "feedback_signals": signals["labels"],
+            "metric_snapshot_path": snapshot_path,
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "use_in_generation_rag": False},
+        references=[snapshot_path],
+    )
+    character_template = _feedback_writing_template(
+        project_id,
+        workspace_path,
+        platform,
+        snapshot_path,
+        template_kind="character_feedback_template",
+        name="Reader feedback character repair template",
+        structure=[
+            "identify high-heat characters and weak-motivation complaints",
+            "turn negative relationship comments into one concrete motivation repair",
+            "carry the repaired motivation into the next chapter scene goal",
+        ],
+        usage_constraints=["do not overwrite existing character canon without ReviewIssue or RevisionTask", "keep changes project-scoped"],
+    )
+    rhythm_template = _feedback_writing_template(
+        project_id,
+        workspace_path,
+        platform,
+        snapshot_path,
+        template_kind="chapter_rhythm_feedback_template",
+        name="Reader feedback rhythm repair template",
+        structure=[
+            "start with conflict or unresolved promise",
+            "reduce exposition before the strongest drop point",
+            "deliver a visible payoff before adding new lore",
+            "end with a next-chapter expectation tied to the platform strategy",
+        ],
+        usage_constraints=["must not use source_chunk.raw_text", "must pass publish gate after feedback repair"],
+    )
+    results = {
+        "review_rule_pack_path": _write(storage, review_rule)["path"],
+        "topic_seed_path": _write(storage, topic_seed)["path"],
+        "character_template_path": _write(storage, character_template)["path"],
+        "rhythm_template_path": _write(storage, rhythm_template)["path"],
+    }
+    results["paths"] = list(results.values())
+    return results
+
+
+def _feedback_writing_template(
+    project_id: str,
+    workspace_path: str,
+    platform: str,
+    snapshot_path: str,
+    *,
+    template_kind: str,
+    name: str,
+    structure: list[str],
+    usage_constraints: list[str],
+) -> WritingTemplate:
+    template_id = make_id("writing_template", f"{template_kind}-{project_id}-{platform}")
+    return WritingTemplate(
+        id=template_id,
+        title=name,
+        source=snapshot_path,
+        tags=["feedback-backflow", template_kind, platform],
+        content={
+            "template_id": template_id,
+            "name": name,
+            "template_kind": template_kind,
+            "structure": structure,
+            "usage_constraints": usage_constraints,
+            "anti_copy_rules": ["feedback assets are operational signals, not source prose", "never copy reader comments into draft prose"],
+            "feedback_source": {"metric_snapshot_path": snapshot_path, "platform": platform},
+        },
+        metadata={
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "copyright_boundary": "abstract structure only",
+            "use_in_generation_rag": False,
+        },
+        references=[snapshot_path],
+    )
+
+
+def _apply_real_feedback_mkaos_updates(
+    storage: LocalStorage,
+    *,
+    project_id: str,
+    normalized: dict[str, Any],
+    signals: dict[str, Any],
+    source_path: str,
+    enabled: bool,
+) -> list[dict[str, Any]]:
+    if not enabled:
+        return []
+    from novel_forge.modules.mkaos import apply_weight_update, list_usage_events
+
+    usage_events = list_usage_events(storage, project_id=project_id, limit=30)
+    delta = _feedback_mkaos_delta_from_real_metrics(normalized, signals)
+    updates: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for event in usage_events:
+        content = event.get("content", {}) if isinstance(event.get("content", {}), dict) else {}
+        knowledge_id = str(content.get("knowledge_id") or "").strip()
+        if not knowledge_id or knowledge_id in seen:
+            continue
+        seen.add(knowledge_id)
+        updates.append(
+            apply_weight_update(
+                storage,
+                {
+                    "knowledge_id": knowledge_id,
+                    "project_id": project_id,
+                    "flow": str(content.get("flow") or "feedback"),
+                    "delta": delta,
+                    "reason": "real_feedback_backflow",
+                    "feedback_paths": [source_path],
+                    "signals": signals["labels"],
+                },
+            )
+        )
+        if len(updates) >= 8:
+            break
+    return updates
+
+
+def _feedback_mkaos_delta_from_real_metrics(normalized: dict[str, Any], signals: dict[str, Any]) -> float:
+    risk = str(signals.get("risk_level", "low"))
+    if risk == "critical":
+        return -0.16
+    if risk == "high":
+        return -0.1
+    if risk == "medium":
+        return -0.04
+    if normalized.get("completion_rate", 0) >= 0.75 and normalized.get("follow_read_rate", 0) >= 0.6:
+        return 0.05
+    return 0.02
+
+
+def _normalize_comments(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    comments: list[str] = []
+    for item in value:
+        if isinstance(item, dict):
+            text = str(item.get("comment") or item.get("text") or item.get("content") or "").strip()
+        else:
+            text = str(item).strip()
+        if text:
+            comments.append(text)
+    return comments
+
+
+def _normalize_drop_points(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    points: list[dict[str, Any]] = []
+    for index, item in enumerate(value, start=1):
+        if isinstance(item, dict):
+            drop_rate = _normalize_rate(_metric_float(item, "drop_rate", "dropoff_rate", "流失率"))
+            risk = str(item.get("risk") or ("high" if drop_rate >= 0.3 else "medium" if drop_rate >= 0.15 else "low"))
+            points.append(
+                {
+                    "chapter": int(_metric_float(item, "chapter", "chapter_index", "章节") or index),
+                    "reads": int(_metric_float(item, "reads", "read_count", "阅读")),
+                    "drop_rate": drop_rate,
+                    "explicit_drop_signals": int(_metric_float(item, "explicit_drop_signals", "drop_signals") or (1 if drop_rate else 0)),
+                    "average_rating": round(_metric_float(item, "average_rating", "rating"), 2),
+                    "risk": risk,
+                    "reason": str(item.get("reason") or item.get("comment") or ""),
+                }
+            )
+        else:
+            points.append({"chapter": index, "reads": 0, "drop_rate": 0.0, "explicit_drop_signals": 1, "average_rating": 0.0, "risk": "medium", "reason": str(item)})
+    return points
+
+
+def _character_heat_from_real_metrics(normalized: dict[str, Any]) -> list[dict[str, Any]]:
+    mentions = normalized.get("character_mentions", {})
+    rows: list[dict[str, Any]] = []
+    if isinstance(mentions, dict):
+        for character, count in mentions.items():
+            try:
+                value = int(count)
+            except (TypeError, ValueError):
+                value = 0
+            if character and value:
+                rows.append({"character": str(character), "mentions": value, "heat": value})
+    elif isinstance(mentions, list):
+        for item in mentions:
+            if isinstance(item, dict) and item.get("character"):
+                rows.append({"character": str(item.get("character")), "mentions": int(item.get("mentions", 0) or 0), "heat": int(item.get("heat", item.get("mentions", 0)) or 0)})
+    return sorted(rows, key=lambda item: item.get("heat", 0), reverse=True)[:20]
+
+
+def _metric_float(data: dict[str, Any], *keys: str) -> float:
+    for key in keys:
+        if key not in data:
+            continue
+        value = data.get(key)
+        if isinstance(value, (int, float)):
+            return float(value)
+        text = str(value).replace("%", "").replace(",", "").strip()
+        if not text:
+            continue
+        try:
+            return float(text)
+        except ValueError:
+            continue
+    return 0.0
+
+
+def _text_keyword_count(text: str, keywords: list[str]) -> int:
+    lowered = text.lower()
+    return sum(lowered.count(str(term).lower()) for term in keywords if str(term).strip())
+
+
+def _platform_persona_match(platform: str, persona_id: str) -> bool:
+    normalized = platform.lower()
+    return (
+        ("qidian" in normalized or "起点" in platform) and persona_id == "qidian_veteran"
+        or ("fanqie" in normalized or "番茄" in platform) and persona_id == "fanqie_reader"
+        or ("jinjiang" in normalized or "晋江" in platform) and persona_id == "relationship_reader"
+        or ("zhihu" in normalized or "知乎" in platform) and persona_id == "mystery_reader"
+        or ("feilu" in normalized or "飞卢" in platform) and persona_id == "shuangwen_reader"
+    )
+
+
+def _persona_revision_suggestions(persona: dict[str, Any], score: float, risk: str) -> list[str]:
+    if score >= 82:
+        return [f"preserve {persona.get('name', 'reader')} strengths and avoid over-repair"]
+    focus = persona.get("focus", []) if isinstance(persona.get("focus"), list) else []
+    primary = str(focus[0]) if focus else "reader motivation"
+    secondary = str(focus[1]) if len(focus) > 1 else primary
+    action = "block and revise" if risk in {"high", "critical"} else "revise locally"
+    return [f"{action}: strengthen {primary}", f"add one visible beat for {secondary} before the ending hook"]
+
+
+def _follow_read_motivation(persona: dict[str, Any], score: float) -> str:
+    if score >= 82:
+        return f"{persona.get('name', 'reader')} has clear motivation to continue"
+    if score >= 68:
+        return f"{persona.get('name', 'reader')} may continue if next chapter pays off the current promise"
+    return f"{persona.get('name', 'reader')} has weak follow-read motivation without immediate repair"
+
+
+def _next_expectation_for_persona(persona: dict[str, Any], platform: str) -> str:
+    focus = persona.get("focus", []) if isinstance(persona.get("focus"), list) else []
+    expected = focus[0] if focus else "payoff"
+    return f"next chapter should deliver {expected} for {platform}"
+
+
+def _risk_from_score(score: float) -> str:
+    if score < 45:
+        return "critical"
+    if score < 62:
+        return "high"
+    if score < 76:
+        return "medium"
+    return "low"
+
+
+def _clamp(value: float, minimum: float, maximum: float) -> float:
+    return round(max(minimum, min(maximum, float(value))), 2)
 
 
 def _numeric(row: dict[str, str], *keys: str) -> float:

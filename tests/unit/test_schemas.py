@@ -34,6 +34,8 @@ from novel_forge.schemas import (
     PublishGateReport,
     RagQualityReport,
     ProjectWorkspaceState,
+    ReaderFeedbackBackflowReport,
+    ReaderSimulationReport,
     ReaderSentimentReport,
     ReleasePackage,
     ReviewReport,
@@ -46,7 +48,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 191)
+        self.assertEqual(len(SCHEMA_CLASSES), 193)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("source_chunk", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
@@ -76,6 +78,8 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("platform_retention_risk", SCHEMA_CLASSES)
         self.assertIn("platform_publish_adapter", SCHEMA_CLASSES)
         self.assertIn("platform_feedback_backflow", SCHEMA_CLASSES)
+        self.assertIn("reader_simulation_report", SCHEMA_CLASSES)
+        self.assertIn("reader_feedback_backflow_report", SCHEMA_CLASSES)
         self.assertIn("platform_strategy_pack", SCHEMA_CLASSES)
         self.assertIn("genre_market_profile", SCHEMA_CLASSES)
         self.assertIn("creative_strategy_profile", SCHEMA_CLASSES)
@@ -644,6 +648,16 @@ class SchemaTests(unittest.TestCase):
                 "confidence": "low",
             },
         )
+        simulation = ReaderSimulationReport(
+            title="simulation",
+            content={
+                "simulation_id": "sim1",
+                "project_id": "p1",
+                "personas": [{"persona_id": "shuangwen_reader", "predicted_score": 80, "dropout_risk": "low"}],
+                "aggregate": {"predicted_score": 80, "dropout_risk": "low", "revision_suggestions": []},
+                "created_at": "2026-01-01T00:00:00Z",
+            },
+        )
         snapshot = ProjectMetricSnapshot(
             title="snapshot",
             content={
@@ -669,7 +683,17 @@ class SchemaTests(unittest.TestCase):
                 "status": "active",
             },
         )
-        for asset in [batch, sentiment, snapshot, settings]:
+        backflow = ReaderFeedbackBackflowReport(
+            title="real feedback backflow",
+            content={
+                "backflow_report_id": "backflow1",
+                "project_id": "p1",
+                "metric_snapshot_path": "feedback/snapshot.json",
+                "target_updates": {"mkaos_weight": {"status": "updated"}},
+                "created_at": "2026-01-01T00:00:00Z",
+            },
+        )
+        for asset in [batch, sentiment, simulation, snapshot, settings, backflow]:
             self.assertEqual(validate_common_fields(asset.to_dict()), [])
 
     def test_source_document_requires_rights_metadata(self):

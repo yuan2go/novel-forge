@@ -6,9 +6,9 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.audit import create_publish_gate_report, create_release_package
-from novel_forge.modules.feedback import process_publish_feedback_loop
+from novel_forge.modules.feedback import create_reader_simulation_report, process_publish_feedback_loop, process_real_feedback_backflow
 from novel_forge.modules.mkaos import create_knowledge_card, record_usage_event
-from novel_forge.schemas import DraftChapter, ProjectWorkspaceState, ReaderFeedback
+from novel_forge.schemas import DraftChapter, ProjectWorkspaceState, ReaderFeedback, SourceChunk
 from novel_forge.storage.local import LocalStorage
 
 
@@ -128,6 +128,101 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             self.assertTrue(result["backflow_plan_path"])
             self.assertEqual(result["mkaos_weight_update_count"], 1)
             self.assertLess(updated["content"]["weight"], 1.0)
+
+    def test_reader_simulation_scores_personas_and_rejects_source_chunks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = _workspace(storage, "reader-sim-p")
+            draft_path = _draft(storage, workspace, project_id="reader-sim-p")
+
+            result = create_reader_simulation_report(
+                storage,
+                draft_path=str(draft_path.relative_to(storage.root)),
+                project_id="reader-sim-p",
+                workspace_path=str(workspace.relative_to(storage.root)),
+                platform="fanqie",
+            )
+            asset = result["asset"]
+
+            self.assertEqual(asset["type"], "reader_simulation_report")
+            self.assertEqual(len(asset["content"]["personas"]), 6)
+            self.assertIn("predicted_score", asset["content"]["aggregate"])
+            self.assertFalse(asset["content"]["source_policy"]["source_chunk_raw_text_allowed"])
+
+            source_chunk_path = storage.write_asset(
+                "raw",
+                SourceChunk(
+                    title="source chunk",
+                    content={
+                        "source_document_id": "source1",
+                        "chunk_index": 0,
+                        "clean_text": "cleaned reference",
+                        "raw_text": "forbidden raw source text",
+                        "content_hash": "hash1",
+                    },
+                    metadata={"project_id": "reader-sim-p"},
+                ),
+            )
+            with self.assertRaisesRegex(ValueError, "must not use source_document or source_chunk"):
+                create_reader_simulation_report(storage, draft_path=str(source_chunk_path.relative_to(storage.root)), project_id="reader-sim-p")
+
+    def test_real_feedback_backflow_writes_learning_assets_and_mkaos_weight(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = _workspace(storage, "real-feedback-p")
+            knowledge = create_knowledge_card(
+                storage,
+                {
+                    "concept_name": "Retention hook",
+                    "core_explanation": "real feedback should adjust hook strength",
+                    "project_id": "real-feedback-p",
+                    "weight": 1.0,
+                },
+            )
+            record_usage_event(
+                storage,
+                {
+                    "knowledge_id": knowledge["asset"]["id"],
+                    "knowledge_pack_id": "real-feedback-pack",
+                    "project_id": "real-feedback-p",
+                    "flow": "publish",
+                    "agent_name": "PublishingAgent",
+                    "used_as": "release_strategy",
+                },
+            )
+
+            result = process_real_feedback_backflow(
+                storage,
+                metrics={
+                    "completion_rate": 0.42,
+                    "follow_read_rate": 0.31,
+                    "comments": ["节奏太拖", "看不懂设定", "想看更强反转"],
+                    "favorites": 8,
+                    "bookshelf_adds": 11,
+                    "reward_count": 1,
+                    "chapter_drop_points": [{"chapter": 3, "drop_rate": 0.36, "reason": "铺垫过长"}],
+                    "negative_keywords": ["拖", "看不懂"],
+                    "character_mentions": {"主角": 5},
+                },
+                project_id="real-feedback-p",
+                workspace_path=str(workspace.relative_to(storage.root)),
+                platform="qidian",
+            )
+            updated = storage.read_json(storage.root / knowledge["path"])
+            learning_types = {storage.read_json(storage.root / path)["type"] for path in result["learning_asset_paths"]}
+            platform_backflow = storage.read_json(storage.root / result["platform_backflow_path"])
+            report = storage.read_json(storage.root / result["path"])
+
+            self.assertEqual(result["mkaos_weight_update_count"], 1)
+            self.assertLess(updated["content"]["weight"], 1.0)
+            self.assertEqual(platform_backflow["type"], "platform_feedback_backflow")
+            self.assertIn("review_rule_pack", learning_types)
+            self.assertIn("topic_seed", learning_types)
+            self.assertIn("writing_template", learning_types)
+            self.assertEqual(report["type"], "reader_feedback_backflow_report")
+            self.assertEqual(report["content"]["target_updates"]["platform_strategy"]["status"], "updated")
 
 
 def _workspace(storage: LocalStorage, project_id: str) -> Path:

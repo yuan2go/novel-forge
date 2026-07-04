@@ -127,6 +127,8 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/feedback/apply-strategy",
                 "/product/feedback/backflow-plan",
                 "/product/feedback/backflow-apply",
+                "/product/feedback/reader-simulation",
+                "/product/feedback/real-backflow",
                 "/product/metrics/snapshots",
                 "/product/metrics/snapshot",
                 "/product/runtime/trace-timeline",

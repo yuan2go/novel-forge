@@ -1,19 +1,35 @@
 "use client";
 
-import { Activity, ListChecks, MessageSquareText, UploadCloud } from "lucide-react";
+import { Activity, BrainCircuit, ListChecks, MessageSquareText, RefreshCcw, UploadCloud } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { FeedbackAssetRow, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { applyFeedbackStrategy, createFeedbackInsight, createOperationalSnapshot, createSentimentReport, importFeedbackBatch, loadFeedbackData, runPublishFeedbackLoop } from "./api";
+import {
+  applyFeedbackStrategy,
+  createFeedbackInsight,
+  createOperationalSnapshot,
+  createReaderSimulation,
+  createSentimentReport,
+  importFeedbackBatch,
+  loadFeedbackData,
+  runPublishFeedbackLoop,
+  runRealFeedbackBackflow
+} from "./api";
 
 export function ReaderFeedbackPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [feedbackAssets, setFeedbackAssets] = useState<FeedbackAssetRow[]>([]);
   const [projectId, setProjectId] = useState("");
   const [inputPath, setInputPath] = useState("");
+  const [platform, setPlatform] = useState("qidian");
+  const [draftPath, setDraftPath] = useState("");
+  const [chapterText, setChapterText] = useState("");
+  const [realMetricsText, setRealMetricsText] = useState("{\n  \"completion_rate\": 0.58,\n  \"follow_read_rate\": 0.44,\n  \"comments\": [\"节奏有点拖\", \"想看下章反转\"],\n  \"favorites\": 12,\n  \"bookshelf_adds\": 18,\n  \"reward_count\": 1,\n  \"chapter_drop_points\": [{\"chapter\": 3, \"drop_rate\": 0.31, \"reason\": \"铺垫过长\"}],\n  \"negative_keywords\": [\"拖\", \"看不懂\"]\n}");
   const [releasePackagePath, setReleasePackagePath] = useState("");
   const [publishLoopResult, setPublishLoopResult] = useState<Record<string, unknown> | null>(null);
+  const [simulationResult, setSimulationResult] = useState<Record<string, unknown> | null>(null);
+  const [realBackflowResult, setRealBackflowResult] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -21,9 +37,13 @@ export function ReaderFeedbackPage() {
   const selectedProject = projects.find((project) => project.project_id === projectId);
   const feedbackRows = feedbackAssets.filter((row) => row.type === "reader_feedback");
   const sentimentRows = feedbackAssets.filter((row) => row.type === "reader_sentiment_report");
+  const simulationRows = feedbackAssets.filter((row) => row.type === "reader_simulation_report");
   const operationalRows = feedbackAssets.filter((row) => row.type === "operational_metric_snapshot");
+  const realBackflowRows = feedbackAssets.filter((row) => row.type === "reader_feedback_backflow_report");
   const latestSentiment = sentimentRows[0];
+  const latestSimulation = simulationRows[0];
   const latestOperational = operationalRows[0];
+  const latestBackflow = realBackflowRows[0];
   const distribution = latestSentiment?.sentiment_distribution || {};
   const followRisk = latestOperational?.follow_read_risk || latestSentiment?.follow_read_risk || {};
   const strategy = latestSentiment?.next_chapter_strategy || {};
@@ -31,6 +51,11 @@ export function ReaderFeedbackPage() {
   const readMetrics = latestOperational?.read_metrics || {};
   const engagement = latestOperational?.engagement_metrics || {};
   const dropoffs = latestOperational?.chapter_dropoffs || [];
+  const simulation = latestSimulation?.reader_simulation || {};
+  const simulationResultAggregate = ((simulationResult?.asset as { content?: { aggregate?: Record<string, unknown> } } | undefined)?.content?.aggregate || {}) as Record<string, unknown>;
+  const simulationScore = simulation.predicted_score ?? simulationResultAggregate.predicted_score ?? "-";
+  const simulationRisk = simulation.dropout_risk ?? simulationResultAggregate.dropout_risk ?? "-";
+  const backflowTargets = latestBackflow?.target_updates || {};
 
   async function refresh(nextProjectId = projectId) {
     const [projectRows, assetRows] = await loadFeedbackData(nextProjectId);
@@ -67,12 +92,54 @@ export function ReaderFeedbackPage() {
       <section className="summaryBand manuscriptSummary">
         <Metric label="反馈资产" value={String(feedbackRows.length)} />
         <Metric label="情绪报告" value={String(sentimentRows.length)} />
+        <Metric label="读者模拟" value={String(simulationRows.length)} />
         <Metric label="运营快照" value={String(operationalRows.length)} />
+        <Metric label="真实回流" value={String(realBackflowRows.length)} />
         <Metric label="负向反馈" value={String(distribution.negative ?? 0)} />
-        <Metric label="追读风险" value={String(followRisk.level ?? "unknown")} />
+        <Metric label="追读风险" value={String(simulation.dropout_risk ?? followRisk.level ?? "unknown")} />
       </section>
 
       <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="模拟读者预读" icon={<BrainCircuit size={18} />} />
+          <div className="formGrid">
+            <select value={platform} onChange={(event) => setPlatform(event.target.value)}>
+              <option value="qidian">起点</option>
+              <option value="fanqie">番茄</option>
+              <option value="feilu">飞卢</option>
+              <option value="jinjiang">晋江</option>
+              <option value="zhihu_yanxuan">知乎盐选</option>
+              <option value="wechat_publish">微信读书/出版向</option>
+            </select>
+            <input value={draftPath} onChange={(event) => setDraftPath(event.target.value)} placeholder="Draft path，留空则使用下方章节文本" />
+            <textarea value={chapterText} onChange={(event) => setChapterText(event.target.value)} placeholder="预发布章节文本" rows={5} />
+            <button
+              className="primaryButton"
+              disabled={busy || (!draftPath.trim() && !chapterText.trim())}
+              onClick={() => runAction(
+                () => createReaderSimulation({
+                  draftPath,
+                  chapterText,
+                  projectId,
+                  workspacePath: selectedProject?.path,
+                  platform
+                }),
+                "模拟读者报告已生成",
+                (result) => setSimulationResult(result as Record<string, unknown>)
+              )}
+            >
+              运行模拟
+            </button>
+          </div>
+          <div className="summaryBand">
+            <Metric label="预测分" value={String(simulationScore)} />
+            <Metric label="风险" value={String(simulationRisk)} />
+          </div>
+          <ul className="plainList">
+            {(simulation.revision_suggestions?.length ? simulation.revision_suggestions : ["模拟会输出弃读风险、追读动机、爽点缺口、下章期待和修订建议。"]).slice(0, 5).map((item) => <li key={item}>{item}</li>)}
+          </ul>
+        </div>
+
         <div className="panel">
           <PanelHeader title="导入评论" icon={<UploadCloud size={18} />} />
           <div className="formGrid">
@@ -99,6 +166,38 @@ export function ReaderFeedbackPage() {
             <button className="secondaryButton" disabled={busy || !feedbackRows.length} onClick={() => runAction(() => createOperationalSnapshot(feedbackRows.slice(0, 24).map((row) => row.path), projectId, selectedProject?.path), "运营指标快照已生成")}>运营快照</button>
             <button className="secondaryButton" disabled={busy || !feedbackRows.length} onClick={() => runAction(() => createFeedbackInsight(feedbackRows[0]?.path), "反馈洞察已生成")}>反馈洞察</button>
             <button className="secondaryButton" disabled={busy || !latestSentiment} onClick={() => runAction(() => applyFeedbackStrategy(latestSentiment?.path || "", selectedProject?.path), "下一章策略已回写")}>回写策略</button>
+          </div>
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="真实反馈回流" icon={<RefreshCcw size={18} />} />
+          <div className="formGrid">
+            <textarea value={realMetricsText} onChange={(event) => setRealMetricsText(event.target.value)} rows={8} />
+            <button
+              className="primaryButton"
+              disabled={busy || !realMetricsText.trim()}
+              onClick={() => runAction(
+                () => {
+                  const metrics = JSON.parse(realMetricsText) as Record<string, unknown>;
+                  return runRealFeedbackBackflow({
+                    metrics,
+                    projectId,
+                    workspacePath: selectedProject?.path,
+                    platform,
+                    releasePackagePath
+                  });
+                },
+                "真实反馈已回流",
+                (result) => setRealBackflowResult(result as Record<string, unknown>)
+              )}
+            >
+              回流指标
+            </button>
+          </div>
+          <p className="previewText">真实指标会写入 MKAOS 权重、平台策略、审稿规则、题材库、人设模板和节奏模板。</p>
+          <div className="summaryBand">
+            <Metric label="风险" value={String(realBackflowResult?.risk_level ?? latestBackflow?.status ?? "-")} />
+            <Metric label="MKAOS" value={String(realBackflowResult?.mkaos_weight_update_count ?? backflowTargets.mkaos_weight?.updates?.length ?? 0)} />
           </div>
         </div>
 

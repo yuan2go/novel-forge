@@ -202,6 +202,8 @@ ASSET_DIR_BY_TYPE = {
     "feedback_import_batch": "feedback",
     "feedback_insight": "feedback",
     "reader_sentiment_report": "feedback",
+    "reader_simulation_report": "feedback",
+    "reader_feedback_backflow_report": "feedback",
     "project_metric_snapshot": "runs",
     "local_settings_profile": "runs",
     "training_exercise": "training",

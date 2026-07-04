@@ -10,9 +10,11 @@ from novel_forge.modules.feedback import (
     apply_feedback_strategy_to_workspace,
     create_feedback_import_batch,
     create_operational_metric_snapshot,
+    create_reader_simulation_report,
     create_reader_sentiment_report,
     list_feedback_assets,
     process_publish_feedback_loop,
+    process_real_feedback_backflow,
 )
 from novel_forge.modules.feedback_backflow import apply_feedback_backflow_plan, create_feedback_backflow_plan
 from novel_forge.storage.local import LocalStorage
@@ -30,6 +32,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     FeedbackBackflowPlanRequest = models["FeedbackBackflowPlanRequest"]
     FeedbackBackflowApplyRequest = models["FeedbackBackflowApplyRequest"]
     PublishFeedbackLoopRequest = models["PublishFeedbackLoopRequest"]
+    ReaderSimulationRequest = models["ReaderSimulationRequest"]
+    RealFeedbackBackflowRequest = models["RealFeedbackBackflowRequest"]
     OperationalMetricSnapshotRequest = models["OperationalMetricSnapshotRequest"]
 
     @router.get("/product/feedback/assets")
@@ -146,6 +150,40 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 release_package_path=request.release_package_path,
                 apply_mkaos_weight_update=request.apply_mkaos_weight_update,
                 require_human_gate=request.require_human_gate,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/feedback/reader-simulation")
+    def feedback_reader_simulation_endpoint(request: ReaderSimulationRequest) -> dict[str, Any]:
+        try:
+            return create_reader_simulation_report(
+                LocalStorage(app_settings.root),
+                draft_path=request.draft_path,
+                chapter_text=request.chapter_text,
+                project_id=request.project_id,
+                workspace_path=request.workspace_path,
+                platform=request.platform,
+                chapter=request.chapter,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/feedback/real-backflow")
+    def feedback_real_backflow_endpoint(request: RealFeedbackBackflowRequest) -> dict[str, Any]:
+        try:
+            return process_real_feedback_backflow(
+                LocalStorage(app_settings.root),
+                metrics=request.metrics,
+                project_id=request.project_id,
+                workspace_path=request.workspace_path,
+                platform=request.platform,
+                release_package_path=request.release_package_path,
+                apply_mkaos_weight_update=request.apply_mkaos_weight_update,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

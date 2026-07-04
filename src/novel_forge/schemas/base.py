@@ -351,6 +351,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "recommendations",
         "confidence",
     ],
+    "reader_simulation_report": ["simulation_id", "project_id", "personas", "aggregate", "created_at"],
     "project_metric_snapshot": [
         "project_id",
         "snapshot_at",
@@ -548,6 +549,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "embedding_job": ["job_id", "source_paths", "backend", "status", "created_at"],
     "hybrid_retrieval_report": ["report_id", "query", "retrieval_backend", "results", "created_at"],
     "operational_metric_snapshot": ["project_id", "snapshot_at", "read_metrics", "engagement_metrics", "character_heat", "chapter_dropoffs", "recommendations"],
+    "reader_feedback_backflow_report": ["backflow_report_id", "project_id", "metric_snapshot_path", "target_updates", "created_at"],
     "publishing_plan": ["plan_id", "project_id", "calendar", "chapter_queue", "platform_targets", "gate_policy", "status"],
     "publishing_log": ["log_id", "release_package_id", "channel", "status", "published_at", "rollback_plan"],
     "local_ops_drill_report": ["drill_id", "scenarios", "results", "recovery_actions", "status", "created_at"],

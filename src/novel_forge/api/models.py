@@ -998,6 +998,24 @@ class PublishFeedbackLoopRequest(BaseModel):
     require_human_gate: bool = True
 
 
+class ReaderSimulationRequest(BaseModel):
+    draft_path: str | None = None
+    chapter_text: str | None = None
+    project_id: str | None = None
+    workspace_path: str | None = None
+    platform: str = "qidian"
+    chapter: int | None = None
+
+
+class RealFeedbackBackflowRequest(BaseModel):
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    project_id: str | None = None
+    workspace_path: str | None = None
+    platform: str = "qidian"
+    release_package_path: str | None = None
+    apply_mkaos_weight_update: bool = True
+
+
 class OperationalMetricSnapshotRequest(BaseModel):
     feedback_paths: list[str] = Field(default_factory=list)
     project_id: str | None = None
@@ -1416,6 +1434,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "FeedbackBackflowPlanRequest": FeedbackBackflowPlanRequest,
         "FeedbackBackflowApplyRequest": FeedbackBackflowApplyRequest,
         "PublishFeedbackLoopRequest": PublishFeedbackLoopRequest,
+        "ReaderSimulationRequest": ReaderSimulationRequest,
+        "RealFeedbackBackflowRequest": RealFeedbackBackflowRequest,
         "OperationalMetricSnapshotRequest": OperationalMetricSnapshotRequest,
         "ProjectMetricSnapshotRequest": ProjectMetricSnapshotRequest,
         "RuntimeCostSnapshotRequest": RuntimeCostSnapshotRequest,

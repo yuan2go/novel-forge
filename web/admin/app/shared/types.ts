@@ -525,6 +525,15 @@ export type FeedbackAssetRow = {
   read_metrics?: Record<string, number>;
   engagement_metrics?: Record<string, number>;
   chapter_dropoffs?: Array<{ chapter: number; reads: number; drop_rate: number; explicit_drop_signals: number; average_rating: number; risk: string }>;
+  reader_simulation?: {
+    predicted_score?: number;
+    dropout_risk?: string;
+    pleasure_gaps?: string[];
+    next_chapter_expectations?: string[];
+    revision_suggestions?: string[];
+    recommendation?: string;
+  };
+  target_updates?: Record<string, { status?: string; path?: string; updates?: unknown[] }>;
   next_chapter_strategy?: {
     primary_strategy?: string;
     constraints?: string[];

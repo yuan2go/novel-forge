@@ -574,8 +574,18 @@ class ReaderSentimentReport(BaseAsset):
 
 
 @dataclass
+class ReaderSimulationReport(BaseAsset):
+    type: str = "reader_simulation_report"
+
+
+@dataclass
 class OperationalMetricSnapshot(BaseAsset):
     type: str = "operational_metric_snapshot"
+
+
+@dataclass
+class ReaderFeedbackBackflowReport(BaseAsset):
+    type: str = "reader_feedback_backflow_report"
 
 
 @dataclass
@@ -1083,7 +1093,9 @@ SCHEMA_CLASSES = {
         FeedbackImportBatch,
         FeedbackInsight,
         ReaderSentimentReport,
+        ReaderSimulationReport,
         OperationalMetricSnapshot,
+        ReaderFeedbackBackflowReport,
         ProjectMetricSnapshot,
         LocalSettingsProfile,
         TrainingExercise,

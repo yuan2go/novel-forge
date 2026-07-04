@@ -195,6 +195,8 @@ describe("Novel Forge admin feature architecture", () => {
 
     const feedbackApi = read("app/features/feedback/api.ts");
     assert.match(feedbackApi, /\/product\/feedback\/publish-loop/);
+    assert.match(feedbackApi, /\/product\/feedback\/reader-simulation/);
+    assert.match(feedbackApi, /\/product\/feedback\/real-backflow/);
   });
 
   it("wires industrial deep workbench panels for analysis, context, editor, production, evaluation, and control", () => {
