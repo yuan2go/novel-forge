@@ -3,6 +3,7 @@ from .service import (
     enforce_os_envelope,
     envelope_asset_metadata,
     envelope_response,
+    is_production_environment,
     normalize_os_envelope,
 )
 
@@ -11,5 +12,6 @@ __all__ = [
     "enforce_os_envelope",
     "envelope_asset_metadata",
     "envelope_response",
+    "is_production_environment",
     "normalize_os_envelope",
 ]

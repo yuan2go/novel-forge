@@ -14,6 +14,7 @@ from novel_forge.modules.common import read_previous, run_metadata
 from novel_forge.modules.audit import create_chapter_audit_report, create_originality_report
 from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.mkaos import record_pack_usage_for_artifact, validate_artifact as validate_mkaos_artifact
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, quality_dimensions_from_context
 from novel_forge.modules.review_issue import persist_review_issues_for_report
 from novel_forge.modules.standards import create_quality_score_report, evaluate_quality_standard
@@ -23,7 +24,14 @@ from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import retrieval_metadata, retrieval_reference_ids
 
 
-def review(storage: LocalStorage, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+def review(
+    storage: LocalStorage,
+    input_path: str | None = None,
+    model: ModelAdapter | None = None,
+    *,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
+) -> Path:
     agent_profile = agent_runtime_profile("review")
     model = model or model_from_env("review")
     draft_asset = read_previous(storage, "drafts", input_path)
@@ -42,6 +50,8 @@ def review(storage: LocalStorage, input_path: str | None = None, model: ModelAda
         platform=str(project_config.get("target_platform") or ""),
         chapter_id=str(draft_asset.content.get("chapter", "")),
         current_goal=f"review {draft_asset.title or draft_asset.id}",
+        environment=environment,
+        os_envelope=os_envelope,
     )
     context_bundle = mkaos_pack.get("context_bundle", {})
     context_bundle_asset = context_bundle.get("asset", {}) if isinstance(context_bundle, dict) else {}
@@ -538,6 +548,8 @@ def _build_mkaos_pack(
     platform: str,
     chapter_id: str,
     current_goal: str,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     try:
         flow_context = build_flow_context_bundle(
@@ -553,10 +565,14 @@ def _build_mkaos_pack(
             query=current_goal,
             token_budget=5000,
             context_profile="review",
+            environment=environment,
+            os_envelope=os_envelope,
         )
         pack = flow_context["mkaos_pack"]
         return {**pack, "context_bundle": flow_context["context_bundle"], "context_bundle_path": flow_context["path"], "context_plan": flow_context["context_plan"]}
     except Exception as exc:
+        if is_production_environment(environment):
+            raise ValueError(f"MKAOS pack build failed in production for {flow}: {exc}") from exc
         return {"path": "", "asset": {"content": {}}, "warning": str(exc)}
 
 

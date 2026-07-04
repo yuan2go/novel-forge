@@ -184,6 +184,10 @@ def _is_production(environment: str) -> bool:
     return _environment(environment) == "production"
 
 
+def is_production_environment(environment: str | None = None) -> bool:
+    return _is_production(_environment(environment or ""))
+
+
 def _missing_production_fields(envelope: dict[str, Any]) -> list[str]:
     missing: list[str] = []
     for field in REQUIRED_PRODUCTION_FIELDS:

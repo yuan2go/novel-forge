@@ -16,6 +16,7 @@ from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.mkaos import record_pack_usage_for_artifact
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.planning_context import build_planning_context, planning_context_metadata
 from novel_forge.modules.production_chain import create_outline_version
 from novel_forge.modules.production_context import filter_project_safe_references
@@ -31,6 +32,8 @@ def generate_outline(
     model: ModelAdapter | None = None,
     *,
     workspace_path: str | None = None,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
 ) -> Path:
     model = model or model_from_env("outline")
     source_path = resolve_path(storage.root, input_path) if input_path else storage.latest("characters")
@@ -50,6 +53,8 @@ def generate_outline(
         genre=str(project_config.get("genre") or ""),
         platform=str(project_config.get("target_platform") or ""),
         current_goal=f"outline for {character.title or character.id}",
+        environment=environment,
+        os_envelope=os_envelope,
     )
     with AgentExecutionContext(
         storage,
@@ -364,6 +369,8 @@ def _build_mkaos_pack(
     genre: str,
     platform: str,
     current_goal: str,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     try:
         flow_context = build_flow_context_bundle(
@@ -377,10 +384,14 @@ def _build_mkaos_pack(
             current_goal=current_goal,
             query=current_goal,
             token_budget=5000,
+            environment=environment,
+            os_envelope=os_envelope,
         )
         pack = flow_context["mkaos_pack"]
         return {**pack, "context_bundle": flow_context["context_bundle"], "context_bundle_path": flow_context["path"], "context_plan": flow_context["context_plan"]}
     except Exception as exc:
+        if is_production_environment(environment):
+            raise ValueError(f"MKAOS pack build failed in production for {flow}: {exc}") from exc
         return {"path": "", "asset": {"content": {}}, "warning": str(exc)}
 
 

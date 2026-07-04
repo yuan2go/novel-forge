@@ -15,6 +15,7 @@ from novel_forge.modules.longform_stability import (
     sanitize_chapter_text,
 )
 from novel_forge.modules.mkaos import record_pack_usage_for_artifact
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_chain import create_draft_version, create_generation_run
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.schemas import DraftChapter
@@ -30,6 +31,8 @@ def draft(
     context_bundle_path: str | Path | None = None,
     stability_preflight_path: str | Path | None = None,
     workspace_path: str | None = None,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
 ) -> Path:
     agent_profile = agent_runtime_profile("draft")
     model = model or model_from_env("draft")
@@ -90,6 +93,8 @@ def draft(
         platform=str(project_config.get("target_platform") or ""),
         chapter_id=str(plan.content.get("chapter", 1) or 1),
         current_goal=str(plan.content.get("objective") or plan.title or "draft chapter"),
+        environment=environment,
+        os_envelope=os_envelope,
     )
     context_bundle = mkaos_pack.get("context_bundle", context_bundle)
     context_bundle_asset = context_bundle["asset"]
@@ -392,6 +397,8 @@ def _build_mkaos_pack(
     platform: str,
     chapter_id: str,
     current_goal: str,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     try:
         flow_context = build_flow_context_bundle(
@@ -407,10 +414,14 @@ def _build_mkaos_pack(
             query=current_goal,
             token_budget=8000,
             existing_context_bundle_path=existing_context_bundle_path,
+            environment=environment,
+            os_envelope=os_envelope,
         )
         pack = flow_context["mkaos_pack"]
         return {**pack, "context_bundle": flow_context["context_bundle"], "context_bundle_path": flow_context["path"], "context_plan": flow_context["context_plan"]}
     except Exception as exc:
+        if is_production_environment(environment):
+            raise ValueError(f"MKAOS pack build failed in production for {flow}: {exc}") from exc
         return {"path": "", "asset": {"content": {}}, "warning": str(exc)}
 
 

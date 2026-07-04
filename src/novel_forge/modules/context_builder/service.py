@@ -437,6 +437,8 @@ def build_flow_context_bundle(
     context_profile: str | None = None,
     existing_context_bundle_path: str | Path | None = None,
     source_policy: dict[str, Any] | None = None,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     target_file = resolve_path(storage.root, target_path)
     profile = context_profile or FLOW_CONTEXT_PROFILES.get(flow, "chapter_generation")
@@ -480,6 +482,8 @@ def build_flow_context_bundle(
             "current_goal": current_goal,
             "knowledge_budget": {"max_core_knowledge": 3 if flow == "prose" else 8},
             "source_policy": policy,
+            "environment": environment,
+            "os_envelope": os_envelope or {},
         },
     )
     bundle_data = storage.read_json(bundle_file)

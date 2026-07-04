@@ -74,6 +74,68 @@ class ContextBuilderMkaosFlowTests(unittest.TestCase):
             self.assertFalse(content["source_isolation"]["source_chunk_raw_text_allowed"])
             self.assertNotIn('"raw_text"', str(content["mkaos_pack"]))
 
+    def test_production_context_builder_requires_os_envelope_and_can_use_enforced_envelope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Production chapter plan",
+                    content={"chapter": 1, "objective": "prove fail closed", "beats": ["gate"], "hook": "gate holds"},
+                    metadata={"project_id": "ctx-prod"},
+                ),
+            )
+
+            with self.assertRaisesRegex(ValueError, "OS envelope required"):
+                build_flow_context_bundle(
+                    storage,
+                    plan_path,
+                    flow="prose",
+                    project_id="ctx-prod",
+                    chapter_id="1",
+                    current_goal="draft production chapter",
+                    environment="production",
+                )
+
+            result = build_flow_context_bundle(
+                storage,
+                plan_path,
+                flow="prose",
+                project_id="ctx-prod",
+                chapter_id="1",
+                current_goal="draft production chapter",
+                environment="production",
+                os_envelope=_os_envelope("ctx-prod", "prose", "knowledge_pack", trace_id="trace-context-prod"),
+            )
+            pack_metadata = result["mkaos_pack"]["asset"]["metadata"]
+
+            self.assertEqual(pack_metadata["os_envelope"]["status"], "enforced")
+            self.assertEqual(pack_metadata["os_envelope"]["trace_id"], "trace-context-prod")
+
+    def test_production_outline_fails_closed_on_mkaos_pack_failure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            character_path = storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="Production protagonist",
+                    content={"role": "主角", "external_goal": "prove production fail closed"},
+                    metadata={"project_id": "outline-prod"},
+                ),
+            )
+
+            with self.assertRaisesRegex(ValueError, "MKAOS pack build failed in production"):
+                outline_service.generate_outline(
+                    storage,
+                    str(character_path),
+                    model=MockModelAdapter(),
+                    environment="production",
+                )
+
+            self.assertFalse([path for path in storage.list_json("outlines") if storage.read_json(path).get("type") == "outline"])
+
     def test_outline_chapter_prose_review_outputs_reference_context_bundle(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -106,6 +168,25 @@ class ContextBuilderMkaosFlowTests(unittest.TestCase):
                 self.assertEqual(bundle["type"], "context_bundle")
                 self.assertIn("mkaos_pack", bundle["content"])
                 self.assertFalse(bundle["content"]["source_isolation"]["source_chunk_raw_text_allowed"])
+
+
+def _os_envelope(project_id: str, task_type: str, asset_type: str, *, trace_id: str) -> dict[str, object]:
+    return {
+        "envelope_id": f"env-{trace_id}",
+        "project_id": project_id,
+        "task_type": task_type,
+        "asset_type": asset_type,
+        "actor_type": "unit_test",
+        "actor_id": "test",
+        "source": "unit-test",
+        "trace_id": trace_id,
+        "source_policy": {
+            "raw_source_text_allowed": False,
+            "generation_rag_allowed": False,
+            "source_chunk_raw_text_allowed": False,
+        },
+        "environment": "production",
+    }
 
 
 if __name__ == "__main__":
