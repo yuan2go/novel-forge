@@ -12,7 +12,7 @@ from novel_forge.model_adapters.mock import MockModelAdapter
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, run_metadata
 from novel_forge.modules.audit import create_chapter_audit_report, create_originality_report
-from novel_forge.modules.context_builder import build_flow_context_bundle
+from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_pack, knowledge_context_contract_metadata
 from novel_forge.modules.mkaos import build_mkaos_flow_context_with_policy, mkaos_pack_metadata, record_pack_usage_for_artifact, validate_artifact as validate_mkaos_artifact
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, quality_dimensions_from_context
 from novel_forge.modules.review_issue import persist_review_issues_for_report
@@ -52,6 +52,7 @@ def review(
         environment=environment,
         os_envelope=os_envelope,
     )
+    knowledge_contract = knowledge_context_contract_from_pack(mkaos_pack)
     context_bundle = mkaos_pack.get("context_bundle", {})
     context_bundle_asset = context_bundle.get("asset", {}) if isinstance(context_bundle, dict) else {}
     context_bundle_content = context_bundle_asset.get("content", {}) if isinstance(context_bundle_asset.get("content", {}), dict) else {}
@@ -68,6 +69,7 @@ def review(
         token_budget=3000,
         sla_seconds=900,
         workspace_path=str(production_context["project"].get("workspace_path", "")),
+        knowledge_context_contract=knowledge_contract,
     ) as agent_run:
         agent_run.guard("read_asset")
         guarded_model = GuardedModelAdapter(model, storage, agent_run.path)
@@ -120,6 +122,7 @@ def review(
                 "context_bundle": context_bundle_content,
                 "context_bundle_id": context_bundle_asset.get("id", ""),
                 "context_bundle_path": mkaos_pack.get("context_bundle_path", ""),
+                "knowledge_context_contract": knowledge_contract,
                 "mkaos_knowledge_pack": _pack_content(mkaos_pack),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
                 "mkaos_knowledge_pack_warning": mkaos_pack.get("warning", ""),
@@ -145,6 +148,7 @@ def review(
                 "feedback_rubric_loaded": bool(feedback_rubric_constraints),
                 "context_bundle_id": context_bundle_asset.get("id", ""),
                 "context_bundle_path": mkaos_pack.get("context_bundle_path", ""),
+                **knowledge_context_contract_metadata(knowledge_contract),
                 "context_builder_unified": bool(mkaos_pack.get("context_bundle_path", "")),
                 "mkaos_knowledge_pack_id": mkaos_pack.get("asset", {}).get("id", ""),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),

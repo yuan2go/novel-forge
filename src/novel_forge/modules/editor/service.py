@@ -15,6 +15,7 @@ from novel_forge.model_adapters import (
 )
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.production_chain import create_draft_version, create_generation_run
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.review_issue import assert_no_blocking_review_issues
@@ -31,6 +32,8 @@ def create_editor_patch(
     instructions: str = "",
     operations: list[dict[str, Any]] | None = None,
     workspace_path: str | None = None,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     storage.ensure_layout()
     path = resolve_path(storage.root, draft_path)
@@ -38,6 +41,19 @@ def create_editor_patch(
     if draft.type != "draft_chapter":
         raise ValueError("draft_path must point to a draft_chapter asset")
     project = project_scope_from_asset(storage, draft, input_path=path, workspace_path=workspace_path)
+    context = build_flow_context_bundle(
+        storage,
+        path,
+        flow="editor_patch",
+        project_id=str(project.get("project_id", "")),
+        workspace_path=str(project.get("workspace_path", "")),
+        chapter_id=str(draft.content.get("chapter", "")) if isinstance(draft.content, dict) else "",
+        current_goal=instructions or "create editor patch",
+        token_budget=2500,
+        environment=environment,
+        os_envelope=os_envelope,
+    )
+    knowledge_contract = knowledge_context_contract_from_result(context)
     normalized_operations = _normalize_operations(operations or [], instructions=instructions, draft_text=str(draft.content.get("text", "")))
     with AgentExecutionContext(
         storage,
@@ -47,6 +63,7 @@ def create_editor_patch(
         output_types=["editor_patch"],
         workspace_path=str(project.get("workspace_path", "")),
         sla_seconds=600,
+        knowledge_context_contract=knowledge_contract,
     ) as run:
         run.guard("read_asset")
         run.guard("write_editor_patch", "editor_patch")
@@ -63,6 +80,7 @@ def create_editor_patch(
                 "operations": normalized_operations,
                 "status": "proposed",
                 "risk_flags": _operation_risks(normalized_operations),
+                "knowledge_context_contract": knowledge_contract,
                 "created_at": now,
                 "applied_at": "",
             },
@@ -70,6 +88,7 @@ def create_editor_patch(
                 "project_id": project.get("project_id", ""),
                 "workspace_path": project.get("workspace_path", ""),
                 "agent_run_path": run.path,
+                **knowledge_context_contract_metadata(knowledge_contract),
             },
             references=filter_project_safe_references(
                 storage,
@@ -239,6 +258,7 @@ def execute_revision_plan(
         raise ValueError("execute_revision_plan requires draft_chapter, review_report, and revision_plan inputs")
     if bundle.type != "context_bundle":
         raise ValueError("context_bundle_path must point to a context_bundle asset")
+    knowledge_contract = bundle.content.get("knowledge_context_contract", {}) if isinstance(bundle.content, dict) and isinstance(bundle.content.get("knowledge_context_contract", {}), dict) else {}
     project = project_scope_from_asset(storage, draft, input_path=draft_file, workspace_path=workspace_path)
     production_context = build_production_context(storage, draft, input_path=draft_file, workspace_path=str(project.get("workspace_path", "")))
     project_id = str(project.get("project_id", ""))
@@ -257,6 +277,7 @@ def execute_revision_plan(
         token_budget=5000,
         sla_seconds=1200,
         workspace_path=workspace,
+        knowledge_context_contract=knowledge_contract,
     ) as run:
         run.guard("read_asset")
         guarded_model = GuardedModelAdapter(model, storage, run.path)
@@ -328,11 +349,13 @@ def execute_revision_plan(
                 },
                 "quality_notes": packet.get("quality_notes", []),
                 "risk_controls": packet.get("risk_controls", []),
+                "knowledge_context_contract": knowledge_contract,
             },
             metadata={
                 "project_id": project_id,
                 "workspace_path": workspace,
                 "agent_run_path": run.path,
+                **knowledge_context_contract_metadata(knowledge_contract),
                 "revision_plan_id": revision.id,
                 "review_id": review.id,
                 "patch_role": "forward_revision",
@@ -367,6 +390,7 @@ def execute_revision_plan(
                     "risk_controls": packet.get("risk_controls", []),
                     "chapter_production_run_id": chapter_production_run_id,
                     "chapter_production_run_path": chapter_production_run_path,
+                    "knowledge_context_contract": knowledge_contract,
                 },
             },
             metadata={
@@ -383,6 +407,7 @@ def execute_revision_plan(
                 "forward_patch_id": forward_patch_result["id"],
                 "forward_patch_path": forward_patch_result["path"],
                 "agent_run_path": run.path,
+                **knowledge_context_contract_metadata(knowledge_contract),
                 "provider": str(generated.get("provider", getattr(model, "name", "local"))),
                 "model": str(generated.get("model", getattr(model, "name", "local"))),
                 "prompt_version": REVISION_EXECUTOR_PROMPT_VERSION,

@@ -5,8 +5,9 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
-from novel_forge.modules.agent_runs import AgentExecutionContext
+from novel_forge.modules.agent_runs import AgentExecutionContext, attach_agent_run_context_contract
 from novel_forge.modules.common import read_previous, resolve_path
+from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import record_trace_span
 from novel_forge.schemas import (
@@ -540,6 +541,8 @@ def process_real_feedback_backflow(
     platform: str = "qidian",
     release_package_path: str | Path | None = None,
     apply_mkaos_weight_update: bool = True,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if not isinstance(metrics, dict) or not metrics:
         raise ValueError("metrics object is required")
@@ -575,6 +578,19 @@ def process_real_feedback_backflow(
             release_package_path=release_package_path,
         )
         snapshot_result = _write(storage, snapshot)
+        context = build_flow_context_bundle(
+            storage,
+            snapshot_result["path"],
+            flow="feedback_backflow",
+            project_id=resolved_project_id,
+            workspace_path=workspace,
+            current_goal="real feedback backflow learning",
+            token_budget=2500,
+            environment=environment,
+            os_envelope=os_envelope,
+        )
+        knowledge_contract = knowledge_context_contract_from_result(context)
+        attach_agent_run_context_contract(storage, run.path, knowledge_contract)
         from novel_forge.modules.platform_strategy import create_platform_feedback_backflow
 
         run.guard("write_platform_feedback_backflow", "platform_feedback_backflow")
@@ -633,6 +649,7 @@ def process_real_feedback_backflow(
                 "signals": signals,
                 "normalized_metrics": normalized,
                 "release_package_path": str(release_package_path or ""),
+                "knowledge_context_contract": knowledge_contract,
                 "created_at": utc_now(),
             },
             metadata={
@@ -641,6 +658,7 @@ def process_real_feedback_backflow(
                 "workflow": "real-feedback-backflow",
                 "risk_level": signals["risk_level"],
                 "use_in_generation_rag": False,
+                **knowledge_context_contract_metadata(knowledge_contract),
             },
             references=filter_project_safe_references(
                 storage,
@@ -678,6 +696,7 @@ def process_real_feedback_backflow(
             "mkaos_weight_update_count": len(mkaos_updates),
             "risk_level": signals["risk_level"],
             "target_updates": target_updates,
+            "knowledge_context_contract": knowledge_contract,
         }
 
 

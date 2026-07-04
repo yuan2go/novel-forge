@@ -1,5 +1,4 @@
 from pathlib import Path
-import json
 import sys
 import tempfile
 import unittest
@@ -53,7 +52,7 @@ class LongformRecapAgentTests(unittest.TestCase):
             self.assertGreater(writeback["mkaos_usage_event_count"], 0)
             self.assertTrue(writeback["mkaos_feedback_paths"])
             self.assertEqual(result["loop"]["status"], "succeeded")
-            self.assertNotIn("raw_text", json.dumps(report["content"], ensure_ascii=False))
+            _assert_no_raw_text_payload(self, report["content"])
 
             issues = list_review_issues(storage, project_id="recap-p", limit=50)
             self.assertTrue(any(issue["content"]["source_system"] == "longform_recap.agent" for issue in issues))
@@ -90,7 +89,7 @@ class LongformRecapAgentTests(unittest.TestCase):
             selected_paths = {item.get("path") for item in bundle["asset"]["content"]["selected_assets"]}
 
             self.assertIn(recap["path"], selected_paths)
-            self.assertNotIn("raw_text", json.dumps(bundle["asset"]["content"], ensure_ascii=False))
+            _assert_no_raw_text_payload(self, bundle["asset"]["content"])
 
 
 def _longform_fixture(storage: LocalStorage) -> Path:
@@ -143,6 +142,23 @@ def _longform_fixture(storage: LocalStorage) -> Path:
         latest_path = draft_path
     assert latest_path is not None
     return latest_path
+
+
+def _assert_no_raw_text_payload(testcase: unittest.TestCase, value):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key == "raw_text":
+                testcase.fail("raw_text payload must not be present in recap or context assets")
+            if key in {"source_chunk_raw_text_allowed", "raw_source_text_allowed"}:
+                testcase.assertFalse(bool(child), f"{key} must not allow raw source text")
+            _assert_no_raw_text_payload(testcase, child)
+        return
+    if isinstance(value, list):
+        for child in value:
+            _assert_no_raw_text_payload(testcase, child)
+        return
+    if isinstance(value, str):
+        testcase.assertNotIn("source_chunk.raw_text", value)
 
 
 if __name__ == "__main__":

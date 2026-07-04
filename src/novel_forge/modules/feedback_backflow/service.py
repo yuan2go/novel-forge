@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
-from novel_forge.modules.agent_runs import AgentExecutionContext
+from novel_forge.modules.agent_runs import AgentExecutionContext, attach_agent_run_context_contract
 from novel_forge.modules.common import resolve_path
+from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata, require_knowledge_context_contract
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.schemas import (
     FeedbackBackflowPlan,
@@ -25,19 +26,39 @@ def create_feedback_backflow_plan(
     project_id: str | None = None,
     workspace_path: str | None = None,
     require_human_gate: bool = True,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     storage.ensure_layout()
     rows = _feedback_rows(storage, feedback_paths or [], project_id=project_id, workspace_path=workspace_path)
     clusters = _clusters_from_rows(rows)
+    context_target = _feedback_context_target(rows, feedback_paths or [])
     with AgentExecutionContext(
         storage,
         agent_key="feedback",
         operation="create-feedback-backflow-plan",
+        input_assets=[context_target] if context_target else [],
         output_types=["feedback_backflow_plan", "feedback_cluster", "plan_adjustment_proposal", "review_rule_update_proposal", "feedback_kg_patch"],
         workspace_path=workspace_path,
         sla_seconds=600,
     ) as run:
         run.guard("create_feedback_backflow_plan")
+        knowledge_contract: dict[str, Any] = {}
+        if context_target:
+            context = build_flow_context_bundle(
+                storage,
+                context_target,
+                flow="feedback_backflow",
+                project_id=project_id or "local-system",
+                workspace_path=workspace_path or "",
+                current_goal="feedback backflow governance",
+                token_budget=2500,
+                environment=environment,
+                os_envelope=os_envelope,
+            )
+            knowledge_contract = knowledge_context_contract_from_result(context)
+            attach_agent_run_context_contract(storage, run.path, knowledge_contract)
+        require_knowledge_context_contract(knowledge_contract, operation="create-feedback-backflow-plan", environment=environment)
         cluster_assets = [_write_cluster(storage, cluster, project_id=project_id or "", workspace_path=workspace_path or "") for cluster in clusters]
         proposal_assets: list[dict[str, Any]] = []
         for cluster, cluster_asset in zip(clusters, cluster_assets):
@@ -56,14 +77,15 @@ def create_feedback_backflow_plan(
                 "proposals": [_asset_ref(item) for item in proposal_assets],
                 "human_gate": human_gate,
                 "status": "waiting_human" if require_human_gate and proposal_assets else "ready",
+                "knowledge_context_contract": knowledge_contract,
                 "created_at": utc_now(),
             },
-            metadata={"project_id": project_id or "", "workspace_path": workspace_path or ""},
+            metadata={"project_id": project_id or "", "workspace_path": workspace_path or "", **knowledge_context_contract_metadata(knowledge_contract)},
             references=filter_project_safe_references(storage, project_id or "", _dedupe([*[str(path) for path in feedback_paths or []], *[item["path"] for item in cluster_assets], *[item["path"] for item in proposal_assets]])),
         )
         result = _write(storage, asset)
         run.succeed(output_assets=[result["path"], *[item["path"] for item in cluster_assets], *[item["path"] for item in proposal_assets]], token_used=len(rows))
-        return {"path": result["path"], "asset": result["asset"], "clusters": cluster_assets, "proposals": proposal_assets}
+        return {"path": result["path"], "asset": result["asset"], "clusters": cluster_assets, "proposals": proposal_assets, "knowledge_context_contract": knowledge_contract}
 
 
 def apply_feedback_backflow_plan(
@@ -132,6 +154,17 @@ def _feedback_rows(storage: LocalStorage, paths: list[str | Path], *, project_id
         if signals:
             rows.append({"comment": " ".join(str(value) for value in signals.values()), "_source_path": _display_path(storage.root, path)})
     return rows
+
+
+def _feedback_context_target(rows: list[dict[str, Any]], paths: list[str | Path]) -> str:
+    for row in rows:
+        if row.get("_source_path"):
+            return str(row["_source_path"])
+    for path in paths:
+        text = str(path or "").strip()
+        if text:
+            return text
+    return ""
 
 
 def _clusters_from_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -9,6 +9,7 @@ from typing import Any, Callable
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import (
+    attach_agent_run_context_contract,
     create_agent_failure_report,
     execute_agent_run_once,
     record_agent_checkpoint,
@@ -18,6 +19,7 @@ from novel_forge.modules.agent_runs import (
 )
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.operation_checkpoint import operation_checkpoint_schema
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.review_issue import review_issue_to_revision_task_candidate
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, release_scheduler_lease, scheduler_lease_status
@@ -28,6 +30,25 @@ QUEUE_STATUSES = {"queued", "claimed", "running", "waiting_human", "acked", "ret
 CLAIMABLE_STATUSES = {"queued", "retry_scheduled", "claimed"}
 TERMINAL_QUEUE_STATUSES = {"acked", "dead_letter", "cancelled"}
 OperationRunner = Callable[[LocalStorage, dict[str, Any], dict[str, Any]], dict[str, Any]]
+
+CORE_MKAOS_CONTEXT_OPERATIONS = {
+    "run-analysis": "required",
+    "decompose": "required",
+    "convert-analysis-report": "required",
+    "generate-outline": "required",
+    "generate-chapter-plan": "required",
+    "draft": "required",
+    "review": "required",
+    "revise": "required",
+    "create-editor-patch": "required",
+    "apply-editor-patch": "compat",
+    "run-longform-recap": "required",
+    "create-publish-gate-report": "required",
+    "create-feedback-backflow-plan": "required",
+    "process-real-feedback-backflow": "required",
+    "run-review-revision-publish-loop": "required",
+    "build-context-bundle": "required",
+}
 
 
 @dataclass(frozen=True)
@@ -109,8 +130,9 @@ class AgentOperationRegistry:
         return self._spec_map
 
     def list_contracts(self) -> list[dict[str, Any]]:
-        contracts = [
-            AgentOperationContract(
+        contracts = []
+        for spec in sorted({item.operation: item for item in self.specs.values()}.values(), key=lambda item: item.operation):
+            contract = AgentOperationContract(
                 operation=spec.operation,
                 agent_key=spec.agent_key,
                 runner_kind="local_service",
@@ -122,8 +144,8 @@ class AgentOperationRegistry:
                 rollback_strategy=spec.rollback_strategy,
                 sla_seconds=spec.sla_seconds,
             ).to_dict()
-            for spec in sorted({item.operation: item for item in self.specs.values()}.values(), key=lambda item: item.operation)
-        ]
+            contract.update(_mkaos_operation_contract_fields(spec.operation))
+            contracts.append(contract)
         contracts.append(
             AgentOperationContract(
                 operation="*",
@@ -162,6 +184,8 @@ class AgentOperationRegistry:
         queue_content = queue_item.get("content", {}) if isinstance(queue_item.get("content", {}), dict) else {}
         run_content = agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}
         evidence = run_content.get("evidence", {}) if isinstance(run_content.get("evidence", {}), dict) else {}
+        canonical = _canonical_operation(str(run_content.get("operation", queue_content.get("operation", ""))))
+        environment = _environment_from_evidence(evidence)
         expected_outputs = _dedupe(
             [
                 *_string_list(queue_content.get("expected_output_assets", [])),
@@ -172,6 +196,7 @@ class AgentOperationRegistry:
         output_rows = run_content.get("output_assets", []) if isinstance(run_content.get("output_assets", []), list) else []
         existing_outputs.extend([str(row.get("path", "")) for row in output_rows if isinstance(row, dict) and row.get("path")])
         existing_outputs = _dedupe(existing_outputs)
+        existing_knowledge_context = _knowledge_context_from_service_result(storage, {"knowledge_context_contract": evidence.get("knowledge_context_contract", {})}, existing_outputs)
         checkpoint = {
             "status": "agent_scheduler_output_reuse",
             "dispatch_id": queue_content.get("dispatch_id", ""),
@@ -180,6 +205,7 @@ class AgentOperationRegistry:
             "output_assets": existing_outputs,
         }
         if existing_outputs:
+            _enforce_operation_knowledge_context(canonical, existing_knowledge_context, environment=environment)
             return {
                 "status": "succeeded",
                 "output_assets": existing_outputs,
@@ -191,11 +217,19 @@ class AgentOperationRegistry:
                     "dispatch_queue_path": _display_path(storage.root, _queue_path(storage, str(queue_content.get("dispatch_id", "")))),
                     "runtime_policy": evidence.get("runtime_policy", {}) if isinstance(evidence.get("runtime_policy", {}), dict) else {},
                     "context_bundle_path": evidence.get("context_bundle_path", ""),
+                    **(
+                        {
+                            "knowledge_context_contract": existing_knowledge_context,
+                            "context_bundle_id": existing_knowledge_context.get("context_bundle_id", ""),
+                            "knowledge_pack_id": existing_knowledge_context.get("knowledge_pack_id", ""),
+                        }
+                        if existing_knowledge_context
+                        else {}
+                    ),
                     "provider_usage": evidence.get("provider_usage", {}) if isinstance(evidence.get("provider_usage", {}), dict) else {},
                     "provider_runtime_guard": evidence.get("provider_runtime_guard", {}) if isinstance(evidence.get("provider_runtime_guard", {}), dict) else {},
                 },
             }
-        canonical = _canonical_operation(str(run_content.get("operation", queue_content.get("operation", ""))))
         runner = self.runners.get(canonical)
         spec = self.specs.get(canonical)
         if runner:
@@ -237,6 +271,12 @@ class AgentOperationRegistry:
             output_assets = _dedupe(_paths_from_result(storage, service_result))
             if not output_assets:
                 raise RuntimeError(f"agent operation {canonical} completed without output assets")
+            knowledge_context = _knowledge_context_from_service_result(storage, service_result, output_assets)
+            _enforce_operation_knowledge_context(canonical, knowledge_context, environment=environment)
+            if knowledge_context:
+                run_id = str((agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}).get("run_id", ""))
+                if run_id:
+                    attach_agent_run_context_contract(storage, _display_path(storage.root, _resolve_agent_run(storage, run_id)), knowledge_context)
             token_used = int(service_result.get("token_used", 0) or sum(len(str(item)) for item in output_assets))
             checkpoint_state = {
                 **checkpoint,
@@ -263,6 +303,7 @@ class AgentOperationRegistry:
                     "dispatch_queue_path": _display_path(storage.root, _queue_path(storage, str(queue_content.get("dispatch_id", "")))),
                     "checkpoint_path": checkpoint_asset.get("path", ""),
                     "service_result": _json_safe_result(service_result),
+                    **({"knowledge_context_contract": knowledge_context, "context_bundle_id": knowledge_context.get("context_bundle_id", ""), "knowledge_pack_id": knowledge_context.get("knowledge_pack_id", "")} if knowledge_context else {}),
                     "runtime_policy": evidence.get("runtime_policy", {}) if isinstance(evidence.get("runtime_policy", {}), dict) else {},
                     "context_bundle_path": evidence.get("context_bundle_path", ""),
                     "provider_usage": evidence.get("provider_usage", {}) if isinstance(evidence.get("provider_usage", {}), dict) else {},
@@ -461,6 +502,48 @@ def scheduler_status(storage: LocalStorage) -> dict[str, Any]:
 
 def list_agent_operation_contracts() -> list[dict[str, Any]]:
     return OPERATION_REGISTRY.list_contracts()
+
+
+def mkaos_agent_operation_coverage_report() -> dict[str, Any]:
+    contracts = list_agent_operation_contracts()
+    by_operation = {str(row.get("operation", "")): row for row in contracts}
+    operations: list[dict[str, Any]] = []
+    for operation, mode in sorted(CORE_MKAOS_CONTEXT_OPERATIONS.items()):
+        contract = by_operation.get(operation, {})
+        operations.append(
+            {
+                "operation": operation,
+                "status": "mkaos_required" if mode == "required" else "compat",
+                "registered": bool(contract),
+                "agent_key": str(contract.get("agent_key", "")),
+                "runner_kind": str(contract.get("runner_kind", "")),
+                "mkaos_context_required": mode == "required",
+                "compat_allowed": mode == "compat",
+                "production_bypass_forbidden": mode == "required",
+                "context_contract_fields": [
+                    "context_bundle_id",
+                    "knowledge_pack_id",
+                    "source_policy",
+                    "source_isolation",
+                    "mkaos_flow",
+                    "selected_knowledge_ids",
+                    "review_rules",
+                    "risk_warnings",
+                    "selector_policy_version",
+                ],
+            }
+        )
+    return {
+        "summary": {
+            "operation_count": len(operations),
+            "registered_count": sum(1 for item in operations if item["registered"]),
+            "required_count": sum(1 for item in operations if item["mkaos_context_required"]),
+            "compat_count": sum(1 for item in operations if item["compat_allowed"]),
+            "production_bypass_forbidden_count": sum(1 for item in operations if item["production_bypass_forbidden"]),
+        },
+        "operations": operations,
+        "bypass_policy": "production/strict/operating_system operations cannot bypass Knowledge Context Contract; compat is explicit only",
+    }
 
 
 def create_agent_task(
@@ -1767,6 +1850,36 @@ def _operation_specs() -> list[AgentOperationSpec]:
             sla_seconds=900,
         ),
         AgentOperationSpec(
+            operation="run-longform-recap",
+            aliases=("longform-recap", "recap"),
+            runner=_run_longform_recap,
+            agent_key="workflow",
+            input_types=("draft_chapter", "draft_version"),
+            output_types=("longform_recap_report", "revision_task"),
+            required_tool="run_validation",
+            sla_seconds=900,
+        ),
+        AgentOperationSpec(
+            operation="create-feedback-backflow-plan",
+            aliases=("feedback-backflow",),
+            runner=_run_create_feedback_backflow_plan,
+            agent_key="feedback",
+            input_types=("reader_feedback", "reader_sentiment_report", "reader_feedback_backflow_report"),
+            output_types=("feedback_backflow_plan", "feedback_cluster", "plan_adjustment_proposal", "review_rule_update_proposal", "feedback_kg_patch"),
+            required_tool="create_feedback_backflow_plan",
+            sla_seconds=600,
+        ),
+        AgentOperationSpec(
+            operation="process-real-feedback-backflow",
+            aliases=("real-feedback-backflow",),
+            runner=_run_process_real_feedback_backflow,
+            agent_key="feedback",
+            input_types=("release_package", "operational_metric_snapshot"),
+            output_types=("reader_feedback_backflow_report", "platform_feedback_backflow", "review_rule_pack", "topic_seed", "writing_template"),
+            required_tool="write_reader_feedback_backflow_report",
+            sla_seconds=600,
+        ),
+        AgentOperationSpec(
             operation="preview-provider-fallback",
             aliases=("provider-fallback-preview",),
             runner=_run_preview_provider_fallback,
@@ -1792,7 +1905,8 @@ def _operation_specs() -> list[AgentOperationSpec]:
 def _run_decompose(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
     from novel_forge.modules.decomposition import decompose
 
-    return {"path": decompose(storage, _required_input_path(agent_run))}
+    evidence = _evidence(agent_run)
+    return {"path": decompose(storage, _required_input_path(agent_run), environment=str(evidence.get("environment") or ""), os_envelope=_envelope_from_evidence(evidence))}
 
 
 def _run_build_materials(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
@@ -1804,7 +1918,8 @@ def _run_build_materials(storage: LocalStorage, queue_item: dict[str, Any], agen
 def _run_generate_outline(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
     from novel_forge.modules.outline import generate_outline
 
-    return {"path": generate_outline(storage, _required_input_path(agent_run), workspace_path=_workspace_path(agent_run))}
+    evidence = _evidence(agent_run)
+    return {"path": generate_outline(storage, _required_input_path(agent_run), workspace_path=_workspace_path(agent_run), environment=str(evidence.get("environment") or ""), os_envelope=_envelope_from_evidence(evidence))}
 
 
 def _run_generate_chapter_plan(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
@@ -1819,6 +1934,8 @@ def _run_generate_chapter_plan(storage: LocalStorage, queue_item: dict[str, Any]
             workspace_path=_workspace_path(agent_run),
             chapter=int(chapter) if isinstance(chapter, int) or str(chapter).isdigit() else None,
             carry_forward=evidence.get("carry_forward", {}) if isinstance(evidence.get("carry_forward", {}), dict) else None,
+            environment=str(evidence.get("environment") or ""),
+            os_envelope=_envelope_from_evidence(evidence),
         )
     }
 
@@ -1834,6 +1951,8 @@ def _run_draft(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dic
             context_bundle_path=evidence.get("context_bundle_path") or None,
             stability_preflight_path=evidence.get("stability_preflight_path") or None,
             workspace_path=_workspace_path(agent_run),
+            environment=str(evidence.get("environment") or ""),
+            os_envelope=_envelope_from_evidence(evidence),
         )
     }
 
@@ -1841,20 +1960,22 @@ def _run_draft(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dic
 def _run_review(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
     from novel_forge.modules.review import review
 
-    return {"path": review(storage, _required_input_path(agent_run))}
+    evidence = _evidence(agent_run)
+    return {"path": review(storage, _required_input_path(agent_run), environment=str(evidence.get("environment") or ""), os_envelope=_envelope_from_evidence(evidence))}
 
 
 def _run_revise(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
     from novel_forge.modules.revision import revise
 
-    return {"path": revise(storage, _required_input_path(agent_run))}
+    evidence = _evidence(agent_run)
+    return {"path": revise(storage, _required_input_path(agent_run), environment=str(evidence.get("environment") or ""), os_envelope=_envelope_from_evidence(evidence))}
 
 
 def _run_analysis(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
     from novel_forge.modules.analysis import run_analysis
 
     evidence = _evidence(agent_run)
-    return run_analysis(storage, _required_input_path(agent_run), str(evidence.get("analysis_type", "common")), workspace_path=_workspace_path(agent_run))
+    return run_analysis(storage, _required_input_path(agent_run), str(evidence.get("analysis_type", "common")), workspace_path=_workspace_path(agent_run), environment=str(evidence.get("environment") or ""), os_envelope=_envelope_from_evidence(evidence))
 
 
 def _run_analysis_conversion(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
@@ -1869,6 +1990,8 @@ def _run_analysis_conversion(storage: LocalStorage, queue_item: dict[str, Any], 
         reuse_scope=str(evidence.get("reuse_scope", "project")),
         human_approved=bool(evidence.get("human_approved", False)),
         approval_note=str(evidence.get("approval_note", "")),
+        environment=str(evidence.get("environment") or ""),
+        os_envelope=_envelope_from_evidence(evidence),
     )
 
 
@@ -1882,6 +2005,8 @@ def _run_create_editor_patch(storage: LocalStorage, queue_item: dict[str, Any], 
         instructions=str(evidence.get("instructions", "")),
         operations=evidence.get("operations", []) if isinstance(evidence.get("operations", []), list) else [],
         workspace_path=_workspace_path(agent_run),
+        environment=str(evidence.get("environment") or ""),
+        os_envelope=_envelope_from_evidence(evidence),
     )
 
 
@@ -2008,6 +2133,8 @@ def _run_publish_gate_report(storage: LocalStorage, queue_item: dict[str, Any], 
             workspace_path=_workspace_path(agent_run) or None,
             chapter_audit_path=evidence.get("chapter_audit_path") or None,
             human_override=bool(evidence.get("human_override", False)),
+            environment=str(evidence.get("environment") or ""),
+            envelope=_envelope_from_evidence(evidence),
         )
     }
 
@@ -2222,6 +2349,58 @@ def _run_review_revision_publish_loop(storage: LocalStorage, queue_item: dict[st
     )
 
 
+def _run_longform_recap(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.longform_recap import run_longform_recap
+
+    evidence = _evidence(agent_run)
+    return run_longform_recap(
+        storage,
+        {
+            **evidence,
+            "project_id": _project_id(agent_run) or evidence.get("project_id", ""),
+            "workspace_path": _workspace_path(agent_run) or evidence.get("workspace_path", ""),
+            "environment": str(evidence.get("environment") or ""),
+            "envelope": _envelope_from_evidence(evidence),
+            "force": bool(evidence.get("force", True)),
+        },
+    )
+
+
+def _run_create_feedback_backflow_plan(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.feedback_backflow import create_feedback_backflow_plan
+
+    evidence = _evidence(agent_run)
+    return create_feedback_backflow_plan(
+        storage,
+        feedback_paths=_input_paths(agent_run),
+        project_id=_project_id(agent_run) or evidence.get("project_id", ""),
+        workspace_path=_workspace_path(agent_run) or evidence.get("workspace_path", ""),
+        require_human_gate=bool(evidence.get("require_human_gate", True)),
+        environment=str(evidence.get("environment") or ""),
+        os_envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_process_real_feedback_backflow(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.feedback import process_real_feedback_backflow
+
+    evidence = _evidence(agent_run)
+    metrics = evidence.get("metrics", {}) if isinstance(evidence.get("metrics", {}), dict) else {}
+    if not metrics:
+        metrics = {"completion_rate": 0.75, "follow_read_rate": 0.6, "comments": [], "favorites": 0, "bookshelf_adds": 0}
+    return process_real_feedback_backflow(
+        storage,
+        metrics=metrics,
+        project_id=_project_id(agent_run) or evidence.get("project_id", ""),
+        workspace_path=_workspace_path(agent_run) or evidence.get("workspace_path", ""),
+        platform=str(evidence.get("platform") or "qidian"),
+        release_package_path=_primary_input_path(agent_run) or None,
+        apply_mkaos_weight_update=bool(evidence.get("apply_mkaos_weight_update", True)),
+        environment=str(evidence.get("environment") or ""),
+        os_envelope=_envelope_from_evidence(evidence),
+    )
+
+
 def _run_preview_provider_fallback(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
     from novel_forge.modules.provider_fallback import preview_provider_fallback
 
@@ -2421,6 +2600,40 @@ def _evidence(agent_run: dict[str, Any], *, include_processor: bool = True) -> d
     return result
 
 
+def _envelope_from_evidence(evidence: dict[str, Any]) -> dict[str, Any] | None:
+    if isinstance(evidence.get("os_envelope"), dict):
+        return evidence["os_envelope"]
+    if isinstance(evidence.get("envelope"), dict):
+        return evidence["envelope"]
+    return None
+
+
+def _environment_from_evidence(evidence: dict[str, Any]) -> str:
+    direct = str(evidence.get("environment") or "").strip()
+    if direct:
+        return direct
+    envelope = _envelope_from_evidence(evidence)
+    if isinstance(envelope, dict):
+        return str(envelope.get("environment") or "").strip()
+    return ""
+
+
+def _enforce_operation_knowledge_context(operation: str, contract: dict[str, Any], *, environment: str) -> None:
+    if CORE_MKAOS_CONTEXT_OPERATIONS.get(operation) != "required":
+        return
+    if not is_production_environment(environment):
+        return
+    if not isinstance(contract, dict) or not contract:
+        raise RuntimeError(f"agent operation {operation} requires knowledge context contract in production")
+    missing = [
+        field
+        for field in ["context_bundle_id", "knowledge_pack_id", "source_policy", "source_isolation", "mkaos_flow"]
+        if (field in {"source_policy", "source_isolation"} and not isinstance(contract.get(field), dict)) or (field not in {"source_policy", "source_isolation"} and not str(contract.get(field) or "").strip())
+    ]
+    if missing:
+        raise RuntimeError(f"agent operation {operation} knowledge context contract missing: {', '.join(missing)}")
+
+
 def _paths_from_result(storage: LocalStorage, value: Any) -> list[str]:
     paths: list[str] = []
 
@@ -2473,6 +2686,57 @@ def _paths_from_result(storage: LocalStorage, value: Any) -> list[str]:
 
     visit(value)
     return _dedupe(paths)
+
+
+def _mkaos_operation_contract_fields(operation: str) -> dict[str, Any]:
+    mode = CORE_MKAOS_CONTEXT_OPERATIONS.get(operation, "")
+    return {
+        "mkaos_context_required": mode == "required",
+        "mkaos_context_mode": mode or "not_required",
+        "compat_warning_allowed": mode == "compat",
+        "production_bypass_forbidden": mode == "required",
+        "knowledge_context_contract_fields": [
+            "context_bundle_id",
+            "knowledge_pack_id",
+            "source_policy",
+            "source_isolation",
+            "mkaos_flow",
+            "selected_knowledge_ids",
+            "review_rules",
+            "risk_warnings",
+            "selector_policy_version",
+        ],
+    }
+
+
+def _knowledge_context_from_service_result(storage: LocalStorage, result: dict[str, Any], output_assets: list[str]) -> dict[str, Any]:
+    if isinstance(result, dict) and isinstance(result.get("knowledge_context_contract"), dict) and result["knowledge_context_contract"]:
+        return result["knowledge_context_contract"]
+    asset = result.get("asset", {}) if isinstance(result, dict) and isinstance(result.get("asset", {}), dict) else {}
+    direct = _knowledge_context_from_asset(asset)
+    if direct:
+        return direct
+    for path_text in output_assets:
+        try:
+            data = storage.read_json(resolve_path(storage.root, path_text))
+        except Exception:
+            continue
+        found = _knowledge_context_from_asset(data)
+        if found:
+            return found
+    return {}
+
+
+def _knowledge_context_from_asset(data: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(data, dict):
+        return {}
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    for source in [content, metadata]:
+        contract = source.get("knowledge_context_contract")
+        if isinstance(contract, dict) and contract:
+            return contract
+    return {}
 
 
 def _json_safe_result(value: Any) -> Any:

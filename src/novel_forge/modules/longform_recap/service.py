@@ -5,7 +5,7 @@ from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
-from novel_forge.modules.context_builder import build_flow_context_bundle
+from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.longform_stability import create_arc_plan, create_canon_database
 from novel_forge.modules.loop_kernel import run_loop
 from novel_forge.modules.mkaos import record_review_feedback, record_usage_event
@@ -103,6 +103,7 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
         environment=str(payload.get("environment") or ""),
         os_envelope=payload.get("envelope") if isinstance(payload.get("envelope"), dict) else None,
     )
+    knowledge_contract = knowledge_context_contract_from_result(context)
     loop = run_loop(
         storage,
         {
@@ -136,6 +137,7 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
         context=context,
         loop=loop,
     )
+    content["knowledge_context_contract"] = knowledge_contract
     asset = LongformRecapReport(
         id=recap_report_id,
         title=f"Longform recap chapters {selected[0]['chapter']}-{selected[-1]['chapter']}",
@@ -149,6 +151,7 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
             "latest_chapter": selected[-1]["chapter"],
             "chapter_count": len(chapters),
             "context_bundle_path": context["path"],
+            **knowledge_context_contract_metadata(knowledge_contract),
             "loop_run_path": loop["loop_run_path"],
         },
         references=filter_project_safe_references(
@@ -177,6 +180,7 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
         "asset": updated,
         "trigger": trigger,
         "context_bundle_path": context["path"],
+        "knowledge_context_contract": knowledge_contract,
         "loop": loop,
         "writeback": writeback,
     }

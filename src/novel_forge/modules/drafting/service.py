@@ -7,7 +7,7 @@ from novel_forge.agents import agent_runtime_profile, enforce_agent_action
 from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.agent_runs import AgentExecutionContext
-from novel_forge.modules.context_builder import build_flow_context_bundle, create_context_build_plan, create_context_bundle
+from novel_forge.modules.context_builder import build_flow_context_bundle, create_context_build_plan, create_context_bundle, knowledge_context_contract_from_pack, knowledge_context_contract_metadata
 from novel_forge.modules.continuity_graph import create_chapter_stability_preflight_report
 from novel_forge.modules.longform_stability import (
     create_longform_artifacts_for_draft,
@@ -95,6 +95,7 @@ def draft(
         environment=environment,
         os_envelope=os_envelope,
     )
+    knowledge_contract = knowledge_context_contract_from_pack(mkaos_pack)
     context_bundle = mkaos_pack.get("context_bundle", context_bundle)
     context_bundle_asset = context_bundle["asset"]
     with AgentExecutionContext(
@@ -109,6 +110,7 @@ def draft(
         token_budget=6000,
         sla_seconds=1200,
         workspace_path=str(production_context["project"].get("workspace_path", "")),
+        knowledge_context_contract=knowledge_contract,
     ) as agent_run:
         agent_run.guard("read_asset")
         guarded_model = GuardedModelAdapter(model, storage, agent_run.path)
@@ -165,6 +167,7 @@ def draft(
                 "context_build_plan_path": context_plan_ref,
                 "context_bundle_id": context_bundle_asset.get("id", ""),
                 "context_bundle_path": context_bundle.get("path", ""),
+                "knowledge_context_contract": knowledge_contract,
                 "actual_context": context_bundle_asset.get("content", {}).get("actual_context", ""),
                 "production_context": production_context,
                 "mkaos_knowledge_pack": _pack_content(mkaos_pack),
@@ -202,6 +205,7 @@ def draft(
                 "context_build_plan_path": context_plan_ref,
                 "context_bundle_id": context_bundle_asset.get("id", ""),
                 "context_bundle_path": context_bundle.get("path", ""),
+                **knowledge_context_contract_metadata(knowledge_contract),
                 "context_builder_unified": bool(context_bundle.get("path", "")),
                 "mkaos_knowledge_pack_id": mkaos_pack.get("asset", {}).get("id", ""),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),

@@ -179,3 +179,11 @@ Implementation note: an intermediate full-discover run exposed non-idempotent `p
 | `python3 -m unittest tests.unit.test_mkaos_fail_closed_policy` | MKAOS pack 构建失败策略：production/strict/operating_system 阻断、compat warning、缺 context/pack id、prose 空 pack、source isolation 阻断。 | 7 tests OK，用时约 0.7s |
 | `python3 -m unittest tests.unit.test_context_builder_mkaos_flow tests.unit.test_mkaos_isolation tests.unit.test_mkaos_os_envelope` | Context Builder / MKAOS isolation / OS Envelope 相邻回归。 | 13 tests OK，用时约 24.7s |
 | `python3 -m unittest tests.unit.test_publish_feedback_loop tests.unit.test_loop_kernel tests.unit.test_longform_recap_agent tests.unit.test_context_and_production_chain tests.unit.test_mkaos_fail_closed_policy` | Publish、Loop、Longform、生产链路与新增 fail-closed 策略回归。 | 32 tests OK，用时约 101.1s |
+
+## MKAOS Agent Knowledge Context Contract
+
+| 命令 | 目的 | 结果 |
+| -- | -- | -- |
+| `python3 -m compileall -q src/novel_forge/storage src/novel_forge/modules/context_builder src/novel_forge/modules/agent_runs src/novel_forge/modules/agent_scheduler` | Storage project-scope guard、Context Builder、AgentRun、Agent Scheduler contract 语法/导入检查。 | OK |
+| `python3 -m unittest tests.unit.test_agent_operation_mkaos_coverage tests.unit.test_mkaos_agent_context_contract tests.unit.test_context_builder_mkaos_flow tests.unit.test_mkaos_fail_closed_policy tests.unit.test_publish_feedback_loop tests.unit.test_longform_recap_agent tests.unit.test_agent_scheduler tests.unit.test_mkaos` | 新增 Knowledge Context Contract、operation coverage、Context Builder、fail-closed、publish/feedback、longform、scheduler、MKAOS 核心回归。 | 37 tests OK，用时 85.539s；保留既有 Starlette/httpx deprecation warning |
+| `python3 -m unittest tests.integration.test_pipeline` | 样例 pipeline 二次复跑幂等回归，验证 contract metadata 和 storage 引用 guard 不破坏主链。 | 1 test OK，用时 386.830s |

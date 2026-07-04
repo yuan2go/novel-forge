@@ -14,6 +14,7 @@ from novel_forge.model_adapters import (
 )
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.creative_assets import create_creative_asset
 from novel_forge.modules.handoff.service import create_analysis_handoff as _create_analysis_handoff
 from novel_forge.modules.production_context import project_scope_from_asset
@@ -68,11 +69,25 @@ def run_analysis(
     analysis_type: str,
     *,
     workspace_path: str | None = None,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     source_path_obj = resolve_path(storage.root, source_path)
     source_asset = storage.read_asset(source_path_obj)
     report_type = _normalize_analysis_type(analysis_type)
     project = project_scope_from_asset(storage, source_asset, input_path=source_path_obj, workspace_path=workspace_path)
+    context = build_flow_context_bundle(
+        storage,
+        source_path_obj,
+        flow="analysis",
+        project_id=str(project.get("project_id", "")),
+        workspace_path=str(project.get("workspace_path", "")),
+        current_goal=f"analysis {report_type}",
+        token_budget=4000,
+        environment=environment,
+        os_envelope=os_envelope,
+    )
+    knowledge_contract = knowledge_context_contract_from_result(context)
     metrics = _source_metrics(source_asset)
     model = model_from_env("analyze")
     with AgentExecutionContext(
@@ -87,14 +102,17 @@ def run_analysis(
         prompt_version=f"{report_type}-rubric-v2",
         token_budget=4000,
         sla_seconds=900,
+        knowledge_context_contract=knowledge_contract,
     ) as run:
         run.guard("read_asset")
         run.guard("call_model_adapter")
         semantic_depth = _semantic_depth_assessment(storage, run.path, report_type, source_asset, metrics, model)
         content = _report_content(report_type, source_asset, metrics)
         content.update(semantic_depth)
+        content["knowledge_context_contract"] = knowledge_contract
         metadata = _analysis_metadata(storage, report_type, source_asset, project, source_path_obj)
         metadata["agent_run_path"] = run.path
+        metadata.update(knowledge_context_contract_metadata(knowledge_contract))
         metadata["semantic_depth_version"] = "analysis-rubric-v2"
         metadata["semantic_provider"] = semantic_depth.get("provider_review", {}).get("provider", "")
         metadata["semantic_model"] = semantic_depth.get("provider_review", {}).get("model", "")
@@ -116,6 +134,7 @@ def run_analysis(
             "asset": asset.to_dict(),
             "metrics": metrics,
             "report_type": report_type,
+            "knowledge_context_contract": knowledge_contract,
         }
         run.succeed(output_assets=[result["path"]], token_used=len(_asset_text(source_asset)))
         return result
@@ -130,6 +149,8 @@ def convert_analysis_report(
     reuse_scope: str = "project",
     human_approved: bool = False,
     approval_note: str = "",
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     report_file = resolve_path(storage.root, report_path)
     report_asset = storage.read_asset(report_file)
@@ -137,6 +158,18 @@ def convert_analysis_report(
     if report_type not in _REPORT_CLASS_BY_TYPE:
         raise ValueError(f"unsupported analysis report type: {report_type}")
     project = project_scope_from_asset(storage, report_asset, input_path=report_file, workspace_path=workspace_path)
+    context = build_flow_context_bundle(
+        storage,
+        report_file,
+        flow="convert",
+        project_id=str(project.get("project_id", "")),
+        workspace_path=str(project.get("workspace_path", "")),
+        current_goal=f"convert {report_type} into abstract reusable assets",
+        token_budget=2500,
+        environment=environment,
+        os_envelope=os_envelope,
+    )
+    knowledge_contract = knowledge_context_contract_from_result(context)
     normalized_targets = _normalize_targets(report_type, targets or [])
     created_assets: list[dict[str, Any]] = []
     rejected_items: list[dict[str, str]] = []
@@ -185,6 +218,7 @@ def convert_analysis_report(
             "approval_note": approval_note,
             "policy": "converted analysis assets cannot enter production RAG or review rule gates until a human approves the abstraction boundary",
         },
+        "knowledge_context_contract": knowledge_contract,
     }
     metadata = {
         "project_id": str(project.get("project_id", "")),
@@ -201,6 +235,7 @@ def convert_analysis_report(
         "human_gate_required": True,
         "human_gate_status": "approved" if human_approved else "waiting_human",
         "approval_note": approval_note,
+        **knowledge_context_contract_metadata(knowledge_contract),
     }
     asset = AnalysisConversionReport(
         title=f"Analysis conversion - {report_asset.title or report_asset.name}",
@@ -217,6 +252,7 @@ def convert_analysis_report(
         "asset": asset.to_dict(),
         "created_assets": created_assets,
         "rejected_items": rejected_items,
+        "knowledge_context_contract": knowledge_contract,
     }
 
 

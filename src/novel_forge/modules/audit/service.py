@@ -9,7 +9,7 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
-from novel_forge.modules.context_builder import build_flow_context_bundle
+from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.longform_stability import create_revision_task_from_gate, evaluate_longform_stability_gate
 from novel_forge.modules.mkaos import list_risk_knowledge
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata
@@ -246,6 +246,7 @@ def create_publish_gate_report(
     )
     context_bundle = publish_context.get("asset", {}) if isinstance(publish_context.get("asset", {}), dict) else {}
     context_bundle_id = str(context_bundle.get("id", ""))
+    knowledge_contract = knowledge_context_contract_from_result(publish_context)
     os_envelope = enforce_os_envelope(
         storage,
         envelope_payload=envelope,
@@ -304,6 +305,7 @@ def create_publish_gate_report(
             "longform_stability": longform_gate,
             "context_bundle_id": context_bundle_id,
             "context_bundle_path": str(publish_context.get("path", "")),
+            "knowledge_context_contract": knowledge_contract,
             "mkaos_risk": mkaos_risk,
             "source_isolation": {
                 "source_chunk_raw_text_allowed": False,
@@ -322,6 +324,7 @@ def create_publish_gate_report(
             **envelope_asset_metadata(os_envelope),
             "context_bundle_id": context_bundle_id,
             "context_bundle_path": str(publish_context.get("path", "")),
+            **knowledge_context_contract_metadata(knowledge_contract),
         },
         references=filter_project_safe_references(
             storage,
@@ -333,10 +336,11 @@ def create_publish_gate_report(
         storage,
         agent_key="publishing",
         operation="create-publish-gate-report",
-        input_assets=[path, audit_path],
+        input_assets=[path, audit_path, str(publish_context.get("path", ""))],
         output_types=["publish_gate_report"],
         workspace_path=str(project.get("workspace_path", "")),
         sla_seconds=300,
+        knowledge_context_contract=knowledge_contract,
     ) as run:
         run.guard("read_asset")
         run.guard("write_publish_gate_report", "publish_gate_report")

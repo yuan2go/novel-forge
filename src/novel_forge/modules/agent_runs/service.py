@@ -117,6 +117,7 @@ class AgentExecutionContext:
     token_budget: int = 0
     sla_seconds: int = 1800
     workspace_path: str | None = None
+    knowledge_context_contract: dict[str, Any] | None = None
     run: dict[str, Any] | None = None
 
     def __enter__(self) -> "AgentExecutionContext":
@@ -142,7 +143,10 @@ class AgentExecutionContext:
             model_name=self.model_name,
             prompt_version=self.prompt_version,
             token_budget=self.token_budget,
-            evidence={"sla_seconds": self.sla_seconds},
+            evidence={
+                "sla_seconds": self.sla_seconds,
+                **(_knowledge_context_evidence(self.knowledge_context_contract) if self.knowledge_context_contract else {}),
+            },
         )
         return self
 
@@ -326,6 +330,7 @@ def start_agent_run(
     now = utc_now()
     run_id = make_id("agent_run", f"{profile.get('agent', agent_key)}-{operation}")
     evidence_payload = evidence or {}
+    knowledge_context = _knowledge_context_from_evidence(evidence_payload)
     trace_payload = _agent_trace_payload(evidence_payload, fallback_trace_id=run_id, span_name=f"agent-run-{operation}")
     first_input = _first_existing_asset(storage, input_rows)
     metadata = {
@@ -336,6 +341,7 @@ def start_agent_run(
         "model_provider": model_provider,
         "model_name": model_name,
         "prompt_version": prompt_version,
+        **_knowledge_context_metadata(knowledge_context),
     }
     if first_input:
         metadata["run_metadata"] = run_metadata(operation, first_input, provider=model_provider, model=model_name, prompt_version=prompt_version)
@@ -379,6 +385,7 @@ def start_agent_run(
             "error": "",
             "checkpoint": {},
             "evidence": evidence_payload,
+            **_knowledge_context_content(knowledge_context),
             "trace": trace_payload,
             "human_gate": human_gate or {"required": status == "waiting_human", "status": "waiting" if status == "waiting_human" else "not_required"},
             "retry_count": retry_count,
@@ -396,6 +403,10 @@ def start_agent_run(
                     *[str(row.get("id", "")) for row in output_rows],
                     *[str(row.get("path", "")) for row in output_rows],
                     str(project.get("workspace_path", "")),
+                    str(knowledge_context.get("context_bundle_path", "")),
+                    str(knowledge_context.get("knowledge_pack_path", "")),
+                    str(knowledge_context.get("context_bundle_id", "")),
+                    str(knowledge_context.get("knowledge_pack_id", "")),
                 ]
             ),
         ),
@@ -424,6 +435,44 @@ def start_agent_run(
     )
     result["event"] = event
     return result
+
+
+def attach_agent_run_context_contract(
+    storage: LocalStorage,
+    agent_run_path: str | Path,
+    contract: dict[str, Any],
+) -> dict[str, Any]:
+    if not isinstance(contract, dict) or not contract:
+        return {"path": str(agent_run_path), "asset": {}}
+    path = _resolve_agent_run(storage, str(agent_run_path))
+    data = storage.read_json(path)
+    if not isinstance(data, dict) or data.get("type") != "agent_run":
+        raise ValueError(f"agent_run JSON must be an object: {path}")
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    evidence = content.get("evidence", {}) if isinstance(content.get("evidence", {}), dict) else {}
+    evidence.update(_knowledge_context_evidence(contract))
+    content["evidence"] = evidence
+    content.update(_knowledge_context_content(contract))
+    metadata.update(_knowledge_context_metadata(contract))
+    data["content"] = content
+    data["metadata"] = metadata
+    data["references"] = filter_project_safe_references(
+        storage,
+        str(metadata.get("project_id", "")),
+        _dedupe(
+            [
+                *[str(ref) for ref in data.get("references", [])],
+                str(contract.get("context_bundle_path", "")),
+                str(contract.get("knowledge_pack_path", "")),
+                str(contract.get("context_bundle_id", "")),
+                str(contract.get("knowledge_pack_id", "")),
+            ]
+        ),
+    )
+    data["updated_at"] = utc_now()
+    _write_json_validated(storage, path, data)
+    return {"path": _display_path(storage.root, path), "asset": data}
 
 
 def update_agent_run_status(
@@ -1612,6 +1661,76 @@ def _write_json_validated(storage: LocalStorage, path: Path, data: dict[str, Any
     if errors:
         raise ValueError("; ".join(errors))
     storage.write_json(path, data)
+
+
+def _knowledge_context_from_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(evidence, dict):
+        return {}
+    contract = evidence.get("knowledge_context_contract")
+    if isinstance(contract, dict) and contract:
+        return contract
+    context_bundle_id = str(evidence.get("context_bundle_id") or "").strip()
+    knowledge_pack_id = str(evidence.get("knowledge_pack_id") or evidence.get("mkaos_knowledge_pack_id") or "").strip()
+    if not context_bundle_id and not knowledge_pack_id:
+        return {}
+    return {
+        "contract_version": str(evidence.get("knowledge_context_contract_version") or "knowledge-context-contract-v1"),
+        "context_bundle_id": context_bundle_id,
+        "context_bundle_path": str(evidence.get("context_bundle_path") or ""),
+        "knowledge_pack_id": knowledge_pack_id,
+        "knowledge_pack_path": str(evidence.get("knowledge_pack_path") or evidence.get("mkaos_knowledge_pack_path") or ""),
+        "source_policy": evidence.get("source_policy", {}) if isinstance(evidence.get("source_policy", {}), dict) else {},
+        "source_isolation": evidence.get("source_isolation", {}) if isinstance(evidence.get("source_isolation", {}), dict) else {},
+        "mkaos_flow": str(evidence.get("mkaos_flow") or evidence.get("task_type") or ""),
+        "selected_knowledge_ids": evidence.get("selected_knowledge_ids", []) if isinstance(evidence.get("selected_knowledge_ids", []), list) else [],
+        "review_rules": evidence.get("review_rules", []) if isinstance(evidence.get("review_rules", []), list) else [],
+        "risk_warnings": evidence.get("risk_warnings", []) if isinstance(evidence.get("risk_warnings", []), list) else [],
+        "selector_policy_version": str(evidence.get("selector_policy_version") or ""),
+    }
+
+
+def _knowledge_context_evidence(contract: dict[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(contract, dict) or not contract:
+        return {}
+    return {
+        "knowledge_context_contract": contract,
+        "context_bundle_id": str(contract.get("context_bundle_id", "")),
+        "context_bundle_path": str(contract.get("context_bundle_path", "")),
+        "knowledge_pack_id": str(contract.get("knowledge_pack_id", "")),
+        "knowledge_pack_path": str(contract.get("knowledge_pack_path", "")),
+        "mkaos_flow": str(contract.get("mkaos_flow", "")),
+        "selected_knowledge_ids": contract.get("selected_knowledge_ids", []) if isinstance(contract.get("selected_knowledge_ids", []), list) else [],
+        "selector_policy_version": str(contract.get("selector_policy_version", "")),
+        "source_policy": contract.get("source_policy", {}) if isinstance(contract.get("source_policy", {}), dict) else {},
+        "source_isolation": contract.get("source_isolation", {}) if isinstance(contract.get("source_isolation", {}), dict) else {},
+    }
+
+
+def _knowledge_context_content(contract: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(contract, dict) or not contract:
+        return {}
+    return {
+        "knowledge_context_contract": contract,
+        "context_bundle_id": str(contract.get("context_bundle_id", "")),
+        "knowledge_pack_id": str(contract.get("knowledge_pack_id", "")),
+        "mkaos_flow": str(contract.get("mkaos_flow", "")),
+    }
+
+
+def _knowledge_context_metadata(contract: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(contract, dict) or not contract:
+        return {}
+    return {
+        "knowledge_context_contract": contract,
+        "context_bundle_id": str(contract.get("context_bundle_id", "")),
+        "context_bundle_path": str(contract.get("context_bundle_path", "")),
+        "knowledge_pack_id": str(contract.get("knowledge_pack_id", "")),
+        "mkaos_knowledge_pack_id": str(contract.get("knowledge_pack_id", "")),
+        "knowledge_pack_path": str(contract.get("knowledge_pack_path", "")),
+        "mkaos_flow": str(contract.get("mkaos_flow", "")),
+        "selected_knowledge_ids": contract.get("selected_knowledge_ids", []) if isinstance(contract.get("selected_knowledge_ids", []), list) else [],
+        "selector_policy_version": str(contract.get("selector_policy_version", "")),
+    }
 
 
 def _display_path(root: Path, path: Path) -> str:

@@ -8,6 +8,7 @@ from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.audit import create_publish_gate_report
 from novel_forge.modules.common import read_previous, resolve_path
+from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.editor import execute_revision_plan
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.review import service as review_service
@@ -15,11 +16,30 @@ from novel_forge.schemas import ContextBundle, RevisionPlan, RevisionTask, valid
 from novel_forge.storage.local import LocalStorage
 
 
-def revise(storage: LocalStorage, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+def revise(
+    storage: LocalStorage,
+    input_path: str | None = None,
+    model: ModelAdapter | None = None,
+    *,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
+) -> Path:
     model = model or model_from_env("revise")
     review_asset = read_previous(storage, "reviews", input_path)
     review_path = input_path or str(storage.root / "data" / "reviews" / f"{review_asset.id}.json")
     project = project_scope_from_asset(storage, review_asset, input_path=review_path)
+    context = build_flow_context_bundle(
+        storage,
+        review_path,
+        flow="revision",
+        project_id=str(project.get("project_id", "")),
+        workspace_path=str(project.get("workspace_path", "")),
+        current_goal=f"revision plan for {review_asset.title or review_asset.id}",
+        token_budget=2500,
+        environment=environment,
+        os_envelope=os_envelope,
+    )
+    knowledge_contract = knowledge_context_contract_from_result(context)
     with AgentExecutionContext(
         storage,
         agent_key="review",
@@ -32,6 +52,7 @@ def revise(storage: LocalStorage, input_path: str | None = None, model: ModelAda
         token_budget=1500,
         sla_seconds=600,
         workspace_path=str(project.get("workspace_path", "")),
+        knowledge_context_contract=knowledge_contract,
     ) as agent_run:
         agent_run.guard("read_asset")
         guarded_model = GuardedModelAdapter(model, storage, agent_run.path)
@@ -48,6 +69,7 @@ def revise(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                 "steps": result["plan"],
                 "target_score": target_score,
                 "must_preserve": result.get("must_preserve") or ["original premise", "copyright boundary", "chapter hook"],
+                "knowledge_context_contract": knowledge_contract,
                 "agent_run_path": agent_run.path,
                 "model_output": result,
             },
@@ -55,6 +77,7 @@ def revise(storage: LocalStorage, input_path: str | None = None, model: ModelAda
                 "model": model.name,
                 "provider": result.get("provider", model.name),
                 "agent_run_path": agent_run.path,
+                **knowledge_context_contract_metadata(knowledge_contract),
                 "project_id": project.get("project_id", ""),
                 "workspace_path": project.get("workspace_path", ""),
             },

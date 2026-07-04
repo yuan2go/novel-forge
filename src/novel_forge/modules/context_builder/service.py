@@ -15,6 +15,7 @@ from novel_forge.modules.mkaos.pack_policy import (
     validate_mkaos_pack_result,
 )
 from novel_forge.modules.novel_kg import build_novel_kg_context
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import record_trace_span
 from novel_forge.schemas import BaseAsset, ContextBuildPlan, ContextBundle, ProjectMetricSnapshot, RagQualityReport, validate_common_fields
@@ -32,15 +33,22 @@ RAW_OR_REPORT_TYPES = {
 }
 
 FLOW_CONTEXT_PROFILES = {
+    "analysis": "review",
+    "decompose": "review",
+    "convert": "review",
     "outline": "outline",
     "chapter_outline": "chapter_outline",
     "prose": "prose",
     "review": "review",
     "revision": "revision",
+    "editor_patch": "revision",
     "recap": "recap",
     "publish": "publish",
     "feedback": "feedback",
+    "feedback_backflow": "feedback",
 }
+
+KNOWLEDGE_CONTEXT_CONTRACT_VERSION = "knowledge-context-contract-v1"
 
 CONTEXT_TYPE_BUCKETS = {
     "character_card": ["characters"],
@@ -528,10 +536,17 @@ def build_flow_context_bundle(
     mkaos_asset = mkaos_pack.get("asset", {}) if isinstance(mkaos_pack.get("asset", {}), dict) else {}
     source_asset_ids = [str(item) for item in content.get("source_asset_ids", []) if str(item).strip()] if isinstance(content.get("source_asset_ids", []), list) else []
     evidence_refs = _dedupe([str(mkaos_asset.get("id", "")), str(mkaos_pack.get("path", "")), *source_asset_ids])
+    knowledge_context_contract = build_knowledge_context_contract(
+        context_bundle={"path": _display_path(storage.root, bundle_file), "asset": bundle_data},
+        mkaos_pack=mkaos_pack,
+        flow=flow,
+        source_policy=policy,
+    )
     content.update(
         {
             "context_bundle_id": context_id,
             "context_builder_version": "context-builder-v2-mkaos",
+            "knowledge_context_contract": knowledge_context_contract,
             "task_type": flow,
             "target_asset_type": content.get("target_asset_type", ""),
             "target_asset_id": content.get("target_asset_id", ""),
@@ -545,6 +560,9 @@ def build_flow_context_bundle(
             "mkaos_knowledge_pack": mkaos_content,
             "mkaos_knowledge_pack_id": str(mkaos_asset.get("id", "")),
             "mkaos_knowledge_pack_path": str(mkaos_pack.get("path", "")),
+            "selected_knowledge_ids": knowledge_context_contract["selected_knowledge_ids"],
+            "risk_warnings": knowledge_context_contract["risk_warnings"],
+            "selector_policy_version": knowledge_context_contract["selector_policy_version"],
             "review_rules": mkaos_content.get("review_rules", []) if isinstance(mkaos_content.get("review_rules", []), list) else [],
             "prior_issues": content.get("prior_issues", []) if isinstance(content.get("prior_issues", []), list) else [],
             "revision_constraints": content.get("revision_constraints", []) if isinstance(content.get("revision_constraints", []), list) else [],
@@ -568,6 +586,10 @@ def build_flow_context_bundle(
             "mkaos_pack_id": str(mkaos_asset.get("id", "")),
             "mkaos_pack_path": str(mkaos_pack.get("path", "")),
             "mkaos_warning": str(mkaos_pack.get("warning", "")),
+            "knowledge_context_contract": knowledge_context_contract,
+            "knowledge_pack_id": knowledge_context_contract["knowledge_pack_id"],
+            "selected_knowledge_ids": knowledge_context_contract["selected_knowledge_ids"],
+            "selector_policy_version": knowledge_context_contract["selector_policy_version"],
             "mkaos_pack_policy": mkaos_pack.get("mkaos_pack_policy") or (mkaos_asset.get("metadata", {}) if isinstance(mkaos_asset.get("metadata", {}), dict) else {}).get("mkaos_pack_policy", {}),
             "mkaos_runtime_policy_warning_path": str(mkaos_pack.get("runtime_policy_warning_path", "")),
             "mkaos_pack_trace_span_path": str(mkaos_pack.get("trace_span_path", "")),
@@ -601,15 +623,117 @@ def build_flow_context_bundle(
         "context_bundle": {"path": _display_path(storage.root, bundle_file), "asset": updated_bundle},
         "mkaos_pack": mkaos_pack,
         "source_policy": policy,
+        "knowledge_context_contract": knowledge_context_contract,
         "validation": {"ok": True, "errors": []},
     }
+
+
+def build_knowledge_context_contract(
+    *,
+    context_bundle: dict[str, Any],
+    mkaos_pack: dict[str, Any],
+    flow: str,
+    source_policy: dict[str, Any],
+) -> dict[str, Any]:
+    bundle_asset = context_bundle.get("asset", {}) if isinstance(context_bundle.get("asset", {}), dict) else {}
+    bundle_content = bundle_asset.get("content", {}) if isinstance(bundle_asset.get("content", {}), dict) else {}
+    pack_asset = mkaos_pack.get("asset", {}) if isinstance(mkaos_pack.get("asset", {}), dict) else {}
+    pack_content = pack_asset.get("content", {}) if isinstance(pack_asset.get("content", {}), dict) else {}
+    pack_items = pack_content.get("pack_items", []) if isinstance(pack_content.get("pack_items", []), list) else []
+    selector_policy = pack_content.get("selector_policy", {}) if isinstance(pack_content.get("selector_policy", {}), dict) else {}
+    source_isolation = bundle_content.get("source_isolation", {}) if isinstance(bundle_content.get("source_isolation", {}), dict) else {}
+    pack_source_isolation = pack_content.get("source_isolation", {}) if isinstance(pack_content.get("source_isolation", {}), dict) else {}
+    return {
+        "contract_version": KNOWLEDGE_CONTEXT_CONTRACT_VERSION,
+        "context_bundle_id": str(bundle_asset.get("id") or bundle_content.get("context_bundle_id") or ""),
+        "context_bundle_path": str(context_bundle.get("path") or ""),
+        "knowledge_pack_id": str(pack_content.get("knowledge_pack_id") or pack_asset.get("id") or ""),
+        "knowledge_pack_path": str(mkaos_pack.get("path") or ""),
+        "source_policy": source_policy,
+        "source_isolation": {
+            "source_chunk_raw_text_allowed": False,
+            "runtime_assets_in_generation_rag_allowed": False,
+            "raw_source_text_allowed": False,
+            **pack_source_isolation,
+            **source_isolation,
+        },
+        "mkaos_flow": str(flow or pack_content.get("flow") or ""),
+        "selected_knowledge_ids": _dedupe([str(item.get("knowledge_id", "")) for item in pack_items if isinstance(item, dict)]),
+        "review_rules": pack_content.get("review_rules", []) if isinstance(pack_content.get("review_rules", []), list) else [],
+        "risk_warnings": pack_content.get("risk_warnings", []) if isinstance(pack_content.get("risk_warnings", []), list) else [],
+        "selector_policy_version": str(selector_policy.get("version") or "selector-v1"),
+    }
+
+
+def knowledge_context_contract_from_result(result: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(result, dict):
+        return {}
+    direct = result.get("knowledge_context_contract")
+    if isinstance(direct, dict) and direct:
+        return direct
+    asset = result.get("asset", {}) if isinstance(result.get("asset", {}), dict) else {}
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    contract = content.get("knowledge_context_contract")
+    if isinstance(contract, dict) and contract:
+        return contract
+    return build_knowledge_context_contract(
+        context_bundle={"path": str(result.get("path") or ""), "asset": asset},
+        mkaos_pack=result.get("mkaos_pack", {}) if isinstance(result.get("mkaos_pack", {}), dict) else {},
+        flow=str(content.get("task_type") or ""),
+        source_policy=result.get("source_policy", {}) if isinstance(result.get("source_policy", {}), dict) else {},
+    )
+
+
+def knowledge_context_contract_from_pack(pack: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(pack, dict):
+        return {}
+    bundle = pack.get("context_bundle", {}) if isinstance(pack.get("context_bundle", {}), dict) else {}
+    bundle_asset = bundle.get("asset", {}) if isinstance(bundle.get("asset", {}), dict) else {}
+    bundle_content = bundle_asset.get("content", {}) if isinstance(bundle_asset.get("content", {}), dict) else {}
+    existing = bundle_content.get("knowledge_context_contract")
+    if isinstance(existing, dict) and existing:
+        return existing
+    return build_knowledge_context_contract(
+        context_bundle=bundle,
+        mkaos_pack=pack,
+        flow=str(bundle_content.get("task_type") or ""),
+        source_policy=bundle_content.get("source_policy", {}) if isinstance(bundle_content.get("source_policy", {}), dict) else {},
+    )
+
+
+def knowledge_context_contract_metadata(contract: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(contract, dict) or not contract:
+        return {}
+    return {
+        "knowledge_context_contract": contract,
+        "context_bundle_id": str(contract.get("context_bundle_id", "")),
+        "context_bundle_path": str(contract.get("context_bundle_path", "")),
+        "knowledge_pack_id": str(contract.get("knowledge_pack_id", "")),
+        "mkaos_knowledge_pack_id": str(contract.get("knowledge_pack_id", "")),
+        "mkaos_flow": str(contract.get("mkaos_flow", "")),
+        "selected_knowledge_ids": contract.get("selected_knowledge_ids", []) if isinstance(contract.get("selected_knowledge_ids", []), list) else [],
+        "selector_policy_version": str(contract.get("selector_policy_version", "")),
+    }
+
+
+def require_knowledge_context_contract(contract: dict[str, Any], *, operation: str, environment: str = "") -> dict[str, Any]:
+    if not is_production_environment(environment):
+        return contract if isinstance(contract, dict) else {}
+    if not isinstance(contract, dict) or not contract:
+        raise ValueError(f"knowledge context contract required for production operation {operation}")
+    missing = [
+        field
+        for field in ["context_bundle_id", "knowledge_pack_id", "source_policy", "source_isolation", "mkaos_flow"]
+        if (field in {"source_policy", "source_isolation"} and not isinstance(contract.get(field), dict)) or (field not in {"source_policy", "source_isolation"} and not str(contract.get(field) or "").strip())
+    ]
+    if missing:
+        raise ValueError(f"knowledge context contract missing required fields for production operation {operation}: {', '.join(missing)}")
+    return contract
 
 
 def _mkaos_flow_for_context(flow: str) -> str:
     if flow in {"outline", "chapter_outline", "prose", "review"}:
         return flow
-    if flow in {"revision", "recap", "publish", "feedback"}:
-        return "review"
     return "review"
 
 

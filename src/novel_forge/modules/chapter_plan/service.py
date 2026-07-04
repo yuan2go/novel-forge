@@ -14,7 +14,7 @@ from novel_forge.model_adapters import (
 )
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
-from novel_forge.modules.context_builder import build_flow_context_bundle
+from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_pack, knowledge_context_contract_metadata
 from novel_forge.modules.mkaos import build_mkaos_flow_context_with_policy, mkaos_pack_metadata, record_pack_usage_for_artifact
 from novel_forge.modules.planning_context import build_planning_context, planning_context_metadata
 from novel_forge.modules.production_chain import create_chapter_plan_version
@@ -59,6 +59,7 @@ def generate_chapter_plan(
         environment=environment,
         os_envelope=os_envelope,
     )
+    knowledge_contract = knowledge_context_contract_from_pack(mkaos_pack)
     carry = carry_forward or {}
     with AgentExecutionContext(
         storage,
@@ -72,6 +73,7 @@ def generate_chapter_plan(
         token_budget=2600,
         sla_seconds=600,
         workspace_path=workspace,
+        knowledge_context_contract=knowledge_contract,
     ) as run:
         run.guard("read_asset")
         guarded_model = GuardedModelAdapter(model, storage, run.path)
@@ -144,6 +146,7 @@ def generate_chapter_plan(
                 "context_bundle": _context_bundle_content(mkaos_pack),
                 "context_bundle_id": mkaos_pack.get("context_bundle", {}).get("asset", {}).get("id", ""),
                 "context_bundle_path": mkaos_pack.get("context_bundle_path", ""),
+                "knowledge_context_contract": knowledge_contract,
                 "mkaos_knowledge_pack": _pack_content(mkaos_pack),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
                 "mkaos_knowledge_pack_warning": mkaos_pack.get("warning", ""),
@@ -163,6 +166,7 @@ def generate_chapter_plan(
                 "chapter": target_chapter,
                 "context_bundle_id": mkaos_pack.get("context_bundle", {}).get("asset", {}).get("id", ""),
                 "context_bundle_path": mkaos_pack.get("context_bundle_path", ""),
+                **knowledge_context_contract_metadata(knowledge_contract),
                 "context_builder_unified": bool(mkaos_pack.get("context_bundle_path", "")),
                 "mkaos_knowledge_pack_id": mkaos_pack.get("asset", {}).get("id", ""),
                 "mkaos_knowledge_pack_path": mkaos_pack.get("path", ""),
