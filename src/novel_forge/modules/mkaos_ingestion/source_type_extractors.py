@@ -27,12 +27,16 @@ def mystery_extractor(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 def extract_by_source_type(source_type: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
     if source_type == "classical_text":
-        return classical_text_extractor(payload)
-    if source_type == "webnovel_analysis":
-        return webnovel_extractor(payload)
-    if source_type == "mystery":
-        return mystery_extractor(payload)
-    return professional_book_extractor(payload)
+        deterministic = classical_text_extractor(payload)
+    elif source_type == "webnovel_analysis":
+        deterministic = webnovel_extractor(payload)
+    elif source_type == "mystery":
+        deterministic = mystery_extractor(payload)
+    else:
+        deterministic = professional_book_extractor(payload)
+    from .provider_extractor import provider_extract_candidates
+
+    return provider_extract_candidates(source_type, payload, deterministic)
 
 
 def _creative_card_payload(payload: dict[str, Any], **overrides: Any) -> dict[str, Any]:
@@ -87,4 +91,5 @@ def _concept_from_text(text: str, fallback: str) -> str:
     compact = re.sub(r"\s+", "", text)
     if not compact:
         return fallback
-    return f"{compact[:12]}{fallback}" if len(compact) > 4 else fallback
+    digest = hashlib.sha256(compact.encode("utf-8")).hexdigest()[:8]
+    return f"{fallback}-{digest}"

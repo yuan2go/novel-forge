@@ -4169,6 +4169,21 @@ def _knowledge_graph_content(
             "attributes": _safe_graph_attrs(attrs),
         }
 
+    def node_id_for(asset_type: str, asset_id: str) -> str:
+        if asset_type == "knowledge_card":
+            return f"knowledge:{asset_id}"
+        if asset_type == "rule_card":
+            return f"rule:{asset_id}"
+        if asset_type == "template_card":
+            return f"template:{asset_id}"
+        if asset_type == "source_chunk":
+            return f"source_chunk:{asset_id}"
+        if asset_type == "review_issue":
+            return f"issue:{asset_id}"
+        if asset_type in _creative_asset_types():
+            return f"creative:{asset_id}"
+        return f"asset:{asset_type}:{asset_id}"
+
     for flow_name in sorted(MKAOS_FLOWS):
         if valid_flow and flow_name != valid_flow:
             continue
@@ -4271,6 +4286,42 @@ def _knowledge_graph_content(
                 continue
             add_edge(f"flow:{flow_name}", node_id, "uses_template", template_type=content.get("template_type", ""))
 
+    creative_rows: list[dict[str, Any]] = []
+    for asset_type in sorted(_creative_asset_types()):
+        creative_rows.extend(_list_assets(storage, "knowledge", asset_type, project_id=project_filter, limit=limit))
+    for row in creative_rows:
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        asset_id = str(row.get("id") or "")
+        node_id = f"creative:{asset_id}"
+        conversion = content.get("conversion") if isinstance(content.get("conversion"), dict) else {}
+        source_knowledge_id = str(conversion.get("from_asset_id") or row.get("source") or "")
+        add_node(
+            {
+                "id": node_id,
+                "node_type": str(row.get("type") or "creative_asset"),
+                "asset_id": asset_id,
+                "path": row.get("path", ""),
+                "label": str(row.get("title") or asset_id),
+                "attributes": _safe_graph_attrs(
+                    {
+                        "project_id": metadata.get("project_id") or content.get("project_id") or project_id,
+                        "creative_asset_type": content.get("creative_asset_type", row.get("type", "")),
+                        "source_knowledge_id": source_knowledge_id,
+                        "applicable_flows": content.get("applicable_flows", []),
+                        "evidence_refs": content.get("evidence_refs", []),
+                        "source_policy": content.get("source_policy", {}),
+                    }
+                ),
+            }
+        )
+        if source_knowledge_id:
+            add_edge(f"knowledge:{source_knowledge_id}", node_id, "converted_to", target_asset_type=row.get("type", ""))
+        for flow_name in _strings(content.get("applicable_flows")):
+            if valid_flow and flow_name != valid_flow:
+                continue
+            add_edge(node_id, f"flow:{flow_name}", "supports_flow", creative_asset_type=row.get("type", ""))
+
     for binding in bindings:
         content = binding.get("content", {}) if isinstance(binding.get("content", {}), dict) else {}
         knowledge_id = str(content.get("knowledge_id") or "")
@@ -4310,6 +4361,22 @@ def _knowledge_graph_content(
             explanation=content.get("explanation", ""),
         )
 
+    for relation in _list_assets(storage, "knowledge", "mkaos_graph_relation", project_id=project_filter, limit=3000):
+        content = relation.get("content", {}) if isinstance(relation.get("content"), dict) else {}
+        source_type = str(content.get("source_asset_type") or "knowledge_card")
+        target_type = str(content.get("target_asset_type") or "")
+        source_asset_id = str(content.get("source_asset_id") or "")
+        target_asset_id = str(content.get("target_asset_id") or "")
+        relation_type = str(content.get("relation_type") or "supports")
+        add_edge(
+            node_id_for(source_type, source_asset_id),
+            node_id_for(target_type, target_asset_id),
+            relation_type,
+            relation_asset_id=relation.get("id", ""),
+            evidence_refs=content.get("evidence_refs", []),
+            source_isolation=content.get("source_isolation", {}),
+        )
+
     observed_pairs: set[tuple[str, str]] = set()
     for event in usage_events:
         content = event.get("content", {}) if isinstance(event.get("content", {}), dict) else {}
@@ -4335,6 +4402,46 @@ def _knowledge_graph_content(
             feedback_delta=metrics["feedback_delta"],
             negative_signal_count=metrics["negative_signal_count"],
         )
+
+    for issue in _list_assets(storage, "reviews", "review_issue", project_id=project_filter, limit=2000):
+        content = issue.get("content", {}) if isinstance(issue.get("content"), dict) else {}
+        issue_id = str(issue.get("id") or "")
+        metadata = content.get("metadata") if isinstance(content.get("metadata"), dict) else {}
+        related_knowledge = _dedupe(
+            [
+                *_strings(metadata.get("related_knowledge_ids")),
+                *[item for item in _strings(content.get("evidence_refs")) if item in knowledge_ids],
+            ]
+        )
+        if not related_knowledge:
+            continue
+        issue_node_id = f"issue:{issue_id}"
+        add_node(
+            {
+                "id": issue_node_id,
+                "node_type": "review_issue",
+                "asset_id": issue_id,
+                "path": issue.get("path", ""),
+                "label": str(content.get("message") or issue.get("title") or issue_id)[:120],
+                "attributes": _safe_graph_attrs(
+                    {
+                        "issue_type": content.get("issue_type", ""),
+                        "severity": content.get("severity", ""),
+                        "blocking": bool(content.get("blocking", False)),
+                        "status": content.get("status", ""),
+                        "target_asset_id": content.get("target_asset_id", ""),
+                    }
+                ),
+            }
+        )
+        for knowledge_id in related_knowledge:
+            add_edge(
+                f"knowledge:{knowledge_id}",
+                issue_node_id,
+                "blocked_by_gate" if content.get("blocking") else "used_in",
+                issue_type=content.get("issue_type", ""),
+                severity=content.get("severity", ""),
+            )
 
     node_list = sorted(nodes.values(), key=lambda item: (str(item.get("node_type", "")), str(item.get("label", "")), str(item.get("id", ""))))
     edge_list = sorted(edges.values(), key=lambda item: (str(item.get("relation", "")), str(item.get("source", "")), str(item.get("target", ""))))
@@ -5080,6 +5187,23 @@ def _knowledge_graph_explorer_content(graph: dict[str, Any], *, max_nodes: int, 
     sampled_ids = {str(node.get("id") or "") for node in sampled_nodes}
     sampled_edges = [edge for edge in edges if str(edge.get("source") or "") in sampled_ids and str(edge.get("target") or "") in sampled_ids]
     node_by_id = {str(node.get("id") or ""): node for node in sampled_nodes}
+    centrality = _graph_centrality(sampled_nodes, sampled_edges)
+    relation_filters = _graph_relation_filters(edges)
+    risk_edges = [
+        edge
+        for edge in sampled_edges
+        if str(edge.get("relation") or "") in {"contradicts", "blocked_by_gate", "violates_originality_boundary", "hurt_by_feedback"}
+    ]
+    path_index = [
+        {
+            "source": str(edge.get("source") or ""),
+            "target": str(edge.get("target") or ""),
+            "relation": str(edge.get("relation") or ""),
+            "source_label": str(node_by_id.get(str(edge.get("source") or ""), {}).get("label") or edge.get("source") or ""),
+            "target_label": str(node_by_id.get(str(edge.get("target") or ""), {}).get("label") or edge.get("target") or ""),
+        }
+        for edge in sampled_edges[:200]
+    ]
     clusters: dict[str, dict[str, Any]] = {}
     for node in sampled_nodes:
         node_type = str(node.get("node_type") or "unknown")
@@ -5105,12 +5229,16 @@ def _knowledge_graph_explorer_content(graph: dict[str, Any], *, max_nodes: int, 
         "graph_id": graph.get("graph_id", ""),
         "project_id": graph.get("project_id", ""),
         "flow": graph.get("flow", ""),
-        "version": "mkaos-graph-explorer-v2",
+        "version": "mkaos-graph-explorer-v3",
         "summary": graph.get("summary", {}),
         "nodes": sampled_nodes,
         "edges": sampled_edges,
         "clusters": sorted_clusters,
         "layout": layout,
+        "centrality": centrality,
+        "relation_filters": relation_filters,
+        "risk_edges": risk_edges,
+        "path_index": path_index,
         "path_animation_frames": frames,
         "large_graph_policy": {
             "total_nodes": len(nodes),
@@ -5147,6 +5275,34 @@ def _deterministic_cluster_layout(nodes: list[dict[str, Any]], clusters: list[di
     return {"mode": "deterministic_clustered_radial", "cluster_centers": cluster_centers, "positions": positions}
 
 
+def _graph_centrality(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> dict[str, Any]:
+    degree: dict[str, int] = {str(node.get("id") or ""): 0 for node in nodes}
+    incoming: dict[str, int] = {node_id: 0 for node_id in degree}
+    outgoing: dict[str, int] = {node_id: 0 for node_id in degree}
+    for edge in edges:
+        source = str(edge.get("source") or "")
+        target = str(edge.get("target") or "")
+        if source in degree:
+            degree[source] += 1
+            outgoing[source] += 1
+        if target in degree:
+            degree[target] += 1
+            incoming[target] += 1
+    top_nodes = sorted(
+        [{"node_id": node_id, "degree": value, "incoming": incoming[node_id], "outgoing": outgoing[node_id]} for node_id, value in degree.items()],
+        key=lambda item: (-int(item["degree"]), str(item["node_id"])),
+    )[:20]
+    return {"top_nodes": top_nodes, "degree": degree, "incoming": incoming, "outgoing": outgoing}
+
+
+def _graph_relation_filters(edges: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    counts: dict[str, int] = {}
+    for edge in edges:
+        relation = str(edge.get("relation") or "unknown")
+        counts[relation] = counts.get(relation, 0) + 1
+    return [{"relation": relation, "count": count} for relation, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))]
+
+
 def _graph_path_animation_frames(edges: list[dict[str, Any]], node_by_id: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     frames: list[dict[str, Any]] = []
     for index, edge in enumerate(edges):
@@ -5165,6 +5321,21 @@ def _graph_path_animation_frames(edges: list[dict[str, Any]], node_by_id: dict[s
             }
         )
     return frames
+
+
+def _creative_asset_types() -> set[str]:
+    return {
+        "genre_seed_card",
+        "world_rule_card",
+        "character_archetype_card",
+        "conflict_pattern_card",
+        "scene_material_card",
+        "plot_template_card",
+        "chapter_hook_card",
+        "review_rule_card",
+        "style_rule_card",
+    }
+
 
 def _source_chunk_graph_node(storage: LocalStorage, chunk_id: str) -> dict[str, Any] | None:
     try:

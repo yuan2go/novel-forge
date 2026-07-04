@@ -7,7 +7,7 @@ import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.mkaos_ingestion import create_repository, import_repository, list_books, list_parallel_pairs, read_source_file, scan_repository
+from novel_forge.modules.mkaos_ingestion import cancel_ingestion_job, create_extraction_job, create_repository, import_repository, list_books, list_parallel_pairs, read_source_file, resume_ingestion_job, scan_repository
 from novel_forge.storage.local import LocalStorage
 
 
@@ -29,6 +29,10 @@ class MkaosIngestionTests(unittest.TestCase):
             self.assertTrue(pairs[0]["content"]["evidence_layer_only"])
             self.assertFalse(pairs[0]["content"]["raw_text_allowed_for_prose"])
             self.assertEqual(imported["report"]["type"], "import_quality_report")
+            chapter = imported["chapters"][0]
+            self.assertIn("section_manifest", chapter["content"])
+            self.assertFalse(chapter["content"]["source_isolation"]["section_text_included"])
+            self.assertNotIn("text", chapter["content"]["section_manifest"][0])
 
     def test_format_adapters_support_p0_file_types_without_external_deps(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -47,6 +51,34 @@ class MkaosIngestionTests(unittest.TestCase):
                 with self.subTest(name=name):
                     result = read_source_file(root / name)
                     self.assertTrue(result["text"])
+                    self.assertIn("parser_quality", result["metadata"])
+                    self.assertIn("sections", result)
+
+    def test_docx_adapter_preserves_heading_manifest_without_external_dependency(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with zipfile.ZipFile(root / "heading.docx", "w") as archive:
+                archive.writestr(
+                    "word/document.xml",
+                    """<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+                    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>第一章 机制</w:t></w:r></w:p>
+                    <w:p><w:r><w:t>制度压力推动角色选择。</w:t></w:r></w:p>
+                    </w:body></w:document>""",
+                )
+            result = read_source_file(root / "heading.docx")
+            self.assertEqual(result["toc"][0]["title"], "第一章 机制")
+            self.assertGreaterEqual(result["metadata"]["section_count"], 1)
+
+    def test_ingestion_job_cancel_and_resume_records_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(Path(tmp) / "workspace")
+            storage.ensure_layout()
+            job = create_extraction_job(storage, {"project_id": "jobs", "source_type": "professional_book"})["job"]
+            cancelled = cancel_ingestion_job(storage, job["id"], {"force": True, "reason": "unit-test"})
+            self.assertEqual(cancelled["content"]["status"], "cancelled")
+            resumed = resume_ingestion_job(storage, job["id"], {"force": True, "source_type": "professional_book"})
+            self.assertEqual(resumed["resumed_from"], job["id"])
+            self.assertIn("job", resumed)
 
 
 def _fixture_repo(root: Path) -> Path:

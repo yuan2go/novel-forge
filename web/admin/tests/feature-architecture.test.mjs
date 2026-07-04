@@ -255,8 +255,11 @@ describe("Novel Forge admin feature architecture", () => {
     ]) {
       assert.match(mkaosApi, new RegExp(endpoint.replaceAll("/", "\\/")));
     }
+    for (const token of ["loadMkaosIngestionJob", "resumeMkaosIngestionJob", "cancelMkaosIngestionJob", "/resume", "/cancel"]) {
+      assert.match(mkaosApi, new RegExp(token.replaceAll("/", "\\/")));
+    }
     const ingestionPage = read("app/features/mkaos/MkaosIngestionPages.tsx");
-    for (const token of ["titleForMode", "Parallel Pairs", "Creative Assets", "Extraction Quality Gate", "raw source text 只进入 evidence layer"]) {
+    for (const token of ["titleForMode", "Parallel Pairs", "Creative Assets", "Extraction Quality Gate", "raw source text 只进入 evidence layer", "Resume Job", "Cancel Job"]) {
       assert.match(ingestionPage, new RegExp(token));
     }
   });

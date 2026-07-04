@@ -155,8 +155,18 @@ Frontend route/API guard:
 
 ## Current Limitations
 
-- PDF parser is dependency-free best effort; high-fidelity PDF extraction can be added later behind an optional dependency.
-- DOCX / EPUB parsing covers common text payloads but does not preserve complex layout.
-- Extractors are deterministic first-slice rules and provider hooks remain future opt-in work.
-- The graph relation deepening writes conversion relation assets; deeper graph traversal UI remains first-slice.
-- Ingestion jobs have durable job assets and retryable failure records; full interactive resume/cancel API can be expanded later.
+- PDF parsing now uses optional `pypdf` when installed and falls back to dependency-free extraction. The fallback still cannot guarantee complex layout fidelity.
+- DOCX parsing now uses optional `python-docx` when installed and falls back to structured Word XML parsing. EPUB parsing now uses optional `ebooklib` when installed and falls back to ZIP/HTML parsing. Chapter assets retain TOC, section, page manifests, parser quality, and warning metadata without storing section/page source text.
+- Extractors remain deterministic by default. Real/model extraction is available only through explicit opt-in provider mode and stores provider evidence hashes/keys rather than raw provider/source text.
+- Graph Explorer now includes creative asset nodes, converter relation assets, centrality, relation filters, risk edges, path index, deterministic layout, and path frames. It is still dependency-free and does not attempt full force-directed rendering or community detection.
+- Ingestion jobs now support detail, resume, and cancel APIs. Resume is implemented for repository import and creative extraction; richer interactive partial-file resume and queue-level scheduling remain P1/P2.
+
+## Optimization Follow-Up
+
+Updated APIs:
+
+- `GET /product/mkaos/ingestion/jobs/{job_id}`
+- `POST /product/mkaos/ingestion/jobs/{job_id}/resume`
+- `POST /product/mkaos/ingestion/jobs/{job_id}/cancel`
+
+Optional parser dependencies are declared under `pyproject.toml` extra `ingestion` and are not required for default tests.

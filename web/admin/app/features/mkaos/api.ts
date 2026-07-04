@@ -186,6 +186,24 @@ export function loadMkaosIngestionJobs() {
   return fetchJson<MkaosRow[]>("/product/mkaos/ingestion/jobs");
 }
 
+export function loadMkaosIngestionJob(jobId: string) {
+  return fetchJson<MkaosRow>(`/product/mkaos/ingestion/jobs/${encodeURIComponent(jobId)}`);
+}
+
+export function resumeMkaosIngestionJob(jobId: string, force = false) {
+  return postJson(`/product/mkaos/ingestion/jobs/${encodeURIComponent(jobId)}/resume`, {
+    force,
+    reason: "web-admin-resume"
+  }).then(unwrapMkaos);
+}
+
+export function cancelMkaosIngestionJob(jobId: string, force = true) {
+  return postJson(`/product/mkaos/ingestion/jobs/${encodeURIComponent(jobId)}/cancel`, {
+    force,
+    reason: "web-admin-cancel"
+  }).then(unwrapMkaos);
+}
+
 export function loadMkaosBooks() {
   return fetchJson<MkaosRow[]>("/product/mkaos/books");
 }

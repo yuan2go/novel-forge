@@ -16,6 +16,8 @@ import {
   loadMkaosOverview,
   loadMkaosParallelPairs,
   loadMkaosRepositories,
+  cancelMkaosIngestionJob,
+  resumeMkaosIngestionJob,
   runMkaosExtractionJob,
   scanMkaosRepository,
   type MkaosRow
@@ -114,8 +116,10 @@ export function MkaosIngestionPage({ mode }: { mode: Mode }) {
             <PanelHeader title="Extraction Jobs" icon={<Sparkles size={18} />} />
             <div className="buttonRow">
               <button className="primaryButton" onClick={() => runAction(() => runMkaosExtractionJob({ sourceType, bookId: selectedBook?.id }), "Extraction job completed")}>Run extraction</button>
+              <button onClick={() => jobs[0] && runAction(() => resumeMkaosIngestionJob(jobs[0].id, true), "Resume Job requested")}>Resume Job</button>
+              <button onClick={() => jobs[0] && runAction(() => cancelMkaosIngestionJob(jobs[0].id, true), "Cancel Job requested")}>Cancel Job</button>
             </div>
-            <DataTable emptyText="No extraction jobs" columns={["Job", "Status", "Operation"]} rows={jobs.map((row) => [row.title, <span key={row.id} className={statusClass(String(row.content.status || ""))}>{String(row.content.status || "-")}</span>, String(row.content.operation || "-")])} />
+            <DataTable emptyText="No extraction jobs" columns={["Job", "Status", "Operation", "Resume"]} rows={jobs.map((row) => [row.title, <span key={row.id} className={statusClass(String(row.content.status || ""))}>{String(row.content.status || "-")}</span>, String(row.content.operation || "-"), String(row.content.resume_allowed ?? "-")])} />
           </div>
         </section>
       ) : null}
@@ -177,7 +181,7 @@ function BooksPanel({ books, pairs }: { books: MkaosRow[]; pairs: MkaosRow[] }) 
     <section className="workspaceGrid">
       <div className="panel">
         <PanelHeader title="Books" icon={<BookOpen size={18} />} />
-        <DataTable emptyText="No books" columns={["Book", "Type", "Risk", "Chapters"]} rows={books.map((row) => [row.title, String(row.content.source_type || "-"), String(row.content.risk_level || "-"), String(row.content.chapter_count ?? "-")])} />
+        <DataTable emptyText="No books" columns={["Book", "Type", "Risk", "Chapters", "Parser", "Sections"]} rows={books.map((row) => [row.title, String(row.content.source_type || "-"), String(row.content.risk_level || "-"), String(row.content.chapter_count ?? "-"), String(row.content.parser_quality || row.content.parser_metadata?.parser_quality || "-"), String(row.content.section_manifest?.length ?? row.content.stats?.section_count ?? "-")])} />
       </div>
       <div className="panel">
         <PanelHeader title="Parallel Pairs" icon={<GitBranch size={18} />} />

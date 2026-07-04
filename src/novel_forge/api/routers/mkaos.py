@@ -219,6 +219,34 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def ingestion_jobs(project_id: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
         return mkaos_ingestion.list_ingestion_jobs(storage(), project_id=project_id, limit=limit)
 
+    @router.get("/product/mkaos/ingestion/jobs/{job_id}")
+    @router.get("/api/mkaos/ingestion/jobs/{job_id}")
+    def ingestion_job(job_id: str) -> dict[str, Any]:
+        try:
+            return mkaos_ingestion.get_ingestion_job(storage(), job_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/ingestion/jobs/{job_id}/resume")
+    @router.post("/api/mkaos/ingestion/jobs/{job_id}/resume")
+    def resume_ingestion_job(job_id: str, payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_ingestion.resume_ingestion_job(storage(), job_id, payload))
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/ingestion/jobs/{job_id}/cancel")
+    @router.post("/api/mkaos/ingestion/jobs/{job_id}/cancel")
+    def cancel_ingestion_job(job_id: str, payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_ingestion.cancel_ingestion_job(storage(), job_id, payload))
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.get("/product/mkaos/books")
     @router.get("/api/mkaos/books")
     def books(project_id: str | None = None, limit: int = 200) -> list[dict[str, Any]]:

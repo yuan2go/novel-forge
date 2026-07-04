@@ -21,9 +21,12 @@ class MkaosGraphExplorerTests(MkaosP1TestCase):
             {"project_id": self.project_id, "persist": True, "max_nodes": 40, "max_frames": 12},
         )["data"]
 
-        self.assertEqual(report["version"], "mkaos-graph-explorer-v2")
+        self.assertEqual(report["version"], "mkaos-graph-explorer-v3")
         self.assertTrue(report["clusters"])
         self.assertTrue(report["layout"]["positions"])
+        self.assertTrue(report["centrality"]["top_nodes"])
+        self.assertTrue(report["relation_filters"])
+        self.assertTrue(report["path_index"])
         self.assertTrue(report["path_animation_frames"])
         self.assertFalse(report["source_isolation"]["raw_text_included"])
         serialized = str(report)

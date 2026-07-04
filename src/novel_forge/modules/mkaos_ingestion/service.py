@@ -281,6 +281,84 @@ def list_ingestion_jobs(storage: LocalStorage, *, project_id: str | None = None,
     return sorted(rows, key=lambda row: str(row.get("updated_at") or ""), reverse=True)[:limit]
 
 
+def get_ingestion_job(storage: LocalStorage, job_ref: str) -> dict[str, Any]:
+    path, data = _find_job(storage, job_ref)
+    return {"path": _display_path(storage, path), "asset": data, "id": data.get("id", ""), "type": data.get("type", ""), "title": data.get("title", ""), "content": data.get("content", {}), "metadata": data.get("metadata", {}), "references": data.get("references", []), "updated_at": data.get("updated_at", "")}
+
+
+def cancel_ingestion_job(storage: LocalStorage, job_ref: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    path, data = _find_job(storage, job_ref)
+    content = data.get("content", {}) if isinstance(data.get("content"), dict) else {}
+    status = str(content.get("status") or "")
+    if status in {"succeeded", "completed_with_failures", "failed", "cancelled"} and not payload.get("force"):
+        raise ValueError(f"job {job_ref} is already terminal; pass force=true to mark it cancelled")
+    event = {
+        "status": "cancelled",
+        "at": utc_now(),
+        "actor": str(payload.get("actor") or "local-operator"),
+        "reason": str(payload.get("reason") or payload.get("cancel_reason") or "operator_cancelled"),
+    }
+    content["status"] = "cancelled"
+    content["cancelled_at"] = event["at"]
+    content["cancel_reason"] = event["reason"]
+    content["resume_allowed"] = True
+    content["status_history"] = [*(content.get("status_history") if isinstance(content.get("status_history"), list) else []), event]
+    data["content"] = content
+    data["updated_at"] = utc_now()
+    storage.write_json(path, data)
+    return get_ingestion_job(storage, str(data.get("id") or job_ref))
+
+
+def resume_ingestion_job(storage: LocalStorage, job_ref: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    path, data = _find_job(storage, job_ref)
+    content = data.get("content", {}) if isinstance(data.get("content"), dict) else {}
+    status = str(content.get("status") or "")
+    if status == "succeeded" and not payload.get("force"):
+        raise ValueError("succeeded jobs do not need resume; pass force=true to rerun")
+    if status == "cancelled" and not payload.get("force"):
+        raise ValueError("cancelled jobs require force=true to resume")
+    operation = str(content.get("operation") or "")
+    resume_payload = {
+        **payload,
+        "trace_id": str(payload.get("trace_id") or content.get("trace_id") or ""),
+        "resume_from_job_id": str(data.get("id") or job_ref),
+        "resume_count": int(content.get("resume_count") or 0) + 1,
+    }
+    content["status"] = "resuming"
+    content["resumed_at"] = utc_now()
+    content["resume_count"] = resume_payload["resume_count"]
+    content["status_history"] = [
+        *(content.get("status_history") if isinstance(content.get("status_history"), list) else []),
+        {"status": "resuming", "at": content["resumed_at"], "actor": str(payload.get("actor") or "local-operator"), "reason": str(payload.get("reason") or "operator_resume")},
+    ]
+    data["content"] = content
+    data["updated_at"] = utc_now()
+    storage.write_json(path, data)
+    if operation == "repository_import":
+        repository_id = str(content.get("repository_id") or "")
+        if not repository_id:
+            raise ValueError("repository_import job is missing repository_id")
+        result = import_repository(storage, repository_id, {**resume_payload, "rescan": bool(payload.get("rescan", False))})
+        result["resumed_from"] = str(data.get("id") or job_ref)
+        return result
+    if operation == "creative_knowledge_extraction":
+        result = create_extraction_job(
+            storage,
+            {
+                **resume_payload,
+                "project_id": str(content.get("project_id") or data.get("metadata", {}).get("project_id") or payload.get("project_id") or "local-system"),
+                "source_type": str(content.get("source_type") or payload.get("source_type") or "professional_book"),
+                "book_id": str(content.get("book_id") or payload.get("book_id") or ""),
+                "chapter_id": str(content.get("chapter_id") or payload.get("chapter_id") or ""),
+            },
+        )
+        result["resumed_from"] = str(data.get("id") or job_ref)
+        return result
+    raise ValueError(f"job operation '{operation}' does not support automatic resume")
+
+
 def _load_or_scan_manifest(storage: LocalStorage, repository_ref: str, payload: dict[str, Any]) -> dict[str, Any]:
     repo_path, repo = _find(storage, repository_ref, "source_repository")
     manifest_path = str(repo.get("content", {}).get("manifest_path") or "")
@@ -319,6 +397,7 @@ def _write_chapter(storage: LocalStorage, project_id: str, book: dict[str, Any],
     title = " / ".join(file_row.get("chapter_path") or []) or str(file_row.get("path") or "")
     source_asset = source.get("asset", {}) if isinstance(source.get("asset", {}), dict) else {}
     chunks = source.get("chunks", []) if isinstance(source.get("chunks", []), list) else []
+    parser_metadata = read.get("metadata") if isinstance(read.get("metadata"), dict) else {}
     content = {
         "chapter_id": "",
         "project_id": project_id,
@@ -332,7 +411,20 @@ def _write_chapter(storage: LocalStorage, project_id: str, book: dict[str, Any],
         "parallel_pair_ids": [],
         "extraction_status": "pending",
         "abstract_preview": _abstract_preview(str(read.get("text") or "")),
+        "toc": _toc_manifest(read.get("toc") if isinstance(read.get("toc"), list) else []),
+        "section_manifest": _section_manifest(read.get("sections") if isinstance(read.get("sections"), list) else []),
+        "page_manifest": _page_manifest(read.get("pages") if isinstance(read.get("pages"), list) else []),
+        "parser_metadata": parser_metadata,
+        "parser_warnings": [str(item) for item in read.get("warnings", []) if str(item).strip()],
+        "parser_quality": str(parser_metadata.get("parser_quality") or "basic_text"),
         "source_policy": _source_policy(),
+        "source_isolation": {
+            "raw_text_included": False,
+            "clean_text_included": False,
+            "section_text_included": False,
+            "page_text_included": False,
+            "evidence_layer_only_refs": True,
+        },
     }
     content["chapter_id"] = make_id("book_chapter_source", f"{content['book_id']} {title}")
     asset = _asset("book_chapter_source", content["chapter_id"], title=title, source=str(source_asset.get("id") or ""), tags=["mkaos", "book-chapter-source"], content=content, metadata=_metadata(project_id, payload, book.get("content", {}).get("rights", {})), references=[str(book.get("id") or ""), str(source_asset.get("id") or ""), *content["source_chunk_ids"]])
@@ -365,7 +457,8 @@ def _import_parallel_pairs(storage: LocalStorage, project_id: str, book: dict[st
 
 def _create_job(storage: LocalStorage, asset_type: str, project_id: str, operation: str, content: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
     job_id = make_id(asset_type, f"{operation} {utc_now()}")
-    asset = _asset(asset_type, job_id, title=f"MKAOS {operation}", source="mkaos-ingestion", tags=["mkaos", "job", operation], content={**content, "job_id": job_id, "operation": operation, "project_id": project_id, "trace_id": str(payload.get("trace_id") or "")}, metadata=_metadata(project_id, payload, {}))
+    now = utc_now()
+    asset = _asset(asset_type, job_id, title=f"MKAOS {operation}", source="mkaos-ingestion", tags=["mkaos", "job", operation], content={**content, "job_id": job_id, "operation": operation, "project_id": project_id, "trace_id": str(payload.get("trace_id") or ""), "created_at": now, "resume_allowed": True, "status_history": [{"status": str(content.get("status") or "created"), "at": now, "actor": str(payload.get("actor") or "local-operator"), "reason": "job_created"}]}, metadata=_metadata(project_id, payload, {}))
     path = _write(storage, asset)
     return {"path": _display_path(storage, path), "asset": storage.read_json(path)}
 
@@ -377,6 +470,11 @@ def _complete_job(storage: LocalStorage, job_path: str, *, status: str, outputs:
     content["status"] = status
     content["outputs"] = outputs
     content["completed_at"] = utc_now()
+    content["resume_allowed"] = status in {"failed", "completed_with_failures", "cancelled"}
+    content["status_history"] = [
+        *(content.get("status_history") if isinstance(content.get("status_history"), list) else []),
+        {"status": status, "at": content["completed_at"], "actor": "system", "reason": "job_completed"},
+    ]
     data["content"] = content
     data["updated_at"] = utc_now()
     storage.write_json(path, data)
@@ -443,6 +541,70 @@ def _find(storage: LocalStorage, ref: str, asset_type: str) -> tuple[Path, dict[
         if isinstance(data, dict) and data.get("type") == asset_type and value in {str(data.get("id") or ""), str(path.relative_to(storage.root))}:
             return path, data
     raise FileNotFoundError(ref)
+
+
+def _find_job(storage: LocalStorage, ref: str) -> tuple[Path, dict[str, Any]]:
+    value = str(ref)
+    if "/" in value or value.endswith(".json"):
+        path = resolve_path(storage.root, value)
+        data = storage.read_json(path)
+        if data.get("type") in {"mkaos_ingestion_job", "mkaos_extraction_job"}:
+            return path, data
+    for asset_type in ["mkaos_ingestion_job", "mkaos_extraction_job"]:
+        category = INGESTION_CATEGORIES[asset_type]
+        for path in reversed(storage.list_json(category)):
+            data = storage.read_json(path)
+            if isinstance(data, dict) and data.get("type") == asset_type and value in {str(data.get("id") or ""), str(path.relative_to(storage.root))}:
+                return path, data
+    raise FileNotFoundError(ref)
+
+
+def _toc_manifest(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "title": str(row.get("title") or ""),
+            "level": int(row.get("level") or 1),
+            "section_index": int(row.get("section_index") or index),
+            "page_start": row.get("page_start"),
+            "href": str(row.get("href") or ""),
+            "char_count": int(row.get("char_count") or 0),
+        }
+        for index, row in enumerate(rows)
+        if str(row.get("title") or "").strip()
+    ]
+
+
+def _section_manifest(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    manifest: list[dict[str, Any]] = []
+    for index, row in enumerate(rows):
+        title = str(row.get("title") or f"section-{index + 1}")
+        text = str(row.get("text") or "")
+        manifest.append(
+            {
+                "section_index": int(row.get("section_index") or index),
+                "title": title,
+                "level": int(row.get("level") or 1),
+                "char_count": int(row.get("char_count") or len(text)),
+                "content_hash": _hash_text(text) if text else "",
+                "source_file": str(row.get("source_file") or ""),
+                "paragraph_start": row.get("paragraph_start"),
+                "paragraph_end": row.get("paragraph_end"),
+                "raw_text_included": False,
+            }
+        )
+    return manifest
+
+
+def _page_manifest(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "page_number": int(row.get("page_number") or index + 1),
+            "char_count": int(row.get("char_count") or len(str(row.get("text") or ""))),
+            "content_hash": _hash_text(str(row.get("text") or "")) if str(row.get("text") or "") else "",
+            "raw_text_included": False,
+        }
+        for index, row in enumerate(rows)
+    ]
 
 
 def _display_path(storage: LocalStorage, path: str | Path) -> str:
