@@ -48,6 +48,12 @@ export function EditorChiefConsolePage() {
   const next10 = snapshot?.next_10_chapter_strategy || {};
   const repairQueue = snapshot?.blocking_repair_queue || {};
   const publishFit = snapshot?.publish_and_platform_fit || {};
+  const governance = snapshot?.governance_loop || {};
+  const governanceRegistry = asRecord(governance.agent_registry);
+  const governanceAudit = asRecord(governance.audit);
+  const governanceEvaluation = asRecord(governance.evaluation);
+  const governanceAnalytics = asRecord(governance.analytics);
+  const governanceRetrieval = asRecord(governance.retrieval);
   const controlLinks = snapshot?.control_links || {};
   const issueRows = asRows(repairQueue.issues);
   const revisionRows = asRows(repairQueue.revision_tasks);
@@ -251,6 +257,43 @@ export function EditorChiefConsolePage() {
         </div>
       </section>
 
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Novel OS 治理闭环" icon={<ShieldCheck size={18} />} />
+          <div className="summaryBand">
+            <Metric label="Registry" value={String(governanceRegistry.entry_count ?? 0)} />
+            <Metric label="Audit Events" value={String(governanceAudit.event_count ?? 0)} />
+            <Metric label="Eval Assets" value={String(governanceEvaluation.asset_count ?? 0)} />
+            <Metric label="Retrieval" value={String(governanceRetrieval.status || "-")} />
+          </div>
+          <DataTable
+            emptyText="暂无治理证据"
+            columns={["System", "Status", "Evidence"]}
+            rows={[
+              ["Agent Registry", String(governanceRegistry.scheduler_policy || "active only"), `${String(governanceRegistry.entry_count ?? 0)} entries`],
+              ["Audit Trail", String(governanceAudit.latest_event_at || "-"), `${String(governanceAudit.event_count ?? 0)} events`],
+              ["Evaluation Center", `${String(governanceEvaluation.blocked_count ?? 0)} blocked`, `${String(governanceEvaluation.asset_count ?? 0)} assets`],
+              ["Analytics", String(asRecord(governanceAnalytics.capabilities).status || "-"), `${String(asRecord(governanceAnalytics.capabilities).local_event_count ?? 0)} events`],
+              ["Retrieval", String(governanceRetrieval.status || "-"), `${String(governanceRetrieval.local_projection_chunk_count ?? 0)} chunks`]
+            ]}
+          />
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="治理入口" icon={<ListChecks size={18} />} />
+          <DataTable
+            columns={["Console", "Path"]}
+            rows={[
+              ["Agent Registry", pathCell("/agent-registry", "agent-registry")],
+              ["Audit Log", pathCell("/audit-log", "audit-log")],
+              ["Evaluation", pathCell("/evaluation", "evaluation")],
+              ["Retrieval", pathCell("/retrieval", "retrieval")],
+              ["Analytics", pathCell("/analytics", "analytics")]
+            ]}
+          />
+        </div>
+      </section>
+
       <section className="panel">
         <PanelHeader title="Evidence Trace" icon={<BookOpenCheck size={18} />} />
         <DataTable
@@ -275,6 +318,10 @@ function asRows(value: unknown): Array<Record<string, unknown>> {
 
 function asStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => String(item)).filter(Boolean) : [];
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
 function decisionLabel(value: string) {

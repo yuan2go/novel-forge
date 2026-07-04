@@ -21,7 +21,18 @@ from novel_forge.modules.long_memory import (
     select_memory_for_node,
 )
 from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, list_model_router_assets, resolve_model_route
-from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve, migrate_pgvector_online, pgvector_capabilities, pgvector_operations_plan
+from novel_forge.modules.pgvector_store import (
+    build_embedding_job,
+    create_pgvector_schema_plan,
+    hybrid_retrieve,
+    migrate_pgvector_online,
+    pgvector_capabilities,
+    pgvector_online_e2e_smoke,
+    pgvector_operations_plan,
+    pgvector_qdrant_comparison_report,
+    rebuild_dirty_index,
+    verify_pgvector_migration,
+)
 from novel_forge.modules.prompt_registry import (
     bind_prompt_to_node,
     create_prompt_template,
@@ -364,6 +375,34 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def pgvector_migrate(request: PgVectorMigrateRequest) -> dict[str, Any]:
         try:
             return migrate_pgvector_online(LocalStorage(app_settings.root), dry_run=request.dry_run, project_id=request.project_id or "")
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/retrieval/pgvector-verify")
+    def pgvector_verify(request: PgVectorMigrateRequest) -> dict[str, Any]:
+        try:
+            return verify_pgvector_migration(LocalStorage(app_settings.root), project_id=request.project_id or "")
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/retrieval/pgvector-online-smoke")
+    def pgvector_online_smoke(request: PgVectorMigrateRequest) -> dict[str, Any]:
+        try:
+            return pgvector_online_e2e_smoke(LocalStorage(app_settings.root), project_id=request.project_id or "", require_online=not request.dry_run)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/retrieval/rebuild-dirty-index")
+    def pgvector_rebuild_dirty_index(request: PgVectorMigrateRequest) -> dict[str, Any]:
+        try:
+            return rebuild_dirty_index(LocalStorage(app_settings.root), project_id=request.project_id or "", persist=True)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/retrieval/pgvector-qdrant-comparison")
+    def pgvector_qdrant_comparison(project_id: str | None = None) -> dict[str, Any]:
+        try:
+            return pgvector_qdrant_comparison_report(LocalStorage(app_settings.root), project_id=project_id or "")
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

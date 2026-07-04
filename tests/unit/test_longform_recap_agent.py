@@ -124,6 +124,7 @@ def _longform_fixture(storage: LocalStorage) -> Path:
         },
     )
     create_usage_binding(storage, knowledge["asset"]["id"], {"flow": "review", "usage_type": "required", "input_role": "recap_rule", "priority": 10})
+    create_usage_binding(storage, knowledge["asset"]["id"], {"flow": "recap", "usage_type": "required", "input_role": "recap_rule", "priority": 10})
     latest_path = None
     for chapter in range(1, 13):
         draft_path = storage.write_asset(

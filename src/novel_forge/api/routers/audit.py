@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 
 from novel_forge.api.routers.context import ProductRouterContext
+from novel_forge.api.routers.runtime_request import normalize_product_api_runtime_request
 from novel_forge.modules.audit import (
     create_chapter_audit_report,
     create_originality_report,
@@ -78,15 +79,16 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def publish_gate_endpoint(request: PublishGateRequest) -> dict[str, Any]:
         storage = LocalStorage(app_settings.root)
         try:
+            runtime_request = normalize_product_api_runtime_request(request, operation="publishing.publish_gate")
             path = create_publish_gate_report(
                 storage,
                 request.draft_path,
                 workspace_path=request.workspace_path,
                 chapter_audit_path=request.chapter_audit_path,
                 human_override=request.human_override,
-                envelope=request.envelope or None,
-                environment=request.environment,
-                source_policy=request.source_policy or None,
+                envelope=runtime_request["envelope"] or None,
+                environment=str(runtime_request["environment"]),
+                source_policy=runtime_request["source_policy"],
             )
             return {"path": str(path.relative_to(storage.root)), "publish_gate_report_path": str(path.relative_to(storage.root))}
         except FileNotFoundError as exc:
@@ -98,6 +100,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def release_package_endpoint(request: ReleasePackageRequest) -> dict[str, Any]:
         storage = LocalStorage(app_settings.root)
         try:
+            runtime_request = normalize_product_api_runtime_request(request, operation="publishing.release_package")
             path = create_release_package(
                 storage,
                 request.draft_path,
@@ -105,9 +108,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 publish_gate_path=request.publish_gate_path,
                 channel=request.channel,
                 human_override=request.human_override,
-                envelope=request.envelope or None,
-                environment=request.environment,
-                source_policy=request.source_policy or None,
+                envelope=runtime_request["envelope"] or None,
+                environment=str(runtime_request["environment"]),
+                source_policy=runtime_request["source_policy"],
             )
             return {"path": str(path.relative_to(storage.root)), "release_package_path": str(path.relative_to(storage.root))}
         except FileNotFoundError as exc:

@@ -12,7 +12,7 @@ from novel_forge.modules.common import resolve_path
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.longform_stability import create_revision_task_from_gate, evaluate_longform_stability_gate
 from novel_forge.modules.mkaos import list_risk_knowledge
-from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata
+from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment, normalize_runtime_request_policy
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.modules.review_issue import assert_no_blocking_review_issues, blocking_review_issues, review_issues_to_gate_issues
 from novel_forge.modules.semantic_enhancement import analyze_story_semantics
@@ -221,7 +221,15 @@ def create_publish_gate_report(
     target = storage.read_asset(path)
     context = build_production_context(storage, target, input_path=path, workspace_path=workspace_path)
     project = context["project"]
-    resolved_source_policy = _publish_source_policy(source_policy)
+    runtime_request = normalize_runtime_request_policy(
+        envelope_payload=envelope,
+        environment=environment,
+        source_policy=_publish_source_policy(source_policy),
+        operation="publishing.publish_gate",
+    )
+    environment = str(runtime_request["environment"])
+    envelope = runtime_request["envelope"] if runtime_request.get("envelope") else None
+    resolved_source_policy = _publish_source_policy(runtime_request["source_policy"])
     _assert_publish_envelope_before_side_effect(
         storage,
         envelope=envelope,
@@ -277,6 +285,13 @@ def create_publish_gate_report(
     review_issue_rows = blocking_review_issues(storage, target_asset_id=target.id, project_id=str(project.get("project_id", "")) or None, related_asset_ids=related_asset_ids)
     gate_data["blocking_issues"].extend(review_issues_to_gate_issues(review_issue_rows))
     gate_data["gates"]["review_issue_blocking_clear"] = not review_issue_rows
+    production_policy = is_production_environment(environment)
+    evaluation_gate = _evaluation_gate_summary(storage, target.to_dict(), _display_path(storage.root, path), project_id=str(project.get("project_id", "")), required=production_policy)
+    gate_data["gates"]["evaluation_gate_passed"] = not evaluation_gate["blocking"]
+    gate_data["blocking_issues"].extend(evaluation_gate["blocking_issues"])
+    platform_strategy_gate = _platform_strategy_gate_summary(storage, context, project_id=str(project.get("project_id", "")), required=production_policy)
+    gate_data["gates"]["platform_strategy_gate_passed"] = not platform_strategy_gate["blocking"]
+    gate_data["blocking_issues"].extend(platform_strategy_gate["blocking_issues"])
     blocking = gate_data["blocking_issues"]
     decision = "ready"
     if any(issue.get("severity") in {"high", "critical"} for issue in blocking):
@@ -303,6 +318,8 @@ def create_publish_gate_report(
             "human_override": bool(human_override),
             "preflight": context.get("preflight", {}),
             "longform_stability": longform_gate,
+            "evaluation_gate": evaluation_gate,
+            "platform_strategy_gate": platform_strategy_gate,
             "context_bundle_id": context_bundle_id,
             "context_bundle_path": str(publish_context.get("path", "")),
             "knowledge_context_contract": knowledge_contract,
@@ -373,7 +390,15 @@ def create_release_package(
     target = storage.read_asset(path)
     context = build_production_context(storage, target, input_path=path, workspace_path=workspace_path)
     project = context["project"]
-    resolved_source_policy = _publish_source_policy(source_policy)
+    runtime_request = normalize_runtime_request_policy(
+        envelope_payload=envelope,
+        environment=environment,
+        source_policy=_publish_source_policy(source_policy),
+        operation="publishing.release_package",
+    )
+    environment = str(runtime_request["environment"])
+    envelope = runtime_request["envelope"] if runtime_request.get("envelope") else None
+    resolved_source_policy = _publish_source_policy(runtime_request["source_policy"])
     _assert_publish_envelope_before_side_effect(
         storage,
         envelope=envelope,
@@ -396,6 +421,8 @@ def create_release_package(
     decision = gate.get("content", {}).get("decision", "blocked") if isinstance(gate.get("content", {}), dict) else "blocked"
     if decision == "blocked" and _gate_has_mkaos_blocker(gate):
         raise ValueError("release_package blocked by MKAOS high/critical risk")
+    if is_production_environment(environment) and decision != "ready":
+        raise ValueError(f"release_package blocked by publish gate decision: {decision}")
     status = "ready" if decision == "ready" else "blocked"
     gate_content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
     gate_envelope = gate.get("metadata", {}).get("os_envelope", {}) if isinstance(gate.get("metadata", {}), dict) and isinstance(gate.get("metadata", {}).get("os_envelope", {}), dict) else {}
@@ -530,7 +557,13 @@ def _assert_publish_envelope_before_side_effect(
     source_policy: dict[str, Any],
     operation: str,
 ) -> None:
-    if str(environment or "").lower() not in {"production", "prod", "operating_system", "strict"}:
+    runtime_request = normalize_runtime_request_policy(
+        envelope_payload=envelope,
+        environment=environment,
+        source_policy=source_policy,
+        operation=operation,
+    )
+    if not runtime_request["production"]:
         return
     enforce_os_envelope(
         storage,
@@ -542,7 +575,7 @@ def _assert_publish_envelope_before_side_effect(
         actor_type="publishing_service",
         source="audit.production_preflight",
         source_policy=source_policy,
-        environment=environment,
+        environment=str(runtime_request["environment"]),
         require_for_production=True,
         record_trace=False,
     )
@@ -582,6 +615,119 @@ def _mkaos_risk_summary(storage: LocalStorage, project_id: str) -> dict[str, Any
             for row in rows[:20]
         ],
     }
+
+
+def _evaluation_gate_summary(storage: LocalStorage, target: dict[str, Any], target_path: str, *, project_id: str, required: bool) -> dict[str, Any]:
+    gate = _latest_governance_asset(
+        storage,
+        "evaluation_gate",
+        project_id=project_id,
+        target_asset_id=str(target.get("id", "")),
+        target_asset_path=target_path,
+    )
+    if not gate:
+        issues = []
+        if required:
+            issues.append(
+                {
+                    "dimension": "evaluation_gate",
+                    "severity": "high",
+                    "message": "production publish requires a passing EvaluationGate",
+                    "recommendation": "run /product/evaluation/evaluation-gate for the draft before publishing",
+                }
+            )
+        return {"status": "missing", "required": required, "blocking": bool(issues), "path": "", "blocking_issues": issues}
+    content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
+    status = str(content.get("status") or "unknown")
+    blocking = bool(content.get("blocking")) or status == "blocked"
+    issues = []
+    if blocking:
+        issues.append(
+            {
+                "dimension": "evaluation_gate",
+                "severity": "critical",
+                "message": f"EvaluationGate blocked publish: score {content.get('overall_score', 'unknown')}",
+                "recommendation": "resolve evaluation findings or rerun evaluation after revision",
+                "evaluation_gate_path": gate.get("path", ""),
+            }
+        )
+    return {
+        "status": status,
+        "required": required,
+        "blocking": blocking,
+        "path": gate.get("path", ""),
+        "overall_score": content.get("overall_score", 0),
+        "minimum_score": content.get("minimum_score", 0),
+        "blocking_issues": issues,
+    }
+
+
+def _platform_strategy_gate_summary(storage: LocalStorage, context: dict[str, Any], *, project_id: str, required: bool) -> dict[str, Any]:
+    project = context.get("project", {}) if isinstance(context.get("project", {}), dict) else {}
+    config = project.get("project_config", {}) if isinstance(project.get("project_config", {}), dict) else {}
+    platform_id = str(config.get("target_platform") or "").strip()
+    pack = _latest_governance_asset(storage, "platform_strategy_pack", project_id=project_id)
+    retention = _latest_governance_asset(storage, "platform_retention_risk", project_id=project_id)
+    retention_content = retention.get("content", {}) if isinstance(retention.get("content", {}), dict) else {}
+    risk_level = str(retention_content.get("risk_level") or "unknown").lower()
+    issues = []
+    if required and not pack:
+        issues.append(
+            {
+                "dimension": "platform_strategy_gate",
+                "severity": "high",
+                "message": "production publish requires a PlatformStrategyPack",
+                "recommendation": "build platform strategy pack before publish gate",
+            }
+        )
+    if risk_level in {"high", "critical"}:
+        issues.append(
+            {
+                "dimension": "platform_retention_risk",
+                "severity": "critical" if risk_level == "critical" else "high",
+                "message": f"platform retention risk is {risk_level}",
+                "recommendation": "revise chapter strategy or resolve retention risk before release",
+                "platform_retention_risk_path": retention.get("path", ""),
+            }
+        )
+    return {
+        "status": "blocked" if issues else "passed" if pack or not required else "missing",
+        "required": required,
+        "target_platform": platform_id,
+        "platform_strategy_pack_path": pack.get("path", "") if pack else "",
+        "platform_retention_risk_path": retention.get("path", "") if retention else "",
+        "risk_level": risk_level,
+        "blocking": bool(issues),
+        "blocking_issues": issues,
+    }
+
+
+def _latest_governance_asset(
+    storage: LocalStorage,
+    asset_type: str,
+    *,
+    project_id: str,
+    target_asset_id: str = "",
+    target_asset_path: str = "",
+) -> dict[str, Any]:
+    rows = []
+    for category in ["runs", "platforms", "publishing"]:
+        for path in storage.list_json(category):
+            data = _read_json_safe(storage, path)
+            if data.get("type") != asset_type:
+                continue
+            metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            row_project = str(metadata.get("project_id") or content.get("project_id") or "")
+            if project_id and row_project and row_project != project_id:
+                continue
+            if target_asset_id and str(content.get("target_asset_id") or "") != target_asset_id:
+                continue
+            if target_asset_path and str(content.get("target_asset_path") or "") not in {"", target_asset_path}:
+                continue
+            data["path"] = _display_path(storage.root, path)
+            rows.append(data)
+    return sorted(rows, key=lambda row: str(row.get("updated_at") or row.get("created_at") or row.get("content", {}).get("created_at", "")))[-1] if rows else {}
 
 
 def _gate_has_mkaos_blocker(gate: dict[str, Any]) -> bool:
@@ -1132,6 +1278,14 @@ def _read_asset_dict(storage: LocalStorage, path: str | Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError(f"asset JSON must be an object: {path}")
     return data
+
+
+def _read_json_safe(storage: LocalStorage, path: Path) -> dict[str, Any]:
+    try:
+        data = storage.read_json(path)
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _asset_text(asset: Any) -> str:

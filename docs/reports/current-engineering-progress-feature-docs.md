@@ -14,6 +14,17 @@
 - MKAOS P0 已从“有条件完成”推进为：**完成**。
 - 当前剩余工作主要是 P1/P2 深化，不是 P0 blocker。
 
+2026-07-04 P1/P2 治理深化更新：
+
+- 新增 Agent Registry：从 `AGENT_RUNTIME_PROFILES` 同步 registry entry，支持 lifecycle、version、capability、evaluation binding 和 scheduler active-only 调度校验。
+- 新增 Audit Log / Audit Trail：AgentRun start/status 自动 best-effort 记录 audit event，并支持 project/trace 查询、trail report 和 source-isolated export package。
+- 深化 Evaluation Center：从模型 benchmark 扩展为通用 `evaluation_suite` / `evaluation_case` / `evaluation_result` / `evaluation_gate`，EvaluationGate 阻断时可生成 ReviewIssue。
+- 深化 pgvector PoC：schema plan 增加 source risk / license / permission / flow allowlist / evidence span / dirty index / quality score，新增 verify、dirty index rebuild 和 pgvector vs Qdrant comparison。
+- 新增 ClickHouse Analytics 可选 OLAP 层：默认 offline projection，不写回业务主数据，真实 ClickHouse 通过环境变量 opt-in。
+- 新增治理闭环集成测试：`Agent Registry -> Context Builder/pgvector -> AgentRun -> Audit Log -> Evaluation -> ReviewIssue -> Analytics -> Editor-in-Chief Console`。
+- Web Admin 新增 `/agent-registry`、`/audit-log`、`/retrieval`、`/analytics`，并在 `/editor-chief` 显示 governance loop 摘要。
+- 本轮未实现 Permission Center；保留现有 ToolPermissionPolicy / runtime profile 兼容逻辑，不新增 RBAC、用户、组织或 SaaS 权限体系。
+
 最终验证：
 
 | 测试命令 | 当前结果 |
@@ -24,6 +35,7 @@
 | `python3 -m unittest tests.unit.test_longform_recap_agent tests.unit.test_loop_kernel tests.unit.test_publish_feedback_loop tests.unit.test_provider_hard_stop_proof tests.integration.test_novel_os_12_chapter_industrial_pressure` | 13 tests OK |
 | `npm --prefix web/admin test` | 8 pass, 1 Playwright smoke skipped |
 | `npm --prefix web/admin run build` | OK, 45 routes generated |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_agent_registry tests.unit.test_agent_registry_scheduler_integration tests.unit.test_audit_log tests.unit.test_pgvector_source_isolation tests.unit.test_clickhouse_analytics tests.unit.test_evaluation_center_general tests.integration.test_novel_os_governance_loop tests.unit.test_schemas tests.unit.test_product_api_routes` | 32 tests OK |
 
 ## 2. 工程能力分层
 
@@ -58,6 +70,7 @@
 | Publishing adapters | Platform Strategy OS 已有平台发布适配契约；外部真实平台 API 和回执 schema 仍需深化 | P2 |
 | Feedback metrics | Platform retention/backflow 已建 first slice；真实平台指标导入、评论热度和回执仍需深化 | P2 |
 | 长链压力 | 12 章已证明，50/100 章仍应保持 opt-in 慢测试 | P2 |
+| Permission Center | 本轮明确不实现；现有 ToolPermissionPolicy 保持兼容 | 暂不做 |
 
 ## 3. 详细功能文档
 

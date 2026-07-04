@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.model_adapters.mock import MockModelAdapter
 from novel_forge.modules.audit import create_publish_gate_report
 from novel_forge.modules.chapter_plan import service as chapter_plan_service
+from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.drafting import service as drafting_service
 from novel_forge.modules.longform_recap import run_longform_recap
 from novel_forge.modules.longform_stability import create_longform_artifacts_for_draft
@@ -83,6 +84,46 @@ class MkaosAgentContextContractTests(unittest.TestCase):
             self.assert_contract(report["content"].get("knowledge_context_contract"))
             self.assert_contract(report["metadata"].get("knowledge_context_contract"))
 
+    def test_operation_aliases_resolve_to_standard_mkaos_flows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "local-system"
+            _knowledge(storage, project_id)
+            character_path = storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="许澜",
+                    content={"role": "主角", "external_goal": "验证主链 operation flow"},
+                    metadata={"project_id": project_id},
+                ),
+            )
+
+            cases = {
+                "draft": "prose",
+                "chapter_plan": "chapter_outline",
+                "publish_gate": "publish",
+                "feedback_backflow": "feedback",
+                "editor_patch": "revision",
+            }
+            for operation_flow, expected_mkaos_flow in cases.items():
+                with self.subTest(operation_flow=operation_flow):
+                    result = build_flow_context_bundle(
+                        storage,
+                        character_path,
+                        flow=operation_flow,
+                        project_id=project_id,
+                        current_goal=f"validate {operation_flow}",
+                        environment="compat",
+                    )
+                    contract = result["knowledge_context_contract"]
+                    self.assert_contract(contract)
+                    self.assertEqual(contract["mkaos_flow"], expected_mkaos_flow)
+                    self.assertTrue(contract["selected_knowledge_ids"])
+                    bundle = result["asset"]
+                    self.assertEqual(bundle["content"]["task_type"], operation_flow)
+                    self.assertEqual(bundle["content"]["mkaos_flow"], expected_mkaos_flow)
+
     def assert_contract(self, contract):
         self.assertIsInstance(contract, dict)
         for field in [
@@ -113,7 +154,7 @@ def _knowledge(storage: LocalStorage, project_id: str) -> None:
             "core_explanation": "核心 Agent 必须通过 Context Builder 和 MKAOS pack 获取治理上下文。",
         },
     )
-    for flow in ["prose", "review", "outline", "chapter_outline"]:
+    for flow in ["prose", "review", "outline", "chapter_outline", "revision", "recap", "publish", "feedback"]:
         create_usage_binding(storage, card["asset"]["id"], {"flow": flow, "usage_type": "optional", "input_role": "governance_context", "priority": 10})
 
 

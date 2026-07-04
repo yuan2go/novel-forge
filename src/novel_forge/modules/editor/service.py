@@ -15,7 +15,8 @@ from novel_forge.model_adapters import (
 )
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
-from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
+from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata, require_knowledge_context_contract
+from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment, normalize_runtime_request_policy
 from novel_forge.modules.production_chain import create_draft_version, create_generation_run
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.review_issue import assert_no_blocking_review_issues
@@ -34,6 +35,7 @@ def create_editor_patch(
     workspace_path: str | None = None,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     storage.ensure_layout()
     path = resolve_path(storage.root, draft_path)
@@ -41,6 +43,14 @@ def create_editor_patch(
     if draft.type != "draft_chapter":
         raise ValueError("draft_path must point to a draft_chapter asset")
     project = project_scope_from_asset(storage, draft, input_path=path, workspace_path=workspace_path)
+    runtime_request = normalize_runtime_request_policy(
+        envelope_payload=os_envelope,
+        environment=environment,
+        source_policy=source_policy,
+        operation="editor.create_patch",
+    )
+    environment = str(runtime_request["environment"])
+    os_envelope = runtime_request["envelope"] if runtime_request.get("envelope") else None
     context = build_flow_context_bundle(
         storage,
         path,
@@ -52,6 +62,7 @@ def create_editor_patch(
         token_budget=2500,
         environment=environment,
         os_envelope=os_envelope,
+        source_policy=runtime_request["source_policy"],
     )
     knowledge_contract = knowledge_context_contract_from_result(context)
     normalized_operations = _normalize_operations(operations or [], instructions=instructions, draft_text=str(draft.content.get("text", "")))
@@ -109,6 +120,9 @@ def apply_editor_patch(
     change_summary: str = "editor patch applied",
     operation_ids: list[str] | None = None,
     operation_indexes: list[int] | None = None,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     path = resolve_path(storage.root, patch_path)
     patch = storage.read_asset(path)
@@ -119,6 +133,32 @@ def apply_editor_patch(
     if draft.type != "draft_chapter":
         raise ValueError("editor_patch target must point to a draft_chapter asset")
     project = project_scope_from_asset(storage, draft, input_path=target_path)
+    runtime_request = normalize_runtime_request_policy(
+        envelope_payload=os_envelope,
+        environment=environment,
+        source_policy=source_policy,
+        operation="editor.apply_patch",
+    )
+    environment = str(runtime_request["environment"])
+    os_envelope = runtime_request["envelope"] if runtime_request.get("envelope") else None
+    knowledge_contract = _patch_knowledge_context_contract(patch)
+    require_knowledge_context_contract(knowledge_contract, operation="apply-editor-patch", environment=environment)
+    applied_envelope = {}
+    if is_production_environment(environment):
+        applied_envelope = enforce_os_envelope(
+            storage,
+            envelope_payload=os_envelope,
+            operation="editor.apply_patch",
+            project_id=str(project.get("project_id", "")),
+            task_type="revision",
+            asset_type="draft_chapter",
+            actor_type="editor_service",
+            source="editor.apply_editor_patch",
+            context_bundle_id=str(knowledge_contract.get("context_bundle_id", "")),
+            source_policy=runtime_request["source_policy"],
+            environment=environment,
+            require_for_production=True,
+        )
     before_text = str(draft.content.get("text", ""))
     selected_operations = _selected_operations(
         patch.content.get("operations", []),
@@ -174,6 +214,15 @@ def apply_editor_patch(
             patch_data["updated_at"] = utc_now()
             storage.write_json(path, patch_data)
         run.succeed(output_assets=[diff_report["path"], *( [version["path"]] if version else [] )])
+        _annotate_apply_editor_patch_metadata(
+            storage,
+            diff_report_path=diff_report["path"],
+            version_path=version["path"] if version else "",
+            patch_path=_display_path(storage.root, path),
+            environment=environment,
+            os_envelope=applied_envelope,
+            knowledge_contract=knowledge_contract,
+        )
         return {
             "patch_path": _display_path(storage.root, path),
             "diff_report": diff_report,
@@ -577,6 +626,60 @@ def list_editor_artifacts(storage: LocalStorage, *, project_id: str | None = Non
                 }
             )
     return sorted(rows, key=lambda row: row.get("updated_at", ""), reverse=True)[:limit]
+
+
+def _patch_knowledge_context_contract(patch: Any) -> dict[str, Any]:
+    content = patch.content if isinstance(getattr(patch, "content", {}), dict) else {}
+    metadata = patch.metadata if isinstance(getattr(patch, "metadata", {}), dict) else {}
+    contract = content.get("knowledge_context_contract") if isinstance(content.get("knowledge_context_contract"), dict) else {}
+    if contract:
+        return contract
+    metadata_contract = metadata.get("knowledge_context_contract") if isinstance(metadata.get("knowledge_context_contract"), dict) else {}
+    if metadata_contract:
+        return metadata_contract
+    if metadata.get("context_bundle_id") or metadata.get("knowledge_pack_id"):
+        return {
+            "context_bundle_id": str(metadata.get("context_bundle_id", "")),
+            "knowledge_pack_id": str(metadata.get("knowledge_pack_id", "")),
+            "source_policy": metadata.get("source_policy", {}) if isinstance(metadata.get("source_policy", {}), dict) else {},
+            "source_isolation": metadata.get("source_isolation", {}) if isinstance(metadata.get("source_isolation", {}), dict) else {"source_chunk_raw_text_allowed": False},
+            "mkaos_flow": str(metadata.get("mkaos_flow", "revision")),
+        }
+    return {}
+
+
+def _annotate_apply_editor_patch_metadata(
+    storage: LocalStorage,
+    *,
+    diff_report_path: str,
+    version_path: str,
+    patch_path: str,
+    environment: str,
+    os_envelope: dict[str, Any],
+    knowledge_contract: dict[str, Any],
+) -> None:
+    for output_path in [diff_report_path, version_path]:
+        if not output_path:
+            continue
+        try:
+            path = resolve_path(storage.root, output_path)
+            data = storage.read_json(path)
+            metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            metadata.update(
+                {
+                    "apply_editor_patch_policy": "production_enforced" if is_production_environment(environment) else "compat_warning",
+                    "apply_editor_patch_source": patch_path,
+                    **knowledge_context_contract_metadata(knowledge_contract),
+                    **envelope_asset_metadata(os_envelope),
+                }
+            )
+            if not is_production_environment(environment):
+                metadata["runtime_policy_warning"] = "apply-editor-patch compat path; production requires upstream knowledge context contract and OS envelope"
+            data["metadata"] = metadata
+            data["updated_at"] = utc_now()
+            storage.write_json(path, data)
+        except Exception:
+            continue
 
 
 def _write_diff_report(

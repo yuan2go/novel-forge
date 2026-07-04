@@ -171,6 +171,56 @@ def envelope_response(data: Any, envelope: dict[str, Any] | None = None, *, succ
     }
 
 
+def normalize_environment(value: Any = "", *, envelope_payload: dict[str, Any] | None = None) -> str:
+    payload = envelope_payload if isinstance(envelope_payload, dict) else {}
+    return _environment(value or payload.get("environment"))
+
+
+def normalize_runtime_request_policy(
+    *,
+    envelope_payload: dict[str, Any] | None = None,
+    environment: str = "",
+    source_policy: dict[str, Any] | None = None,
+    operation: str = "",
+) -> dict[str, Any]:
+    """Normalize API/service request policy before side effects.
+
+    API callers historically passed ``environment`` and ``source_policy`` as
+    optional fields beside an OS envelope. Production policy must treat the
+    envelope value as authoritative when the top-level field is omitted.
+    """
+
+    payload = envelope_payload if isinstance(envelope_payload, dict) else {}
+    envelope_policy = payload.get("source_policy") if isinstance(payload.get("source_policy"), dict) else {}
+    merged_policy = {**envelope_policy, **(source_policy or {})}
+    resolved_environment = normalize_environment(environment, envelope_payload=payload)
+    production = is_production_environment(resolved_environment)
+    if production:
+        merged_policy.setdefault("production_fail_closed", True)
+        merged_policy.setdefault("compat_warning_allowed", False)
+        merged_policy.setdefault("mkaos_pack_required", True)
+        merged_policy.setdefault("source_isolation_required", True)
+        merged_policy.setdefault("empty_pack_policy", "block")
+    else:
+        merged_policy.setdefault("production_fail_closed", False)
+        merged_policy.setdefault("compat_warning_allowed", True)
+        merged_policy.setdefault("mkaos_pack_required", False)
+        merged_policy.setdefault("source_isolation_required", True)
+        merged_policy.setdefault("empty_pack_policy", "warn")
+    normalized_payload = dict(payload)
+    if normalized_payload:
+        normalized_payload["environment"] = resolved_environment
+        normalized_payload["source_policy"] = merged_policy
+    return {
+        "operation": operation,
+        "environment": resolved_environment,
+        "source_policy": merged_policy,
+        "envelope": normalized_payload,
+        "production": production,
+        "strict": production,
+    }
+
+
 def _environment(value: Any) -> str:
     raw = str(value or os.environ.get("NOVEL_FORGE_ENVIRONMENT", "dev")).strip().lower()
     if raw in PRODUCTION_ENVIRONMENTS:

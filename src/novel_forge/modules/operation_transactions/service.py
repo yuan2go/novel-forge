@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.modules.audit_log import record_audit_event
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.runtime_ledger import record_cost_ledger, record_trace_span
@@ -102,6 +103,18 @@ def preview_operation_rollback(
     )
     result = _write(storage, asset)
     _record_span(storage, plan_content["trace"], "rollback_plan", strategy, "failed" if rollback_status == "unsafe" else "succeeded", str(metadata.get("project_id", "")), str(metadata.get("workspace_path", "")), {"rollback_plan_path": result["path"]})
+    _record_rollback_audit(
+        storage,
+        action="rollback_plan_previewed",
+        status="failed" if rollback_status == "unsafe" else "succeeded",
+        project_id=str(metadata.get("project_id", "")),
+        trace=plan_content["trace"],
+        input_refs=[_display_path(storage.root, transaction_path)],
+        output_refs=[result["path"]],
+        evidence_refs=[*content.get("created_assets", []), *content.get("updated_assets", [])],
+        blocking=rollback_status == "unsafe",
+        metadata={"strategy": strategy, "rollback_status": rollback_status, "unsafe_reasons": unsafe_reasons},
+    )
     return result
 
 
@@ -153,6 +166,18 @@ def apply_rollback_plan(
     result = _write(storage, asset)
     _mark_transaction_rolled_back(storage, str(content.get("transaction_path", "")), result["path"], status=status)
     _record_span(storage, result_content["trace"], "rollback_result", status, "failed" if errors else "succeeded", str(metadata.get("project_id", "")), str(metadata.get("workspace_path", "")), {"rollback_result_path": result["path"], "errors": errors})
+    _record_rollback_audit(
+        storage,
+        action="rollback_plan_applied",
+        status="failed" if errors else "succeeded",
+        project_id=str(metadata.get("project_id", "")),
+        trace=result_content["trace"],
+        input_refs=[_display_path(storage.root, plan_path)],
+        output_refs=[result["path"]],
+        evidence_refs=[str(item.get("path", "")) for item in applied if isinstance(item, dict)],
+        blocking=bool(errors),
+        metadata={"actor": actor, "applied_count": len(applied), "errors": errors},
+    )
     return result
 
 
@@ -239,6 +264,18 @@ def coordinate_runtime_rollback(
     path = storage.root / "data" / "runs" / f"{report_id}.json"
     storage.write_json(path, report)
     _record_span(storage, trace_payload, "rollback_coordination", strategy, "failed" if unsafe else "succeeded", project_id, workspace_path, {"report_path": _display_path(storage.root, path), "confirm": confirm, "transaction_count": len(ordered_transactions)})
+    _record_rollback_audit(
+        storage,
+        action="rollback_coordinated",
+        status="failed" if unsafe else "succeeded",
+        project_id=project_id,
+        trace=trace_payload,
+        input_refs=[item["path"] for item in ordered_transactions],
+        output_refs=[_display_path(storage.root, path)],
+        evidence_refs=[*[str(item.get("path", "")) for item in previews], *[str(item.get("path", "")) for item in results]],
+        blocking=bool(unsafe),
+        metadata={"strategy": strategy, "confirm": confirm, "unsafe_reasons": unsafe},
+    )
     return {"path": _display_path(storage.root, path), "asset": report, "verification": verification}
 
 
@@ -747,6 +784,41 @@ def _resolve_asset(storage: LocalStorage, path_or_id: str | Path, expected_type:
         if isinstance(data, dict) and data.get("type") == expected_type and str(data.get("id", "")) == needle:
             return path
     raise FileNotFoundError(f"{expected_type} not found: {path_or_id}")
+
+
+def _record_rollback_audit(
+    storage: LocalStorage,
+    *,
+    action: str,
+    status: str,
+    project_id: str,
+    trace: dict[str, Any],
+    input_refs: list[str],
+    output_refs: list[str],
+    evidence_refs: list[str],
+    blocking: bool,
+    metadata: dict[str, Any],
+) -> None:
+    try:
+        record_audit_event(
+            storage,
+            event_type="rollback",
+            action=action,
+            actor_type="runtime",
+            actor_id=str(metadata.get("actor") or "operation_transactions"),
+            target={"action": action},
+            project_id=project_id,
+            trace_id=str(trace.get("trace_id") or ""),
+            input_refs=input_refs,
+            output_refs=output_refs,
+            evidence_refs=evidence_refs,
+            status=status,
+            blocking=blocking,
+            rollback_ref=next(iter(output_refs), ""),
+            metadata=metadata,
+        )
+    except Exception:
+        pass
 
 
 def _write(storage: LocalStorage, asset: Any) -> dict[str, Any]:

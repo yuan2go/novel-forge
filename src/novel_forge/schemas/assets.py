@@ -719,6 +719,36 @@ class AgentDispatchQueue(BaseAsset):
 
 
 @dataclass
+class AgentRegistryEntry(BaseAsset):
+    type: str = "agent_registry_entry"
+
+
+@dataclass
+class AgentVersion(BaseAsset):
+    type: str = "agent_version"
+
+
+@dataclass
+class AgentCapability(BaseAsset):
+    type: str = "agent_capability"
+
+
+@dataclass
+class AgentLifecycleEvent(BaseAsset):
+    type: str = "agent_lifecycle_event"
+
+
+@dataclass
+class AgentEvaluationBinding(BaseAsset):
+    type: str = "agent_evaluation_binding"
+
+
+@dataclass
+class AgentRegistrySnapshot(BaseAsset):
+    type: str = "agent_registry_snapshot"
+
+
+@dataclass
 class OperationTransaction(BaseAsset):
     type: str = "operation_transaction"
 
@@ -789,6 +819,21 @@ class CostQualityDashboard(BaseAsset):
 
 
 @dataclass
+class AuditLog(BaseAsset):
+    type: str = "audit_log"
+
+
+@dataclass
+class AuditTrailReport(BaseAsset):
+    type: str = "audit_trail_report"
+
+
+@dataclass
+class AuditExportPackage(BaseAsset):
+    type: str = "audit_export_package"
+
+
+@dataclass
 class ModelProfile(BaseAsset):
     type: str = "model_profile"
 
@@ -846,6 +891,46 @@ class PromptRegressionReport(BaseAsset):
 @dataclass
 class ModelRoutingPolicy(BaseAsset):
     type: str = "model_routing_policy"
+
+
+@dataclass
+class EvaluationSuite(BaseAsset):
+    type: str = "evaluation_suite"
+
+
+@dataclass
+class EvaluationCase(BaseAsset):
+    type: str = "evaluation_case"
+
+
+@dataclass
+class EvaluationRun(BaseAsset):
+    type: str = "evaluation_run"
+
+
+@dataclass
+class EvaluationResult(BaseAsset):
+    type: str = "evaluation_result"
+
+
+@dataclass
+class EvaluationMetric(BaseAsset):
+    type: str = "evaluation_metric"
+
+
+@dataclass
+class EvaluationGate(BaseAsset):
+    type: str = "evaluation_gate"
+
+
+@dataclass
+class EvaluationRegressionReport(BaseAsset):
+    type: str = "evaluation_regression_report"
+
+
+@dataclass
+class EvaluationDashboardSnapshot(BaseAsset):
+    type: str = "evaluation_dashboard_snapshot"
 
 
 @dataclass
@@ -966,6 +1051,26 @@ class EmbeddingJob(BaseAsset):
 @dataclass
 class HybridRetrievalReport(BaseAsset):
     type: str = "hybrid_retrieval_report"
+
+
+@dataclass
+class AnalyticsEvent(BaseAsset):
+    type: str = "analytics_event"
+
+
+@dataclass
+class AnalyticsSyncJob(BaseAsset):
+    type: str = "analytics_sync_job"
+
+
+@dataclass
+class AnalyticsDashboardSnapshot(BaseAsset):
+    type: str = "analytics_dashboard_snapshot"
+
+
+@dataclass
+class AnalyticsMetricDefinition(BaseAsset):
+    type: str = "analytics_metric_definition"
 
 
 @dataclass
@@ -1122,6 +1227,12 @@ SCHEMA_CLASSES = {
         AgentSlaReport,
         AgentRollbackReport,
         AgentDispatchQueue,
+        AgentRegistryEntry,
+        AgentVersion,
+        AgentCapability,
+        AgentLifecycleEvent,
+        AgentEvaluationBinding,
+        AgentRegistrySnapshot,
         OperationTransaction,
         RollbackPlan,
         RollbackResult,
@@ -1136,6 +1247,9 @@ SCHEMA_CLASSES = {
         AgentCostSnapshot,
         ChapterCostSnapshot,
         CostQualityDashboard,
+        AuditLog,
+        AuditTrailReport,
+        AuditExportPackage,
         ModelProfile,
         ModelRoute,
         ModelRouteResolution,
@@ -1148,6 +1262,14 @@ SCHEMA_CLASSES = {
         PromptNodeBinding,
         PromptRegressionReport,
         ModelRoutingPolicy,
+        EvaluationSuite,
+        EvaluationCase,
+        EvaluationRun,
+        EvaluationResult,
+        EvaluationMetric,
+        EvaluationGate,
+        EvaluationRegressionReport,
+        EvaluationDashboardSnapshot,
         ToolDefinition,
         ToolInvocation,
         ToolPermissionPolicy,
@@ -1172,6 +1294,10 @@ SCHEMA_CLASSES = {
         PgVectorSchemaPlan,
         EmbeddingJob,
         HybridRetrievalReport,
+        AnalyticsEvent,
+        AnalyticsSyncJob,
+        AnalyticsDashboardSnapshot,
+        AnalyticsMetricDefinition,
         LocalOpsDrillReport,
         LongChainAcceptanceReport,
     ]

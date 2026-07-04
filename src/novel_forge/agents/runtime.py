@@ -18,6 +18,20 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "allowed_write_types": ["workflow_run", "task_status"],
         "forbidden": ["break_schema_compatibility_silently", "overwrite_user_changes", "skip_tests_for_code_changes"],
     },
+    "workflow": {
+        "agent": "Workflow Agent",
+        "permission_profile": "workflow_coordination_and_recovery",
+        "allowed_tools": ["read_asset", "run_validation", "run_worker_task", "record_checkpoint", "coordinate_loop"],
+        "allowed_write_types": ["workflow_run", "task_status", "agent_run", "loop_run", "loop_step", "loop_checkpoint", "loop_report"],
+        "forbidden": ["bypass_schema_validation", "suppress_blocking_issue", "execute_unregistered_operation"],
+    },
+    "context": {
+        "agent": "Context Agent",
+        "permission_profile": "context_selection_budget_and_replay",
+        "allowed_tools": ["read_asset", "build_context_plan", "build_context_bundle", "run_retrieval", "run_validation"],
+        "allowed_write_types": ["context_build_plan", "context_bundle", "rag_quality_report", "hybrid_retrieval_report", "memory_retrieval_report"],
+        "forbidden": ["include_raw_source_text_in_generation_context", "overfill_token_budget_without_warning", "hide_actual_context"],
+    },
     "knowledge": {
         "agent": "Knowledge Agent",
         "permission_profile": "reference_to_abstract_knowledge_only",

@@ -11,6 +11,7 @@ from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.schemas import (
+    BaseAsset,
     ModelBenchmarkRun,
     ModelBenchmarkTask,
     ModelComparisonReport,
@@ -30,7 +31,55 @@ EVALUATION_TYPES = {
     "model_routing_policy",
     "prompt_version",
     "prompt_regression_report",
+    "evaluation_suite",
+    "evaluation_case",
+    "evaluation_run",
+    "evaluation_result",
+    "evaluation_metric",
+    "evaluation_gate",
+    "evaluation_regression_report",
+    "evaluation_dashboard_snapshot",
 }
+
+CONTENT_QUALITY_DIMENSIONS = [
+    "readability",
+    "hook_strength",
+    "emotional_curve",
+    "conflict_density",
+    "plot_progress",
+    "character_motivation",
+    "scene_vividness",
+    "dialogue_quality",
+    "ai_flavor_risk",
+    "originality_risk",
+]
+LONGFORM_DIMENSIONS = [
+    "canon_consistency",
+    "character_drift",
+    "arc_progress",
+    "foreshadowing_tracking",
+    "power_scale_consistency",
+    "timeline_consistency",
+    "world_rule_consistency",
+]
+ENGINEERING_DIMENSIONS = [
+    "schema_validity",
+    "context_adherence",
+    "source_isolation",
+    "os_envelope_coverage",
+    "trace_coverage",
+    "cost_budget",
+    "latency",
+    "failure_rate",
+    "rollback_readiness",
+]
+PLATFORM_DIMENSIONS = [
+    "opening_gate",
+    "chapter_rhythm",
+    "platform_retention_risk",
+    "publish_compliance",
+    "feedback_backflow_quality",
+]
 
 
 def create_model_profile(
@@ -524,21 +573,29 @@ def list_model_evaluation_assets(storage: LocalStorage, *, project_id: str | Non
         if project_id and str(metadata.get("project_id", "")) != project_id:
             continue
         content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        scores = content.get("scores", {}) if isinstance(content.get("scores", {}), dict) else {}
+        score = float(content.get("overall_score", scores.get("overall", 0)) or 0)
         rows.append(
             {
                 "path": _display_path(storage.root, path),
                 "id": data.get("id", ""),
                 "type": data.get("type", ""),
                 "title": data.get("title") or data.get("name", ""),
+                "content": content,
+                "metadata": metadata,
                 "provider": content.get("provider") or metadata.get("provider", ""),
                 "model_name": content.get("model_name") or metadata.get("model_name", ""),
                 "task_type": content.get("task_type", ""),
                 "status": content.get("status", ""),
-                "scores": content.get("scores", {}),
-                "score": content.get("scores", {}).get("overall", 0) if isinstance(content.get("scores", {}), dict) else 0,
+                "target_asset_type": content.get("target_asset_type", ""),
+                "target_asset_path": content.get("target_asset_path", ""),
+                "scores": scores,
+                "overall_score": score,
+                "score": score,
                 "cost_estimate": content.get("cost_estimate", {}),
                 "latency_ms": content.get("latency_ms", ""),
                 "recommendation": content.get("recommendation", ""),
+                "blocking": bool(content.get("blocking") or metadata.get("blocking")),
                 "task_routes": content.get("task_routes", {}),
                 "updated_at": data.get("updated_at", ""),
             }
@@ -546,6 +603,226 @@ def list_model_evaluation_assets(storage: LocalStorage, *, project_id: str | Non
         if len(rows) >= limit:
             break
     return sorted(rows, key=lambda row: row.get("updated_at", ""), reverse=True)
+
+
+def create_evaluation_suite(
+    storage: LocalStorage,
+    *,
+    name: str,
+    target_asset_types: list[str] | None = None,
+    metrics: list[str] | None = None,
+    status: str = "active",
+    project_id: str = "",
+) -> dict[str, Any]:
+    selected_metrics = metrics or [*CONTENT_QUALITY_DIMENSIONS, *LONGFORM_DIMENSIONS, *ENGINEERING_DIMENSIONS, *PLATFORM_DIMENSIONS]
+    asset = BaseAsset(
+        type="evaluation_suite",
+        title=name,
+        tags=["evaluation", "suite", status],
+        content={
+            "suite_id": make_id("evaluation_suite", name),
+            "name": name,
+            "target_asset_types": target_asset_types
+            or [
+                "outline",
+                "chapter_plan",
+                "draft_chapter",
+                "review_report",
+                "context_bundle",
+                "rag_quality_report",
+                "review_issue",
+                "agent_run",
+                "workflow_run",
+                "loop_run",
+                "longform_recap_report",
+                "publish_gate_report",
+                "release_package",
+                "reader_feedback_backflow_report",
+            ],
+            "metrics": selected_metrics,
+            "status": status,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "status": status, "metric_count": len(selected_metrics)},
+    )
+    return _write(storage, asset)
+
+
+def create_evaluation_case(storage: LocalStorage, *, suite_id: str, target_asset_path: str, expected: dict[str, Any] | None = None, status: str = "active") -> dict[str, Any]:
+    target = storage.read_asset(resolve_path(storage.root, target_asset_path))
+    project = project_scope_from_asset(storage, target, input_path=target_asset_path)
+    asset = BaseAsset(
+        type="evaluation_case",
+        title=f"Evaluation case {target.title or target.id}",
+        tags=["evaluation", "case", target.type, status],
+        content={
+            "case_id": make_id("evaluation_case", f"{suite_id}-{target.id}"),
+            "suite_id": suite_id,
+            "target_asset_path": target_asset_path,
+            "target_asset_id": target.id,
+            "target_asset_type": target.type,
+            "expected": expected or {},
+            "status": status,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project.get("project_id", ""), "suite_id": suite_id, "target_asset_type": target.type, "status": status},
+        references=filter_project_safe_references(storage, str(project.get("project_id", "")), [target.id, target_asset_path]),
+    )
+    return _write(storage, asset)
+
+
+def evaluate_asset(
+    storage: LocalStorage,
+    target_asset_path: str | Path,
+    *,
+    suite_id: str = "default-novel-os-quality",
+    project_id: str = "",
+    create_issue_on_fail: bool = False,
+    human_annotations: list[dict[str, Any]] | None = None,
+    model_judge: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    path = resolve_path(storage.root, target_asset_path)
+    target = storage.read_asset(path)
+    project = project_scope_from_asset(storage, target, input_path=path)
+    project_id = project_id or str(project.get("project_id", ""))
+    scores = _score_asset(target.to_dict())
+    model_judge = _resolve_model_judge(storage, target.to_dict(), path, project_id=project_id, model_judge=model_judge)
+    evaluator_inputs = _apply_evaluator_inputs(scores, human_annotations=human_annotations, model_judge=model_judge)
+    overall = round(sum(scores.values()) / max(1, len(scores)), 4)
+    recommendation = "pass" if overall >= 0.72 else ("revise" if overall >= 0.55 else "block")
+    content = {
+        "result_id": make_id("evaluation_result", f"{target.type}-{target.id}-{utc_now()}"),
+        "suite_id": suite_id,
+        "target_asset_id": target.id,
+        "target_asset_type": target.type,
+        "target_asset_path": _display_path(storage.root, path),
+        "scores": scores,
+        "overall_score": overall,
+        "recommendation": recommendation,
+        "evaluation_mode": evaluator_inputs["evaluation_mode"],
+        "evaluator_inputs": evaluator_inputs,
+        "dimensions": {
+            "content_quality": {key: scores[key] for key in CONTENT_QUALITY_DIMENSIONS if key in scores},
+            "longform_consistency": {key: scores[key] for key in LONGFORM_DIMENSIONS if key in scores},
+            "engineering_quality": {key: scores[key] for key in ENGINEERING_DIMENSIONS if key in scores},
+            "platform_fit": {key: scores[key] for key in PLATFORM_DIMENSIONS if key in scores},
+        },
+        "created_at": utc_now(),
+    }
+    asset = BaseAsset(
+        type="evaluation_result",
+        title=f"Evaluation result {target.type}",
+        source=target.id,
+        tags=["evaluation", "result", target.type, recommendation],
+        content=content,
+        metadata={"project_id": project_id, "suite_id": suite_id, "target_asset_type": target.type, "overall_score": overall, "recommendation": recommendation},
+        references=filter_project_safe_references(storage, project_id, [target.id, _display_path(storage.root, path)]),
+    )
+    result = _write(storage, asset)
+    issue = {}
+    if create_issue_on_fail and recommendation == "block":
+        issue = _create_review_issue_for_evaluation(storage, target.to_dict(), result, project_id=project_id)
+    return {**result, "scores": scores, "recommendation": recommendation, "review_issue": issue}
+
+
+def run_evaluation_suite(storage: LocalStorage, *, suite_path: str | Path | None = None, target_asset_paths: list[str] | None = None, project_id: str = "") -> dict[str, Any]:
+    suite = _load_or_default_suite(storage, suite_path)
+    suite_content = suite.get("content", {}) if isinstance(suite.get("content", {}), dict) else {}
+    target_paths = target_asset_paths or _recent_evaluation_targets(storage, project_id=project_id)
+    result_paths = []
+    results = []
+    for target_path in target_paths:
+        try:
+            result = evaluate_asset(storage, target_path, suite_id=str(suite_content.get("suite_id") or "default-novel-os-quality"), project_id=project_id, create_issue_on_fail=True)
+            result_paths.append(result["path"])
+            results.append(result["asset"])
+        except Exception as exc:
+            results.append({"target_asset_path": target_path, "status": "failed", "error": f"{type(exc).__name__}: {exc}"})
+    status = "failed" if not result_paths else ("completed_with_failures" if len(result_paths) != len(target_paths) else "completed")
+    asset = BaseAsset(
+        type="evaluation_run",
+        title="Evaluation suite run",
+        tags=["evaluation", "run", status],
+        content={
+            "run_id": make_id("evaluation_run", f"{suite_content.get('suite_id', 'suite')}-{utc_now()}"),
+            "suite_id": suite_content.get("suite_id", "default-novel-os-quality"),
+            "target_asset_path": ",".join(target_paths),
+            "status": status,
+            "result_paths": result_paths,
+            "results": results,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "suite_id": suite_content.get("suite_id", "default-novel-os-quality"), "status": status, "result_count": len(result_paths)},
+        references=filter_project_safe_references(storage, project_id, [*target_paths, *result_paths]),
+    )
+    return _write(storage, asset)
+
+
+def create_evaluation_gate(storage: LocalStorage, target_asset_path: str | Path, *, minimum_score: float = 0.72, project_id: str = "") -> dict[str, Any]:
+    result = evaluate_asset(storage, target_asset_path, project_id=project_id, create_issue_on_fail=True)
+    evaluation = result.get("asset", {})
+    content_result = evaluation.get("content", {}) if isinstance(evaluation.get("content", {}), dict) else {}
+    score = float(content_result.get("overall_score", 0) or 0)
+    status = "passed" if score >= minimum_score else "blocked"
+    issue = {}
+    if status == "blocked" and not result.get("review_issue"):
+        try:
+            target_asset = storage.read_asset(resolve_path(storage.root, target_asset_path))
+            issue = _create_review_issue_for_evaluation(storage, target_asset.to_dict(), result, project_id=project_id)
+        except Exception:
+            issue = {}
+    asset = BaseAsset(
+        type="evaluation_gate",
+        title=f"Evaluation gate {status}",
+        tags=["evaluation", "gate", status],
+        content={
+            "gate_id": make_id("evaluation_gate", f"{content_result.get('target_asset_id', '')}-{utc_now()}"),
+            "target_asset_id": content_result.get("target_asset_id", ""),
+            "target_asset_type": content_result.get("target_asset_type", ""),
+            "target_asset_path": content_result.get("target_asset_path", ""),
+            "evaluation_result_path": result["path"],
+            "minimum_score": minimum_score,
+            "overall_score": score,
+            "status": status,
+            "blocking": status == "blocked",
+            "review_issue_path": issue.get("path", "") if isinstance(issue, dict) else "",
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "status": status, "blocking": status == "blocked"},
+        references=filter_project_safe_references(storage, project_id, [result["path"], str(target_asset_path), issue.get("path", "") if isinstance(issue, dict) else ""]),
+    )
+    written = _write(storage, asset)
+    return {**written, "evaluation_result": result, "review_issue": issue}
+
+
+def create_evaluation_dashboard_snapshot(storage: LocalStorage, *, project_id: str = "") -> dict[str, Any]:
+    results = [row for row in list_model_evaluation_assets(storage, project_id=project_id or None, limit=1000) if row.get("type") in {"evaluation_result", "model_benchmark_run"}]
+    scores = []
+    for row in results:
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if row.get("type") == "evaluation_result":
+            scores.append(float(content.get("overall_score", row.get("score", 0)) or 0))
+        elif row.get("type") == "model_benchmark_run":
+            scores.append(float(row.get("score", 0) or 0))
+    average = round(sum(scores) / max(1, len(scores)), 4)
+    asset = BaseAsset(
+        type="evaluation_dashboard_snapshot",
+        title="Evaluation dashboard snapshot",
+        tags=["evaluation", "dashboard"],
+        content={
+            "snapshot_id": make_id("evaluation_dashboard", f"{project_id}-{utc_now()}"),
+            "summary": {"result_count": len(results), "average_score": average, "block_count": sum(1 for row in results if row.get("recommendation") == "block")},
+            "quality_trends": [{"index": index + 1, "score": score} for index, score in enumerate(scores[-50:])],
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "average_score": average, "result_count": len(results)},
+        references=[str(row.get("path", "")) for row in results if row.get("path")],
+    )
+    return _write(storage, asset)
+
+
+def evaluation_dashboard(storage: LocalStorage, *, project_id: str = "") -> dict[str, Any]:
+    return create_evaluation_dashboard_snapshot(storage, project_id=project_id)["asset"]["content"]
 
 
 def _run_adapter(adapter: ModelAdapter, task: Any) -> dict[str, Any]:
@@ -559,6 +836,266 @@ def _run_adapter(adapter: ModelAdapter, task: Any) -> dict[str, Any]:
     if task_type in {"revision", "revise"}:
         return adapter.revise(prompt, {}, context)
     return adapter.generate(prompt, context)
+
+
+def _score_asset(asset: dict[str, Any]) -> dict[str, float]:
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    metadata = asset.get("metadata", {}) if isinstance(asset.get("metadata", {}), dict) else {}
+    text = str(content.get("text") or content.get("summary") or content.get("actual_context") or content)
+    source_isolation = content.get("source_isolation", {}) if isinstance(content.get("source_isolation", {}), dict) else {}
+    has_trace = bool(metadata.get("trace_id") or content.get("trace_id") or metadata.get("agent_run_path"))
+    has_context = bool(content.get("context_bundle") or content.get("context_bundle_id") or metadata.get("context_bundle_id"))
+    has_envelope = bool(metadata.get("os_envelope_id") or content.get("envelope_id") or metadata.get("envelope_id"))
+    raw_text_risk = _contains_key(content, "raw_text") or bool(source_isolation.get("source_chunk_raw_text_allowed"))
+    length_score = min(1.0, max(0.35, len(text) / 1200))
+    issue_count = len(content.get("issues", [])) if isinstance(content.get("issues", []), list) else 0
+    blocking = bool(content.get("blocking") or metadata.get("blocking"))
+    return {
+        "readability": round(length_score, 4),
+        "hook_strength": 0.72 if any(key in text.lower() for key in ["hook", "钩子", "悬念", "期待"]) else 0.58,
+        "emotional_curve": 0.7 if any(key in text for key in ["情绪", "压力", "代价", "动机"]) else 0.56,
+        "conflict_density": 0.74 if any(key in text for key in ["冲突", "风险", "阻碍", "代价"]) else 0.52,
+        "plot_progress": 0.72 if any(key in text for key in ["推进", "目标", "结果", "转折"]) else 0.55,
+        "character_motivation": 0.72 if any(key in text for key in ["动机", "目标", "欲望", "选择"]) else 0.55,
+        "scene_vividness": 0.68 if len(text) > 80 else 0.5,
+        "dialogue_quality": 0.66 if "dialogue" in text.lower() or "对话" in text else 0.55,
+        "ai_flavor_risk": 0.78 if "AI" not in text and "模板化" not in text else 0.45,
+        "originality_risk": 0.25 if raw_text_risk else 0.82,
+        "canon_consistency": 0.35 if blocking else 0.76,
+        "character_drift": 0.45 if issue_count >= 3 else 0.72,
+        "arc_progress": 0.7 if asset.get("type") in {"outline", "chapter_plan", "longform_recap_report"} else 0.6,
+        "foreshadowing_tracking": 0.72 if "foreshadow" in text.lower() or "伏笔" in text else 0.58,
+        "power_scale_consistency": 0.68,
+        "timeline_consistency": 0.68,
+        "world_rule_consistency": 0.68,
+        "schema_validity": 1.0,
+        "context_adherence": 0.78 if has_context else 0.55,
+        "source_isolation": 0.2 if raw_text_risk else 0.95,
+        "os_envelope_coverage": 0.78 if has_envelope else 0.55,
+        "trace_coverage": 0.8 if has_trace else 0.5,
+        "cost_budget": 0.72,
+        "latency": 0.72,
+        "failure_rate": 0.25 if str(content.get("status", "")).lower() == "failed" else 0.8,
+        "rollback_readiness": 0.72 if metadata.get("rollback_path") or content.get("rollback_plan") else 0.56,
+        "opening_gate": 0.68,
+        "chapter_rhythm": 0.72 if any(key in text for key in ["节奏", "反转", "爽点", "hook"]) else 0.55,
+        "platform_retention_risk": 0.72 if "retention" in text.lower() or "留存" in text else 0.58,
+        "publish_compliance": 0.25 if raw_text_risk or blocking else 0.8,
+        "feedback_backflow_quality": 0.74 if asset.get("type") == "reader_feedback_backflow_report" else 0.6,
+    }
+
+
+def _apply_evaluator_inputs(
+    scores: dict[str, float],
+    *,
+    human_annotations: list[dict[str, Any]] | None,
+    model_judge: dict[str, Any] | None,
+) -> dict[str, Any]:
+    annotations = _normalize_human_annotations(human_annotations)
+    judge = _normalize_model_judge(model_judge)
+    if annotations:
+        scores["human_annotation"] = round(sum(item["score"] for item in annotations) / len(annotations), 4)
+    if judge.get("score") is not None:
+        scores["model_judge"] = float(judge["score"])
+    mode = "local_heuristic"
+    external = bool(judge.get("external_provider_called", False))
+    if annotations and external:
+        mode = "local_heuristic_with_human_and_external_model_judge"
+    elif external:
+        mode = "local_heuristic_with_external_model_judge"
+    elif annotations and judge.get("score") is not None:
+        mode = "local_heuristic_with_human_and_model_judge"
+    elif annotations:
+        mode = "local_heuristic_with_human_annotations"
+    elif judge.get("score") is not None:
+        mode = "local_heuristic_with_model_judge"
+    return {
+        "evaluation_mode": mode,
+        "human_annotations": annotations,
+        "model_judge": judge,
+        "external_provider_called": bool(judge.get("external_provider_called", False)),
+    }
+
+
+def _normalize_human_annotations(value: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    rows = value if isinstance(value, list) else []
+    normalized = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        score = _score_0_1(row.get("score", row.get("rating", 0)))
+        normalized.append(
+            {
+                "dimension": str(row.get("dimension") or "overall"),
+                "score": score,
+                "annotator": str(row.get("annotator") or "human"),
+                "comment": str(row.get("comment") or "")[:500],
+            }
+        )
+    return normalized
+
+
+def _normalize_model_judge(value: dict[str, Any] | None) -> dict[str, Any]:
+    payload = value if isinstance(value, dict) else {}
+    score_value = payload.get("score")
+    score = _score_0_1(score_value) if score_value not in (None, "") else None
+    return {
+        "enabled": bool(payload.get("enabled", False)),
+        "provider": str(payload.get("provider") or "local"),
+        "model": str(payload.get("model") or "deterministic-judge"),
+        "score": score,
+        "confidence": _score_0_1(payload.get("confidence", 1.0)),
+        "recommendation": str(payload.get("recommendation") or ""),
+        "status": str(payload.get("status") or ("provided_score" if score is not None else "not_provided")),
+        "external_provider_called": bool(payload.get("external_provider_called", False)),
+        "model_gateway_call": payload.get("model_gateway_call", {}) if isinstance(payload.get("model_gateway_call", {}), dict) else {},
+    }
+
+
+def _resolve_model_judge(storage: LocalStorage, target: dict[str, Any], target_path: Path, *, project_id: str, model_judge: dict[str, Any] | None) -> dict[str, Any] | None:
+    payload = model_judge if isinstance(model_judge, dict) else {}
+    if not payload or not payload.get("enabled"):
+        return model_judge
+    mode = str(payload.get("mode") or payload.get("judge_mode") or "score").lower()
+    if mode not in {"external", "provider", "model"}:
+        return model_judge
+    policy = payload.get("runtime_policy", {}) if isinstance(payload.get("runtime_policy", {}), dict) else {}
+    source_policy = payload.get("source_policy", {}) if isinstance(payload.get("source_policy", {}), dict) else {}
+    allowed = bool(payload.get("allow_external_model_judge") or policy.get("allow_external_model_judge"))
+    if not allowed:
+        raise PermissionError("external model judge requires allow_external_model_judge=true")
+    if bool(source_policy.get("raw_source_text_allowed")):
+        raise PermissionError("external model judge cannot run with raw_source_text_allowed=true")
+    if str(target.get("type", "")) in {"source_document", "source_chunk", "cleaned_text"}:
+        raise PermissionError("external model judge cannot evaluate raw source assets")
+    provider = str(payload.get("provider") or "mock")
+    env = dict(os.environ)
+    env["NOVEL_FORGE_MODEL_PROVIDER"] = provider
+    adapter = model_from_env("review", env=env)
+    from novel_forge.modules.model_router import call_model_via_router
+
+    text = _evaluation_judge_text(target)
+    trace = payload.get("trace") if isinstance(payload.get("trace"), dict) else {}
+    if not trace and isinstance(payload.get("os_envelope"), dict):
+        trace = {"trace_id": str(payload["os_envelope"].get("trace_id") or "")}
+    result = call_model_via_router(
+        storage,
+        adapter=adapter,
+        operation="review",
+        payload=text,
+        context={"evaluation_judge": True, "target_asset_type": target.get("type", ""), "source_policy": source_policy},
+        task_type="evaluation_judge",
+        project_id=project_id,
+        input_assets=[_display_path(storage.root, target_path)],
+        trace=trace if isinstance(trace, dict) else {},
+    )
+    score = _score_0_1(result.get("score", payload.get("score", 0)) if isinstance(result, dict) else 0)
+    return {
+        **payload,
+        "score": score,
+        "recommendation": str((result or {}).get("next_action") or payload.get("recommendation") or ""),
+        "status": "external_provider_called",
+        "external_provider_called": True,
+        "provider": provider,
+        "model": str((result or {}).get("model") or payload.get("model") or ""),
+        "model_gateway_call": (result or {}).get("model_gateway_call", {}) if isinstance(result, dict) else {},
+    }
+
+
+def _evaluation_judge_text(target: dict[str, Any]) -> str:
+    content = target.get("content", {}) if isinstance(target.get("content", {}), dict) else {}
+    text = str(content.get("text") or content.get("summary") or content.get("actual_context") or content)
+    return text[:4000]
+
+
+def _score_0_1(value: Any) -> float:
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        score = 0.0
+    if score > 1.0 and score <= 100.0:
+        score = score / 100.0
+    return round(max(0.0, min(1.0, score)), 4)
+
+
+def _load_or_default_suite(storage: LocalStorage, suite_path: str | Path | None) -> dict[str, Any]:
+    if suite_path:
+        return storage.read_json(resolve_path(storage.root, suite_path))
+    for path in reversed(storage.list_json("runs")):
+        data = _read_json_safe(storage, path)
+        if data.get("type") == "evaluation_suite" and data.get("content", {}).get("status") == "active":
+            return data
+    return create_evaluation_suite(storage, name="Default Novel OS Quality Suite")["asset"]
+
+
+def _recent_evaluation_targets(storage: LocalStorage, *, project_id: str = "") -> list[str]:
+    target_types = {
+        "outline",
+        "chapter_plan",
+        "draft_chapter",
+        "review_report",
+        "context_bundle",
+        "rag_quality_report",
+        "agent_run",
+        "workflow_run",
+        "loop_run",
+        "longform_recap_report",
+        "publish_gate_report",
+        "release_package",
+        "reader_feedback_backflow_report",
+    }
+    paths: list[str] = []
+    for category in ["drafts", "reviews", "contexts", "runs", "loops", "publishing", "feedback", "outlines", "chapter_plans"]:
+        for path in reversed(storage.list_json(category)):
+            data = _read_json_safe(storage, path)
+            if data.get("type") not in target_types:
+                continue
+            metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            if project_id and str(metadata.get("project_id", "")) != project_id:
+                continue
+            paths.append(_display_path(storage.root, path))
+            if len(paths) >= 12:
+                return paths
+    return paths
+
+
+def _create_review_issue_for_evaluation(storage: LocalStorage, target: dict[str, Any], evaluation_result: dict[str, Any], *, project_id: str) -> dict[str, Any]:
+    try:
+        from novel_forge.modules.review_issue import create_review_issue
+
+        return create_review_issue(
+            storage,
+            {
+                "project_id": project_id,
+                "target_asset_id": str(target.get("id", "")),
+                "target_asset_type": str(target.get("type", "")),
+                "issue_type": "context_budget_overflow" if evaluation_result.get("scores", {}).get("source_isolation", 1) < 0.5 else "plot_logic_gap",
+                "severity": "critical",
+                "blocking": True,
+                "message": "Evaluation gate blocked this asset.",
+                "fix_suggestion": "Inspect evaluation_result and revise before publish gate.",
+                "source_system": "evaluation_center",
+                "evidence_refs": [evaluation_result.get("path", "")],
+            },
+        )
+    except Exception:
+        return {}
+
+
+def _contains_key(value: Any, key: str) -> bool:
+    if isinstance(value, dict):
+        return any(child_key == key or _contains_key(child, key) for child_key, child in value.items())
+    if isinstance(value, list):
+        return any(_contains_key(child, key) for child in value)
+    return False
+
+
+def _read_json_safe(storage: LocalStorage, path: Path) -> dict[str, Any]:
+    try:
+        data = storage.read_json(path)
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _model_for_benchmark(task_type: str, *, provider: str, model_name: str) -> ModelAdapter:
@@ -762,7 +1299,7 @@ def _project_scope(storage: LocalStorage, refs: list[dict[str, str]], *, workspa
 
 def _write(
     storage: LocalStorage,
-    asset: ModelProfile | ModelBenchmarkTask | ModelBenchmarkRun | ModelComparisonReport | ModelRoutingPolicy | PromptVersion | PromptRegressionReport,
+    asset: BaseAsset,
 ) -> dict[str, Any]:
     errors = validate_common_fields(asset.to_dict())
     if errors:

@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: novel_forge
       POSTGRES_USER: novel_forge
@@ -48,6 +48,26 @@ services:
     volumes:
       - minio-data:/data
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    profiles: ["analytics"]
+    environment:
+      CLICKHOUSE_DB: novel_forge
+      CLICKHOUSE_USER: novel_forge
+      CLICKHOUSE_PASSWORD: novel_forge
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ports:
+      - "8123:8123"
+      - "9002:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - clickhouse-logs:/var/log/clickhouse-server
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
   api:
     build:
       context: .
@@ -60,6 +80,13 @@ services:
       NOVEL_FORGE_CELERY_RESULT_BACKEND: redis://redis:6379/1
       NOVEL_FORGE_QDRANT_URL: http://qdrant:6333
       NOVEL_FORGE_MINIO_ENDPOINT: minio:9000
+      NOVEL_FORGE_PGVECTOR_ONLINE: ${NOVEL_FORGE_PGVECTOR_ONLINE:-0}
+      NOVEL_FORGE_PGVECTOR_STRICT: ${NOVEL_FORGE_PGVECTOR_STRICT:-0}
+      NOVEL_FORGE_CLICKHOUSE_ONLINE: ${NOVEL_FORGE_CLICKHOUSE_ONLINE:-0}
+      NOVEL_FORGE_CLICKHOUSE_URL: ${NOVEL_FORGE_CLICKHOUSE_URL:-http://clickhouse:8123}
+      NOVEL_FORGE_CLICKHOUSE_DATABASE: ${NOVEL_FORGE_CLICKHOUSE_DATABASE:-novel_forge}
+      NOVEL_FORGE_CLICKHOUSE_USER: ${NOVEL_FORGE_CLICKHOUSE_USER:-novel_forge}
+      NOVEL_FORGE_CLICKHOUSE_PASSWORD: ${NOVEL_FORGE_CLICKHOUSE_PASSWORD:-novel_forge}
       NOVEL_FORGE_API_HOST: 0.0.0.0
       NOVEL_FORGE_API_PORT: 8000
       NOVEL_FORGE_API_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
@@ -95,6 +122,13 @@ services:
       NOVEL_FORGE_CELERY_RESULT_BACKEND: redis://redis:6379/1
       NOVEL_FORGE_QDRANT_URL: http://qdrant:6333
       NOVEL_FORGE_MINIO_ENDPOINT: minio:9000
+      NOVEL_FORGE_PGVECTOR_ONLINE: ${NOVEL_FORGE_PGVECTOR_ONLINE:-0}
+      NOVEL_FORGE_PGVECTOR_STRICT: ${NOVEL_FORGE_PGVECTOR_STRICT:-0}
+      NOVEL_FORGE_CLICKHOUSE_ONLINE: ${NOVEL_FORGE_CLICKHOUSE_ONLINE:-0}
+      NOVEL_FORGE_CLICKHOUSE_URL: ${NOVEL_FORGE_CLICKHOUSE_URL:-http://clickhouse:8123}
+      NOVEL_FORGE_CLICKHOUSE_DATABASE: ${NOVEL_FORGE_CLICKHOUSE_DATABASE:-novel_forge}
+      NOVEL_FORGE_CLICKHOUSE_USER: ${NOVEL_FORGE_CLICKHOUSE_USER:-novel_forge}
+      NOVEL_FORGE_CLICKHOUSE_PASSWORD: ${NOVEL_FORGE_CLICKHOUSE_PASSWORD:-novel_forge}
     command: ["python", "-m", "novel_forge.cli", "worker", "--root", "/runtime", "--loglevel", "INFO", "--concurrency", "2"]
     volumes:
       - ./.local/workspace:/runtime
@@ -136,4 +170,6 @@ volumes:
   redis-data:
   qdrant-data:
   minio-data:
+  clickhouse-data:
+  clickhouse-logs:
   neo4j-data:

@@ -37,13 +37,16 @@ FLOW_CONTEXT_PROFILES = {
     "decompose": "review",
     "convert": "review",
     "outline": "outline",
+    "chapter_plan": "chapter_outline",
     "chapter_outline": "chapter_outline",
+    "draft": "prose",
     "prose": "prose",
     "review": "review",
     "revision": "revision",
     "editor_patch": "revision",
     "recap": "recap",
     "publish": "publish",
+    "publish_gate": "publish",
     "feedback": "feedback",
     "feedback_backflow": "feedback",
 }
@@ -456,6 +459,7 @@ def build_flow_context_bundle(
 ) -> dict[str, Any]:
     target_file = resolve_path(storage.root, target_path)
     profile = context_profile or FLOW_CONTEXT_PROFILES.get(flow, "chapter_generation")
+    mkaos_flow = _mkaos_flow_for_context(flow)
     policy = dict(source_policy or {})
     policy.update({
         "source_chunk_raw_text_allowed": False,
@@ -483,12 +487,12 @@ def build_flow_context_bundle(
         )
         context_bundle = create_context_bundle(storage, context_plan["path"])
         bundle_file = resolve_path(storage.root, context_bundle["path"])
-    pack_policy = resolve_mkaos_pack_policy(flow, environment=environment)
+    pack_policy = resolve_mkaos_pack_policy(mkaos_flow, environment=environment)
     try:
         mkaos_pack = build_knowledge_pack(
             storage,
             {
-                "flow": _mkaos_flow_for_context(flow),
+                "flow": mkaos_flow,
                 "task_id": f"{flow}-{project_id or 'local'}-{chapter_id or 'project'}",
                 "project_id": project_id or "local-system",
                 "workspace_path": workspace_path,
@@ -496,7 +500,7 @@ def build_flow_context_bundle(
                 "platform": platform,
                 "chapter_id": chapter_id,
                 "current_goal": current_goal,
-                "knowledge_budget": {"max_core_knowledge": 3 if flow == "prose" else 8},
+                "knowledge_budget": {"max_core_knowledge": 3 if mkaos_flow == "prose" else 8},
                 "source_policy": policy,
                 "environment": environment,
                 "os_envelope": os_envelope or {},
@@ -507,7 +511,7 @@ def build_flow_context_bundle(
             raise ValueError(f"MKAOS pack build failed in production for {flow}: {exc}") from exc
         mkaos_pack = mkaos_pack_warning_fallback(
             storage,
-            flow=flow,
+            flow=mkaos_flow,
             project_id=project_id or "local-system",
             workspace_path=workspace_path,
             target_path=target_file,
@@ -523,7 +527,7 @@ def build_flow_context_bundle(
     _assert_flow_context_source_isolated(flow, content, mkaos_content)
     mkaos_pack = validate_mkaos_pack_result(
         storage,
-        flow=flow,
+        flow=mkaos_flow,
         mkaos_pack=mkaos_pack,
         project_id=project_id or "local-system",
         workspace_path=workspace_path,
@@ -539,7 +543,7 @@ def build_flow_context_bundle(
     knowledge_context_contract = build_knowledge_context_contract(
         context_bundle={"path": _display_path(storage.root, bundle_file), "asset": bundle_data},
         mkaos_pack=mkaos_pack,
-        flow=flow,
+        flow=mkaos_flow,
         source_policy=policy,
     )
     content.update(
@@ -548,6 +552,7 @@ def build_flow_context_bundle(
             "context_builder_version": "context-builder-v2-mkaos",
             "knowledge_context_contract": knowledge_context_contract,
             "task_type": flow,
+            "mkaos_flow": mkaos_flow,
             "target_asset_type": content.get("target_asset_type", ""),
             "target_asset_id": content.get("target_asset_id", ""),
             "mkaos_pack": mkaos_content,
@@ -582,6 +587,7 @@ def build_flow_context_bundle(
         {
             "context_builder_unified": True,
             "task_type": flow,
+            "mkaos_flow": mkaos_flow,
             "source_policy": policy,
             "mkaos_pack_id": str(mkaos_asset.get("id", "")),
             "mkaos_pack_path": str(mkaos_pack.get("path", "")),
@@ -613,7 +619,7 @@ def build_flow_context_bundle(
         path=_display_path(storage.root, bundle_file),
         project_id=project_id,
         workspace_path=workspace_path,
-        attributes={"flow": flow, "mkaos_pack_id": str(mkaos_asset.get("id", "")), "token_budget": token_budget},
+        attributes={"flow": flow, "mkaos_flow": mkaos_flow, "mkaos_pack_id": str(mkaos_asset.get("id", "")), "token_budget": token_budget},
     )
     updated_bundle = storage.read_json(bundle_file)
     return {
@@ -732,8 +738,20 @@ def require_knowledge_context_contract(contract: dict[str, Any], *, operation: s
 
 
 def _mkaos_flow_for_context(flow: str) -> str:
-    if flow in {"outline", "chapter_outline", "prose", "review"}:
-        return flow
+    normalized = str(flow or "").strip().lower().replace("-", "_")
+    aliases = {
+        "analysis": "review",
+        "decompose": "review",
+        "convert": "review",
+        "chapter_plan": "chapter_outline",
+        "draft": "prose",
+        "editor_patch": "revision",
+        "publish_gate": "publish",
+        "feedback_backflow": "feedback",
+    }
+    normalized = aliases.get(normalized, normalized)
+    if normalized in {"outline", "chapter_outline", "prose", "review", "revision", "recap", "publish", "feedback"}:
+        return normalized
     return "review"
 
 
@@ -748,7 +766,7 @@ def _assert_flow_context_source_isolated(flow: str, context_content: dict[str, A
     actual_context = str(context_content.get("actual_context") or "")
     if "source_chunk.raw_text" in actual_context:
         raise ValueError(f"{flow} context bundle actual_context mentions source_chunk.raw_text")
-    if flow in {"prose", "recap", "publish"} and '"raw_text"' in json.dumps(context_content, ensure_ascii=False):
+    if _mkaos_flow_for_context(flow) in {"prose", "review", "recap", "publish"} and '"raw_text"' in json.dumps(context_content, ensure_ascii=False):
         raise ValueError(f"{flow} context bundle must not include raw_text keys")
 
 

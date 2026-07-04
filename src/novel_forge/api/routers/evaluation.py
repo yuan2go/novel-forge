@@ -5,16 +5,24 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from novel_forge.api.routers.context import ProductRouterContext
+from novel_forge.api.routers.runtime_request import normalize_product_api_runtime_request
 from novel_forge.modules.evaluation_center import (
     compare_model_runs,
     create_benchmark_task_from_generation_run,
+    create_evaluation_case,
+    create_evaluation_dashboard_snapshot,
+    create_evaluation_gate,
+    create_evaluation_suite,
     create_model_routing_policy,
     create_model_benchmark_task,
     create_model_profile,
     create_prompt_regression_report,
     create_prompt_version,
+    evaluate_asset,
+    evaluation_dashboard,
     list_model_evaluation_assets,
     resolve_model_route,
+    run_evaluation_suite,
     run_model_benchmark_batch,
     run_model_benchmark,
 )
@@ -175,6 +183,128 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 candidate_version=request.candidate_version,
                 benchmark_runs=request.benchmark_runs,
             )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/evaluation/suites")
+    def suites(project_id: str | None = None, limit: int = Query(default=200, ge=1, le=1000)) -> list[dict[str, Any]]:
+        try:
+            return [
+                row
+                for row in list_model_evaluation_assets(LocalStorage(app_settings.root), project_id=project_id, limit=limit)
+                if row.get("type") == "evaluation_suite"
+            ]
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/evaluation/suite")
+    def suite_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return create_evaluation_suite(
+                LocalStorage(app_settings.root),
+                name=str(payload.get("name") or "Novel OS Quality Suite"),
+                target_asset_types=[str(item) for item in payload.get("target_asset_types", [])] if isinstance(payload.get("target_asset_types", []), list) else None,
+                metrics=[str(item) for item in payload.get("metrics", [])] if isinstance(payload.get("metrics", []), list) else None,
+                status=str(payload.get("status") or "active"),
+                project_id=str(payload.get("project_id") or ""),
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/evaluation/case")
+    def case_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return create_evaluation_case(
+                LocalStorage(app_settings.root),
+                suite_id=str(payload.get("suite_id") or "default-novel-os-quality"),
+                target_asset_path=str(payload.get("target_asset_path") or ""),
+                expected=payload.get("expected") if isinstance(payload.get("expected"), dict) else {},
+                status=str(payload.get("status") or "active"),
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/evaluation/run-suite")
+    def run_suite_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return run_evaluation_suite(
+                LocalStorage(app_settings.root),
+                suite_path=payload.get("suite_path") or None,
+                target_asset_paths=[str(item) for item in payload.get("target_asset_paths", [])] if isinstance(payload.get("target_asset_paths", []), list) else None,
+                project_id=str(payload.get("project_id") or ""),
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/evaluation/evaluate-asset")
+    def evaluate_asset_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            runtime_request = normalize_product_api_runtime_request(payload, operation="evaluation.evaluate_asset")
+            return evaluate_asset(
+                LocalStorage(app_settings.root),
+                str(payload.get("target_asset_path") or ""),
+                suite_id=str(payload.get("suite_id") or "default-novel-os-quality"),
+                project_id=str(payload.get("project_id") or ""),
+                create_issue_on_fail=bool(payload.get("create_issue_on_fail", False)),
+                human_annotations=payload.get("human_annotations") if isinstance(payload.get("human_annotations"), list) else None,
+                model_judge={
+                    **(payload.get("model_judge") if isinstance(payload.get("model_judge"), dict) else {}),
+                    "environment": runtime_request["environment"],
+                    "source_policy": runtime_request["source_policy"],
+                    "os_envelope": runtime_request["envelope"],
+                },
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/evaluation/evaluate-agent-run")
+    def evaluate_agent_run_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        payload = {**payload, "suite_id": payload.get("suite_id") or "agent-run-quality"}
+        return evaluate_asset_endpoint(payload)
+
+    @router.post("/product/evaluation/evaluate-workflow-run")
+    def evaluate_workflow_run_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        payload = {**payload, "suite_id": payload.get("suite_id") or "workflow-run-quality"}
+        return evaluate_asset_endpoint(payload)
+
+    @router.post("/product/evaluation/evaluate-context")
+    def evaluate_context_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        payload = {**payload, "suite_id": payload.get("suite_id") or "context-quality"}
+        return evaluate_asset_endpoint(payload)
+
+    @router.post("/product/evaluation/evaluate-longform")
+    def evaluate_longform_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        payload = {**payload, "suite_id": payload.get("suite_id") or "longform-quality"}
+        return evaluate_asset_endpoint(payload)
+
+    @router.post("/product/evaluation/evaluate-platform-fit")
+    def evaluate_platform_fit_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        payload = {**payload, "suite_id": payload.get("suite_id") or "platform-fit"}
+        return evaluate_asset_endpoint(payload)
+
+    @router.post("/product/evaluation/evaluation-gate")
+    def evaluation_gate_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return create_evaluation_gate(
+                LocalStorage(app_settings.root),
+                str(payload.get("target_asset_path") or ""),
+                minimum_score=float(payload.get("minimum_score", 0.72) or 0.72),
+                project_id=str(payload.get("project_id") or ""),
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/evaluation/regression-report")
+    def evaluation_regression_report_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return create_evaluation_dashboard_snapshot(LocalStorage(app_settings.root), project_id=str(payload.get("project_id") or ""))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/evaluation/dashboard")
+    def evaluation_dashboard_endpoint(project_id: str | None = None) -> dict[str, Any]:
+        try:
+            return evaluation_dashboard(LocalStorage(app_settings.root), project_id=project_id or "")
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

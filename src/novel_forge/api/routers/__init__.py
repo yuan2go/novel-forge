@@ -6,11 +6,14 @@ from fastapi import APIRouter
 
 from novel_forge.api.routers import (
     agents,
+    agent_registry,
     analysis,
     assets,
     audit,
+    audit_log,
     batch,
     canon_graph,
+    clickhouse_analytics,
     context_builder,
     continuity,
     drafts,
@@ -49,6 +52,7 @@ def product_routers(ctx: ProductRouterContext) -> Iterable[APIRouter]:
         tasks.create_router(ctx),
         workflow_nodes.create_router(ctx),
         agents.create_router(ctx),
+        agent_registry.create_router(ctx),
         assets.create_router(ctx),
         libraries.create_router(ctx),
         manuscript.create_router(ctx),
@@ -68,6 +72,7 @@ def product_routers(ctx: ProductRouterContext) -> Iterable[APIRouter]:
         mkaos.create_router(ctx),
         runtime.create_router(ctx),
         os_capabilities.create_router(ctx),
+        clickhouse_analytics.create_router(ctx),
         platform_strategy.create_router(ctx),
         settings.create_router(ctx),
         production_chain.create_router(ctx),
@@ -79,4 +84,5 @@ def product_routers(ctx: ProductRouterContext) -> Iterable[APIRouter]:
         drafts.create_router(ctx),
         reviews.create_router(ctx),
         audit.create_router(ctx),
+        audit_log.create_router(ctx),
     ]

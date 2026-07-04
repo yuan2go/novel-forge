@@ -24,6 +24,7 @@ from novel_forge.modules.continuity_graph import (
     create_continuity_graph_snapshot,
 )
 from novel_forge.modules.editor import apply_editor_patch, create_draft_diff_report, create_editor_patch
+from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding
 from novel_forge.modules.evaluation_center import (
     compare_model_runs,
     create_benchmark_task_from_generation_run,
@@ -36,7 +37,7 @@ from novel_forge.modules.evaluation_center import (
 )
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.modules.production_chain import create_generation_run
-from novel_forge.schemas import ChapterPlan, CharacterCard, ContextBundle, ContinuityBible, DraftChapter, ForeshadowingThread, WorldBible
+from novel_forge.schemas import ChapterPlan, CharacterCard, ContextBundle, ContinuityBible, DraftChapter, EditorPatch, ForeshadowingThread, WorldBible
 from novel_forge.storage.local import LocalStorage
 
 
@@ -133,6 +134,68 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
             selected = apply_editor_patch(storage, paragraph_patch["path"], operation_ids=["op-1"])
             self.assertEqual(selected["applied_operations"], ["op-1"])
             self.assertIn("第一段", storage.read_json(paragraph_draft)["content"]["text"])
+
+    def test_production_apply_editor_patch_requires_upstream_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(title="Draft", content={"chapter": 1, "text": "旧文本", "copyright_boundary": "fixture"}, metadata={"project_id": "editor-prod-p"}),
+            )
+            patch_path = storage.write_asset(
+                "drafts",
+                EditorPatch(
+                    title="Manual patch",
+                    source=storage.read_asset(draft_path).id,
+                    content={
+                        "target_draft_id": storage.read_asset(draft_path).id,
+                        "target_draft_path": str(draft_path.relative_to(storage.root)),
+                        "operations": [{"kind": "replace_text", "before": "旧文本", "after": "新文本"}],
+                        "status": "proposed",
+                    },
+                    metadata={"project_id": "editor-prod-p"},
+                ),
+            )
+
+            with self.assertRaisesRegex(ValueError, "knowledge context contract required"):
+                apply_editor_patch(
+                    storage,
+                    patch_path,
+                    environment="production",
+                    os_envelope=_editor_envelope("editor-prod-p", "draft_chapter", trace_id="trace-editor-apply-missing-contract"),
+                )
+
+    def test_production_apply_editor_patch_accepts_create_patch_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "local-system"
+            _revision_knowledge(storage, project_id)
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(title="Draft", content={"chapter": 1, "text": "旧文本", "copyright_boundary": "fixture"}, metadata={"project_id": project_id}),
+            )
+            patch = create_editor_patch(
+                storage,
+                draft_path,
+                operations=[{"kind": "replace_text", "before": "旧文本", "after": "新文本", "instruction": "tighten wording"}],
+                environment="production",
+                os_envelope=_editor_envelope(project_id, "editor_patch", trace_id="trace-editor-create"),
+            )
+
+            applied = apply_editor_patch(
+                storage,
+                patch["path"],
+                environment="production",
+                os_envelope=_editor_envelope(project_id, "draft_chapter", trace_id="trace-editor-apply"),
+            )
+            version = storage.read_json(storage.root / applied["draft_version"]["path"])
+
+            self.assertTrue(applied["applied"])
+            self.assertEqual(storage.read_json(draft_path)["content"]["text"], "新文本")
+            self.assertEqual(version["metadata"]["apply_editor_patch_policy"], "production_enforced")
+            self.assertEqual(version["metadata"]["os_envelope"]["status"], "enforced")
 
     def test_continuity_graph_snapshot_and_chapter_report(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -387,6 +450,31 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
                     os.environ["NOVEL_FORGE_ROOT"] = previous_root
                 if previous_provider is not None:
                     os.environ["NOVEL_FORGE_MODEL_PROVIDER"] = previous_provider
+
+
+def _revision_knowledge(storage: LocalStorage, project_id: str) -> None:
+    card = create_knowledge_card(
+        storage,
+        {
+            "project_id": project_id,
+            "concept_name": "Revision contract",
+            "core_explanation": "editor patch production apply must inherit the upstream MKAOS context",
+        },
+    )
+    create_usage_binding(storage, card["asset"]["id"], {"flow": "revision", "usage_type": "required", "input_role": "editor_patch", "priority": 10})
+
+
+def _editor_envelope(project_id: str, asset_type: str, *, trace_id: str) -> dict:
+    return {
+        "project_id": project_id,
+        "task_type": "revision",
+        "asset_type": asset_type,
+        "actor_type": "unit_test",
+        "source": "tests.unit.test_agent_editor_continuity_evaluation",
+        "trace_id": trace_id,
+        "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": True},
+        "environment": "production",
+    }
 
 
 if __name__ == "__main__":

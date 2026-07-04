@@ -50,6 +50,21 @@ CORE_MKAOS_CONTEXT_OPERATIONS = {
     "build-context-bundle": "required",
 }
 
+MKAOS_OPERATION_ALIASES = {
+    "analysis": "run-analysis",
+    "decompose": "decompose",
+    "convert": "convert-analysis-report",
+    "outline": "generate-outline",
+    "chapter_plan": "generate-chapter-plan",
+    "draft": "draft",
+    "review": "review",
+    "revision": "revise",
+    "editor_patch": "create-editor-patch",
+    "recap": "run-longform-recap",
+    "publish_gate": "create-publish-gate-report",
+    "feedback_backflow": "create-feedback-backflow-plan",
+}
+
 
 @dataclass(frozen=True)
 class AgentOperationSpec:
@@ -186,6 +201,9 @@ class AgentOperationRegistry:
         evidence = run_content.get("evidence", {}) if isinstance(run_content.get("evidence", {}), dict) else {}
         canonical = _canonical_operation(str(run_content.get("operation", queue_content.get("operation", ""))))
         environment = _environment_from_evidence(evidence)
+        spec = self.specs.get(canonical)
+        registry_resolution = _resolve_agent_registry_for_scheduler(storage, spec, canonical, environment=environment)
+        _attach_agent_registry_resolution(storage, agent_run, registry_resolution)
         expected_outputs = _dedupe(
             [
                 *_string_list(queue_content.get("expected_output_assets", [])),
@@ -231,7 +249,6 @@ class AgentOperationRegistry:
                 },
             }
         runner = self.runners.get(canonical)
-        spec = self.specs.get(canonical)
         if runner:
             checkpoint_resume = _resume_from_checkpoint(storage, queue_item, agent_run, canonical)
             if checkpoint_resume:
@@ -533,15 +550,44 @@ def mkaos_agent_operation_coverage_report() -> dict[str, Any]:
                 ],
             }
         )
+    operation_aliases: list[dict[str, Any]] = []
+    for alias, operation in MKAOS_OPERATION_ALIASES.items():
+        mode = CORE_MKAOS_CONTEXT_OPERATIONS.get(operation, "")
+        contract = by_operation.get(operation, {})
+        operation_aliases.append(
+            {
+                "operation": alias,
+                "canonical_operation": operation,
+                "status": "mkaos_required" if mode == "required" else ("compat" if mode == "compat" else "not_covered"),
+                "registered": bool(contract),
+                "mkaos_context_required": mode == "required",
+                "compat_allowed": mode == "compat",
+                "production_bypass_forbidden": mode == "required",
+                "context_contract_fields": [
+                    "context_bundle_id",
+                    "knowledge_pack_id",
+                    "source_policy",
+                    "source_isolation",
+                    "mkaos_flow",
+                    "selected_knowledge_ids",
+                    "review_rules",
+                    "risk_warnings",
+                    "selector_policy_version",
+                ],
+            }
+        )
     return {
         "summary": {
             "operation_count": len(operations),
+            "operation_alias_count": len(operation_aliases),
             "registered_count": sum(1 for item in operations if item["registered"]),
+            "registered_alias_count": sum(1 for item in operation_aliases if item["registered"]),
             "required_count": sum(1 for item in operations if item["mkaos_context_required"]),
             "compat_count": sum(1 for item in operations if item["compat_allowed"]),
             "production_bypass_forbidden_count": sum(1 for item in operations if item["production_bypass_forbidden"]),
         },
         "operations": operations,
+        "operation_aliases": operation_aliases,
         "bypass_policy": "production/strict/operating_system operations cannot bypass Knowledge Context Contract; compat is explicit only",
     }
 
@@ -1537,7 +1583,7 @@ def _operation_specs() -> list[AgentOperationSpec]:
         ),
         AgentOperationSpec(
             operation="convert-analysis-report",
-            aliases=("analysis-conversion",),
+            aliases=("analysis-conversion", "convert"),
             runner=_run_analysis_conversion,
             agent_key="analysis",
             input_types=("common_novel_analysis_report", "web_fiction_business_analysis_report", "published_fiction_analysis_report", "classic_literary_analysis_report"),
@@ -1689,7 +1735,7 @@ def _operation_specs() -> list[AgentOperationSpec]:
         ),
         AgentOperationSpec(
             operation="create-publish-gate-report",
-            aliases=("publish-gate-report",),
+            aliases=("publish-gate-report", "publish-gate"),
             runner=_run_publish_gate_report,
             agent_key="publishing",
             input_types=("draft_chapter", "draft_version"),
@@ -2021,6 +2067,9 @@ def _run_apply_editor_patch(storage: LocalStorage, queue_item: dict[str, Any], a
         change_summary=str(evidence.get("change_summary", "agent scheduler editor patch")),
         operation_ids=_string_list(evidence.get("operation_ids", [])),
         operation_indexes=[int(item) for item in evidence.get("operation_indexes", [])] if isinstance(evidence.get("operation_indexes", []), list) else [],
+        environment=str(evidence.get("environment") or ""),
+        os_envelope=_envelope_from_evidence(evidence),
+        source_policy=evidence.get("source_policy") if isinstance(evidence.get("source_policy"), dict) else None,
     )
 
 
@@ -2632,6 +2681,68 @@ def _enforce_operation_knowledge_context(operation: str, contract: dict[str, Any
     ]
     if missing:
         raise RuntimeError(f"agent operation {operation} knowledge context contract missing: {', '.join(missing)}")
+
+
+def _resolve_agent_registry_for_scheduler(storage: LocalStorage, spec: AgentOperationSpec | None, operation: str, *, environment: str) -> dict[str, Any]:
+    if not spec:
+        return {}
+    try:
+        from novel_forge.modules.agent_registry import resolve_agent_registry_entry
+
+        return resolve_agent_registry_entry(
+            storage,
+            agent_id=spec.agent_key,
+            operation=operation,
+            environment=environment,
+            require_schedulable=True,
+            auto_sync=True,
+        )
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        raise RuntimeError(f"agent registry resolution failed for {spec.agent_key}/{operation}: {exc}") from exc
+
+
+def _attach_agent_registry_resolution(storage: LocalStorage, agent_run: dict[str, Any], resolution: dict[str, Any]) -> None:
+    if not resolution:
+        return
+    run_id = str((agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}).get("run_id", ""))
+    if not run_id:
+        return
+    try:
+        path = _resolve_agent_run(storage, run_id)
+        data = storage.read_json(path)
+    except Exception:
+        return
+    if not isinstance(data, dict) or data.get("type") != "agent_run":
+        return
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    registry = {
+        "agent_id": str(resolution.get("agent_id", "")),
+        "agent_registry_entry_id": str(resolution.get("agent_registry_entry_id", "")),
+        "agent_registry_entry_path": str(resolution.get("agent_registry_entry_path", "")),
+        "agent_registry_version": str(resolution.get("agent_registry_version", "")),
+        "lifecycle_state": str(resolution.get("lifecycle_state", "")),
+        "scheduler_enabled": bool(resolution.get("scheduler_enabled", False)),
+    }
+    content["agent_registry"] = registry
+    metadata.update(
+        {
+            "agent_registry_entry_id": registry["agent_registry_entry_id"],
+            "agent_registry_entry_path": registry["agent_registry_entry_path"],
+            "agent_registry_version": registry["agent_registry_version"],
+            "agent_lifecycle_state": registry["lifecycle_state"],
+            "agent_scheduler_enabled": registry["scheduler_enabled"],
+        }
+    )
+    data["content"] = content
+    data["metadata"] = metadata
+    refs = [str(item) for item in data.get("references", []) if str(item).strip()]
+    refs.extend([registry["agent_registry_entry_id"], registry["agent_registry_entry_path"]])
+    data["references"] = filter_project_safe_references(storage, str(metadata.get("project_id", "")), _dedupe(refs))
+    data["updated_at"] = utc_now()
+    storage.write_json(path, data)
 
 
 def _paths_from_result(storage: LocalStorage, value: Any) -> list[str]:

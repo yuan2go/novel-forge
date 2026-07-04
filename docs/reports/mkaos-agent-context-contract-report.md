@@ -21,7 +21,21 @@ Covered operations:
 | editor_patch | required | Context Builder | `src/novel_forge/modules/editor/service.py` |
 | recap | required | Context Builder | `src/novel_forge/modules/longform_recap/service.py` |
 | publish_gate | required | Context Builder | `src/novel_forge/modules/audit/service.py` |
-| feedback_backflow | required | Context Builder | `src/novel_forge/modules/feedback.py`, `src/novel_forge/modules/feedback_backflow/service.py` |
+| feedback_backflow | required | Context Builder | `src/novel_forge/modules/feedback/service.py`, `src/novel_forge/modules/feedback_backflow/service.py` |
+
+Operation names are normalized before MKAOS pack construction, so scheduler-facing names and service-facing flow names cannot drift:
+
+| Operation Flow | Standard MKAOS Flow |
+| -- | -- |
+| `analysis`, `decompose`, `convert` | `review` |
+| `outline` | `outline` |
+| `chapter_plan`, `chapter_outline` | `chapter_outline` |
+| `draft`, `prose` | `prose` |
+| `review` | `review` |
+| `revision`, `editor_patch` | `revision` |
+| `recap` | `recap` |
+| `publish`, `publish_gate` | `publish` |
+| `feedback`, `feedback_backflow` | `feedback` |
 
 ## Knowledge Context Contract
 
@@ -45,9 +59,11 @@ The contract version is `knowledge-context-contract-v1`.
 
 - `ContextBuilder` always adds an MKAOS `knowledge_pack` and contract to flow context bundles.
 - `AgentExecutionContext` writes `context_bundle_id`, `knowledge_pack_id`, `mkaos_flow`, selected knowledge ids, and the full contract into AgentRun metadata.
-- `AgentOperationRegistry` exposes operation-level MKAOS coverage and forbids production bypass for required operations.
+- `AgentOperationRegistry` exposes both canonical operation coverage and user-facing operation alias coverage, and forbids production bypass for required operations.
 - Production `output_reuse` and `local_service` execution paths fail closed if a required operation lacks the contract.
 - `apply-editor-patch` remains `compat` because it can consume an already-built context bundle from the revision execution path.
+- Direct real feedback backflow service calls now validate the contract in production, matching the Agent Scheduler enforcement path.
+- MKAOS pack output contracts now cover `revision`, `recap`, `publish`, and `feedback`, so those flows build real packs instead of falling back to `review`.
 
 ## Source Isolation
 
@@ -61,9 +77,10 @@ The wider contract propagation increased reference counts on run and context ass
 
 | Command | Result |
 | -- | -- |
-| `python3 -m compileall -q src/novel_forge/storage src/novel_forge/modules/context_builder src/novel_forge/modules/agent_runs src/novel_forge/modules/agent_scheduler` | OK |
-| `python3 -m unittest tests.unit.test_agent_operation_mkaos_coverage tests.unit.test_mkaos_agent_context_contract tests.unit.test_context_builder_mkaos_flow tests.unit.test_mkaos_fail_closed_policy tests.unit.test_publish_feedback_loop tests.unit.test_longform_recap_agent tests.unit.test_agent_scheduler tests.unit.test_mkaos` | 37 tests OK, 1 existing Starlette/httpx deprecation warning |
-| `python3 -m unittest tests.integration.test_pipeline` | 1 test OK, 386.830s |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_mkaos_agent_context_contract tests.unit.test_agent_operation_mkaos_coverage` | 6 tests OK |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_context_builder_mkaos_flow tests.unit.test_mkaos_fail_closed_policy tests.unit.test_publish_feedback_loop tests.unit.test_longform_recap_agent tests.unit.test_agent_scheduler tests.unit.test_mkaos` | 33 tests OK, 1 existing Starlette/httpx deprecation warning |
+| `PYTHONPATH=src python3 -m unittest tests.integration.test_novel_os_long_chain_smoke` | 1 test OK |
+| `PYTHONPATH=src python3 -m compileall -q src/novel_forge/modules/context_builder src/novel_forge/modules/agent_scheduler src/novel_forge/modules/mkaos src/novel_forge/modules/feedback tests/unit/test_mkaos_agent_context_contract.py tests/unit/test_agent_operation_mkaos_coverage.py tests/unit/test_longform_recap_agent.py` | OK |
 
 ## Remaining Risk
 

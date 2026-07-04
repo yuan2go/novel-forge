@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.audit import create_publish_gate_report, create_release_package
 from novel_forge.modules.feedback import create_reader_simulation_report, process_publish_feedback_loop, process_real_feedback_backflow
-from novel_forge.modules.mkaos import create_knowledge_card, record_usage_event
+from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding, record_usage_event
 from novel_forge.schemas import DraftChapter, ProjectWorkspaceState, ReaderFeedback, SourceChunk
 from novel_forge.storage.local import LocalStorage
 
@@ -55,6 +55,45 @@ class PublishFeedbackLoopTests(unittest.TestCase):
                 )
 
             self.assertEqual(len(storage.list_json("contexts")), before_contexts)
+
+    def test_publish_gate_uses_production_environment_from_envelope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = _workspace(storage, "publish-env-envelope-p")
+            draft_path = _draft(storage, workspace, project_id="publish-env-envelope-p")
+            _publish_knowledge(storage, "publish-env-envelope-p")
+
+            gate_path = create_publish_gate_report(
+                storage,
+                draft_path,
+                workspace_path=str(workspace.relative_to(storage.root)),
+                envelope=_production_envelope("publish-env-envelope-p", "publish_gate_report", trace_id="trace-publish-env-envelope"),
+            )
+            gate = storage.read_asset(gate_path)
+
+            self.assertEqual(gate.metadata["os_envelope"]["environment"], "production")
+            self.assertEqual(gate.metadata["source_policy"]["empty_pack_policy"], "block")
+            self.assertFalse(gate.metadata["source_policy"]["compat_warning_allowed"])
+
+    def test_production_release_package_blocks_non_ready_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = _workspace(storage, "release-prod-block-p")
+            draft_path = _draft(storage, workspace, project_id="release-prod-block-p")
+            gate_path = create_publish_gate_report(storage, draft_path, workspace_path=str(workspace.relative_to(storage.root)))
+            gate = storage.read_asset(gate_path)
+
+            self.assertNotEqual(gate.content["decision"], "ready")
+            with self.assertRaisesRegex(ValueError, "publish gate decision"):
+                create_release_package(
+                    storage,
+                    draft_path,
+                    workspace_path=str(workspace.relative_to(storage.root)),
+                    publish_gate_path=gate_path,
+                    envelope=_production_envelope("release-prod-block-p", "release_package", trace_id="trace-release-prod-block"),
+                )
 
     def test_release_package_blocks_mkaos_risk_and_excludes_raw_text(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -256,6 +295,32 @@ def _draft(storage: LocalStorage, workspace_path: Path, *, project_id: str) -> P
             references=[str(workspace_path.relative_to(storage.root))],
         ),
     )
+
+
+def _publish_knowledge(storage: LocalStorage, project_id: str) -> None:
+    card = create_knowledge_card(
+        storage,
+        {
+            "concept_name": "Publish governance",
+            "core_explanation": "production publish must carry a MKAOS pack",
+            "project_id": project_id,
+            "weight": 1.0,
+        },
+    )
+    create_usage_binding(storage, card["asset"]["id"], {"flow": "publish", "usage_type": "required", "input_role": "publish_gate", "priority": 10})
+
+
+def _production_envelope(project_id: str, asset_type: str, *, trace_id: str) -> dict:
+    return {
+        "project_id": project_id,
+        "task_type": "publish",
+        "asset_type": asset_type,
+        "actor_type": "unit_test",
+        "source": "tests.unit.test_publish_feedback_loop",
+        "trace_id": trace_id,
+        "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": True},
+        "environment": "production",
+    }
 
 
 if __name__ == "__main__":

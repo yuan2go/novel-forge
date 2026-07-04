@@ -38,7 +38,9 @@ export type NavItemKey =
   | "editor_chief_console"
   | "workflow_runtime"
   | "agent_center"
+  | "agent_registry"
   | "agent_dispatch"
+  | "audit_log"
   | "canon_console"
   | "character_console"
   | "arc_console"
@@ -48,6 +50,7 @@ export type NavItemKey =
   | "loop_runs"
   | "novel_kg_workbench"
   | "trace_timeline"
+  | "retrieval_status"
   | "cost_dashboard"
   | "invalidation_map"
   | "review_rework_board"
@@ -81,6 +84,7 @@ export type NavItemKey =
   | "production_control"
   | "change_impact"
   | "model_evaluation"
+  | "analytics_dashboard"
   | "data_statistics"
   | "settings_center"
   | "task_center"
@@ -118,7 +122,9 @@ export const navGroups: NavGroup[] = [
       { key: "editor_chief_console", label: "总编控制台", description: "全书健康、主线、人物、伏笔、疲劳和发布判断", href: "/editor-chief", icon: <BookOpenCheck size={17} /> },
       { key: "workflow_runtime", label: "Workflow Runtime", description: "DAG、ready queue 和 resume 控制台", href: "/workflow-runtime", icon: <Workflow size={17} /> },
       { key: "agent_center", label: "Agent Center", description: "AgentTask、Loop、Issue 和运行证据", href: "/agent-center", icon: <ListChecks size={17} /> },
+      { key: "agent_registry", label: "Agent Registry", description: "Agent 元数据、生命周期和调度资格", href: "/agent-registry", icon: <ListChecks size={17} /> },
       { key: "agent_dispatch", label: "Agent Dispatch", description: "Agent queue、lease、recover 和 contract", href: "/agent-dispatch", icon: <ListChecks size={17} /> },
+      { key: "audit_log", label: "Audit Log", description: "治理级 audit trail 和证据导出", href: "/audit-log", icon: <FileSearch size={17} /> },
       { key: "canon_console", label: "Canon Console", description: "正典、事实账本和设定规则", href: "/canon-console", icon: <BookOpenCheck size={17} /> },
       { key: "character_console", label: "Character Console", description: "人物卡和人物状态账本", href: "/character-console", icon: <BookMarked size={17} /> },
       { key: "arc_console", label: "Arc Console", description: "长篇主线、阶段弧线和章节状态", href: "/arc-console", icon: <GitPullRequest size={17} /> },
@@ -128,6 +134,7 @@ export const navGroups: NavGroup[] = [
       { key: "longform_recap", label: "Longform Recap", description: "长篇复盘报告和治理写回", href: "/longform-recap", icon: <BookOpenCheck size={17} /> },
       { key: "loop_runs", label: "Loop Runs", description: "LoopRun、step、checkpoint 和 report", href: "/loop-runs", icon: <Route size={17} /> },
       { key: "trace_timeline", label: "Trace Timeline", description: "统一 trace/span 时间线", href: "/trace-timeline", icon: <Route size={17} /> },
+      { key: "retrieval_status", label: "Retrieval / pgvector", description: "pgvector PoC、source isolation 和 dirty index", href: "/retrieval", icon: <Database size={17} /> },
       { key: "cost_dashboard", label: "Cost Dashboard", description: "成本账本、模型调用和预算告警", href: "/cost-dashboard", icon: <CreditCard size={17} /> },
       { key: "invalidation_map", label: "Invalidation Map", description: "变更影响、KG dirty 和下游失效", href: "/invalidation", icon: <GitPullRequest size={17} /> },
       { key: "review_rework_board", label: "Review Rework", description: "审稿问题到发布门禁闭环", href: "/review-rework", icon: <ShieldCheck size={17} /> },
@@ -185,6 +192,7 @@ export const navGroups: NavGroup[] = [
       { key: "production_control", label: "生产总控", description: "运行实体观测", href: "/control", icon: <Activity size={17} /> },
       { key: "change_impact", label: "变更影响", description: "长篇变更影响分析", href: "/impact", icon: <GitPullRequest size={17} /> },
       { key: "model_evaluation", label: "模型评测", description: "Benchmark 和模型路由", href: "/evaluation", icon: <SlidersHorizontal size={17} /> },
+      { key: "analytics_dashboard", label: "Analytics", description: "ClickHouse optional OLAP 离线投影", href: "/analytics", icon: <BarChart3 size={17} /> },
       { key: "data_statistics", label: "数据统计", description: "产能、质量、成本趋势", href: "/statistics", icon: <BarChart3 size={17} /> },
       { key: "settings_center", label: "设置中心", description: "本地生产配置", href: "/settings", icon: <Settings size={17} /> },
       { key: "task_center", label: "任务中心", description: "任务、timeline 和恢复", href: "/tasks", icon: <ListChecks size={17} /> },

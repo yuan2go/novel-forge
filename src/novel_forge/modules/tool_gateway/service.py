@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.modules.audit_log import record_audit_event
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.runtime_ledger import record_trace_span
 from novel_forge.schemas import MCPServerRegistry, ToolDefinition, ToolInvocation, ToolPermissionPolicy, validate_common_fields
@@ -471,6 +472,18 @@ def _record_invocation(
         references=filter_project_safe_references(storage, project_id, _collect_paths(input_payload, output)),
     )
     written = _write(storage, asset)
+    _record_tool_audit(
+        storage,
+        tool_name=tool_name,
+        operation=operation,
+        agent_type=agent_type,
+        project_id=project_id,
+        trace=trace_payload,
+        status=content["status"],
+        input_refs=_collect_paths(input_payload),
+        output_refs=_collect_paths(output),
+        evidence_refs=[written["path"]],
+    )
     if trace_payload.get("trace_id"):
         record_trace_span(
             storage,
@@ -493,6 +506,40 @@ def _find_tool(storage: LocalStorage, tool_name: str) -> dict[str, Any] | None:
         if row.get("type") == "tool_definition" and str(content.get("name", "")) == tool_name and content.get("status") == "active":
             return row
     return None
+
+
+def _record_tool_audit(
+    storage: LocalStorage,
+    *,
+    tool_name: str,
+    operation: str,
+    agent_type: str,
+    project_id: str,
+    trace: dict[str, Any],
+    status: str,
+    input_refs: list[str],
+    output_refs: list[str],
+    evidence_refs: list[str],
+) -> None:
+    try:
+        record_audit_event(
+            storage,
+            event_type="tool_gateway",
+            action="tool_invoked",
+            actor_type="agent" if agent_type else "system",
+            actor_id=agent_type,
+            target={"tool_name": tool_name, "operation": operation},
+            project_id=project_id,
+            trace_id=str(trace.get("trace_id") or ""),
+            input_refs=input_refs,
+            output_refs=output_refs,
+            evidence_refs=evidence_refs,
+            status="succeeded" if status == "succeeded" else status,
+            blocking=status in {"blocked", "failed"},
+            metadata={"tool_name": tool_name, "operation": operation},
+        )
+    except Exception:
+        pass
 
 
 def _builtin_tool_definition(tool_name: str) -> dict[str, Any] | None:

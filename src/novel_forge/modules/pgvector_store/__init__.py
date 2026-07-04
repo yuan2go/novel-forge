@@ -5,6 +5,10 @@ from novel_forge.modules.pgvector_store.service import (
     migrate_pgvector_online,
     pgvector_capabilities,
     pgvector_operations_plan,
+    pgvector_online_e2e_smoke,
+    pgvector_qdrant_comparison_report,
+    rebuild_dirty_index,
+    verify_pgvector_migration,
 )
 
 __all__ = [
@@ -14,4 +18,8 @@ __all__ = [
     "migrate_pgvector_online",
     "pgvector_capabilities",
     "pgvector_operations_plan",
+    "pgvector_online_e2e_smoke",
+    "pgvector_qdrant_comparison_report",
+    "rebuild_dirty_index",
+    "verify_pgvector_migration",
 ]

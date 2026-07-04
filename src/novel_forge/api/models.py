@@ -573,6 +573,9 @@ class EditorPatchRequest(BaseModel):
     instructions: str = ""
     operations: list[dict[str, Any]] = Field(default_factory=list)
     workspace_path: str | None = None
+    environment: str = ""
+    os_envelope: dict[str, Any] = Field(default_factory=dict)
+    source_policy: dict[str, Any] = Field(default_factory=dict)
 
 
 class EditorPatchApplyRequest(BaseModel):
@@ -581,6 +584,9 @@ class EditorPatchApplyRequest(BaseModel):
     change_summary: str = "editor patch applied"
     operation_ids: list[str] = Field(default_factory=list)
     operation_indexes: list[int] = Field(default_factory=list)
+    environment: str = ""
+    os_envelope: dict[str, Any] = Field(default_factory=dict)
+    source_policy: dict[str, Any] = Field(default_factory=dict)
 
 
 class DraftDiffReportRequest(BaseModel):

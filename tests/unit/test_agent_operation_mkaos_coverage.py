@@ -42,8 +42,11 @@ class AgentOperationMkaosCoverageTests(unittest.TestCase):
     def test_operation_coverage_report_classifies_required_and_compat_operations(self):
         report = mkaos_agent_operation_coverage_report()
         rows = {row["operation"]: row for row in report["operations"]}
+        aliases = {row["operation"]: row for row in report["operation_aliases"]}
 
         self.assertGreaterEqual(report["summary"]["registered_count"], 14)
+        self.assertEqual(report["summary"]["operation_alias_count"], 12)
+        self.assertEqual(report["summary"]["registered_alias_count"], 12)
         self.assertEqual(rows["draft"]["status"], "mkaos_required")
         self.assertEqual(rows["review"]["status"], "mkaos_required")
         self.assertEqual(rows["create-publish-gate-report"]["status"], "mkaos_required")
@@ -51,6 +54,40 @@ class AgentOperationMkaosCoverageTests(unittest.TestCase):
         self.assertEqual(rows["apply-editor-patch"]["status"], "compat")
         self.assertTrue(rows["draft"]["production_bypass_forbidden"])
         self.assertFalse(rows["apply-editor-patch"]["production_bypass_forbidden"])
+        self.assertEqual(aliases["analysis"]["canonical_operation"], "run-analysis")
+        self.assertEqual(aliases["convert"]["canonical_operation"], "convert-analysis-report")
+        self.assertEqual(aliases["publish_gate"]["canonical_operation"], "create-publish-gate-report")
+        self.assertEqual(aliases["feedback_backflow"]["canonical_operation"], "create-feedback-backflow-plan")
+        for operation in [
+            "analysis",
+            "decompose",
+            "convert",
+            "outline",
+            "chapter_plan",
+            "draft",
+            "review",
+            "revision",
+            "editor_patch",
+            "recap",
+            "publish_gate",
+            "feedback_backflow",
+        ]:
+            with self.subTest(alias=operation):
+                self.assertEqual(aliases[operation]["status"], "mkaos_required")
+                self.assertTrue(aliases[operation]["production_bypass_forbidden"])
+
+    def test_user_facing_operation_aliases_resolve_in_registry(self):
+        registry = AgentOperationRegistry()
+        cases = {
+            "convert": "convert-analysis-report",
+            "publish_gate": "create-publish-gate-report",
+            "feedback_backflow": "create-feedback-backflow-plan",
+            "editor_patch": "create-editor-patch",
+        }
+        for requested, canonical in cases.items():
+            with self.subTest(requested=requested):
+                spec = registry.specs[requested.replace("_", "-")]
+                self.assertEqual(spec.operation, canonical)
 
     def test_scheduler_production_output_reuse_requires_knowledge_context_contract(self):
         with tempfile.TemporaryDirectory() as tmp:

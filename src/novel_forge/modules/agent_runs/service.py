@@ -8,6 +8,7 @@ from typing import Any
 from novel_forge.agents import agent_runtime_profile, enforce_agent_action, runtime_profile_for_skill
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.model_adapters.runtime import evaluate_provider_runtime_guard, normalize_provider_usage, provider_runtime_guard_from_context
+from novel_forge.modules.audit_log import record_audit_event
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import check_budget_policy, record_cost_ledger, record_model_call_log, record_trace_span
@@ -331,6 +332,7 @@ def start_agent_run(
     run_id = make_id("agent_run", f"{profile.get('agent', agent_key)}-{operation}")
     evidence_payload = evidence or {}
     knowledge_context = _knowledge_context_from_evidence(evidence_payload)
+    agent_registry = _agent_registry_for_run(storage, agent_key, operation, evidence_payload)
     trace_payload = _agent_trace_payload(evidence_payload, fallback_trace_id=run_id, span_name=f"agent-run-{operation}")
     first_input = _first_existing_asset(storage, input_rows)
     metadata = {
@@ -342,6 +344,7 @@ def start_agent_run(
         "model_name": model_name,
         "prompt_version": prompt_version,
         **_knowledge_context_metadata(knowledge_context),
+        **agent_registry,
     }
     if first_input:
         metadata["run_metadata"] = run_metadata(operation, first_input, provider=model_provider, model=model_name, prompt_version=prompt_version)
@@ -386,6 +389,7 @@ def start_agent_run(
             "checkpoint": {},
             "evidence": evidence_payload,
             **_knowledge_context_content(knowledge_context),
+            "agent_registry": agent_registry,
             "trace": trace_payload,
             "human_gate": human_gate or {"required": status == "waiting_human", "status": "waiting" if status == "waiting_human" else "not_required"},
             "retry_count": retry_count,
@@ -432,6 +436,20 @@ def start_agent_run(
         status=status,
         message=f"{profile.get('agent', agent_key)} started {operation}",
         payload={"operation": operation, "skill": skill},
+    )
+    _record_audit_safely(
+        storage,
+        event_type="agent_run",
+        action="started",
+        actor_type="agent",
+        actor_id=agent_key,
+        project_id=project_id,
+        trace_id=str(trace_payload.get("trace_id", "")),
+        target={"agent_run_id": run_id, "operation": operation, "path": result["path"]},
+        input_refs=[str(row.get("path", "")) for row in input_rows],
+        output_refs=[result["path"]],
+        evidence_refs=[event.get("path", ""), contract.get("path", "")],
+        status=status,
     )
     result["event"] = event
     return result
@@ -546,6 +564,22 @@ def update_agent_run_status(
         status=status,
         message=message or f"agent run moved to {status}",
         payload={"error": error, "output_count": len(content["output_assets"])},
+    )
+    _record_audit_safely(
+        storage,
+        event_type="agent_run",
+        action=event_type,
+        actor_type="agent",
+        actor_id=str(content.get("agent_type", "")),
+        project_id=project_id,
+        trace_id=str(trace_payload.get("trace_id", "")),
+        target={"agent_run_id": content.get("run_id", ""), "operation": content.get("operation", ""), "path": _display_path(storage.root, path)},
+        input_refs=[str(row.get("path", "")) for row in content.get("input_assets", []) if isinstance(row, dict)],
+        output_refs=[str(row.get("path", "")) for row in content.get("output_assets", []) if isinstance(row, dict)],
+        evidence_refs=[event.get("path", "")],
+        status=status,
+        blocking=status in {"failed", "dead_letter", "cancelled"},
+        metadata={"error": error, "message": message},
     )
     return {"path": _display_path(storage.root, path), "asset": data, "event": event}
 
@@ -1202,7 +1236,28 @@ def create_agent_rollback_report(
         metadata={"project_id": metadata.get("project_id", ""), "workspace_path": metadata.get("workspace_path", "")},
         references=filter_project_safe_references(storage, str(metadata.get("project_id", "")), [_display_path(storage.root, run_path), *target_paths]),
     )
-    return _write(storage, asset)
+    written = _write(storage, asset)
+    try:
+        record_audit_event(
+            storage,
+            event_type="rollback",
+            action="agent_rollback_report_created",
+            actor_type="agent_runtime",
+            actor_id=str(content.get("agent_type") or content.get("agent_key") or ""),
+            target={"agent_run_id": content.get("run_id", ""), "rollback_strategy": rollback_strategy},
+            project_id=str(metadata.get("project_id", "")),
+            trace_id=str(metadata.get("trace_id") or content.get("trace_id") or ""),
+            input_refs=[_display_path(storage.root, run_path)],
+            output_refs=[written["path"]],
+            evidence_refs=target_paths,
+            status=status,
+            blocking=status == "failed",
+            rollback_ref=written["path"],
+            metadata={"apply": bool(apply), "reason": reason},
+        )
+    except Exception:
+        pass
+    return written
 
 
 def list_agent_runs(
@@ -1558,6 +1613,11 @@ def _agent_run_row(storage: LocalStorage, path: Path, data: dict[str, Any]) -> d
         "checkpoint": content.get("checkpoint", {}) if isinstance(content.get("checkpoint", {}), dict) else {},
         "evidence": content.get("evidence", {}) if isinstance(content.get("evidence", {}), dict) else {},
         "human_gate": content.get("human_gate", {}),
+        "agent_registry_entry_id": metadata.get("agent_registry_entry_id", ""),
+        "agent_registry_entry_path": metadata.get("agent_registry_entry_path", ""),
+        "agent_registry_version": metadata.get("agent_registry_version", ""),
+        "agent_lifecycle_state": metadata.get("agent_lifecycle_state", ""),
+        "agent_scheduler_enabled": metadata.get("agent_scheduler_enabled", False),
         "project_id": metadata.get("project_id", ""),
         "workspace_path": metadata.get("workspace_path", ""),
         "started_at": content.get("started_at", ""),
@@ -1663,6 +1723,15 @@ def _write_json_validated(storage: LocalStorage, path: Path, data: dict[str, Any
     storage.write_json(path, data)
 
 
+def _record_audit_safely(storage: LocalStorage, **kwargs: Any) -> None:
+    try:
+        from novel_forge.modules.audit_log import record_audit_event
+
+        record_audit_event(storage, **kwargs)
+    except Exception:
+        return
+
+
 def _knowledge_context_from_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(evidence, dict):
         return {}
@@ -1686,6 +1755,31 @@ def _knowledge_context_from_evidence(evidence: dict[str, Any]) -> dict[str, Any]
         "review_rules": evidence.get("review_rules", []) if isinstance(evidence.get("review_rules", []), list) else [],
         "risk_warnings": evidence.get("risk_warnings", []) if isinstance(evidence.get("risk_warnings", []), list) else [],
         "selector_policy_version": str(evidence.get("selector_policy_version") or ""),
+    }
+
+
+def _agent_registry_for_run(storage: LocalStorage, agent_key: str, operation: str, evidence: dict[str, Any]) -> dict[str, Any]:
+    explicit = evidence.get("agent_registry", {}) if isinstance(evidence, dict) and isinstance(evidence.get("agent_registry", {}), dict) else {}
+    if explicit:
+        return {
+            "agent_registry_entry_id": str(explicit.get("agent_registry_entry_id") or explicit.get("entry_id") or ""),
+            "agent_registry_entry_path": str(explicit.get("agent_registry_entry_path") or explicit.get("entry_path") or ""),
+            "agent_registry_version": str(explicit.get("agent_registry_version") or explicit.get("version") or ""),
+            "agent_lifecycle_state": str(explicit.get("lifecycle_state") or ""),
+            "agent_scheduler_enabled": bool(explicit.get("scheduler_enabled", False)),
+        }
+    try:
+        from novel_forge.modules.agent_registry import resolve_agent_registry_entry
+
+        resolved = resolve_agent_registry_entry(storage, agent_id=agent_key, operation=operation, require_schedulable=False, auto_sync=True)
+    except Exception:
+        return {}
+    return {
+        "agent_registry_entry_id": str(resolved.get("agent_registry_entry_id", "")),
+        "agent_registry_entry_path": str(resolved.get("agent_registry_entry_path", "")),
+        "agent_registry_version": str(resolved.get("agent_registry_version", "")),
+        "agent_lifecycle_state": str(resolved.get("lifecycle_state", "")),
+        "agent_scheduler_enabled": bool(resolved.get("scheduler_enabled", False)),
     }
 
 

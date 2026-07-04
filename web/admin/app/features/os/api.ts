@@ -113,6 +113,7 @@ export type EditorChiefSnapshot = {
   next_10_chapter_strategy: Record<string, unknown>;
   blocking_repair_queue: Record<string, unknown>;
   publish_and_platform_fit: Record<string, unknown>;
+  governance_loop?: Record<string, unknown>;
   control_links: Record<string, string>;
   evidence: Record<string, unknown>;
 };

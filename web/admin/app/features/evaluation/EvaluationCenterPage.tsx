@@ -79,6 +79,9 @@ export function EvaluationCenterPage() {
         <Metric label="模型 Profile" value={String(grouped.model_profile?.length ?? 0)} />
         <Metric label="评测任务" value={String(grouped.model_benchmark_task?.length ?? 0)} />
         <Metric label="Benchmark Run" value={String(grouped.model_benchmark_run?.length ?? 0)} />
+        <Metric label="Eval Suite" value={String(grouped.evaluation_suite?.length ?? 0)} />
+        <Metric label="Eval Result" value={String(grouped.evaluation_result?.length ?? 0)} />
+        <Metric label="Eval Gate" value={String(grouped.evaluation_gate?.length ?? 0)} />
         <Metric label="对比报告" value={String(grouped.model_comparison_report?.length ?? 0)} />
         <Metric label="路由策略" value={String(grouped.model_routing_policy?.length ?? 0)} />
         <Metric label="估算成本" value={totalEstimatedCost.toFixed(4)} />
@@ -191,6 +194,37 @@ export function EvaluationCenterPage() {
               回归评测
             </button>
           </div>
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="持续质量评估" icon={<BarChart3 size={18} />} />
+          <DataTable
+            emptyText="暂无通用 EvaluationResult"
+            columns={["Target", "Recommendation", "Score", "Blocking", "Path"]}
+            rows={(grouped.evaluation_result || []).slice(0, 20).map((asset) => [
+              String((asset as FeatureAssetRow & { target_asset_type?: string }).target_asset_type || asset.type),
+              String((asset as FeatureAssetRow & { recommendation?: string }).recommendation || "-"),
+              String(asset.score ?? "-"),
+              String((asset as FeatureAssetRow & { blocking?: boolean }).blocking ? "yes" : "no"),
+              <span className="pathText" key={`${asset.path}-eval-result-path`}>{asset.path}</span>
+            ])}
+          />
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="Evaluation Gates" icon={<FlaskConical size={18} />} />
+          <DataTable
+            emptyText="暂无 evaluation gate"
+            columns={["Title", "Status", "Score", "Path"]}
+            rows={(grouped.evaluation_gate || []).slice(0, 20).map((asset) => [
+              asset.title,
+              <span className={statusClass(asset.status || "")} key={`${asset.path}-eval-gate-status`}>{asset.status || "-"}</span>,
+              String(asset.score ?? "-"),
+              <span className="pathText" key={`${asset.path}-eval-gate-path`}>{asset.path}</span>
+            ])}
+          />
         </div>
       </section>
 

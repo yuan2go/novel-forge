@@ -63,6 +63,7 @@ def build_editor_chief_snapshot(
     blocking_issues = [row for row in active_issues if bool(_content(row).get("blocking"))]
     revision_tasks = _active_revision_tasks(assets)
     publishing_assets = list_publishing_assets(storage, project_id=project_id, limit=100)
+    governance = _safe_governance_summary(storage, project_id=project_id)
 
     arc_progress = _arc_progress_section(assets, canon_reasoning=canon_reasoning, current_chapter=current_chapter, review_issues=active_issues)
     character_drift = _character_drift_section(assets, review_issues=active_issues)
@@ -104,6 +105,7 @@ def build_editor_chief_snapshot(
         "next_10_chapter_strategy": next_strategy,
         "blocking_repair_queue": _blocking_repair_queue(blocking_issues, revision_tasks),
         "publish_and_platform_fit": publish_fit,
+        "governance_loop": governance,
         "source_dashboards": {
             "longform_stability": {
                 "summary": longform.get("summary", {}),
@@ -140,6 +142,34 @@ def _safe_canon_reasoning(storage: LocalStorage, *, project_id: str | None, work
         )
     except Exception as exc:
         return {"status": "unknown", "reasoning": {"issue_count": 0, "blocking_issue_count": 0, "issues": [], "obligations": []}, "summary": {}, "error": str(exc)}
+
+
+def _safe_governance_summary(storage: LocalStorage, *, project_id: str | None) -> dict[str, Any]:
+    try:
+        from novel_forge.modules.agent_registry import agent_registry_coverage
+        from novel_forge.modules.audit_log import audit_chain_summary
+        from novel_forge.modules.clickhouse_analytics import agent_metrics, analytics_capabilities, evaluation_metrics
+        from novel_forge.modules.evaluation_center import list_model_evaluation_assets
+        from novel_forge.modules.pgvector_store import pgvector_capabilities
+
+        evaluation_rows = list_model_evaluation_assets(storage, project_id=project_id, limit=200)
+        return {
+            "agent_registry": agent_registry_coverage(storage),
+            "audit": audit_chain_summary(storage, project_id=project_id or ""),
+            "evaluation": {
+                "asset_count": len(evaluation_rows),
+                "blocked_count": sum(1 for row in evaluation_rows if row.get("recommendation") == "block" or row.get("blocking")),
+                "metrics": evaluation_metrics(storage, project_id=project_id or ""),
+            },
+            "analytics": {
+                "capabilities": analytics_capabilities(storage, project_id=project_id or ""),
+                "agent_metrics": agent_metrics(storage, project_id=project_id or ""),
+            },
+            "retrieval": pgvector_capabilities(storage, project_id=project_id or ""),
+            "status": "ready",
+        }
+    except Exception as exc:
+        return {"status": "unknown", "error": str(exc)}
 
 
 def _overall_health(

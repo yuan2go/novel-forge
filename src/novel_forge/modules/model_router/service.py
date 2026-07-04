@@ -7,6 +7,7 @@ from typing import Any
 
 from novel_forge.model_adapters.runtime import estimate_provider_cost, evaluate_provider_runtime_guard, normalize_provider_usage, provider_runtime_guard_from_context
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.modules.audit_log import record_audit_event
 from novel_forge.modules.evaluation_center import resolve_model_route as resolve_evaluation_route
 from novel_forge.modules.operation_checkpoint import record_operation_stage_checkpoint
 from novel_forge.modules.production_context import filter_project_safe_references
@@ -204,6 +205,22 @@ def execute_model_gateway_call(
             source_id=model_call_source_id,
             prompt_version=prompt_version or str(resolution.get("prompt", {}).get("version", "")),
         )
+        _record_model_gateway_audit(
+            storage,
+            action="provider_preflight_blocked",
+            operation=operation,
+            task_type=task_type,
+            provider=provider,
+            model=model,
+            project_id=project_id,
+            trace=trace_payload,
+            status="failed",
+            blocking=True,
+            input_assets=input_assets or [],
+            output_assets=output_assets or [],
+            evidence_refs=[route.get("path", ""), preflight_gate.get("path", "") if isinstance(preflight_gate, dict) else "", failed_call.get("path", "")],
+            metadata={"guard": preflight},
+        )
         raise RuntimeError(f"provider runtime guard blocked model gateway call: {preflight.get('message')} ({failed_call.get('path', '')})")
     _record_gateway_checkpoint(storage, "provider_started", checkpoint_common, stage_payload={"guard": preflight})
     normalized_usage = normalize_provider_usage(usage or {}, usage_source=str((usage or {}).get("usage_source", "model_gateway") if isinstance(usage, dict) else "model_gateway"))
@@ -225,6 +242,22 @@ def execute_model_gateway_call(
             workspace_path=workspace_path,
             source_id=model_call_source_id,
             prompt_version=prompt_version or str(resolution.get("prompt", {}).get("version", "")),
+        )
+        _record_model_gateway_audit(
+            storage,
+            action="provider_postflight_blocked",
+            operation=operation,
+            task_type=task_type,
+            provider=provider,
+            model=model,
+            project_id=project_id,
+            trace=trace_payload,
+            status="failed",
+            blocking=True,
+            input_assets=input_assets or [],
+            output_assets=output_assets or [],
+            evidence_refs=[route.get("path", ""), postflight_gate.get("path", "") if isinstance(postflight_gate, dict) else "", failed_call.get("path", "")],
+            metadata={"guard": postflight, "usage": normalized_usage},
         )
         raise RuntimeError(f"provider runtime guard blocked model gateway call: {postflight.get('message')} ({failed_call.get('path', '')})")
     _record_gateway_checkpoint(storage, "provider_completed", checkpoint_common, stage_payload={"guard": postflight, "usage": normalized_usage, "cost": cost_payload})
@@ -257,6 +290,22 @@ def execute_model_gateway_call(
         "output_validated",
         checkpoint_common,
         stage_payload={"model_call_log_path": model_call.get("path", ""), "runtime_policy_status": envelope.commit_result.get("status", "")},
+    )
+    _record_model_gateway_audit(
+        storage,
+        action="model_call_completed",
+        operation=operation,
+        task_type=task_type,
+        provider=provider,
+        model=model,
+        project_id=project_id,
+        trace=trace_payload,
+        status="succeeded" if status in {"succeeded", "success", "ok"} else status,
+        blocking=False,
+        input_assets=input_assets or [],
+        output_assets=output_assets or [],
+        evidence_refs=[route.get("path", ""), model_call.get("path", ""), envelope.commit_result.get("path", "") if isinstance(envelope.commit_result, dict) else ""],
+        metadata={"usage": normalized_usage, "cost": cost_payload},
     )
     return {
         "status": "succeeded" if status in {"succeeded", "success", "ok"} else status,
@@ -502,6 +551,44 @@ def _selection_rule(value: str) -> str:
 def _status(value: str) -> str:
     normalized = str(value or "active").strip().lower().replace(" ", "_")
     return normalized if normalized in {"active", "draft", "disabled", "archived"} else "active"
+
+
+def _record_model_gateway_audit(
+    storage: LocalStorage,
+    *,
+    action: str,
+    operation: str,
+    task_type: str,
+    provider: str,
+    model: str,
+    project_id: str,
+    trace: dict[str, Any],
+    status: str,
+    blocking: bool,
+    input_assets: list[str],
+    output_assets: list[str],
+    evidence_refs: list[str],
+    metadata: dict[str, Any],
+) -> None:
+    try:
+        record_audit_event(
+            storage,
+            event_type="model_gateway",
+            action=action,
+            actor_type="model_router",
+            actor_id=provider,
+            target={"operation": operation, "task_type": task_type, "provider": provider, "model": model},
+            project_id=project_id,
+            trace_id=str(trace.get("trace_id") or ""),
+            input_refs=input_assets,
+            output_refs=output_assets,
+            evidence_refs=evidence_refs,
+            status=status,
+            blocking=blocking,
+            metadata={key: value for key, value in metadata.items() if key not in {"prompt", "raw_text"}},
+        )
+    except Exception:
+        pass
 
 
 def _write(storage: LocalStorage, asset: ModelRoute | ModelRouteResolution) -> dict[str, Any]:
