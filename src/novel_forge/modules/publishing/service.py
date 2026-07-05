@@ -13,6 +13,60 @@ from novel_forge.storage.local import LocalStorage
 PUBLISHING_TYPES = {"publish_gate_report", "release_package", "publishing_plan", "publishing_log"}
 
 
+def create_publish_gate_report(
+    storage: LocalStorage,
+    draft_path: str | Path,
+    *,
+    workspace_path: str | None = None,
+    chapter_audit_path: str | Path | None = None,
+    human_override: bool = False,
+    envelope: dict[str, Any] | None = None,
+    environment: str = "",
+    source_policy: dict[str, Any] | None = None,
+) -> Path:
+    """Publishing-domain facade for the existing publish gate implementation."""
+    from novel_forge.modules.audit import create_publish_gate_report as _create_publish_gate_report
+
+    return _create_publish_gate_report(
+        storage,
+        draft_path,
+        workspace_path=workspace_path,
+        chapter_audit_path=chapter_audit_path,
+        human_override=human_override,
+        envelope=envelope,
+        environment=environment,
+        source_policy=source_policy,
+    )
+
+
+def create_release_package(
+    storage: LocalStorage,
+    draft_path: str | Path,
+    *,
+    workspace_path: str | None = None,
+    publish_gate_path: str | Path | None = None,
+    channel: str = "local",
+    human_override: bool = False,
+    envelope: dict[str, Any] | None = None,
+    environment: str = "",
+    source_policy: dict[str, Any] | None = None,
+) -> Path:
+    """Publishing-domain facade for release package construction."""
+    from novel_forge.modules.audit import create_release_package as _create_release_package
+
+    return _create_release_package(
+        storage,
+        draft_path,
+        workspace_path=workspace_path,
+        publish_gate_path=publish_gate_path,
+        channel=channel,
+        human_override=human_override,
+        envelope=envelope,
+        environment=environment,
+        source_policy=source_policy,
+    )
+
+
 def list_publishing_assets(storage: LocalStorage, *, project_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for path in reversed(storage.list_json("publishing")):

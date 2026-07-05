@@ -5,10 +5,11 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.audit import create_release_package
 from novel_forge.modules.publishing import (
+    create_publish_gate_report,
     create_publishing_log,
     create_publishing_plan,
+    create_release_package,
     list_publishing_assets,
     prepare_platform_release,
     publishing_adapter_status,
@@ -46,10 +47,19 @@ class PublishingCenterTests(unittest.TestCase):
                 ),
             )
 
+            gate_path = create_publish_gate_report(
+                storage,
+                draft_path,
+                workspace_path=str(workspace_path.relative_to(storage.root)),
+                human_override=True,
+            )
+            self.assertEqual(storage.read_asset(gate_path).type, "publish_gate_report")
+
             package_path = create_release_package(
                 storage,
                 draft_path,
                 workspace_path=str(workspace_path.relative_to(storage.root)),
+                publish_gate_path=gate_path,
                 channel="local_serial",
                 human_override=True,
             )

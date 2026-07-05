@@ -1,4 +1,5 @@
 from novel_forge.agents.runtime import (
+    AGENT_PROFILE_ALIASES,
     AGENT_RUNTIME_PROFILES,
     SKILL_AGENT_MAP,
     agent_runtime_profile,
@@ -9,6 +10,7 @@ from novel_forge.agents.runtime import (
 )
 
 __all__ = [
+    "AGENT_PROFILE_ALIASES",
     "AGENT_RUNTIME_PROFILES",
     "SKILL_AGENT_MAP",
     "agent_runtime_profile",

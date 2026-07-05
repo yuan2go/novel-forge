@@ -195,6 +195,32 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "allowed_write_types": ["publish_gate_report", "release_package", "publishing_plan", "publishing_log", "task_status", "workflow_run"],
         "forbidden": ["publish_blocked_content", "skip_originality_gate", "write_draft_prose"],
     },
+    "platform_strategy": {
+        "agent": "Platform Compliance Agent",
+        "permission_profile": "platform_strategy_and_publish_adapter_governance",
+        "allowed_tools": [
+            "read_asset",
+            "write_platform_profile",
+            "write_platform_strategy_pack",
+            "write_platform_gate",
+            "write_platform_publish_adapter",
+            "write_platform_feedback_backflow",
+            "run_validation",
+        ],
+        "allowed_write_types": [
+            "platform_profile",
+            "platform_rhythm_rule",
+            "platform_opening_gate",
+            "platform_chapter_gate",
+            "platform_retention_risk",
+            "platform_publish_adapter",
+            "platform_feedback_backflow",
+            "platform_strategy_pack",
+            "task_status",
+            "workflow_run",
+        ],
+        "forbidden": ["bypass_publish_gate", "weaken_originality_boundary_for_platform_fit", "write_draft_prose"],
+    },
     "style": {
         "agent": "Style Agent",
         "permission_profile": "parameterized_style_analysis_without_author_imitation",
@@ -338,6 +364,44 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         ],
         "forbidden": ["write_draft_prose", "store_private_reader_identity", "copy_reader_comments_into_story_text"],
     },
+    "longform_recap": {
+        "agent": "Longform Recap Agent",
+        "permission_profile": "longform_recap_memory_and_continuity_writeback",
+        "allowed_tools": [
+            "read_asset",
+            "build_context_bundle",
+            "coordinate_loop",
+            "write_longform_recap_report",
+            "write_canon_patch",
+            "write_character_state_ledger",
+            "write_foreshadowing_graph",
+            "write_revision_task",
+            "run_validation",
+        ],
+        "allowed_write_types": [
+            "longform_recap_report",
+            "canon_patch",
+            "character_state_ledger",
+            "foreshadowing_graph",
+            "arc_plan",
+            "revision_task",
+            "review_issue",
+            "loop_run",
+            "loop_step",
+            "loop_checkpoint",
+            "loop_report",
+            "task_status",
+            "workflow_run",
+        ],
+        "forbidden": ["silently_mutate_accepted_canon", "write_draft_prose", "overwrite_recap_history_without_version"],
+    },
+    "training": {
+        "agent": "Training Agent",
+        "permission_profile": "exercise_generation_without_production_mutation",
+        "allowed_tools": ["read_asset", "write_training_exercise", "run_validation"],
+        "allowed_write_types": ["training_exercise", "task_status", "workflow_run"],
+        "forbidden": ["turn_training_output_into_canon", "copy_reference_expression", "write_final_chapter"],
+    },
     "metrics": {
         "agent": "Chief Editor Agent",
         "permission_profile": "production_observability_snapshot_only",
@@ -376,26 +440,69 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
     },
 }
 
+AGENT_PROFILE_ALIASES: dict[str, str] = {
+    "editor_in_chief": "chief_editor",
+    "chief_editor_agent": "chief_editor",
+    "detailed_outline": "chapter_plan",
+    "detailed_outline_agent": "chapter_plan",
+    "chapter_writer": "draft",
+    "chapter_writer_agent": "draft",
+    "writer": "draft",
+    "reviewer": "review",
+    "reviewer_agent": "review",
+    "revision": "ai_editor",
+    "revision_agent": "ai_editor",
+    "canon_guardian": "continuity",
+    "canon_guardian_agent": "continuity",
+    "foreshadowing": "continuity",
+    "foreshadowing_agent": "continuity",
+    "character_consistency": "continuity",
+    "character_consistency_agent": "continuity",
+    "multidisciplinary_knowledge": "knowledge",
+    "multidisciplinary_knowledge_agent": "knowledge",
+    "platform_compliance": "platform_strategy",
+    "platform_compliance_agent": "platform_strategy",
+    "eval": "model_evaluation",
+    "eval_agent": "model_evaluation",
+    "release_gate": "publishing",
+    "release_gate_agent": "publishing",
+}
+
 SKILL_AGENT_MAP = {
-    "hot-novel-deconstruction": "knowledge",
-    "hot-novel-business-deconstruction": "analysis",
-    "published-fiction-craft-analysis": "analysis",
-    "classic-literary-depth-analysis": "analysis",
+    "agent-loop-governance": "workflow",
     "analysis-to-asset-conversion": "analysis",
     "anti-copy-abstraction": "knowledge",
+    "canon-continuity-graph": "continuity",
+    "chapter-outline": "chapter_plan",
+    "character-design": "character",
+    "classic-literary-depth-analysis": "analysis",
+    "context-builder-source-isolation": "context",
+    "hot-novel-business-deconstruction": "analysis",
+    "hot-novel-deconstruction": "knowledge",
+    "long-outline": "outline",
+    "material-curation": "material",
+    "mkaos-knowledge-asset-os": "knowledge",
     "multidisciplinary-knowledge": "knowledge",
-    "long-outline": "chief_editor",
-    "worldbuilding": "material",
-    "character-design": "material",
-    "chapter-outline": "chief_editor",
+    "narrative-beat-design": "outline",
+    "novel-os-engineering-audit": "engineering",
+    "platform-strategy-os": "platform_strategy",
+    "project-planning": "chief_editor",
     "prose-generation": "draft",
+    "provider-runtime-policy": "model_evaluation",
+    "publish-release-gate-os": "publishing",
+    "published-fiction-craft-analysis": "analysis",
     "quality-review": "review",
     "reader-feedback": "feedback",
+    "review-issue-gate": "review",
+    "skill-governance": "engineering",
+    "topic-development": "topic",
+    "training-exercise": "training",
+    "worldbuilding": "worldbuilding",
 }
 
 
 def agent_runtime_profile(agent_key: str) -> dict[str, Any]:
-    key = _normalize(agent_key)
+    key = _canonical_agent_key(agent_key)
     if key not in AGENT_RUNTIME_PROFILES:
         raise ValueError(f"unknown agent runtime profile: {agent_key}")
     return deepcopy(AGENT_RUNTIME_PROFILES[key])
@@ -441,3 +548,8 @@ def enforce_agent_action(profile: dict[str, Any], tool_name: str, output_type: s
 
 def _normalize(value: str) -> str:
     return value.strip().lower().replace(" agent", "").replace(" ", "_").replace("-", "_")
+
+
+def _canonical_agent_key(agent_key: str) -> str:
+    normalized = _normalize(agent_key)
+    return AGENT_PROFILE_ALIASES.get(normalized, normalized)
