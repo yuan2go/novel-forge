@@ -17,6 +17,7 @@ from novel_forge.modules.mkaos.asset_index import (
     list_assets as _list_assets,
 )
 from novel_forge.modules.mkaos import quality as _mkaos_quality
+from novel_forge.modules.mkaos.model_judge_policy import model_judge_conflict_result as _model_judge_conflict_result
 from novel_forge.modules.mkaos.risk_policy import (
     normalize_risk_level as _normalize_risk_level,
     risk_reasons as _risk_reasons,
@@ -3716,24 +3717,6 @@ def _mkaos_payload_is_production(payload: dict[str, Any]) -> bool:
     envelope = payload.get("os_envelope") if isinstance(payload.get("os_envelope"), dict) else payload.get("envelope") if isinstance(payload.get("envelope"), dict) else {}
     environment = str(payload.get("environment") or envelope.get("environment") or "")
     return is_production_environment(environment) or bool(payload.get("strict", False))
-
-
-def _model_judge_conflict_result(payload: dict[str, Any]) -> dict[str, Any]:
-    requested = bool(payload.get("enable_model_judge") or payload.get("model_judge_enabled") or payload.get("model_judge") or payload.get("model_judge_result"))
-    opt_in = bool(payload.get("model_judge_opt_in") or os.environ.get("NOVEL_FORGE_MKAOS_MODEL_JUDGE") == "1")
-    if not requested:
-        return {"requested": False, "opt_in": False, "status": "not_requested", "conflicts": []}
-    if not opt_in:
-        return {"requested": True, "opt_in": False, "status": "opt_in_required", "conflicts": [], "provider": str(payload.get("model_judge_provider") or "")}
-    judge_payload = payload.get("model_judge_result") if isinstance(payload.get("model_judge_result"), dict) else {}
-    conflicts = judge_payload.get("conflicts") if isinstance(judge_payload.get("conflicts"), list) else []
-    return {
-        "requested": True,
-        "opt_in": True,
-        "status": "completed" if conflicts else "no_conflict_returned",
-        "provider": str(payload.get("model_judge_provider") or judge_payload.get("provider") or "mock"),
-        "conflicts": _strip_source_text_fields(conflicts),
-    }
 
 
 def _infer_graph_conflicts(graph_relations: list[dict[str, Any]], selected_by_id: dict[str, dict[str, Any]], *, production: bool) -> list[dict[str, Any]]:

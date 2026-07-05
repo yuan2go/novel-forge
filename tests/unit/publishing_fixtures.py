@@ -6,13 +6,27 @@ from typing import Any
 from novel_forge.api.product import create_project_with_defaults
 from novel_forge.model_adapters.runtime import ProviderRuntimeGuard, evaluate_provider_runtime_guard
 from novel_forge.modules.evaluation_center import create_evaluation_gate
+from novel_forge.modules.canon_graph import run_canon_graph_plugin
 from novel_forge.modules.longform_stability import create_arc_plan, create_canon_database, create_chapter_state_package, model_assisted_longform_extraction
 from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding
+from novel_forge.modules.genre_os import build_genre_strategy_pack, run_genre_risk_gate
 from novel_forge.modules.platform_strategy import build_platform_strategy_pack
 from novel_forge.modules.publishing import create_publish_gate_report
+from novel_forge.modules.model_router import create_model_route
+from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate
 from novel_forge.modules.runtime_ledger import record_gate_result, record_model_call_log
+from novel_forge.modules.style_os import build_style_profile, extract_style_fingerprint, ingest_style_sample, run_style_drift_gate
 from novel_forge.schemas import BaseAsset, DraftChapter, ReviewReport
 from novel_forge.storage.local import LocalStorage
+
+
+class ProviderJudgeAdapter:
+    def review(self, payload: str, context: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "text": '{"recommendation":"ready","scores":{"genre_promise":91,"platform_rhythm":88,"style_adherence":86,"hook_strength":90,"conflict_density":87,"character_motivation":88,"canon_consistency":92,"ai_flavor_risk":85},"rationale":"provider-backed release fixture judgment"}',
+            "usage": {"input_tokens": 1200, "output_tokens": 240, "total_tokens": 1440, "usage_source": "provider_fixture"},
+            "cost": {"amount": 0.012, "currency": "USD", "source": "provider_fixture"},
+        }
 
 
 def production_envelope(project_id: str, asset_type: str, *, trace_id: str, source_policy: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -29,7 +43,7 @@ def production_envelope(project_id: str, asset_type: str, *, trace_id: str, sour
     }
 
 
-def create_production_ready_release_inputs(storage: LocalStorage, *, title: str = "Production Ready Release") -> dict[str, Any]:
+def create_production_ready_release_inputs(storage: LocalStorage, *, title: str = "Production Ready Release", include_v7: bool = True) -> dict[str, Any]:
     detail = create_project_with_defaults(storage.root, title)
     project_id = str(detail["project_id"])
     workspace_path = str(detail["path"])
@@ -43,6 +57,16 @@ def create_production_ready_release_inputs(storage: LocalStorage, *, title: str 
     _longform_evidence(storage, draft_path, project_id=project_id, workspace_path=workspace_path)
     _publish_knowledge(storage, project_id)
     record_provider_runtime_evidence(storage, project_id, workspace_path=workspace_path)
+    if include_v7:
+        _v7_content_intelligence_evidence(storage, draft_path, project_id=project_id, workspace_path=workspace_path, source_policy=source_policy)
+    else:
+        create_evaluation_gate(
+            storage,
+            str(draft_path.relative_to(storage.root)),
+            minimum_score=0.0,
+            project_id=project_id,
+            require_provider_runtime=True,
+        )
     build_platform_strategy_pack(
         storage,
         {
@@ -52,13 +76,6 @@ def create_production_ready_release_inputs(storage: LocalStorage, *, title: str 
             "topic": "账册追查",
             "genre": "悬疑",
         },
-    )
-    create_evaluation_gate(
-        storage,
-        str(draft_path.relative_to(storage.root)),
-        minimum_score=0.0,
-        project_id=project_id,
-        require_provider_runtime=True,
     )
     gate_path = create_publish_gate_report(
         storage,
@@ -75,6 +92,114 @@ def create_production_ready_release_inputs(storage: LocalStorage, *, title: str 
         "publish_gate_path": gate_path,
         "source_policy": source_policy,
     }
+
+
+def _v7_content_intelligence_evidence(storage: LocalStorage, draft_path: Path, *, project_id: str, workspace_path: str, source_policy: dict[str, Any]) -> None:
+    draft_asset = storage.read_asset(draft_path)
+    draft_text = str(draft_asset.content.get("text", ""))
+    envelope_base = {
+        "project_id": project_id,
+        "actor_type": "unit_test",
+        "source": "tests.unit.publishing_fixtures",
+        "source_policy": source_policy,
+        "environment": "production",
+    }
+    genre = build_genre_strategy_pack(
+        storage,
+        genre="mystery",
+        subgenre="police_procedural",
+        project_id=project_id,
+        platform_id="local_serial",
+        environment="production",
+        envelope={**envelope_base, "task_type": "genre_strategy", "asset_type": "genre_strategy_pack", "trace_id": f"trace-v7-genre-{project_id}"},
+        source_policy=source_policy,
+    )
+    run_genre_risk_gate(
+        storage,
+        strategy_pack_path=genre["genre_strategy_pack_path"],
+        target_path=draft_path,
+        evidence={"线索不可回溯": "mitigated", "反转靠新增设定": "mitigated"},
+        environment="production",
+        envelope={**envelope_base, "task_type": "genre_risk_gate", "asset_type": "genre_risk_gate", "trace_id": f"trace-v7-genre-risk-{project_id}"},
+    )
+    sample = ingest_style_sample(
+        storage,
+        sample_text=draft_text,
+        project_id=project_id,
+        rights={"license": "project-owned", "allowed_usage": "style_parameter_extraction"},
+        environment="production",
+        envelope={**envelope_base, "task_type": "style_ingestion", "asset_type": "style_sample", "trace_id": f"trace-v7-style-sample-{project_id}"},
+    )
+    fingerprint = extract_style_fingerprint(
+        storage,
+        sample_path=sample["path"],
+        environment="production",
+        envelope={**envelope_base, "task_type": "style_fingerprint", "asset_type": "style_fingerprint", "trace_id": f"trace-v7-style-fp-{project_id}"},
+    )
+    style = build_style_profile(
+        storage,
+        fingerprint_path=fingerprint["path"],
+        style_name="release fixture style",
+        environment="production",
+        envelope={**envelope_base, "task_type": "style_profile", "asset_type": "style_profile", "trace_id": f"trace-v7-style-profile-{project_id}"},
+    )
+    run_style_drift_gate(
+        storage,
+        style_profile_path=style["style_profile_path"],
+        target_path=draft_path,
+        environment="production",
+        envelope={**envelope_base, "task_type": "style_drift_gate", "asset_type": "style_drift_report", "trace_id": f"trace-v7-style-drift-{project_id}"},
+    )
+    run_canon_graph_plugin(
+        storage,
+        {
+            "plugin": "mystery_evidence_chain_engine",
+            "target_path": str(draft_path),
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "persist_issues": False,
+        },
+    )
+    rubric = build_quality_rubric_pack(
+        storage,
+        genre_id="mystery",
+        platform_id="local_serial",
+        style_profile_path=style["style_profile_path"],
+        environment="production",
+        envelope={**envelope_base, "task_type": "quality_eval", "asset_type": "quality_rubric_pack", "trace_id": f"trace-v7-rubric-{project_id}"},
+    )
+    create_model_route(
+        storage,
+        task_type="quality_judge",
+        provider="unit-provider",
+        model_name="premium-judge-v1",
+        project_id=project_id,
+        environment="production",
+        approval_status="approved",
+        approval_id=f"approval-v7-quality-{project_id}",
+        approved_by="qa-lead",
+        production_provider_allowlist=["unit-provider"],
+        max_cost_per_run=1.0,
+    )
+    quality = run_provider_quality_judge(
+        storage,
+        suite_type="opening_3",
+        target_paths=[str(draft_path)],
+        rubric_path=rubric["path"],
+        adapter=ProviderJudgeAdapter(),
+        genre_strategy_pack_path=genre["genre_strategy_pack_path"],
+        style_profile_path=style["style_profile_path"],
+        platform_id="local_serial",
+        environment="production",
+        envelope={**envelope_base, "task_type": "quality_judge", "asset_type": "opening_3_report", "trace_id": f"trace-v7-quality-{project_id}"},
+        provider_runtime_guard={"max_total_tokens": 2000, "cost_profile": {"input_per_1k": 0.005, "output_per_1k": 0.015}},
+    )
+    run_quality_gate(
+        storage,
+        quality_report_path=quality["path"],
+        environment="production",
+        envelope={**envelope_base, "task_type": "quality_gate", "asset_type": "evaluation_gate", "trace_id": f"trace-v7-quality-gate-{project_id}"},
+    )
 
 
 def record_provider_runtime_evidence(storage: LocalStorage, project_id: str, *, workspace_path: str = "") -> None:

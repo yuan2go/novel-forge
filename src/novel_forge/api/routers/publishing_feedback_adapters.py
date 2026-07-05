@@ -10,6 +10,7 @@ from novel_forge.modules.publishing_feedback_adapters import (
     import_platform_metrics,
     publish_platform_upload_package,
     record_platform_receipt,
+    resolve_feedback_mutation_proposal,
 )
 from novel_forge.storage.local import LocalStorage
 
@@ -25,6 +26,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     PlatformMetricsImportRequest = models["PlatformMetricsImportRequest"]
     PlatformCommentsClusterRequest = models["PlatformCommentsClusterRequest"]
     FeedbackMutationProposalRequest = models["FeedbackMutationProposalRequest"]
+    FeedbackMutationResolveRequest = models["FeedbackMutationResolveRequest"]
 
     @router.post("/product/publishing-adapters/upload-package")
     def upload_package_endpoint(request: PlatformUploadPackageRequest) -> dict:
@@ -115,6 +117,24 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 environment=request.environment,
                 envelope=request.envelope or None,
             )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/feedback-adapters/mutation-proposal/resolve")
+    def mutation_proposal_resolve_endpoint(request: FeedbackMutationResolveRequest) -> dict:
+        try:
+            return resolve_feedback_mutation_proposal(
+                LocalStorage(app_settings.root),
+                proposal_ref=request.proposal_ref,
+                approved=request.approved,
+                actor=request.actor,
+                decision_note=request.decision_note,
+                create_application_chain=request.create_application_chain,
+                environment=request.environment,
+                envelope=request.envelope or None,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

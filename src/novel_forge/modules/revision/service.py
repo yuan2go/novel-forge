@@ -7,9 +7,16 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, resolve_path
+from novel_forge.modules.content_intelligence_governance import content_intelligence_preflight_gate
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.editor import execute_revision_plan
+from novel_forge.modules.model_operation_governance import (
+    attach_model_operation_governance,
+    enforce_model_operation_preflight,
+    record_model_operation_final_governance,
+)
 from novel_forge.modules.publishing import create_publish_gate_report
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.review import service as review_service
 from novel_forge.schemas import ContextBundle, RevisionPlan, RevisionTask, validate_common_fields
@@ -23,6 +30,8 @@ def revise(
     *,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
+    provider_runtime_gate: dict[str, Any] | None = None,
 ) -> Path:
     model = model or model_from_env("revise")
     review_asset = read_previous(storage, "reviews", input_path)
@@ -36,10 +45,37 @@ def revise(
         workspace_path=str(project.get("workspace_path", "")),
         current_goal=f"revision plan for {review_asset.title or review_asset.id}",
         token_budget=2500,
+        source_policy=source_policy,
         environment=environment,
         os_envelope=os_envelope,
     )
     knowledge_contract = knowledge_context_contract_from_result(context)
+    content_intelligence = content_intelligence_preflight_gate(
+        storage,
+        target_asset_id=review_asset.id,
+        target_asset_path=review_path,
+        project_id=str(project.get("project_id", "")),
+        workspace_path=str(project.get("workspace_path", "")),
+        required=is_production_environment(environment or (os_envelope or {}).get("environment")),
+    )
+    preflight = enforce_model_operation_preflight(
+        storage,
+        operation="revise",
+        environment=environment,
+        target_asset_id=review_asset.id,
+        target_asset_path=review_path,
+        project_id=str(project.get("project_id", "")),
+        workspace_path=str(project.get("workspace_path", "")),
+        asset_type="revision_plan",
+        task_type="revise",
+        os_envelope=os_envelope,
+        source_policy=source_policy,
+        provider_runtime_gate=provider_runtime_gate,
+        context_bundle_path=str(context.get("path") or ""),
+        require_context_bundle=True,
+        extra_gate_statuses={"content_intelligence": content_intelligence},
+        extra_required_gates=["content_intelligence"],
+    )
     with AgentExecutionContext(
         storage,
         agent_key="review",
@@ -84,6 +120,24 @@ def revise(
             references=filter_project_safe_references(storage, str(project.get("project_id", "")), [review_asset.id]),
         )
         path = storage.write_asset("reviews", asset)
+        final_governance = record_model_operation_final_governance(
+            storage,
+            operation="revise",
+            environment=environment,
+            output_asset_id=asset.id,
+            output_asset_path=path,
+            project_id=str(project.get("project_id", "")),
+            workspace_path=str(project.get("workspace_path", "")),
+            source_policy=source_policy,
+            os_envelope=os_envelope,
+            provider_runtime_gate=provider_runtime_gate,
+            preflight_governance=preflight,
+            context_bundle_path=str(context.get("path") or ""),
+            require_context_bundle=True,
+            extra_gate_statuses={"content_intelligence": content_intelligence},
+            extra_required_gates=["content_intelligence"],
+        )
+        attach_model_operation_governance(storage, path, final_governance)
         agent_run.succeed(output_assets=[path], token_used=len(str(result)))
         return path
 

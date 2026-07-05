@@ -32,6 +32,13 @@ class CanonGraphPluginTests(unittest.TestCase):
             self.assertEqual(result["status"], "blocked")
             self.assertEqual(result["asset"]["type"], "fantasy_power_scale_report")
             self.assertGreaterEqual(result["asset"]["content"]["blocking_issue_count"], 1)
+            state_machine = result["asset"]["content"]["genre_state_machine"]
+            self.assertEqual(state_machine["status"], "blocked")
+            self.assertEqual(
+                [machine["machine"] for machine in state_machine["machines"]],
+                ["PowerScaleGraph", "ResourceEconomy", "BreakthroughRule"],
+            )
+            self.assertTrue(state_machine["rollback_rebuild_contract"]["requires_rebuild_after_rollback"])
             self.assertTrue(result["review_issues"])
 
     def test_all_plugins_have_schema_backed_pass_report(self):
@@ -47,6 +54,31 @@ class CanonGraphPluginTests(unittest.TestCase):
                 result = run_canon_graph_plugin(storage, {"plugin": plugin, "artifact_text": "稳定规则下的原创章节。", "persist_issues": False})
                 self.assertEqual(result["asset"]["type"], expected_type)
                 self.assertEqual(result["asset"]["content"]["blocking_issue_count"], 0)
+                state_machine = result["asset"]["content"]["genre_state_machine"]
+                self.assertIn(state_machine["status"], {"passed", "warning"})
+                self.assertTrue(state_machine["machines"])
+                self.assertTrue(all("transition" in machine for machine in state_machine["machines"]))
+
+    def test_mystery_plugin_projects_evidence_chain_state_machine(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+
+            result = run_canon_graph_plugin(
+                storage,
+                {
+                    "plugin": "mystery_evidence_chain_engine",
+                    "artifact_text": "侦探检查指纹证据，重新排列嫌疑人的动机，并把真相揭示留到下一章。",
+                    "persist_issues": False,
+                },
+            )
+
+            state_machine = result["asset"]["content"]["genre_state_machine"]
+            self.assertEqual(state_machine["status"], "passed")
+            self.assertEqual(
+                [machine["machine"] for machine in state_machine["machines"]],
+                ["EvidenceChainGraph", "SuspectMatrix", "RevealSchedule"],
+            )
+            self.assertTrue(all(machine["state"] == "observed" for machine in state_machine["machines"]))
 
 
 if __name__ == "__main__":

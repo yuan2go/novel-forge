@@ -5,14 +5,45 @@ from typing import Any
 
 from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.agent_runs import AgentExecutionContext
-from novel_forge.modules.common import read_previous
+from novel_forge.modules.common import read_previous, resolve_path
+from novel_forge.modules.model_operation_governance import (
+    attach_model_operation_governance,
+    enforce_model_operation_preflight,
+    record_model_operation_final_governance,
+)
 from novel_forge.schemas import TopicSeed
 from novel_forge.storage.local import LocalStorage
 
 
-def develop_topic(storage: LocalStorage, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+def develop_topic(
+    storage: LocalStorage,
+    input_path: str | None = None,
+    model: ModelAdapter | None = None,
+    *,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
+    provider_runtime_gate: dict[str, Any] | None = None,
+) -> Path:
     material = read_previous(storage, "materials", input_path)
+    material_path = resolve_path(storage.root, input_path) if input_path else storage.latest("materials")
+    project_id = str(material.metadata.get("project_id") or "")
+    workspace_path = str(material.metadata.get("workspace_path") or "")
     model = model or model_from_env("topic")
+    preflight = enforce_model_operation_preflight(
+        storage,
+        operation="develop-topic",
+        environment=environment,
+        target_asset_id=material.id,
+        target_asset_path=material_path,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        asset_type="topic_seed",
+        task_type="develop-topic",
+        os_envelope=os_envelope,
+        source_policy=source_policy,
+        provider_runtime_gate=provider_runtime_gate,
+    )
     with AgentExecutionContext(
         storage,
         agent_key="topic",
@@ -38,6 +69,20 @@ def develop_topic(storage: LocalStorage, input_path: str | None = None, model: M
         )
         run.guard("write_topic_seed", "topic_seed")
         path = _write_topic(storage, material, generated, model)
+        final_governance = record_model_operation_final_governance(
+            storage,
+            operation="develop-topic",
+            environment=environment,
+            output_asset_id=storage.read_json(path).get("id", ""),
+            output_asset_path=path,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            source_policy=source_policy,
+            os_envelope=os_envelope,
+            provider_runtime_gate=provider_runtime_gate,
+            preflight_governance=preflight,
+        )
+        attach_model_operation_governance(storage, path, final_governance)
         run.succeed(output_assets=[str(path.relative_to(storage.root)) if path.is_absolute() and path.is_relative_to(storage.root) else str(path)])
         return path
 
@@ -76,8 +121,13 @@ def _write_topic(storage: LocalStorage, material: Any, generated: dict[str, Any]
     return storage.write_asset("topics", asset)
 
 
-def generate_topic(storage: LocalStorage, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
-    return develop_topic(storage, input_path, model)
+def generate_topic(
+    storage: LocalStorage,
+    input_path: str | None = None,
+    model: ModelAdapter | None = None,
+    **kwargs: Any,
+) -> Path:
+    return develop_topic(storage, input_path, model, **kwargs)
 
 
 def _string_list(values: Any) -> list[str]:

@@ -16,6 +16,11 @@ from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_pack, knowledge_context_contract_metadata
 from novel_forge.modules.mkaos import build_mkaos_flow_context_with_policy, mkaos_pack_metadata, record_pack_usage_for_artifact
+from novel_forge.modules.model_operation_governance import (
+    attach_model_operation_governance,
+    enforce_model_operation_preflight,
+    record_model_operation_final_governance,
+)
 from novel_forge.modules.planning_context import build_planning_context, planning_context_metadata
 from novel_forge.modules.production_chain import create_chapter_plan_version
 from novel_forge.modules.production_context import filter_project_safe_references
@@ -35,6 +40,8 @@ def generate_chapter_plan(
     carry_forward: dict[str, Any] | None = None,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
+    provider_runtime_gate: dict[str, Any] | None = None,
 ) -> Path:
     model = model or model_from_env("chapter_plan")
     outline_path = resolve_path(storage.root, input_path) if input_path else storage.latest("outlines")
@@ -58,8 +65,25 @@ def generate_chapter_plan(
         current_goal=f"chapter {target_chapter} plan",
         environment=environment,
         os_envelope=os_envelope,
+        source_policy=source_policy,
     )
     knowledge_contract = knowledge_context_contract_from_pack(mkaos_pack)
+    preflight = enforce_model_operation_preflight(
+        storage,
+        operation="generate-chapter-plan",
+        environment=environment,
+        target_asset_id=outline.id,
+        target_asset_path=outline_path,
+        project_id=project_id,
+        workspace_path=workspace,
+        asset_type="chapter_plan",
+        task_type="generate-chapter-plan",
+        os_envelope=os_envelope,
+        source_policy=source_policy,
+        provider_runtime_gate=provider_runtime_gate,
+        context_bundle_path=str(mkaos_pack.get("context_bundle_path") or ""),
+        require_context_bundle=True,
+    )
     carry = carry_forward or {}
     with AgentExecutionContext(
         storage,
@@ -189,6 +213,22 @@ def generate_chapter_plan(
         )
         run.guard("write_chapter_plan", "chapter_plan")
         path = storage.write_asset("chapter_plans", asset)
+        final_governance = record_model_operation_final_governance(
+            storage,
+            operation="generate-chapter-plan",
+            environment=environment,
+            output_asset_id=asset.id,
+            output_asset_path=path,
+            project_id=project_id,
+            workspace_path=workspace,
+            source_policy=source_policy,
+            os_envelope=os_envelope,
+            provider_runtime_gate=provider_runtime_gate,
+            preflight_governance=preflight,
+            context_bundle_path=str(mkaos_pack.get("context_bundle_path") or ""),
+            require_context_bundle=True,
+        )
+        attach_model_operation_governance(storage, path, final_governance)
         _record_mkaos_usage(storage, mkaos_pack, flow="chapter_outline", target_asset_id=asset.id, chapter_id=str(target_chapter), agent_name="ChapterOutlineAgent")
         run.guard("write_chapter_plan_version", "chapter_plan_version")
         version = create_chapter_plan_version(storage, path, change_summary="model-driven chapter plan from project planning context")
@@ -481,6 +521,7 @@ def _build_mkaos_pack(
     current_goal: str,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return build_mkaos_flow_context_with_policy(
         storage,
@@ -502,6 +543,7 @@ def _build_mkaos_pack(
                 current_goal=current_goal,
                 query=current_goal,
                 token_budget=5000,
+                source_policy=source_policy,
                 environment=environment,
                 os_envelope=os_envelope,
             )

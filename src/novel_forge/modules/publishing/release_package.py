@@ -7,6 +7,7 @@ from typing import Any
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
+from novel_forge.modules.content_intelligence_governance import platform_upload_checklist_for_release, release_content_intelligence_gate
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment, normalize_runtime_request_policy
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.modules.publishing.publish_gate import (
@@ -109,6 +110,27 @@ def create_release_package(
         gate="release_package",
     )
     text = asset_text(target)
+    release_summary = summary(text)
+    cover_requirements = cover_asset_requirements(context, channel or "local")
+    upload_checklist = platform_upload_checklist_for_release(
+        title=target.title,
+        summary=release_summary,
+        text=text,
+        channel=channel or "local",
+        cover=cover_requirements,
+    )
+    content_intelligence_gate = release_content_intelligence_gate(
+        storage,
+        target_asset_id=target.id,
+        target_asset_path=path,
+        project_id=str(project.get("project_id", "")),
+        workspace_path=str(project.get("workspace_path", "")),
+        platform_upload_checklist=upload_checklist,
+        required=is_production_environment(environment),
+    )
+    if is_production_environment(environment) and content_intelligence_gate["blocking"]:
+        dimensions = ", ".join(str(issue.get("dimension", "")) for issue in content_intelligence_gate["blocking_issues"])
+        raise ValueError(f"release_package blocked by content_intelligence: {dimensions}")
     release_version = make_id("release_version", f"{target.id}:{channel}:{utc_now()}")
     asset = ReleasePackage(
         title=f"Release package for {target.title}",
@@ -120,10 +142,10 @@ def create_release_package(
             "target_asset_id": target.id,
             "publish_gate_report_id": asset_id(gate),
             "title_candidates": title_candidates(target.title, context),
-            "summary": summary(text),
+            "summary": release_summary,
             "tags": release_tags(context, target),
             "metadata_optimization": publishing_metadata_optimization(target.title, text, context),
-            "cover_asset": cover_asset_requirements(context, channel or "local"),
+            "cover_asset": cover_requirements,
             "platform_review_feedback": {
                 "status": "not_submitted",
                 "feedback_source": "manual_or_webhook_adapter",
@@ -145,6 +167,8 @@ def create_release_package(
             "platform_strategy_gate": gate_content.get("platform_strategy_gate", {}),
             "production_governance": gate_content.get("production_governance", {}),
             "release_gate_evidence": release_gate_evidence,
+            "content_intelligence_gate": content_intelligence_gate,
+            "platform_upload_checklist": upload_checklist,
             "source_isolation": {
                 "source_chunk_raw_text_allowed": False,
                 "runtime_assets_in_generation_rag_allowed": False,
@@ -167,7 +191,11 @@ def create_release_package(
             "risk_level": "low" if status == "ready" else "high",
             **envelope_asset_metadata(os_envelope),
         },
-        references=filter_project_safe_references(storage, str(project.get("project_id", "")), dedupe([target.id, asset_id(gate)])),
+        references=filter_project_safe_references(
+            storage,
+            str(project.get("project_id", "")),
+            dedupe([target.id, asset_id(gate), *content_intelligence_gate.get("evidence_refs", [])]),
+        ),
     )
     with AgentExecutionContext(
         storage,

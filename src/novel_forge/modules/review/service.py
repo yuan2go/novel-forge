@@ -14,6 +14,11 @@ from novel_forge.modules.common import read_previous, run_metadata
 from novel_forge.modules.audit import create_chapter_audit_report, create_originality_report
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_pack, knowledge_context_contract_metadata
 from novel_forge.modules.mkaos import build_mkaos_flow_context_with_policy, mkaos_pack_metadata, record_pack_usage_for_artifact, validate_artifact as validate_mkaos_artifact
+from novel_forge.modules.model_operation_governance import (
+    attach_model_operation_governance,
+    enforce_model_operation_preflight,
+    record_model_operation_final_governance,
+)
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, quality_dimensions_from_context
 from novel_forge.modules.review_issue import persist_review_issues_for_report
 from novel_forge.modules.standards import create_quality_score_report, evaluate_quality_standard
@@ -30,6 +35,8 @@ def review(
     *,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
+    provider_runtime_gate: dict[str, Any] | None = None,
 ) -> Path:
     agent_profile = agent_runtime_profile("review")
     model = model or model_from_env("review")
@@ -51,8 +58,27 @@ def review(
         current_goal=f"review {draft_asset.title or draft_asset.id}",
         environment=environment,
         os_envelope=os_envelope,
+        source_policy=source_policy,
     )
     knowledge_contract = knowledge_context_contract_from_pack(mkaos_pack)
+    project_id = str(production_context["project"].get("project_id", ""))
+    workspace_path = str(production_context["project"].get("workspace_path", ""))
+    preflight = enforce_model_operation_preflight(
+        storage,
+        operation="review",
+        environment=environment,
+        target_asset_id=draft_asset.id,
+        target_asset_path=draft_path_for_reports,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        asset_type="review_report",
+        task_type="review",
+        os_envelope=os_envelope,
+        source_policy=source_policy,
+        provider_runtime_gate=provider_runtime_gate,
+        context_bundle_path=str(mkaos_pack.get("context_bundle_path") or ""),
+        require_context_bundle=True,
+    )
     context_bundle = mkaos_pack.get("context_bundle", {})
     context_bundle_asset = context_bundle.get("asset", {}) if isinstance(context_bundle, dict) else {}
     context_bundle_content = context_bundle_asset.get("content", {}) if isinstance(context_bundle_asset.get("content", {}), dict) else {}
@@ -187,6 +213,22 @@ def review(
             ),
         )
         review_path = storage.write_asset("reviews", asset)
+        final_governance = record_model_operation_final_governance(
+            storage,
+            operation="review",
+            environment=environment,
+            output_asset_id=asset.id,
+            output_asset_path=review_path,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            source_policy=source_policy,
+            os_envelope=os_envelope,
+            provider_runtime_gate=provider_runtime_gate,
+            preflight_governance=preflight,
+            context_bundle_path=str(mkaos_pack.get("context_bundle_path") or ""),
+            require_context_bundle=True,
+        )
+        attach_model_operation_governance(storage, review_path, final_governance)
         review_issue_summary = persist_review_issues_for_report(
             storage,
             review_path,
@@ -556,6 +598,7 @@ def _build_mkaos_pack(
     current_goal: str,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return build_mkaos_flow_context_with_policy(
         storage,
@@ -578,6 +621,7 @@ def _build_mkaos_pack(
                 query=current_goal,
                 token_budget=5000,
                 context_profile="review",
+                source_policy=source_policy,
                 environment=environment,
                 os_envelope=os_envelope,
             )

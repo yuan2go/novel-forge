@@ -17,12 +17,10 @@ from novel_forge.core.asset_scan import read_json_for_scan
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.evaluation.quality import QUALITY_DIMENSIONS
-from novel_forge.model_adapters import estimate_usage_from_text, model_from_env, validate_model_output
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.agent_runs import create_agent_failure_report, update_agent_run_status
 from novel_forge.modules.creative_assets import create_creative_asset
 from novel_forge.modules.ingestion.service import discover_source_files
-from novel_forge.modules.model_router import call_model_via_router
 from novel_forge.modules.source_intake import (
     create_github_source_note,
     list_github_knowledge_sources,
@@ -36,6 +34,7 @@ from novel_forge.api.services.product_asset_index import (
     find_asset_binding as _find_asset_binding,
 )
 from novel_forge.api.services.postgres_fallback_policy import handle_postgres_asset_read_fallback
+from novel_forge.api.services.product_handoff_review import review_handoff_output_quality_with_model
 from novel_forge.api.services import product_tasks as _product_tasks
 from novel_forge.schemas import AssetCollection, BatchTaskItem, DraftChapter, ProjectWorkspaceState, validate_common_fields
 from novel_forge.storage.object_store import MinioObjectStore, object_name_for_path
@@ -2552,9 +2551,6 @@ def _semantic_handoff_output_quality(storage: LocalStorage, handoff: dict[str, A
 
 
 def _review_handoff_output_quality(storage: LocalStorage, handoff: dict[str, Any], handoff_path: Path, output: dict[str, Any]) -> dict[str, Any]:
-    handoff_content = handoff.get("content", {}) if isinstance(handoff.get("content", {}), dict) else {}
-    output_content = output.get("content", {}) if isinstance(output.get("content", {}), dict) else {}
-    output_metadata = output.get("metadata", {}) if isinstance(output.get("metadata", {}), dict) else {}
     rubric = [
         "output satisfies every handoff acceptance item",
         "output is abstracted enough for the copyright boundary",
@@ -2562,74 +2558,14 @@ def _review_handoff_output_quality(storage: LocalStorage, handoff: dict[str, Any
         "output preserves traceable source references and project boundaries",
         *[str(dimension) for dimension in QUALITY_DIMENSIONS],
     ]
-    payload = {
-        "handoff": {
-            "operation": handoff_content.get("operation", ""),
-            "expected_output_type": handoff_content.get("expected_output_type", ""),
-            "acceptance_checks": handoff_content.get("acceptance_checks", []),
-            "instructions": handoff_content.get("instructions", ""),
-        },
-        "output": {
-            "id": output.get("id", ""),
-            "type": output.get("type", ""),
-            "title": output.get("title") or output.get("name", ""),
-            "content": output_content,
-            "metadata": output_metadata,
-            "references": output.get("references", []),
-        },
-        "rubric": rubric,
-        "minimum_score": HANDOFF_REVIEW_MIN_SCORE,
-    }
-    try:
-        adapter = model_from_env("review")
-        prompt = json.dumps(payload, ensure_ascii=False, sort_keys=True)
-        trace = {"trace_id": str(handoff.get("id", "")) or "handoff-review", "parent_span_id": str(handoff.get("id", "")) or "handoff-review"}
-        review = validate_model_output(
-            "review",
-            call_model_via_router(
-                storage,
-                adapter=adapter,
-                operation="handoff_review",
-                payload=prompt,
-                context=payload,
-                task_type="review",
-                input_assets=[handoff_path],
-                trace=trace,
-            ),
-        )
-        usage = review.get("usage") if isinstance(review.get("usage"), dict) else estimate_usage_from_text(prompt, json.dumps(review, ensure_ascii=False), usage_source="handoff_review_estimated")
-        if "usage" not in review:
-            review["usage"] = usage
-        if "cost" not in review:
-            review["cost"] = {"amount": 0.0, "currency": "USD", "source": "handoff_review"}
-        score = float(review.get("score", 0))
-        issues = review.get("issues", []) if isinstance(review.get("issues", []), list) else []
-        return {
-            "ok": score >= HANDOFF_REVIEW_MIN_SCORE,
-            "score": score,
-            "minimum_score": HANDOFF_REVIEW_MIN_SCORE,
-            "provider": review.get("provider", getattr(adapter, "name", "")),
-            "model": review.get("model", getattr(adapter, "name", "")),
-            "summary": str(review.get("summary", "")),
-            "issues": issues,
-            "suggestions": review.get("revision_suggestions", []),
-            "rubric": rubric,
-            "checked_at": utc_now(),
-        }
-    except Exception as exc:
-        return {
-            "ok": False,
-            "score": 0,
-            "minimum_score": HANDOFF_REVIEW_MIN_SCORE,
-            "provider": "",
-            "model": "",
-            "summary": "semantic review provider failed",
-            "issues": [],
-            "suggestions": [],
-            "rubric": rubric,
-            "error": str(exc),
-            "checked_at": utc_now(),
-        }
+    return review_handoff_output_quality_with_model(
+        storage,
+        handoff=handoff,
+        handoff_path=handoff_path,
+        output=output,
+        rubric=rubric,
+        minimum_score=HANDOFF_REVIEW_MIN_SCORE,
+    )
 
 
 def _source_overlap_check(storage: LocalStorage, handoff: dict[str, Any], handoff_path: Path, output: dict[str, Any]) -> dict[str, Any]:

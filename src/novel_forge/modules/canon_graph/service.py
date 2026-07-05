@@ -62,6 +62,61 @@ CANON_PLUGIN_REPORTS = {
     "horror_rule_contamination_engine": HorrorRuleContaminationReport,
 }
 
+PLUGIN_STATE_MACHINE_SPECS = {
+    "fantasy_power_scale_engine": {
+        "domain": "fantasy",
+        "machines": {
+            "PowerScaleGraph": ["境界", "等级", "一阶", "二阶", "power", "scale"],
+            "ResourceEconomy": ["资源", "灵石", "丹药", "代价", "cost"],
+            "BreakthroughRule": ["突破", "越级", "瓶颈", "breakthrough"],
+        },
+        "blocked_markers": ["无限越级", "无代价突破", "一击秒杀所有", "unlimited power"],
+    },
+    "mystery_evidence_chain_engine": {
+        "domain": "mystery",
+        "machines": {
+            "EvidenceChainGraph": ["证据", "线索", "指纹", "足迹", "evidence", "clue"],
+            "SuspectMatrix": ["嫌疑", "动机", "不在场", "suspect", "motive"],
+            "RevealSchedule": ["真相", "揭示", "反转", "reveal"],
+        },
+        "blocked_markers": ["凭空出现的证据", "突然想起真相", "新增关键证据", "new evidence appears from nowhere"],
+    },
+    "romance_relationship_state_engine": {
+        "domain": "romance",
+        "machines": {
+            "RelationshipStateMachine": ["相识", "信任", "误会", "靠近", "relationship"],
+            "TrustProgression": ["信任", "原谅", "承诺", "trust"],
+        },
+        "blocked_markers": ["互不相识却结婚", "毫无理由原谅", "relationship state reset"],
+    },
+    "historical_faction_network_engine": {
+        "domain": "historical",
+        "machines": {
+            "FactionNetwork": ["派系", "盟友", "朝堂", "阵营", "faction"],
+            "OfficeSystem": ["官职", "制度", "衙门", "office"],
+            "ResourceFlow": ["粮草", "银两", "兵权", "resource"],
+        },
+        "blocked_markers": ["古代手机", "互联网", "现代枪械随处可得"],
+    },
+    "sci_fi_rule_consistency_engine": {
+        "domain": "sci_fi",
+        "machines": {
+            "RuleConstraintGraph": ["规则", "限制", "物理", "constraint"],
+            "TechCostLedger": ["能源", "成本", "代价", "副作用", "cost"],
+        },
+        "blocked_markers": ["无限能源", "突破所有物理限制", "technology solves everything"],
+    },
+    "horror_rule_contamination_engine": {
+        "domain": "horror",
+        "machines": {
+            "ContaminationGraph": ["污染", "扩散", "感染", "contamination"],
+            "TabooRule": ["禁忌", "规则", "不可", "taboo"],
+            "SafeZoneDecay": ["安全区", "庇护", "失效", "safe zone"],
+        },
+        "blocked_markers": ["规则失效", "不受污染", "怪物随意改变规则"],
+    },
+}
+
 
 def build_canon_graph(
     storage: LocalStorage,
@@ -316,6 +371,7 @@ def run_canon_graph_plugin(storage: LocalStorage, payload: dict[str, Any]) -> di
         persist=bool(payload.get("persist_snapshot", False)),
     )
     conflicts = _plugin_conflicts(plugin, artifact_text, graph)
+    state_machine = _plugin_state_machine(plugin, artifact_text, graph, chapter_no=chapter_no)
     issue_candidates = [
         {
             "issue_type": "canon_plugin_conflict",
@@ -356,6 +412,8 @@ def run_canon_graph_plugin(storage: LocalStorage, payload: dict[str, Any]) -> di
             "blocking_issue_count": blocking_count,
             "evidence_refs": _dedupe([*evidence_refs, *graph.get("references", [])[:20]]),
             "plugin": plugin,
+            "genre_state_machine": state_machine,
+            "state_machine_status": state_machine["status"],
             "graph_summary": graph["summary"],
             "review_issue_paths": issue_paths,
         },
@@ -1842,6 +1900,52 @@ def _plugin_conflicts(plugin: str, artifact_text: str, graph: dict[str, Any]) ->
             }
         )
     return conflicts
+
+
+def _plugin_state_machine(plugin: str, artifact_text: str, graph: dict[str, Any], *, chapter_no: int | str) -> dict[str, Any]:
+    spec = PLUGIN_STATE_MACHINE_SPECS.get(plugin, {"domain": "generic", "machines": {}, "blocked_markers": []})
+    text = artifact_text.lower()
+    graph_summary = graph.get("summary", {}) if isinstance(graph.get("summary", {}), dict) else {}
+    machine_states: list[dict[str, Any]] = []
+    observed_total = 0
+    for name, markers in spec.get("machines", {}).items():
+        hits = [marker for marker in markers if str(marker).lower() in text]
+        observed_total += len(hits)
+        machine_states.append(
+            {
+                "machine": name,
+                "state": "observed" if hits else "needs_evidence",
+                "observed_signals": hits,
+                "transition": {
+                    "chapter_no": chapter_no,
+                    "from": "unknown",
+                    "to": "observed" if hits else "unproven",
+                    "evidence": hits,
+                },
+                "audit_rule": "state transitions must be backed by prior canon, explicit chapter evidence, or approved canon change.",
+            }
+        )
+    blocked_hits = [marker for marker in spec.get("blocked_markers", []) if str(marker).lower() in text]
+    status = "blocked" if blocked_hits else "passed" if observed_total else "warning"
+    return {
+        "status": status,
+        "domain": spec.get("domain", "generic"),
+        "plugin": plugin,
+        "chapter_no": chapter_no,
+        "machines": machine_states,
+        "blocking_signals": blocked_hits,
+        "graph_projection": {
+            "node_count": graph_summary.get("node_count", 0),
+            "edge_count": graph_summary.get("edge_count", 0),
+            "edge_relation_counts": graph_summary.get("edge_relation_counts", {}),
+            "references_sample": graph.get("references", [])[:10],
+        },
+        "rollback_rebuild_contract": {
+            "requires_diff": True,
+            "requires_rebuild_after_rollback": True,
+            "stable_keys": ["domain", "machine", "chapter_no", "observed_signals"],
+        },
+    }
 
 
 def _plugin_fix(plugin: str) -> str:

@@ -12,6 +12,7 @@ from novel_forge.modules.publishing_feedback_adapters import (
     import_platform_metrics,
     publish_platform_upload_package,
     record_platform_receipt,
+    resolve_feedback_mutation_proposal,
 )
 from novel_forge.modules.publishing import create_release_package
 from novel_forge.schemas import ReleasePackage
@@ -87,6 +88,46 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
             self.assertTrue(comments["asset"]["content"]["pain_points"])
             self.assertTrue(proposal["asset"]["content"]["human_gate"]["required"])
             self.assertFalse(proposal["asset"]["content"]["risk_assessment"]["silent_mutation_allowed"])
+
+    def test_feedback_mutation_approval_creates_planned_application_chain_without_silent_patch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            proposal = create_feedback_mutation_proposal(
+                storage,
+                source_feedback_paths=["data/feedback/comment-cluster.json"],
+                target_assets=[
+                    {"asset_type": "outline", "path": "data/outlines/o1.json"},
+                    {"asset_type": "chapter_plan", "path": "data/chapter_plans/c2.json"},
+                    {"asset_type": "style", "path": "data/styles/style-policy.json"},
+                    {"asset_type": "genre", "path": "data/genres/genre-pack.json"},
+                ],
+                proposed_changes=[
+                    {"domain": "outline", "change": "tighten act two dropoff"},
+                    {"domain": "chapter_plan", "change": "increase hook pressure"},
+                    {"domain": "style", "change": "reduce slow exposition"},
+                    {"domain": "genre", "change": "make reader promise visible"},
+                ],
+            )
+
+            resolved = resolve_feedback_mutation_proposal(
+                storage,
+                proposal_ref=proposal["path"],
+                approved=True,
+                actor="lead-editor",
+                decision_note="approved for workflow execution",
+            )
+
+            content = resolved["asset"]["content"]
+            self.assertEqual(content["human_gate"]["status"], "approved")
+            self.assertEqual(content["application_status"], "planned")
+            self.assertFalse(content["application_chain"]["silent_mutation_allowed"])
+            self.assertEqual(content["application_chain"]["patch_plan"]["outline_patch"]["status"], "needs_review")
+            self.assertEqual(content["application_chain"]["patch_plan"]["chapter_plan_patch"]["status"], "needs_review")
+            self.assertEqual(content["application_chain"]["patch_plan"]["style_policy_update"]["status"], "needs_review")
+            self.assertEqual(content["application_chain"]["patch_plan"]["genre_strategy_update"]["status"], "needs_review")
+            self.assertFalse(content["application_chain"]["downstream_invalidation"]["apply"])
+            self.assertTrue(content["application_chain"]["regeneration_task"]["requires_re_review"])
+            self.assertNotEqual(resolved["path"], proposal["path"])
 
     def test_comment_cluster_can_persist_review_issue_paths(self):
         with tempfile.TemporaryDirectory() as tmp:

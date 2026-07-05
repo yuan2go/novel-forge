@@ -449,6 +449,72 @@ def create_feedback_mutation_proposal(
     return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "envelope": env}
 
 
+def resolve_feedback_mutation_proposal(
+    storage: LocalStorage,
+    *,
+    proposal_ref: str | Path,
+    approved: bool,
+    actor: str = "operator",
+    decision_note: str = "",
+    create_application_chain: bool = True,
+    environment: str = "",
+    envelope: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    proposal_path = _resolve_feedback_proposal(storage, proposal_ref)
+    proposal = storage.read_json(proposal_path)
+    if proposal.get("type") != "feedback_plan_mutation_proposal":
+        raise ValueError("proposal_ref must point to a feedback_plan_mutation_proposal")
+    content = proposal.get("content", {}) if isinstance(proposal.get("content", {}), dict) else {}
+    metadata = proposal.get("metadata", {}) if isinstance(proposal.get("metadata", {}), dict) else {}
+    env = enforce_os_envelope(
+        storage,
+        envelope_payload=envelope,
+        operation="resolve-feedback-mutation-proposal",
+        project_id=str(metadata.get("project_id") or (envelope or {}).get("project_id") or ""),
+        task_type="feedback_mutation_resolution",
+        asset_type="feedback_plan_mutation_proposal",
+        source_policy={"raw_source_text_allowed": False, "generation_rag_allowed": False},
+        environment=environment,
+        require_for_production=True,
+    )
+    human_gate = content.get("human_gate", {}) if isinstance(content.get("human_gate", {}), dict) else {}
+    human_gate.update(
+        {
+            "required": True,
+            "status": "approved" if approved else "rejected",
+            "approved_by": actor if approved else "",
+            "rejected_by": "" if approved else actor,
+            "decided_at": utc_now(),
+            "decision_note": decision_note,
+        }
+    )
+    updated_content = {
+        **content,
+        "proposal_id": make_id("feedback_plan_mutation_proposal", f"{content.get('proposal_id', proposal.get('id', 'proposal'))}:resolution:{utc_now()}"),
+        "supersedes_proposal_id": content.get("proposal_id", proposal.get("id", "")),
+        "source_proposal_path": _display_path(storage.root, proposal_path),
+        "human_gate": human_gate,
+        "application_status": "planned" if approved and create_application_chain else "rejected" if not approved else "approved_waiting_application_plan",
+    }
+    if approved and create_application_chain:
+        updated_content["application_chain"] = _feedback_application_chain(updated_content)
+    resolved = FeedbackPlanMutationProposal(
+        title=f"Resolved {proposal.get('title') or 'feedback mutation proposal'}",
+        source=str(proposal.get("id") or ""),
+        tags=["publishing-feedback-adapter", "mutation-proposal", "human-gated", "approved" if approved else "rejected"],
+        content=updated_content,
+        metadata={
+            **metadata,
+            "project_id": str(metadata.get("project_id") or env.get("project_id") or ""),
+            "feedback_resolution_status": human_gate["status"],
+            **envelope_asset_metadata(env),
+        },
+        references=_dedupe([_display_path(storage.root, proposal_path), *[str(path) for path in proposal.get("references", []) if str(path).strip()]]),
+    )
+    path = _write_asset(storage, resolved)
+    return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "envelope": env}
+
+
 def _book_metadata_from_release(release: dict[str, Any]) -> dict[str, Any]:
     content = release.get("content", {}) if isinstance(release.get("content"), dict) else {}
     return {
@@ -496,6 +562,58 @@ def _dropoff_risk(chapter_metrics: list[dict[str, Any]]) -> str:
     return "low"
 
 
+def _feedback_application_chain(content: dict[str, Any]) -> dict[str, Any]:
+    target_assets = content.get("target_assets", []) if isinstance(content.get("target_assets", []), list) else []
+    proposed_changes = content.get("proposed_changes", []) if isinstance(content.get("proposed_changes", []), list) else []
+    domains = _affected_domains(target_assets, proposed_changes)
+    patch_plan = {
+        "outline_patch": _patch_step("outline", target_assets, proposed_changes),
+        "chapter_plan_patch": _patch_step("chapter_plan", target_assets, proposed_changes),
+        "style_policy_update": _patch_step("style", target_assets, proposed_changes),
+        "genre_strategy_update": _patch_step("genre", target_assets, proposed_changes),
+        "mkaos_weight_governance": _patch_step("mkaos", target_assets, proposed_changes),
+    }
+    return {
+        "status": "planned",
+        "human_approved": True,
+        "silent_mutation_allowed": False,
+        "patch_plan": patch_plan,
+        "impact_analysis": {
+            "affected_domains": domains,
+            "target_asset_count": len(target_assets),
+            "requires_downstream_invalidation": True,
+            "requires_re_review": True,
+            "risk_level": "high" if any(domain in {"outline", "chapter_plan", "genre", "style"} for domain in domains) else "medium",
+        },
+        "downstream_invalidation": {
+            "apply": False,
+            "status": "needs_workflow_execution",
+            "targets": _dedupe([str(row.get("path") or row.get("asset_id") or row.get("asset_type") or "") for row in target_assets if isinstance(row, dict)]),
+            "invalidate_asset_types": ["outline", "chapter_plan", "draft_chapter", "review_report", "release_package"],
+        },
+        "regeneration_task": {
+            "status": "planned",
+            "task_type": "regenerate_after_feedback_mutation",
+            "requires_review_issue_link": True,
+            "requires_revision_task": True,
+            "requires_re_review": True,
+            "requires_publish_gate_rerun": True,
+        },
+    }
+
+
+def _patch_step(domain: str, target_assets: list[dict[str, Any]], proposed_changes: list[dict[str, Any]]) -> dict[str, Any]:
+    changes = [row for row in proposed_changes if isinstance(row, dict) and str(row.get("domain") or row.get("target_domain") or "").lower() in {domain, domain.replace("_", "-")}]
+    targets = [row for row in target_assets if isinstance(row, dict) and str(row.get("asset_type") or row.get("domain") or "").lower() in {domain, domain.replace("_", "-")}]
+    return {
+        "status": "needs_review" if changes or targets else "not_applicable",
+        "domain": domain,
+        "target_assets": targets,
+        "proposed_changes": changes,
+        "apply_mode": "human_gated_workflow_only",
+    }
+
+
 def _cluster_comments(comments: list[dict[str, Any]]) -> dict[str, list[Any]]:
     pain_markers = ["毒", "水", "崩", "看不懂", "弃", "无聊", "慢"]
     pleasure_markers = ["爽", "好看", "刺激", "期待", "喜欢", "反转"]
@@ -534,6 +652,32 @@ def _affected_domains(target_assets: list[dict[str, Any]], proposed_changes: lis
         if value:
             domains.append(value)
     return sorted(set(domains))
+
+
+def _resolve_feedback_proposal(storage: LocalStorage, proposal_ref: str | Path) -> Path:
+    direct = resolve_path(storage.root, proposal_ref)
+    if direct.exists():
+        return direct
+    ref = str(proposal_ref)
+    for path in reversed(storage.list_json("feedback")):
+        data = storage.read_json(path)
+        if data.get("type") != "feedback_plan_mutation_proposal":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if ref in {str(data.get("id", "")), str(content.get("proposal_id", "")), _display_path(storage.root, path)}:
+            return path
+    raise FileNotFoundError(f"feedback mutation proposal not found: {proposal_ref}")
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        item = str(value or "").strip()
+        if item and item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
 
 
 def _platform_client_from_config(config: dict[str, Any]) -> HttpPlatformClient | None:

@@ -348,6 +348,16 @@ class FeedbackMutationProposalRequest(BaseModel):
     envelope: dict[str, Any] = Field(default_factory=dict)
 
 
+class FeedbackMutationResolveRequest(BaseModel):
+    proposal_ref: str
+    approved: bool
+    actor: str = "operator"
+    decision_note: str = ""
+    create_application_chain: bool = True
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
 class CreativeAssetCreateRequest(BaseModel):
     asset_type: str
     title: str
@@ -1523,6 +1533,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "PlatformMetricsImportRequest": PlatformMetricsImportRequest,
         "PlatformCommentsClusterRequest": PlatformCommentsClusterRequest,
         "FeedbackMutationProposalRequest": FeedbackMutationProposalRequest,
+        "FeedbackMutationResolveRequest": FeedbackMutationResolveRequest,
         "CreativeAssetCreateRequest": CreativeAssetCreateRequest,
         "StyleDecomposeRequest": StyleDecomposeRequest,
         "StyleReviewRequest": StyleReviewRequest,

@@ -5,6 +5,7 @@ from .service import (
     import_platform_metrics,
     publish_platform_upload_package,
     record_platform_receipt,
+    resolve_feedback_mutation_proposal,
 )
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "import_platform_metrics",
     "publish_platform_upload_package",
     "record_platform_receipt",
+    "resolve_feedback_mutation_proposal",
 ]

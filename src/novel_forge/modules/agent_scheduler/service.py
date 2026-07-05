@@ -2001,7 +2001,17 @@ def _run_generate_outline(storage: LocalStorage, queue_item: dict[str, Any], age
     from novel_forge.modules.outline import generate_outline
 
     evidence = _evidence(agent_run)
-    return {"path": generate_outline(storage, _required_input_path(agent_run), workspace_path=_workspace_path(agent_run), environment=str(evidence.get("environment") or ""), os_envelope=_envelope_from_evidence(evidence))}
+    return {
+        "path": generate_outline(
+            storage,
+            _required_input_path(agent_run),
+            workspace_path=_workspace_path(agent_run),
+            environment=str(evidence.get("environment") or ""),
+            os_envelope=_envelope_from_evidence(evidence),
+            source_policy=evidence.get("source_policy") if isinstance(evidence.get("source_policy"), dict) else None,
+            provider_runtime_gate=_provider_runtime_gate_from_evidence(evidence),
+        )
+    }
 
 
 def _run_generate_chapter_plan(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
@@ -2018,6 +2028,8 @@ def _run_generate_chapter_plan(storage: LocalStorage, queue_item: dict[str, Any]
             carry_forward=evidence.get("carry_forward", {}) if isinstance(evidence.get("carry_forward", {}), dict) else None,
             environment=str(evidence.get("environment") or ""),
             os_envelope=_envelope_from_evidence(evidence),
+            source_policy=evidence.get("source_policy") if isinstance(evidence.get("source_policy"), dict) else None,
+            provider_runtime_gate=_provider_runtime_gate_from_evidence(evidence),
         )
     }
 
@@ -2035,6 +2047,8 @@ def _run_draft(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dic
             workspace_path=_workspace_path(agent_run),
             environment=str(evidence.get("environment") or ""),
             os_envelope=_envelope_from_evidence(evidence),
+            source_policy=evidence.get("source_policy") if isinstance(evidence.get("source_policy"), dict) else None,
+            provider_runtime_gate=_provider_runtime_gate_from_evidence(evidence),
         )
     }
 
@@ -2043,14 +2057,32 @@ def _run_review(storage: LocalStorage, queue_item: dict[str, Any], agent_run: di
     from novel_forge.modules.review import review
 
     evidence = _evidence(agent_run)
-    return {"path": review(storage, _required_input_path(agent_run), environment=str(evidence.get("environment") or ""), os_envelope=_envelope_from_evidence(evidence))}
+    return {
+        "path": review(
+            storage,
+            _required_input_path(agent_run),
+            environment=str(evidence.get("environment") or ""),
+            os_envelope=_envelope_from_evidence(evidence),
+            source_policy=evidence.get("source_policy") if isinstance(evidence.get("source_policy"), dict) else None,
+            provider_runtime_gate=_provider_runtime_gate_from_evidence(evidence),
+        )
+    }
 
 
 def _run_revise(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
     from novel_forge.modules.revision import revise
 
     evidence = _evidence(agent_run)
-    return {"path": revise(storage, _required_input_path(agent_run), environment=str(evidence.get("environment") or ""), os_envelope=_envelope_from_evidence(evidence))}
+    return {
+        "path": revise(
+            storage,
+            _required_input_path(agent_run),
+            environment=str(evidence.get("environment") or ""),
+            os_envelope=_envelope_from_evidence(evidence),
+            source_policy=evidence.get("source_policy") if isinstance(evidence.get("source_policy"), dict) else None,
+            provider_runtime_gate=_provider_runtime_gate_from_evidence(evidence),
+        )
+    }
 
 
 def _run_analysis(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
@@ -2976,6 +3008,14 @@ def _envelope_from_evidence(evidence: dict[str, Any]) -> dict[str, Any] | None:
         return evidence["os_envelope"]
     if isinstance(evidence.get("envelope"), dict):
         return evidence["envelope"]
+    return None
+
+
+def _provider_runtime_gate_from_evidence(evidence: dict[str, Any]) -> dict[str, Any] | None:
+    if isinstance(evidence.get("provider_runtime_gate"), dict):
+        return evidence["provider_runtime_gate"]
+    if isinstance(evidence.get("provider_runtime_guard"), dict):
+        return evidence["provider_runtime_guard"]
     return None
 
 

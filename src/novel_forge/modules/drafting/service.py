@@ -6,6 +6,7 @@ from typing import Any
 from novel_forge.agents import agent_runtime_profile, enforce_agent_action
 from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.content_intelligence_governance import content_intelligence_preflight_gate
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.context_builder import build_flow_context_bundle, create_context_build_plan, create_context_bundle, knowledge_context_contract_from_pack, knowledge_context_contract_metadata
 from novel_forge.modules.continuity_graph import create_chapter_stability_preflight_report
@@ -15,6 +16,12 @@ from novel_forge.modules.longform_stability import (
     sanitize_chapter_text,
 )
 from novel_forge.modules.mkaos import build_mkaos_flow_context_with_policy, mkaos_pack_metadata, record_pack_usage_for_artifact
+from novel_forge.modules.model_operation_governance import (
+    attach_model_operation_governance,
+    enforce_model_operation_preflight,
+    record_model_operation_final_governance,
+)
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_chain import create_draft_version, create_generation_run
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.schemas import DraftChapter
@@ -32,6 +39,8 @@ def draft(
     workspace_path: str | None = None,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
+    provider_runtime_gate: dict[str, Any] | None = None,
 ) -> Path:
     agent_profile = agent_runtime_profile("draft")
     model = model or model_from_env("draft")
@@ -39,6 +48,8 @@ def draft(
     plan = storage.read_asset(plan_path)
     plan_ref = _display_path(storage.root, plan_path)
     production_context = build_production_context(storage, plan, input_path=plan_path, workspace_path=workspace_path)
+    project_id = str(production_context["project"].get("project_id", ""))
+    workspace = str(production_context["project"].get("workspace_path", "")) or str(workspace_path or "")
     previous_chapter_state = require_chapter_state_for_generation(
         storage,
         int(plan.content.get("chapter", 1) or 1),
@@ -94,10 +105,37 @@ def draft(
         current_goal=str(plan.content.get("objective") or plan.title or "draft chapter"),
         environment=environment,
         os_envelope=os_envelope,
+        source_policy=source_policy,
     )
     knowledge_contract = knowledge_context_contract_from_pack(mkaos_pack)
     context_bundle = mkaos_pack.get("context_bundle", context_bundle)
     context_bundle_asset = context_bundle["asset"]
+    content_intelligence = content_intelligence_preflight_gate(
+        storage,
+        target_asset_id=plan.id,
+        target_asset_path=plan_path,
+        project_id=project_id,
+        workspace_path=workspace,
+        required=is_production_environment(environment or (os_envelope or {}).get("environment")),
+    )
+    preflight = enforce_model_operation_preflight(
+        storage,
+        operation="draft",
+        environment=environment,
+        target_asset_id=plan.id,
+        target_asset_path=plan_path,
+        project_id=project_id,
+        workspace_path=workspace,
+        asset_type="draft_chapter",
+        task_type="draft",
+        os_envelope=os_envelope,
+        source_policy=source_policy,
+        provider_runtime_gate=provider_runtime_gate,
+        context_bundle_path=str(context_bundle.get("path") or mkaos_pack.get("context_bundle_path") or ""),
+        require_context_bundle=True,
+        extra_gate_statuses={"content_intelligence": content_intelligence},
+        extra_required_gates=["content_intelligence"],
+    )
     with AgentExecutionContext(
         storage,
         agent_key="draft",
@@ -242,6 +280,24 @@ def draft(
             ),
         )
         path = storage.write_asset("drafts", asset)
+        final_governance = record_model_operation_final_governance(
+            storage,
+            operation="draft",
+            environment=environment,
+            output_asset_id=asset.id,
+            output_asset_path=path,
+            project_id=project_id,
+            workspace_path=workspace,
+            source_policy=source_policy,
+            os_envelope=os_envelope,
+            provider_runtime_gate=provider_runtime_gate,
+            preflight_governance=preflight,
+            context_bundle_path=str(context_bundle.get("path") or mkaos_pack.get("context_bundle_path") or ""),
+            require_context_bundle=True,
+            extra_gate_statuses={"content_intelligence": content_intelligence},
+            extra_required_gates=["content_intelligence"],
+        )
+        attach_model_operation_governance(storage, path, final_governance)
         _record_mkaos_usage(
             storage,
             mkaos_pack,
@@ -405,6 +461,7 @@ def _build_mkaos_pack(
     current_goal: str,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return build_mkaos_flow_context_with_policy(
         storage,
@@ -427,6 +484,7 @@ def _build_mkaos_pack(
                 query=current_goal,
                 token_budget=8000,
                 existing_context_bundle_path=existing_context_bundle_path,
+                source_policy=source_policy,
                 environment=environment,
                 os_envelope=os_envelope,
             )

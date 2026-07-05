@@ -194,6 +194,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/feedback-adapters/metrics",
                 "/product/feedback-adapters/comments/cluster",
                 "/product/feedback-adapters/mutation-proposal",
+                "/product/feedback-adapters/mutation-proposal/resolve",
                 "/product/settings/assets",
                 "/product/settings/profile",
                 "/product/production/versions",

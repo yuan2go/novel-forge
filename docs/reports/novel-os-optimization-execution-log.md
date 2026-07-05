@@ -3,7 +3,7 @@
 审计日期：2026-07-05  
 基线 commit：`8733acf`
 本轮继续治理基线 commit：`2f1f0bc`
-分支：`backup/v6-post-mkaos-industrialization-20260705`  
+分支：`feat/v7-content-intelligence-and-longform-proof`
 
 ## Scan
 
@@ -55,6 +55,12 @@
 | P1-PROVIDER-PRODUCTION-001 | P1 | provider route production policy 缺 allowlist/mock denylist/审批证据 | `resolve_model_route` 在 production 下强制 provider allowlist、mock denylist、审批证据，并把 policy/evidence 写入 resolution；scheduler/workflow/provider-fallback/GuardedModelAdapter 透传 environment | `src/novel_forge/modules/model_router/service.py`、相关调用方、`tests/unit/test_provider_hard_stop_proof.py` | provider policy 单测覆盖 allowlist deny、mock deny、缺审批 deny、审批通过、fixture mode mock |
 | P1-SERVICE-SEAMS-007 | P1 | Product/Workflow/MKAOS 大 service 仍缺 use-case 级拆分 | 抽出 `product_tasks`、`workflow_nodes.control`、`mkaos.quality`，原 facade 保持兼容并补 characterization tests | `src/novel_forge/api/services/product_tasks.py`、`src/novel_forge/modules/workflow_nodes/control.py`、`src/novel_forge/modules/mkaos/quality.py`、`tests/unit/test_use_case_service_seams.py` | 新 seam focused tests 和既有 Product/Workflow/MKAOS 回归通过 |
 | P1-PROVIDER-OPS-001 | P1 | provider approval evidence 只存在于 resolution content，UI/ops 无聚合视图 | 新增 `provider_approval_evidence_report`、API endpoint、OS Console provider approval evidence panel；route/gateway API 支持 environment/approval/fixture 字段 | `src/novel_forge/modules/model_router/service.py`、`src/novel_forge/api/routers/os_capabilities.py`、`src/novel_forge/api/models.py`、`web/admin/app/features/os/*` | provider approval report 单测和 web admin node tests 通过 |
+| P1-PROVIDER-GOVERNANCE-002 | P1 | 核心 model/provider-assisted 生产链路仍有旧 service 只用 `GuardedModelAdapter`，未统一要求 provider/source/context 证据 | 新增 `model_operation_governance` 公共 seam，并接入 `topic`、`outline`、`chapter_plan`、`draft`、`review`、`revision` 及 scheduler runner 证据透传；production 下缺 ProviderRuntimeGate 会在模型调用前阻断，成功路径写回 `production_governance` | `src/novel_forge/modules/model_operation_governance.py`、`topics/service.py`、`outline/service.py`、`chapter_plan/service.py`、`drafting/service.py`、`review/service.py`、`revision/service.py`、`agent_scheduler/service.py`、`tests/unit/test_model_operation_governance.py` | 正反 fixture 通过；核心本地主链和 scheduler focused tests 通过 |
+| P1-SERVICE-SEAMS-008 | P1 | `product.py` 和 `mkaos/service.py` 仍承载 provider/model use-case 细节 | 抽出 Product handoff provider review helper；抽出 MKAOS model judge opt-in/source scrub policy，主 service 保持兼容调用 | `src/novel_forge/api/services/product_handoff_review.py`、`src/novel_forge/api/services/product.py`、`src/novel_forge/modules/mkaos/model_judge_policy.py`、`src/novel_forge/modules/mkaos/service.py` | Product/MKAOS 回归通过 |
+| P0-V7-MAIN-CHAIN-001 | P0 | Draft/Revision 的生产模型调用仍可能只校验 provider/context，而不强制 V7 内容智能证据 | 新增 `content_intelligence_governance`，Draft/Revision production preflight 和 final governance 强制记录 `genre_strategy_pack` + `style_generation_policy`；缺失时在模型调用前 fail closed | `src/novel_forge/modules/content_intelligence_governance.py`、`src/novel_forge/modules/drafting/service.py`、`src/novel_forge/modules/revision/service.py`、`tests/unit/test_model_operation_governance.py` | 缺 genre/style 证据阻断；证据齐全时 model operation governance passed |
+| P0-V7-RELEASE-GATE-001 | P0 | Release Package 仍可能只依赖旧 publish gate ready，不硬性引用 V7 quality evidence | ReleasePackage production 自身新增 V7 hard gate，要求 quality report、provider judge result、genre risk gate、style drift gate、canon graph plugin report、evaluation gate、blocking ReviewIssue clear、platform upload checklist；缺任一项阻断 | `src/novel_forge/modules/publishing/release_package.py`、`src/novel_forge/modules/content_intelligence_governance.py`、`tests/unit/publishing_fixtures.py`、`tests/unit/test_publish_feedback_loop.py` | 旧 publish gate ready 但缺 V7 evidence 会阻断；完整 V7 fixture 最终 package status ready |
+| P0-CANON-STATE-MACHINE-001 | P0 | Canon Graph 插件只有 report，没有题材状态机投影 | 在现有 plugin report 中加入 genre state machine：玄幻 PowerScale/Resource/Breakthrough，悬疑 Evidence/Suspect/Reveal，历史 Faction/Office/Resource，言情 Relationship/Trust，科幻 Rule/Cost，恐怖 Contamination/Taboo/SafeZone | `src/novel_forge/modules/canon_graph/service.py`、`tests/unit/test_canon_graph_plugins.py` | 插件 report schema-backed；阻断样本和 pass/warning 样本均覆盖 state-machine fields |
+| P0-FEEDBACK-APPROVAL-001 | P0 | 反馈 proposal 审批后缺应用链，容易停在建议层 | 新增 `resolve_feedback_mutation_proposal`，审批后生成新的 proposal version，包含 outline/chapter_plan/style/genre/MKAOS patch plan、impact analysis、downstream invalidation、regeneration task；不静默修改目标资产 | `src/novel_forge/modules/publishing_feedback_adapters/service.py`、`src/novel_forge/api/routers/publishing_feedback_adapters.py`、`src/novel_forge/api/models.py`、`tests/unit/test_publishing_feedback_adapters.py` | approved proposal 生成 planned application chain；API route 覆盖通过 |
 
 ## Test Log
 
@@ -96,6 +102,19 @@
 | `python3 -m compileall -q src/novel_forge/api/services/product_tasks.py src/novel_forge/modules/workflow_nodes/control.py src/novel_forge/modules/mkaos/quality.py src/novel_forge/modules/model_router/service.py src/novel_forge/api/routers/os_capabilities.py src/novel_forge/api/models.py` | 通过 | 本轮新增/修改模块语法检查通过 |
 | `PYTHONPATH=src python3 -m unittest tests.unit.test_product_api.ProductApiTests.test_task_control_config_and_health_shape tests.unit.test_workflow_executor.WorkflowExecutorTests.test_pause_retry_and_cancel_workflow_run_controls tests.unit.test_mkaos_quality_score` | 通过 | 5 个既有 Product/Workflow/MKAOS focused regression 通过 |
 | `make test` | 通过 | Python 505 tests OK，2 skipped；Web admin node tests 10 passed，1 optional Playwright smoke skipped |
+| `python3 -m unittest tests.unit.test_model_operation_governance tests.unit.test_context_builder_mkaos_flow tests.unit.test_mkaos_agent_context_contract tests.unit.test_module_services tests.unit.test_agent_scheduler tests.unit.test_mkaos_provider_semantic_governance tests.unit.test_product_api` | 通过 | 74 个 model operation governance、Context Builder/MKAOS、scheduler、Product 回归通过 |
+| `python3 -m unittest tests.unit.test_mkaos_provider_semantic_governance tests.unit.test_mkaos_conflict_detector tests.unit.test_product_api tests.unit.test_large_service_seams` | 通过 | 54 个 MKAOS/Product/seam 回归通过 |
+| `python3 -m compileall -q src/novel_forge tests` | 通过 | 本轮新增 governance/seam 模块和测试语法检查通过 |
+| `git diff --check` | 通过 | 无 whitespace error |
+| `python3 -m unittest tests.unit.test_model_operation_governance tests.unit.test_publish_feedback_loop.PublishFeedbackLoopTests.test_release_package_blocks_ready_gate_without_v7_content_intelligence_evidence tests.unit.test_publish_feedback_loop.PublishFeedbackLoopTests.test_release_package_production_ready_fixture_creates_ready_package` | 通过 | 6 个 model operation/V7 release gate 正反 fixture 通过 |
+| `python3 -m unittest tests.unit.test_model_operation_governance tests.unit.test_publish_feedback_loop tests.unit.test_quality_eval_v2 tests.unit.test_genre_os tests.unit.test_style_os tests.unit.test_canon_graph_plugins` | 通过 | 30 个 V7 governance、publish、quality、genre、style、canon focused tests 通过 |
+| `python3 -m unittest tests.integration.test_content_intelligence_context_builder tests.integration.test_genre_style_quality_to_draft_chain tests.integration.test_long_chain_50_chapter_content_intelligence tests.unit.test_product_api_routes tests.unit.test_schemas` | 通过 | 22 个 content intelligence/context/draft chain/long-chain/API/schema 测试通过；FastAPI TestClient deprecation warning 不影响结果 |
+| `python3 -m compileall -q src/novel_forge tests` | 通过 | 本轮 V7 content intelligence governance 语法检查通过 |
+| `python3 -m unittest tests.unit.test_canon_graph_plugins tests.unit.test_publish_feedback_loop.PublishFeedbackLoopTests.test_release_package_production_ready_fixture_creates_ready_package tests.integration.test_genre_style_quality_to_draft_chain` | 通过 | 5 个 Canon 状态机与 release/draft 链路 focused tests 通过 |
+| `python3 -m unittest tests.unit.test_publishing_feedback_adapters tests.integration.test_feedback_to_mutation_proposal tests.unit.test_product_api_routes tests.unit.test_schemas` | 通过 | 27 个 feedback approval/API/schema tests 通过；FastAPI TestClient deprecation warning 不影响结果 |
+| `python3 -m unittest tests.unit.test_model_operation_governance tests.unit.test_publish_feedback_loop tests.unit.test_quality_eval_v2 tests.unit.test_genre_os tests.unit.test_style_os tests.unit.test_canon_graph_plugins tests.unit.test_publishing_feedback_adapters tests.integration.test_content_intelligence_context_builder tests.integration.test_genre_style_quality_to_draft_chain tests.integration.test_feedback_to_mutation_proposal tests.integration.test_long_chain_50_chapter_content_intelligence tests.unit.test_product_api_routes tests.unit.test_schemas` | 通过 | 61 个 V7 focused tests 通过；FastAPI TestClient deprecation warning 不影响结果 |
+| `python3 -m compileall -q src/novel_forge tests` | 通过 | 最终语法检查通过 |
+| `git diff --check` | 通过 | 最终 whitespace 检查通过 |
 
 ## Correction During Validation
 
@@ -103,8 +122,9 @@
 
 ## Next
 
-1. 在已有 seam tests 保护下继续拆 MKAOS/product/workflow/scheduler 大 service；下一批优先 Product task control/search storage、Workflow gate/rollback helpers、MKAOS selection/quality/lineage/writer。
-2. 将 Postgres fallback policy 暴露到 health/system diagnostics。
-3. 分批治理 `workflow_nodes/service.py`、`product.py` 内剩余 broad exception；`mkaos/service.py` 目标 broad exception 已清零。
-4. 将 publishing facade 的新模块边界继续扩展到 adapter/release plan，避免 `service.py` 再次膨胀。
-5. Provider approval evidence 已进 OS Console；下一轮补 API/UI 操作侧审批录入表单和 route lifecycle 审计。
+1. 将 V7 content-intelligence gate 继续推进到 Outline/ChapterPlan 的 production acceptance，而不仅是 Draft/Revision/ReleasePackage。
+2. 将 Canon state-machine 从 report projection 深化为可查询、可 diff 的 typed graph state。
+3. 将 feedback approval application chain 接入 Workflow Processor，执行 patch/invalidation/regeneration 仍必须 human-gated。
+4. 在已有 seam tests 保护下继续拆 MKAOS/product/workflow/scheduler 大 service；下一批优先 Product search/export storage、MKAOS selection/lineage/writer、Workflow gate/rollback helpers。
+5. 将 `decomposition`、`analysis` 的 provider-assisted 素材分析路径接入同一 governance，但需要先明确“分析源文本允许策略”和“生成源文本禁止策略”的区别。
+6. 将 Postgres fallback policy 暴露到 health/system diagnostics。

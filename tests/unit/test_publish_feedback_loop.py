@@ -205,8 +205,29 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             self.assertEqual(package.content["evaluation_gate"]["status"], "passed")
             self.assertEqual(package.content["provider_runtime_gate"]["status"], "passed")
             self.assertEqual(package.content["platform_strategy_gate"]["status"], "passed")
+            self.assertEqual(package.content["content_intelligence_gate"]["status"], "passed")
+            self.assertEqual(package.content["platform_upload_checklist"]["status"], "passed")
             self.assertEqual(package.metadata["os_envelope"]["environment"], "production")
             self.assertEqual(package.metadata["os_envelope"]["asset_type"], "release_package")
+
+    def test_release_package_blocks_ready_gate_without_v7_content_intelligence_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = create_production_ready_release_inputs(storage, include_v7=False)
+            gate = storage.read_asset(fixture["publish_gate_path"])
+
+            self.assertEqual(gate.content["decision"], "ready", gate.content["blocking_issues"])
+            with self.assertRaisesRegex(ValueError, "content_intelligence"):
+                create_release_package(
+                    storage,
+                    fixture["draft_path"],
+                    workspace_path=fixture["workspace_path"],
+                    publish_gate_path=fixture["publish_gate_path"],
+                    envelope=production_envelope(fixture["project_id"], "release_package", trace_id=f"trace-release-no-v7-{fixture['project_id']}"),
+                    environment="production",
+                    source_policy=fixture["source_policy"],
+                )
 
     def test_publish_gate_governance_blocks_missing_provider_fixture(self):
         with tempfile.TemporaryDirectory() as tmp:
