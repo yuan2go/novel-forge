@@ -35,7 +35,7 @@ from novel_forge.api.services.product_asset_index import (
     asset_records as _asset_records,
     find_asset_binding as _find_asset_binding,
 )
-from novel_forge.api.services.postgres_fallback_policy import postgres_asset_read_fallback_policy
+from novel_forge.api.services.postgres_fallback_policy import handle_postgres_asset_read_fallback
 from novel_forge.api.services import product_tasks as _product_tasks
 from novel_forge.schemas import AssetCollection, BatchTaskItem, DraftChapter, ProjectWorkspaceState, validate_common_fields
 from novel_forge.storage.object_store import MinioObjectStore, object_name_for_path
@@ -124,7 +124,13 @@ def indexed_list_projects(settings: Any, storage: LocalStorage, include_deleted:
                 rows.append({**_project_summary(storage, storage.root / row["workspace_path"], data), "index_source": "postgres"})
             return rows
         except Exception as exc:
-            if not postgres_asset_read_fallback_policy(settings, exc)["allow_local_fallback"]:
+            fallback_policy = handle_postgres_asset_read_fallback(
+                storage,
+                settings,
+                exc,
+                operation="indexed_list_projects",
+            )
+            if not fallback_policy["allow_local_fallback"]:
                 raise
     return [{**row, "index_source": "json"} for row in list_projects(storage, include_deleted=include_deleted)]
 
@@ -468,7 +474,15 @@ def indexed_project_assets(
                     return rows
             return rows
         except Exception as exc:
-            if not postgres_asset_read_fallback_policy(settings, exc)["allow_local_fallback"]:
+            fallback_policy = handle_postgres_asset_read_fallback(
+                storage,
+                settings,
+                exc,
+                operation="project_assets_indexed",
+                project_id=str(project.get("project_id", "")),
+                workspace_path=str(project.get("workspace_path", "")),
+            )
+            if not fallback_policy["allow_local_fallback"]:
                 raise
     return project_assets(storage, project_id_or_path, category=category, asset_type=asset_type, keyword=keyword, limit=limit)
 
@@ -977,7 +991,14 @@ def indexed_task_center(
                 "page": {"offset": offset, "limit": limit, "total": total_tasks},
             }
         except Exception as exc:
-            if not postgres_asset_read_fallback_policy(settings, exc)["allow_local_fallback"]:
+            fallback_policy = handle_postgres_asset_read_fallback(
+                storage,
+                settings,
+                exc,
+                operation="task_center_indexed",
+                project_id=project_id or "",
+            )
+            if not fallback_policy["allow_local_fallback"]:
                 raise
     return task_center(
         storage,

@@ -24,6 +24,10 @@ from novel_forge.modules.agent_scheduler.publishing_runners import (
     run_publish_gate_report as _run_publishing_gate_report,
     run_release_package as _run_publishing_release_package,
 )
+from novel_forge.modules.agent_scheduler.production_governance import (
+    enforce_scheduler_final_governance,
+    enforce_scheduler_preflight_governance,
+)
 from novel_forge.modules.agent_scheduler.recovery_runner import recover_dispatch as _recover_dispatch
 from novel_forge.modules.agent_scheduler.rollback_runner import rollback_operation_outputs as _rollback_operation_outputs
 from novel_forge.modules.agent_scheduler.scheduler_tick import run_scheduler_loop as _run_scheduler_loop
@@ -102,6 +106,9 @@ class AgentOperationRegistry(OperationRegistryCatalog):
         spec = self.specs.get(canonical)
         registry_resolution = _resolve_agent_registry_for_scheduler(storage, spec, canonical, environment=environment)
         _attach_agent_registry_resolution(storage, agent_run, registry_resolution)
+        queue_path = _queue_path(storage, str(queue_content.get("dispatch_id", "")))
+        agent_run_path = _agent_run_path_for_governance(storage, agent_run, queue_path)
+        preflight_governance: dict[str, Any] = {}
         expected_outputs = _dedupe(
             [
                 *_string_list(queue_content.get("expected_output_assets", [])),
@@ -122,6 +129,26 @@ class AgentOperationRegistry(OperationRegistryCatalog):
         }
         if existing_outputs:
             _enforce_operation_knowledge_context(canonical, existing_knowledge_context, environment=environment)
+            preflight_governance = enforce_scheduler_preflight_governance(
+                storage,
+                operation=canonical,
+                environment=environment,
+                queue_path=queue_path,
+                agent_run_path=agent_run_path,
+                queue_item=queue_item,
+                agent_run=agent_run,
+            )
+            final_governance = enforce_scheduler_final_governance(
+                storage,
+                operation=canonical,
+                environment=environment,
+                queue_path=queue_path,
+                agent_run_path=agent_run_path,
+                queue_item=queue_item,
+                agent_run=agent_run,
+                output_assets=existing_outputs,
+                preflight_report=preflight_governance,
+            )
             return {
                 "status": "succeeded",
                 "output_assets": existing_outputs,
@@ -144,10 +171,20 @@ class AgentOperationRegistry(OperationRegistryCatalog):
                     ),
                     "provider_usage": evidence.get("provider_usage", {}) if isinstance(evidence.get("provider_usage", {}), dict) else {},
                     "provider_runtime_guard": evidence.get("provider_runtime_guard", {}) if isinstance(evidence.get("provider_runtime_guard", {}), dict) else {},
+                    **_governance_evidence(preflight_governance, final_governance),
                 },
             }
         runner = self.runners.get(canonical)
         if runner:
+            preflight_governance = enforce_scheduler_preflight_governance(
+                storage,
+                operation=canonical,
+                environment=environment,
+                queue_path=queue_path,
+                agent_run_path=agent_run_path,
+                queue_item=queue_item,
+                agent_run=agent_run,
+            )
             checkpoint_resume = _resume_from_checkpoint(storage, queue_item, agent_run, canonical)
             if checkpoint_resume:
                 return checkpoint_resume
@@ -188,6 +225,17 @@ class AgentOperationRegistry(OperationRegistryCatalog):
                 raise RuntimeError(f"agent operation {canonical} completed without output assets")
             knowledge_context = _knowledge_context_from_service_result(storage, service_result, output_assets)
             _enforce_operation_knowledge_context(canonical, knowledge_context, environment=environment)
+            final_governance = enforce_scheduler_final_governance(
+                storage,
+                operation=canonical,
+                environment=environment,
+                queue_path=queue_path,
+                agent_run_path=agent_run_path,
+                queue_item=queue_item,
+                agent_run=agent_run,
+                output_assets=output_assets,
+                preflight_report=preflight_governance,
+            )
             if knowledge_context:
                 run_id = str((agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}).get("run_id", ""))
                 if run_id:
@@ -202,6 +250,7 @@ class AgentOperationRegistry(OperationRegistryCatalog):
                 "input_assets": _input_paths(agent_run),
                 "service_result": _json_safe_result(service_result),
                 "output_assets": output_assets,
+                "production_governance": _governance_evidence(preflight_governance, final_governance),
                 "checkpoint_schema": spec.checkpoint_schema() if spec else {"version": "0.1.0", "strategy": "local_service"},
             }
             checkpoint_asset = _record_operation_checkpoint(storage, queue_item, agent_run, status="agent_scheduler_service_completed", state=checkpoint_state)
@@ -223,6 +272,7 @@ class AgentOperationRegistry(OperationRegistryCatalog):
                     "context_bundle_path": evidence.get("context_bundle_path", ""),
                     "provider_usage": evidence.get("provider_usage", {}) if isinstance(evidence.get("provider_usage", {}), dict) else {},
                     "provider_runtime_guard": evidence.get("provider_runtime_guard", {}) if isinstance(evidence.get("provider_runtime_guard", {}), dict) else {},
+                    **_governance_evidence(preflight_governance, final_governance),
                 },
             }
         return {
@@ -2927,6 +2977,29 @@ def _envelope_from_evidence(evidence: dict[str, Any]) -> dict[str, Any] | None:
     if isinstance(evidence.get("envelope"), dict):
         return evidence["envelope"]
     return None
+
+
+def _governance_evidence(preflight: dict[str, Any], final: dict[str, Any]) -> dict[str, Any]:
+    if not preflight and not final:
+        return {}
+    return {
+        "production_governance_path": str(final.get("path") or ""),
+        "production_governance_status": str(final.get("status") or ""),
+        "production_governance_preflight_path": str(preflight.get("path") or ""),
+        "production_governance_gate_result_path": str(final.get("gate_result_path") or ""),
+    }
+
+
+def _agent_run_path_for_governance(storage: LocalStorage, agent_run: dict[str, Any], queue_path: Path) -> Path:
+    run_content = agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}
+    for value in [run_content.get("run_id"), agent_run.get("id"), agent_run.get("path"), agent_run.get("_path")]:
+        if not str(value or "").strip():
+            continue
+        try:
+            return _resolve_agent_run(storage, str(value))
+        except (FileNotFoundError, ValueError):
+            continue
+    return queue_path
 
 
 def _environment_from_evidence(evidence: dict[str, Any]) -> str:

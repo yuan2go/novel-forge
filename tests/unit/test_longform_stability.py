@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -186,6 +187,42 @@ class LongformStabilityTests(unittest.TestCase):
             self.assertIn(result["model_gateway"]["status"], {"succeeded", "fallback"})
             if result["model_gateway"]["status"] == "succeeded":
                 self.assertTrue(any(call.content["operation"] == "model_assisted_longform_extraction" for call in calls))
+
+    def test_model_assisted_extraction_records_local_fallback_decision(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft = _write_good_longform_fixture(storage)
+
+            with patch("novel_forge.modules.model_router.execute_model_gateway_call", side_effect=RuntimeError("provider down")):
+                result = model_assisted_longform_extraction(storage, draft, use_model=True)
+
+            decision = storage.read_json(storage.root / result["model_gateway"]["fallback_decision_path"])
+
+            self.assertEqual(result["model_gateway"]["status"], "fallback")
+            self.assertEqual(decision["type"], "fallback_decision")
+            self.assertTrue(decision["content"]["allowed"])
+            self.assertFalse(decision["content"]["silent_fallback_allowed"])
+            self.assertEqual(decision["content"]["fallback_type"], "model_assisted_longform_extraction")
+
+    def test_model_assisted_extraction_blocks_deterministic_fallback_in_production(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft = _write_good_longform_fixture(storage)
+
+            with patch("novel_forge.modules.model_router.execute_model_gateway_call", side_effect=RuntimeError("provider down")):
+                with self.assertRaisesRegex(RuntimeError, "blocked production fallback"):
+                    model_assisted_longform_extraction(storage, draft, use_model=True, environment="production")
+
+            decisions = [
+                storage.read_json(path)
+                for path in storage.list_json("runs")
+                if storage.read_json(path).get("type") == "fallback_decision"
+            ]
+            self.assertTrue(decisions)
+            self.assertFalse(decisions[-1]["content"]["allowed"])
+            self.assertEqual(decisions[-1]["content"]["mode"], "deterministic_longform_fallback")
 
     def test_control_asset_upsert_and_extraction_calibration_persist_reports(self):
         with tempfile.TemporaryDirectory() as tmp:

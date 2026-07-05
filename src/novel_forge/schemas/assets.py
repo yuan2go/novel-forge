@@ -519,6 +519,16 @@ class ReleasePackage(BaseAsset):
 
 
 @dataclass
+class ProductionGovernanceReport(BaseAsset):
+    type: str = "production_governance_report"
+
+
+@dataclass
+class FallbackDecision(BaseAsset):
+    type: str = "fallback_decision"
+
+
+@dataclass
 class PublishingPlan(BaseAsset):
     type: str = "publishing_plan"
 
@@ -1397,6 +1407,8 @@ SCHEMA_CLASSES = {
         OriginalityReport,
         PublishGateReport,
         ReleasePackage,
+        ProductionGovernanceReport,
+        FallbackDecision,
         PublishingPlan,
         PublishingLog,
         ReaderFeedback,

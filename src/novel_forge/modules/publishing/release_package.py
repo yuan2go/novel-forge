@@ -143,6 +143,7 @@ def create_release_package(
             "evaluation_gate": gate_content.get("evaluation_gate", {}),
             "provider_runtime_gate": gate_content.get("provider_runtime_gate", {}),
             "platform_strategy_gate": gate_content.get("platform_strategy_gate", {}),
+            "production_governance": gate_content.get("production_governance", {}),
             "release_gate_evidence": release_gate_evidence,
             "source_isolation": {
                 "source_chunk_raw_text_allowed": False,

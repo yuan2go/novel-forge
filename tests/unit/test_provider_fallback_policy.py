@@ -61,8 +61,15 @@ class ProviderFallbackPolicyTests(unittest.TestCase):
             self.assertFalse(preview["silent_fallback_allowed"])
             self.assertEqual(preview["fallback_candidates"][0]["cost_prediction"]["amount"], 0.02)
             self.assertEqual(approved["status"], "approved")
+            self.assertTrue(approved["fallback_decision_path"])
+            decision = storage.read_json(storage.root / approved["fallback_decision_path"])
+            self.assertEqual(decision["type"], "fallback_decision")
+            self.assertEqual(decision["content"]["allowed"], True)
+            self.assertEqual(decision["content"]["rollback_plan"]["rollback_action"], "return_to_primary_route")
+            self.assertFalse(decision["content"]["silent_fallback_allowed"])
             self.assertEqual(resolved["provider"], "fallback-provider")
             self.assertEqual(resolved["hard_stop_policy"], "fail_closed")
+            self.assertEqual(resolved["fallback_decision_path"], approved["fallback_decision_path"])
 
 
 if __name__ == "__main__":

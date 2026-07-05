@@ -1,5 +1,6 @@
 from tests.unit.mkaos_p1_helpers import MkaosP1TestCase
 from novel_forge.modules import mkaos
+from novel_forge.modules.mkaos_model_extraction import create_model_extraction_job, run_model_extraction_job
 
 
 class MkaosProviderSemanticGovernanceTests(MkaosP1TestCase):
@@ -17,6 +18,66 @@ class MkaosProviderSemanticGovernanceTests(MkaosP1TestCase):
         self.assertEqual(report["status"], "opt_in_required")
         self.assertFalse(report["passed"])
         self.assertFalse(report["source_isolation"]["raw_text_included"])
+
+    def test_model_extraction_blocks_mock_provider_in_production_without_fixture(self):
+        job = create_model_extraction_job(
+            self.storage,
+            {
+                "project_id": self.project_id,
+                "source_type": "professional_book",
+                "provider_mode": "mock",
+                "input_summary": "制度压力应抽象为行动代价。",
+                "evidence_refs": ["fixture-evidence"],
+            },
+        )
+
+        with self.assertRaisesRegex(ValueError, "provider runtime gate"):
+            run_model_extraction_job(
+                self.storage,
+                job["id"],
+                {
+                    "environment": "production",
+                    "provider_mode": "mock",
+                    "input_summary": "制度压力应抽象为行动代价。",
+                },
+            )
+
+        evidences = [
+            self.storage.read_json(path)
+            for path in self.storage.list_json("runs")
+            if self.storage.read_json(path).get("type") == "mkaos_extraction_provider_evidence"
+        ]
+        self.assertTrue(evidences)
+        self.assertEqual(evidences[-1]["content"]["provider_runtime_gate"]["status"], "blocked")
+        self.assertFalse(evidences[-1]["content"]["provider_approval_evidence"]["mock_fixture_allowed"])
+
+    def test_model_extraction_allows_mock_provider_in_production_fixture_mode(self):
+        job = create_model_extraction_job(
+            self.storage,
+            {
+                "project_id": self.project_id,
+                "source_type": "professional_book",
+                "provider_mode": "mock",
+                "input_summary": "制度压力应抽象为行动代价。",
+            },
+        )
+
+        result = run_model_extraction_job(
+            self.storage,
+            job["id"],
+            {
+                "environment": "production",
+                "provider_mode": "mock",
+                "allow_mock_provider_fixture": True,
+                "input_summary": "制度压力应抽象为行动代价。",
+                "evidence_refs": ["fixture-evidence"],
+            },
+        )
+
+        self.assertEqual(result["status"], "succeeded")
+        evidence = result["provider_evidence"]["asset"]
+        self.assertEqual(evidence["content"]["provider_runtime_gate"]["status"], "passed")
+        self.assertTrue(evidence["content"]["provider_approval_evidence"]["mock_fixture_allowed"])
 
     def test_provider_e2e_probe_accepts_mock_opt_in_without_network(self):
         seeded = self.seed_knowledge_system()

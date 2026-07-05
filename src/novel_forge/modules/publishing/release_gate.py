@@ -8,6 +8,7 @@ def release_package_gate_evidence(gate: dict[str, Any], *, production: bool) -> 
     checks: list[dict[str, Any]] = []
     issues: list[dict[str, Any]] = []
     gate_specs = [
+        ("production_governance", "path", "passed"),
         ("evaluation_gate", "path", "passed"),
         ("provider_runtime_gate", "", "passed"),
         ("platform_strategy_gate", "platform_strategy_pack_path", "passed"),

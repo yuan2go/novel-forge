@@ -8,6 +8,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.model_adapters.runtime import estimate_provider_cost, normalize_provider_usage
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.model_router import resolve_model_route
+from novel_forge.modules.production_governance import record_fallback_decision
 from novel_forge.modules.runtime_ledger import record_gate_result
 from novel_forge.storage.local import LocalStorage
 
@@ -125,7 +126,28 @@ def approve_provider_fallback(storage: LocalStorage, payload: dict[str, Any]) ->
         message=reason or "provider fallback approval denied",
         blocking=True,
     )
-    return {"status": "approved" if approved else "denied", "approval_gate_path": gate.get("path", ""), "approval": approval, "asset": gate.get("asset", {})}
+    decision = record_fallback_decision(
+        storage,
+        fallback_type="provider",
+        mode="manual_operator_approval",
+        allowed=approved,
+        reason=reason or "provider fallback approval denied",
+        project_id=project_id,
+        workspace_path=workspace_path,
+        environment=str(payload.get("environment") or preview.get("environment") or ""),
+        approval_required=True,
+        approval_ref=str(gate.get("path", "")),
+        target_refs=[str(preview.get("route_resolution_path", "")), str(preview.get("preview_gate_path", ""))],
+        evidence_refs=[str(gate.get("path", ""))],
+        rollback_plan={
+            "rollback_action": "return_to_primary_route",
+            "approval_ref": str(gate.get("path", "")),
+            "route_resolution_path": str(preview.get("route_resolution_path", "")),
+            "requires_operator_review": True,
+        },
+        trace=payload.get("trace", {}) if isinstance(payload.get("trace", {}), dict) else {},
+    )
+    return {"status": "approved" if approved else "denied", "approval_gate_path": gate.get("path", ""), "fallback_decision_path": decision.get("path", ""), "approval": approval, "asset": gate.get("asset", {})}
 
 
 def resolve_provider_fallback(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -146,6 +168,7 @@ def resolve_provider_fallback(storage: LocalStorage, payload: dict[str, Any]) ->
         raise ValueError("provider fallback approval provider mismatch")
     if model_name and model_name != str(result.get("model_name") or ""):
         raise ValueError("provider fallback approval model mismatch")
+    fallback_decision = _find_fallback_decision_for_approval(storage, approval_asset.get("path", ""), str(result.get("approval_id", "")))
     return {
         "status": "approved",
         "hard_stop_policy": "fail_closed",
@@ -157,6 +180,7 @@ def resolve_provider_fallback(storage: LocalStorage, payload: dict[str, Any]) ->
         "usage_estimate": result.get("usage_estimate", {}),
         "approval_gate_path": approval_asset.get("path", ""),
         "approval_id": result.get("approval_id", ""),
+        "fallback_decision_path": fallback_decision.get("path", ""),
     }
 
 
@@ -211,6 +235,22 @@ def _find_approval(storage: LocalStorage, approval_ref: str) -> dict[str, Any]:
         if approval_ref in {str(data.get("id", "")), str(content.get("gate_id", "")), str(result.get("approval_id", "")), _display_path(storage.root, path)}:
             return {**data, "path": _display_path(storage.root, path)}
     raise FileNotFoundError(f"provider fallback approval not found: {approval_ref}")
+
+
+def _find_fallback_decision_for_approval(storage: LocalStorage, approval_path: str, approval_id: str) -> dict[str, Any]:
+    for path in reversed(storage.list_json("runs")):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "fallback_decision":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if approval_path and str(content.get("approval_ref", "")) == approval_path:
+            return {**data, "path": _display_path(storage.root, path)}
+        if approval_id and approval_id in str(content):
+            return {**data, "path": _display_path(storage.root, path)}
+    return {}
 
 
 def _approval_key(task_type: str, provider: str, model_name: str, project_id: str) -> str:

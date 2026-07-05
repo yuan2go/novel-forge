@@ -75,6 +75,21 @@ def run_model_extraction_job(storage: LocalStorage, job_ref: str, payload: dict[
     provider = run_provider(run_payload, prompt.get("content", prompt))
     sanitizer = sanitize_provider_output(provider.get("output", {}))
     provider_evidence = _write_provider_evidence(storage, project_id, provider, sanitizer, run_payload)
+    provider_runtime_gate = provider.get("provider_runtime_gate", {}) if isinstance(provider.get("provider_runtime_gate", {}), dict) else {}
+    if _is_production(run_payload) and provider_runtime_gate.get("status") == "blocked":
+        _update_job(
+            storage,
+            path,
+            {
+                "status": "blocked",
+                "completed_at": utc_now(),
+                "candidate_count": 0,
+                "review_count": 0,
+                "provider_evidence_path": provider_evidence.get("path", ""),
+                "review_issue_count": 0,
+            },
+        )
+        raise ValueError(f"MKAOS model extraction blocked production provider runtime gate: {provider_runtime_gate.get('reason', 'blocked')}")
     raw_candidates = _provider_candidates(sanitizer["sanitized"])
     if not raw_candidates:
         raw_candidates = deterministic
@@ -298,6 +313,9 @@ def _write_provider_evidence(storage: LocalStorage, project_id: str, provider: d
         "forbidden_field_count": sanitizer.get("forbidden_field_count", 0),
         "source_policy": _source_policy(),
         "source_isolation": _source_isolation(),
+        "provider_approval_evidence": provider.get("provider_approval_evidence", {}) if isinstance(provider.get("provider_approval_evidence", {}), dict) else {},
+        "provider_runtime_gate": provider.get("provider_runtime_gate", {}) if isinstance(provider.get("provider_runtime_gate", {}), dict) else {},
+        "warnings": provider.get("warnings", []) if isinstance(provider.get("warnings"), list) else [],
         "created_at": utc_now(),
     }
     asset = _asset("mkaos_extraction_provider_evidence", make_id("mkaos_extraction_provider_evidence", content["provider_output_hash"] or utc_now()), "MKAOS extraction provider evidence", "mkaos-model-extraction", content, _metadata(project_id, payload), references=_strings(payload.get("evidence_refs")))

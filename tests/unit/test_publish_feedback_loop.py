@@ -171,6 +171,14 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             gate = storage.read_asset(fixture["publish_gate_path"])
 
             self.assertEqual(gate.content["decision"], "ready", gate.content["blocking_issues"])
+            self.assertEqual(gate.content["production_governance"]["status"], "passed")
+            self.assertTrue(gate.content["production_governance"]["path"])
+            governance = storage.read_json(storage.root / gate.content["production_governance"]["path"])
+            self.assertEqual(governance["type"], "production_governance_report")
+            self.assertEqual(governance["content"]["status"], "passed")
+            self.assertFalse(governance["content"]["blocking"])
+            for dimension in ["os_envelope", "context_bundle", "mkaos_risk", "review_issue", "evaluation_gate", "provider_runtime_gate", "platform_strategy_gate", "source_isolation"]:
+                self.assertIn(dimension, governance["content"]["gate_statuses"])
             self.assertEqual(gate.content["evaluation_gate"]["status"], "passed")
             self.assertEqual(gate.content["provider_runtime_gate"]["status"], "passed")
             self.assertEqual(gate.content["platform_strategy_gate"]["status"], "passed")
@@ -192,11 +200,37 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             self.assertEqual(package.content["status"], "ready")
             self.assertFalse(evidence["blocking"], evidence["blocking_issues"])
             self.assertTrue(all(not check["blocking"] for check in evidence["checks"]))
+            self.assertEqual(package.content["production_governance"]["status"], "passed")
+            self.assertEqual(package.content["production_governance"]["path"], gate.content["production_governance"]["path"])
             self.assertEqual(package.content["evaluation_gate"]["status"], "passed")
             self.assertEqual(package.content["provider_runtime_gate"]["status"], "passed")
             self.assertEqual(package.content["platform_strategy_gate"]["status"], "passed")
             self.assertEqual(package.metadata["os_envelope"]["environment"], "production")
             self.assertEqual(package.metadata["os_envelope"]["asset_type"], "release_package")
+
+    def test_publish_gate_governance_blocks_missing_provider_fixture(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "provider-governance-block-p"
+            workspace = _workspace(storage, project_id)
+            draft_path = _draft(storage, workspace, project_id=project_id)
+            _publish_knowledge(storage, project_id)
+
+            gate_path = create_publish_gate_report(
+                storage,
+                draft_path,
+                workspace_path=str(workspace.relative_to(storage.root)),
+                envelope=_production_envelope(project_id, "publish_gate_report", trace_id="trace-provider-governance-block"),
+            )
+            gate = storage.read_asset(gate_path)
+            governance = storage.read_json(storage.root / gate.content["production_governance"]["path"])
+
+            self.assertEqual(gate.content["decision"], "blocked")
+            self.assertEqual(gate.content["production_governance"]["status"], "blocked")
+            self.assertEqual(governance["content"]["status"], "blocked")
+            self.assertTrue(governance["content"]["blocking"])
+            self.assertTrue(any(issue["dimension"] == "provider_runtime_gate" for issue in governance["content"]["blocking_issues"]))
 
     def test_release_package_blocks_mkaos_risk_and_excludes_raw_text(self):
         with tempfile.TemporaryDirectory() as tmp:

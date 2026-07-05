@@ -31,6 +31,7 @@ from novel_forge.schemas import (
     OriginalityReport,
     OutlineVersion,
     ProjectMetricSnapshot,
+    ProductionGovernanceReport,
     PublishGateReport,
     RagQualityReport,
     ProjectWorkspaceState,
@@ -38,6 +39,7 @@ from novel_forge.schemas import (
     ReaderSimulationReport,
     ReaderSentimentReport,
     ReleasePackage,
+    FallbackDecision,
     ReviewReport,
     SCHEMA_CLASSES,
     SourceDocument,
@@ -48,7 +50,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 256)
+        self.assertEqual(len(SCHEMA_CLASSES), 258)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("source_chunk", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
@@ -88,6 +90,8 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("genre_risk_gate", SCHEMA_CLASSES)
         self.assertIn("platform_genre_fit", SCHEMA_CLASSES)
         self.assertIn("genre_template_binding", SCHEMA_CLASSES)
+        self.assertIn("production_governance_report", SCHEMA_CLASSES)
+        self.assertIn("fallback_decision", SCHEMA_CLASSES)
         self.assertIn("creative_strategy_profile", SCHEMA_CLASSES)
         self.assertIn("style_profile", SCHEMA_CLASSES)
         self.assertIn("style_sample", SCHEMA_CLASSES)
@@ -388,6 +392,41 @@ class SchemaTests(unittest.TestCase):
         )
         self.assertEqual(validate_common_fields(audit.to_dict()), [])
         self.assertEqual(validate_common_fields(release.to_dict()), [])
+
+    def test_production_governance_and_fallback_decision_validation(self):
+        governance = ProductionGovernanceReport(
+            title="governance",
+            content={
+                "report_id": "gov-1",
+                "operation": "publishing.publish_gate",
+                "environment": "production",
+                "target_asset_id": "draft1",
+                "target_asset_path": "data/drafts/draft1.json",
+                "required_gates": ["os_envelope", "provider_runtime_gate"],
+                "gate_statuses": {"os_envelope": {"status": "passed"}, "provider_runtime_gate": {"status": "passed"}},
+                "status": "passed",
+                "blocking": False,
+                "blocking_issues": [],
+                "rollback_plan": {"rollback_action": "do_not_create_release_package"},
+                "created_at": "2026-01-01T00:00:00Z",
+            },
+        )
+        decision = FallbackDecision(
+            title="fallback",
+            content={
+                "decision_id": "fallback-1",
+                "fallback_type": "provider",
+                "mode": "manual_operator_approval",
+                "allowed": True,
+                "approval_required": True,
+                "silent_fallback_allowed": False,
+                "reason": "operator approved",
+                "rollback_plan": {"rollback_action": "return_to_primary_route"},
+                "created_at": "2026-01-01T00:00:00Z",
+            },
+        )
+        self.assertEqual(validate_common_fields(governance.to_dict()), [])
+        self.assertEqual(validate_common_fields(decision.to_dict()), [])
 
     def test_analysis_assets_reject_direct_generation_rag(self):
         report = CommonNovelAnalysisReport(

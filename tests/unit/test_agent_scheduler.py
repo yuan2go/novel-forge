@@ -285,6 +285,48 @@ class AgentSchedulerTests(unittest.TestCase):
             status = scheduler_status(storage)
             self.assertEqual(status["by_status"]["acked"], 1)
 
+    def test_workflow_agent_node_preserves_production_scheduler_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Production Evidence Workflow",
+                entry_node_id="continuity",
+                nodes=[
+                    {
+                        "node_id": "continuity",
+                        "node_type": "agent",
+                        "operation": "create-continuity-graph-snapshot",
+                        "input_types": ["chapter_plan"],
+                        "output_types": ["continuity_graph_snapshot"],
+                        "processor": {
+                            "kind": "agent",
+                            "agent_key": "continuity",
+                            "agent_status": "prepared",
+                            "token_budget": 500,
+                            "environment": "production",
+                            "os_envelope": _scheduler_production_envelope("workflow-scheduler-prod-p"),
+                            "source_policy": {"source_isolation_required": True},
+                            "provider_runtime_guard": {"status": "passed", "provider": "workflow-fixture", "model": "local-continuity"},
+                        },
+                    }
+                ],
+            )
+
+            execute_workflow(storage, workflow["path"], input_assets=[plan_path], execute_agents=False)
+            agent = list_agent_runs(storage)[0]
+            evidence = storage.read_json(storage.root / agent["path"])["content"]["evidence"]
+
+            self.assertEqual(evidence["environment"], "production")
+            self.assertEqual(evidence["os_envelope"]["project_id"], "workflow-scheduler-prod-p")
+            self.assertEqual(evidence["source_policy"]["source_isolation_required"], True)
+            self.assertEqual(evidence["provider_runtime_guard"]["status"], "passed")
+
     def test_scheduler_waits_for_human_when_prepared_agent_has_no_outputs(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -361,6 +403,64 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(resume["status"], "completed")
             scheduler_agent = [row for row in list_agent_runs(storage) if row["operation"] == "create-continuity-graph-snapshot" and row["status"] == "succeeded"]
             self.assertGreaterEqual(len(scheduler_agent), 1)
+
+    def test_production_scheduler_blocks_registered_operation_missing_provider_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            run = start_agent_run(
+                storage,
+                agent_key="continuity",
+                operation="create-continuity-graph-snapshot",
+                status="prepared",
+                token_budget=500,
+                evidence={
+                    "environment": "production",
+                    "os_envelope": _scheduler_production_envelope("scheduler-prod-p"),
+                    "source_policy": {"source_isolation_required": True},
+                    "trace": {"trace_id": "trace-scheduler-prod-missing"},
+                },
+            )
+            dispatch_agent_run(storage, agent_run_path=run["path"], max_attempts=1)
+
+            tick = run_agent_scheduler_tick(storage)
+
+            self.assertEqual(tick["acked_count"], 0)
+            self.assertEqual(tick["error_count"], 1)
+            queue = list_agent_dispatch_queue(storage)[0]
+            self.assertEqual(queue["status"], "dead_letter")
+            self.assertIn("provider_runtime_gate", queue["last_error"])
+
+    def test_production_scheduler_records_governance_for_registered_operation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            run = start_agent_run(
+                storage,
+                agent_key="continuity",
+                operation="create-continuity-graph-snapshot",
+                status="prepared",
+                token_budget=500,
+                evidence={
+                    "environment": "production",
+                    "os_envelope": _scheduler_production_envelope("scheduler-prod-p"),
+                    "source_policy": {"source_isolation_required": True},
+                    "provider_runtime_guard": {"status": "passed", "provider": "scheduler-fixture", "model": "local-continuity", "path": "runs/provider-runtime-gate.json"},
+                    "trace": {"trace_id": "trace-scheduler-prod-ready"},
+                },
+            )
+            dispatch_agent_run(storage, agent_run_path=run["path"], max_attempts=1)
+
+            tick = run_agent_scheduler_tick(storage)
+
+            self.assertEqual(tick["acked_count"], 1)
+            agent = storage.read_json(storage.root / run["path"])
+            governance_path = agent["content"]["evidence"]["production_governance_path"]
+            governance = storage.read_json(storage.root / governance_path)
+
+            self.assertEqual(governance["type"], "production_governance_report")
+            self.assertEqual(governance["content"]["operation"], "agent_scheduler.create-continuity-graph-snapshot")
+            self.assertEqual(agent["content"]["evidence"]["production_governance_path"], governance_path)
 
     def test_scheduler_resumes_registered_operation_from_completed_checkpoint(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -444,6 +544,19 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(asset["metadata"]["rollback_status"], "rolled_back")
             self.assertEqual(asset["metadata"]["asset_status"], "rolled_back")
             self.assertIn("rolled-back", asset["tags"])
+
+
+def _scheduler_production_envelope(project_id: str) -> dict[str, object]:
+    return {
+        "environment": "production",
+        "project_id": project_id,
+        "task_type": "agent_scheduler",
+        "asset_type": "agent_run",
+        "actor_type": "agent_scheduler",
+        "source": "unit-test",
+        "trace_id": f"trace-{project_id}",
+        "source_policy": {"source_isolation_required": True},
+    }
 
 
 if __name__ == "__main__":

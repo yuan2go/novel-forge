@@ -2882,12 +2882,19 @@ def _dispatch_agent_node(
         workspace_path=workspace_path,
     )
     agent_status = "running" if execute_agents else str(processor.get("agent_status") or "prepared")
+    processor_evidence = processor.get("evidence") if isinstance(processor.get("evidence"), dict) else {}
+    processor_envelope = processor.get("os_envelope") if isinstance(processor.get("os_envelope"), dict) else processor.get("envelope") if isinstance(processor.get("envelope"), dict) else processor_evidence.get("os_envelope") if isinstance(processor_evidence.get("os_envelope"), dict) else processor_evidence.get("envelope") if isinstance(processor_evidence.get("envelope"), dict) else {}
+    processor_source_policy = processor.get("source_policy") if isinstance(processor.get("source_policy"), dict) else processor_evidence.get("source_policy") if isinstance(processor_evidence.get("source_policy"), dict) else {}
     agent_evidence = {
+        **processor_evidence,
         "workflow_run_id": run_id,
         "workflow_node_id": node.get("node_id", ""),
         "expected_output_assets": output_assets,
         "processor": processor,
         "runtime_policy": _runtime_policy_spec(node, processor),
+        "environment": str(processor.get("environment") or processor_evidence.get("environment") or (processor_envelope.get("environment") if isinstance(processor_envelope, dict) else "") or ""),
+        "os_envelope": processor_envelope if isinstance(processor_envelope, dict) else {},
+        "source_policy": processor_source_policy if isinstance(processor_source_policy, dict) else {},
         "context_bundle_path": _first_context_bundle_path(storage, [*input_assets, *output_assets], processor),
         "token_used": int(processor.get("token_used", 0) or 0),
         "cost_estimate": float(processor.get("cost_estimate", 0) or 0),

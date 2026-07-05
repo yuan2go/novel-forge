@@ -13,8 +13,10 @@ from novel_forge.modules.publishing_feedback_adapters import (
     publish_platform_upload_package,
     record_platform_receipt,
 )
+from novel_forge.modules.publishing import create_release_package
 from novel_forge.schemas import ReleasePackage
 from novel_forge.storage.local import LocalStorage
+from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
 
 
 class PlatformClient:
@@ -25,6 +27,11 @@ class PlatformClient:
             "review_status": "submitted",
             "receipt_raw": {"remote_receipt_id": "receipt-api-1", "token": "must-not-be-persisted"},
         }
+
+
+class FailingPlatformClient:
+    def publish_upload_package(self, payload: dict, context: dict) -> dict:
+        raise RuntimeError("remote timeout with token=secret")
 
 
 class PublishingFeedbackAdapterTests(unittest.TestCase):
@@ -100,6 +107,99 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
     def test_platform_api_adapter_records_receipt_without_persisting_secret(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
+            fixture = create_production_ready_release_inputs(storage, title="Platform API Ready")
+            release_path = create_release_package(
+                storage,
+                fixture["draft_path"],
+                workspace_path=fixture["workspace_path"],
+                publish_gate_path=fixture["publish_gate_path"],
+                envelope=production_envelope(fixture["project_id"], "release_package", trace_id=f"trace-platform-release-{fixture['project_id']}"),
+                environment="production",
+                source_policy=fixture["source_policy"],
+            )
+            upload = build_platform_upload_package(storage, release_package_path=release_path, platform_id="api-platform")
+
+            result = publish_platform_upload_package(
+                storage,
+                upload_package_path=upload["path"],
+                platform_client=PlatformClient(),
+                platform_config={"platform_id": "api-platform", "endpoint": "https://platform.example/upload", "token_env": "PLATFORM_TOKEN"},
+                environment="production",
+                envelope={
+                    "project_id": fixture["project_id"],
+                    "task_type": "platform_publish",
+                    "asset_type": "platform_publish_receipt",
+                    "actor_type": "service",
+                    "source": "test",
+                    "trace_id": "trace-platform-api",
+                    "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
+                    "environment": "production",
+                },
+            )
+
+            receipt = result["asset"]
+            self.assertEqual(receipt["type"], "platform_publish_receipt")
+            self.assertEqual(receipt["content"]["platform_book_id"], "book-api-1")
+            self.assertEqual(receipt["content"]["receipt_raw"]["token"], "[redacted]")
+            self.assertEqual(receipt["content"]["platform_api_evidence"]["mode"], "api_adapter")
+            self.assertEqual(receipt["content"]["platform_api_evidence"]["production_governance"]["status"], "passed")
+            self.assertEqual(result["status_asset"]["content"]["review_status"], "submitted")
+
+    def test_platform_api_adapter_failure_writes_denied_fallback_decision(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            fixture = create_production_ready_release_inputs(storage, title="Platform API Failure")
+            release_path = create_release_package(
+                storage,
+                fixture["draft_path"],
+                workspace_path=fixture["workspace_path"],
+                publish_gate_path=fixture["publish_gate_path"],
+                envelope=production_envelope(fixture["project_id"], "release_package", trace_id=f"trace-platform-release-fail-{fixture['project_id']}"),
+                environment="production",
+                source_policy=fixture["source_policy"],
+            )
+            upload = build_platform_upload_package(storage, release_package_path=release_path, platform_id="api-platform")
+
+            with self.assertRaisesRegex(RuntimeError, "failed closed"):
+                publish_platform_upload_package(
+                    storage,
+                    upload_package_path=upload["path"],
+                    platform_client=FailingPlatformClient(),
+                    platform_config={"platform_id": "api-platform", "endpoint": "https://platform.example/upload", "token_env": "PLATFORM_TOKEN"},
+                    environment="production",
+                    envelope={
+                        "project_id": fixture["project_id"],
+                        "task_type": "platform_publish",
+                        "asset_type": "platform_publish_receipt",
+                        "actor_type": "service",
+                        "source": "test",
+                        "trace_id": "trace-platform-api-failure",
+                        "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
+                        "environment": "production",
+                    },
+                )
+
+            decisions = [
+                storage.read_json(path)
+                for path in storage.list_json("runs")
+                if storage.read_json(path).get("type") == "fallback_decision"
+            ]
+            statuses = [
+                storage.read_json(path)
+                for path in storage.list_json("publishing")
+                if storage.read_json(path).get("type") == "platform_review_status"
+            ]
+
+            self.assertTrue(decisions)
+            self.assertFalse(decisions[-1]["content"]["allowed"])
+            self.assertEqual(decisions[-1]["content"]["fallback_type"], "external_platform_adapter")
+            self.assertNotIn("secret", str(decisions[-1]["content"]))
+            self.assertTrue(statuses)
+            self.assertEqual(statuses[-1]["content"]["review_status"], "failed")
+
+    def test_production_platform_publish_blocks_upload_package_without_release_governance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
             release = ReleasePackage(
                 title="release",
                 content={
@@ -117,30 +217,24 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
             release_path = storage.write_asset_auto(release)
             upload = build_platform_upload_package(storage, release_package_path=release_path, platform_id="api-platform")
 
-            result = publish_platform_upload_package(
-                storage,
-                upload_package_path=upload["path"],
-                platform_client=PlatformClient(),
-                platform_config={"platform_id": "api-platform", "endpoint": "https://platform.example/upload", "token_env": "PLATFORM_TOKEN"},
-                environment="production",
-                envelope={
-                    "project_id": "p1",
-                    "task_type": "platform_publish",
-                    "asset_type": "platform_publish_receipt",
-                    "actor_type": "service",
-                    "source": "test",
-                    "trace_id": "trace-platform-api",
-                    "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
-                    "environment": "production",
-                },
-            )
-
-            receipt = result["asset"]
-            self.assertEqual(receipt["type"], "platform_publish_receipt")
-            self.assertEqual(receipt["content"]["platform_book_id"], "book-api-1")
-            self.assertEqual(receipt["content"]["receipt_raw"]["token"], "[redacted]")
-            self.assertEqual(receipt["content"]["platform_api_evidence"]["mode"], "api_adapter")
-            self.assertEqual(result["status_asset"]["content"]["review_status"], "submitted")
+            with self.assertRaisesRegex(ValueError, "production governance"):
+                publish_platform_upload_package(
+                    storage,
+                    upload_package_path=upload["path"],
+                    platform_client=PlatformClient(),
+                    platform_config={"platform_id": "api-platform", "endpoint": "https://platform.example/upload", "token_env": "PLATFORM_TOKEN"},
+                    environment="production",
+                    envelope={
+                        "project_id": "p1",
+                        "task_type": "platform_publish",
+                        "asset_type": "platform_publish_receipt",
+                        "actor_type": "service",
+                        "source": "test",
+                        "trace_id": "trace-platform-api-missing-governance",
+                        "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
+                        "environment": "production",
+                    },
+                )
 
     def test_production_platform_publish_fails_closed_without_client_or_endpoint(self):
         with tempfile.TemporaryDirectory() as tmp:

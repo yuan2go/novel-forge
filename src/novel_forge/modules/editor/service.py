@@ -17,6 +17,7 @@ from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata, require_knowledge_context_contract
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment, normalize_runtime_request_policy
+from novel_forge.modules.production_governance import build_production_governance_report
 from novel_forge.modules.production_chain import create_draft_version, create_generation_run
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.review_issue import assert_no_blocking_review_issues
@@ -286,6 +287,10 @@ def execute_revision_plan(
     workspace_path: str | None = None,
     chapter_production_run_id: str = "",
     chapter_production_run_path: str = "",
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
+    provider_runtime_gate: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Execute a revision plan as model-backed paragraph patches.
 
@@ -312,7 +317,59 @@ def execute_revision_plan(
     production_context = build_production_context(storage, draft, input_path=draft_file, workspace_path=str(project.get("workspace_path", "")))
     project_id = str(project.get("project_id", ""))
     workspace = str(project.get("workspace_path", ""))
+    runtime_request = normalize_runtime_request_policy(
+        envelope_payload=os_envelope,
+        environment=environment,
+        source_policy=source_policy,
+        operation="editor.execute_revision_plan",
+    )
+    environment = str(runtime_request["environment"])
+    source_policy = runtime_request["source_policy"]
+    os_envelope = runtime_request["envelope"] if runtime_request.get("envelope") else None
     assert_no_blocking_review_issues(storage, target_asset_id=draft.id, project_id=project_id or None, gate="canonical_chapter")
+    applied_envelope: dict[str, Any] = {}
+    preflight_governance: dict[str, Any] = {}
+    if is_production_environment(environment):
+        require_knowledge_context_contract(knowledge_contract, operation="execute-revision-plan", environment=environment)
+        applied_envelope = enforce_os_envelope(
+            storage,
+            envelope_payload=os_envelope,
+            operation="editor.execute_revision_plan",
+            project_id=project_id,
+            task_type="revision",
+            asset_type="draft_chapter",
+            actor_type="editor_service",
+            source="editor.execute_revision_plan",
+            context_bundle_id=str(knowledge_contract.get("context_bundle_id") or bundle.id),
+            provider=str((provider_runtime_gate or {}).get("provider") or getattr(model, "name", "local")),
+            model=str((provider_runtime_gate or {}).get("model") or getattr(model, "name", "local")),
+            source_policy=source_policy,
+            environment=environment,
+            require_for_production=True,
+        )
+        preflight_governance = build_production_governance_report(
+            storage,
+            operation="editor.execute_revision_plan.preflight",
+            environment=environment,
+            target_asset_id=draft.id,
+            target_asset_path=draft_file,
+            project_id=project_id,
+            workspace_path=workspace,
+            gate_statuses={
+                "os_envelope": {"status": "passed", "path": applied_envelope.get("trace_span_path", ""), "summary": {"envelope_id": applied_envelope.get("envelope_id", "")}},
+                "context_bundle": {"status": "passed", "path": _display_path(storage.root, bundle_file), "summary": {"context_bundle_id": bundle.id}},
+                "source_isolation": {"status": "passed", "path": _display_path(storage.root, bundle_file), "summary": source_policy},
+                "review_issue": {"status": "passed", "summary": {"gate": "canonical_chapter"}},
+                "provider_runtime_gate": provider_runtime_gate or {"status": "missing", "blocking": True, "summary": {"reason": "provider runtime evidence is required for production final draft promotion"}},
+            },
+            required_gates=["os_envelope", "context_bundle", "source_isolation", "review_issue", "provider_runtime_gate"],
+            source_policy=source_policy,
+            evidence_refs=[_display_path(storage.root, bundle_file), _display_path(storage.root, review_file), _display_path(storage.root, revision_file)],
+            rollback_plan={"rollback_action": "do_not_promote_final_draft", "rollback_ref": _display_path(storage.root, draft_file), "requires_operator_review": True},
+            trace={"trace_id": applied_envelope.get("trace_id", "")},
+        )
+        if preflight_governance["blocking"]:
+            raise ValueError("production governance blocked final draft promotion: " + "; ".join(issue["message"] for issue in preflight_governance["blocking_issues"]))
     before_text = str(draft.content.get("text", ""))
     with AgentExecutionContext(
         storage,
@@ -399,11 +456,17 @@ def execute_revision_plan(
                 "quality_notes": packet.get("quality_notes", []),
                 "risk_controls": packet.get("risk_controls", []),
                 "knowledge_context_contract": knowledge_contract,
+                "production_governance_preflight": {
+                    "status": preflight_governance.get("status", ""),
+                    "path": preflight_governance.get("path", ""),
+                    "gate_result_path": preflight_governance.get("gate_result_path", ""),
+                },
             },
             metadata={
                 "project_id": project_id,
                 "workspace_path": workspace,
                 "agent_run_path": run.path,
+                **envelope_asset_metadata(applied_envelope),
                 **knowledge_context_contract_metadata(knowledge_contract),
                 "revision_plan_id": revision.id,
                 "review_id": review.id,
@@ -440,12 +503,18 @@ def execute_revision_plan(
                     "chapter_production_run_id": chapter_production_run_id,
                     "chapter_production_run_path": chapter_production_run_path,
                     "knowledge_context_contract": knowledge_contract,
+                    "production_governance_preflight": {
+                        "status": preflight_governance.get("status", ""),
+                        "path": preflight_governance.get("path", ""),
+                        "gate_result_path": preflight_governance.get("gate_result_path", ""),
+                    },
                 },
             },
             metadata={
                 **draft.metadata,
                 "project_id": project_id,
                 "workspace_path": workspace,
+                **envelope_asset_metadata(applied_envelope),
                 "draft_status": "final",
                 "previous_draft_id": draft.id,
                 "previous_draft_path": _display_path(storage.root, draft_file),
@@ -549,6 +618,54 @@ def execute_revision_plan(
                 _display_path(storage.root, revision_file),
             ],
         )
+        final_governance: dict[str, Any] = {}
+        if is_production_environment(environment):
+            final_governance = build_production_governance_report(
+                storage,
+                operation="editor.execute_revision_plan.final_draft",
+                environment=environment,
+                target_asset_id=final.id,
+                target_asset_path=final_path,
+                project_id=project_id,
+                workspace_path=workspace,
+                gate_statuses={
+                    "os_envelope": {"status": "passed", "path": applied_envelope.get("trace_span_path", ""), "summary": {"envelope_id": applied_envelope.get("envelope_id", "")}},
+                    "context_bundle": {"status": "passed", "path": _display_path(storage.root, bundle_file), "summary": {"context_bundle_id": bundle.id}},
+                    "source_isolation": {"status": "passed", "path": _display_path(storage.root, bundle_file), "summary": source_policy},
+                    "review_issue": {"status": "passed", "summary": {"gate": "canonical_chapter"}},
+                    "provider_runtime_gate": provider_runtime_gate or {"status": "missing", "blocking": True},
+                    "rollback": {"status": "passed", "path": rollback_patch_result["path"], "summary": {"rollback_patch_id": rollback_patch_result["id"]}},
+                },
+                required_gates=["os_envelope", "context_bundle", "source_isolation", "review_issue", "provider_runtime_gate", "rollback"],
+                source_policy=source_policy,
+                evidence_refs=[
+                    preflight_governance.get("path", ""),
+                    forward_patch_result["path"],
+                    rollback_patch_result["path"],
+                    diff["path"],
+                    _display_path(storage.root, review_file),
+                    _display_path(storage.root, revision_file),
+                ],
+                rollback_plan={"rollback_action": "apply_editor_rollback_patch", "rollback_ref": rollback_patch_result["path"], "requires_operator_review": True},
+                trace={"trace_id": applied_envelope.get("trace_id", "")},
+            )
+            if final_governance["blocking"]:
+                raise ValueError("production governance blocked final draft promotion: " + "; ".join(issue["message"] for issue in final_governance["blocking_issues"]))
+            final_data = storage.read_json(final_path)
+            final_content = final_data.get("content", {}) if isinstance(final_data.get("content"), dict) else {}
+            final_metadata = final_data.get("metadata", {}) if isinstance(final_data.get("metadata"), dict) else {}
+            final_content["production_governance"] = {
+                "status": final_governance["status"],
+                "path": final_governance["path"],
+                "gate_result_path": final_governance["gate_result_path"],
+                "blocking": final_governance["blocking"],
+            }
+            final_metadata["production_governance_status"] = final_governance["status"]
+            final_data["content"] = final_content
+            final_data["metadata"] = final_metadata
+            final_refs = final_data.get("references", []) if isinstance(final_data.get("references", []), list) else []
+            final_data["references"] = _dedupe([*final_refs, final_governance["path"], final_governance["gate_result_path"]])
+            storage.write_json(final_path, final_data)
         run.guard("write_draft_version", "draft_version")
         version = create_draft_version(storage, final_path, change_summary="model revision executor final draft", status="active")
         run.guard("write_generation_run", "generation_run")
@@ -578,8 +695,12 @@ def execute_revision_plan(
             version["path"],
             generation["path"],
         )
+        production_governance_path = str(final_governance.get("path", ""))
+        output_assets = [forward_patch_result["path"], rollback_patch_result["path"], final_ref, version["path"], diff["path"], generation["path"]]
+        if production_governance_path:
+            output_assets.append(production_governance_path)
         run.succeed(
-            output_assets=[forward_patch_result["path"], rollback_patch_result["path"], final_ref, version["path"], diff["path"], generation["path"]],
+            output_assets=output_assets,
             token_used=len(before_text) + len(after_text),
         )
         return {
@@ -590,9 +711,11 @@ def execute_revision_plan(
             "forward_patch_path": forward_patch_result["path"],
             "rollback_patch_path": rollback_patch_result["path"],
             "agent_run_path": run.path,
+            "production_governance_path": production_governance_path,
+            "production_governance_preflight_path": str(preflight_governance.get("path", "")),
             "operations": operations,
             "rollback_operations": rollback_operations,
-            "output_paths": [forward_patch_result["path"], rollback_patch_result["path"], final_ref, version["path"], diff["path"], generation["path"]],
+            "output_paths": output_assets,
         }
 
 

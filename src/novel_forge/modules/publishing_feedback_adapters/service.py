@@ -11,6 +11,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment
 from novel_forge.modules.review_issue import persist_issue_candidates
+from novel_forge.modules.publishing_feedback_adapters.fallbacks import record_platform_publish_failure
 from novel_forge.schemas import (
     ChapterDropoffReport,
     CommentClusterReport,
@@ -204,6 +205,7 @@ def publish_platform_upload_package(
     client = platform_client or _platform_client_from_config(config)
     if client is None:
         raise ValueError("platform publish requires platform_client or platform_config.endpoint")
+    production_governance = _release_governance_from_upload(storage, upload, required=production)
     platform_id = str(config.get("platform_id") or upload.get("content", {}).get("platform_id") or "external")
     context = {
         "platform_id": platform_id,
@@ -215,8 +217,16 @@ def publish_platform_upload_package(
     try:
         response = client.publish_upload_package(upload.get("content", {}), context)
     except Exception as exc:
-        _write_platform_failure_status(storage, upload_path=_display_path(storage.root, upload_path), platform_id=platform_id, message=str(exc), envelope=env)
-        raise RuntimeError(f"platform API publish failed closed: {exc}") from exc
+        failure = record_platform_publish_failure(
+            storage,
+            upload_path=_display_path(storage.root, upload_path),
+            platform_id=platform_id,
+            error_message=str(exc),
+            envelope=env,
+            environment=environment,
+            production_governance_path=production_governance.get("path", ""),
+        )
+        raise RuntimeError(f"platform API publish failed closed: {failure['redacted_error']}") from exc
     receipt_raw = _redact(response.get("receipt_raw", response) if isinstance(response, dict) else {})
     receipt = record_platform_receipt(
         storage,
@@ -239,6 +249,7 @@ def publish_platform_upload_package(
         "token_env": context["token_env"],
         "upload_package_path": _display_path(storage.root, upload_path),
         "response_keys": sorted(str(key) for key in response.keys()) if isinstance(response, dict) else [],
+        "production_governance": production_governance,
     }
     storage.write_json(resolve_path(storage.root, receipt_path), receipt_asset)
     status_asset = storage.read_json(resolve_path(storage.root, receipt["status_path"]))
@@ -250,6 +261,24 @@ def publish_platform_upload_package(
         "platform_api_evidence": receipt_asset["content"]["platform_api_evidence"],
         "envelope": env,
     }
+
+
+def _release_governance_from_upload(storage: LocalStorage, upload: dict[str, Any], *, required: bool) -> dict[str, Any]:
+    content = upload.get("content", {}) if isinstance(upload.get("content", {}), dict) else {}
+    release_ref = str(content.get("release_package_path") or "").strip()
+    if not release_ref:
+        if required:
+            raise ValueError("production governance requires upload package to reference a release package")
+        return {"status": "skipped", "path": "", "blocking": False}
+    release = storage.read_json(resolve_path(storage.root, release_ref))
+    release_content = release.get("content", {}) if isinstance(release.get("content", {}), dict) else {}
+    governance = release_content.get("production_governance", {}) if isinstance(release_content.get("production_governance", {}), dict) else {}
+    status = str(governance.get("status") or "missing")
+    path = str(governance.get("path") or "")
+    blocking = bool(governance.get("blocking")) or status != "passed" or not path
+    if required and blocking:
+        raise ValueError(f"production governance must pass before platform publish: {status}")
+    return {"status": status, "path": path, "blocking": blocking, "release_package_path": release_ref}
 
 
 def import_platform_metrics(
@@ -529,26 +558,6 @@ def _redact(value: Any) -> Any:
     if isinstance(value, list):
         return [_redact(item) for item in value]
     return value
-
-
-def _write_platform_failure_status(storage: LocalStorage, *, upload_path: str, platform_id: str, message: str, envelope: dict[str, Any]) -> str:
-    status = PlatformReviewStatus(
-        title=f"{platform_id} platform API failure",
-        source=upload_path,
-        tags=["publishing-feedback-adapter", "review-status", "failed", "api-adapter"],
-        content={
-            "status_id": make_id("platform_review_status", f"{platform_id}-{upload_path}-failed"),
-            "platform_id": platform_id,
-            "receipt_id": "",
-            "review_status": "failed",
-            "blocking_reasons": [message or "platform API publish failed"],
-            "updated_at": utc_now(),
-            "platform_api_evidence": {"mode": "api_adapter", "status": "failed_closed"},
-        },
-        metadata={"project_id": str(envelope.get("project_id") or ""), **envelope_asset_metadata(envelope)},
-        references=[upload_path],
-    )
-    return _write_asset(storage, status)
 
 
 def _float(value: Any) -> float:

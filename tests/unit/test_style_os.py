@@ -53,6 +53,26 @@ class StyleOSTests(unittest.TestCase):
             self.assertTrue(report["review_issues"])
             self.assertTrue(report["style_rewrite_task_path"])
 
+    def test_style_drift_gate_passes_matching_profile_without_rewrite_task(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            sample_text = "短句。对话。行动。代价。 " * 50
+            sample = ingest_style_sample(storage, sample_text=sample_text, project_id="p1")
+            fp = extract_style_fingerprint(storage, sample_path=sample["path"])
+            profile = build_style_profile(storage, fingerprint_path=fp["path"], style_name="short style")
+            draft = DraftChapter(
+                title="matching chapter",
+                content={"chapter": 1, "text": sample_text, "copyright_boundary": "original draft"},
+                metadata={"project_id": "p1"},
+            )
+            draft_path = storage.write_asset_auto(draft)
+
+            report = run_style_drift_gate(storage, style_profile_path=profile["style_profile_path"], target_path=draft_path)
+
+            self.assertEqual(report["asset"]["content"]["drift_level"], "low")
+            self.assertEqual(report["review_issues"], [])
+            self.assertEqual(report["style_rewrite_task_path"], "")
+
 
 if __name__ == "__main__":
     unittest.main()

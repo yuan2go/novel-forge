@@ -8,6 +8,8 @@ from typing import Any
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
+from novel_forge.modules.os_envelope import is_production_environment
+from novel_forge.modules.production_governance import record_fallback_decision
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import record_gate_result
 from novel_forge.schemas import (
@@ -1122,6 +1124,7 @@ def model_assisted_longform_extraction(
     *,
     workspace_path: str | None = None,
     use_model: bool = True,
+    environment: str = "",
 ) -> dict[str, Any]:
     path = resolve_path(storage.root, draft_path)
     draft = storage.read_asset(path)
@@ -1134,6 +1137,7 @@ def model_assisted_longform_extraction(
         "reason": "use_model=false",
         "operation": "model_assisted_longform_extraction",
     }
+    production = is_production_environment(environment)
     if use_model:
         try:
             from novel_forge.modules.model_router import execute_model_gateway_call
@@ -1158,11 +1162,35 @@ def model_assisted_longform_extraction(
                 mode="longform_stability",
             )
         except Exception as exc:
+            decision = record_fallback_decision(
+                storage,
+                fallback_type="model_assisted_longform_extraction",
+                mode="deterministic_longform_fallback",
+                allowed=not production,
+                reason=f"model gateway failed: {exc}",
+                project_id=project_id,
+                workspace_path=workspace,
+                environment=environment,
+                approval_required=production,
+                target_refs=[_display_path(storage.root, path)],
+                evidence_refs=list(created.values()),
+                rollback_plan={
+                    "rollback_action": "rerun_longform_extraction_with_provider",
+                    "rollback_ref": _display_path(storage.root, path),
+                    "requires_operator_review": True,
+                },
+                trace={"trace_id": make_id("trace", f"longform-extraction-fallback-{draft.id}")},
+                actor_type="system",
+            )
             model_gateway = {
                 "status": "fallback",
                 "reason": str(exc),
                 "operation": "model_assisted_longform_extraction",
+                "fallback_decision_path": decision.get("path", ""),
+                "fallback_audit_event_path": decision.get("audit_event_path", ""),
             }
+            if production:
+                raise RuntimeError(f"model-assisted longform extraction blocked production fallback: {exc}") from exc
     gate = evaluate_longform_stability_gate(storage, path, workspace_path=workspace)
     extraction_quality = _longform_extraction_quality(storage, path, created)
     return {

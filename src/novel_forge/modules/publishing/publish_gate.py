@@ -12,6 +12,7 @@ from novel_forge.modules.longform_stability import create_revision_task_from_gat
 from novel_forge.modules.mkaos import list_risk_knowledge
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment, normalize_runtime_request_policy
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
+from novel_forge.modules.production_governance import build_production_governance_report
 from novel_forge.modules.review_issue import blocking_review_issues, review_issues_to_gate_issues
 from novel_forge.modules.runtime_policy import provider_hard_stop_evidence_report
 from novel_forge.schemas import PublishGateReport
@@ -117,6 +118,39 @@ def create_publish_gate_report(
         decision = "needs_revision"
     if human_override and decision != "blocked":
         decision = "ready"
+    production_governance = build_production_governance_report(
+        storage,
+        operation="publishing.publish_gate",
+        environment=environment,
+        target_asset_id=target.id,
+        target_asset_path=path,
+        project_id=str(project.get("project_id", "")),
+        workspace_path=str(project.get("workspace_path", "")),
+        gate_statuses={
+            "os_envelope": {"status": "passed", "path": os_envelope.get("trace_span_path", ""), "blocking": False},
+            "context_bundle": {"status": "passed" if publish_context.get("path") else "missing", "path": str(publish_context.get("path", "")), "blocking": not bool(publish_context.get("path"))},
+            "source_isolation": {"status": "passed", "blocking": False, "path": str(publish_context.get("path", ""))},
+            "mkaos_risk": {"status": "blocked" if mkaos_risk.get("blocking") else "passed", "blocking": bool(mkaos_risk.get("blocking")), "path": ""},
+            "review_issue": {"status": "passed" if gate_data["gates"].get("review_issue_blocking_clear") else "blocked", "blocking": not bool(gate_data["gates"].get("review_issue_blocking_clear")), "path": ""},
+            "longform_stability": {"status": "passed" if longform_gate.get("passed") else "blocked", "blocking": not bool(longform_gate.get("passed")), "path": ""},
+            "evaluation_gate": evaluation_gate,
+            "provider_runtime_gate": provider_runtime_gate,
+            "platform_strategy_gate": platform_strategy_gate,
+        },
+        source_policy=resolved_source_policy,
+        evidence_refs=[
+            display_path(storage.root, Path(audit_path)),
+            str(publish_context.get("path", "")),
+            str(evaluation_gate.get("path", "")),
+            str(platform_strategy_gate.get("platform_strategy_pack_path", "")),
+        ],
+        rollback_plan={
+            "rollback_action": "do_not_create_release_package",
+            "rollback_ref": display_path(storage.root, path),
+            "requires_operator_review": True,
+        },
+        trace={"trace_id": os_envelope.get("trace_id", ""), "span_id": os_envelope.get("trace_id", "")},
+    )
     asset = PublishGateReport(
         title=f"Publish gate for {target.title}",
         source=target.id,
@@ -138,6 +172,12 @@ def create_publish_gate_report(
             "evaluation_gate": evaluation_gate,
             "provider_runtime_gate": provider_runtime_gate,
             "platform_strategy_gate": platform_strategy_gate,
+            "production_governance": {
+                "status": production_governance["status"],
+                "path": production_governance["path"],
+                "gate_result_path": production_governance["gate_result_path"],
+                "blocking": production_governance["blocking"],
+            },
             "context_bundle_id": context_bundle_id,
             "context_bundle_path": str(publish_context.get("path", "")),
             "knowledge_context_contract": knowledge_contract,

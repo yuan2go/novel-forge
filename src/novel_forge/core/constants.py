@@ -191,6 +191,8 @@ ASSET_DIR_BY_TYPE = {
     "originality_report": "reviews",
     "publish_gate_report": "publishing",
     "release_package": "publishing",
+    "production_governance_report": "runs",
+    "fallback_decision": "runs",
     "writing_template": "templates",
     "craft_template": "templates",
     "long_form_macro_plan": "outlines",
