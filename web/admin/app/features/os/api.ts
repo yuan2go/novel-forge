@@ -398,6 +398,13 @@ export function loadProviderHardStopEvidence(projectId?: string, workspacePath?:
   return fetchJson<Record<string, unknown>>(`/product/runtime/provider-hard-stop-evidence?${params.toString()}`);
 }
 
+export function loadProviderApprovalEvidence(projectId?: string, taskType?: string) {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  if (taskType) params.set("task_type", taskType);
+  return fetchJson<Record<string, unknown>>(`/product/os/model-router/provider-approval-report?${params.toString()}`);
+}
+
 export function previewRollback(transactionPathOrId: string, strategy = "restore_previous_versions") {
   return postJson("/product/runtime/rollback/preview", {
     transaction_path_or_id: transactionPathOrId,

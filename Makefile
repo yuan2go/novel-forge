@@ -9,7 +9,7 @@ DEMO_WORKSPACE ?= .local/demo-workspace
 help:
 	@echo "make test      - run stdlib unittest suite"
 	@echo "make lint      - compile Python sources"
-	@echo "make validate  - validate V5 structure and JSON assets"
+	@echo "make validate  - validate Novel Forge workspace structure and JSON assets"
 	@echo "make demo      - run sample end-to-end pipeline"
 	@echo "make local-workspace - create ignored local runtime workspace"
 	@echo "make infra-up  - start PostgreSQL, Redis, Qdrant, and MinIO"

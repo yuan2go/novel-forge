@@ -6,11 +6,12 @@ from typing import Any
 from novel_forge.api.product import create_project_with_defaults
 from novel_forge.model_adapters.runtime import ProviderRuntimeGuard, evaluate_provider_runtime_guard
 from novel_forge.modules.evaluation_center import create_evaluation_gate
-from novel_forge.modules.longform_stability import create_arc_plan, create_canon_database, model_assisted_longform_extraction
+from novel_forge.modules.longform_stability import create_arc_plan, create_canon_database, create_chapter_state_package, model_assisted_longform_extraction
 from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding
 from novel_forge.modules.platform_strategy import build_platform_strategy_pack
+from novel_forge.modules.publishing import create_publish_gate_report
 from novel_forge.modules.runtime_ledger import record_gate_result, record_model_call_log
-from novel_forge.schemas import BaseAsset, DraftChapter, PublishGateReport
+from novel_forge.schemas import BaseAsset, DraftChapter, ReviewReport
 from novel_forge.storage.local import LocalStorage
 
 
@@ -42,7 +43,7 @@ def create_production_ready_release_inputs(storage: LocalStorage, *, title: str 
     _longform_evidence(storage, draft_path, project_id=project_id, workspace_path=workspace_path)
     _publish_knowledge(storage, project_id)
     record_provider_runtime_evidence(storage, project_id, workspace_path=workspace_path)
-    platform_pack = build_platform_strategy_pack(
+    build_platform_strategy_pack(
         storage,
         {
             "project_id": project_id,
@@ -52,20 +53,19 @@ def create_production_ready_release_inputs(storage: LocalStorage, *, title: str 
             "genre": "悬疑",
         },
     )
-    evaluation_gate = create_evaluation_gate(
+    create_evaluation_gate(
         storage,
         str(draft_path.relative_to(storage.root)),
         minimum_score=0.0,
         project_id=project_id,
         require_provider_runtime=True,
     )
-    gate_path = _ready_publish_gate(
+    gate_path = create_publish_gate_report(
         storage,
-        draft_path=draft_path,
-        project_id=project_id,
+        draft_path,
         workspace_path=workspace_path,
-        evaluation_gate_path=evaluation_gate["path"],
-        platform_strategy_pack_path=platform_pack["path"],
+        envelope=production_envelope(project_id, "publish_gate_report", trace_id=f"trace-publish-ready-{project_id}", source_policy=source_policy),
+        environment="production",
         source_policy=source_policy,
     )
     return {
@@ -154,7 +154,12 @@ def _ready_draft(storage: LocalStorage, *, project_id: str, workspace_path: str)
             title="Chapter 1",
             content={
                 "chapter": 1,
-                "text": "阿照在夜档司查到竹筹穿册。陶主簿把旧竹筹藏入铺牌，真相露出一角，旧城隐税机制被确认。",
+                "text": "阿照为了确认桥南隐税卷，必须在夜档司旧库里重新排账。因为陶主簿把旧竹筹藏进铺牌，所以她先把纸灯下的账页排成三列，但第三列却全都指向同一枚旧印。这个线索证明旧城隐税机制仍在运转，也让陶主簿想逼夜档司承接旧债的目标暴露。阿照决定不立刻摊牌，她选择留下半枚税筹作饵，代价是明夜必须独自去井口验灰。她刚锁上账册，井口忽然传来第二声钟，她发现半枚税筹背面还刻着师父的旧名。",
+                "rag_quality_gate": {
+                    "report_path": str(rag_path.relative_to(storage.root)),
+                    "recommendation": "pass",
+                    "context_budget_score": {"score": 96.0},
+                },
                 "copyright_boundary": "project-owned production-ready fixture",
             },
             metadata={
@@ -178,6 +183,8 @@ def _longform_evidence(storage: LocalStorage, draft_path: Path, *, project_id: s
             {"entity_id": "azhao", "entity_type": "character", "canonical_name": "阿照", "aliases": [], "forbidden_aliases": ["沈砚"], "role": "protagonist", "status": "active"},
             {"entity_id": "night_archive_office", "entity_type": "organization", "canonical_name": "夜档司", "aliases": [], "forbidden_aliases": [], "role": "core_organization", "status": "active"},
             {"entity_id": "tao_clerk", "entity_type": "character", "canonical_name": "陶主簿", "aliases": [], "forbidden_aliases": [], "role": "visible_villain_agent", "status": "active"},
+            {"entity_id": "city_tax_office", "entity_type": "organization", "canonical_name": "城课司", "aliases": [], "forbidden_aliases": [], "role": "background_power", "status": "active"},
+            {"entity_id": "mentor_debt", "entity_type": "case", "canonical_name": "师父旧债", "aliases": ["师门旧债"], "forbidden_aliases": [], "role": "mainline_debt", "status": "active"},
         ],
         project_id=project_id,
         workspace_path=workspace_path,
@@ -193,87 +200,30 @@ def _longform_evidence(storage: LocalStorage, draft_path: Path, *, project_id: s
         project_id=project_id,
         workspace_path=workspace_path,
     )
+    _review_report(storage, draft_path, project_id=project_id, workspace_path=workspace_path)
+    create_chapter_state_package(storage, draft_path, workspace_path=workspace_path)
     model_assisted_longform_extraction(storage, draft_path, workspace_path=workspace_path, use_model=False)
 
 
-def _ready_publish_gate(
-    storage: LocalStorage,
-    *,
-    draft_path: Path,
-    project_id: str,
-    workspace_path: str,
-    evaluation_gate_path: str,
-    platform_strategy_pack_path: str,
-    source_policy: dict[str, Any],
-) -> Path:
+def _review_report(storage: LocalStorage, draft_path: Path, *, project_id: str, workspace_path: str) -> Path:
     draft = storage.read_asset(draft_path)
-    envelope = production_envelope(project_id, "publish_gate_report", trace_id=f"trace-publish-ready-{project_id}", source_policy=source_policy)
-    asset = PublishGateReport(
-        title=f"Ready publish gate for {draft.title}",
-        source=draft.id,
-        tags=["publish-gate", "quality-gate", "release-control", "fixture-ready"],
-        content={
-            "target_asset_id": draft.id,
-            "gates": {
-                "chapter_audit_passed": True,
-                "mkaos_risk_clear": True,
-                "review_issue_blocking_clear": True,
-                "evaluation_gate_passed": True,
-                "provider_runtime_gate_passed": True,
-                "platform_strategy_gate_passed": True,
-            },
-            "decision": "ready",
-            "blocking_issues": [],
-            "review_issue_paths": [],
-            "required_reports": {},
-            "human_override": False,
-            "preflight": {"ready": True, "warnings": [], "missing": []},
-            "longform_stability": {"status": "pass", "passed": True, "blocking_issues": []},
-            "evaluation_gate": {
-                "status": "passed",
-                "required": True,
-                "blocking": False,
-                "path": evaluation_gate_path,
-                "blocking_issues": [],
-            },
-            "provider_runtime_gate": {
-                "status": "passed",
-                "required": True,
-                "blocking": False,
-                "blocking_issues": [],
-            },
-            "platform_strategy_gate": {
-                "status": "passed",
-                "required": True,
-                "blocking": False,
-                "platform_strategy_pack_path": platform_strategy_pack_path,
-                "blocking_issues": [],
-            },
-            "context_bundle_id": "",
-            "context_bundle_path": "",
-            "knowledge_context_contract": {},
-            "mkaos_risk": {"blocking": False, "blocking_count": 0, "blocking_issues": [], "risk_items": []},
-            "source_isolation": {
-                "source_chunk_raw_text_allowed": False,
-                "runtime_assets_in_generation_rag_allowed": False,
-                "raw_source_text_allowed": False,
-            },
-            "os_envelope_id": envelope["envelope_id"],
-        },
-        metadata={
-            "workflow": "publish-gate",
-            "project_id": project_id,
-            "workspace_path": workspace_path,
-            "risk_level": "low",
-            "environment": "production",
-            "source_policy": source_policy,
-            "os_envelope": envelope,
-            "os_envelope_id": envelope["envelope_id"],
-            "trace_id": envelope["trace_id"],
-        },
-        references=[draft.id, str(draft_path.relative_to(storage.root)), evaluation_gate_path, platform_strategy_pack_path],
+    return storage.write_asset(
+        "reviews",
+        ReviewReport(
+            title="Ready structured review",
+            source=draft.id,
+            score=95.0,
+            strengths=["clear motivation", "causal clue chain", "tracked ending hook"],
+            weaknesses=[],
+            issues=[],
+            risk_level="low",
+            revision_suggestions=[],
+            next_action="accept",
+            content={"target_asset_id": draft.id, "decision": "accept"},
+            metadata={"project_id": project_id, "workspace_path": workspace_path, "workflow": "production-ready-fixture"},
+            references=[draft.id, str(draft_path.relative_to(storage.root))],
+        ),
     )
-    return storage.write_asset("publishing", asset)
 
 
 def _publish_knowledge(storage: LocalStorage, project_id: str) -> None:

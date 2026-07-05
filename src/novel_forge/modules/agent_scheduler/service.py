@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +24,10 @@ from novel_forge.modules.agent_scheduler.publishing_runners import (
     run_publish_gate_report as _run_publishing_gate_report,
     run_release_package as _run_publishing_release_package,
 )
+from novel_forge.modules.agent_scheduler.recovery_runner import recover_dispatch as _recover_dispatch
+from novel_forge.modules.agent_scheduler.rollback_runner import rollback_operation_outputs as _rollback_operation_outputs
+from novel_forge.modules.agent_scheduler.scheduler_tick import run_scheduler_loop as _run_scheduler_loop
+from novel_forge.modules.agent_scheduler.scheduler_tick import run_scheduler_tick as _run_scheduler_tick
 from novel_forge.modules.agent_runs import (
     attach_agent_run_context_contract,
     execute_agent_run_once,
@@ -38,7 +41,7 @@ from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.review_issue import review_issue_to_revision_task_candidate
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, release_scheduler_lease, scheduler_lease_status
-from novel_forge.schemas import AgentDispatchQueue, AgentRollbackReport, AgentTask, BaseAsset, RevisionTask, validate_common_fields
+from novel_forge.schemas import AgentDispatchQueue, AgentTask, BaseAsset, RevisionTask, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 CORE_MKAOS_CONTEXT_OPERATIONS = {
@@ -928,62 +931,23 @@ def run_agent_scheduler_tick(
     retry_delay_seconds: int = 0,
     dry_run: bool = False,
 ) -> dict[str, Any]:
-    storage.ensure_layout()
-    tick_id = make_id("agent_scheduler_tick", utc_now())
-    owner = lease_owner or tick_id
-    lease = acquire_scheduler_lease(storage, lease_key="agent_scheduler", owner=owner, ttl_seconds=lease_ttl_seconds, force=force_lease)
-    if not lease.get("acquired"):
-        return {"scheduler_tick_id": tick_id, "status": "skipped", "reason": "agent_scheduler_lease_active", "lease": lease, "claimed": [], "acked": [], "waiting_human": [], "retried": [], "dead_lettered": [], "errors": []}
-    materialized = _materialize_prepared_agent_runs(storage, project_id=project_id, limit=limit)
-    candidates = _claimable_queue_candidates(storage, project_id=project_id, limit=limit)
-    if dry_run:
-        release = release_scheduler_lease(storage, lease_key="agent_scheduler", owner=owner, last_tick=tick_id)
-        return {"scheduler_tick_id": tick_id, "status": "completed", "dry_run": True, "lease": release.get("lease", lease.get("lease", {})), "materialized": materialized, "candidate_count": len(candidates), "claimed": [], "acked": [], "waiting_human": [], "retried": [], "dead_lettered": [], "errors": []}
-    claimed: list[dict[str, Any]] = []
-    acked: list[dict[str, Any]] = []
-    waiting_human: list[dict[str, Any]] = []
-    retried: list[dict[str, Any]] = []
-    dead_lettered: list[dict[str, Any]] = []
-    errors: list[dict[str, Any]] = []
-    for row in candidates:
-        claim = _claim_queue_item(storage, row["path"], owner=owner, ttl_seconds=lease_ttl_seconds)
-        if not claim.get("claimed"):
-            continue
-        claimed.append(claim["queue"])
-        try:
-            result = _run_claimed_dispatch(storage, claim["queue"], retry_delay_seconds=retry_delay_seconds)
-            if result.get("queue_status") == "acked":
-                acked.append(result)
-            elif result.get("queue_status") == "waiting_human":
-                waiting_human.append(result)
-            elif result.get("queue_status") == "retry_scheduled":
-                retried.append(result)
-            elif result.get("queue_status") == "dead_letter":
-                dead_lettered.append(result)
-        except Exception as exc:
-            errors.append({"queue_path": row["path"], "error": f"{type(exc).__name__}: {exc}"})
-            _fail_queue_item(storage, row["path"], reason=f"{type(exc).__name__}: {exc}", retry_delay_seconds=retry_delay_seconds)
-    release = release_scheduler_lease(storage, lease_key="agent_scheduler", owner=owner, last_tick=tick_id)
-    status = "failed" if errors else "completed"
-    return {
-        "scheduler_tick_id": tick_id,
-        "status": status,
-        "lease": release.get("lease", lease.get("lease", {})) if isinstance(release, dict) else lease.get("lease", {}),
-        "materialized": materialized,
-        "candidate_count": len(candidates),
-        "claimed_count": len(claimed),
-        "acked_count": len(acked),
-        "waiting_human_count": len(waiting_human),
-        "retry_count": len(retried),
-        "dead_letter_count": len(dead_lettered),
-        "error_count": len(errors),
-        "claimed": claimed,
-        "acked": acked,
-        "waiting_human": waiting_human,
-        "retried": retried,
-        "dead_lettered": dead_lettered,
-        "errors": errors,
-    }
+    return _run_scheduler_tick(
+        storage,
+        project_id=project_id,
+        limit=limit,
+        lease_owner=lease_owner,
+        lease_ttl_seconds=lease_ttl_seconds,
+        force_lease=force_lease,
+        retry_delay_seconds=retry_delay_seconds,
+        dry_run=dry_run,
+        acquire_lease=acquire_scheduler_lease,
+        release_lease=release_scheduler_lease,
+        materialize_prepared_agent_runs=_materialize_prepared_agent_runs,
+        claimable_queue_candidates=_claimable_queue_candidates,
+        claim_queue_item=_claim_queue_item,
+        run_claimed_dispatch=_run_claimed_dispatch,
+        fail_queue_item=_fail_queue_item,
+    )
 
 
 def run_agent_scheduler_loop(
@@ -999,68 +963,23 @@ def run_agent_scheduler_loop(
     force_lease: bool = False,
     retry_delay_seconds: int = 0,
 ) -> dict[str, Any]:
-    loop_id = make_id("agent_scheduler_loop", utc_now())
-    ticks: list[dict[str, Any]] = []
-    for index in range(max(1, int(iterations or 1))):
-        tick = run_agent_scheduler_tick(
-            storage,
-            project_id=project_id,
-            limit=limit,
-            lease_owner=lease_owner or loop_id,
-            lease_ttl_seconds=lease_ttl_seconds,
-            force_lease=force_lease,
-            retry_delay_seconds=retry_delay_seconds,
-        )
-        tick["iteration"] = index + 1
-        ticks.append(tick)
-        if stop_when_idle and int(tick.get("candidate_count", 0) or 0) == 0:
-            break
-        if index + 1 < max(1, int(iterations or 1)) and interval_seconds > 0:
-            time.sleep(min(float(interval_seconds), 60.0))
-    errors = [item for tick in ticks for item in tick.get("errors", []) if isinstance(item, dict)]
-    return {
-        "scheduler_loop_id": loop_id,
-        "status": "failed" if errors else "completed",
-        "tick_count": len(ticks),
-        "ticks": ticks,
-        "latest_tick": ticks[-1] if ticks else {},
-        "acked_count": sum(int(tick.get("acked_count", 0) or 0) for tick in ticks),
-        "waiting_human_count": sum(int(tick.get("waiting_human_count", 0) or 0) for tick in ticks),
-        "retry_count": sum(int(tick.get("retry_count", 0) or 0) for tick in ticks),
-        "dead_letter_count": sum(int(tick.get("dead_letter_count", 0) or 0) for tick in ticks),
-        "error_count": len(errors),
-        "errors": errors,
-    }
+    return _run_scheduler_loop(
+        run_agent_scheduler_tick,
+        storage=storage,
+        project_id=project_id,
+        limit=limit,
+        iterations=iterations,
+        interval_seconds=interval_seconds,
+        stop_when_idle=stop_when_idle,
+        lease_owner=lease_owner,
+        lease_ttl_seconds=lease_ttl_seconds,
+        force_lease=force_lease,
+        retry_delay_seconds=retry_delay_seconds,
+    )
 
 
 def recover_agent_dispatch(storage: LocalStorage, *, queue_path: str | Path, reason: str = "manual recovery") -> dict[str, Any]:
-    path = _resolve_queue(storage, queue_path)
-    data = _read_json_safe(storage, path)
-    if not isinstance(data, dict) or data.get("type") != "agent_dispatch_queue":
-        raise ValueError(f"agent_dispatch_queue JSON must be an object: {path}")
-    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-    if str(content.get("status", "")) not in {"dead_letter", "retry_scheduled", "waiting_human", "claimed"}:
-        raise ValueError("agent_dispatch_queue is not recoverable")
-    content.update(
-        {
-            "status": "queued",
-            "available_at": utc_now(),
-            "lease_owner": "",
-            "lease_expires_at": "",
-            "last_error": "",
-            "recovered_at": utc_now(),
-            "recovery_reason": reason,
-        }
-    )
-    data["content"] = content
-    data["updated_at"] = utc_now()
-    data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], "queued", "recovered"])
-    _write_json_validated(storage, path, data)
-    try:
-        update_agent_run_status(storage, str(content.get("agent_run_path", "")), status="prepared", event_type="agent_dispatch.recovered", message=reason)
-    except Exception:
-        pass
-    return _queue_row(storage, path, data)
+    return _recover_dispatch(storage, queue_path=queue_path, reason=reason)
 
 
 def _materialize_prepared_agent_runs(storage: LocalStorage, *, project_id: str | None, limit: int) -> list[dict[str, Any]]:
@@ -1347,86 +1266,6 @@ def _output_asset_reusable(storage: LocalStorage, value: str) -> bool:
     asset_status = str(metadata.get("asset_status", "")).lower()
     rollback_status = str(metadata.get("rollback_status", "")).lower()
     return asset_status not in {"quarantined", "rolled_back"} and rollback_status not in {"rolled_back", "rollback_required"}
-
-
-def _rollback_operation_outputs(
-    storage: LocalStorage,
-    queue_item: dict[str, Any],
-    agent_run: dict[str, Any],
-    *,
-    operation: str,
-    output_assets: list[str],
-    strategy: str,
-    reason: str,
-) -> dict[str, Any]:
-    queue_content = queue_item.get("content", {}) if isinstance(queue_item.get("content", {}), dict) else {}
-    run_content = agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}
-    metadata = agent_run.get("metadata", {}) if isinstance(agent_run.get("metadata", {}), dict) else {}
-    target_paths = _dedupe(output_assets)
-    applied_paths: list[str] = []
-    errors: list[str] = []
-    manual_required = strategy in {"manual_reconciliation_required", "rollback_patch_available"}
-    for target in target_paths:
-        try:
-            path = resolve_path(storage.root, target)
-            data = storage.read_json(path)
-            if not isinstance(data, dict):
-                raise ValueError("target asset is not a JSON object")
-            target_metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
-            target_metadata["rollback_status"] = "rollback_required" if manual_required else "rolled_back"
-            target_metadata["rollback_strategy"] = strategy
-            target_metadata["rollback_reason"] = reason
-            target_metadata["rolled_back_by_agent_run_id"] = run_content.get("run_id", "")
-            target_metadata["rolled_back_by_dispatch_id"] = queue_content.get("dispatch_id", "")
-            target_metadata["rollback_at"] = utc_now()
-            if manual_required:
-                target_metadata["asset_status"] = "rollback_required"
-            else:
-                target_metadata["asset_status"] = "rolled_back"
-            data["metadata"] = target_metadata
-            data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], "rollback-required" if manual_required else "rolled-back"])
-            data["updated_at"] = utc_now()
-            _write_json_validated(storage, path, data)
-            applied_paths.append(_display_path(storage.root, path))
-        except Exception as exc:
-            errors.append(f"{target}: {type(exc).__name__}: {exc}")
-    status = "failed" if errors else "applied" if target_paths else "not_required"
-    asset = AgentRollbackReport(
-        title=f"Agent operation rollback: {operation or run_content.get('operation', '')}",
-        source=str(run_content.get("run_id", "")),
-        tags=["agent-rollback", "agent-operation-rollback", status, operation],
-        content={
-            "agent_run_id": run_content.get("run_id", ""),
-            "agent_run_path": str(queue_content.get("agent_run_path", "")),
-            "rollback_id": make_id("rollback", f"{run_content.get('run_id', '')}:{queue_content.get('dispatch_id', '')}:{operation}"),
-            "target_asset_paths": target_paths,
-            "applied_asset_paths": applied_paths,
-            "rollback_strategy": strategy,
-            "status": status,
-            "reason": reason,
-            "operation": operation,
-            "dispatch_id": queue_content.get("dispatch_id", ""),
-            "idempotency_key": queue_content.get("idempotency_key", ""),
-            "errors": errors,
-            "created_at": utc_now(),
-        },
-        metadata={"project_id": metadata.get("project_id", ""), "workspace_path": metadata.get("workspace_path", "")},
-        references=filter_project_safe_references(storage, str(metadata.get("project_id", "")), _dedupe([str(queue_content.get("agent_run_path", "")), *target_paths, *applied_paths])),
-    )
-    report_path = storage.write_asset("runs", asset)
-    result = {"status": status, "path": _display_path(storage.root, report_path), "target_asset_paths": target_paths, "applied_asset_paths": applied_paths, "errors": errors, "rollback_strategy": strategy}
-    try:
-        record_agent_event(
-            storage,
-            agent_run_path=str(queue_content.get("agent_run_path", "")),
-            event_type="agent_operation.rollback",
-            status="failed" if errors else "recovered",
-            message=reason,
-            payload=result,
-        )
-    except Exception:
-        pass
-    return result
 
 
 def _canonical_operation(value: str) -> str:
@@ -2236,6 +2075,8 @@ def _run_resolve_model_route(storage: LocalStorage, queue_item: dict[str, Any], 
         workflow_node_id=str(evidence.get("workflow_node_id") or ""),
         trace=evidence.get("trace", {}) if isinstance(evidence.get("trace", {}), dict) else {},
         persist=True,
+        environment=str(evidence.get("environment") or ""),
+        allow_mock_fixture=bool(evidence.get("allow_mock_fixture") or evidence.get("mock_provider_test_mode")),
     )
 
 

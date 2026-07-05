@@ -11,6 +11,7 @@ import {
   loadAgentDispatchData,
   loadCostDashboardData,
   loadInvalidationData,
+  loadProviderApprovalEvidence,
   loadProviderHardStopEvidence,
   loadRuntimePolicyEnforcement,
   loadRuntimePolicyLegacyAudit,
@@ -51,13 +52,14 @@ export function OperatingSystemConsolePage() {
   const [legacyAudit, setLegacyAudit] = useState<Record<string, unknown>>({});
   const [surfaceCoverage, setSurfaceCoverage] = useState<Record<string, unknown>>({});
   const [providerHardStop, setProviderHardStop] = useState<Record<string, unknown>>({});
+  const [providerApproval, setProviderApproval] = useState<Record<string, unknown>>({});
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [rollbackVerify, setRollbackVerify] = useState<Record<string, unknown> | null>(null);
   const [rollbackCoordination, setRollbackCoordination] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState("");
 
   async function refresh() {
-    const [workflowData, agentData, traceData, costData, invalidationData, policyData, legacyAuditData, surfaceData, hardStopData] = await Promise.all([
+    const [workflowData, agentData, traceData, costData, invalidationData, policyData, legacyAuditData, surfaceData, hardStopData, approvalData] = await Promise.all([
       loadWorkflowRuntimeData(),
       loadAgentDispatchData(),
       loadTraceTimelineData(),
@@ -66,7 +68,8 @@ export function OperatingSystemConsolePage() {
       loadRuntimePolicyEnforcement(),
       loadRuntimePolicyLegacyAudit(),
       loadRuntimePolicySurfaceCoverage(),
-      loadProviderHardStopEvidence()
+      loadProviderHardStopEvidence(),
+      loadProviderApprovalEvidence()
     ]);
     setProjects(workflowData[0]);
     setTaskControl(workflowData[1]);
@@ -83,6 +86,7 @@ export function OperatingSystemConsolePage() {
     setLegacyAudit(legacyAuditData);
     setSurfaceCoverage(surfaceData);
     setProviderHardStop(hardStopData);
+    setProviderApproval(approvalData);
   }
 
   useEffect(() => {
@@ -95,9 +99,14 @@ export function OperatingSystemConsolePage() {
   const legacySummary = (legacyAudit.summary as Record<string, unknown> | undefined) || {};
   const surfaceSummary = (surfaceCoverage.summary as Record<string, unknown> | undefined) || {};
   const hardStopSummary = (providerHardStop.summary as Record<string, unknown> | undefined) || {};
+  const approvalSummary = (providerApproval.summary as Record<string, unknown> | undefined) || {};
   const legacyEntrypoints = (legacyAudit.entrypoints as Array<Record<string, unknown>> | undefined) || [];
   const surfaceRows = (surfaceCoverage.surface_matrix as Array<Record<string, unknown>> | undefined) || [];
   const hardStopRows = (providerHardStop.provider_gates as Array<Record<string, unknown>> | undefined) || [];
+  const approvalRows = [
+    ...((providerApproval.rows as Array<Record<string, unknown>> | undefined) || []),
+    ...((providerApproval.routes as Array<Record<string, unknown>> | undefined) || [])
+  ];
   const uncoveredOperations = (policyReport.uncovered_operations as string[] | undefined) || [];
   const policyOperations = (policyReport.operations as Array<Record<string, unknown>> | undefined) || [];
   const rollbackRows = assets.filter((asset) => ["operation_transaction", "rollback_plan", "rollback_result"].includes(asset.type));
@@ -120,6 +129,7 @@ export function OperatingSystemConsolePage() {
         <Metric label="Bypass Audit" value={String(legacySummary.review_required_count ?? 0)} />
         <Metric label="Surface" value={String(surfaceCoverage.status || "-")} />
         <Metric label="Hard Stops" value={String(hardStopSummary.covered_hard_stop_dimension_count ?? 0)} />
+        <Metric label="Provider Approval" value={String(providerApproval.status || "-")} />
       </section>
 
       <section className="osConsoleGrid">
@@ -209,6 +219,33 @@ export function OperatingSystemConsolePage() {
               Array.isArray(row.observed_dimensions) ? row.observed_dimensions.join(", ") : Array.isArray(row.hard_stop_dimensions) ? row.hard_stop_dimensions.join(", ") : String(row.hard_stop_dimension || "-"),
               String(row.message || "-")
             ])}
+          />
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="Provider Approval Evidence" icon={<ShieldCheck size={18} />} />
+          <div className="summaryBand">
+            <Metric label="Status" value={String(providerApproval.status || "-")} />
+            <Metric label="Production" value={String(approvalSummary.production_resolution_count ?? 0)} />
+            <Metric label="Blocked" value={String(approvalSummary.blocked_count ?? 0)} />
+            <Metric label="Missing" value={String(approvalSummary.missing_approval_count ?? 0)} />
+          </div>
+          <DataTable
+            emptyText="暂无 provider approval evidence"
+            columns={["Kind", "Task", "Env", "Provider", "Policy", "Approval", "Path"]}
+            rows={approvalRows.slice(0, 28).map((row) => {
+              const approval = (row.approval_evidence as Record<string, unknown> | undefined) || {};
+              const policy = (row.provider_policy as Record<string, unknown> | undefined) || {};
+              return [
+                row.resolution_status ? "resolution" : "route",
+                String(row.task_type || "-"),
+                String(row.environment || "-"),
+                `${String(row.provider || "-")} / ${String(row.model_name || "-")}`,
+                <span className={statusClass(String(policy.status || row.status || ""))} key={`${String(row.path)}-policy`}>{String(policy.status || row.status || "-")}</span>,
+                String(approval.approval_id || approval.status || "-"),
+                <span className="pathText" key={`${String(row.path)}-path`}>{String(row.path || "-")}</span>
+              ];
+            })}
           />
         </div>
       </section>

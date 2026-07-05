@@ -1,301 +1,233 @@
 # CLAUDE.md
 
-This file defines project-level operating rules for Claude Code, Codex, and other coding agents working in Novel Forge v6.
+This is the long-lived operating manual for Claude Code, Codex, and other coding agents working in this repository.
 
-Novel Forge v6 is a local-first AI novel production platform and early Novel Operating System runtime. The repository, package, CLI, and public product name remain `novel-forge` / Novel Forge unless a separate migration task explicitly approves a rename.
+Novel Forge v6 is a local-first AI novel production platform and early Novel Operating System runtime. The repository, package, CLI, and public product name remain `novel-forge` / Novel Forge. "Novel Operating System" is the architecture target, not an approved repository or package rename.
 
-## Product Identity
+## Source Of Truth
 
-Novel Forge is a local-first AI novel production platform for industrialized long-form fiction work.
+Code is the truth source. Old docs are historical intent until verified against current files.
 
-It coordinates:
+When making architecture, product, roadmap, or implementation claims, check the relevant evidence first:
 
-- project and workspace management;
-- source ingestion, rights metadata, cleaning, and abstract analysis;
-- knowledge, material, template, style, and quality-standard assets;
-- context construction and retrieval;
-- topic, world, character, outline, chapter-plan, draft, review, revision, feedback, publishing, and export workflows;
-- workflow runs, task status, handoff packets, validation, release packages, and audit trails.
+- source code under `src/novel_forge/`;
+- schemas under `src/novel_forge/schemas/`;
+- CLI entrypoint `src/novel_forge/cli.py`;
+- API entrypoint `src/novel_forge/api/app.py` and routers under `src/novel_forge/api/routers/`;
+- UI routes under `web/admin/app/`;
+- tests under `tests/`;
+- scripts, Makefile, `pyproject.toml`, `docker-compose.yml`, and package manifests;
+- root `skills/` and generated `.claude/skills/`;
+- current docs entrypoint `docs/README.md` and state report `docs/project-current-state.md`.
 
-Do not describe the system as a one-off AI writing prompt tool. Its durable value is workflow control, asset accumulation, quality gates, versioned production, and recoverable Agent execution.
+Do not write planned capabilities as completed. Use these status labels when documenting: implemented, partially implemented, design-only, not implemented, deprecated, or unknown.
 
-## Naming Rule
+## Project Mission
 
-Use these names consistently:
+Novel Forge is not a one-off prompt generator. It is a platform for controlled, traceable, long-form fiction production.
 
-| Context | Correct Name |
-|---|---|
-| Repository/package/CLI | `novel-forge` |
-| Product name | Novel Forge |
-| Product category | local-first AI novel production platform |
-| Internal architecture vision | Novel Operating System |
-| Avoid as current public rename | `Novel Operating System` as repository/package name |
+The platform cares about:
 
-A rename to Novel Operating System is not approved in v6. Novel Operating System is the architecture target, not the repository/package/CLI name.
+- hot novel, published fiction, and classic literature deconstruction;
+- mystery/suspense reading and craft analysis;
+- genre, material, knowledge, template, style, and quality-standard libraries;
+- topic, worldbuilding, character, outline, chapter plan, draft, review, revision, and feedback workflows;
+- long-form stability, Canon, arcs, foreshadowing, character continuity, and villain operations;
+- Context Builder, RAG, OS Envelope, ReviewIssue, Release Package, Quality Gate, Eval Center, Loop Engineering, Agent Center, and MKAOS;
+- reader feedback loops, platform strategy, publishing gates, export/release readiness, and operational rollback.
 
-## Platform Architecture Direction
+## Content Types
 
-All new work should move the project toward a workflow-first platform architecture:
+Keep these categories separate in analysis, docs, schemas, and generated assets:
 
-```text
-Project / Workspace
-  -> Workflow Definition
-  -> Workflow Node
-  -> Context Bundle
-  -> Generation / Analysis / Review Run
-  -> Agent Dispatch / Processor Contract
-  -> Artifact Version
-  -> Quality / KG / Publish Gate
-  -> Trace Span / Model Call Log / Cost Ledger
-  -> Revision Task
-  -> Invalidation / Resume
-  -> Publish / Feedback / Analytics Loop
-```
+- material;
+- deconstruction;
+- genre;
+- worldbuilding;
+- character;
+- outline;
+- chapter plan;
+- draft prose;
+- review;
+- feedback;
+- training exercise;
+- reusable template;
+- engineering implementation;
+- test evidence;
+- roadmap.
 
-Target platform layers:
+Never mix raw source text with generated drafts. Reference works may be used only for abstract structural learning.
 
-| Layer | Responsibility |
-|---|---|
-| Workflow | define node chains, runs, queues, retries, recovery, and invalidation |
-| Knowledge | manage source-derived abstract knowledge, material cards, templates, styles, standards, and graphs |
-| Context | select, rank, compress, budget, and replay the actual model context |
-| Production | generate and version topics, worlds, characters, outlines, chapter plans, drafts, reviews, and revisions |
-| Evaluation | run originality, style, chapter, continuity, platform-fit, and publishing gates |
-| Agent | execute bounded node work through contracts, checkpoints, budgets, gates, and metrics |
-| Analytics | show production funnel, blocking points, quality trends, feedback, and next-action recommendations |
-| Publishing | manage release package, publishing plan, platform status, chapter queue, and post-release data |
+## Current Engineering State
 
-## Current Implementation Truth
+The current verified baseline is Novel Forge v6. Important evidence paths:
 
-Do not overclaim. v6 currently has an early OS runtime, but not the complete Novel Operating System product.
+- version/runtime: `pyproject.toml`, `src/novel_forge/__init__.py`, `src/novel_forge/api/app.py`;
+- schema-backed assets: `src/novel_forge/schemas/assets.py`;
+- CLI: `src/novel_forge/cli.py`;
+- local workflow core: `src/novel_forge/workflows/`, `src/novel_forge/modules/`;
+- product API: `src/novel_forge/api/`, especially `src/novel_forge/api/routers/__init__.py`;
+- Web console: `web/admin/app/`;
+- tests: `tests/unit/`, `tests/integration/`, `tests/acceptance/`;
+- runtime skill source: root `skills/`; generated runtime copies: `.claude/skills/`.
 
-Implemented or partially implemented:
+Implemented or substantially implemented:
 
-- Python 3.11+ standard-library core.
-- CLI-first workflow with schema-backed JSON assets.
-- Local runtime workspace under `.local/workspace/`.
-- Source ingestion, cleaning, decomposition, knowledge extraction, materials, topic, world, characters, outline, chapter plan, draft, review, revision, and feedback analysis.
-- Handoff packets for Claude Code / Codex-assisted deconstruction and knowledge parsing.
-- RAG/retrieval foundations: local search, local vector search, Qdrant integration.
-- Optional industrial stack: FastAPI, PostgreSQL, Redis/Celery, Qdrant, MinIO, Next.js admin console, gated Neo4j.
-- Draft/review/revision workbench, release package, publish gate report, originality report, chapter audit, style and quality profiles in varying depth.
-- Skills system under root `skills/` with `.claude/skills/` as generated runtime output only.
-- Workflow runtime first slice: DAG validation, ready-node queue, state machine, processor registry, gate pipeline, scheduler tick/loop, resume, invalidation, trace, quarantine, and rollback markers.
-- Agent Scheduler first slice: contracts, runs, dispatch queue, leases, operation registry, checkpoints, budget/SLA/gate records, retry, dead letter, and recovery.
-- Novel KG first slice: typed ontology collections, snapshots, query/path/impact/conflict APIs, KG gate, continuity preflight, and workbench.
-- Runtime ledger first slice: trace spans, gate results, model call logs, cost ledgers, budget policies, alerts, snapshots, and cost-quality dashboard assets.
-- Review rework backend first slice: review issue, revision task, editor patch, draft version, re-review, and publish gate.
+- standard-library Python core with dataclass-like schemas and local JSON storage;
+- CLI pipeline from source intake through feedback insight;
+- FastAPI product API with many product/OS/MKAOS routers;
+- Next.js admin console with pages for projects, assets, analysis, context, production, review, editor, quality, feedback, OS runtime, agent dispatch, KG, cost, trace, and MKAOS;
+- optional Docker local stack for PostgreSQL, Redis/Celery, Qdrant, MinIO, FastAPI, worker, and Web;
+- skills source/runtime sync tooling;
+- MKAOS ingestion, quality, lineage, graph/pack/gate, and production integration slices;
+- Context Builder, RAG/local vector/Qdrant/pgvector slices;
+- ReviewIssue, revision task, editor patch, publishing gate, release package, and quality gate slices;
+- Agent registry/scheduler first slices with operations, queue lifecycle, runner seams, retry, recovery, rollback, and dead-letter behavior;
+- OS acceptance, long-chain, MKAOS, provider guard, publishing, and scheduler tests.
 
-Known P0 gaps to respect in planning:
+Partially implemented and must not be overclaimed:
 
-1. OS acceptance harness is still needed: one project/chapter-sized fixture must prove workflow execute/resume, Agent dispatch, KG/preflight gate, trace/cost ledger, review rework, publish gate, invalidation, and cost-quality output.
-2. Universal runtime policy enforcement is incomplete until every model-producing path writes trace/model-call/cost evidence and respects budget/provider timeout/cancel policy.
-3. OS console depth remains uneven: Workflow Runtime Console, Agent Dispatch Center, Novel KG Workbench, Trace Timeline, Cost Dashboard, Invalidation Map, and Review Rework Board need route-level smoke coverage and operator-ready views.
-4. Context Builder still needs deeper manual source selection, richer compression controls, KG-backed context, and invalidation warnings.
-5. Semantic quality remains P1/P0 edge work: stronger provider-backed review, Novel KG extraction, alias merge, evidence spans, continuity conflict analysis, and feedback-to-plan learning.
-6. Business rollback remains conservative: many operations can quarantine, mark, or supersede assets, but multi-asset rollback needs stronger guarantees.
-7. Reader Feedback and Publishing Centers are not fully productized: feedback-to-plan loops, publishing calendar, platform status, and post-release data recovery still need depth.
+- complete autonomous Agent Center product;
+- universal provider/model-call hard-stop coverage across every model-producing path;
+- fully productized Eval Center and cost-quality routing;
+- business-grade rollback for all multi-asset workflows;
+- full publishing calendar/platform adapter operations;
+- production-scale database-backed execution and distributed concurrency;
+- full long-novel generation without operator intervention.
 
-## Operating Discipline
-
-These rules bias toward clarity, traceability, and verification over speed.
-
-### 1. Think Before Coding
-
-Do not assume. Do not hide uncertainty. Surface tradeoffs early.
-
-Before implementing:
-
-- State important assumptions if they affect design, safety, data, or tests.
-- If multiple interpretations exist, choose the safest reasonable one and explain the tradeoff.
-- If a simpler approach exists, prefer it and avoid speculative architecture.
-- If a wrong assumption could damage data or architecture, stop and ask.
-
-### 2. Platform-First, Not Prompt-First
-
-Do not solve durable system problems by only adding a bigger prompt.
-
-For every AI capability, identify:
-
-- node/stage;
-- input schema;
-- context bundle;
-- output artifact;
-- version behavior;
-- quality gate;
-- retry/revision path;
-- audit log.
-
-Prompts are execution parameters inside workflow nodes. They are not the product architecture.
-
-### 3. Simplicity First
-
-Use the minimum code that solves the current verified problem.
-
-- Do not add features beyond the task.
-- Do not create abstractions for single-use code.
-- Do not add configurability that is not needed now.
-- Do not add external dependencies unless an ADR or explicit user instruction requires it.
-- If a small local function is enough, do not introduce a framework.
-
-### 4. Surgical Changes
-
-Touch only what the task requires.
-
-- Do not refactor unrelated files.
-- Do not reformat unrelated code.
-- Match existing style and naming.
-- Clean up imports, variables, and helper functions made unused by your own changes.
-- If you notice unrelated dead code or risk, mention it instead of deleting it.
-
-Every changed line should trace to the current task, a failing test, a validation rule, or a documented acceptance criterion.
-
-### 5. Goal-Driven Execution
-
-Transform tasks into verifiable goals:
-
-- "Add validation" means add a failing or meaningful test, implement validation, then make tests pass.
-- "Fix a bug" means reproduce the bug or identify concrete evidence, fix it, then verify it.
-- "Refactor" means preserve behavior, keep public contracts stable, and run tests before claiming completion.
-
-For multi-step work, use a short plan:
-
-```text
-1. Step -> verify: check
-2. Step -> verify: check
-3. Step -> verify: check
-```
-
-Do not treat "code written" as "task complete". Completion requires verification.
-
-## Agent Responsibilities
-
-- Claude Code: product owner, project editor, workflow controller, audit owner.
-- Codex: engineering editor, code implementation, tests, CLI/API/UI glue, schema consistency.
-- ChatGPT: advanced reviewer, multidisciplinary synthesis, commercial logic review, design critique.
-- DeepSeek: future long-form draft producer behind a model adapter.
-- MockModel: deterministic test adapter only.
-- LocalRuleEngine: schema and quality rule checks.
+## Agent And Workflow Contract
 
 Agents are roles and permission boundaries. Skills are reusable capabilities. Model adapters are execution interfaces.
 
-Agent work must remain contract-based: `agent_contract`, `agent_run`, `agent_dispatch_queue`, `agent_checkpoint`, `agent_budget`, `agent_gate`, `agent_metric`, trace spans, and ledger records must be present before autonomous scheduling is trusted.
+Every production-grade Agent operation should have:
 
-## Skills Rules
+- operation registration;
+- input schema and bounded context;
+- OS Envelope or equivalent runtime evidence;
+- provider/model-call policy evidence when a model is used;
+- checkpoint, budget/SLA, gate, metric, trace, and cost records when applicable;
+- versioned output artifact;
+- recovery, retry, rollback, and dead-letter behavior for scheduled work;
+- tests or a documented verification path.
 
-Skills are reusable capabilities, not Agent roles, knowledge assets, templates, executable tools, or storage locations.
+Do not claim a complete autonomous Agent Center exists until operation coverage, UI depth, production hard-stop behavior, business rollback, and end-to-end OS acceptance are all demonstrated.
 
-- Root `skills/` is the project source of truth.
-- `.claude/skills/` is runtime output only and must be generated from root `skills/`.
-- Use `make sync-skills-dry-run` before `make sync-skills`.
-- Use `docs/09-skills/agent-skill-map.md` to select Skills by Agent role.
-- Popular novel analysis must use `hot-novel-deconstruction` or `hot-novel-business-deconstruction`, then `anti-copy-abstraction`.
-- Published fiction analysis must use `published-fiction-craft-analysis`.
-- Classic literary analysis must use `classic-literary-depth-analysis`.
-- Analysis outputs must use `analysis-to-asset-conversion` before entering materials, knowledge, templates, or review rules.
-- Drafting must use `chapter-outline` before `prose-generation`.
-- Draft outputs must pass `quality-review` before revision or final decisions.
-- Reader feedback must use `reader-feedback` before it changes chapter plans or revisions.
-- Professional knowledge must use `multidisciplinary-knowledge` before entering KnowledgeCard or review rules.
-- Skills must not store source text, protected expression, concrete copyable plots, private material, or real secrets.
-- Skills do not expand Agent permissions and do not replace schemas, workflows, or review gates.
+## Development Workflow
 
-## Copyright And Originality Boundary
+For each task:
 
-Reference works may be used only for structural learning and abstract mechanism extraction.
+1. Read this file.
+2. Read `docs/README.md`.
+3. Read `docs/project-current-state.md`.
+4. Inspect the relevant code, tests, commands, and docs before deciding.
+5. Make the smallest safe change that satisfies the task.
+6. Run the smallest meaningful verification, plus broader tests when risk justifies it.
+7. Update docs and reports when behavior, public contracts, architecture, or roadmap changes.
 
-Allowed:
+For large work, write a short plan before editing. For uncertain implementation state, say "not found in current code" or "partially implemented" and include evidence paths.
 
-- Structure.
-- Rhythm.
-- Conflict mechanism.
-- Character mechanism.
-- Emotion curve.
-- Hook pattern.
-- Commercial readability logic.
-- Craft technique stated as reusable abstraction.
+## Engineering Rules
+
+- Prefer existing module patterns over new parallel architecture.
+- Keep public CLI/API/schema contracts compatible unless the task explicitly asks for a breaking change.
+- Do not delete historical docs; mark them historical or archive-index them.
+- Do not edit `.claude/skills/` as source of truth. Change root `skills/`, then run `make sync-skills-dry-run` and `make sync-skills` when runtime copies need updating.
+- Do not add external dependencies without explicit need and a dependency/security rationale.
+- Do not bypass OS Envelope, Context Builder, Canon/KG, ReviewIssue, provider runtime policy, or publish/release gates for production paths.
+- Do not hide test failures. Record failing commands and the next fix.
+- Do not use mock/fallback behavior as proof of production readiness.
+- Do not scatter durable prompts through unrelated service code; use Skill, prompt registry, module service, or workflow-node boundaries when appropriate.
+
+## Copyright Boundary
+
+Allowed from reference works:
+
+- structure;
+- rhythm;
+- conflict mechanism;
+- character mechanism;
+- emotion curve;
+- hook pattern;
+- commercial readability logic;
+- abstract craft technique.
 
 Forbidden:
 
-- Copying original sentences or distinctive expressions.
-- Reusing protected characters, settings, or plot combinations.
-- Mixing raw source text with generated drafts.
-- Treating decomposition or analysis reports as draft prose.
-- Encouraging direct imitation of a specific work.
+- original sentences or distinctive expression;
+- protected characters, settings, scenes, and plot combinations;
+- raw source text inside generated drafts;
+- decomposition/analysis text treated as draft prose;
+- direct imitation of a named work.
 
-Reference-derived assets must remain abstract and must preserve source lineage.
+Reference-derived assets must preserve lineage and remain abstract.
 
-## Data Boundary
+## Skills Rules
 
-Keep asset stages separate:
+Claude Code may select useful local Skills for engineering, creative, review, or governance tasks, but Skills never replace code evidence or project rules.
 
-- Raw source: `data/raw/`.
-- Cleaned source: `data/cleaned/`.
-- Decomposition: `data/decompositions/`.
-- Analysis: `data/analysis/`.
-- Knowledge: `data/knowledge/`.
-- Materials: `data/materials/`.
-- Platform/genre/topic/world/character/continuity/style/quality/template assets: dedicated generated asset directories.
-- Outlines and chapter plans: `data/outlines/`, `data/chapter_plans/`.
-- Drafts: `data/drafts/`.
-- Reviews and revisions: `data/reviews/`.
-- Publishing assets: `data/publishing/`.
-- Feedback: `data/feedback/`.
-- Workspaces: `data/workspaces/`.
-- Runs, task status, handoff, and dead letters: `data/runs/`.
+Rules:
 
-Do not move or merge these directories without updating docs, tests, and validation.
+- root `skills/` is the project source of truth;
+- `.claude/skills/` is generated runtime output;
+- use `make sync-skills-dry-run` before `make sync-skills`;
+- use `docs/09-skills/agent-skill-map.md` for Agent-to-Skill selection;
+- install new Skills only from trusted sources after reading `SKILL.md` and checking shell, network, credential, deletion, and upload risks;
+- record Skill adoption or risk in the relevant report when it affects the project;
+- Skill outputs must still pass schemas, storage boundaries, provider boundaries, copyright boundaries, and review gates.
 
-## Model Adapter Boundary
+## Repository Map
 
-Runnable local workflows use:
-
-- `MockModelAdapter`.
-- `LocalRuleEngine`.
-- Claude Code Codex worker through `CODEX_HOME=~/.codex-claude codex` for production agent model calls.
-
-Provider adapters for ChatGPT and DeepSeek are opt-in OpenAI-compatible JSON providers. Generic Codex remains explicit unless selected through provider settings.
-
-- `health_check()` is safe.
-- Model output must be strict JSON when a schema-backed asset will be written.
-- Invalid model output fails the step instead of writing malformed assets.
-- Do not call external APIs in tests.
-- Do not hard-code provider-specific logic inside business workflows.
-- Do not read secrets except through documented provider settings.
-
-Real provider support requires:
-
-- Dependency policy.
-- Secret policy.
-- Mocked tests.
-- No-network default test behavior.
-- Trace, model-call, and cost-ledger evidence for production paths.
-
-## Required Commands
-
-Use these commands for verification:
-
-```bash
-make lint
-make test
-make validate
-make sync-skills-dry-run
+```text
+src/novel_forge/          Python package: CLI, API, schemas, modules, workflows, storage
+src/novel_forge/modules/  domain/application services and OS runtime modules
+src/novel_forge/api/      FastAPI app, routers, product API service layer
+web/admin/                Next.js admin console
+tests/                    unit, integration, acceptance, fixtures
+skills/                   project Skill source of truth
+.claude/skills/           generated runtime Skill copies plus external runtime Skills
+docs/                     current docs, architecture, reports, historical plans
+scripts/                  local operations, validation, sync, smoke, data scripts
+examples/                 deterministic sample inputs and outputs
+data/                     ignored/generated local asset tree
+.local/workspace/         ignored runtime workspace for local runs
 ```
 
-Use `make demo` only when demo asset generation is relevant to the task.
+## Common Commands
 
-For local production-style stack changes, also use the smallest relevant Docker command:
+Use `PYTHONPATH=src` when running modules directly from the checkout.
 
 ```bash
-make local-smoke
+make test                    # Python unittest suite + web admin node tests
+make lint                    # Python compile check
+make validate                # validate the local workspace structure and assets
+make demo                    # run sample local pipeline
+make sync-skills-dry-run     # preview root skills -> .claude/skills drift
+make sync-skills             # update runtime Skill copies
+make check-skills            # fail on Skill drift
+make local-up                # Docker local production-style stack
+make local-smoke             # local stack smoke test
+make local-down              # stop stack
+make api                     # FastAPI backend on local workspace
+make worker                  # Celery worker on local workspace
+make web-dev                 # Next.js dev console
+PYTHONPATH=src python3 -m novel_forge.cli --help
+PYTHONPATH=src python3 -m novel_forge.cli validate --root .local/workspace
+npm --prefix web/admin test
+npm --prefix web/admin run lint
 ```
 
-## Testing Standard
+Optional provider and browser smoke commands may require local secrets, installed browsers, or Docker services. Mark skipped or unavailable checks explicitly.
 
-Before claiming completion:
+## Completion Standard
 
-- Run the smallest relevant test first when possible.
-- Run `make lint`, `make test`, and `make validate` for code or schema changes.
-- Run `make sync-skills-dry-run` or `make check-skills` for Skill changes.
-- Record test results in roadmap docs when the task changes project status.
-- If you cannot run tests because the execution environment lacks the repository or dependencies, state that explicitly and do not claim tests passed.
+An Agent task is complete only when the smallest relevant verification exists:
+
+- docs-only: consistency check against current code paths and current docs index;
+- schema/code: tests plus validation;
+- workflow changes: node status, recovery, retry, and artifact checks;
+- scheduler changes: dispatch queue, lease, checkpoint, gate, budget/SLA, retry/dead-letter, and recovery checks;
+- Skill changes: dry-run drift check;
+- UI changes: route-level smoke or component/API tests when possible;
+- production content: review report and quality gate result.
+
+When verification is not possible in the current environment, record the exact blocker and the next command to run.

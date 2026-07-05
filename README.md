@@ -55,7 +55,7 @@ This OS acceptance chain is not the same thing as generating a complete long nov
 make test
 make validate
 make demo
-./novel-forge --help
+PYTHONPATH=src python3 -m novel_forge.cli --help
 ```
 
 Core Novel OS validation:
@@ -153,43 +153,43 @@ Both local workers run `codex exec` non-interactively with JSON output schema va
 ## Core Commands
 
 ```bash
-./novel-forge init
-./novel-forge ingest examples/sample_inputs/sample_novel.txt
-./novel-forge clean --input data/raw/<file>.json
-./novel-forge decompose --input data/cleaned/<file>.json
-./novel-forge extract-knowledge --input data/decompositions/<file>.json
-./novel-forge build-materials
-./novel-forge generate-topic
-./novel-forge topic-development
-./novel-forge training-exercise
-./novel-forge generate-world
-./novel-forge generate-characters
-./novel-forge generate-outline
-./novel-forge generate-chapter-plan
-./novel-forge draft
-./novel-forge review --input data/drafts/<file>.json
-./novel-forge compare-reviews --input data/drafts/<file>.json
-./novel-forge revise --input data/reviews/<file>.json
-./novel-forge import-feedback examples/sample_inputs/sample_feedback.csv
-./novel-forge analyze-feedback
-./novel-forge claude-deconstruct
-./novel-forge claude-knowledge
-./novel-forge build-index
-./novel-forge search
-./novel-forge build-vector-index
-./novel-forge vector-search --query "..."
-./novel-forge qdrant-index
-./novel-forge qdrant-search --query "..."
-./novel-forge minio-sync
-./novel-forge init-workspace
-./novel-forge workspace-status
-./novel-forge run-pipeline --sample
-./novel-forge industrial-status
-./novel-forge status
-./novel-forge validate
+PYTHONPATH=src python3 -m novel_forge.cli init
+PYTHONPATH=src python3 -m novel_forge.cli ingest examples/sample_inputs/sample_novel.txt
+PYTHONPATH=src python3 -m novel_forge.cli clean --input data/raw/<file>.json
+PYTHONPATH=src python3 -m novel_forge.cli decompose --input data/cleaned/<file>.json
+PYTHONPATH=src python3 -m novel_forge.cli extract-knowledge --input data/decompositions/<file>.json
+PYTHONPATH=src python3 -m novel_forge.cli build-materials
+PYTHONPATH=src python3 -m novel_forge.cli generate-topic
+PYTHONPATH=src python3 -m novel_forge.cli topic-development
+PYTHONPATH=src python3 -m novel_forge.cli training-exercise
+PYTHONPATH=src python3 -m novel_forge.cli generate-world
+PYTHONPATH=src python3 -m novel_forge.cli generate-characters
+PYTHONPATH=src python3 -m novel_forge.cli generate-outline
+PYTHONPATH=src python3 -m novel_forge.cli generate-chapter-plan
+PYTHONPATH=src python3 -m novel_forge.cli draft
+PYTHONPATH=src python3 -m novel_forge.cli review --input data/drafts/<file>.json
+PYTHONPATH=src python3 -m novel_forge.cli compare-reviews --input data/drafts/<file>.json
+PYTHONPATH=src python3 -m novel_forge.cli revise --input data/reviews/<file>.json
+PYTHONPATH=src python3 -m novel_forge.cli import-feedback examples/sample_inputs/sample_feedback.csv
+PYTHONPATH=src python3 -m novel_forge.cli analyze-feedback
+PYTHONPATH=src python3 -m novel_forge.cli claude-deconstruct
+PYTHONPATH=src python3 -m novel_forge.cli claude-knowledge
+PYTHONPATH=src python3 -m novel_forge.cli build-index
+PYTHONPATH=src python3 -m novel_forge.cli search
+PYTHONPATH=src python3 -m novel_forge.cli build-vector-index
+PYTHONPATH=src python3 -m novel_forge.cli vector-search --query "..."
+PYTHONPATH=src python3 -m novel_forge.cli qdrant-index
+PYTHONPATH=src python3 -m novel_forge.cli qdrant-search --query "..."
+PYTHONPATH=src python3 -m novel_forge.cli minio-sync
+PYTHONPATH=src python3 -m novel_forge.cli init-workspace
+PYTHONPATH=src python3 -m novel_forge.cli workspace-status
+PYTHONPATH=src python3 -m novel_forge.cli run-pipeline --sample
+PYTHONPATH=src python3 -m novel_forge.cli industrial-status
+PYTHONPATH=src python3 -m novel_forge.cli status
+PYTHONPATH=src python3 -m novel_forge.cli validate
 ```
 
-These commands default to the current directory unless `NOVEL_FORGE_ROOT` is set. For production-style local use, prefer `NOVEL_FORGE_ROOT=.local/workspace` or explicit `--root .local/workspace`.
+These commands default to the current directory unless `NOVEL_FORGE_ROOT` is set. If the package is installed, the shorter `novel-forge ...` console script is also available. For production-style local use, prefer `NOVEL_FORGE_ROOT=.local/workspace` or explicit `--root .local/workspace`.
 
 ## Industrial Stack
 
@@ -226,9 +226,14 @@ Current P0/P1 closure status:
 
 - [CLAUDE.md](CLAUDE.md)
 - [AGENTS.md](AGENTS.md)
-- [ARCHITECTURE.md](ARCHITECTURE.md)
-- [WORKFLOW.md](WORKFLOW.md)
-- [TESTING.md](TESTING.md)
+- [Docs Index](docs/README.md)
+- [Current Project State](docs/project-current-state.md)
+- [Architecture Overview](docs/architecture/overview.md)
+- [Module Map](docs/architecture/module-map.md)
+- [Capability Map](docs/product/capability-map.md)
+- [Extension Guide](docs/engineering/extension-guide.md)
+- [Regression Tests](docs/quality/regression-tests.md)
+- [Current Roadmap](docs/roadmap/current-roadmap.md)
 - [Novel Operating System Target](docs/00-product/novel-operating-system.md)
 - [Novel OS New Capabilities](docs/architecture/novel-operating-system-new-capabilities.md)
 - [Novel OS Remaining Closure Plan](docs/08-roadmap/novel-os-remaining-closure-plan.md)

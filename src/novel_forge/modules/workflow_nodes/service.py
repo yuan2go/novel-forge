@@ -21,6 +21,12 @@ from novel_forge.modules.runtime_ledger import (
     record_trace_span,
     release_scheduler_lease,
 )
+from novel_forge.modules.workflow_nodes.control import (
+    build_cancel_control_update,
+    build_pause_control_update,
+    build_retry_control_evidence,
+    normalize_workflow_control_action,
+)
 from novel_forge.modules.workflow_nodes.query import (
     list_node_runs as _query_list_node_runs,
     list_workflow_definitions as _query_list_workflow_definitions,
@@ -676,21 +682,20 @@ def pause_workflow_run(storage: LocalStorage, workflow_run_path_or_id: str | Pat
     storage.ensure_layout()
     path, data = _resolve_workflow_run(storage, workflow_run_path_or_id)
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-    status = str(content.get("status", ""))
-    if status in WORKFLOW_RUN_TERMINAL_STATUSES:
-        raise ValueError(f"terminal workflow_run cannot be paused: {status}")
-    blocked = content.get("blocked", {}) if isinstance(content.get("blocked", {}), dict) else {}
-    if not blocked.get("node_id"):
-        blocked = {"node_id": _next_resume_node_from_run(storage, data), "status": "paused", "reason": reason or "workflow paused"}
-    else:
-        blocked = {**blocked, "status": "paused", "reason": reason or blocked.get("reason") or "workflow paused"}
+    update = build_pause_control_update(
+        content,
+        reason=reason,
+        operator=operator,
+        next_node_id=_next_resume_node_from_run(storage, data),
+        terminal_statuses=WORKFLOW_RUN_TERMINAL_STATUSES,
+    )
     return _update_workflow_run_control(
         storage,
         path,
         data,
-        status="paused",
-        blocked=blocked,
-        control={"action": "pause", "operator": operator, "reason": reason},
+        status=update["status"],
+        blocked=update["blocked"],
+        control=update["control"],
     )
 
 
@@ -698,19 +703,15 @@ def cancel_workflow_run(storage: LocalStorage, workflow_run_path_or_id: str | Pa
     storage.ensure_layout()
     path, data = _resolve_workflow_run(storage, workflow_run_path_or_id)
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-    status = str(content.get("status", ""))
-    if status in {"completed", "superseded"}:
-        raise ValueError(f"workflow_run cannot be cancelled from status: {status}")
-    blocked = content.get("blocked", {}) if isinstance(content.get("blocked", {}), dict) else {}
-    blocked = {**blocked, "status": "cancelled", "reason": reason or "workflow cancelled"}
+    update = build_cancel_control_update(content, reason=reason, operator=operator)
     cancelled = _update_workflow_run_control(
         storage,
         path,
         data,
-        status="cancelled",
-        blocked=blocked,
-        control={"action": "cancel", "operator": operator, "reason": reason},
-        finish=True,
+        status=update["status"],
+        blocked=update["blocked"],
+        control=update["control"],
+        finish=bool(update["finish"]),
     )
     cancelled_agents: list[dict[str, str]] = []
     for agent_path in content.get("agent_runs", []) if isinstance(content.get("agent_runs", []), list) else []:
@@ -788,14 +789,12 @@ def control_workflow_run(
     workspace_path: str | None = None,
     archive_previous: bool = True,
 ) -> dict[str, Any]:
-    normalized = str(action or "").strip().lower()
-    if normalized not in WORKFLOW_RUN_CONTROL_ACTIONS:
-        raise ValueError(f"workflow control action must be one of: {', '.join(sorted(WORKFLOW_RUN_CONTROL_ACTIONS))}")
+    normalized = normalize_workflow_control_action(action, WORKFLOW_RUN_CONTROL_ACTIONS)
     if normalized == "pause":
         return pause_workflow_run(storage, workflow_run_path_or_id, reason=reason)
     if normalized == "cancel":
         return cancel_workflow_run(storage, workflow_run_path_or_id, reason=reason)
-    retry_evidence = {"workflow_control_action": normalized, "reason": reason, **(evidence or {})}
+    retry_evidence = build_retry_control_evidence(normalized, reason, evidence)
     return retry_workflow_run(
         storage,
         workflow_run_path_or_id,
@@ -4373,6 +4372,8 @@ def _execute_registered_service_processor_impl(
             workflow_node_id=str(processor.get("workflow_node_id") or processor.get("node_id") or ""),
             trace=processor.get("trace", {}) if isinstance(processor.get("trace", {}), dict) else {},
             persist=bool(processor.get("persist", True)),
+            environment=str(processor.get("environment") or ""),
+            allow_mock_fixture=bool(processor.get("allow_mock_fixture") or processor.get("mock_provider_test_mode")),
         )
         return _service_success(storage, operation, result)
     if operation in {"model_gateway_call", "execute_model_gateway_call"}:
@@ -4395,6 +4396,8 @@ def _execute_registered_service_processor_impl(
             status=str(processor.get("status") or "succeeded"),
             trace=processor.get("trace", {}) if isinstance(processor.get("trace", {}), dict) else {},
             mode=str(processor.get("mode") or "") or None,
+            environment=str(processor.get("environment") or ""),
+            allow_mock_fixture=bool(processor.get("allow_mock_fixture") or processor.get("mock_provider_test_mode")),
         )
         return _service_success(storage, operation, result)
     if operation in {"prompt_template", "create_prompt_template"}:

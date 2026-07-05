@@ -727,6 +727,13 @@ class ModelRouteRequest(BaseModel):
     status: str = "active"
     project_id: str | None = None
     workspace_path: str | None = None
+    environment: str = ""
+    approval_status: str = ""
+    approval_id: str = ""
+    approved_by: str = ""
+    approval_reason: str = ""
+    production_provider_allowlist: list[str] = Field(default_factory=list)
+    mock_provider_test_mode: bool = False
 
 
 class ModelRouteResolveRequest(BaseModel):
@@ -738,6 +745,8 @@ class ModelRouteResolveRequest(BaseModel):
     workflow_node_id: str = ""
     trace: dict[str, Any] = Field(default_factory=dict)
     persist: bool = True
+    environment: str = ""
+    allow_mock_fixture: bool = False
 
 
 class ModelGatewayCallRequest(BaseModel):
@@ -756,6 +765,8 @@ class ModelGatewayCallRequest(BaseModel):
     status: str = "succeeded"
     trace: dict[str, Any] = Field(default_factory=dict)
     mode: str | None = None
+    environment: str = ""
+    allow_mock_fixture: bool = False
 
 
 class PromptTemplateRequest(BaseModel):

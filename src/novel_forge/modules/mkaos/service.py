@@ -16,6 +16,7 @@ from novel_forge.modules.mkaos.asset_index import (
     find_asset as _find_asset,
     list_assets as _list_assets,
 )
+from novel_forge.modules.mkaos import quality as _mkaos_quality
 from novel_forge.modules.mkaos.risk_policy import (
     normalize_risk_level as _normalize_risk_level,
     risk_reasons as _risk_reasons,
@@ -2361,29 +2362,15 @@ def recalculate_knowledge_quality(storage: LocalStorage, knowledge_ref: str | Pa
 
 
 def knowledge_quality_history(storage: LocalStorage, knowledge_ref: str | Path, *, limit: int = 200) -> dict[str, Any]:
-    knowledge_id = str(knowledge_ref)
-    try:
-        _, knowledge = _find_asset(storage, knowledge_ref, asset_type="knowledge_card", categories=["knowledge"])
-        knowledge_id = str(knowledge.get("id") or knowledge_id)
-    except FileNotFoundError:
-        pass
-    rows = [row for row in _list_assets(storage, "knowledge", "knowledge_quality_score", limit=limit) if str(row.get("content", {}).get("knowledge_id") or "") == knowledge_id]
-    return {"knowledge_id": knowledge_id, "count": len(rows), "items": rows}
+    return _mkaos_quality.knowledge_quality_history(storage, knowledge_ref, limit=limit)
 
 
 def list_low_quality_knowledge(storage: LocalStorage, *, threshold: float = 0.45, project_id: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
-    rows = list_knowledge_cards(storage, project_id=project_id, include_deprecated=True, limit=limit)
-    return [row for row in rows if _float(row.get("content", {}).get("overall_quality_score", row.get("content", {}).get("quality_score", 0.7)), 0.7) < threshold]
+    return _mkaos_quality.list_low_quality_knowledge(storage, threshold=threshold, project_id=project_id, limit=limit)
 
 
 def list_high_copyright_risk_knowledge(storage: LocalStorage, *, threshold: float = 0.7, project_id: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
-    rows = list_knowledge_cards(storage, project_id=project_id, include_deprecated=True, limit=limit)
-    return [
-        row
-        for row in rows
-        if _float((row.get("content", {}).get("quality_dimensions") or {}).get("copyright_risk_score"), 0.0) >= threshold
-        or str(row.get("content", {}).get("risk_level") or row.get("metadata", {}).get("risk_level") or "") in {"high", "critical"}
-    ]
+    return _mkaos_quality.list_high_copyright_risk_knowledge(storage, threshold=threshold, project_id=project_id, limit=limit)
 
 
 def create_knowledge_relation(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:

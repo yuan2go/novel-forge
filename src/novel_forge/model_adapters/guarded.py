@@ -260,6 +260,8 @@ class GuardedModelAdapter:
             workflow_node_id=str(context.get("workflow_node_id", "")),
             trace=run_info.get("trace", {}) if isinstance(run_info.get("trace", {}), dict) else {},
             persist=True,
+            environment=str(context.get("environment") or context.get("runtime_environment") or run_info.get("environment") or ""),
+            allow_mock_fixture=bool(context.get("allow_mock_fixture") or context.get("mock_provider_test_mode") or run_info.get("allow_mock_fixture")),
         )
         resolution = route.get("resolution", {}) if isinstance(route.get("resolution", {}), dict) else route.get("asset", {}).get("content", {})
         return {

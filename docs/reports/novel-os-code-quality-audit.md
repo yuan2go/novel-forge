@@ -13,15 +13,15 @@
 
 | 类型 | 证据 | 风险 | 优先级 |
 | --- | --- | --- | --- |
-| 超长 service | `modules/mkaos/service.py` 7334 行，已抽出 `mkaos.asset_index` 和 `mkaos.risk_policy` | 单文件仍承担 ingestion/quality/lineage/asset 操作，回归风险高 | P1 |
-| 超长 API facade | `api/services/product.py` 5703 行，已抽出 `product_asset_index` 和 Postgres fallback policy | API use case 边界仍不清，路由和 domain 紧耦合 | P1 |
-| 超长 workflow service | `modules/workflow_nodes/service.py` 4723 行，已抽出 `workflow_nodes.query` 和 `publishing_ops` | node 执行、错误恢复、状态更新仍难局部测试 | P1 |
-| 超长 scheduler service | `modules/agent_scheduler/service.py` 已抽出 `agent_scheduler.publishing_runners`、`agent_scheduler.queue_lifecycle`、`agent_scheduler.operation_registry`、`agent_scheduler.dead_letter_runner` | execution/rollback orchestration 仍混合 | P1 |
+| 超长 service | `modules/mkaos/service.py` 继续过大，已抽出 `mkaos.asset_index`、`mkaos.risk_policy`、`mkaos.quality` | 单文件仍承担 ingestion/selection/lineage/asset writer，回归风险高 | P1 |
+| 超长 API facade | `api/services/product.py` 继续过大，已抽出 `product_asset_index`、Postgres fallback policy、`product_tasks` | API use case 边界仍不清，路由和 domain 紧耦合 | P1 |
+| 超长 workflow service | `modules/workflow_nodes/service.py` 继续过大，已抽出 `workflow_nodes.query`、`publishing_ops`、`workflow_nodes.control` | node 执行、错误恢复、状态更新仍难局部测试 | P1 |
+| 超长 scheduler service | `modules/agent_scheduler/service.py` 已抽出 `agent_scheduler.publishing_runners`、`agent_scheduler.queue_lifecycle`、`agent_scheduler.operation_registry`、`agent_scheduler.dead_letter_runner`、`scheduler_tick`、`recovery_runner`、`rollback_runner`、`execution_runner` | operation-specific runners 和 workflow resume 仍混合 | P1 |
 | schema 集中 | `schemas/base.py` 1957 行 | required fields 和 validation 难以按域演进 | P1 |
 | 过渡层 | `api/routers/README.md` 标注 `_bindings.py` 和 product facade 为 transitional | 过渡结构可能固化 | P1 |
 | fallback 路径 | `api/app.py` Postgres list 失败后可退到本地 list | 严格环境下可能掩盖数据库问题 | P1 |
 | broad exception | `workflow_nodes`、`product` 仍有外部系统/副作用路径 `except Exception`；`mkaos/service.py` 目标文件已清零 | 静默失败或错误语义不清 | P1，部分治理：已新增 `core.exception_policy`/`core.asset_scan` 并接入只读资产扫描、qdrant preview、workflow scheduler scan、scheduler dead-letter 副作用 |
-| mock provider | `model_adapters/mock.py`、`mkaos_model_extraction/provider_runner.py` | 测试有用，但生产入口必须 fail-closed | P0/P1，部分治理：provider evidence 现在要求 hard-stop + success 双证据 |
+| mock provider | `model_adapters/mock.py`、`mkaos_model_extraction/provider_runner.py` | 测试有用，但生产入口必须 fail-closed | P0/P1，已治理生产路由：provider evidence 要求 hard-stop + success 双证据，production model route 强制 allowlist、mock denylist、审批证据 |
 | placeholder 描述 | `modules/topics/__init__.py`、`modules/review/__init__.py`、`modules/knowledge/__init__.py` | 小风险，影响代码导航质量 | P2，已修复运行时代码占位文案 |
 | 版本命名漂移 | `pyproject.toml`、`api/app.py`、`__init__.py` 曾保留 V5 runtime 命名 | 版本和能力沟通不一致 | P1，已修复为 Novel Forge v6 / Novel OS |
 | Agent Skill map 漂移 | `agents/runtime.py` 原映射缺 root Skills | 权限和职责选择不稳定 | P0，已修复 |
@@ -42,7 +42,7 @@
 - 所有 model-producing operation 的 OS Envelope coverage；
 - Longform Recap、Platform Compliance、Training AgentRun integration 已补第一批 scheduler tests；
 - Eval -> provider routing -> publish gate 的阻断和 success fixture 已补第一批测试；
-- Release package 已补 production-ready 正向 fixture；下一步应扩展到 publish gate generator 端到端 ready；
+- Release package 已补 production-ready 正向 fixture，且 ready publish gate 由 `create_publish_gate_report(...)` 基于完整证据自然生成；
 - publishing facade 和 audit implementation 的一致性；
 - MKAOS service 拆分前 characterization tests。
 
@@ -68,4 +68,11 @@
 - Product qdrant preview、Workflow scheduler scan/prepared agent scan、resume/node lookup、asset refs 继续收窄 broad exception。
 - Agent Scheduler registry catalog 抽出到 `agent_scheduler.operation_registry`，主 service 只保留 execution/rollback orchestration。
 - Agent Scheduler retry/dead-letter 状态转换抽出到 `agent_scheduler.dead_letter_runner`。
-- Release package 主实现迁入 `modules.publishing.service`，audit 同名函数降级为兼容 wrapper；publish gate 主实现仍待迁移。
+- PublishGate 主实现迁入 `modules.publishing.publish_gate`，ReleasePackage 主实现迁入 `modules.publishing.release_package`；audit 同名函数降级为兼容 wrapper。
+- Agent Scheduler tick/loop、manual recovery、rollback report、execution result 分类分别抽到 `scheduler_tick`、`recovery_runner`、`rollback_runner`、`execution_runner`。
+- ModelRouter production route resolution 接入 provider allowlist、mock denylist、approval evidence，并在 resolution 中记录 policy/evidence。
+- Originality signature 修复空 plot/role 字段误判，避免多个空结构资产被判为 100% 相似。
+- Product task control/dead-letter use case 抽到 `api.services.product_tasks`，`product.py` 只保留兼容 facade。
+- Workflow pause/cancel/retry control payload 生成抽到 `workflow_nodes.control`，执行器主 service 不再直接拼控制决策。
+- MKAOS low-quality/high-risk/quality-history 查询抽到 `mkaos.quality`。
+- Provider approval evidence 增加 ops 聚合报告、API endpoint 和 OS Console 面板，production resolution 的审批状态、allowlist/mock denylist policy 可直接观测。

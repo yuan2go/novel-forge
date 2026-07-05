@@ -36,6 +36,7 @@ from novel_forge.api.services.product_asset_index import (
     find_asset_binding as _find_asset_binding,
 )
 from novel_forge.api.services.postgres_fallback_policy import postgres_asset_read_fallback_policy
+from novel_forge.api.services import product_tasks as _product_tasks
 from novel_forge.schemas import AssetCollection, BatchTaskItem, DraftChapter, ProjectWorkspaceState, validate_common_fields
 from novel_forge.storage.object_store import MinioObjectStore, object_name_for_path
 from novel_forge.storage.local import LocalStorage
@@ -90,10 +91,7 @@ REVIEW_ISSUE_STATUSES = {"open", "accepted", "ignored", "fixed"}
 BATCH_REVIEW_DECISIONS = {"approved", "rejected", "needs_revision"}
 BATCH_ANALYSIS_MODES = {"auto", "claude_code"}
 HANDOFF_ACCEPTANCE_STATUSES = {"pending", "accepted", "needs_fix", "rejected"}
-TASK_CONTROL_RELATIVE_PATH = Path("data/indexes/task-control.json")
-QUEUE_PRESSURE_RELATIVE_PATH = Path("data/indexes/queue-pressure.json")
 AUDIT_LOG_RELATIVE_PATH = Path("data/runs/audit-log.jsonl")
-DEFAULT_TASK_CONTROL = {"max_concurrent_batches": 1, "max_concurrent_steps": 1}
 EXPORT_FORMATS = {"markdown", "docx", "epub"}
 HANDOFF_REVIEW_MIN_SCORE = 70
 BATCH_PIPELINE_STEPS = ["ingest", "clean", "decompose", "extract-knowledge", "build-materials"]
@@ -1055,26 +1053,7 @@ def indexed_task_timeline(
 
 
 def task_control_status(settings: Any) -> dict[str, Any]:
-    config = _read_task_control(settings.root)
-    celery = _celery_inspection(settings)
-    storage = LocalStorage(settings.root)
-    trend = _record_queue_pressure(settings.root, celery)
-    try:
-        from novel_forge.modules.runtime_ledger import scheduler_lease_status
-
-        scheduler = scheduler_lease_status(storage)
-    except Exception as exc:
-        scheduler = {"status": "error", "error": str(exc)}
-    return {
-        "config": config,
-        "celery": celery,
-        "queue_trend": trend,
-        "scheduler": scheduler,
-        "dead_letters": {"count": len(task_dead_letter_rows(settings.root, limit=1000))},
-        "failed_batch_items": list_batch_items(storage, status="failed", limit=25),
-        "waiting_handoffs": list_batch_items(storage, status="waiting_handoff", limit=25),
-        "heartbeat": utc_now(),
-    }
+    return _product_tasks.task_control_status(settings, list_batch_items_func=list_batch_items)
 
 
 def task_recovery_workbench(settings: Any, project_id: str | None = None) -> dict[str, Any]:
@@ -1117,80 +1096,23 @@ def project_health_report(settings: Any, project_id: str | None = None) -> dict[
 
 
 def update_task_control(root: str | Path, patch: dict[str, Any]) -> dict[str, Any]:
-    config = _read_task_control(root)
-    for key in ["max_concurrent_batches", "max_concurrent_steps"]:
-        if patch.get(key) is not None:
-            value = int(patch[key])
-            if value < 1:
-                raise ValueError(f"{key} must be at least 1")
-            config[key] = value
-    path = Path(root).resolve() / TASK_CONTROL_RELATIVE_PATH
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return config
-
-
-def _record_queue_pressure(root: str | Path, celery: dict[str, Any], max_points: int = 120) -> list[dict[str, Any]]:
-    path = Path(root).resolve() / QUEUE_PRESSURE_RELATIVE_PATH
-    path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
-    except (OSError, json.JSONDecodeError):
-        data = []
-    if not isinstance(data, list):
-        data = []
-    queue_lengths = celery.get("queue_lengths", {}) if isinstance(celery.get("queue_lengths", {}), dict) else {}
-    queues = queue_lengths.get("queues", {}) if isinstance(queue_lengths.get("queues", {}), dict) else {}
-    snapshot = {
-        "recorded_at": utc_now(),
-        "healthy": bool(celery.get("healthy")),
-        "active_count": int(celery.get("active_count", 0) or 0),
-        "reserved_count": int(celery.get("reserved_count", 0) or 0),
-        "scheduled_count": int(celery.get("scheduled_count", 0) or 0),
-        "queue_total": sum(int(value or 0) for value in queues.values()),
-        "queues": queues,
-    }
-    data.append(snapshot)
-    data = data[-max_points:]
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return data
+    return _product_tasks.update_task_control(root, patch)
 
 
 def cancel_celery_task(task_id: str, terminate: bool = False, signal: str = "SIGTERM") -> dict[str, Any]:
     if not task_id.strip():
         raise ValueError("task_id must not be empty")
-    celery_app = _celery_app_or_error()
+    celery_app = _product_tasks.celery_app_or_error()
     celery_app.control.revoke(task_id, terminate=terminate, signal=signal)
     return {"task_id": task_id, "revoked": True, "terminate": terminate, "signal": signal}
 
 
 def task_dead_letter_rows(root: str | Path, limit: int = 100) -> list[dict[str, Any]]:
-    from novel_forge.workers.runtime import list_dead_letters
-
-    return list_dead_letters(root, limit=limit)
+    return _product_tasks.task_dead_letter_rows(root, limit=limit)
 
 
 def retry_dead_letter(root: str | Path, dead_letter_path: str):
-    storage = LocalStorage(root)
-    path = resolve_path(storage.root, dead_letter_path).resolve()
-    path.relative_to(storage.root)
-    data = storage.read_json(path)
-    if not isinstance(data, dict) or data.get("type") != "task_dead_letter":
-        raise ValueError(f"dead_letter_path must point to a task_dead_letter asset: {dead_letter_path}")
-    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-    payload = content.get("payload", {}) if isinstance(content.get("payload", {}), dict) else {}
-    task_name = str(content.get("task_name", ""))
-    args = payload.get("args", [])
-    kwargs = payload.get("kwargs", {})
-    if not task_name:
-        raise ValueError("dead letter has no task_name")
-    if not isinstance(args, list):
-        args = []
-    if not isinstance(kwargs, dict):
-        kwargs = {}
-    from novel_forge.workers.dispatch import enqueue_task
-
-    return enqueue_task(task_name, *args, task_kwargs=kwargs)
+    return _product_tasks.retry_dead_letter(root, dead_letter_path)
 
 
 def receive_uploads(settings: Any, body: bytes, content_type: str) -> dict[str, Any]:
@@ -5385,97 +5307,6 @@ def _rights_payload(
         "source_url": source_url,
         "allow_downstream_generation": allow_downstream_generation,
     }
-
-
-def _read_task_control(root: str | Path) -> dict[str, int]:
-    path = Path(root).resolve() / TASK_CONTROL_RELATIVE_PATH
-    if not path.exists():
-        return dict(DEFAULT_TASK_CONTROL)
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return dict(DEFAULT_TASK_CONTROL)
-    config = dict(DEFAULT_TASK_CONTROL)
-    for key in config:
-        try:
-            value = int(data.get(key, config[key]))
-        except (AttributeError, TypeError, ValueError):
-            value = config[key]
-        config[key] = max(1, value)
-    return config
-
-
-def _celery_app_or_error() -> Any:
-    try:
-        from novel_forge.workers.tasks import celery_app
-    except Exception as exc:
-        raise RuntimeError(f"Celery task import failed: {exc}") from exc
-    if celery_app is None:
-        raise RuntimeError("Celery is not installed or configured")
-    return celery_app
-
-
-def _celery_inspection(settings: Any) -> dict[str, Any]:
-    try:
-        celery_app = _celery_app_or_error()
-    except Exception as exc:
-        return {
-            "available": False,
-            "healthy": False,
-            "error": str(exc),
-            "workers": {},
-            "active_count": 0,
-            "reserved_count": 0,
-            "scheduled_count": 0,
-            "queue_lengths": {},
-        }
-    try:
-        inspector = celery_app.control.inspect(timeout=0.5)
-        ping = inspector.ping() or {}
-        active = inspector.active() or {}
-        reserved = inspector.reserved() or {}
-        scheduled = inspector.scheduled() or {}
-    except Exception as exc:
-        return {
-            "available": True,
-            "healthy": False,
-            "error": str(exc),
-            "workers": {},
-            "active_count": 0,
-            "reserved_count": 0,
-            "scheduled_count": 0,
-            "queue_lengths": _redis_queue_lengths(settings),
-        }
-    return {
-        "available": True,
-        "healthy": bool(ping),
-        "error": "",
-        "workers": ping,
-        "active_count": sum(len(items) for items in active.values()),
-        "reserved_count": sum(len(items) for items in reserved.values()),
-        "scheduled_count": sum(len(items) for items in scheduled.values()),
-        "queue_lengths": _redis_queue_lengths(settings),
-    }
-
-
-def _redis_queue_lengths(settings: Any) -> dict[str, Any]:
-    try:
-        import redis
-    except ModuleNotFoundError:
-        return {"available": False, "error": "redis dependency is not installed"}
-    try:
-        client = redis.Redis.from_url(settings.celery_broker_url or settings.redis_url, socket_connect_timeout=0.2, socket_timeout=0.2)
-        queues = {
-            "celery": int(client.llen("celery")),
-            str(getattr(settings, "celery_default_queue", "novel-forge")): int(client.llen(getattr(settings, "celery_default_queue", "novel-forge"))),
-        }
-        return {
-            "available": True,
-            "queues": queues,
-            "idempotency_keys": len(list(client.scan_iter("novel_forge:idempotency:*", count=1000))),
-        }
-    except Exception as exc:
-        return {"available": False, "error": str(exc)}
 
 
 def _parse_multipart(body: bytes, content_type: str) -> tuple[dict[str, str], list[dict[str, Any]]]:

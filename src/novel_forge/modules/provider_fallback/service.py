@@ -28,6 +28,8 @@ def preview_provider_fallback(storage: LocalStorage, payload: dict[str, Any]) ->
         workflow_node_id=str(payload.get("workflow_node_id") or ""),
         trace=payload.get("trace", {}) if isinstance(payload.get("trace", {}), dict) else {},
         persist=True,
+        environment=str(payload.get("environment") or ""),
+        allow_mock_fixture=bool(payload.get("allow_mock_fixture") or payload.get("mock_provider_test_mode")),
     )
     resolution = route.get("resolution", {}) if isinstance(route.get("resolution", {}), dict) else route.get("asset", {}).get("content", {})
     primary = _candidate_cost(

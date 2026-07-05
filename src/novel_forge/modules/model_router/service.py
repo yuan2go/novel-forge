@@ -10,6 +10,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.audit_log import record_audit_event
 from novel_forge.modules.evaluation_center import resolve_model_route as resolve_evaluation_route
 from novel_forge.modules.operation_checkpoint import record_operation_stage_checkpoint
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.prompt_registry import resolve_prompt
 from novel_forge.modules.runtime_ledger import check_budget_policy, record_gate_result, record_model_call_log, record_trace_span
@@ -18,6 +19,18 @@ from novel_forge.schemas import ModelRoute, ModelRouteResolution, validate_commo
 from novel_forge.storage.local import LocalStorage
 
 MODEL_ROUTER_TYPES = {"model_route", "model_route_resolution"}
+MOCK_PROVIDER_NAMES = {"mock", "mock-provider", "local-mock", "mock-openai", "fixture-mock"}
+DEFAULT_PRODUCTION_PROVIDER_ALLOWLIST = {
+    "anthropic",
+    "azure-openai",
+    "bedrock",
+    "fallback-provider",
+    "local-provider",
+    "openai",
+    "primary-provider",
+    "unit-provider",
+    "vertex-ai",
+}
 
 
 def create_model_route(
@@ -33,6 +46,13 @@ def create_model_route(
     status: str = "active",
     project_id: str = "",
     workspace_path: str = "",
+    environment: str = "",
+    approval_status: str = "",
+    approval_id: str = "",
+    approved_by: str = "",
+    approval_reason: str = "",
+    production_provider_allowlist: list[str] | None = None,
+    mock_provider_test_mode: bool = False,
 ) -> dict[str, Any]:
     content = {
         "model_route_id": make_id("model_route", f"{task_type}-{provider}-{model_name}"),
@@ -44,6 +64,13 @@ def create_model_route(
         "max_cost_per_run": float(max_cost_per_run or 0.0),
         "max_latency_ms": int(max_latency_ms or 0),
         "status": _status(status),
+        "environment": environment,
+        "approval_status": approval_status,
+        "approval_id": approval_id,
+        "approved_by": approved_by,
+        "approval_reason": approval_reason,
+        "production_provider_allowlist": production_provider_allowlist or [],
+        "mock_provider_test_mode": bool(mock_provider_test_mode),
         "created_at": utc_now(),
         "updated_at": utc_now(),
     }
@@ -67,6 +94,8 @@ def resolve_model_route(
     workflow_node_id: str = "",
     trace: dict[str, Any] | None = None,
     persist: bool = True,
+    environment: str = "",
+    allow_mock_fixture: bool = False,
 ) -> dict[str, Any]:
     route = _latest_model_route(storage, task_type=task_type, project_id=project_id)
     source = "model_route"
@@ -74,6 +103,7 @@ def resolve_model_route(
         route = resolve_evaluation_route(storage, task_type=task_type, project_id=project_id or None)
         source = str(route.get("source", "evaluation_center"))
     route_content = route.get("content", {}) if isinstance(route.get("content", {}), dict) else route
+    resolved_environment = str(environment or route_content.get("environment") or "")
     prompt = resolve_prompt(
         storage,
         prompt_id=prompt_id,
@@ -106,23 +136,42 @@ def resolve_model_route(
         "route_path": str(route.get("path", "")) if isinstance(route, dict) else "",
         "prompt": prompt,
         "budget": budget,
+        "environment": resolved_environment,
         "created_at": utc_now(),
         "trace": trace_payload,
     }
+    resolution["approval_evidence"] = _provider_route_approval_evidence(route_content)
+    resolution["provider_policy"] = _production_provider_policy(
+        provider=resolution["provider"],
+        route_content=route_content,
+        environment=resolved_environment,
+        allow_mock_fixture=allow_mock_fixture,
+        approval_evidence=resolution["approval_evidence"],
+    )
+    if resolution["provider_policy"]["blocking"]:
+        resolution["status"] = "blocked"
+        if persist:
+            written = _write_model_route_resolution(
+                storage,
+                task_type=task_type,
+                resolution=resolution,
+                project_id=project_id,
+                workspace_path=workspace_path,
+                prompt=prompt,
+            )
+            raise ValueError(f"production provider policy blocked model route: {resolution['provider_policy']['message']} ({written['path']})")
+        raise ValueError(f"production provider policy blocked model route: {resolution['provider_policy']['message']}")
+    resolution["status"] = "resolved"
     if not persist:
         return {"status": "resolved", **resolution}
-    asset = ModelRouteResolution(
-        title=f"Model route resolution {task_type}",
-        tags=["model-route-resolution", task_type, resolution["provider"], resolution["model_name"]],
-        content=resolution,
-        metadata={"project_id": project_id, "workspace_path": workspace_path, "task_type": task_type},
-        references=filter_project_safe_references(
-            storage,
-            project_id,
-            [value for value in [resolution.get("route_path", ""), prompt.get("prompt_path", ""), prompt.get("release_path", "")] if value],
-        ),
+    written = _write_model_route_resolution(
+        storage,
+        task_type=task_type,
+        resolution=resolution,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        prompt=prompt,
     )
-    written = _write(storage, asset)
     if trace_payload.get("trace_id"):
         record_trace_span(
             storage,
@@ -157,6 +206,8 @@ def execute_model_gateway_call(
     status: str = "succeeded",
     trace: dict[str, Any] | None = None,
     mode: str | None = None,
+    environment: str = "",
+    allow_mock_fixture: bool = False,
 ) -> dict[str, Any]:
     route = resolve_model_route(
         storage,
@@ -166,6 +217,8 @@ def execute_model_gateway_call(
         prompt_id=prompt_id,
         prompt_version=prompt_version,
         trace=trace,
+        environment=environment,
+        allow_mock_fixture=allow_mock_fixture,
     )
     resolution = route.get("resolution", {}) if isinstance(route.get("resolution", {}), dict) else route.get("asset", {}).get("content", {})
     trace_payload = _trace_payload(trace, task_type=task_type)
@@ -331,6 +384,8 @@ def call_model_via_router(
     prompt_id: str = "",
     prompt_version: str = "",
     trace: dict[str, Any] | None = None,
+    environment: str = "",
+    allow_mock_fixture: bool = False,
 ) -> dict[str, Any]:
     """Resolve ModelRouter before executing an adapter operation.
 
@@ -348,6 +403,8 @@ def call_model_via_router(
         prompt_id=prompt_id,
         prompt_version=prompt_version,
         trace=trace,
+        environment=environment or str((context or {}).get("environment") or (context or {}).get("runtime_environment") or ""),
+        allow_mock_fixture=allow_mock_fixture or bool((context or {}).get("allow_mock_fixture") or (context or {}).get("mock_provider_test_mode")),
     )
     context_payload = {**(context or {}), "model_route": _compact_route_for_context(route), "runtime_operation": operation}
     started = utc_now()
@@ -379,6 +436,8 @@ def call_model_via_router(
             cost={"amount": 0.0, "currency": "USD", "source": "model_router_adapter_exception"},
             status="failed",
             trace=trace,
+            environment=environment or str((context or {}).get("environment") or (context or {}).get("runtime_environment") or ""),
+            allow_mock_fixture=allow_mock_fixture or bool((context or {}).get("allow_mock_fixture") or (context or {}).get("mock_provider_test_mode")),
         )
         raise
     usage = normalize_provider_usage(
@@ -401,6 +460,8 @@ def call_model_via_router(
         cost=cost,
         status="succeeded",
         trace=trace,
+        environment=environment or str((context or {}).get("environment") or (context or {}).get("runtime_environment") or ""),
+        allow_mock_fixture=allow_mock_fixture or bool((context or {}).get("allow_mock_fixture") or (context or {}).get("mock_provider_test_mode")),
     )
     if isinstance(result, dict):
         result["model_route_resolution_path"] = str(route.get("path", ""))
@@ -429,6 +490,247 @@ def list_model_router_assets(storage: LocalStorage, *, project_id: str | None = 
             continue
         rows.append({**data, "path": _display_path(storage.root, path)})
     return sorted(rows, key=lambda row: str(row.get("updated_at", "")), reverse=True)[:limit]
+
+
+def provider_approval_evidence_report(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    task_type: str | None = None,
+    limit: int = 200,
+) -> dict[str, Any]:
+    assets = list_model_router_assets(storage, project_id=project_id, task_type=task_type, limit=max(limit, 1))
+    rows: list[dict[str, Any]] = []
+    route_rows: list[dict[str, Any]] = []
+    for asset in assets:
+        content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+        metadata = asset.get("metadata", {}) if isinstance(asset.get("metadata", {}), dict) else {}
+        if asset.get("type") == "model_route":
+            evidence = _provider_route_approval_evidence(content)
+            environment = str(content.get("environment") or "")
+            policy = _production_provider_policy(
+                provider=str(content.get("provider", "")),
+                route_content=content,
+                environment=environment,
+                allow_mock_fixture=bool(content.get("mock_provider_test_mode") or content.get("fixture_mode")),
+                approval_evidence=evidence,
+            )
+            route_rows.append(
+                {
+                    "path": str(asset.get("path", "")),
+                    "id": str(asset.get("id", "")),
+                    "task_type": str(content.get("task_type") or metadata.get("task_type") or ""),
+                    "provider": str(content.get("provider", "")),
+                    "model_name": str(content.get("model_name", "")),
+                    "environment": environment,
+                    "production": is_production_environment(environment),
+                    "approval_evidence": evidence,
+                    "provider_policy": policy,
+                    "status": _approval_report_row_status(status=str(content.get("status") or ""), production=is_production_environment(environment), approval_evidence=evidence, provider_policy=policy),
+                    "updated_at": str(asset.get("updated_at", "")),
+                }
+            )
+            continue
+        if asset.get("type") != "model_route_resolution":
+            continue
+        evidence = content.get("approval_evidence", {}) if isinstance(content.get("approval_evidence", {}), dict) else {}
+        policy = content.get("provider_policy", {}) if isinstance(content.get("provider_policy", {}), dict) else {}
+        environment = str(content.get("environment") or policy.get("environment") or "")
+        production = is_production_environment(environment)
+        rows.append(
+            {
+                "path": str(asset.get("path", "")),
+                "id": str(asset.get("id", "")),
+                "task_type": str(content.get("task_type") or metadata.get("task_type") or ""),
+                "provider": str(content.get("provider", "")),
+                "model_name": str(content.get("model_name", "")),
+                "environment": environment,
+                "production": production,
+                "resolution_status": str(content.get("status") or metadata.get("status") or ""),
+                "approval_evidence": evidence,
+                "provider_policy": policy,
+                "status": _approval_report_row_status(status=str(content.get("status") or ""), production=production, approval_evidence=evidence, provider_policy=policy),
+                "route_path": str(content.get("route_path") or ""),
+                "created_at": str(content.get("created_at") or asset.get("created_at") or ""),
+                "updated_at": str(asset.get("updated_at", "")),
+            }
+        )
+    summary = _provider_approval_summary(rows, route_rows)
+    return {
+        "kind": "provider_approval_evidence_report",
+        "status": _provider_approval_report_status(summary),
+        "project_id": project_id or "",
+        "task_type": task_type or "",
+        "summary": summary,
+        "rows": rows[:limit],
+        "routes": route_rows[:limit],
+        "generated_at": utc_now(),
+    }
+
+
+def _approval_report_row_status(
+    *,
+    status: str,
+    production: bool,
+    approval_evidence: dict[str, Any],
+    provider_policy: dict[str, Any],
+) -> str:
+    if provider_policy.get("blocking") or str(provider_policy.get("status", "")) == "blocked" or status == "blocked":
+        return "blocked"
+    if not production:
+        return "skipped"
+    if not approval_evidence.get("approved"):
+        return "missing_approval"
+    if str(provider_policy.get("status", "")) == "passed":
+        return "passed"
+    return "warning"
+
+
+def _provider_approval_summary(rows: list[dict[str, Any]], route_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    production_rows = [row for row in rows if row.get("production")]
+    all_rows = rows + route_rows
+    blocking_rows = [row for row in all_rows if row.get("status") == "blocked"]
+    missing_rows = [row for row in all_rows if row.get("status") == "missing_approval"]
+    return {
+        "resolution_count": len(rows),
+        "route_count": len(route_rows),
+        "production_resolution_count": len(production_rows),
+        "passed_resolution_count": sum(1 for row in rows if row.get("status") == "passed"),
+        "blocked_resolution_count": sum(1 for row in rows if row.get("status") == "blocked"),
+        "missing_approval_count": len(missing_rows),
+        "blocked_count": len(blocking_rows),
+        "mock_fixture_count": sum(1 for row in all_rows if (row.get("provider_policy", {}) if isinstance(row.get("provider_policy", {}), dict) else {}).get("mock_provider_fixture_mode")),
+        "mock_denied_count": sum(
+            1
+            for row in all_rows
+            for issue in ((row.get("provider_policy", {}) if isinstance(row.get("provider_policy", {}), dict) else {}).get("blocking_issues", []) or [])
+            if isinstance(issue, dict) and issue.get("dimension") == "mock_provider_denied"
+        ),
+        "approval_present_count": sum(1 for row in all_rows if (row.get("approval_evidence", {}) if isinstance(row.get("approval_evidence", {}), dict) else {}).get("evidence_present")),
+        "approved_count": sum(1 for row in all_rows if (row.get("approval_evidence", {}) if isinstance(row.get("approval_evidence", {}), dict) else {}).get("approved")),
+    }
+
+
+def _provider_approval_report_status(summary: dict[str, Any]) -> str:
+    if int(summary.get("blocked_count", 0) or 0) > 0:
+        return "blocked"
+    if int(summary.get("missing_approval_count", 0) or 0) > 0:
+        return "warning"
+    if int(summary.get("production_resolution_count", 0) or 0) > 0:
+        return "passed"
+    if int(summary.get("route_count", 0) or 0) > 0:
+        return "skipped"
+    return "no_evidence"
+
+
+def _write_model_route_resolution(
+    storage: LocalStorage,
+    *,
+    task_type: str,
+    resolution: dict[str, Any],
+    project_id: str,
+    workspace_path: str,
+    prompt: dict[str, Any],
+) -> dict[str, Any]:
+    asset = ModelRouteResolution(
+        title=f"Model route resolution {task_type}",
+        tags=["model-route-resolution", task_type, str(resolution.get("provider", "")), str(resolution.get("model_name", "")), str(resolution.get("status", "resolved"))],
+        content=resolution,
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "task_type": task_type, "status": str(resolution.get("status", "resolved"))},
+        references=filter_project_safe_references(
+            storage,
+            project_id,
+            [value for value in [resolution.get("route_path", ""), prompt.get("prompt_path", ""), prompt.get("release_path", "")] if value],
+        ),
+    )
+    return _write(storage, asset)
+
+
+def _provider_route_approval_evidence(route_content: dict[str, Any]) -> dict[str, Any]:
+    nested = route_content.get("provider_route_approval", {}) if isinstance(route_content.get("provider_route_approval", {}), dict) else {}
+    status = str(route_content.get("approval_status") or nested.get("status") or "").strip().lower()
+    approval_id = str(route_content.get("approval_id") or nested.get("approval_id") or "")
+    approved_by = str(route_content.get("approved_by") or nested.get("approved_by") or nested.get("operator") or "")
+    reason = str(route_content.get("approval_reason") or nested.get("reason") or nested.get("approval_reason") or "")
+    approved = status in {"approved", "operator_approved", "passed"} and bool(approval_id or approved_by or reason)
+    return {
+        "status": status or "missing",
+        "approved": approved,
+        "approval_id": approval_id,
+        "approved_by": approved_by,
+        "reason": reason,
+        "evidence_present": bool(approval_id or approved_by or reason),
+        "source": "model_route",
+    }
+
+
+def _production_provider_policy(
+    *,
+    provider: str,
+    route_content: dict[str, Any],
+    environment: str,
+    allow_mock_fixture: bool,
+    approval_evidence: dict[str, Any],
+) -> dict[str, Any]:
+    if not is_production_environment(environment):
+        return {
+            "status": "skipped",
+            "blocking": False,
+            "message": "non-production route",
+            "environment": environment,
+            "provider": provider,
+            "allowlist": [],
+            "mock_provider_fixture_mode": False,
+            "approval_required": False,
+        }
+    provider_name = str(provider or "").strip().lower()
+    route_allowlist = route_content.get("production_provider_allowlist", [])
+    allowlist = {str(item).strip().lower() for item in route_allowlist if str(item).strip()} if isinstance(route_allowlist, list) else set()
+    if not allowlist:
+        allowlist = set(DEFAULT_PRODUCTION_PROVIDER_ALLOWLIST)
+    fixture_mode = bool(allow_mock_fixture or route_content.get("mock_provider_test_mode") or route_content.get("fixture_mode"))
+    issues: list[dict[str, Any]] = []
+    if provider_name in MOCK_PROVIDER_NAMES:
+        if not fixture_mode:
+            issues.append(
+                {
+                    "dimension": "mock_provider_denied",
+                    "severity": "critical",
+                    "message": "mock provider is denied in production without explicit fixture/test mode",
+                    "recommendation": "use an approved production provider or set explicit fixture mode only in tests",
+                }
+            )
+    elif provider_name not in allowlist:
+        issues.append(
+            {
+                "dimension": "production_provider_allowlist",
+                "severity": "critical",
+                "message": f"provider {provider} is not in the production provider allowlist",
+                "recommendation": "add the provider to an approved production allowlist before routing production calls",
+            }
+        )
+    if not approval_evidence.get("approved"):
+        issues.append(
+            {
+                "dimension": "provider_route_approval",
+                "severity": "high",
+                "message": "production provider route requires approval evidence",
+                "recommendation": "record approval_status plus approval_id, approved_by, or approval_reason on the route",
+            }
+        )
+    return {
+        "status": "blocked" if issues else "passed",
+        "blocking": bool(issues),
+        "message": "; ".join(str(issue.get("message", "")) for issue in issues) if issues else "production provider policy passed",
+        "environment": environment,
+        "provider": provider,
+        "allowlist": sorted(allowlist),
+        "mock_provider_denylist": sorted(MOCK_PROVIDER_NAMES),
+        "mock_provider_fixture_mode": fixture_mode,
+        "approval_required": True,
+        "approval_evidence": approval_evidence,
+        "blocking_issues": issues,
+    }
 
 
 def _latest_model_route(storage: LocalStorage, *, task_type: str, project_id: str) -> dict[str, Any] | None:

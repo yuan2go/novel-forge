@@ -41,11 +41,12 @@
 
 | ID | 任务 | 验收 |
 | --- | --- | --- |
-| P1-AGENT-SCHED-001 | 拆分 `agent_scheduler/service.py` 为 registry、lease、runner、recovery | 外部 API 不变，单元测试分层 |
+| P1-AGENT-SCHED-001 | 拆分 `agent_scheduler/service.py` 为 registry、lease、runner、recovery | 部分完成：已迁出 queue lifecycle、operation registry、dead-letter、publishing runners、scheduler tick/loop、manual recovery、rollback、execution result 分类；外部 API 不变，scheduler focused tests 通过 |
 | P1-AGENT-LONGFORM-001 | 将 `longform_recap` 包装为 AgentOperation | 已完成：scheduler tick 执行级测试覆盖 Longform Recap Agent |
-| P1-AGENT-PUBLISH-001 | 给 publishing module 增加 gate facade，委托 audit implementation | 部分完成：已新增 facade，生产调用和相关测试已迁移；implementation 仍在 audit |
+| P1-AGENT-PUBLISH-001 | 给 publishing module 增加 gate/package 主实现 | 已完成：PublishGate/ReleasePackage 主实现均迁入 publishing module，audit 只保留兼容 wrapper |
 | P1-AGENT-EVAL-001 | Eval result 接入 provider runtime policy 和 release gate | 已完成本轮硬化：missing/failed provider evidence、缺少成功 guard/model_call evidence 均会阻断 production publish；已有 provider success fixture |
-| P1-AGENT-UI-001 | Agent Center 页面拆分并增加 operation detail/trace/cost 视图 | UI 可追踪每个 Agent 输出 |
+| P1-AGENT-PROVIDER-001 | Production provider route 强制 allowlist、mock denylist、审批证据 | 已完成：`resolve_model_route` 在 production 下 fail-closed，并记录 provider policy/approval evidence；OS Console 已展示 provider approval evidence report |
+| P1-AGENT-UI-001 | Agent Center 页面拆分并增加 operation detail/trace/cost/provider approval 视图 | 部分完成：OS Console 已加入 provider approval evidence；Agent operation detail 仍待补 |
 
 ## P2 计划
 

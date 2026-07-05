@@ -20,7 +20,7 @@ from novel_forge.modules.long_memory import (
     retrieve_memory,
     select_memory_for_node,
 )
-from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, list_model_router_assets, resolve_model_route
+from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, list_model_router_assets, provider_approval_evidence_report, resolve_model_route
 from novel_forge.modules.pgvector_store import (
     build_embedding_job,
     create_pgvector_schema_plan,
@@ -92,6 +92,17 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.get("/model-router/provider-approval-report")
+    def model_router_provider_approval_report(
+        project_id: str | None = None,
+        task_type: str | None = None,
+        limit: int = Query(default=200, ge=1, le=1000),
+    ) -> dict[str, Any]:
+        try:
+            return provider_approval_evidence_report(LocalStorage(app_settings.root), project_id=project_id, task_type=task_type, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/model-router/route")
     def model_route_create(request: ModelRouteRequest) -> dict[str, Any]:
         try:
@@ -107,6 +118,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 status=request.status,
                 project_id=request.project_id or "",
                 workspace_path=request.workspace_path or "",
+                environment=request.environment,
+                approval_status=request.approval_status,
+                approval_id=request.approval_id,
+                approved_by=request.approved_by,
+                approval_reason=request.approval_reason,
+                production_provider_allowlist=request.production_provider_allowlist,
+                mock_provider_test_mode=request.mock_provider_test_mode,
             )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -124,6 +142,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 workflow_node_id=request.workflow_node_id,
                 trace=request.trace,
                 persist=request.persist,
+                environment=request.environment,
+                allow_mock_fixture=request.allow_mock_fixture,
             )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -148,6 +168,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 status=request.status,
                 trace=request.trace,
                 mode=request.mode,
+                environment=request.environment,
+                allow_mock_fixture=request.allow_mock_fixture,
             )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
