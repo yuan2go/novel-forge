@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.audit import create_publish_gate_report, create_release_package
+from novel_forge.modules.publishing import create_publish_gate_report, create_release_package
 from novel_forge.modules.feedback import create_reader_simulation_report, process_publish_feedback_loop, process_real_feedback_backflow
 from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding, record_usage_event
 from novel_forge.schemas import DraftChapter, ProjectWorkspaceState, ReaderFeedback, SourceChunk
@@ -75,6 +75,9 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             self.assertEqual(gate.metadata["os_envelope"]["environment"], "production")
             self.assertEqual(gate.metadata["source_policy"]["empty_pack_policy"], "block")
             self.assertFalse(gate.metadata["source_policy"]["compat_warning_allowed"])
+            self.assertFalse(gate.content["gates"]["provider_runtime_gate_passed"])
+            self.assertTrue(gate.content["provider_runtime_gate"]["blocking"])
+            self.assertTrue(any(issue["dimension"] == "provider_runtime_gate" for issue in gate.content["blocking_issues"]))
 
     def test_production_release_package_blocks_non_ready_gate(self):
         with tempfile.TemporaryDirectory() as tmp:

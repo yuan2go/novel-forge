@@ -18,8 +18,10 @@
 | ReviewIssue | `review-issue-gate` | 项目 `skills/` | 保证审稿、发布、MKAOS gate 使用统一阻断对象 | `skills/review-issue-gate/SKILL.md` | 否 | 低；只读 | ReviewIssue 风险项和 acceptance 标准 |
 | 通用仓库审计 | `analyze-project` | 全局 `/Users/yuan/.agents/skills` | 仓库结构、入口、测试和配置盘点 | `/Users/yuan/.agents/skills/analyze-project/SKILL.md` | 否 | 低；只读 | 顶层目录和大文件扫描 |
 | 架构设计 | `codebase-design` | 全局 `/Users/yuan/.agents/skills` | 模块边界、deep module、拆分策略 | `/Users/yuan/.agents/skills/codebase-design/SKILL.md` | 否 | 低；只读 | Target architecture 和拆分路线 |
+| 第二轮 Agent operation | `agent-loop-governance` | 项目 `skills/` | Longform Recap 必须进入 AgentRun/dispatch/checkpoint 证据链 | `skills/agent-loop-governance/SKILL.md` | 否 | 低；只读 | `run-longform-recap` 改为 Longform Recap Agent operation 并补 scheduler 测试 |
+| 第二轮 Provider/Eval | `provider-runtime-policy` | 项目 `skills/` | Provider hard-stop 不得 silent fallback，Eval/Publish 需阻断缺失证据 | `skills/provider-runtime-policy/SKILL.md` | 否 | 低；只读 | EvaluationGate/PublishGate 接入 provider runtime policy |
+| 第二轮 Publish | `publish-release-gate-os` | 项目 `skills/` | 发布入口必须通过 schema-backed gate 和 release facade | `skills/publish-release-gate-os/SKILL.md` | 否 | 低；只读 | 生产调用迁移到 `modules.publishing` facade |
 
 ## 未安装新 Skill
 
 本轮本地项目 Skill 已足够覆盖 Novel OS 工程审计、Agent 运行、Context、MKAOS、Provider、Canon、Publish 和 ReviewIssue。没有访问第三方 Skill 仓库，也没有执行未知 Skill 脚本。
-

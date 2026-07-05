@@ -6,10 +6,10 @@ from typing import Any
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.agent_runs import AgentExecutionContext
-from novel_forge.modules.audit import create_publish_gate_report
 from novel_forge.modules.common import read_previous, resolve_path
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.editor import execute_revision_plan
+from novel_forge.modules.publishing import create_publish_gate_report
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.review import service as review_service
 from novel_forge.schemas import ContextBundle, RevisionPlan, RevisionTask, validate_common_fields

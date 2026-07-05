@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.audit import create_publish_gate_report
+from novel_forge.modules.publishing import create_publish_gate_report
 from novel_forge.modules.longform_stability import (
     calibrate_longform_extraction,
     check_canon_consistency,

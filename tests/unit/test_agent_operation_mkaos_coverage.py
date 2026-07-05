@@ -43,6 +43,7 @@ class AgentOperationMkaosCoverageTests(unittest.TestCase):
         report = mkaos_agent_operation_coverage_report()
         rows = {row["operation"]: row for row in report["operations"]}
         aliases = {row["operation"]: row for row in report["operation_aliases"]}
+        contracts = {row["operation"]: row for row in list_agent_operation_contracts()}
 
         self.assertGreaterEqual(report["summary"]["registered_count"], 14)
         self.assertEqual(report["summary"]["operation_alias_count"], 12)
@@ -51,6 +52,8 @@ class AgentOperationMkaosCoverageTests(unittest.TestCase):
         self.assertEqual(rows["review"]["status"], "mkaos_required")
         self.assertEqual(rows["create-publish-gate-report"]["status"], "mkaos_required")
         self.assertEqual(rows["run-longform-recap"]["status"], "mkaos_required")
+        self.assertEqual(rows["run-longform-recap"]["agent_key"], "longform_recap")
+        self.assertEqual(contracts["run-longform-recap"]["required_tools"], ["write_longform_recap_report"])
         self.assertEqual(rows["apply-editor-patch"]["status"], "compat")
         self.assertTrue(rows["draft"]["production_bypass_forbidden"])
         self.assertFalse(rows["apply-editor-patch"]["production_bypass_forbidden"])

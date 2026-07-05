@@ -32,7 +32,7 @@
 | ID | 任务 | 验收 | 状态 |
 | --- | --- | --- | --- |
 | P0-AGENT-RUNTIME-001 | 修复 Skill 到 Agent runtime drift | 所有 root Skill 都有显式 Agent map；目标 Agent alias 可解析 | 已完成 |
-| P0-AGENT-RUNTIME-002 | operation registry 覆盖 longform recap、platform compliance、training | operation coverage test 通过，无默认 fallback | 待做 |
+| P0-AGENT-RUNTIME-002 | operation registry 覆盖 longform recap、platform compliance、training | operation coverage test 通过，无默认 fallback | 部分完成：Longform Recap 已完成；Platform/Training 待做 |
 | P0-AGENT-CONTEXT-001 | model-producing operation 强制 OS Envelope + Context Builder | 缺字段时 fail-closed，测试覆盖 draft/review/publish | 待做 |
 | P0-AGENT-REVIEW-001 | 所有审稿/发布阻断统一 ReviewIssue | blocking issue 可阻断 release package | 部分已实现，待压测 |
 | P0-AGENT-CANON-001 | Canon/Character/Foreshadowing/Arc 统一 continuity gate | 修改 canon 必有 patch、confidence、source、trace | 待做 |
@@ -42,9 +42,9 @@
 | ID | 任务 | 验收 |
 | --- | --- | --- |
 | P1-AGENT-SCHED-001 | 拆分 `agent_scheduler/service.py` 为 registry、lease、runner、recovery | 外部 API 不变，单元测试分层 |
-| P1-AGENT-LONGFORM-001 | 将 `longform_recap` 包装为 AgentOperation | AgentRun/cost/trace/checkpoint 可见 |
-| P1-AGENT-PUBLISH-001 | 给 publishing module 增加 gate facade，委托 audit implementation | 部分完成：已新增 facade 和单测；待迁移其他调用方 |
-| P1-AGENT-EVAL-001 | Eval result 接入 provider runtime policy 和 release gate | 未达标 provider 不能进生产主链 |
+| P1-AGENT-LONGFORM-001 | 将 `longform_recap` 包装为 AgentOperation | 已完成：scheduler tick 执行级测试覆盖 Longform Recap Agent |
+| P1-AGENT-PUBLISH-001 | 给 publishing module 增加 gate facade，委托 audit implementation | 部分完成：已新增 facade，生产调用和相关测试已迁移；implementation 仍在 audit |
+| P1-AGENT-EVAL-001 | Eval result 接入 provider runtime policy 和 release gate | 部分完成：missing/failed provider runtime evidence 会阻断 production publish；真实 success fixture 待补 |
 | P1-AGENT-UI-001 | Agent Center 页面拆分并增加 operation detail/trace/cost 视图 | UI 可追踪每个 Agent 输出 |
 
 ## P2 计划

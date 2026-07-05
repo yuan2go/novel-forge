@@ -971,7 +971,7 @@ def _loop_re_review(
 
 
 def _loop_publish_gate(storage: LocalStorage, payload: dict[str, Any], *, target: dict[str, Any], workspace_path: str, loop_outputs: dict[str, Any]) -> dict[str, Any]:
-    from novel_forge.modules.audit import create_publish_gate_report
+    from novel_forge.modules.publishing import create_publish_gate_report
 
     draft_path = str(loop_outputs.get("final_draft_path") or target.get("path") or "").strip()
     if not draft_path:

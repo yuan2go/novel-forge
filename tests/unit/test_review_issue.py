@@ -7,7 +7,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.model_adapters.mock import MockModelAdapter
-from novel_forge.modules.audit import create_publish_gate_report, create_release_package
+from novel_forge.modules.publishing import create_publish_gate_report, create_release_package
 from novel_forge.modules.editor import execute_revision_plan
 from novel_forge.modules.mkaos import check_canon_conflict
 from novel_forge.modules.review import service as review_service

@@ -57,6 +57,33 @@ class EvaluationCenterGeneralTests(unittest.TestCase):
             self.assertTrue(issues)
             self.assertEqual(issues[0]["content"]["source_system"], "evaluation_center")
 
+    def test_evaluation_gate_can_require_provider_runtime_policy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Provider gated draft",
+                    content={"chapter": 1, "text": "原创章节，有目标、冲突、钩子、节奏和留存。"},
+                    metadata={"project_id": "eval-provider-p"},
+                ),
+            )
+
+            gate = create_evaluation_gate(
+                storage,
+                str(draft_path.relative_to(storage.root)),
+                minimum_score=0.0,
+                project_id="eval-provider-p",
+                require_provider_runtime=True,
+            )
+            content = gate["asset"]["content"]
+
+            self.assertEqual(content["status"], "blocked")
+            self.assertTrue(content["blocking"])
+            self.assertTrue(content["provider_runtime_policy"]["required"])
+            self.assertEqual(content["provider_runtime_policy"]["status"], "missing")
+
     def test_evaluate_asset_accepts_human_annotations_and_model_judge(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

@@ -5,6 +5,7 @@ from typing import Any
 
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.api.product import postgres_strict_local_prod_check, register_product_routes
+from novel_forge.api.services.postgres_fallback_policy import postgres_asset_read_fallback_policy
 from novel_forge.modules.common import resolve_path
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.postgres import PostgresAssetStore
@@ -63,8 +64,10 @@ def create_app(settings: IndustrialSettings | None = None):
                     limit=limit,
                 )
                 return [_api_asset_row_from_index(row) for row in rows]
-            except Exception:
-                pass
+            except Exception as exc:
+                fallback_policy = postgres_asset_read_fallback_policy(app_settings, exc)
+                if not fallback_policy["allow_local_fallback"]:
+                    raise HTTPException(status_code=int(fallback_policy["http_status"]), detail=fallback_policy["message"]) from exc
         try:
             return pipeline.search_assets(
                 app_settings.root,

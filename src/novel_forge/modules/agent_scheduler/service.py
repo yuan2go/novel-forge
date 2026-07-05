@@ -2088,10 +2088,10 @@ def _operation_specs() -> list[AgentOperationSpec]:
             operation="run-longform-recap",
             aliases=("longform-recap", "recap"),
             runner=_run_longform_recap,
-            agent_key="workflow",
+            agent_key="longform_recap",
             input_types=("draft_chapter", "draft_version"),
             output_types=("longform_recap_report", "revision_task"),
-            required_tool="run_validation",
+            required_tool="write_longform_recap_report",
             sla_seconds=900,
         ),
         AgentOperationSpec(
@@ -2361,7 +2361,7 @@ def _run_chapter_audit_report(storage: LocalStorage, queue_item: dict[str, Any],
 
 
 def _run_publish_gate_report(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
-    from novel_forge.modules.audit import create_publish_gate_report
+    from novel_forge.modules.publishing import create_publish_gate_report
 
     evidence = _evidence(agent_run)
     return {
@@ -2378,7 +2378,7 @@ def _run_publish_gate_report(storage: LocalStorage, queue_item: dict[str, Any], 
 
 
 def _run_release_package(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
-    from novel_forge.modules.audit import create_release_package
+    from novel_forge.modules.publishing import create_release_package
 
     evidence = _evidence(agent_run)
     return {
@@ -2817,13 +2817,21 @@ def _required_input_path(agent_run: dict[str, Any]) -> str:
 def _workspace_path(agent_run: dict[str, Any]) -> str:
     metadata = agent_run.get("metadata", {}) if isinstance(agent_run.get("metadata", {}), dict) else {}
     evidence = _evidence(agent_run, include_processor=False)
-    return str(metadata.get("workspace_path", "") or evidence.get("workspace_path", "") or "")
+    metadata_value = str(metadata.get("workspace_path", "") or "")
+    evidence_value = str(evidence.get("workspace_path", "") or "")
+    if metadata_value and metadata_value != "local-system":
+        return metadata_value
+    return evidence_value or metadata_value
 
 
 def _project_id(agent_run: dict[str, Any]) -> str:
     metadata = agent_run.get("metadata", {}) if isinstance(agent_run.get("metadata", {}), dict) else {}
     evidence = _evidence(agent_run, include_processor=False)
-    return str(metadata.get("project_id", "") or evidence.get("project_id", "") or "")
+    metadata_value = str(metadata.get("project_id", "") or "")
+    evidence_value = str(evidence.get("project_id", "") or "")
+    if metadata_value and metadata_value != "local-system":
+        return metadata_value
+    return evidence_value or metadata_value
 
 
 def _evidence(agent_run: dict[str, Any], *, include_processor: bool = True) -> dict[str, Any]:

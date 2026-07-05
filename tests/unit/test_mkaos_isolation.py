@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.audit import create_release_package
+from novel_forge.modules.publishing import create_release_package
 from novel_forge.modules.chapter_plan import service as chapter_plan_service
 from novel_forge.modules.context_builder import create_context_build_plan, create_context_bundle
 from novel_forge.modules.mkaos import (

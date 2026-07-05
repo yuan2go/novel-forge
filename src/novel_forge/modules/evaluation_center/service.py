@@ -10,6 +10,7 @@ from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.runtime_policy import provider_hard_stop_evidence_report
 from novel_forge.schemas import (
     BaseAsset,
     ModelBenchmarkRun,
@@ -758,12 +759,21 @@ def run_evaluation_suite(storage: LocalStorage, *, suite_path: str | Path | None
     return _write(storage, asset)
 
 
-def create_evaluation_gate(storage: LocalStorage, target_asset_path: str | Path, *, minimum_score: float = 0.72, project_id: str = "") -> dict[str, Any]:
+def create_evaluation_gate(
+    storage: LocalStorage,
+    target_asset_path: str | Path,
+    *,
+    minimum_score: float = 0.72,
+    project_id: str = "",
+    require_provider_runtime: bool = False,
+) -> dict[str, Any]:
     result = evaluate_asset(storage, target_asset_path, project_id=project_id, create_issue_on_fail=True)
     evaluation = result.get("asset", {})
     content_result = evaluation.get("content", {}) if isinstance(evaluation.get("content", {}), dict) else {}
     score = float(content_result.get("overall_score", 0) or 0)
-    status = "passed" if score >= minimum_score else "blocked"
+    provider_runtime = provider_hard_stop_evidence_report(storage, project_id=project_id or None)
+    provider_blocking = bool(require_provider_runtime and provider_runtime.get("status") != "passed")
+    status = "passed" if score >= minimum_score and not provider_blocking else "blocked"
     issue = {}
     if status == "blocked" and not result.get("review_issue"):
         try:
@@ -785,6 +795,11 @@ def create_evaluation_gate(storage: LocalStorage, target_asset_path: str | Path,
             "overall_score": score,
             "status": status,
             "blocking": status == "blocked",
+            "provider_runtime_policy": {
+                "required": bool(require_provider_runtime),
+                "status": provider_runtime.get("status", ""),
+                "summary": provider_runtime.get("summary", {}),
+            },
             "review_issue_path": issue.get("path", "") if isinstance(issue, dict) else "",
             "created_at": utc_now(),
         },

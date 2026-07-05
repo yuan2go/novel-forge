@@ -15,6 +15,7 @@ from novel_forge.modules.mkaos import list_risk_knowledge
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment, normalize_runtime_request_policy
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.modules.review_issue import assert_no_blocking_review_issues, blocking_review_issues, review_issues_to_gate_issues
+from novel_forge.modules.runtime_policy import provider_hard_stop_evidence_report
 from novel_forge.modules.semantic_enhancement import analyze_story_semantics
 from novel_forge.modules.standards import create_quality_score_report
 from novel_forge.modules.style import create_style_review_report
@@ -289,6 +290,9 @@ def create_publish_gate_report(
     evaluation_gate = _evaluation_gate_summary(storage, target.to_dict(), _display_path(storage.root, path), project_id=str(project.get("project_id", "")), required=production_policy)
     gate_data["gates"]["evaluation_gate_passed"] = not evaluation_gate["blocking"]
     gate_data["blocking_issues"].extend(evaluation_gate["blocking_issues"])
+    provider_runtime_gate = _provider_runtime_gate_summary(storage, project_id=str(project.get("project_id", "")), workspace_path=str(project.get("workspace_path", "")), required=production_policy)
+    gate_data["gates"]["provider_runtime_gate_passed"] = not provider_runtime_gate["blocking"]
+    gate_data["blocking_issues"].extend(provider_runtime_gate["blocking_issues"])
     platform_strategy_gate = _platform_strategy_gate_summary(storage, context, project_id=str(project.get("project_id", "")), required=production_policy)
     gate_data["gates"]["platform_strategy_gate_passed"] = not platform_strategy_gate["blocking"]
     gate_data["blocking_issues"].extend(platform_strategy_gate["blocking_issues"])
@@ -319,6 +323,7 @@ def create_publish_gate_report(
             "preflight": context.get("preflight", {}),
             "longform_stability": longform_gate,
             "evaluation_gate": evaluation_gate,
+            "provider_runtime_gate": provider_runtime_gate,
             "platform_strategy_gate": platform_strategy_gate,
             "context_bundle_id": context_bundle_id,
             "context_bundle_path": str(publish_context.get("path", "")),
@@ -480,6 +485,7 @@ def create_release_package(
             "context_bundle_id": gate_content.get("context_bundle_id", ""),
             "context_bundle_path": gate_content.get("context_bundle_path", ""),
             "mkaos_risk": gate_content.get("mkaos_risk", {}),
+            "provider_runtime_gate": gate_content.get("provider_runtime_gate", {}),
             "source_isolation": {
                 "source_chunk_raw_text_allowed": False,
                 "runtime_assets_in_generation_rag_allowed": False,
@@ -658,6 +664,36 @@ def _evaluation_gate_summary(storage: LocalStorage, target: dict[str, Any], targ
         "path": gate.get("path", ""),
         "overall_score": content.get("overall_score", 0),
         "minimum_score": content.get("minimum_score", 0),
+        "blocking_issues": issues,
+    }
+
+
+def _provider_runtime_gate_summary(storage: LocalStorage, *, project_id: str, workspace_path: str, required: bool) -> dict[str, Any]:
+    report = provider_hard_stop_evidence_report(storage, project_id=project_id or None, workspace_path=workspace_path or None)
+    status = str(report.get("status") or "missing")
+    summary = report.get("summary", {}) if isinstance(report.get("summary", {}), dict) else {}
+    blocking = bool(required and status != "passed")
+    issues = []
+    if blocking:
+        failed_count = int(summary.get("failed_provider_guard_count", 0) or 0)
+        issues.append(
+            {
+                "dimension": "provider_runtime_gate",
+                "severity": "critical" if failed_count else "high",
+                "message": f"production publish requires provider runtime hard-stop evidence; current status is {status}",
+                "recommendation": "run provider runtime guard/evaluation before publish gate, or record an approved fallback with ReviewIssue evidence",
+                "provider_runtime_status": status,
+                "missing_dimensions": summary.get("missing_dimensions", []),
+            }
+        )
+    return {
+        "status": status,
+        "required": required,
+        "blocking": blocking,
+        "summary": summary,
+        "provider_guard_gate_count": summary.get("provider_guard_gate_count", 0),
+        "failed_provider_guard_count": summary.get("failed_provider_guard_count", 0),
+        "missing_dimensions": summary.get("missing_dimensions", []),
         "blocking_issues": issues,
     }
 

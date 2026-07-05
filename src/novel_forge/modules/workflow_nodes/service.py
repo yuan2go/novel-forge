@@ -4325,9 +4325,9 @@ def _execute_registered_service_processor_impl(
         )
         return _service_success(storage, operation, result)
     if operation in {"publish_gate_report", "create_publish_gate_report"}:
-        from novel_forge.modules.audit import create_publish_gate_report
+        from novel_forge.modules.workflow_nodes.publishing_ops import run_publish_gate_report_operation
 
-        result = create_publish_gate_report(
+        result = run_publish_gate_report_operation(
             storage,
             _processor_path(processor, input_assets, "draft_path", "target_path"),
             workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
@@ -4336,9 +4336,9 @@ def _execute_registered_service_processor_impl(
         )
         return _service_success(storage, operation, result)
     if operation in {"release_package", "create_release_package"}:
-        from novel_forge.modules.audit import create_release_package
+        from novel_forge.modules.workflow_nodes.publishing_ops import run_release_package_operation
 
-        result = create_release_package(
+        result = run_release_package_operation(
             storage,
             _processor_path(processor, input_assets, "draft_path", "target_path"),
             workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,

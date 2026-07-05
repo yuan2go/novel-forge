@@ -242,7 +242,7 @@ OPERATION_POLICIES: dict[str, OperationPolicy] = {
         require_budget_policy=False,
         require_model_call_log=False,
         require_cost_ledger_for_cost=False,
-        required_gates=("runtime_policy", "publish", "longform_os_acceptance"),
+        required_gates=("runtime_policy", "publish", "evaluation_gate", "provider_runtime_guard", "longform_os_acceptance"),
         description="Create a publish gate report and block non-canonical chapter promotion.",
     ),
     "publishing_plan": _policy(
@@ -320,6 +320,8 @@ for _alias, _target in {
     "longform_extraction": "model_assisted_longform_extraction",
     "publish_gate": "publish_gate_report",
     "create_publish_gate_report": "publish_gate_report",
+    "release_package": "publish_gate_report",
+    "create_release_package": "publish_gate_report",
     "create_publishing_plan": "publishing_plan",
     "create_publishing_log": "publishing_log",
     "create_feedback_backflow_plan": "feedback_backflow",

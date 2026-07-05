@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.audit import create_publish_gate_report, create_release_package
+from novel_forge.modules.publishing import create_publish_gate_report, create_release_package
 from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.longform_recap import run_longform_recap
 from novel_forge.modules.longform_stability import create_arc_plan, create_canon_database, create_longform_artifacts_for_draft

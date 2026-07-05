@@ -10,6 +10,11 @@ from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.mkaos.risk_policy import (
+    normalize_risk_level as _normalize_risk_level,
+    risk_reasons as _risk_reasons,
+    severity_penalty as _severity_penalty,
+)
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, envelope_response, is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.schemas import (
@@ -5697,11 +5702,6 @@ def _recency_bonus(asset: dict[str, Any]) -> float:
     return 0.02 if value else 0.0
 
 
-def _normalize_risk_level(value: str) -> str:
-    normalized = str(value or "low").strip().lower()
-    return normalized if normalized in {"low", "medium", "high", "critical"} else "low"
-
-
 def _project_scope_matches(asset_project_id: str, requested_project_id: str) -> bool:
     requested = str(requested_project_id or "").strip()
     asset_project = str(asset_project_id or "").strip()
@@ -6335,27 +6335,8 @@ def _issue(rule_id: str, rule_name: str, severity: str, blocking: bool, message:
     }
 
 
-def _severity_penalty(severity: str) -> int:
-    return {"critical": 45, "high": 25, "medium": 12, "low": 5, "info": 1}.get(str(severity), 5)
-
-
 def _looks_like_broken_causality(text: str) -> bool:
     return any(term in text for term in ["突然成功", "莫名解决", "无缘无故"]) or ("结果" in text and not any(term in text for term in ["因为", "于是", "只好", "代价", "选择"]))
-
-
-def _risk_reasons(row: dict[str, Any], risky_ids: set[str]) -> list[str]:
-    reasons: list[str] = []
-    content = row.get("content", {})
-    metadata = row.get("metadata", {})
-    if content.get("status") == "deprecated" or metadata.get("asset_status") == "deprecated":
-        reasons.append("deprecated")
-    if content.get("status") == "needs_review" or metadata.get("asset_status") == "needs_review":
-        reasons.append("needs_review")
-    if content.get("risk_level") in {"high", "critical"} or metadata.get("risk_level") in {"high", "critical"}:
-        reasons.append("high_risk")
-    if row.get("id") in risky_ids:
-        reasons.append("review_hit")
-    return reasons
 
 
 def _payload_project_id(*payloads: dict[str, Any]) -> str:
