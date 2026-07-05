@@ -1,1 +1,1 @@
-"""decomposition module placeholder for V5 workflows."""
+"""Decomposition module for Novel Forge v6 workflows."""

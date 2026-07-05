@@ -703,6 +703,7 @@ def provider_hard_stop_evidence_report(
     dimensions = {"token": 0, "cost": 0, "cancel": 0, "timeout": 0}
     failures: list[dict[str, Any]] = []
     rows: list[dict[str, Any]] = []
+    successful_provider_guard_count = 0
     for row in provider_gates:
         content = _content(row)
         result = content.get("result", {}) if isinstance(content.get("result", {}), dict) else {}
@@ -720,6 +721,8 @@ def provider_hard_stop_evidence_report(
                 dimensions[key] += 1
         if str(content.get("status", "")) == "failed":
             failures.append({"path": row.get("_path", ""), "error_type": error_type, "message": str(content.get("message", ""))})
+        if str(content.get("status", "")) in {"passed", "succeeded"} and str(result.get("status", "")) in {"passed", "succeeded"}:
+            successful_provider_guard_count += 1
         rows.append(
             {
                 "path": row.get("_path", ""),
@@ -733,24 +736,34 @@ def provider_hard_stop_evidence_report(
             }
         )
     failed_calls = [row for row in model_calls if str(_content(row).get("status", "")) == "failed"]
+    successful_calls = [row for row in model_calls if str(_content(row).get("status", "")) in {"passed", "succeeded"}]
     missing = [key for key, count in dimensions.items() if count <= 0]
-    status = "passed" if not missing and provider_gates else "warning" if provider_gates else "missing"
+    missing_success = []
+    if successful_provider_guard_count <= 0:
+        missing_success.append("provider_guard_success")
+    if not successful_calls:
+        missing_success.append("model_call_success")
+    status = "passed" if not missing and not missing_success and provider_gates else "warning" if provider_gates else "missing"
     return {
         "status": status,
         "summary": {
             "provider_guard_gate_count": len(provider_gates),
             "failed_provider_guard_count": len(failures),
+            "successful_provider_guard_count": successful_provider_guard_count,
             "failed_model_call_count": len(failed_calls),
+            "successful_model_call_count": len(successful_calls),
             "required_hard_stop_dimension_count": 4,
             "covered_hard_stop_dimension_count": 4 - len(missing),
             "dimension_counts": dimensions,
             "missing_dimensions": missing,
+            "missing_success_evidence": missing_success,
         },
         "provider_gates": rows[:200],
         "provider_guard_rows": rows[:200],
         "failures": failures[:50],
         "failed_model_calls": [{"path": row.get("_path", ""), "operation": _content(row).get("operation", ""), "provider": _content(row).get("provider", "")} for row in failed_calls[:50]],
-        "recommendations": _provider_hard_stop_recommendations(missing, provider_gates),
+        "successful_model_calls": [{"path": row.get("_path", ""), "operation": _content(row).get("operation", ""), "provider": _content(row).get("provider", "")} for row in successful_calls[:50]],
+        "recommendations": _provider_hard_stop_recommendations(missing, missing_success, provider_gates),
         "created_at": utc_now(),
     }
 
@@ -1339,17 +1352,23 @@ def _surface_coverage_recommendations(strict_blockers: list[str], provider_repor
     missing = provider_report.get("summary", {}).get("missing_dimensions", [])
     if missing:
         recommendations.append(f"add provider hard-stop probes for: {', '.join(str(item) for item in missing)}")
+    missing_success = provider_report.get("summary", {}).get("missing_success_evidence", [])
+    if missing_success:
+        recommendations.append(f"add provider success evidence for: {', '.join(str(item) for item in missing_success)}")
     if not recommendations:
         recommendations.append("registered surfaces have OS envelope coverage and provider hard-stop evidence")
     return recommendations
 
 
-def _provider_hard_stop_recommendations(missing: list[str], provider_gates: list[dict[str, Any]]) -> list[str]:
+def _provider_hard_stop_recommendations(missing: list[str], missing_success: list[str], provider_gates: list[dict[str, Any]]) -> list[str]:
     if not provider_gates:
         return ["run at least one ModelGateway or GuardedModelAdapter call with provider_runtime_guard enabled"]
+    recommendations = []
     if missing:
-        return [f"add deterministic or real-provider guard probe for missing dimension: {item}" for item in missing]
-    return ["provider hard-stop evidence covers token, cost, cancel, and timeout dimensions"]
+        recommendations.extend(f"add deterministic or real-provider guard probe for missing dimension: {item}" for item in missing)
+    if missing_success:
+        recommendations.append("record at least one successful provider_runtime_guard and model_call_log before production publish")
+    return recommendations or ["provider hard-stop evidence covers token, cost, cancel, timeout, and success dimensions"]
 
 
 def _legacy_entrypoint_recommendation(status: str) -> str:

@@ -24,8 +24,8 @@ def create_app(settings: IndustrialSettings | None = None):
     postgres_strict_local_prod_check(app_settings, sync=True)
     app = FastAPI(
         title="Novel Forge API",
-        version="5.0.0",
-        description="Industrial backend API for Novel Forge V5 assets and workflows.",
+        version="6.0.0",
+        description="Novel OS / Novel Forge v6 local-first AI novel production runtime API.",
     )
     app.add_middleware(
         CORSMiddleware,

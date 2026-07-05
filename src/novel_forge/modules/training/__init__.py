@@ -1,1 +1,1 @@
-"""training module placeholder for V5 workflows."""
+"""Training module for Novel Forge v6 workflows."""

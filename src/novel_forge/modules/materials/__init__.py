@@ -1,1 +1,1 @@
-"""materials module placeholder for V5 workflows."""
+"""Materials module for Novel Forge v6 workflows."""

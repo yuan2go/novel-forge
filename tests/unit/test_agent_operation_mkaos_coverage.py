@@ -25,6 +25,8 @@ class AgentOperationMkaosCoverageTests(unittest.TestCase):
             "revise",
             "create-editor-patch",
             "run-longform-recap",
+            "create-platform-strategy-pack",
+            "generate-training-exercise",
             "create-publish-gate-report",
             "create-feedback-backflow-plan",
             "process-real-feedback-backflow",
@@ -45,15 +47,21 @@ class AgentOperationMkaosCoverageTests(unittest.TestCase):
         aliases = {row["operation"]: row for row in report["operation_aliases"]}
         contracts = {row["operation"]: row for row in list_agent_operation_contracts()}
 
-        self.assertGreaterEqual(report["summary"]["registered_count"], 14)
-        self.assertEqual(report["summary"]["operation_alias_count"], 12)
-        self.assertEqual(report["summary"]["registered_alias_count"], 12)
+        self.assertGreaterEqual(report["summary"]["registered_count"], 16)
+        self.assertEqual(report["summary"]["operation_alias_count"], 14)
+        self.assertEqual(report["summary"]["registered_alias_count"], 14)
         self.assertEqual(rows["draft"]["status"], "mkaos_required")
         self.assertEqual(rows["review"]["status"], "mkaos_required")
         self.assertEqual(rows["create-publish-gate-report"]["status"], "mkaos_required")
         self.assertEqual(rows["run-longform-recap"]["status"], "mkaos_required")
         self.assertEqual(rows["run-longform-recap"]["agent_key"], "longform_recap")
         self.assertEqual(contracts["run-longform-recap"]["required_tools"], ["write_longform_recap_report"])
+        self.assertEqual(rows["create-platform-strategy-pack"]["status"], "mkaos_required")
+        self.assertEqual(rows["create-platform-strategy-pack"]["agent_key"], "platform_strategy")
+        self.assertEqual(contracts["create-platform-strategy-pack"]["required_tools"], ["write_platform_strategy_pack"])
+        self.assertEqual(rows["generate-training-exercise"]["status"], "mkaos_required")
+        self.assertEqual(rows["generate-training-exercise"]["agent_key"], "training")
+        self.assertEqual(contracts["generate-training-exercise"]["required_tools"], ["write_training_exercise"])
         self.assertEqual(rows["apply-editor-patch"]["status"], "compat")
         self.assertTrue(rows["draft"]["production_bypass_forbidden"])
         self.assertFalse(rows["apply-editor-patch"]["production_bypass_forbidden"])
@@ -61,6 +69,8 @@ class AgentOperationMkaosCoverageTests(unittest.TestCase):
         self.assertEqual(aliases["convert"]["canonical_operation"], "convert-analysis-report")
         self.assertEqual(aliases["publish_gate"]["canonical_operation"], "create-publish-gate-report")
         self.assertEqual(aliases["feedback_backflow"]["canonical_operation"], "create-feedback-backflow-plan")
+        self.assertEqual(aliases["platform_compliance"]["canonical_operation"], "create-platform-strategy-pack")
+        self.assertEqual(aliases["training"]["canonical_operation"], "generate-training-exercise")
         for operation in [
             "analysis",
             "decompose",
@@ -72,6 +82,8 @@ class AgentOperationMkaosCoverageTests(unittest.TestCase):
             "revision",
             "editor_patch",
             "recap",
+            "platform_compliance",
+            "training",
             "publish_gate",
             "feedback_backflow",
         ]:
@@ -85,6 +97,8 @@ class AgentOperationMkaosCoverageTests(unittest.TestCase):
             "convert": "convert-analysis-report",
             "publish_gate": "create-publish-gate-report",
             "feedback_backflow": "create-feedback-backflow-plan",
+            "platform_compliance": "create-platform-strategy-pack",
+            "training": "generate-training-exercise",
             "editor_patch": "create-editor-patch",
         }
         for requested, canonical in cases.items():

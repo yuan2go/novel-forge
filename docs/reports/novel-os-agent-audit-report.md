@@ -1,7 +1,7 @@
 # Novel OS Agent Audit Report
 
 审计日期：2026-07-05  
-基线 commit：`534d195`  
+基线 commit：`8733acf`
 范围：`agents/runtime.py`、`modules/agent_runs/`、`modules/agent_scheduler/`、Agent 相关 Skills、workflow/loop/publish/eval 入口。  
 
 ## Agent 总表
@@ -26,11 +26,11 @@
 | Quality Agent | `modules/audit/` | validation/gates | artifacts/schemas | validation/risk/gate | audit log | validation tests | 7 |
 | Feedback Agent | `modules/feedback/` | reader signal clustering | reader feedback、metrics | insights/backflow | feedback assets | simulation proof | 6 |
 | Publishing Agent | `modules/audit/`、`modules/publishing/` | publish gate、release package | final chapter、package | gate report、plan/log | release assets | publish feedback report | 6 |
-| Model Evaluation Agent | `modules/evaluation_center/`、`modules/runtime_policy/` | provider and model evaluation | runs、benchmarks、profiles | eval result/routing recommendation | ledger/eval assets | provider runtime policy tests partial | 6 |
+| Model Evaluation Agent | `modules/evaluation_center/`、`modules/runtime_policy/` | provider and model evaluation | runs、benchmarks、profiles | eval result/routing recommendation | ledger/eval assets | provider runtime policy hard-stop + success fixture | 7 |
 | Continuity Agent | `modules/canon_graph/`、`modules/continuity_graph/` | canon、character、foreshadowing consistency | recap/context/canon | canon patch、graph updates | continuity graph | canon graph proof | 7 |
-| Longform Recap Agent | `modules/longform_recap/` | recap and writeback | chapters、review、canon | recap, canon patch, ledger | long memory/continuity | proof docs; runtime profile added this round | 5 |
-| Platform Compliance Agent | `modules/platform_strategy/` | platform fit, rhythm, publish adapter | platform profile/content | platform gates/adapters | platform assets | runtime profile added this round | 5 |
-| Training Agent | `modules/training/` | exercise generation | knowledge/material | training exercise | asset storage | runtime profile added this round | 4 |
+| Longform Recap Agent | `modules/longform_recap/` | recap and writeback | chapters、review、canon | recap, canon patch, ledger | long memory/continuity | scheduler operation test | 6 |
+| Platform Compliance Agent | `modules/platform_strategy/` | platform fit, rhythm, publish adapter | platform profile/content | platform gates/adapters | platform assets | scheduler operation test | 6 |
+| Training Agent | `modules/training/` | exercise generation | knowledge/material | training exercise | asset storage | scheduler operation test | 5 |
 
 ## 深度问题
 
@@ -39,9 +39,9 @@
 | 项目 Skill 到 Agent runtime 映射不完整 | `agents/runtime.py` 原 `SKILL_AGENT_MAP` 缺少多个 root Skill，未知 Skill 会退到 Quality Agent | Agent 选择和权限边界不稳定 | P0 | 本轮已修复 |
 | 目标 Agent 名称和代码 profile 名称不一致 | 用户目标结构包含 `Editor-in-Chief`、`Chapter Writer`、`Canon Guardian` 等，代码使用 `chief_editor`、`draft`、`continuity` | 文档/操作入口容易漂移 | P0 | 本轮新增 alias |
 | Agent 运行构件成熟但覆盖不均 | `agent_runs`、`agent_scheduler` 已存在，部分业务 module 未强制走 AgentExecutionContext | 仍可能产生旁路链路 | P1 | 待继续 |
-| Longform Recap 有 writeback 但顶层 Agent 化不足 | `modules/longform_recap/service.py` 直接协调 context/loop/writeback | 复盘 Agent 的状态、成本、重试记录不够统一 | P1 | 待继续 |
-| Publishing domain 边界分散 | release package/gate 在 `modules/audit/service.py`，plan/log 在 `modules/publishing/service.py` | 发布 Agent 职责难以从路径直观看出 | P1 | 待继续 |
-| Eval 与 release/provider routing 闭环不够硬 | `modules/evaluation_center/` 和 `modules/runtime_policy/` 独立存在 | Eval 结果不一定阻断发布或 provider routing | P1 | 待继续 |
+| Longform Recap 有 writeback 但顶层 Agent 化不足 | `modules/longform_recap/service.py` 直接协调 context/loop/writeback | 复盘 Agent 的状态、成本、重试记录不够统一 | P1 | 已补 operation coverage，后续补 UI/trace 深度 |
+| Publishing domain 边界分散 | release package/gate 在 `modules/audit/service.py`，plan/log 在 `modules/publishing/service.py` | 发布 Agent 职责难以从路径直观看出 | P1 | 部分修复：facade 和 release evidence hard-stop 已完成 |
+| Eval 与 release/provider routing 闭环不够硬 | `modules/evaluation_center/` 和 `modules/runtime_policy/` 独立存在 | Eval 结果不一定阻断发布或 provider routing | P1 | 部分修复：provider missing/failed/success evidence 接入 publish/release gate |
 
 ## 本轮代码修复
 
@@ -49,8 +49,10 @@
 - 新增 `AGENT_PROFILE_ALIASES`，使目标 Agent 名称可解析到实际 runtime profile。
 - 扩展 `SKILL_AGENT_MAP` 到所有 root `skills/*/SKILL.md`。
 - 添加 `tests/unit/test_agent_runtime_profiles.py`，防止 Skill 新增后再次默认落入 Quality Agent。
+- 将 `create-platform-strategy-pack` 和 `generate-training-exercise` 注册为 Agent operation。
+- 更新 MKAOS operation coverage，Platform/Training 生产旁路禁止。
+- Provider runtime evidence 增加成功 guard/model_call 夹具。
 
 ## 判断
 
 Agent Center 已有真实第一片基础设施，不应被描述为“完全没有 Agent”。但它距离完整自治中心仍缺 UI 深度、operation coverage、业务 rollback、Eval hard-stop、跨链路 observability 和端到端 acceptance 压测。
-

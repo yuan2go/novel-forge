@@ -1,1 +1,1 @@
-"""outline module placeholder for V5 workflows."""
+"""Outline module for Novel Forge v6 workflows."""

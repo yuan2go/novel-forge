@@ -1,1 +1,1 @@
-"""topics module placeholder for V5 workflows."""
+"""Topics module for Novel Forge v6 workflows."""

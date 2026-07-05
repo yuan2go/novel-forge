@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+from novel_forge.core.exception_policy import require_recoverable_asset_scan_error
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import (
     attach_agent_run_context_contract,
@@ -43,6 +44,8 @@ CORE_MKAOS_CONTEXT_OPERATIONS = {
     "create-editor-patch": "required",
     "apply-editor-patch": "compat",
     "run-longform-recap": "required",
+    "create-platform-strategy-pack": "required",
+    "generate-training-exercise": "required",
     "create-publish-gate-report": "required",
     "create-feedback-backflow-plan": "required",
     "process-real-feedback-backflow": "required",
@@ -61,6 +64,8 @@ MKAOS_OPERATION_ALIASES = {
     "revision": "revise",
     "editor_patch": "create-editor-patch",
     "recap": "run-longform-recap",
+    "platform_compliance": "create-platform-strategy-pack",
+    "training": "generate-training-exercise",
     "publish_gate": "create-publish-gate-report",
     "feedback_backflow": "create-feedback-backflow-plan",
 }
@@ -2095,6 +2100,26 @@ def _operation_specs() -> list[AgentOperationSpec]:
             sla_seconds=900,
         ),
         AgentOperationSpec(
+            operation="create-platform-strategy-pack",
+            aliases=("platform-strategy-pack", "platform-strategy", "platform-compliance"),
+            runner=_run_platform_strategy_pack,
+            agent_key="platform_strategy",
+            input_types=("topic_seed", "project_workspace_state"),
+            output_types=("platform_strategy_pack",),
+            required_tool="write_platform_strategy_pack",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="generate-training-exercise",
+            aliases=("training-exercise", "training"),
+            runner=_run_training_exercise,
+            agent_key="training",
+            input_types=("topic_seed",),
+            output_types=("training_exercise",),
+            required_tool="write_training_exercise",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
             operation="create-feedback-backflow-plan",
             aliases=("feedback-backflow",),
             runner=_run_create_feedback_backflow_plan,
@@ -2422,6 +2447,38 @@ def _run_reader_sentiment_report(storage: LocalStorage, queue_item: dict[str, An
     )
 
 
+def _run_platform_strategy_pack(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.platform_strategy import build_platform_strategy_pack
+
+    evidence = _evidence(agent_run)
+    input_path = _primary_input_path(agent_run)
+    payload = {
+        **evidence,
+        "project_id": _project_id(agent_run) or evidence.get("project_id", ""),
+        "workspace_path": _workspace_path(agent_run) or evidence.get("workspace_path", ""),
+        "persist": True,
+    }
+    if input_path:
+        source = _read_json_safe(storage, resolve_path(storage.root, input_path))
+        content = source.get("content", {}) if isinstance(source.get("content", {}), dict) else {}
+        metadata = source.get("metadata", {}) if isinstance(source.get("metadata", {}), dict) else {}
+        if source.get("type") == "topic_seed":
+            payload.setdefault("topic", content.get("logline") or source.get("title") or "Untitled topic")
+            payload.setdefault("genre", content.get("genre") or metadata.get("genre") or "generic")
+        if source.get("type") == "project_workspace_state":
+            config = content.get("project_config", {}) if isinstance(content.get("project_config", {}), dict) else {}
+            memory = content.get("memory", {}) if isinstance(content.get("memory", {}), dict) else {}
+            payload.setdefault("platform", config.get("target_platform") or evidence.get("platform") or "qidian")
+            payload.setdefault("topic", memory.get("series_title") or source.get("title") or "Untitled topic")
+    return build_platform_strategy_pack(storage, payload)
+
+
+def _run_training_exercise(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.training.service import generate_training_exercise
+
+    return {"path": generate_training_exercise(storage, _required_input_path(agent_run))}
+
+
 def _run_operational_metric_snapshot(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
     from novel_forge.modules.feedback import create_operational_metric_snapshot
 
@@ -2678,7 +2735,8 @@ def _asset_ref(storage: LocalStorage, item: str | Path) -> dict[str, Any]:
     path = resolve_path(storage.root, item)
     try:
         data = storage.read_json(path)
-    except Exception:
+    except Exception as exc:
+        require_recoverable_asset_scan_error(exc, context=f"agent scheduler asset reference: {path}")
         return {"id": str(item), "type": "", "path": str(item), "title": ""}
     if not isinstance(data, dict):
         return {"id": str(item), "type": "", "path": str(item), "title": ""}
@@ -3705,7 +3763,8 @@ def _path_exists(storage: LocalStorage, value: str | Path) -> bool:
 def _read_json_safe(storage: LocalStorage, path: Path) -> dict[str, Any]:
     try:
         data = storage.read_json(path)
-    except Exception:
+    except Exception as exc:
+        require_recoverable_asset_scan_error(exc, context=f"agent scheduler JSON scan: {path}")
         return {}
     return data if isinstance(data, dict) else {}
 

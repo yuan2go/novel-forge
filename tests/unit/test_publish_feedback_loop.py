@@ -5,9 +5,13 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from novel_forge.model_adapters.runtime import ProviderRuntimeGuard, evaluate_provider_runtime_guard
+from novel_forge.modules.evaluation_center import create_evaluation_gate
 from novel_forge.modules.publishing import create_publish_gate_report, create_release_package
 from novel_forge.modules.feedback import create_reader_simulation_report, process_publish_feedback_loop, process_real_feedback_backflow
 from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding, record_usage_event
+from novel_forge.modules.platform_strategy import build_platform_strategy_pack
+from novel_forge.modules.runtime_ledger import record_gate_result, record_model_call_log
 from novel_forge.schemas import DraftChapter, ProjectWorkspaceState, ReaderFeedback, SourceChunk
 from novel_forge.storage.local import LocalStorage
 
@@ -89,7 +93,7 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             gate = storage.read_asset(gate_path)
 
             self.assertNotEqual(gate.content["decision"], "ready")
-            with self.assertRaisesRegex(ValueError, "publish gate decision"):
+            with self.assertRaisesRegex(ValueError, "gate evidence"):
                 create_release_package(
                     storage,
                     draft_path,
@@ -97,6 +101,66 @@ class PublishFeedbackLoopTests(unittest.TestCase):
                     publish_gate_path=gate_path,
                     envelope=_production_envelope("release-prod-block-p", "release_package", trace_id="trace-release-prod-block"),
                 )
+
+    def test_production_release_package_checks_gate_evidence_even_if_decision_is_ready(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = _workspace(storage, "release-evidence-block-p")
+            draft_path = _draft(storage, workspace, project_id="release-evidence-block-p")
+            gate_path = create_publish_gate_report(storage, draft_path, workspace_path=str(workspace.relative_to(storage.root)), human_override=True)
+            gate_data = storage.read_json(gate_path)
+            gate_data["content"]["decision"] = "ready"
+            storage.write_json(gate_path, gate_data)
+
+            with self.assertRaisesRegex(ValueError, "provider_runtime_gate"):
+                create_release_package(
+                    storage,
+                    draft_path,
+                    workspace_path=str(workspace.relative_to(storage.root)),
+                    publish_gate_path=gate_path,
+                    envelope=_production_envelope("release-evidence-block-p", "release_package", trace_id="trace-release-evidence-block"),
+                )
+
+    def test_publish_gate_accepts_provider_guard_success_fixture(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "provider-success-p"
+            workspace = _workspace(storage, project_id)
+            draft_path = _draft(storage, workspace, project_id=project_id)
+            _publish_knowledge(storage, project_id)
+            workspace_rel = str(workspace.relative_to(storage.root))
+            _record_provider_runtime_evidence(storage, project_id, workspace_path=workspace_rel)
+            build_platform_strategy_pack(
+                storage,
+                {
+                    "project_id": project_id,
+                    "workspace_path": workspace_rel,
+                    "platform": "local_serial",
+                    "topic": "账册追查",
+                    "genre": "悬疑",
+                },
+            )
+            create_evaluation_gate(
+                storage,
+                str(draft_path.relative_to(storage.root)),
+                minimum_score=0.0,
+                project_id=project_id,
+                require_provider_runtime=True,
+            )
+
+            gate_path = create_publish_gate_report(
+                storage,
+                draft_path,
+                workspace_path=workspace_rel,
+                envelope=_production_envelope(project_id, "publish_gate_report", trace_id="trace-provider-success"),
+            )
+            gate = storage.read_asset(gate_path)
+
+            self.assertEqual(gate.content["provider_runtime_gate"]["status"], "passed")
+            self.assertFalse(gate.content["provider_runtime_gate"]["blocking"])
+            self.assertTrue(gate.content["gates"]["provider_runtime_gate_passed"])
 
     def test_release_package_blocks_mkaos_risk_and_excludes_raw_text(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -311,6 +375,71 @@ def _publish_knowledge(storage: LocalStorage, project_id: str) -> None:
         },
     )
     create_usage_binding(storage, card["asset"]["id"], {"flow": "publish", "usage_type": "required", "input_role": "publish_gate", "priority": 10})
+
+
+def _record_provider_runtime_evidence(storage: LocalStorage, project_id: str, *, workspace_path: str = "") -> None:
+    cancel_file = storage.root / "cancel.flag"
+    cancel_file.write_text("cancel\n", encoding="utf-8")
+    cases = [
+        ("token", {"input_tokens": 80, "output_tokens": 40, "total_tokens": 120}, ProviderRuntimeGuard(max_total_tokens=100)),
+        ("cost", {"input_tokens": 1000, "output_tokens": 1000, "total_tokens": 2000}, ProviderRuntimeGuard(max_cost=0.001, cost_profile={"per_1k": 0.01})),
+        ("timeout", {"input_tokens": 10, "output_tokens": 10, "total_tokens": 20, "elapsed_ms": 100}, ProviderRuntimeGuard(timeout_ms=20)),
+        ("cancel", {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2}, ProviderRuntimeGuard(cancel_file=str(cancel_file))),
+    ]
+    for label, usage, guard in cases:
+        result = evaluate_provider_runtime_guard(operation=f"publish_{label}", provider="mock", usage=usage, guard=guard)
+        record_gate_result(
+            storage,
+            gate_kind="provider_runtime_guard",
+            status="failed",
+            target_paths=[],
+            result=result,
+            trace={"trace_id": f"trace-publish-{label}", "span_id": f"span-publish-{label}"},
+            project_id=project_id,
+            workspace_path=workspace_path,
+            message=result["message"],
+        )
+        record_model_call_log(
+            storage,
+            provider="mock",
+            model="mock-publish",
+            operation=f"publish_{label}",
+            status="failed",
+            usage=result.get("usage", {}),
+            cost={"amount": 0.0, "currency": "USD", "source": "publish_guard_fixture"},
+            trace={"trace_id": f"trace-publish-{label}", "span_id": f"span-publish-{label}"},
+            project_id=project_id,
+            workspace_path=workspace_path,
+        )
+    success = evaluate_provider_runtime_guard(
+        operation="publish_success",
+        provider="mock",
+        usage={"input_tokens": 20, "output_tokens": 30, "total_tokens": 50, "elapsed_ms": 10},
+        guard=ProviderRuntimeGuard(max_total_tokens=1000, timeout_ms=1000, max_cost=1.0, cost_profile={"per_1k": 0.01}),
+    )
+    record_gate_result(
+        storage,
+        gate_kind="provider_runtime_guard",
+        status="passed",
+        target_paths=[],
+        result=success,
+        trace={"trace_id": "trace-publish-success", "span_id": "span-publish-success"},
+        project_id=project_id,
+        workspace_path=workspace_path,
+        message=success["message"],
+    )
+    record_model_call_log(
+        storage,
+        provider="mock",
+        model="mock-publish",
+        operation="publish_success",
+        status="succeeded",
+        usage=success.get("usage", {}),
+        cost={"amount": 0.0005, "currency": "USD", "source": "publish_guard_fixture"},
+        trace={"trace_id": "trace-publish-success", "span_id": "span-publish-success"},
+        project_id=project_id,
+        workspace_path=workspace_path,
+    )
 
 
 def _production_envelope(project_id: str, asset_type: str, *, trace_id: str) -> dict:

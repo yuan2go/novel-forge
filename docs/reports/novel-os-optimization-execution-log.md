@@ -1,7 +1,7 @@
 # Novel OS Optimization Execution Log
 
 审计日期：2026-07-05  
-基线 commit：`534d195`  
+基线 commit：`8733acf`
 分支：`backup/v6-post-mkaos-industrialization-20260705`  
 
 ## Scan
@@ -33,6 +33,11 @@
 | P1-EVAL-PROVIDER-001 | P1 | Eval gate 与 provider runtime hard-stop 证据连接不够硬 | EvaluationGate 增加 provider runtime policy 摘要和可选 required block；PublishGate 增加 provider runtime gate，生产环境缺失/失败时阻断 | `src/novel_forge/modules/evaluation_center/service.py`、`src/novel_forge/modules/audit/service.py`、`src/novel_forge/modules/runtime_policy/service.py`、相关测试 | 生产 publish gate 暴露并阻断 missing provider runtime evidence |
 | P1-PUBLISH-FACADE-002 | P1 | 生产代码和测试仍直接从 `modules.audit` 导入 publish gate/release package | 迁移 `agent_scheduler`、`revision`、`loop_kernel`、`workflow_nodes` 和相关测试到 `modules.publishing` facade | 多个 `src/novel_forge/modules/*` 与 publish tests | `rg` 只剩 `modules.publishing.service` 内部委托 audit |
 | P1-SERVICE-SEAMS-001 | P1 | `mkaos/service.py`、`product.py`、`workflow_nodes/service.py` 过大，缺少先测后拆 seam | 新增 Postgres fallback policy、MKAOS risk policy、workflow publishing ops seam，并补 characterization tests | `api/services/postgres_fallback_policy.py`、`modules/mkaos/risk_policy.py`、`modules/workflow_nodes/publishing_ops.py`、`tests/unit/test_large_service_seams.py` | seam 单测通过，原服务通过新 seam 调用 |
+| P0-AGENT-RUNTIME-002 | P0 | Platform Compliance / Training 只有 runtime profile，没有 operation coverage | 新增 `create-platform-strategy-pack`、`generate-training-exercise` operation specs、scheduler runners、MKAOS contract aliases、执行级测试 | `src/novel_forge/modules/agent_scheduler/service.py`、`tests/unit/test_agent_registry_scheduler_integration.py`、`tests/unit/test_agent_operation_mkaos_coverage.py` | scheduler tick 可分别执行 Platform Compliance Agent 和 Training Agent 并产出 schema-backed assets |
+| P1-EVAL-PROVIDER-002 | P1 | provider hard-stop 只能证明失败阻断，缺成功样本 | `provider_hard_stop_evidence_report` 要求 hard-stop 四维覆盖 + 至少一次成功 provider guard/model_call；publish gate 增加 production success fixture | `src/novel_forge/modules/runtime_policy/service.py`、`tests/unit/test_provider_hard_stop_proof.py`、`tests/unit/test_publish_feedback_loop.py` | provider report/publish gate 均能区分 missing、warning、passed |
+| P1-PUBLISH-GATE-003 | P1 | release package 只依赖 publish gate decision | release package 自身校验 EvaluationGate、ProviderRuntimeGate、PlatformStrategyGate 的状态与证据路径，production 缺失即阻断 | `src/novel_forge/modules/audit/service.py`、`tests/unit/test_publish_feedback_loop.py` | 即使 publish gate decision 被改成 ready，缺 gate evidence 仍阻断 |
+| P1-RUNTIME-NAMING-001 | P1 | runtime 仍暴露 V5 命名 | API/CLI/包版本/模块占位文案统一为 v6/Novel OS | `pyproject.toml`、`src/novel_forge/api/app.py`、`src/novel_forge/__init__.py`、`src/novel_forge/modules/*/__init__.py` | `rg "5.0.0|Novel Forge V5|V5 workflows" src tests pyproject.toml` 无命中 |
+| P1-EXCEPTION-POLICY-001 | P1 | broad exception 会静默掩盖扫描/存储故障 | 新增 `core.exception_policy` 并接入 storage reference scan、publishing scan、audit scan、agent scheduler scan helper | `src/novel_forge/core/exception_policy.py`、`src/novel_forge/storage/local.py`、`src/novel_forge/modules/publishing/service.py`、`src/novel_forge/modules/audit/service.py`、`src/novel_forge/modules/agent_scheduler/service.py` | exception policy 单测通过，非 recoverable 错误不再被吞 |
 
 ## Test Log
 
@@ -49,8 +54,11 @@
 | `PYTHONPATH=src python3 -m unittest tests.unit.test_large_service_seams tests.unit.test_agent_registry_scheduler_integration tests.unit.test_agent_operation_mkaos_coverage tests.unit.test_evaluation_center_general tests.unit.test_publish_feedback_loop` | 通过 | 24 个本轮新增/受影响测试通过 |
 | `PYTHONPATH=src python3 -m unittest tests.unit.test_publishing_center tests.unit.test_review_issue tests.unit.test_mkaos_isolation tests.unit.test_mkaos_agent_context_contract tests.unit.test_longform_stability tests.unit.test_workflow_executor tests.unit.test_agent_scheduler tests.unit.test_loop_kernel` | 通过 | 60 个 publishing/workflow/agent/MKAOS 相关回归通过 |
 | `PYTHONPATH=src python3 -m unittest tests.integration.test_novel_os_12_chapter_industrial_pressure` | 通过 | 12 章 Novel OS 压力切片通过 |
-| `make test` | 通过 | Python 485 tests OK，2 skipped；Web admin node tests 10 passed，1 optional Playwright smoke skipped |
+| `make test` | 通过 | Python 490 tests OK，2 skipped；Web admin node tests 10 passed，1 optional Playwright smoke skipped |
 | `git diff --check` | 通过 | 无 whitespace error |
+| `PYTHONPATH=src python3 -m compileall -q src tests` | 通过 | 全源码和测试语法检查通过 |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_publish_feedback_loop tests.unit.test_provider_hard_stop_proof tests.unit.test_runtime_policy` | 通过 | 19 个 publish/provider/runtime policy 测试通过 |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_agent_registry_scheduler_integration tests.unit.test_agent_operation_mkaos_coverage tests.unit.test_exception_policy tests.unit.test_cli` | 通过 | 21 个 Agent operation、MKAOS coverage、exception policy、CLI 测试通过 |
 
 ## Correction During Validation
 
@@ -58,8 +66,8 @@
 
 ## Next
 
-1. 把 Platform Compliance、Training 纳入 operation registry coverage。
-2. 将 provider runtime guard 真实成功证据纳入 release readiness fixture。
-3. 继续迁移非 publish gate 的 audit 调用边界，保留 audit 为 implementation detail。
-4. 在已有 seam tests 保护下继续拆 MKAOS/product/workflow/scheduler 大 service。
-5. 将 Postgres fallback policy 暴露到 health/system diagnostics。
+1. 继续迁移非 publish gate 的 audit 调用边界，保留 audit 为 implementation detail。
+2. 在已有 seam tests 保护下继续拆 MKAOS/product/workflow/scheduler 大 service。
+3. 将 Postgres fallback policy 暴露到 health/system diagnostics。
+4. 分批治理 `workflow_nodes/service.py`、`product.py`、`mkaos/service.py` 内剩余 broad exception，优先生产状态机和写入路径。
+5. 给 release package 增加正向 production-ready fixture，覆盖 EvaluationGate/ProviderGate/PlatformGate 全部通过后的 package 内容。

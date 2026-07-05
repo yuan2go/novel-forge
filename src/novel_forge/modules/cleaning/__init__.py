@@ -1,1 +1,1 @@
-"""cleaning module placeholder for V5 workflows."""
+"""Cleaning module for Novel Forge v6 workflows."""

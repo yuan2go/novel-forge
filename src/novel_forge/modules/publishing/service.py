@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from novel_forge.core.exception_policy import require_recoverable_asset_scan_error
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
@@ -72,7 +73,8 @@ def list_publishing_assets(storage: LocalStorage, *, project_id: str | None = No
     for path in reversed(storage.list_json("publishing")):
         try:
             data = storage.read_json(path)
-        except Exception:
+        except Exception as exc:
+            require_recoverable_asset_scan_error(exc, context=f"publishing asset list: {path}")
             continue
         if not isinstance(data, dict) or data.get("type") not in PUBLISHING_TYPES:
             continue
@@ -280,7 +282,8 @@ def _project_from_packages(
             project = project_scope_from_asset(storage, asset, input_path=item["path"])
             if project.get("project_id") or project.get("workspace_path"):
                 return project
-        except Exception:
+        except Exception as exc:
+            require_recoverable_asset_scan_error(exc, context=f"publishing package project resolution: {item.get('path', '')}")
             continue
     return {"project_id": project_id or "", "workspace_path": workspace_path or ""}
 

@@ -1,1 +1,1 @@
-"""drafting module placeholder for V5 workflows."""
+"""Drafting module for Novel Forge v6 workflows."""

@@ -1,7 +1,7 @@
 # Novel OS Skill Selection Log
 
 审计日期：2026-07-05  
-基线 commit：`534d195`  
+基线 commit：`8733acf`
 范围：本轮自主 Skill 发现、阅读、采用和风险判断。  
 
 | 阶段 | 使用 Skill | 来源 | 使用原因 | 读取的 Skill 文件 | 是否安装新 Skill | 风险判断 | 实际产出 |
@@ -21,6 +21,9 @@
 | 第二轮 Agent operation | `agent-loop-governance` | 项目 `skills/` | Longform Recap 必须进入 AgentRun/dispatch/checkpoint 证据链 | `skills/agent-loop-governance/SKILL.md` | 否 | 低；只读 | `run-longform-recap` 改为 Longform Recap Agent operation 并补 scheduler 测试 |
 | 第二轮 Provider/Eval | `provider-runtime-policy` | 项目 `skills/` | Provider hard-stop 不得 silent fallback，Eval/Publish 需阻断缺失证据 | `skills/provider-runtime-policy/SKILL.md` | 否 | 低；只读 | EvaluationGate/PublishGate 接入 provider runtime policy |
 | 第二轮 Publish | `publish-release-gate-os` | 项目 `skills/` | 发布入口必须通过 schema-backed gate 和 release facade | `skills/publish-release-gate-os/SKILL.md` | 否 | 低；只读 | 生产调用迁移到 `modules.publishing` facade |
+| 第三轮 Agent operation | `agent-loop-governance` | 项目 `skills/` | Platform Compliance / Training 需要从 runtime profile 升级到可调度 operation | `skills/agent-loop-governance/SKILL.md` | 否 | 低；只读 | 新增 `create-platform-strategy-pack`、`generate-training-exercise` Agent operation 和 scheduler 测试 |
+| 第三轮 Provider/Eval | `provider-runtime-policy` | 项目 `skills/` | Provider gate 需要同时证明 hard-stop 失败路径和成功调用路径 | `skills/provider-runtime-policy/SKILL.md` | 否 | 低；只读 | provider evidence status 要求成功 guard/model_call，补 production publish success fixture |
+| 第三轮 Publish | `publish-release-gate-os` | 项目 `skills/` | Release package 不能只依赖 publish gate decision，需自校验证据路径和状态 | `skills/publish-release-gate-os/SKILL.md` | 否 | 低；只读 | Release package 自检 EvaluationGate、ProviderRuntimeGate、PlatformStrategyGate |
 
 ## 未安装新 Skill
 

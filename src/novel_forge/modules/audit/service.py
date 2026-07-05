@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.constants import DATA_DIRS
+from novel_forge.core.exception_policy import recoverable_asset_scan_error, require_recoverable_asset_scan_error
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
@@ -426,10 +427,14 @@ def create_release_package(
     decision = gate.get("content", {}).get("decision", "blocked") if isinstance(gate.get("content", {}), dict) else "blocked"
     if decision == "blocked" and _gate_has_mkaos_blocker(gate):
         raise ValueError("release_package blocked by MKAOS high/critical risk")
+    gate_content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
+    release_gate_evidence = _release_package_gate_evidence(gate, production=is_production_environment(environment))
+    if is_production_environment(environment) and release_gate_evidence["blocking"]:
+        dimensions = ", ".join(str(issue.get("dimension", "")) for issue in release_gate_evidence["blocking_issues"])
+        raise ValueError(f"release_package blocked by gate evidence: {dimensions}")
     if is_production_environment(environment) and decision != "ready":
         raise ValueError(f"release_package blocked by publish gate decision: {decision}")
     status = "ready" if decision == "ready" else "blocked"
-    gate_content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
     gate_envelope = gate.get("metadata", {}).get("os_envelope", {}) if isinstance(gate.get("metadata", {}), dict) and isinstance(gate.get("metadata", {}).get("os_envelope", {}), dict) else {}
     os_envelope = enforce_os_envelope(
         storage,
@@ -485,7 +490,10 @@ def create_release_package(
             "context_bundle_id": gate_content.get("context_bundle_id", ""),
             "context_bundle_path": gate_content.get("context_bundle_path", ""),
             "mkaos_risk": gate_content.get("mkaos_risk", {}),
+            "evaluation_gate": gate_content.get("evaluation_gate", {}),
             "provider_runtime_gate": gate_content.get("provider_runtime_gate", {}),
+            "platform_strategy_gate": gate_content.get("platform_strategy_gate", {}),
+            "release_gate_evidence": release_gate_evidence,
             "source_isolation": {
                 "source_chunk_raw_text_allowed": False,
                 "runtime_assets_in_generation_rag_allowed": False,
@@ -538,6 +546,51 @@ def _release_platform_rules(context: dict[str, Any], channel: str) -> dict[str, 
         "title_candidate_count": 3,
         "min_hook_score": config.get("publish_min_hook_score", 0.7),
         "max_risk_level": config.get("publish_max_risk_level", "medium"),
+    }
+
+
+def _release_package_gate_evidence(gate: dict[str, Any], *, production: bool) -> dict[str, Any]:
+    content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
+    checks: list[dict[str, Any]] = []
+    issues: list[dict[str, Any]] = []
+    gate_specs = [
+        ("evaluation_gate", "path", "passed"),
+        ("provider_runtime_gate", "", "passed"),
+        ("platform_strategy_gate", "platform_strategy_pack_path", "passed"),
+    ]
+    for dimension, path_field, expected_status in gate_specs:
+        payload = content.get(dimension, {}) if isinstance(content.get(dimension, {}), dict) else {}
+        status = str(payload.get("status") or "missing")
+        path_value = str(payload.get(path_field) or "") if path_field else ""
+        blocking = bool(payload.get("blocking")) or status != expected_status
+        missing_path = bool(production and path_field and not path_value)
+        checks.append(
+            {
+                "dimension": dimension,
+                "status": status,
+                "expected_status": expected_status,
+                "path_field": path_field,
+                "path": path_value,
+                "blocking": bool(blocking or missing_path),
+            }
+        )
+        if production and (blocking or missing_path):
+            issues.append(
+                {
+                    "dimension": dimension,
+                    "severity": "critical" if dimension == "provider_runtime_gate" else "high",
+                    "message": f"production release requires {dimension} status {expected_status} with durable evidence",
+                    "current_status": status,
+                    "path": path_value,
+                    "recommendation": f"rerun or repair {dimension} before creating the release package",
+                }
+            )
+    return {
+        "publish_gate_report_id": _asset_id(gate),
+        "publish_gate_decision": content.get("decision", "blocked"),
+        "checks": checks,
+        "blocking": bool(issues),
+        "blocking_issues": issues,
     }
 
 
@@ -822,6 +875,7 @@ def _reference_library_scan(storage: LocalStorage, target: dict[str, Any], conte
     }
     included: list[dict[str, Any]] = []
     excluded: list[dict[str, str]] = []
+    scan_errors: list[dict[str, str]] = []
     scanned = 0
     for category in DATA_DIRS:
         for path in reversed(storage.list_json(category)):
@@ -829,7 +883,9 @@ def _reference_library_scan(storage: LocalStorage, target: dict[str, Any], conte
                 break
             try:
                 data = storage.read_json(path)
-            except Exception:
+            except Exception as exc:
+                require_recoverable_asset_scan_error(exc, context=f"reference library scan: {path}")
+                scan_errors.append(recoverable_asset_scan_error(exc, path=_display_path(storage.root, path)))
                 continue
             if not isinstance(data, dict):
                 continue
@@ -859,6 +915,8 @@ def _reference_library_scan(storage: LocalStorage, target: dict[str, Any], conte
     return {
         "included_assets": _dedupe_assets(included),
         "excluded": excluded,
+        "scan_errors": scan_errors[:50],
+        "scan_error_count": len(scan_errors),
         "scanned_count": scanned,
         "scope": {"project_id": project_id, "limit": limit, "allowed_types": sorted(allowed_types)},
     }
@@ -1319,7 +1377,8 @@ def _read_asset_dict(storage: LocalStorage, path: str | Path) -> dict[str, Any]:
 def _read_json_safe(storage: LocalStorage, path: Path) -> dict[str, Any]:
     try:
         data = storage.read_json(path)
-    except Exception:
+    except Exception as exc:
+        require_recoverable_asset_scan_error(exc, context=f"audit JSON scan: {path}")
         return {}
     return data if isinstance(data, dict) else {}
 

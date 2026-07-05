@@ -52,11 +52,43 @@ class ProviderHardStopProofTests(unittest.TestCase):
                     project_id=project_id,
                 )
 
+            success = evaluate_provider_runtime_guard(
+                operation="proof_success",
+                provider="mock",
+                usage={"input_tokens": 20, "output_tokens": 30, "total_tokens": 50, "elapsed_ms": 10},
+                guard=ProviderRuntimeGuard(max_total_tokens=1000, timeout_ms=1000, max_cost=1.0, cost_profile={"per_1k": 0.01}),
+            )
+            self.assertEqual(success["status"], "passed")
+            record_gate_result(
+                storage,
+                gate_kind="provider_runtime_guard",
+                status="passed",
+                target_paths=[],
+                result=success,
+                trace={"trace_id": "trace-success", "span_id": "span-success"},
+                project_id=project_id,
+                message=success["message"],
+            )
+            record_model_call_log(
+                storage,
+                provider="mock",
+                model="mock-proof",
+                operation="proof_success",
+                status="succeeded",
+                usage=success.get("usage", {}),
+                cost={"amount": 0.0005, "currency": "USD", "source": "hard_stop_proof_success"},
+                trace={"trace_id": "trace-success", "span_id": "span-success"},
+                project_id=project_id,
+            )
+
             report = provider_hard_stop_evidence_report(storage, project_id=project_id)
 
             self.assertEqual(report["status"], "passed")
             self.assertEqual(report["summary"]["covered_hard_stop_dimension_count"], 4)
             self.assertEqual(report["summary"]["missing_dimensions"], [])
+            self.assertEqual(report["summary"]["missing_success_evidence"], [])
+            self.assertEqual(report["summary"]["successful_provider_guard_count"], 1)
+            self.assertEqual(report["summary"]["successful_model_call_count"], 1)
             for dimension in ["token", "cost", "timeout", "cancel"]:
                 self.assertGreaterEqual(report["summary"]["dimension_counts"][dimension], 1)
             self.assertEqual(report["summary"]["failed_model_call_count"], 4)

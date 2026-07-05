@@ -27,7 +27,7 @@ class CliTests(unittest.TestCase):
     def test_help(self):
         result = self.run_cli("--help")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("Novel Forge V5 CLI", result.stdout)
+        self.assertIn("Novel Forge v6 / Novel OS CLI", result.stdout)
 
     def test_init_and_validate_temp_project_reports_missing_docs(self):
         with tempfile.TemporaryDirectory() as tmp:

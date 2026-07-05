@@ -1,1 +1,1 @@
-"""ingestion module placeholder for V5 workflows."""
+"""Ingestion module for Novel Forge v6 workflows."""

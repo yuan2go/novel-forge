@@ -19,7 +19,7 @@ def add_root(parser: argparse.ArgumentParser) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="novel-forge", description="Novel Forge V5 CLI")
+    parser = argparse.ArgumentParser(prog="novel-forge", description="Novel Forge v6 / Novel OS CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 
     init_p = sub.add_parser("init", help="initialize local project directories")

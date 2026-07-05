@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.modules.agent_registry import record_agent_lifecycle_event, sync_runtime_profiles
 from novel_forge.modules.agent_runs import list_agent_runs, start_agent_run
 from novel_forge.modules.agent_scheduler import dispatch_agent_run, list_agent_dispatch_queue, run_agent_scheduler_tick
-from novel_forge.schemas import DraftChapter
+from novel_forge.schemas import DraftChapter, TopicSeed
 from novel_forge.storage.local import LocalStorage
 
 
@@ -74,6 +74,62 @@ class AgentRegistrySchedulerIntegrationTests(unittest.TestCase):
             self.assertTrue(any(str(path).endswith(".json") for path in output_assets))
             self.assertTrue(any(storage.read_json(storage.root / path)["type"] == "longform_recap_report" for path in output_assets))
 
+    def test_scheduler_executes_platform_strategy_as_platform_compliance_operation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            sync_runtime_profiles(storage)
+            topic_path = _topic_fixture(storage, project_id="scheduler-platform-p")
+            run = start_agent_run(
+                storage,
+                agent_key="platform_strategy",
+                operation="create-platform-strategy-pack",
+                input_assets=[topic_path],
+                status="prepared",
+                evidence={"project_id": "scheduler-platform-p", "platform": "fanqie"},
+            )
+            dispatch_agent_run(storage, agent_run_path=run["path"])
+
+            tick = run_agent_scheduler_tick(storage)
+            runs = [row for row in list_agent_runs(storage, operation="create-platform-strategy-pack")]
+            queue = list_agent_dispatch_queue(storage)[0]
+            queue_asset = storage.read_json(storage.root / queue["path"])
+            output_assets = queue_asset["content"]["result"]["output_assets"]
+
+            self.assertEqual(tick["status"], "completed")
+            self.assertEqual(tick["acked_count"], 1)
+            self.assertEqual(queue["status"], "acked")
+            self.assertEqual(runs[0]["agent_type"], "Platform Compliance Agent")
+            self.assertTrue(any(storage.read_json(storage.root / path)["type"] == "platform_strategy_pack" for path in output_assets))
+
+    def test_scheduler_executes_training_exercise_as_training_agent_operation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            sync_runtime_profiles(storage)
+            topic_path = _topic_fixture(storage, project_id="scheduler-training-p")
+            run = start_agent_run(
+                storage,
+                agent_key="training",
+                operation="generate-training-exercise",
+                input_assets=[topic_path],
+                status="prepared",
+                evidence={"project_id": "scheduler-training-p"},
+            )
+            dispatch_agent_run(storage, agent_run_path=run["path"])
+
+            tick = run_agent_scheduler_tick(storage)
+            runs = [row for row in list_agent_runs(storage, operation="generate-training-exercise")]
+            queue = list_agent_dispatch_queue(storage)[0]
+            queue_asset = storage.read_json(storage.root / queue["path"])
+            output_assets = queue_asset["content"]["result"]["output_assets"]
+
+            self.assertEqual(tick["status"], "completed")
+            self.assertEqual(tick["acked_count"], 1)
+            self.assertEqual(queue["status"], "acked")
+            self.assertEqual(runs[0]["agent_type"], "Training Agent")
+            self.assertTrue(any(storage.read_json(storage.root / path)["type"] == "training_exercise" for path in output_assets))
+
 
 def _longform_recap_fixture(storage: LocalStorage) -> Path:
     latest_path = None
@@ -92,3 +148,19 @@ def _longform_recap_fixture(storage: LocalStorage) -> Path:
         )
     assert latest_path is not None
     return latest_path
+
+
+def _topic_fixture(storage: LocalStorage, *, project_id: str) -> Path:
+    return storage.write_asset(
+        "topics",
+        TopicSeed(
+            title=f"Scheduler topic {project_id}",
+            content={
+                "logline": "主角在雨夜发现账册异常，被迫在家族和真相之间做选择。",
+                "reader_attraction": "强冲突、低门槛、明确追查钩子",
+                "differentiation": "原创账册追查机制，不复用受保护表达",
+                "genre": "悬疑",
+            },
+            metadata={"project_id": project_id},
+        ),
+    )

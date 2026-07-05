@@ -1,1 +1,1 @@
-"""chapter_plan module placeholder for V5 workflows."""
+"""Chapter plan module for Novel Forge v6 workflows."""

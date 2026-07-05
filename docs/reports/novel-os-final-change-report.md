@@ -1,7 +1,7 @@
 # Novel OS Final Change Report
 
 日期：2026-07-05  
-基线 commit：`534d195`  
+基线 commit：`8733acf`
 分支：`backup/v6-post-mkaos-industrialization-20260705`  
 
 ## 本轮完成
@@ -11,6 +11,8 @@
 同时完成一个低风险 P0 代码修复：项目源 Skill 到 Agent runtime profile 的映射全部显式化，并为目标 Agent 名称增加 alias。
 
 追加执行了第二批 P1 硬化：Longform Recap 真实注册为 Longform Recap Agent operation；EvaluationGate/PublishGate 接入 provider runtime hard-stop；生产调用迁移到 publishing facade；为 MKAOS/product/workflow 大服务建立 characterization seam；Postgres/local fallback 改为显式策略。
+
+继续完成第三批关键修复：Platform Compliance 和 Training 注册为可调度 Agent operation；provider runtime policy 增加成功 guard/model_call 证据要求；release package 自身校验 EvaluationGate、ProviderRuntimeGate、PlatformStrategyGate；运行时版本命名统一为 Novel Forge v6 / Novel OS；新增 exception policy 并接入高风险扫描路径。
 
 ## 代码变更
 
@@ -24,6 +26,8 @@
 | `src/novel_forge/modules/evaluation_center/service.py` | EvaluationGate 增加 provider runtime policy 摘要和 required block 选项 |
 | `src/novel_forge/modules/audit/service.py` | PublishGate 增加 provider runtime gate，生产环境缺失/失败 provider hard-stop evidence 时阻断 |
 | `src/novel_forge/modules/runtime_policy/service.py` | publish gate runtime policy 增加 `evaluation_gate` 与 `provider_runtime_guard` 必要 gate |
+| `src/novel_forge/core/exception_policy.py` | 新增资产扫描异常分类策略 |
+| `pyproject.toml`、`src/novel_forge/__init__.py`、`src/novel_forge/api/app.py`、`src/novel_forge/cli/__init__.py` | 运行时版本和描述统一到 Novel Forge v6 / Novel OS |
 | `src/novel_forge/api/services/postgres_fallback_policy.py` | 新增 Postgres/local read fallback 显式策略 |
 | `src/novel_forge/modules/mkaos/risk_policy.py` | 从 MKAOS 大 service 抽出风险等级/惩罚/原因规则 |
 | `src/novel_forge/modules/workflow_nodes/publishing_ops.py` | 从 workflow_nodes 大 service 抽出 publish gate/release package operation seam |
@@ -31,7 +35,8 @@
 | `tests/unit/test_publishing_center.py` | 发布中心测试改用 publishing facade 创建 gate/package |
 | `tests/unit/test_agent_registry_scheduler_integration.py` | 新增 Longform Recap Agent scheduler 执行级测试 |
 | `tests/unit/test_large_service_seams.py` | 新增三类大 service seam characterization tests |
-| `tests/unit/test_evaluation_center_general.py`、`tests/unit/test_publish_feedback_loop.py` | 增加 provider runtime hard-stop gate 测试 |
+| `tests/unit/test_evaluation_center_general.py`、`tests/unit/test_publish_feedback_loop.py` | 增加 provider runtime hard-stop gate、provider success fixture、release gate evidence hard-stop 测试 |
+| `tests/unit/test_exception_policy.py` | 新增异常策略单测 |
 | `docs/reports/novel-os-*.md` | 新增本轮要求的审计和执行报告 |
 
 ## 当前系统判断
@@ -51,9 +56,9 @@ Novel Forge 已经形成 Novel OS 第一生产片：OS Envelope、Context Builde
 
 1. `api/services/product.py`、`modules/mkaos/service.py`、`modules/workflow_nodes/service.py`、`modules/agent_scheduler/service.py` 过大。
 2. Publish Gate 实现仍在 audit module，publishing facade 已成为生产入口，但后续可继续把实现迁出 audit。
-3. Platform Compliance、Training 仍需完整进入 Agent operation registry。
-4. Eval 已阻断 missing provider runtime evidence，但还需要真实 provider guard success fixture。
-5. 部分 broad exception 仍可能掩盖严格环境故障。
+3. 大 service 拆分仍处于 seam 阶段，尚未完成结构性拆解。
+4. 部分 broad exception 仍存在，已建立策略但需要继续逐模块接入。
+5. Release package 已有负向证据 hard-stop，后续还应补完整 production-ready 正向 package fixture。
 
 ## 测试结果
 
@@ -72,8 +77,11 @@ Novel Forge 已经形成 Novel OS 第一生产片：OS Envelope、Context Builde
 - `PYTHONPATH=src python3 -m unittest tests.integration.test_novel_os_12_chapter_industrial_pressure`
 - `make test`
 - `git diff --check`
+- `PYTHONPATH=src python3 -m compileall -q src tests`
+- `PYTHONPATH=src python3 -m unittest tests.unit.test_publish_feedback_loop tests.unit.test_provider_hard_stop_proof tests.unit.test_runtime_policy`
+- `PYTHONPATH=src python3 -m unittest tests.unit.test_agent_registry_scheduler_integration tests.unit.test_agent_operation_mkaos_coverage tests.unit.test_exception_policy tests.unit.test_cli`
 
-`make test` 结果：Python 485 tests OK，2 skipped；Web admin node tests 10 passed，1 optional Playwright smoke skipped。
+`make test` 结果：Python 490 tests OK，2 skipped；Web admin node tests 10 passed，1 optional Playwright smoke skipped。
 
 ## 验证中纠正的问题
 

@@ -1,1 +1,1 @@
-"""review module placeholder for V5 workflows."""
+"""Review module for Novel Forge v6 workflows."""

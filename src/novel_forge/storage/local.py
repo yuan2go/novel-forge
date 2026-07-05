@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.constants import ASSET_DIR_BY_TYPE, DATA_DIRS, SKILL_NAMES
+from novel_forge.core.exception_policy import require_recoverable_asset_scan_error
 from novel_forge.core.ids import utc_now
 from novel_forge.schemas import BaseAsset, asset_from_dict
 from novel_forge.storage.locks import StorageLock
@@ -194,7 +195,7 @@ class LocalStorage:
         dirty_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             dirty = self.read_json(dirty_path) if dirty_path.exists() else {}
-        except Exception:
+        except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError, ValueError):
             dirty = {}
         entries = dirty.get("entries", []) if isinstance(dirty, dict) and isinstance(dirty.get("entries", []), list) else []
         relative = str(path.relative_to(self.root)) if path.is_relative_to(self.root) else str(path)
@@ -259,7 +260,8 @@ def _project_id_for_reference(storage: LocalStorage, reference: str) -> str:
     if candidate.exists() and candidate.is_file():
         try:
             data = storage.read_json(candidate)
-        except Exception:
+        except Exception as exc:
+            require_recoverable_asset_scan_error(exc, context=f"project reference read: {candidate}")
             return ""
         return _project_id_from_data(data)
     if "/" in value or value.endswith(".json"):
@@ -268,7 +270,8 @@ def _project_id_for_reference(storage: LocalStorage, reference: str) -> str:
         for path in storage.list_json(category):
             try:
                 data = storage.read_json(path)
-            except Exception:
+            except Exception as exc:
+                require_recoverable_asset_scan_error(exc, context=f"project reference scan: {path}")
                 continue
             if not isinstance(data, dict):
                 continue
@@ -294,7 +297,8 @@ def _project_id_index_for_references(storage: LocalStorage, references: set[str]
         if candidate.exists() and candidate.is_file():
             try:
                 data = storage.read_json(candidate)
-            except Exception:
+            except Exception as exc:
+                require_recoverable_asset_scan_error(exc, context=f"project reference index read: {candidate}")
                 continue
             _index_project_reference(storage, index, candidate, data)
             continue
@@ -342,7 +346,8 @@ def _cached_category_project_index(storage: LocalStorage, category: str) -> dict
     for path in paths:
         try:
             data = storage.read_json(path)
-        except Exception:
+        except Exception as exc:
+            require_recoverable_asset_scan_error(exc, context=f"project reference category scan: {path}")
             continue
         _index_project_reference(storage, index, path, data)
     cache[category] = (signature, index)

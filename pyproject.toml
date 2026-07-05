@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "novel-forge"
-version = "5.0.0"
-description = "File-based industrial AI novel production system"
+version = "6.0.0"
+description = "Local-first Novel OS runtime for traceable AI novel production"
 requires-python = ">=3.11"
 dependencies = []
 

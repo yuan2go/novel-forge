@@ -1,1 +1,1 @@
-"""characters module placeholder for V5 workflows."""
+"""Characters module for Novel Forge v6 workflows."""
