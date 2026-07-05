@@ -31,6 +31,8 @@
 | 第五轮 Runner seam | `codebase-design` | 全局 `/Users/yuan/.agents/skills` | 按 deep module seam 拆出 scheduler publishing runner，不扩大 registry 接口 | `/Users/yuan/.agents/skills/codebase-design/SKILL.md`、`/Users/yuan/.agents/skills/codebase-design/DEEPENING.md` | 否 | 低；只读 | 新增 `agent_scheduler.publishing_runners`，audit reference lookup 接入 `core.asset_scan` |
 | 第六轮 Scheduler/Publishing seam | `codebase-design` | 全局 `/Users/yuan/.agents/skills` | 继续按 deep module 思路拆 queue lifecycle，并把 release gate evidence 迁入 publishing 边界 | `/Users/yuan/.agents/skills/codebase-design/SKILL.md`、`/Users/yuan/.agents/skills/codebase-design/DEEPENING.md` | 否 | 低；只读 | 新增 `agent_scheduler.queue_lifecycle`、`publishing.release_gate` |
 | 第六轮 回归保护 | `tdd` | 全局 `/Users/yuan/.agents/skills` | 使用既有 characterization/focused regression 验证拆分不改变 scheduler/publishing/workflow/product 行为 | `/Users/yuan/.agents/skills/tdd/SKILL.md`、`/Users/yuan/.agents/skills/tdd/tests.md` | 否 | 低；只读 | 99 个 scheduler/publishing/workflow/product/seam focused tests 通过 |
+| 第七轮 Scheduler/Publishing seam | `codebase-design` | 全局 `/Users/yuan/.agents/skills` | 继续拆 registry/dead-letter，并把 release package 主实现从 audit 迁到 publishing | `/Users/yuan/.agents/skills/codebase-design/SKILL.md`、`/Users/yuan/.agents/skills/codebase-design/DEEPENING.md` | 否 | 低；只读 | 新增 `agent_scheduler.operation_registry`、`agent_scheduler.dead_letter_runner`，release package 主实现迁入 publishing |
+| 第七轮 回归保护 | `tdd` | 全局 `/Users/yuan/.agents/skills` | 通过公共 scheduler/publishing/release seam 验证迁移，不测试私有实现细节 | `/Users/yuan/.agents/skills/tdd/SKILL.md`、`/Users/yuan/.agents/skills/tdd/tests.md` | 否 | 低；只读 | 37 个 focused tests 与第二批 99 个 focused tests 通过 |
 
 ## 未安装新 Skill
 

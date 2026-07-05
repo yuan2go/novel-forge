@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from novel_forge.core.exception_policy import require_recoverable_asset_scan_error
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.modules.agent_scheduler.dead_letter_runner import fail_queue_item as _fail_queue_item
+from novel_forge.modules.agent_scheduler.operation_registry import AgentOperationSpec, OperationRegistryCatalog, OperationRunner
 from novel_forge.modules.agent_scheduler.queue_lifecycle import (
     CLAIMABLE_STATUSES,
     QUEUE_STATUSES,
@@ -18,7 +19,6 @@ from novel_forge.modules.agent_scheduler.queue_lifecycle import (
     queue_row as _queue_row,
     resolve_queue as _resolve_queue,
     update_queue_item as _update_queue_item,
-    utc_datetime_after as _utc_datetime_after,
     utc_now_dt as _utc_now_dt,
 )
 from novel_forge.modules.agent_scheduler.publishing_runners import (
@@ -27,7 +27,6 @@ from novel_forge.modules.agent_scheduler.publishing_runners import (
 )
 from novel_forge.modules.agent_runs import (
     attach_agent_run_context_contract,
-    create_agent_failure_report,
     execute_agent_run_once,
     record_agent_checkpoint,
     record_agent_event,
@@ -35,15 +34,12 @@ from novel_forge.modules.agent_runs import (
     update_agent_run_status,
 )
 from novel_forge.modules.common import resolve_path
-from novel_forge.modules.operation_checkpoint import operation_checkpoint_schema
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.review_issue import review_issue_to_revision_task_candidate
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, release_scheduler_lease, scheduler_lease_status
 from novel_forge.schemas import AgentDispatchQueue, AgentRollbackReport, AgentTask, BaseAsset, RevisionTask, validate_common_fields
 from novel_forge.storage.local import LocalStorage
-
-OperationRunner = Callable[[LocalStorage, dict[str, Any], dict[str, Any]], dict[str, Any]]
 
 CORE_MKAOS_CONTEXT_OPERATIONS = {
     "run-analysis": "required",
@@ -84,133 +80,14 @@ MKAOS_OPERATION_ALIASES = {
 }
 
 
-@dataclass(frozen=True)
-class AgentOperationSpec:
-    operation: str
-    aliases: tuple[str, ...]
-    runner: OperationRunner
-    agent_key: str
-    input_types: tuple[str, ...]
-    output_types: tuple[str, ...]
-    required_tool: str
-    checkpoint_strategy: str = "service_result"
-    rollback_strategy: str = "mark_outputs_rolled_back"
-    sla_seconds: int = 1800
-
-    def checkpoint_schema(self) -> dict[str, Any]:
-        schema = operation_checkpoint_schema(self.operation, checkpoint_strategy=self.checkpoint_strategy)
-        return {
-            **schema,
-            "version": "1.0",
-            "strategy": self.checkpoint_strategy,
-            "required": ["status", "operation", "idempotency_key", "input_assets", "output_assets"],
-            "states": ["operation_started", "agent_scheduler_service_completed", "agent_scheduler_service_failed", "agent_scheduler_rollback_applied"],
-            "resume_from_checkpoint": {
-                "output_committed": "reuse completed output_assets when assets still exist and are not rolled back or quarantined",
-                "provider_completed": "resume output validation from durable raw provider output",
-                "prompt_built": "restart provider call without rebuilding context when input fingerprints still match",
-            },
-            "idempotency_key": "agent_dispatch_queue.content.idempotency_key",
-            "rollback_strategy": self.rollback_strategy,
-        }
-
-
-@dataclass(frozen=True)
-class AgentOperationContract:
-    operation: str
-    agent_key: str = ""
-    runner_kind: str = "output_reuse"
-    input_types: list[str] = field(default_factory=list)
-    output_types: list[str] = field(default_factory=list)
-    required_tools: list[str] = field(default_factory=list)
-    checkpoint_schema: dict[str, Any] = field(default_factory=dict)
-    resume_supported: bool = True
-    rollback_strategy: str = "agent_rollback_report"
-    gates: list[str] = field(default_factory=lambda: ["permission", "schema", "budget", "sla"])
-    sla_seconds: int = 1800
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "operation": self.operation,
-            "agent_key": self.agent_key,
-            "runner_kind": self.runner_kind,
-            "input_types": self.input_types,
-            "output_types": self.output_types,
-            "required_tools": self.required_tools,
-            "checkpoint_schema": self.checkpoint_schema,
-            "resume_supported": self.resume_supported,
-            "rollback_strategy": self.rollback_strategy,
-            "gates": self.gates,
-            "sla_seconds": self.sla_seconds,
-        }
-
-
-class AgentOperationRegistry:
+class AgentOperationRegistry(OperationRegistryCatalog):
     def __init__(self) -> None:
-        self._runner_map: dict[str, OperationRunner] | None = None
-        self._spec_map: dict[str, AgentOperationSpec] | None = None
-
-    @property
-    def runners(self) -> dict[str, OperationRunner]:
-        if self._runner_map is None:
-            self._runner_map = _operation_runners()
-        return self._runner_map
-
-    @property
-    def specs(self) -> dict[str, AgentOperationSpec]:
-        if self._spec_map is None:
-            self._spec_map = _operation_specs_by_alias()
-        return self._spec_map
-
-    def list_contracts(self) -> list[dict[str, Any]]:
-        contracts = []
-        for spec in sorted({item.operation: item for item in self.specs.values()}.values(), key=lambda item: item.operation):
-            contract = AgentOperationContract(
-                operation=spec.operation,
-                agent_key=spec.agent_key,
-                runner_kind="local_service",
-                input_types=list(spec.input_types),
-                output_types=list(spec.output_types),
-                required_tools=[spec.required_tool],
-                checkpoint_schema=spec.checkpoint_schema(),
-                resume_supported=True,
-                rollback_strategy=spec.rollback_strategy,
-                sla_seconds=spec.sla_seconds,
-            ).to_dict()
-            contract.update(_mkaos_operation_contract_fields(spec.operation))
-            contracts.append(contract)
-        contracts.append(
-            AgentOperationContract(
-                operation="*",
-                runner_kind="output_reuse",
-                required_tools=["read_asset", "run_validation"],
-                checkpoint_schema={"version": "0.1.0", "strategy": "output_reuse"},
-                resume_supported=True,
-            ).to_dict()
-        )
-        return contracts
-
-    def contract_for_run(self, agent_run: dict[str, Any], contract_asset: dict[str, Any] | None = None) -> AgentOperationContract:
-        content = agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}
-        metadata = agent_run.get("metadata", {}) if isinstance(agent_run.get("metadata", {}), dict) else {}
-        contract_content = contract_asset.get("content", {}) if isinstance(contract_asset, dict) and isinstance(contract_asset.get("content", {}), dict) else {}
-        output_types = [str(item) for item in contract_content.get("output_types", []) if str(item).strip()] if isinstance(contract_content.get("output_types", []), list) else []
-        permissions = content.get("permissions", {}) if isinstance(content.get("permissions", {}), dict) else {}
-        canonical = _canonical_operation(str(content.get("operation", "")))
-        spec = self.specs.get(canonical)
-        runner_kind = "local_service" if canonical in self.runners else "output_reuse"
-        resolved_output_types = output_types or (list(spec.output_types) if spec else [])
-        required_tools = [spec.required_tool] if spec else ([_tool_name_for_output(resolved_output_types)] if resolved_output_types else [str((permissions.get("tool_allowlist") or ["run_validation"])[0])])
-        return AgentOperationContract(
-            operation=str(content.get("operation", "")),
-            agent_key=str(metadata.get("agent_key", "") or (spec.agent_key if spec else "")),
-            runner_kind=runner_kind,
-            input_types=[str(item) for item in contract_content.get("input_types", []) if str(item).strip()] if isinstance(contract_content.get("input_types", []), list) else [],
-            output_types=resolved_output_types,
-            required_tools=required_tools,
-            checkpoint_schema=spec.checkpoint_schema() if spec else {"version": "0.1.0", "strategy": runner_kind},
-            rollback_strategy=spec.rollback_strategy if spec else "agent_rollback_report",
-            sla_seconds=spec.sla_seconds if spec else 1800,
+        super().__init__(
+            operation_runners=lambda: _operation_runners(),
+            operation_specs_by_alias=lambda: _operation_specs_by_alias(),
+            canonical_operation=lambda value: _canonical_operation(value),
+            mkaos_operation_contract_fields=lambda operation: _mkaos_operation_contract_fields(operation),
+            tool_name_for_output=lambda output_types: _tool_name_for_output(output_types),
         )
 
     def execute(self, storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
@@ -1341,37 +1218,6 @@ def _resume_workflow_from_agent(storage: LocalStorage, queue_data: dict[str, Any
         max_nodes=5,
         archive_previous=True,
     )
-
-
-def _fail_queue_item(storage: LocalStorage, queue_path: str | Path, *, reason: str, retry_delay_seconds: int = 0, result: dict[str, Any] | None = None) -> dict[str, Any]:
-    path = _resolve_queue(storage, queue_path)
-    data = _read_json_safe(storage, path)
-    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-    attempt_count = int(content.get("attempt_count", 0) or 0)
-    max_attempts = int(content.get("max_attempts", 3) or 3)
-    if attempt_count >= max_attempts:
-        try:
-            update_agent_run_status(storage, str(content.get("agent_run_path", "")), status="dead_letter", error=reason, event_type="agent_dispatch.dead_letter", message=reason)
-        except (FileNotFoundError, ValueError):
-            pass
-        updates = {"dead_lettered_at": utc_now(), "last_error": reason}
-        if result is not None:
-            updates["result"] = result
-        return _update_queue_item(storage, path, status="dead_letter", updates=updates)
-    try:
-        create_agent_failure_report(
-            storage,
-            agent_run_path=str(content.get("agent_run_path", "")),
-            error_type="AgentSchedulerExecutionFailed",
-            error_message=reason,
-            recovery_instruction="Agent scheduler will retry after the queue backoff, or recover the dispatch manually from the Agent Scheduler console.",
-        )
-    except (FileNotFoundError, ValueError):
-        pass
-    updates = {"available_at": _utc_datetime_after(max(0, retry_delay_seconds)), "last_error": reason}
-    if result is not None:
-        updates["result"] = result
-    return _update_queue_item(storage, path, status="retry_scheduled", updates=updates)
 
 
 def _resolve_agent_run(storage: LocalStorage, value: str | Path) -> Path:

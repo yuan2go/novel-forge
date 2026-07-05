@@ -7,8 +7,11 @@ from novel_forge.core.exception_policy import require_recoverable_asset_scan_err
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
-from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
-from novel_forge.schemas import PublishingLog, PublishingPlan, validate_common_fields
+from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment, normalize_runtime_request_policy
+from novel_forge.modules.publishing.release_gate import release_package_gate_evidence
+from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.review_issue import assert_no_blocking_review_issues
+from novel_forge.schemas import PublishingLog, PublishingPlan, ReleasePackage, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 PUBLISHING_TYPES = {"publish_gate_report", "release_package", "publishing_plan", "publishing_log"}
@@ -52,20 +55,163 @@ def create_release_package(
     environment: str = "",
     source_policy: dict[str, Any] | None = None,
 ) -> Path:
-    """Publishing-domain facade for release package construction."""
-    from novel_forge.modules.audit import create_release_package as _create_release_package
+    from novel_forge.modules.audit.service import (
+        _asset_id,
+        _asset_text,
+        _assert_publish_envelope_before_side_effect,
+        _cover_asset_requirements,
+        _dedupe,
+        _gate_has_mkaos_blocker,
+        _publish_source_policy,
+        _publishing_metadata_optimization,
+        _read_asset_dict,
+        _related_review_issue_asset_ids,
+        _release_platform_rules,
+        _release_tags,
+        _summary,
+        _title_candidates,
+    )
 
-    return _create_release_package(
+    path = resolve_path(storage.root, draft_path)
+    target = storage.read_asset(path)
+    context = build_production_context(storage, target, input_path=path, workspace_path=workspace_path)
+    project = context["project"]
+    runtime_request = normalize_runtime_request_policy(
+        envelope_payload=envelope,
+        environment=environment,
+        source_policy=_publish_source_policy(source_policy),
+        operation="publishing.release_package",
+    )
+    environment = str(runtime_request["environment"])
+    envelope = runtime_request["envelope"] if runtime_request.get("envelope") else None
+    resolved_source_policy = _publish_source_policy(runtime_request["source_policy"])
+    _assert_publish_envelope_before_side_effect(
         storage,
-        draft_path,
+        envelope=envelope,
+        environment=environment,
+        project_id=str(project.get("project_id", "")),
+        asset_type="release_package",
+        source_policy=resolved_source_policy,
+        operation="publishing.release_package",
+    )
+    gate_path = resolve_path(storage.root, publish_gate_path) if publish_gate_path else create_publish_gate_report(
+        storage,
+        path,
         workspace_path=workspace_path,
-        publish_gate_path=publish_gate_path,
-        channel=channel,
         human_override=human_override,
         envelope=envelope,
         environment=environment,
-        source_policy=source_policy,
+        source_policy=resolved_source_policy,
     )
+    gate = _read_asset_dict(storage, gate_path)
+    decision = gate.get("content", {}).get("decision", "blocked") if isinstance(gate.get("content", {}), dict) else "blocked"
+    if decision == "blocked" and _gate_has_mkaos_blocker(gate):
+        raise ValueError("release_package blocked by MKAOS high/critical risk")
+    gate_content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
+    release_gate_evidence = release_package_gate_evidence(gate, production=is_production_environment(environment))
+    if is_production_environment(environment) and release_gate_evidence["blocking"]:
+        dimensions = ", ".join(str(issue.get("dimension", "")) for issue in release_gate_evidence["blocking_issues"])
+        raise ValueError(f"release_package blocked by gate evidence: {dimensions}")
+    if is_production_environment(environment) and decision != "ready":
+        raise ValueError(f"release_package blocked by publish gate decision: {decision}")
+    status = "ready" if decision == "ready" else "blocked"
+    gate_envelope = gate.get("metadata", {}).get("os_envelope", {}) if isinstance(gate.get("metadata", {}), dict) and isinstance(gate.get("metadata", {}).get("os_envelope", {}), dict) else {}
+    os_envelope = enforce_os_envelope(
+        storage,
+        envelope_payload=envelope or gate_envelope,
+        operation="publishing.release_package",
+        project_id=str(project.get("project_id", "")),
+        task_type="publish",
+        asset_type="release_package",
+        actor_type="publishing_service",
+        source="publishing.create_release_package",
+        context_bundle_id=str(gate_content.get("context_bundle_id", "")),
+        source_policy=resolved_source_policy,
+        environment=environment or str(gate_envelope.get("environment", "")),
+        bypass_reason="release package local compatibility path",
+        require_for_production=True,
+    )
+    assert_no_blocking_review_issues(
+        storage,
+        target_asset_id=target.id,
+        project_id=str(project.get("project_id", "")) or None,
+        related_asset_ids=_related_review_issue_asset_ids(target.to_dict()),
+        gate="release_package",
+    )
+    text = _asset_text(target)
+    release_version = make_id("release_version", f"{target.id}:{channel}:{utc_now()}")
+    asset = ReleasePackage(
+        title=f"Release package for {target.title}",
+        source=target.id,
+        tags=["release-package", str(channel or "local")],
+        content={
+            "release_version": release_version,
+            "version_key": f"{target.id}:{release_version}",
+            "target_asset_id": target.id,
+            "publish_gate_report_id": _asset_id(gate),
+            "title_candidates": _title_candidates(target.title, context),
+            "summary": _summary(text),
+            "tags": _release_tags(context, target),
+            "metadata_optimization": _publishing_metadata_optimization(target.title, text, context),
+            "cover_asset": _cover_asset_requirements(context, channel or "local"),
+            "platform_review_feedback": {
+                "status": "not_submitted",
+                "feedback_source": "manual_or_webhook_adapter",
+                "feedback_items": [],
+                "回流说明": "平台审核反馈进入 publishing_log 后，再回流到审稿规则、章节计划和发布策略。",
+            },
+            "channel": channel or "local",
+            "status": status,
+            "draft_path": _display_path(storage.root, path),
+            "publish_gate_report_path": _display_path(storage.root, Path(gate_path)),
+            "platform_rules": _release_platform_rules(context, channel or "local"),
+            "known_risks": gate_content.get("blocking_issues", []),
+            "review_report": gate_content.get("required_reports", {}),
+            "context_bundle_id": gate_content.get("context_bundle_id", ""),
+            "context_bundle_path": gate_content.get("context_bundle_path", ""),
+            "mkaos_risk": gate_content.get("mkaos_risk", {}),
+            "evaluation_gate": gate_content.get("evaluation_gate", {}),
+            "provider_runtime_gate": gate_content.get("provider_runtime_gate", {}),
+            "platform_strategy_gate": gate_content.get("platform_strategy_gate", {}),
+            "release_gate_evidence": release_gate_evidence,
+            "source_isolation": {
+                "source_chunk_raw_text_allowed": False,
+                "runtime_assets_in_generation_rag_allowed": False,
+                "raw_source_text_allowed": False,
+                "release_package_raw_text_included": False,
+            },
+            "rollback_snapshot": {
+                "draft_path": _display_path(storage.root, path),
+                "publish_gate_report_path": _display_path(storage.root, Path(gate_path)),
+                "created_at": utc_now(),
+            },
+            "os_envelope_id": os_envelope.get("envelope_id", ""),
+            "created_at": utc_now(),
+        },
+        metadata={
+            "workflow": "release-package",
+            "project_id": project.get("project_id", ""),
+            "workspace_path": project.get("workspace_path", ""),
+            "created_at": utc_now(),
+            "risk_level": "low" if status == "ready" else "high",
+            **envelope_asset_metadata(os_envelope),
+        },
+        references=filter_project_safe_references(storage, str(project.get("project_id", "")), _dedupe([target.id, _asset_id(gate)])),
+    )
+    with AgentExecutionContext(
+        storage,
+        agent_key="publishing",
+        operation="create-release-package",
+        input_assets=[path, gate_path],
+        output_types=["release_package"],
+        workspace_path=str(project.get("workspace_path", "")),
+        sla_seconds=300,
+    ) as run:
+        run.guard("read_asset")
+        run.guard("write_release_package", "release_package")
+        output = storage.write_asset("publishing", asset)
+        run.succeed(output_assets=[_display_path(storage.root, output)])
+        return output
 
 
 def list_publishing_assets(storage: LocalStorage, *, project_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:

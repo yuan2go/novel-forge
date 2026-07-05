@@ -16,7 +16,7 @@
 | 超长 service | `modules/mkaos/service.py` 7334 行，已抽出 `mkaos.asset_index` 和 `mkaos.risk_policy` | 单文件仍承担 ingestion/quality/lineage/asset 操作，回归风险高 | P1 |
 | 超长 API facade | `api/services/product.py` 5703 行，已抽出 `product_asset_index` 和 Postgres fallback policy | API use case 边界仍不清，路由和 domain 紧耦合 | P1 |
 | 超长 workflow service | `modules/workflow_nodes/service.py` 4723 行，已抽出 `workflow_nodes.query` 和 `publishing_ops` | node 执行、错误恢复、状态更新仍难局部测试 | P1 |
-| 超长 scheduler service | `modules/agent_scheduler/service.py` 已抽出 `agent_scheduler.publishing_runners` 与 `agent_scheduler.queue_lifecycle` | registry、retry/dead-letter runner 仍混合 | P1 |
+| 超长 scheduler service | `modules/agent_scheduler/service.py` 已抽出 `agent_scheduler.publishing_runners`、`agent_scheduler.queue_lifecycle`、`agent_scheduler.operation_registry`、`agent_scheduler.dead_letter_runner` | execution/rollback orchestration 仍混合 | P1 |
 | schema 集中 | `schemas/base.py` 1957 行 | required fields 和 validation 难以按域演进 | P1 |
 | 过渡层 | `api/routers/README.md` 标注 `_bindings.py` 和 product facade 为 transitional | 过渡结构可能固化 | P1 |
 | fallback 路径 | `api/app.py` Postgres list 失败后可退到本地 list | 严格环境下可能掩盖数据库问题 | P1 |
@@ -66,3 +66,6 @@
 - Agent Scheduler queue lifecycle 抽出到 `agent_scheduler.queue_lifecycle`，主 service 不再直接实现 dispatch id、queue path、resolve、lease expiry、claim、status update、row projection。
 - Release package gate evidence 判定迁入 `modules.publishing.release_gate`，audit release package 改为调用 publishing 侧策略。
 - Product qdrant preview、Workflow scheduler scan/prepared agent scan、resume/node lookup、asset refs 继续收窄 broad exception。
+- Agent Scheduler registry catalog 抽出到 `agent_scheduler.operation_registry`，主 service 只保留 execution/rollback orchestration。
+- Agent Scheduler retry/dead-letter 状态转换抽出到 `agent_scheduler.dead_letter_runner`。
+- Release package 主实现迁入 `modules.publishing.service`，audit 同名函数降级为兼容 wrapper；publish gate 主实现仍待迁移。
