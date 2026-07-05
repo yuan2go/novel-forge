@@ -1,14 +1,30 @@
 from __future__ import annotations
 
-import hashlib
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
 from novel_forge.core.exception_policy import require_recoverable_asset_scan_error
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.modules.agent_scheduler.queue_lifecycle import (
+    CLAIMABLE_STATUSES,
+    QUEUE_STATUSES,
+    claim_queue_item as _claim_queue_item,
+    dispatch_id_from_key as _dispatch_id_from_key,
+    parse_utc_datetime as _parse_utc_datetime,
+    queue_lease_expired as _queue_lease_expired,
+    queue_path as _queue_path,
+    queue_row as _queue_row,
+    resolve_queue as _resolve_queue,
+    update_queue_item as _update_queue_item,
+    utc_datetime_after as _utc_datetime_after,
+    utc_now_dt as _utc_now_dt,
+)
+from novel_forge.modules.agent_scheduler.publishing_runners import (
+    run_publish_gate_report as _run_publishing_gate_report,
+    run_release_package as _run_publishing_release_package,
+)
 from novel_forge.modules.agent_runs import (
     attach_agent_run_context_contract,
     create_agent_failure_report,
@@ -27,9 +43,6 @@ from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, release_
 from novel_forge.schemas import AgentDispatchQueue, AgentRollbackReport, AgentTask, BaseAsset, RevisionTask, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
-QUEUE_STATUSES = {"queued", "claimed", "running", "waiting_human", "acked", "retry_scheduled", "dead_letter", "cancelled"}
-CLAIMABLE_STATUSES = {"queued", "retry_scheduled", "claimed"}
-TERMINAL_QUEUE_STATUSES = {"acked", "dead_letter", "cancelled"}
 OperationRunner = Callable[[LocalStorage, dict[str, Any], dict[str, Any]], dict[str, Any]]
 
 CORE_MKAOS_CONTEXT_OPERATIONS = {
@@ -1223,31 +1236,6 @@ def _claimable_queue_candidates(storage: LocalStorage, *, project_id: str | None
     return candidates
 
 
-def _claim_queue_item(storage: LocalStorage, queue_path: str | Path, *, owner: str, ttl_seconds: int) -> dict[str, Any]:
-    path = _resolve_queue(storage, queue_path)
-    data = _read_json_safe(storage, path)
-    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-    status = str(content.get("status", ""))
-    if status in TERMINAL_QUEUE_STATUSES or status == "waiting_human":
-        return {"claimed": False, "reason": f"queue status is {status}", "queue": _queue_row(storage, path, data)}
-    if status == "claimed" and not _queue_lease_expired(content) and str(content.get("lease_owner", "")) != owner:
-        return {"claimed": False, "reason": "claimed_by_another_worker", "queue": _queue_row(storage, path, data)}
-    content.update(
-        {
-            "status": "claimed",
-            "attempt_count": int(content.get("attempt_count", 0) or 0) + 1,
-            "lease_owner": owner,
-            "lease_expires_at": _utc_datetime_after(ttl_seconds),
-            "claimed_at": utc_now(),
-        }
-    )
-    data["content"] = content
-    data["updated_at"] = utc_now()
-    data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], "claimed"])
-    _write_json_validated(storage, path, data)
-    return {"claimed": True, "queue": _queue_row(storage, path, data)}
-
-
 def _run_claimed_dispatch(storage: LocalStorage, queue_row: dict[str, Any], *, retry_delay_seconds: int) -> dict[str, Any]:
     queue_path = _resolve_queue(storage, str(queue_row.get("path", "")))
     queue_data = _read_json_safe(storage, queue_path)
@@ -1364,7 +1352,7 @@ def _fail_queue_item(storage: LocalStorage, queue_path: str | Path, *, reason: s
     if attempt_count >= max_attempts:
         try:
             update_agent_run_status(storage, str(content.get("agent_run_path", "")), status="dead_letter", error=reason, event_type="agent_dispatch.dead_letter", message=reason)
-        except Exception:
+        except (FileNotFoundError, ValueError):
             pass
         updates = {"dead_lettered_at": utc_now(), "last_error": reason}
         if result is not None:
@@ -1378,91 +1366,12 @@ def _fail_queue_item(storage: LocalStorage, queue_path: str | Path, *, reason: s
             error_message=reason,
             recovery_instruction="Agent scheduler will retry after the queue backoff, or recover the dispatch manually from the Agent Scheduler console.",
         )
-    except Exception:
+    except (FileNotFoundError, ValueError):
         pass
     updates = {"available_at": _utc_datetime_after(max(0, retry_delay_seconds)), "last_error": reason}
     if result is not None:
         updates["result"] = result
     return _update_queue_item(storage, path, status="retry_scheduled", updates=updates)
-
-
-def _update_queue_item(storage: LocalStorage, queue_path: str | Path, *, status: str, updates: dict[str, Any]) -> dict[str, Any]:
-    if status not in QUEUE_STATUSES:
-        raise ValueError(f"agent_dispatch_queue status is invalid: {status}")
-    path = _resolve_queue(storage, queue_path)
-    data = _read_json_safe(storage, path)
-    if not isinstance(data, dict) or data.get("type") != "agent_dispatch_queue":
-        raise ValueError(f"agent_dispatch_queue JSON must be an object: {path}")
-    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-    content.update(updates)
-    content["status"] = status
-    content["lease_owner"] = "" if status in {"acked", "retry_scheduled", "dead_letter", "waiting_human", "cancelled"} else content.get("lease_owner", "")
-    content["lease_expires_at"] = "" if status in {"acked", "retry_scheduled", "dead_letter", "waiting_human", "cancelled"} else content.get("lease_expires_at", "")
-    data["content"] = content
-    data["updated_at"] = utc_now()
-    data["tags"] = _dedupe([*[str(tag) for tag in data.get("tags", [])], status])
-    _write_json_validated(storage, path, data)
-    return _queue_row(storage, path, data)
-
-
-def _queue_row(storage: LocalStorage, path: Path, data: dict[str, Any]) -> dict[str, Any]:
-    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
-    return {
-        "path": _display_path(storage.root, path),
-        "id": data.get("id", ""),
-        "dispatch_id": content.get("dispatch_id", ""),
-        "idempotency_key": content.get("idempotency_key", ""),
-        "status": content.get("status", ""),
-        "agent_run_id": content.get("agent_run_id", ""),
-        "agent_run_path": content.get("agent_run_path", ""),
-        "agent_contract_path": content.get("agent_contract_path", ""),
-        "workflow_run_id": content.get("workflow_run_id", ""),
-        "workflow_run_path": content.get("workflow_run_path", ""),
-        "workflow_node_id": content.get("workflow_node_id", ""),
-        "operation": content.get("operation", ""),
-        "agent_key": content.get("agent_key", ""),
-        "priority": content.get("priority", 100),
-        "attempt_count": content.get("attempt_count", 0),
-        "max_attempts": content.get("max_attempts", 3),
-        "available_at": content.get("available_at", ""),
-        "lease_owner": content.get("lease_owner", ""),
-        "lease_expires_at": content.get("lease_expires_at", ""),
-        "claimed_at": content.get("claimed_at", ""),
-        "acked_at": content.get("acked_at", ""),
-        "dead_lettered_at": content.get("dead_lettered_at", ""),
-        "last_error": content.get("last_error", ""),
-        "checkpoint_path": content.get("checkpoint_path", ""),
-        "expected_output_assets": content.get("expected_output_assets", []),
-        "project_id": metadata.get("project_id", ""),
-        "workspace_path": metadata.get("workspace_path", ""),
-        "created_at": data.get("created_at", ""),
-        "updated_at": data.get("updated_at", ""),
-    }
-
-
-def _queue_path(storage: LocalStorage, dispatch_id: str) -> Path:
-    safe = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "-" for ch in dispatch_id or "agent_dispatch")
-    return storage.data_dir("runs") / f"{safe}.json"
-
-
-def _dispatch_id_from_key(idempotency_key: str) -> str:
-    digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()[:16]
-    return f"agent-dispatch-{digest}"
-
-
-def _resolve_queue(storage: LocalStorage, value: str | Path) -> Path:
-    path = resolve_path(storage.root, value)
-    if path.exists():
-        return path
-    for candidate in storage.list_json("runs"):
-        data = _read_json_safe(storage, candidate)
-        if not isinstance(data, dict) or data.get("type") != "agent_dispatch_queue":
-            continue
-        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-        if str(content.get("dispatch_id", "")) == str(value) or str(data.get("id", "")) == str(value):
-            return candidate
-    raise FileNotFoundError(f"agent_dispatch_queue not found: {value}")
 
 
 def _resolve_agent_run(storage: LocalStorage, value: str | Path) -> Path:
@@ -2386,36 +2295,13 @@ def _run_chapter_audit_report(storage: LocalStorage, queue_item: dict[str, Any],
 
 
 def _run_publish_gate_report(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
-    from novel_forge.modules.publishing import create_publish_gate_report
-
     evidence = _evidence(agent_run)
-    return {
-        "path": create_publish_gate_report(
-            storage,
-            _required_input_path(agent_run),
-            workspace_path=_workspace_path(agent_run) or None,
-            chapter_audit_path=evidence.get("chapter_audit_path") or None,
-            human_override=bool(evidence.get("human_override", False)),
-            environment=str(evidence.get("environment") or ""),
-            envelope=_envelope_from_evidence(evidence),
-        )
-    }
+    return _run_publishing_gate_report(storage, input_path=_required_input_path(agent_run), workspace_path=_workspace_path(agent_run) or None, evidence=evidence, envelope=_envelope_from_evidence(evidence))
 
 
 def _run_release_package(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
-    from novel_forge.modules.publishing import create_release_package
-
     evidence = _evidence(agent_run)
-    return {
-        "path": create_release_package(
-            storage,
-            _required_input_path(agent_run),
-            workspace_path=_workspace_path(agent_run) or None,
-            publish_gate_path=evidence.get("publish_gate_path") or None,
-            channel=str(evidence.get("channel", "local")),
-            human_override=bool(evidence.get("human_override", False)),
-        )
-    }
+    return _run_publishing_release_package(storage, input_path=_required_input_path(agent_run), workspace_path=_workspace_path(agent_run) or None, evidence=evidence, envelope=_envelope_from_evidence(evidence))
 
 
 def _run_outline_version(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
@@ -3718,30 +3604,6 @@ def _tool_name_for_output(output_types: list[str]) -> str:
     if not output_types:
         return "run_validation"
     return f"write_{output_types[0]}"
-
-
-def _queue_lease_expired(content_or_row: dict[str, Any]) -> bool:
-    expires_at = str(content_or_row.get("lease_expires_at", "") or "")
-    if not expires_at:
-        return True
-    return _parse_utc_datetime(expires_at) <= _utc_now_dt()
-
-
-def _utc_datetime_after(seconds: int) -> str:
-    return (_utc_now_dt() + timedelta(seconds=max(0, int(seconds or 0)))).isoformat().replace("+00:00", "Z")
-
-
-def _parse_utc_datetime(value: str) -> datetime:
-    if not value:
-        return datetime.fromtimestamp(0, tz=timezone.utc)
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
-    except ValueError:
-        return datetime.fromtimestamp(0, tz=timezone.utc)
-
-
-def _utc_now_dt() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 def _trace_payload(value: Any) -> dict[str, str]:

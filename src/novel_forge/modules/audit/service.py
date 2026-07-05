@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from novel_forge.core.asset_scan import read_json_for_scan
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.exception_policy import recoverable_asset_scan_error, require_recoverable_asset_scan_error
 from novel_forge.core.ids import make_id, utc_now
@@ -14,6 +15,7 @@ from novel_forge.modules.context_builder import build_flow_context_bundle, knowl
 from novel_forge.modules.longform_stability import create_revision_task_from_gate, evaluate_longform_stability_gate
 from novel_forge.modules.mkaos import list_risk_knowledge
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment, normalize_runtime_request_policy
+from novel_forge.modules.publishing.release_gate import release_package_gate_evidence
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
 from novel_forge.modules.review_issue import assert_no_blocking_review_issues, blocking_review_issues, review_issues_to_gate_issues
 from novel_forge.modules.runtime_policy import provider_hard_stop_evidence_report
@@ -428,7 +430,7 @@ def create_release_package(
     if decision == "blocked" and _gate_has_mkaos_blocker(gate):
         raise ValueError("release_package blocked by MKAOS high/critical risk")
     gate_content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
-    release_gate_evidence = _release_package_gate_evidence(gate, production=is_production_environment(environment))
+    release_gate_evidence = release_package_gate_evidence(gate, production=is_production_environment(environment))
     if is_production_environment(environment) and release_gate_evidence["blocking"]:
         dimensions = ", ".join(str(issue.get("dimension", "")) for issue in release_gate_evidence["blocking_issues"])
         raise ValueError(f"release_package blocked by gate evidence: {dimensions}")
@@ -546,51 +548,6 @@ def _release_platform_rules(context: dict[str, Any], channel: str) -> dict[str, 
         "title_candidate_count": 3,
         "min_hook_score": config.get("publish_min_hook_score", 0.7),
         "max_risk_level": config.get("publish_max_risk_level", "medium"),
-    }
-
-
-def _release_package_gate_evidence(gate: dict[str, Any], *, production: bool) -> dict[str, Any]:
-    content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
-    checks: list[dict[str, Any]] = []
-    issues: list[dict[str, Any]] = []
-    gate_specs = [
-        ("evaluation_gate", "path", "passed"),
-        ("provider_runtime_gate", "", "passed"),
-        ("platform_strategy_gate", "platform_strategy_pack_path", "passed"),
-    ]
-    for dimension, path_field, expected_status in gate_specs:
-        payload = content.get(dimension, {}) if isinstance(content.get(dimension, {}), dict) else {}
-        status = str(payload.get("status") or "missing")
-        path_value = str(payload.get(path_field) or "") if path_field else ""
-        blocking = bool(payload.get("blocking")) or status != expected_status
-        missing_path = bool(production and path_field and not path_value)
-        checks.append(
-            {
-                "dimension": dimension,
-                "status": status,
-                "expected_status": expected_status,
-                "path_field": path_field,
-                "path": path_value,
-                "blocking": bool(blocking or missing_path),
-            }
-        )
-        if production and (blocking or missing_path):
-            issues.append(
-                {
-                    "dimension": dimension,
-                    "severity": "critical" if dimension == "provider_runtime_gate" else "high",
-                    "message": f"production release requires {dimension} status {expected_status} with durable evidence",
-                    "current_status": status,
-                    "path": path_value,
-                    "recommendation": f"rerun or repair {dimension} before creating the release package",
-                }
-            )
-    return {
-        "publish_gate_report_id": _asset_id(gate),
-        "publish_gate_decision": content.get("decision", "blocked"),
-        "checks": checks,
-        "blocking": bool(issues),
-        "blocking_issues": issues,
     }
 
 
@@ -1348,17 +1305,13 @@ def _asset_by_reference(storage: LocalStorage, reference: str) -> dict[str, Any]
         return None
     candidate = resolve_path(storage.root, reference)
     if candidate.exists() and candidate.is_file():
-        try:
-            data = storage.read_json(candidate)
-        except Exception:
-            data = None
+        data = read_json_for_scan(storage, candidate, context="audit asset reference direct lookup")
         if isinstance(data, dict):
             return data
     for category in DATA_DIRS:
         for path in reversed(storage.list_json(category)):
-            try:
-                data = storage.read_json(path)
-            except Exception:
+            data = read_json_for_scan(storage, path, context="audit asset reference scan")
+            if not data:
                 continue
             if not isinstance(data, dict):
                 continue

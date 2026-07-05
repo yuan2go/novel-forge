@@ -2,6 +2,7 @@
 
 审计日期：2026-07-05  
 基线 commit：`8733acf`
+本轮继续治理基线 commit：`2f1f0bc`
 分支：`backup/v6-post-mkaos-industrialization-20260705`  
 
 ## Scan
@@ -38,6 +39,14 @@
 | P1-PUBLISH-GATE-003 | P1 | release package 只依赖 publish gate decision | release package 自身校验 EvaluationGate、ProviderRuntimeGate、PlatformStrategyGate 的状态与证据路径，production 缺失即阻断 | `src/novel_forge/modules/audit/service.py`、`tests/unit/test_publish_feedback_loop.py` | 即使 publish gate decision 被改成 ready，缺 gate evidence 仍阻断 |
 | P1-RUNTIME-NAMING-001 | P1 | runtime 仍暴露 V5 命名 | API/CLI/包版本/模块占位文案统一为 v6/Novel OS | `pyproject.toml`、`src/novel_forge/api/app.py`、`src/novel_forge/__init__.py`、`src/novel_forge/modules/*/__init__.py` | `rg "5.0.0|Novel Forge V5|V5 workflows" src tests pyproject.toml` 无命中 |
 | P1-EXCEPTION-POLICY-001 | P1 | broad exception 会静默掩盖扫描/存储故障 | 新增 `core.exception_policy` 并接入 storage reference scan、publishing scan、audit scan、agent scheduler scan helper | `src/novel_forge/core/exception_policy.py`、`src/novel_forge/storage/local.py`、`src/novel_forge/modules/publishing/service.py`、`src/novel_forge/modules/audit/service.py`、`src/novel_forge/modules/agent_scheduler/service.py` | exception policy 单测通过，非 recoverable 错误不再被吞 |
+| P1-SERVICE-SEAMS-002 | P1 | `mkaos/service.py`、`product.py`、`workflow_nodes/service.py` 仍承担大量只读扫描/query/index 职责，且扫描类 broad exception 仍会吞掉权限/系统错误 | 新增统一资产扫描 seam、MKAOS asset index、Product asset index、Workflow query 模块；Product/Workflow/MKAOS 扫描类异常改为 recoverable-only policy，Postgres read fallback 接入显式环境策略 | `src/novel_forge/core/asset_scan.py`、`src/novel_forge/modules/mkaos/asset_index.py`、`src/novel_forge/api/services/product_asset_index.py`、`src/novel_forge/modules/workflow_nodes/query.py`、三处 service、`tests/unit/test_asset_scan_seams.py` | characterization tests 通过；MKAOS 目标 service `except Exception` 清零；Product/Workflow 扫描类异常不再吞 Permission/OSError |
+| P0-RELEASE-PACKAGE-004 | P0 | release package 缺完整 production-ready 正向样本 | 新增 schema-backed ready publish gate fixture，覆盖 production envelope、passed EvaluationGate、passed ProviderRuntimeGate、PlatformStrategyPack、clean MKAOS risk、ReviewIssue clear，最终 release package `status=ready` | `tests/unit/publishing_fixtures.py`、`tests/unit/test_publish_feedback_loop.py` | 正向 release package fixture 通过 |
+| P0-SCHEDULER-RELEASE-001 | P0 | Agent Scheduler release runner 没有把 environment/envelope/source_policy 传入 publishing facade | `_run_release_package` 传入 production runtime policy；新增 scheduler 测试断言 release package 使用 evidence 中的 `asset_type=release_package` envelope 和 source policy marker | `src/novel_forge/modules/agent_scheduler/service.py`、`tests/unit/test_agent_registry_scheduler_integration.py` | scheduler release package production policy 测试通过 |
+| P1-SERVICE-SEAMS-003 | P1 | `agent_scheduler/service.py` runner 逻辑继续集中在主 service | 新增 `agent_scheduler.publishing_runners`，先抽 publish gate/release package runner seam | `src/novel_forge/modules/agent_scheduler/publishing_runners.py`、`src/novel_forge/modules/agent_scheduler/service.py` | scheduler/publish focused tests 通过 |
+| P1-EXCEPTION-POLICY-002 | P1 | audit asset reference lookup 仍有扫描类 broad exception | `_asset_by_reference` 接入 `core.asset_scan.read_json_for_scan`，非 recoverable 错误 fail-closed | `src/novel_forge/modules/audit/service.py` | publish/audit focused tests 通过 |
+| P1-SCHEDULER-SEAMS-004 | P1 | `agent_scheduler/service.py` 仍直接承担 queue claim/lease/status projection | 新增 `agent_scheduler.queue_lifecycle`，迁出 dispatch id、queue path、resolve、lease expiry、claim、status update、row projection；`_fail_queue_item` 保留 orchestration 但收窄 dead-letter/failure-report 副作用异常 | `src/novel_forge/modules/agent_scheduler/queue_lifecycle.py`、`src/novel_forge/modules/agent_scheduler/service.py` | scheduler focused tests 通过 |
+| P1-PUBLISH-FACADE-004 | P1 | release package gate evidence 判定仍沉在 audit implementation | 新增 `publishing.release_gate.release_package_gate_evidence` 并由 audit release package 调用，发布阻断证据策略开始迁入 publishing module | `src/novel_forge/modules/publishing/release_gate.py`、`src/novel_forge/modules/publishing/__init__.py`、`src/novel_forge/modules/audit/service.py` | publish feedback tests 通过 |
+| P1-EXCEPTION-POLICY-003 | P1 | Product/Workflow 展示和调度扫描路径仍有可收窄 broad exception | qdrant preview 只降级缺失/无效资产；workflow scheduler candidates/prepared agent scan 接入 `read_json_for_scan`；resume/node lookup 和 asset refs 改为 FileNotFound/ValueError-only | `src/novel_forge/api/services/product.py`、`src/novel_forge/modules/workflow_nodes/service.py` | workflow/product focused tests 通过 |
 
 ## Test Log
 
@@ -54,11 +63,19 @@
 | `PYTHONPATH=src python3 -m unittest tests.unit.test_large_service_seams tests.unit.test_agent_registry_scheduler_integration tests.unit.test_agent_operation_mkaos_coverage tests.unit.test_evaluation_center_general tests.unit.test_publish_feedback_loop` | 通过 | 24 个本轮新增/受影响测试通过 |
 | `PYTHONPATH=src python3 -m unittest tests.unit.test_publishing_center tests.unit.test_review_issue tests.unit.test_mkaos_isolation tests.unit.test_mkaos_agent_context_contract tests.unit.test_longform_stability tests.unit.test_workflow_executor tests.unit.test_agent_scheduler tests.unit.test_loop_kernel` | 通过 | 60 个 publishing/workflow/agent/MKAOS 相关回归通过 |
 | `PYTHONPATH=src python3 -m unittest tests.integration.test_novel_os_12_chapter_industrial_pressure` | 通过 | 12 章 Novel OS 压力切片通过 |
-| `make test` | 通过 | Python 490 tests OK，2 skipped；Web admin node tests 10 passed，1 optional Playwright smoke skipped |
+| `make test` | 通过 | Python 496 tests OK，2 skipped；Web admin node tests 10 passed，1 optional Playwright smoke skipped |
 | `git diff --check` | 通过 | 无 whitespace error |
 | `PYTHONPATH=src python3 -m compileall -q src tests` | 通过 | 全源码和测试语法检查通过 |
 | `PYTHONPATH=src python3 -m unittest tests.unit.test_publish_feedback_loop tests.unit.test_provider_hard_stop_proof tests.unit.test_runtime_policy` | 通过 | 19 个 publish/provider/runtime policy 测试通过 |
 | `PYTHONPATH=src python3 -m unittest tests.unit.test_agent_registry_scheduler_integration tests.unit.test_agent_operation_mkaos_coverage tests.unit.test_exception_policy tests.unit.test_cli` | 通过 | 21 个 Agent operation、MKAOS coverage、exception policy、CLI 测试通过 |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_asset_scan_seams tests.unit.test_large_service_seams` | 通过 | 7 个 service seam/asset scan characterization tests 通过 |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_asset_scan_seams tests.unit.test_large_service_seams tests.unit.test_product_api` | 通过 | 45 个 Product/API/seam 回归通过 |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_workflow_executor tests.unit.test_agent_workflow_and_impact tests.unit.test_agent_scheduler` | 通过 | 38 个 workflow/scheduler 回归通过 |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_mkaos_professional_book_import tests.unit.test_mkaos_canon_semantic_graph tests.unit.test_mkaos_quality_score tests.unit.test_mkaos_longitudinal_learning` | 通过 | 7 个受影响 MKAOS 回归通过 |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_publish_feedback_loop.PublishFeedbackLoopTests.test_release_package_production_ready_fixture_creates_ready_package tests.unit.test_agent_registry_scheduler_integration.AgentRegistrySchedulerIntegrationTests.test_scheduler_release_package_preserves_production_runtime_policy` | 通过 | P0 release positive fixture 与 scheduler production policy 测试通过 |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_publish_feedback_loop tests.unit.test_agent_registry_scheduler_integration tests.unit.test_asset_scan_seams tests.unit.test_large_service_seams` | 通过 | 24 个 publishing/scheduler/seam 回归通过 |
+| `python3 -m py_compile src/novel_forge/modules/agent_scheduler/service.py src/novel_forge/modules/agent_scheduler/queue_lifecycle.py src/novel_forge/modules/audit/service.py src/novel_forge/modules/publishing/release_gate.py src/novel_forge/modules/publishing/__init__.py src/novel_forge/modules/workflow_nodes/service.py src/novel_forge/api/services/product.py` | 通过 | 本轮新增/修改模块语法检查通过 |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_agent_scheduler tests.unit.test_agent_registry_scheduler_integration tests.unit.test_publish_feedback_loop tests.unit.test_workflow_executor tests.unit.test_product_api tests.unit.test_large_service_seams tests.unit.test_asset_scan_seams` | 通过 | 99 个 scheduler/publishing/workflow/product/seam focused regression 通过 |
 
 ## Correction During Validation
 
@@ -67,7 +84,7 @@
 ## Next
 
 1. 继续迁移非 publish gate 的 audit 调用边界，保留 audit 为 implementation detail。
-2. 在已有 seam tests 保护下继续拆 MKAOS/product/workflow/scheduler 大 service。
+2. 在已有 seam tests 保护下继续拆 MKAOS/product/workflow/scheduler 大 service；下一批优先 agent scheduler registry/dead-letter runner、Product task control/search storage、Workflow gate/rollback helpers。
 3. 将 Postgres fallback policy 暴露到 health/system diagnostics。
-4. 分批治理 `workflow_nodes/service.py`、`product.py`、`mkaos/service.py` 内剩余 broad exception，优先生产状态机和写入路径。
-5. 给 release package 增加正向 production-ready fixture，覆盖 EvaluationGate/ProviderGate/PlatformGate 全部通过后的 package 内容。
+4. 分批治理 `workflow_nodes/service.py`、`product.py` 内剩余 broad exception；`mkaos/service.py` 本轮已清零目标文件内 `except Exception`。
+5. 将 release package 正向 production-ready fixture 扩展到 end-to-end publish gate generator，而不只使用 ready publish gate fixture。

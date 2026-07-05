@@ -2,6 +2,7 @@
 
 审计日期：2026-07-05  
 基线 commit：`8733acf`
+本轮继续治理基线 commit：`2f1f0bc`
 范围：本轮自主 Skill 发现、阅读、采用和风险判断。  
 
 | 阶段 | 使用 Skill | 来源 | 使用原因 | 读取的 Skill 文件 | 是否安装新 Skill | 风险判断 | 实际产出 |
@@ -24,6 +25,12 @@
 | 第三轮 Agent operation | `agent-loop-governance` | 项目 `skills/` | Platform Compliance / Training 需要从 runtime profile 升级到可调度 operation | `skills/agent-loop-governance/SKILL.md` | 否 | 低；只读 | 新增 `create-platform-strategy-pack`、`generate-training-exercise` Agent operation 和 scheduler 测试 |
 | 第三轮 Provider/Eval | `provider-runtime-policy` | 项目 `skills/` | Provider gate 需要同时证明 hard-stop 失败路径和成功调用路径 | `skills/provider-runtime-policy/SKILL.md` | 否 | 低；只读 | provider evidence status 要求成功 guard/model_call，补 production publish success fixture |
 | 第三轮 Publish | `publish-release-gate-os` | 项目 `skills/` | Release package 不能只依赖 publish gate decision，需自校验证据路径和状态 | `skills/publish-release-gate-os/SKILL.md` | 否 | 低；只读 | Release package 自检 EvaluationGate、ProviderRuntimeGate、PlatformStrategyGate |
+| 第四轮大 service 拆分 | `codebase-design` | 全局 `/Users/yuan/.agents/skills` | 选择先抽公共只读 seam，而不是直接改私有实现细节 | `/Users/yuan/.agents/skills/codebase-design/SKILL.md`、`/Users/yuan/.agents/skills/codebase-design/DEEPENING.md` | 否 | 低；只读 | 新增 `asset_scan`、`mkaos.asset_index`、`product_asset_index`、`workflow_nodes.query` |
+| 第四轮测试保护 | `tdd` | 全局 `/Users/yuan/.agents/skills` | 先写 characterization tests，再拆 service 和治理 broad exception | `/Users/yuan/.agents/skills/tdd/SKILL.md`、`/Users/yuan/.agents/skills/tdd/tests.md` | 否 | 低；只读 | 新增 `tests/unit/test_asset_scan_seams.py` 并跑 focused regression |
+| 第五轮 Release/Scheduler | `tdd` | 全局 `/Users/yuan/.agents/skills` | 先补 release package 正向 fixture 和 scheduler runner 红测，再修实现 | `/Users/yuan/.agents/skills/tdd/SKILL.md`、`/Users/yuan/.agents/skills/tdd/tests.md` | 否 | 低；只读 | 新增 production-ready release fixture、scheduler production policy test |
+| 第五轮 Runner seam | `codebase-design` | 全局 `/Users/yuan/.agents/skills` | 按 deep module seam 拆出 scheduler publishing runner，不扩大 registry 接口 | `/Users/yuan/.agents/skills/codebase-design/SKILL.md`、`/Users/yuan/.agents/skills/codebase-design/DEEPENING.md` | 否 | 低；只读 | 新增 `agent_scheduler.publishing_runners`，audit reference lookup 接入 `core.asset_scan` |
+| 第六轮 Scheduler/Publishing seam | `codebase-design` | 全局 `/Users/yuan/.agents/skills` | 继续按 deep module 思路拆 queue lifecycle，并把 release gate evidence 迁入 publishing 边界 | `/Users/yuan/.agents/skills/codebase-design/SKILL.md`、`/Users/yuan/.agents/skills/codebase-design/DEEPENING.md` | 否 | 低；只读 | 新增 `agent_scheduler.queue_lifecycle`、`publishing.release_gate` |
+| 第六轮 回归保护 | `tdd` | 全局 `/Users/yuan/.agents/skills` | 使用既有 characterization/focused regression 验证拆分不改变 scheduler/publishing/workflow/product 行为 | `/Users/yuan/.agents/skills/tdd/SKILL.md`、`/Users/yuan/.agents/skills/tdd/tests.md` | 否 | 低；只读 | 99 个 scheduler/publishing/workflow/product/seam focused tests 通过 |
 
 ## 未安装新 Skill
 

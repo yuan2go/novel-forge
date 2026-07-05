@@ -8,8 +8,14 @@ import re
 from pathlib import Path
 from typing import Any
 
+from novel_forge.core.asset_scan import read_json_for_scan
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.mkaos.asset_index import (
+    asset_row as _asset_row,
+    find_asset as _find_asset,
+    list_assets as _list_assets,
+)
 from novel_forge.modules.mkaos.risk_policy import (
     normalize_risk_level as _normalize_risk_level,
     risk_reasons as _risk_reasons,
@@ -6038,12 +6044,11 @@ def _artifact_text(storage: LocalStorage, payload: dict[str, Any]) -> str:
         return str(payload.get("artifact_text") or payload.get("text") or "")
     path = payload.get("artifact_path") or payload.get("path")
     if path:
-        try:
-            data = storage.read_json(resolve_path(storage.root, path))
-            content = data.get("content", {}) if isinstance(data, dict) and isinstance(data.get("content", {}), dict) else {}
-            return str(content.get("text") or content.get("summary") or content)
-        except Exception:
+        data = read_json_for_scan(storage, resolve_path(storage.root, path), context="mkaos artifact text scan")
+        if not data:
             return ""
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        return str(content.get("text") or content.get("summary") or content)
     return ""
 
 
@@ -6103,79 +6108,12 @@ def _low_effect_event_count(storage: LocalStorage, knowledge_id: str, flow: str)
     return len(low)
 
 
-def _find_asset(storage: LocalStorage, ref: str | Path, *, asset_type: str | None = None, categories: list[str] | None = None) -> tuple[Path, dict[str, Any]]:
-    value = str(ref)
-    if not value:
-        raise FileNotFoundError("empty asset reference")
-    if "/" in value or value.endswith(".json"):
-        path = resolve_path(storage.root, value)
-        data = storage.read_json(path)
-        if isinstance(data, dict) and (not asset_type or data.get("type") == asset_type):
-            return path, data
-    for category in categories or ["raw", "knowledge", "quality_standards", "templates", "contexts", "runs", "continuity"]:
-        for path in reversed(storage.list_json(category)):
-            try:
-                data = storage.read_json(path)
-            except Exception:
-                continue
-            if not isinstance(data, dict):
-                continue
-            if asset_type and data.get("type") != asset_type:
-                continue
-            if value in {str(data.get("id", "")), str(path.relative_to(storage.root))}:
-                return path, data
-    raise FileNotFoundError(f"asset not found: {ref}")
-
-
 def _find_existing_source_chunk(storage: LocalStorage, source_id: str, content_hash: str) -> dict[str, Any] | None:
     for row in _list_assets(storage, "raw", "source_chunk", limit=2000):
         content = row.get("content", {})
         if str(content.get("source_document_id", "")) == source_id and str(content.get("content_hash", "")) == content_hash:
             return row
     return None
-
-
-def _list_assets(storage: LocalStorage, category: str, asset_type: str, *, project_id: str | None = None, mkaos_only: bool | None = None, limit: int = 100) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for path in reversed(storage.list_json(category)):
-        if len(rows) >= limit:
-            break
-        try:
-            data = storage.read_json(path)
-        except Exception:
-            continue
-        if not isinstance(data, dict) or data.get("type") != asset_type:
-            continue
-        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
-        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-        record_project = str(metadata.get("project_id") or content.get("project_id") or "")
-        if project_id and record_project and record_project != project_id:
-            continue
-        if mkaos_only is True and not (metadata.get("mkaos") or content.get("mkaos_source")):
-            continue
-        rows.append(_asset_row(storage, path, data))
-    return rows
-
-
-def _asset_row(storage: LocalStorage, path: Path, data: dict[str, Any]) -> dict[str, Any]:
-    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
-    return {
-        "path": _display_path(storage.root, path),
-        "id": data.get("id", ""),
-        "type": data.get("type", ""),
-        "title": data.get("title") or data.get("name", ""),
-        "source": data.get("source", ""),
-        "tags": data.get("tags", []),
-        "project_id": metadata.get("project_id") or content.get("project_id") or "",
-        "workspace_path": metadata.get("workspace_path") or content.get("workspace_path") or "",
-        "status": content.get("status") or metadata.get("asset_status") or "",
-        "risk_level": content.get("risk_level") or metadata.get("risk_level") or "",
-        "content": content,
-        "metadata": metadata,
-        "updated_at": data.get("updated_at", ""),
-        "asset": data,
-    }
 
 
 def _ensure_valid(data: dict[str, Any]) -> None:
@@ -6214,7 +6152,7 @@ def _strings(value: Any) -> list[str]:
 def _float(value: Any, fallback: float) -> float:
     try:
         return float(value)
-    except Exception:
+    except (TypeError, ValueError):
         return fallback
 
 
@@ -6544,7 +6482,7 @@ def _abstraction_benchmark_recommendations(candidate_reports: list[dict[str, Any
 def _canon_semantic_graph_conflict_result(storage: LocalStorage, payload: dict[str, Any], check_input: dict[str, Any]) -> dict[str, Any]:
     try:
         from novel_forge.modules.canon_graph import check_canon_graph_conflicts
-    except Exception as exc:
+    except ModuleNotFoundError as exc:
         return {"status": "unavailable", "conflicts": [], "issue_candidates": [], "references": [], "error": str(exc)}
     graph_payload = {
         **payload,
@@ -6700,7 +6638,7 @@ def _read_professional_book_file(path: Path, source_format: str) -> tuple[str, l
     if source_format == "pdf":
         try:
             from pypdf import PdfReader  # type: ignore
-        except Exception:
+        except ModuleNotFoundError:
             return "", ["PDF parser unavailable; install optional dependency pypdf to parse PDF files"], "pypdf"
         reader = PdfReader(str(path))
         pages = [(page.extract_text() or "") for page in reader.pages]
@@ -6708,14 +6646,14 @@ def _read_professional_book_file(path: Path, source_format: str) -> tuple[str, l
     if source_format == "docx":
         try:
             import docx  # type: ignore
-        except Exception:
+        except ModuleNotFoundError:
             return "", ["DOCX parser unavailable; install optional dependency python-docx to parse DOCX files"], "python-docx"
         document = docx.Document(str(path))
         return "\n\n".join(paragraph.text for paragraph in document.paragraphs if paragraph.text.strip()), warnings, ""
     if source_format == "epub":
         try:
             from ebooklib import epub  # type: ignore
-        except Exception:
+        except ModuleNotFoundError:
             return "", ["EPUB parser unavailable; install optional dependency ebooklib to parse EPUB files"], "ebooklib"
         book = epub.read_epub(str(path))
         parts: list[str] = []

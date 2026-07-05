@@ -10,6 +10,7 @@ from novel_forge.modules.agent_runs import list_agent_runs, start_agent_run
 from novel_forge.modules.agent_scheduler import dispatch_agent_run, list_agent_dispatch_queue, run_agent_scheduler_tick
 from novel_forge.schemas import DraftChapter, TopicSeed
 from novel_forge.storage.local import LocalStorage
+from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
 
 
 class AgentRegistrySchedulerIntegrationTests(unittest.TestCase):
@@ -129,6 +130,49 @@ class AgentRegistrySchedulerIntegrationTests(unittest.TestCase):
             self.assertEqual(queue["status"], "acked")
             self.assertEqual(runs[0]["agent_type"], "Training Agent")
             self.assertTrue(any(storage.read_json(storage.root / path)["type"] == "training_exercise" for path in output_assets))
+
+    def test_scheduler_release_package_preserves_production_runtime_policy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            sync_runtime_profiles(storage)
+            fixture = create_production_ready_release_inputs(storage, title="Scheduler Release Ready")
+            source_policy = {**fixture["source_policy"], "scheduler_policy_marker": "release-runner"}
+            run = start_agent_run(
+                storage,
+                agent_key="publishing",
+                operation="create-release-package",
+                input_assets=[fixture["draft_path"]],
+                status="prepared",
+                evidence={
+                    "project_id": fixture["project_id"],
+                    "workspace_path": fixture["workspace_path"],
+                    "publish_gate_path": str(fixture["publish_gate_path"].relative_to(storage.root)),
+                    "environment": "production",
+                    "os_envelope": production_envelope(
+                        fixture["project_id"],
+                        "release_package",
+                        trace_id=f"trace-scheduler-release-{fixture['project_id']}",
+                        source_policy=source_policy,
+                    ),
+                    "source_policy": source_policy,
+                },
+            )
+            dispatch_agent_run(storage, agent_run_path=run["path"])
+
+            tick = run_agent_scheduler_tick(storage)
+            queue = list_agent_dispatch_queue(storage)[0]
+            queue_asset = storage.read_json(storage.root / queue["path"])
+            output_assets = queue_asset["content"]["result"]["output_assets"]
+            package = storage.read_json(storage.root / output_assets[0])
+
+            self.assertEqual(tick["status"], "completed")
+            self.assertEqual(queue["status"], "acked")
+            self.assertEqual(package["type"], "release_package")
+            self.assertEqual(package["content"]["status"], "ready")
+            self.assertEqual(package["metadata"]["os_envelope"]["environment"], "production")
+            self.assertEqual(package["metadata"]["os_envelope"]["asset_type"], "release_package")
+            self.assertEqual(package["metadata"]["source_policy"]["scheduler_policy_marker"], "release-runner")
 
 
 def _longform_recap_fixture(storage: LocalStorage) -> Path:

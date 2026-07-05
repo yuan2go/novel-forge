@@ -13,6 +13,7 @@ from email.parser import BytesParser
 from pathlib import Path
 from typing import Any
 
+from novel_forge.core.asset_scan import read_json_for_scan
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.evaluation.quality import QUALITY_DIMENSIONS
@@ -29,6 +30,12 @@ from novel_forge.modules.source_intake import (
 )
 from novel_forge.agents import enforce_agent_action
 from novel_forge.api.health import assemble_project_health_report
+from novel_forge.api.services.product_asset_index import (
+    asset_path_by_id as _asset_path_by_id,
+    asset_records as _asset_records,
+    find_asset_binding as _find_asset_binding,
+)
+from novel_forge.api.services.postgres_fallback_policy import postgres_asset_read_fallback_policy
 from novel_forge.schemas import AssetCollection, BatchTaskItem, DraftChapter, ProjectWorkspaceState, validate_common_fields
 from novel_forge.storage.object_store import MinioObjectStore, object_name_for_path
 from novel_forge.storage.local import LocalStorage
@@ -118,8 +125,8 @@ def indexed_list_projects(settings: Any, storage: LocalStorage, include_deleted:
                     continue
                 rows.append({**_project_summary(storage, storage.root / row["workspace_path"], data), "index_source": "postgres"})
             return rows
-        except Exception:
-            if getattr(settings, "postgres_write_strict", False):
+        except Exception as exc:
+            if not postgres_asset_read_fallback_policy(settings, exc)["allow_local_fallback"]:
                 raise
     return [{**row, "index_source": "json"} for row in list_projects(storage, include_deleted=include_deleted)]
 
@@ -251,30 +258,6 @@ def _create_or_use_project_binding(
     )
     attach_assets_to_project(storage, [created["path"]], workspace_path, role=f"project-binding:{asset_type}")
     return {id_key: str(created["asset"]["id"]), path_key: str(created["path"])}
-
-
-def _find_asset_binding(storage: LocalStorage, asset_type: str, value: str) -> dict[str, str] | None:
-    if not value:
-        return None
-    candidate = resolve_path(storage.root, value)
-    paths = [candidate] if candidate.exists() and candidate.is_file() else []
-    for category in DATA_DIRS:
-        paths.extend(storage.list_json(category))
-    seen: set[Path] = set()
-    for path in paths:
-        if path in seen:
-            continue
-        seen.add(path)
-        try:
-            data = storage.read_json(path)
-        except Exception:
-            continue
-        if not isinstance(data, dict) or data.get("type") != asset_type:
-            continue
-        display_path = _display_path(storage.root, path)
-        if value in {display_path, str(path), str(data.get("id", ""))}:
-            return {"id": str(data.get("id", "")), "path": display_path}
-    return None
 
 
 def transition_project_status(
@@ -486,8 +469,8 @@ def indexed_project_assets(
                 if len(rows) >= limit:
                     return rows
             return rows
-        except Exception:
-            if getattr(settings, "postgres_write_strict", False):
+        except Exception as exc:
+            if not postgres_asset_read_fallback_policy(settings, exc)["allow_local_fallback"]:
                 raise
     return project_assets(storage, project_id_or_path, category=category, asset_type=asset_type, keyword=keyword, limit=limit)
 
@@ -670,7 +653,7 @@ def _record_project_scope(storage: LocalStorage, record: dict[str, Any]) -> tupl
     if not workspace_path and metadata.get("workspace_id"):
         try:
             workspace_path = _project_identity(storage, str(metadata.get("workspace_id")))["workspace_path"]
-        except Exception:
+        except (FileNotFoundError, ValueError):
             workspace_path = ""
     return project_id, workspace_path
 
@@ -995,8 +978,8 @@ def indexed_task_center(
                 "index_source": "postgres",
                 "page": {"offset": offset, "limit": limit, "total": total_tasks},
             }
-        except Exception:
-            if getattr(settings, "postgres_write_strict", False):
+        except Exception as exc:
+            if not postgres_asset_read_fallback_policy(settings, exc)["allow_local_fallback"]:
                 raise
     return task_center(
         storage,
@@ -1152,7 +1135,7 @@ def _record_queue_pressure(root: str | Path, celery: dict[str, Any], max_points:
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
-    except Exception:
+    except (OSError, json.JSONDecodeError):
         data = []
     if not isinstance(data, list):
         data = []
@@ -2712,9 +2695,8 @@ def _source_overlap_check(storage: LocalStorage, handoff: dict[str, Any], handof
     source_path = str(source_asset.get("path") or "")
     if not source_path:
         return {"name": "source_overlap", "ok": True, "message": "no source path recorded"}
-    try:
-        source = storage.read_json(resolve_path(storage.root, source_path))
-    except Exception:
+    source = read_json_for_scan(storage, resolve_path(storage.root, source_path), context="product source overlap scan")
+    if not source:
         return {"name": "source_overlap", "ok": True, "message": "source unavailable for overlap check"}
     if not isinstance(source, dict):
         return {"name": "source_overlap", "ok": True, "message": "source unavailable for overlap check"}
@@ -2772,9 +2754,8 @@ def _dedupe_bound_outputs(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _source_compliance_gate(storage: LocalStorage, input_path: str, operation: str) -> None:
-    try:
-        data = storage.read_json(resolve_path(storage.root, input_path))
-    except Exception:
+    data = read_json_for_scan(storage, resolve_path(storage.root, input_path), context="product source compliance scan")
+    if not data:
         return
     if not isinstance(data, dict):
         return
@@ -2807,9 +2788,8 @@ def _source_rights_for_asset(storage: LocalStorage, data: dict[str, Any]) -> dic
             continue
         for category in DATA_DIRS:
             for path in storage.list_json(category):
-                try:
-                    candidate = storage.read_json(path)
-                except Exception:
+                candidate = read_json_for_scan(storage, path, context="product source rights scan")
+                if not candidate:
                     continue
                 if not isinstance(candidate, dict):
                     continue
@@ -3325,8 +3305,10 @@ def _mark_handoff_status(
     try:
         path = resolve_path(storage.root, handoff_path).resolve()
         path.relative_to(storage.root)
-        data = storage.read_json(path)
-    except Exception:
+    except (OSError, ValueError):
+        return
+    data = read_json_for_scan(storage, path, context="product handoff status scan")
+    if not data:
         return
     if not isinstance(data, dict) or data.get("type") != "claude_code_handoff":
         return
@@ -4591,9 +4573,8 @@ def _add_workspace_references(storage: LocalStorage, project: dict[str, Any], as
         return
     references = [str(item) for item in data.get("references", []) if str(item).strip()]
     for asset_path in asset_paths:
-        try:
-            asset_data = storage.read_json(resolve_path(storage.root, asset_path))
-        except Exception:
+        asset_data = read_json_for_scan(storage, resolve_path(storage.root, asset_path), context="product workspace reference scan")
+        if not asset_data:
             continue
         if isinstance(asset_data, dict):
             asset_id = str(asset_data.get("id", ""))
@@ -4607,9 +4588,8 @@ def _add_workspace_references(storage: LocalStorage, project: dict[str, Any], as
 def _workspace_ref_from_asset(storage: LocalStorage, asset_path: str | None) -> str | None:
     if not asset_path:
         return None
-    try:
-        data = storage.read_json(resolve_path(storage.root, asset_path))
-    except Exception:
+    data = read_json_for_scan(storage, resolve_path(storage.root, asset_path), context="product workspace ref scan")
+    if not data:
         return None
     if not isinstance(data, dict):
         return None
@@ -4675,9 +4655,8 @@ def _backup_version_rows(storage: LocalStorage, path: Path) -> list[dict[str, An
         return []
     rows = []
     for backup_path in sorted(backup_parent.glob(f"{path.stem}.*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
-        try:
-            data = storage.read_json(backup_path)
-        except Exception:
+        data = read_json_for_scan(storage, backup_path, context="product backup version scan")
+        if not data:
             continue
         if isinstance(data, dict):
             rows.append(_asset_version_row(storage, backup_path, data, "backup"))
@@ -4688,30 +4667,6 @@ def _json_unified_diff(before: Any, after: Any, from_path: str, to_path: str) ->
     before_lines = json.dumps(before, ensure_ascii=False, indent=2, sort_keys=True).splitlines()
     after_lines = json.dumps(after, ensure_ascii=False, indent=2, sort_keys=True).splitlines()
     return "\n".join(difflib.unified_diff(before_lines, after_lines, fromfile=from_path, tofile=to_path, lineterm=""))
-
-
-def _asset_records(storage: LocalStorage) -> list[dict[str, Any]]:
-    records = []
-    for category in DATA_DIRS:
-        for path in storage.list_json(category):
-            try:
-                data = storage.read_json(path)
-            except Exception:
-                continue
-            if not isinstance(data, dict):
-                continue
-            records.append(
-                {
-                    "id": str(data.get("id", "")),
-                    "path": _display_path(storage.root, path),
-                    "absolute_path": path,
-                    "category": category,
-                    "type": data.get("type", ""),
-                    "title": data.get("title") or data.get("name", ""),
-                    "data": data,
-                }
-            )
-    return records
 
 
 def _graph_node(record: dict[str, Any]) -> dict[str, Any]:
@@ -4839,9 +4794,8 @@ def _reference_assets(storage: LocalStorage, data: dict[str, Any]) -> list[dict[
     matches = []
     for category in ["raw", "cleaned", "decompositions", "knowledge", "materials", "topics", "worlds", "characters", "outlines", "chapter_plans", "drafts", "reviews", "feedback", "workspaces", "runs"]:
         for path in storage.list_json(category):
-            try:
-                candidate = storage.read_json(path)
-            except Exception:
+            candidate = read_json_for_scan(storage, path, context="product reference asset scan")
+            if not candidate:
                 continue
             if not isinstance(candidate, dict):
                 continue
@@ -4996,7 +4950,7 @@ def qdrant_search_operation(
             detail = asset_detail(storage, path_value)
             title = title or str(detail["summary"].get("title", ""))
             preview = _asset_preview_text(detail["asset"])[:260]
-        except Exception:
+        except (FileNotFoundError, ValueError, KeyError):
             preview = ""
         results.append(
             {
@@ -5115,9 +5069,8 @@ def archive_task_events(root: str | Path, before: str | None = None, keep_latest
     storage.ensure_layout()
     rows: list[dict[str, Any]] = []
     for path in storage.list_json("runs"):
-        try:
-            data = storage.read_json(path)
-        except Exception:
+        data = read_json_for_scan(storage, path, context="product task archive scan")
+        if not data:
             continue
         if not isinstance(data, dict) or data.get("type") != "task_status":
             continue
@@ -5440,13 +5393,13 @@ def _read_task_control(root: str | Path) -> dict[str, int]:
         return dict(DEFAULT_TASK_CONTROL)
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
+    except (OSError, json.JSONDecodeError):
         return dict(DEFAULT_TASK_CONTROL)
     config = dict(DEFAULT_TASK_CONTROL)
     for key in config:
         try:
             value = int(data.get(key, config[key]))
-        except Exception:
+        except (AttributeError, TypeError, ValueError):
             value = config[key]
         config[key] = max(1, value)
     return config
@@ -5582,9 +5535,8 @@ def _try_minio_upload(settings: Any, root: Path, path: Path, upload_id: str) -> 
 def _next_draft_version_index(storage: LocalStorage, root_draft_id: str) -> int:
     highest = 0
     for path in storage.list_json("drafts"):
-        try:
-            data = storage.read_json(path)
-        except Exception:
+        data = read_json_for_scan(storage, path, context="product draft version scan")
+        if not data:
             continue
         if not isinstance(data, dict) or data.get("type") != "draft_chapter":
             continue
@@ -5592,7 +5544,7 @@ def _next_draft_version_index(storage: LocalStorage, root_draft_id: str) -> int:
         if data.get("id") == root_draft_id or metadata.get("root_draft_id") == root_draft_id:
             try:
                 highest = max(highest, int(metadata.get("version_index", 0)))
-            except Exception:
+            except (TypeError, ValueError):
                 pass
     return highest + 1
 
@@ -5725,17 +5677,6 @@ def _asset_by_id(storage: LocalStorage, category: str, asset_id: str) -> dict[st
     return data if isinstance(data, dict) else None
 
 
-def _asset_path_by_id(storage: LocalStorage, category: str, asset_id: str) -> Path | None:
-    if not asset_id:
-        return None
-    for path in storage.list_json(category):
-        try:
-            data = storage.read_json(path)
-        except Exception:
-            continue
-        if isinstance(data, dict) and data.get("id") == asset_id:
-            return path
-    return None
 
 
 def _dedupe_list(values: list[str]) -> list[str]:

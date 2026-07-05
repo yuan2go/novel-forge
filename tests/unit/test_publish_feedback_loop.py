@@ -14,6 +14,7 @@ from novel_forge.modules.platform_strategy import build_platform_strategy_pack
 from novel_forge.modules.runtime_ledger import record_gate_result, record_model_call_log
 from novel_forge.schemas import DraftChapter, ProjectWorkspaceState, ReaderFeedback, SourceChunk
 from novel_forge.storage.local import LocalStorage
+from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
 
 
 class PublishFeedbackLoopTests(unittest.TestCase):
@@ -161,6 +162,41 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             self.assertEqual(gate.content["provider_runtime_gate"]["status"], "passed")
             self.assertFalse(gate.content["provider_runtime_gate"]["blocking"])
             self.assertTrue(gate.content["gates"]["provider_runtime_gate_passed"])
+
+    def test_release_package_production_ready_fixture_creates_ready_package(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = create_production_ready_release_inputs(storage)
+            gate = storage.read_asset(fixture["publish_gate_path"])
+
+            self.assertEqual(gate.content["decision"], "ready", gate.content["blocking_issues"])
+            self.assertEqual(gate.content["evaluation_gate"]["status"], "passed")
+            self.assertEqual(gate.content["provider_runtime_gate"]["status"], "passed")
+            self.assertEqual(gate.content["platform_strategy_gate"]["status"], "passed")
+            self.assertFalse(gate.content["mkaos_risk"]["blocking"])
+            self.assertTrue(gate.content["gates"]["review_issue_blocking_clear"])
+
+            package_path = create_release_package(
+                storage,
+                fixture["draft_path"],
+                workspace_path=fixture["workspace_path"],
+                publish_gate_path=fixture["publish_gate_path"],
+                envelope=production_envelope(fixture["project_id"], "release_package", trace_id=f"trace-release-ready-{fixture['project_id']}"),
+                environment="production",
+                source_policy=fixture["source_policy"],
+            )
+            package = storage.read_asset(package_path)
+            evidence = package.content["release_gate_evidence"]
+
+            self.assertEqual(package.content["status"], "ready")
+            self.assertFalse(evidence["blocking"], evidence["blocking_issues"])
+            self.assertTrue(all(not check["blocking"] for check in evidence["checks"]))
+            self.assertEqual(package.content["evaluation_gate"]["status"], "passed")
+            self.assertEqual(package.content["provider_runtime_gate"]["status"], "passed")
+            self.assertEqual(package.content["platform_strategy_gate"]["status"], "passed")
+            self.assertEqual(package.metadata["os_envelope"]["environment"], "production")
+            self.assertEqual(package.metadata["os_envelope"]["asset_type"], "release_package")
 
     def test_release_package_blocks_mkaos_risk_and_excludes_raw_text(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from novel_forge.core.asset_scan import read_json_for_scan
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_scheduler import ensure_agent_dispatch_queue
 from novel_forge.modules.agent_runs import ensure_agent_contract, execute_agent_run_once, record_agent_checkpoint, start_agent_run, update_agent_run_status
@@ -19,6 +20,11 @@ from novel_forge.modules.runtime_ledger import (
     record_gate_result,
     record_trace_span,
     release_scheduler_lease,
+)
+from novel_forge.modules.workflow_nodes.query import (
+    list_node_runs as _query_list_node_runs,
+    list_workflow_definitions as _query_list_workflow_definitions,
+    list_workflow_runs as _query_list_workflow_runs,
 )
 from novel_forge.schemas import BaseAsset, NodeRun, WorkflowDefinition, WorkflowNode, WorkflowRun, validate_common_fields
 from novel_forge.storage.local import LocalStorage
@@ -363,112 +369,15 @@ def record_node_run(
 
 
 def list_node_runs(storage: LocalStorage, *, project_id: str | None = None, run_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for path in reversed(storage.list_json("runs")):
-        try:
-            data = storage.read_json(path)
-        except Exception:
-            continue
-        if not isinstance(data, dict) or data.get("type") != "node_run":
-            continue
-        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
-        if project_id and str(metadata.get("project_id", "")) != project_id:
-            continue
-        if run_id and str(content.get("run_id", "")) != run_id:
-            continue
-        rows.append(
-            {
-                "path": _display_path(storage.root, path),
-                "id": data.get("id", ""),
-                "run_id": content.get("run_id", ""),
-                "node_id": content.get("node_id", ""),
-                "node_type": content.get("node_type", ""),
-                "operation": content.get("operation", ""),
-                "status": content.get("status", ""),
-                "input_count": len(content.get("input_assets", []) if isinstance(content.get("input_assets", []), list) else []),
-                "output_count": len(content.get("output_assets", []) if isinstance(content.get("output_assets", []), list) else []),
-                "project_id": metadata.get("project_id", ""),
-                "workspace_path": metadata.get("workspace_path", ""),
-                "started_at": content.get("started_at", ""),
-                "finished_at": content.get("finished_at", ""),
-                "error": content.get("error", ""),
-            }
-        )
-        if len(rows) >= limit:
-            break
-    return rows
+    return _query_list_node_runs(storage, project_id=project_id, run_id=run_id, limit=limit)
 
 
 def list_workflow_definitions(storage: LocalStorage, *, limit: int = 100) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for path in reversed(storage.list_json("runs")):
-        try:
-            data = storage.read_json(path)
-        except Exception:
-            continue
-        if not isinstance(data, dict) or data.get("type") != "workflow_definition":
-            continue
-        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-        rows.append(
-            {
-                "path": _display_path(storage.root, path),
-                "id": data.get("id", ""),
-                "workflow_id": content.get("workflow_id", ""),
-                "name": content.get("name", data.get("title", "")),
-                "version": content.get("version", ""),
-                "entry_node_id": content.get("entry_node_id", ""),
-                "status": content.get("status", ""),
-                "node_count": len(content.get("nodes", []) if isinstance(content.get("nodes", []), list) else []),
-                "updated_at": data.get("updated_at", ""),
-            }
-        )
-        if len(rows) >= limit:
-            break
-    return rows
+    return _query_list_workflow_definitions(storage, limit=limit)
 
 
 def list_workflow_runs(storage: LocalStorage, *, project_id: str | None = None, status: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for path in reversed(storage.list_json("runs")):
-        try:
-            data = storage.read_json(path)
-        except Exception:
-            continue
-        if not isinstance(data, dict) or data.get("type") != "workflow_run":
-            continue
-        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
-        if project_id and str(metadata.get("project_id", "")) != project_id:
-            continue
-        if status and str(content.get("status", "")) != status:
-            continue
-        blocked = content.get("blocked", {}) if isinstance(content.get("blocked", {}), dict) else {}
-        trace = content.get("trace", {}) if isinstance(content.get("trace", {}), dict) else {}
-        rows.append(
-            {
-                "path": _display_path(storage.root, path),
-                "id": data.get("id", ""),
-                "run_id": content.get("run_id", ""),
-                "workflow_id": content.get("workflow_id", ""),
-                "status": content.get("status", ""),
-                "blocked_node_id": blocked.get("node_id", ""),
-                "blocked_status": blocked.get("status", ""),
-                "blocked_reason": blocked.get("reason", ""),
-                "node_run_count": len(content.get("node_runs", []) if isinstance(content.get("node_runs", []), list) else []),
-                "agent_run_count": len(content.get("agent_runs", []) if isinstance(content.get("agent_runs", []), list) else []),
-                "output_count": len(content.get("outputs", []) if isinstance(content.get("outputs", []), list) else []),
-                "trace_id": trace.get("trace_id", content.get("run_id", "")),
-                "project_id": metadata.get("project_id", ""),
-                "workspace_path": metadata.get("workspace_path", ""),
-                "started_at": content.get("started_at", ""),
-                "finished_at": content.get("finished_at", ""),
-                "updated_at": data.get("updated_at", ""),
-            }
-        )
-        if len(rows) >= limit:
-            break
-    return rows
+    return _query_list_workflow_runs(storage, project_id=project_id, status=status, limit=limit)
 
 
 def workflow_state_machine() -> dict[str, Any]:
@@ -1744,9 +1653,8 @@ def _resolve_workflow_run(storage: LocalStorage, value: str | Path) -> tuple[Pat
         raise ValueError(f"workflow_run JSON expected: {candidate}")
     lookup = str(value)
     for path in storage.list_json("runs"):
-        try:
-            data = storage.read_json(path)
-        except Exception:
+        data = read_json_for_scan(storage, path, context="workflow run resolve")
+        if not data:
             continue
         if not isinstance(data, dict) or data.get("type") != "workflow_run":
             continue
@@ -1765,9 +1673,8 @@ def _resolve_workflow_definition(storage: LocalStorage, value: str | Path) -> tu
         raise ValueError(f"workflow_definition JSON expected: {candidate}")
     lookup = str(value)
     for path in storage.list_json("runs"):
-        try:
-            data = storage.read_json(path)
-        except Exception:
+        data = read_json_for_scan(storage, path, context="workflow definition resolve")
+        if not data:
             continue
         if not isinstance(data, dict) or data.get("type") != "workflow_definition":
             continue
@@ -1790,9 +1697,8 @@ def _workflow_nodes(storage: LocalStorage, workflow: dict[str, Any]) -> list[dic
             continue
         rows[node_id] = _attach_workflow_runtime_policy(_normalize_node(item, workflow_id=workflow_id), workflow_policy)
     for path in storage.list_json("runs"):
-        try:
-            data = storage.read_json(path)
-        except Exception:
+        data = read_json_for_scan(storage, path, context="workflow node resolve")
+        if not data:
             continue
         if not isinstance(data, dict) or data.get("type") != "workflow_node":
             continue
@@ -1989,7 +1895,7 @@ def _next_resume_node_from_run(storage: LocalStorage, workflow_run: dict[str, An
         nodes = _workflow_nodes(storage, workflow)
         node_map = {str(node.get("node_id", "")): node for node in nodes if str(node.get("node_id", "")).strip()}
         order = _topological_order(node_map, str((workflow.get("content", {}) if isinstance(workflow.get("content", {}), dict) else {}).get("entry_node_id", "")))
-    except Exception:
+    except (FileNotFoundError, ValueError):
         return ""
     for node_id in order:
         if _last_status_for_node(run_log, node_id) not in WORKFLOW_SUCCESS_NODE_STATUSES:
@@ -2335,23 +2241,24 @@ def _first_context_bundle_path(storage: LocalStorage, asset_paths: list[str], pr
         if _asset_type(storage, item) == "context_bundle":
             return _display_path(storage.root, resolve_path(storage.root, item))
         if _asset_type(storage, item) == "revision_task":
-            try:
-                data = storage.read_json(resolve_path(storage.root, item))
-                content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-                task_outputs = content.get("outputs", {}) if isinstance(content.get("outputs", {}), dict) else {}
-                value = str(task_outputs.get("context_bundle_path") or "").strip()
-                if value and _asset_type(storage, value) == "context_bundle":
-                    return _display_path(storage.root, resolve_path(storage.root, value))
-            except Exception:
+            data = read_json_for_scan(storage, resolve_path(storage.root, item), context="workflow context bundle scan")
+            if not data:
                 continue
+            content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            task_outputs = content.get("outputs", {}) if isinstance(content.get("outputs", {}), dict) else {}
+            value = str(task_outputs.get("context_bundle_path") or "").strip()
+            if value and _asset_type(storage, value) == "context_bundle":
+                return _display_path(storage.root, resolve_path(storage.root, value))
     return ""
 
 
 def _asset_type(storage: LocalStorage, path: str | Path) -> str:
-    try:
-        return storage.read_asset(resolve_path(storage.root, path)).type
-    except Exception:
+    if not str(path).strip():
         return ""
+    data = read_json_for_scan(storage, resolve_path(storage.root, path), context="workflow asset type lookup")
+    if not data:
+        return ""
+    return str(data.get("type", ""))
 
 
 def _post_gate_failure(
@@ -2536,7 +2443,7 @@ def _evaluate_runtime_guard(
                 message=result["message"],
                 blocking=True,
             )
-        except Exception:
+        except (FileNotFoundError, ValueError):
             pass
     return result
 
@@ -3371,9 +3278,8 @@ def _checkpoint_node_run_hit(storage: LocalStorage, checkpoint_state: dict[str, 
     if not idempotency_key:
         return {}
     for path in reversed(storage.list_json("runs")):
-        try:
-            data = storage.read_json(path)
-        except Exception:
+        data = read_json_for_scan(storage, path, context="workflow checkpoint node run scan")
+        if not data:
             continue
         if not isinstance(data, dict) or data.get("type") != "node_run":
             continue
@@ -3401,19 +3307,19 @@ def _missing_required_input_types(storage: LocalStorage, node: dict[str, Any], i
         return []
     actual: set[str] = set()
     for item in input_assets:
-        try:
-            actual.add(storage.read_asset(resolve_path(storage.root, item)).type)
-        except Exception:
+        data = read_json_for_scan(storage, resolve_path(storage.root, item), context="workflow required input type scan")
+        asset_type = str(data.get("type", "")).strip()
+        if not asset_type:
             continue
+        actual.add(asset_type)
     return [asset_type for asset_type in required if asset_type not in actual]
 
 
 def _stale_inputs(storage: LocalStorage, input_assets: list[str]) -> list[str]:
     stale: list[str] = []
     for item in input_assets:
-        try:
-            data = storage.read_json(resolve_path(storage.root, item))
-        except Exception:
+        data = read_json_for_scan(storage, resolve_path(storage.root, item), context="workflow stale input scan")
+        if not data:
             continue
         metadata = data.get("metadata", {}) if isinstance(data, dict) and isinstance(data.get("metadata", {}), dict) else {}
         if metadata.get("asset_status") == "stale":
@@ -3630,10 +3536,9 @@ def _report_gate(
 
 
 def _read_report_asset(storage: LocalStorage, item: str | Path) -> dict[str, Any]:
-    try:
-        path = resolve_path(storage.root, item)
-        data = storage.read_json(path)
-    except Exception:
+    path = resolve_path(storage.root, item)
+    data = read_json_for_scan(storage, path, context="workflow report asset read")
+    if not data:
         return {}
     if not isinstance(data, dict):
         return {}
@@ -3724,7 +3629,7 @@ def _workflow_recovery_instruction(status: str, blocked: dict[str, Any], errors:
 def _path_exists(storage: LocalStorage, value: str | Path) -> bool:
     try:
         return resolve_path(storage.root, value).exists()
-    except Exception:
+    except (OSError, ValueError):
         return False
 
 
@@ -3809,10 +3714,7 @@ def _scheduler_candidates(storage: LocalStorage, *, project_id: str | None, limi
     for path in reversed(storage.list_json("runs")):
         if len(candidates) >= limit:
             break
-        try:
-            data = storage.read_json(path)
-        except Exception:
-            continue
+        data = read_json_for_scan(storage, path, context=f"workflow scheduler candidate scan: {path}")
         if not isinstance(data, dict) or data.get("type") != "workflow_run":
             continue
         content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
@@ -3850,10 +3752,7 @@ def _scheduler_candidates(storage: LocalStorage, *, project_id: str | None, limi
         agent_run_path = _agent_run_path_for_node(run_log, node_id)
         if not agent_run_path:
             continue
-        try:
-            agent_run = storage.read_json(resolve_path(storage.root, agent_run_path))
-        except Exception:
-            continue
+        agent_run = read_json_for_scan(storage, resolve_path(storage.root, agent_run_path), context=f"workflow scheduler prepared agent scan: {agent_run_path}")
         if not isinstance(agent_run, dict) or agent_run.get("type") != "agent_run":
             continue
         agent_content = agent_run.get("content", {}) if isinstance(agent_run.get("content", {}), dict) else {}
@@ -4057,7 +3956,7 @@ def _workflow_node_for_run(storage: LocalStorage, workflow_run: dict[str, Any], 
     try:
         _, workflow = _resolve_workflow_definition(storage, workflow_ref)
         nodes = _workflow_nodes(storage, workflow)
-    except Exception:
+    except (FileNotFoundError, ValueError):
         return None
     for node in nodes:
         if str(node.get("node_id", "")) == node_id:
@@ -4075,10 +3974,8 @@ def _processor_number(node: dict[str, Any] | None, key: str) -> float:
 
 def _scheduler_output_assets(storage: LocalStorage, candidate: dict[str, Any]) -> list[str]:
     values = [str(item) for item in candidate.get("expected_output_assets", []) if str(item).strip()] if isinstance(candidate.get("expected_output_assets", []), list) else []
-    try:
-        agent_run = storage.read_json(resolve_path(storage.root, str(candidate.get("agent_run_path", ""))))
-    except Exception:
-        agent_run = {}
+    agent_run_path = str(candidate.get("agent_run_path", "")).strip()
+    agent_run = read_json_for_scan(storage, resolve_path(storage.root, agent_run_path), context="workflow scheduler output scan") if agent_run_path else {}
     content = agent_run.get("content", {}) if isinstance(agent_run, dict) and isinstance(agent_run.get("content", {}), dict) else {}
     for row in content.get("output_assets", []) if isinstance(content.get("output_assets", []), list) else []:
         if isinstance(row, dict):
@@ -4782,7 +4679,7 @@ def _asset_ref(storage: LocalStorage, value: str | Path) -> dict[str, str]:
         try:
             asset = storage.read_asset(path)
             return {"id": asset.id, "type": asset.type, "title": asset.title, "path": _display_path(storage.root, path)}
-        except Exception:
+        except (FileNotFoundError, ValueError):
             pass
     return {"id": str(value), "type": "", "title": "", "path": str(value)}
 
@@ -4794,7 +4691,7 @@ def _project_scope_from_refs(storage: LocalStorage, refs: list[dict[str, str]]) 
             continue
         try:
             asset = storage.read_asset(resolve_path(storage.root, path))
-        except Exception:
+        except (FileNotFoundError, ValueError):
             continue
         project = project_scope_from_asset(storage, asset, input_path=path)
         if project.get("project_id") or project.get("workspace_path"):
