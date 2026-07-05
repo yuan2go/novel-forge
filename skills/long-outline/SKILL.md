@@ -18,6 +18,7 @@ description: Use when creating or reviewing full-book outlines, volume plans, lo
 - 生成全书大纲、卷纲、前 30 章规划或长期连载节奏。
 - 审查大纲是否能支撑主线目标和持续追读。
 - 将题材、世界观和人物转化为可执行剧情路线。
+- 长线结构需要检查 reader grounding、beat 解锁顺序、伏笔/payoff 路径和信息递进时，配合 `narrative-beat-design`。
 
 ## 输入要求
 
@@ -30,10 +31,12 @@ description: Use when creating or reviewing full-book outlines, volume plans, lo
 1. 明确全书主线目标和不可回避的核心冲突。
 2. 划分阶段目标或卷目标，并定义每阶段的敌人升级和资源升级。
 3. 规划人物关系变化、信念变化和关键代价。
-4. 安排爽点分布、情绪曲线、阶段高潮和追读钩子。
-5. 建立伏笔设置、延迟兑现和回收计划。
-6. 检查每卷是否有明确奖励、代价、升级和更大压力。
-7. 输出全书大纲、卷纲和风险清单。
+4. 定义每阶段 reader prerequisites、已 grounded 规则、人物状态和读者承诺。
+5. 规划阶段 beat path：每个阶段必须说明它 requires 什么、grounds 什么、解锁哪些后续冲突或 payoff。
+6. 安排爽点分布、情绪曲线、阶段高潮和追读钩子。
+7. 建立伏笔设置、延迟兑现和回收计划，确保 payoff 前有足够 grounding。
+8. 检查每卷是否有明确奖励、代价、升级和更大压力。
+9. 输出全书大纲、卷纲和风险清单。
 
 ## 输出格式
 
@@ -47,6 +50,8 @@ description: Use when creating or reviewing full-book outlines, volume plans, lo
 ## 敌人升级
 ## 资源升级
 ## 人物关系变化
+## Reader Grounding
+## Beat Path
 ## 爽点分布
 ## 情绪曲线
 ## 伏笔与回收
@@ -59,6 +64,7 @@ description: Use when creating or reviewing full-book outlines, volume plans, lo
 
 - 每一卷必须有清晰目标、阻力、奖励、代价和结尾升级。
 - 主角成长必须对应更强冲突，而不是单纯堆能力。
+- 每个阶段关键 beat 必须说明它为后续章节 grounded 了哪些规则、关系、悬念或承诺。
 - 伏笔必须有设置位置、回收窗口和剧情功能。
 - 长线规划必须服务追读，不得变成设定年表。
 
@@ -73,4 +79,5 @@ description: Use when creating or reviewing full-book outlines, volume plans, lo
 
 - 上游：`character-design`、`worldbuilding`、`TopicSeed`。
 - 下游：`chapter-outline`、`prose-generation`、`quality-review`。
+- 关联 Skill：`narrative-beat-design`。
 - Agent：Chief Editor Agent、Draft Agent、Review Agent。

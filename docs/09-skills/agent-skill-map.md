@@ -37,27 +37,29 @@ skills/*/SKILL.md
 
 | Agent | Recommended Skills | Notes |
 |---|---|---|
-| Chief Editor Agent | `project-planning`, `quality-review`, `novel-os-engineering-audit`, `platform-strategy-os` | Converts product goals into executable plans, acceptance decisions, platform priorities, and evidence-backed risk calls. |
-| Workflow Agent | `agent-loop-governance`, `project-planning`, `review-issue-gate` | Coordinates workflow definitions, recovery, checkpoints, loop budgets, and acceptance evidence without bypassing runtime policy. |
+| Chief Editor Agent | `project-planning`, `quality-review`, `narrative-beat-design`, `novel-os-engineering-audit`, `platform-strategy-os`, `publish-release-gate-os` | Converts product goals into executable plans, acceptance decisions, narrative beat priorities, platform priorities, release readiness, and evidence-backed risk calls. |
+| Workflow Agent | `agent-loop-governance`, `project-planning`, `review-issue-gate`, `provider-runtime-policy` | Coordinates workflow definitions, recovery, checkpoints, provider budgets, loop budgets, and acceptance evidence without bypassing runtime policy. |
+| Engineering Agent | `project-planning`, `novel-os-engineering-audit`, `skill-governance` | Turns specs and audits into file-level, interface-level, testable implementation plans without letting Skill edits bypass governance. |
 | Knowledge Agent | `mkaos-knowledge-asset-os`, `multidisciplinary-knowledge`, `anti-copy-abstraction`, `analysis-to-asset-conversion` | Reference-derived analysis and professional knowledge must become evidence-backed, source-isolated MKAOS assets before downstream use. |
 | Material Agent | `material-curation`, `mkaos-knowledge-asset-os`, `analysis-to-asset-conversion`, `anti-copy-abstraction` | Converts raw and abstracted assets into reusable production material with lineage, rights, and quality status. |
-| Context Agent | `context-builder-source-isolation`, `mkaos-knowledge-asset-os`, `material-curation`, `quality-review` | Selects, ranks, compresses, and replays context bundles through Context Builder and Knowledge Pack contracts. |
+| Context Agent | `context-builder-source-isolation`, `mkaos-knowledge-asset-os`, `material-curation`, `quality-review`, `canon-continuity-graph` | Selects, ranks, compresses, and replays context bundles through Context Builder, Knowledge Pack, and canon continuity contracts. |
 | Topic Agent | `topic-development`, `platform-strategy-os`, `anti-copy-abstraction`, `material-curation` | Develops market-positioned and differentiated TopicSeed candidates with platform fit. |
-| Worldbuilding Agent | `worldbuilding`, `mkaos-knowledge-asset-os`, `context-builder-source-isolation` | Every setting must create conflict, limits, cost, or hooks and remain source-isolated. |
-| Character Agent | `character-design`, `context-builder-source-isolation` | Character actions must serve the main conflict and remain traceable to approved context. |
-| Outline Agent | `long-outline`, `platform-strategy-os`, `character-design`, `worldbuilding`, `context-builder-source-isolation` | Outline must integrate character pressure, world rules, reader payoff, platform strategy, and MKAOS context. |
-| Chapter Plan Agent | `chapter-outline`, `platform-strategy-os`, `quality-review`, `context-builder-source-isolation` | Every chapter plan must pass commercial unit, platform rhythm, and source isolation checks. |
-| Draft Agent | `prose-generation`, `chapter-outline`, `context-builder-source-isolation`, `review-issue-gate` | Drafting must follow approved chapter plan and ContextBundle, then produce reviewable draft candidates rather than final text. |
-| Editor Agent | `quality-review`, `review-issue-gate`, `prose-generation`, `chapter-outline` | Applies controlled local revisions through editor patches, draft versions, ReviewIssue resolution, and rollback-capable artifacts. |
-| Review Agent | `quality-review`, `review-issue-gate`, `anti-copy-abstraction`, `mkaos-knowledge-asset-os` | Reviews must check originality, source leakage, MKAOS misuse, platform risk, and produce actionable revision tasks. |
-| Quality Agent | `quality-review`, `review-issue-gate`, `context-builder-source-isolation`, `novel-os-engineering-audit` | Runs validation, continuity, publish, originality, source isolation, and OS acceptance gates. |
+| Worldbuilding Agent | `worldbuilding`, `mkaos-knowledge-asset-os`, `context-builder-source-isolation`, `canon-continuity-graph` | Every setting must create conflict, limits, cost, or hooks and remain source-isolated and continuity-safe. |
+| Character Agent | `character-design`, `context-builder-source-isolation`, `canon-continuity-graph` | Character actions must serve the main conflict and remain traceable to approved context and accepted canon. |
+| Outline Agent | `long-outline`, `narrative-beat-design`, `platform-strategy-os`, `character-design`, `worldbuilding`, `context-builder-source-isolation`, `canon-continuity-graph` | Outline must integrate character pressure, world rules, reader grounding, beat progression, platform strategy, canon continuity, and MKAOS context. |
+| Chapter Plan Agent | `chapter-outline`, `narrative-beat-design`, `platform-strategy-os`, `quality-review`, `context-builder-source-isolation`, `canon-continuity-graph` | Every chapter plan must pass commercial unit, beat grounding, platform rhythm, source isolation, and continuity checks. |
+| Draft Agent | `prose-generation`, `chapter-outline`, `context-builder-source-isolation`, `review-issue-gate`, `provider-runtime-policy` | Drafting must follow approved chapter plan and ContextBundle, record provider evidence, then produce reviewable draft candidates rather than final text. |
+| Editor Agent | `quality-review`, `review-issue-gate`, `prose-generation`, `chapter-outline`, `canon-continuity-graph` | Applies controlled local revisions through editor patches, draft versions, ReviewIssue resolution, canon impact checks, and rollback-capable artifacts. |
+| Review Agent | `quality-review`, `review-issue-gate`, `anti-copy-abstraction`, `mkaos-knowledge-asset-os`, `canon-continuity-graph` | Reviews must check originality, source leakage, MKAOS misuse, canon conflict, platform risk, and produce actionable revision tasks. |
+| Quality Agent | `quality-review`, `review-issue-gate`, `context-builder-source-isolation`, `canon-continuity-graph`, `publish-release-gate-os`, `provider-runtime-policy`, `novel-os-engineering-audit` | Runs validation, continuity, publish, provider, originality, source isolation, and OS acceptance gates. |
 | Feedback Agent | `reader-feedback`, `mkaos-knowledge-asset-os`, `platform-strategy-os`, `quality-review` | Feedback must be classified, attributed to assets/knowledge/platform strategy, and converted into advisory learning before mutation. |
-| Publishing Agent | `review-issue-gate`, `platform-strategy-os`, `quality-review`, `context-builder-source-isolation` | Checks release readiness, source isolation, platform fit, and blocking gates before any release package is accepted. |
-| Model Evaluation Agent | `quality-review`, `novel-os-engineering-audit`, `project-planning` | Evaluates model quality, latency, cost, routing, and regression only through traceable benchmark assets. |
+| Publishing Agent | `publish-release-gate-os`, `review-issue-gate`, `platform-strategy-os`, `quality-review`, `context-builder-source-isolation`, `canon-continuity-graph` | Checks release readiness, source isolation, platform fit, continuity, rollback/resume evidence, and blocking gates before any release package is accepted. |
+| Model Evaluation Agent | `provider-runtime-policy`, `quality-review`, `novel-os-engineering-audit`, `project-planning` | Evaluates model quality, latency, cost, routing, fallback, and regression only through traceable benchmark assets. |
 | Training Agent | `training-exercise`, `quality-review`, `multidisciplinary-knowledge`, `mkaos-knowledge-asset-os` | Builds exercises and rubrics from reusable knowledge, evidence refs, and review standards. |
-| Agent Center / Scheduler | `agent-loop-governance`, `context-builder-source-isolation`, `review-issue-gate` | Uses operation coverage, context contracts, hard-stop policy, checkpoints, and dead-letter recovery. |
-| Platform Strategy Agent | `platform-strategy-os`, `mkaos-knowledge-asset-os`, `review-issue-gate` | Turns platform rules and feedback into profiles, rhythm gates, retention risks, publish adapters, and backflow recommendations. |
-| Engineering Audit Agent | `novel-os-engineering-audit`, `agent-loop-governance`, `context-builder-source-isolation` | Audits implementation against docs, code, UI, tests, gates, and acceptance evidence. |
+| Agent Center / Scheduler | `agent-loop-governance`, `provider-runtime-policy`, `context-builder-source-isolation`, `review-issue-gate` | Uses operation coverage, provider hard-stops, context contracts, checkpoints, and dead-letter recovery. |
+| Platform Strategy Agent | `platform-strategy-os`, `publish-release-gate-os`, `mkaos-knowledge-asset-os`, `review-issue-gate` | Turns platform rules and feedback into profiles, rhythm gates, retention risks, publish adapters, and backflow recommendations. |
+| Engineering Audit Agent | `novel-os-engineering-audit`, `agent-loop-governance`, `provider-runtime-policy`, `canon-continuity-graph`, `context-builder-source-isolation` | Audits implementation against docs, code, UI, tests, provider/canon gates, and acceptance evidence. |
+| Skill Governance Agent | `skill-governance`, `project-planning`, `novel-os-engineering-audit` | Creates, revises, audits, syncs, and adopts Skills through predictable triggers, single source of truth, progressive disclosure, and runtime boundary checks. |
 
 ## Runtime Tool Skills
 
@@ -65,8 +67,9 @@ The following Skills may exist only in Claude Code runtime under `.claude/skills
 
 | Runtime Skill | Recommended Use | Boundary |
 |---|---|---|
-| `pdf`, `docx`, `xlsx` | Local document analysis or fixture generation. | Must not move protected source text into MKAOS packs, prose, publish, or recap contexts. |
-| `mcp-builder`, `claude-api`, `skill-creator` | MCP/API/Skill scaffolding or architecture help. | Must remain opt-in and cannot bypass Runtime Policy, OS Envelope, or tests. |
+| `pdf`, `docx`, `xlsx` | Local document analysis or fixture generation. | Proprietary runtime material; use only for explicit file tasks, do not vendor into root `skills/`, do not move protected source text into MKAOS packs, prose, publish, or recap contexts. |
+| `claude-api` | Claude/Anthropic SDK, Claude model migration, Managed Agents, or Claude provider work. | Provider-specific and opt-in; never override OpenAI/Codex/provider-neutral tasks, never store secrets, and do not bypass `provider-runtime-policy`. |
+| `mcp-builder`, `skill-creator` | MCP server or Skill scaffolding, eval, and architecture help. | Must remain opt-in; network/API/eval runs require task need and cannot bypass Runtime Policy, OS Envelope, or tests. |
 | `webapp-testing`, `frontend-design` | Admin UI smoke tests, Playwright checks, and design review. | UI changes still require project tests and local-first boundaries. |
 | `doc-coauthoring` | Collaborative documentation drafting. | Docs must stay consistent with implemented code and acceptance status. |
 
@@ -78,7 +81,7 @@ The following Skills may exist only in Claude Code runtime under `.claude/skills
 - Reference-work analysis can be traced to `anti-copy-abstraction`.
 - Reader feedback, material curation, topic development, training, and multidisciplinary knowledge outputs remain bounded by schema validation and review gates.
 - Workflow/Agent-dispatched Skill outputs can be traced to runtime policy evidence when they create model-produced or production-mutating assets.
-- MKAOS, Context Builder, ReviewIssue, Agent Loop, Platform Strategy, and Engineering Audit have dedicated Skills.
+- MKAOS, Context Builder, ReviewIssue, Agent Loop, Provider Runtime, Canon Continuity, Publish Release Gate, Narrative Beat Design, Skill Governance, Platform Strategy, and Engineering Audit have dedicated Skills.
 - Runtime-only tool Skills are separated from root project Skills and require license/source review before vendoring.
 
 ## Risks And Boundaries
@@ -86,3 +89,4 @@ The following Skills may exist only in Claude Code runtime under `.claude/skills
 - Agent permissions still come from `AGENTS.md`; Skills do not expand permissions.
 - Skills do not store knowledge assets or source text.
 - Skills do not override workflow status, schema validation, runtime policy, trace/cost ledger requirements, or review gates.
+- Runtime tool Skills do not authorize provider calls, external network access, office conversion, browser automation, or subprocess execution unless the task explicitly needs them and local policy allows them.

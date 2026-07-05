@@ -18,6 +18,7 @@ description: Use when creating or reviewing chapter plans so every chapter has a
 - 将全书大纲或卷纲拆成可写作的章节细纲。
 - 正文生成前检查章节是否具备最小商业单元。
 - 审稿时发现章节缺冲突、缺爽点、缺钩子，需要退回细纲。
+- 章节存在信息跳跃、概念未铺垫、伏笔/payoff 没有 reader grounding 时，配合 `narrative-beat-design` 重排 beat path。
 
 ## 输入要求
 
@@ -30,10 +31,12 @@ description: Use when creating or reviewing chapter plans so every chapter has a
 1. 明确本章目标和必须完成的剧情功能。
 2. 列出出场人物、人物目标、冲突关系和场景。
 3. 设计本章冲突、阻力、行动、代价和结果。
-4. 安排信息增量、爽点、悬念、反转和情绪变化。
-5. 设计开头钩子、小钩子、结尾钩子和下一章承接点。
-6. 检查章节最小商业单元：冲突、推进、奖励、代价、钩子。
-7. 输出可交给正文模型执行的细纲。
+4. 定义本章 reader prerequisites 和 grounded set：读者进入本章前已经知道的人物状态、世界规则、伏笔和承诺。
+5. 设计 beat path：每个 beat 标注 function、requires、grounds、hook/payoff 和风险。
+6. 安排信息增量、爽点、悬念、反转和情绪变化，确保后续 beat 不依赖未 grounded 概念。
+7. 设计开头钩子、小钩子、结尾钩子和下一章承接点。
+8. 检查章节最小商业单元：冲突、推进、奖励、代价、钩子。
+9. 输出可交给正文模型执行的细纲。
 
 ## 输出格式
 
@@ -45,6 +48,8 @@ description: Use when creating or reviewing chapter plans so every chapter has a
 ## 场景列表
 ## 本章冲突
 ## 信息增量
+## Reader Grounding
+## Beat Path
 ## 读者爽点
 ## 悬念与反转
 ## 代价
@@ -58,6 +63,8 @@ description: Use when creating or reviewing chapter plans so every chapter has a
 
 - 每章必须有冲突、推进、奖励、代价和钩子。
 - 每个场景必须有目标、阻力、行动、信息增量和情绪变化。
+- 每个关键 beat 的 requires 必须已经是 prerequisite 或由早先 beat grounded。
+- 如果本章需要解释世界规则、专业知识或伏笔，必须先说明它服务哪个行动、冲突或 payoff。
 - 结尾钩子必须制造下一章阅读理由。
 - 细纲必须足够具体，能约束 `prose-generation` 不脱纲。
 
@@ -72,4 +79,5 @@ description: Use when creating or reviewing chapter plans so every chapter has a
 
 - 上游：`long-outline`、`character-design`、`worldbuilding`。
 - 下游：`prose-generation`、`quality-review`、`DraftChapter`。
+- 关联 Skill：`narrative-beat-design`。
 - Agent：Draft Agent、Review Agent、Quality Agent。

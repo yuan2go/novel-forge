@@ -34,8 +34,14 @@ Prefer the smallest set of Skills that covers the task. If the task affects prod
    - `context-builder-source-isolation`
    - `review-issue-gate`
    - `agent-loop-governance`
+   - `provider-runtime-policy`
+   - `canon-continuity-graph`
+   - `publish-release-gate-os`
+   - `narrative-beat-design`
    - `platform-strategy-os`
    - `novel-os-engineering-audit`
+
+If the task changes Skills, Skill routing, runtime sync, external Skill adoption, or vendor/tool boundaries, use `skill-governance`.
 
 At the beginning of each substantial phase, emit this audit note:
 
@@ -90,6 +96,7 @@ Skills must not place these into generated prose, publish packages, recap contex
 - `.claude/skills/` is runtime output and may include official/tool Skills from external sources. Those Skills keep their original upstream license and should not be copied into root `skills/` without review.
 - External Skill adoption must record source URL, commit/version when available, license, scripts, dependencies, network behavior, install command, install path, and verification result.
 - Reject or mark manual-review for Skills with unknown binaries, unsafe scripts, hidden network calls, credential handling, or incompatible licenses.
+- External writing/process Skills should be absorbed as Novel OS methods only after rewriting them into project terminology, schema boundaries, and gate requirements; do not directly vendor personal workflow Skills into root `skills/`.
 
 ## External Skill Installation
 
@@ -147,6 +154,22 @@ Do not install:
 - Provider failure must not silently downgrade production output.
 - Tool Skills can help with setup or testing, but they do not bypass Runtime Policy, OS Envelope, Audit Log, or ReviewIssue gates.
 
+### `claude-api` Boundary
+
+- Use `claude-api` only for explicit Claude/Anthropic provider work, Claude SDK migration, Claude model selection, Managed Agents, Claude tool use, or Anthropic API debugging.
+- Do not use `claude-api` for OpenAI, Codex, Gemini, local-provider, provider-neutral, or repository-default LLM tasks.
+- If provider is ambiguous, inspect the target code for provider markers before using `claude-api`; ask or use provider-neutral project policy when unclear.
+- `claude-api` examples do not authorize live provider calls. Production model calls must satisfy `provider-runtime-policy`, `model_call_log`, `cost_ledger`, budget, timeout, and fallback requirements.
+- Never write API keys, OAuth tokens, cookies, bearer tokens, federation secrets, or provider credentials into code, docs, logs, reports, or Skill output.
+
+### Office / PDF / XLSX Runtime Skill Boundary
+
+- `docx`, `pdf`, and `xlsx` are runtime/vendor tool Skills for explicit file tasks only.
+- Their LICENSE files include proprietary service restrictions; do not copy them into root `skills/`, publish them, or treat them as project-owned source Skills without license review.
+- Running LibreOffice, pandoc, OCR, PDF tools, spreadsheet recalculation, browser previews, npm packages, or Python helpers is opt-in and must be tied to a concrete file task.
+- Extracted document text is still source material. It must not enter MKAOS packs, ContextBundle, prose, publish, recap, or feedback backflow unless source isolation, rights policy, and ReviewIssue gates allow the abstracted result.
+- Office/PDF/XLSX scripts are not default validation dependencies. Project tests should not require them unless the task explicitly targets those formats.
+
 ## Runtime Copy Boundary
 
 - Root `skills/` is source of truth.
@@ -154,6 +177,7 @@ Do not install:
 - Use `make sync-skills-dry-run` before runtime sync.
 - Use `make sync-skills` only when intentionally updating local Claude Code runtime copies.
 - Use `--prune` only after confirming extra runtime-only Skills should be removed.
+- Use `skill-governance` before pruning, vendoring, or reclassifying runtime-only Skills.
 
 ## Usage And Installation Record
 
