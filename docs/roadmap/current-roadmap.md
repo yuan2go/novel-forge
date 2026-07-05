@@ -1,9 +1,26 @@
 # Current Roadmap
 
 Updated: 2026-07-05
-Baseline checked: branch `backup/v6-post-mkaos-industrialization-20260705`, commit `e4f700c`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, starting commit `3f68522`
 
 This roadmap reflects current code evidence, not historical v5 plans. See `docs/08-roadmap/v5-*` only for history.
+
+## 2026-07-05 V7 Content Intelligence Delta
+
+The branch now has a verified foundation for Genre OS, Style OS, Canon Graph 2.0 plugins, Quality Eval 2.0, Long-chain Proof Center, and manual Publishing/Feedback Adapter 2.0. These capabilities are wired through schemas, services, product API routes, Agent operations, workflow processors, focused tests, and basic Web Admin consoles. See `docs/reports/v7-content-intelligence-foundation-report.md`.
+
+This does not yet mean full autonomous premium long-form production. Provider-backed evaluation evidence, opt-in provider 50-chapter proof, generic platform API publishing, and UI artifact inspect/compare/repair foundations now exist. Remaining V7 proof work should focus on real external provider runs, deeper draft/revision integration, platform-specific adapters, and richer operator workflows.
+
+## V7 Follow-up Priorities
+
+| Priority | Goal | Current Status | Dependencies | Acceptance Standard | Order |
+|---|---|---|---|---|---|
+| V7-P0-1 | Provider-backed quality judge proof | Implemented foundation | `modules/quality_eval/`, provider runtime guard, runtime ledger | Quality gate can cite provider route approval, model call log, runtime policy gate, cost ledger, and fail-closed behavior in production mode | 1 |
+| V7-P0-2 | Draft/revision use of Genre and Style policies | Partial foundation | Context Builder, draft/revision services, style/genre assets | Draft and revision requests consume strategy/style policy via context without raw sample leakage | 2 |
+| V7-P0-3 | Release package cites V7 quality evidence | Partial foundation | publishing module, Quality Eval 2.0, ReviewIssue, platform strategy | Release package can hard-stop on failed/missing quality suite evidence | 3 |
+| V7-P1-1 | UI artifact inspection depth | Implemented foundation | Web Admin V7 consoles, product API | Operators can load, compare, and mark V7 assets for review from the console | 4 |
+| V7-P1-2 | Opt-in provider long-chain proof | Implemented foundation | long-chain proof, provider runtime policy, cost ledger | A 50-chapter provider proof is opt-in, budgeted through route policy, and produces model call/cost/runtime evidence | 5 |
+| V7-P1-3 | Platform-specific publishing adapters | New gap | generic HTTP adapter, platform strategy, publishing feedback adapters | A named platform adapter handles auth, upload, status callback, rate limits, and terms constraints with operator approval | 6 |
 
 ## P0 - Runtime Correctness And Production Safety
 

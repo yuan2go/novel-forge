@@ -1,7 +1,7 @@
 # Regression Tests
 
 Updated: 2026-07-05
-Baseline checked: branch `backup/v6-post-mkaos-industrialization-20260705`, commit `e4f700c`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, starting commit `3f68522`
 
 Novel Forge keeps a dependency-light test core and optional industrial/browser checks. Run the smallest relevant verification for each change, then broaden when runtime, API, Agent, or publishing behavior changes.
 
@@ -17,6 +17,21 @@ PYTHONPATH=src python3 -m novel_forge.cli --help
 PYTHONPATH=src python3 -m unittest tests.integration.test_novel_os_acceptance
 PYTHONPATH=src python3 -m unittest tests.integration.test_novel_os_long_chain_smoke
 ```
+
+## V7 Content Intelligence Focused Commands
+
+Run these when changing Genre OS, Style OS, Canon Graph 2.0 plugins, Quality Eval 2.0, Long-chain Proof, Publishing/Feedback adapters, or related product routes:
+
+```bash
+python3 -m unittest tests.unit.test_genre_os tests.unit.test_style_os tests.unit.test_canon_graph_plugins tests.unit.test_quality_eval_v2 tests.unit.test_long_chain_proof tests.unit.test_publishing_feedback_adapters
+python3 -m unittest tests.integration.test_content_intelligence_context_builder tests.integration.test_genre_style_quality_to_draft_chain tests.integration.test_feedback_to_mutation_proposal tests.integration.test_long_chain_50_chapter_content_intelligence
+python3 -m unittest tests.unit.test_product_api_routes tests.unit.test_schemas tests.integration.test_novel_os_acceptance
+python3 -m compileall -q src/novel_forge tests
+npm --prefix web/admin run lint
+npm --prefix web/admin test
+```
+
+Current verified result for the V7 foundation and risk closure pass: all commands above passed. `make test` passed with Python 527 tests OK, skipped=2, and Web Admin 10 passed, 1 optional browser-related skipped test.
 
 ## Makefile Targets
 
@@ -46,6 +61,7 @@ PYTHONPATH=src python3 -m unittest tests.integration.test_novel_os_long_chain_sm
 | Canon/KG/continuity | `test_canon_graph*.py`, `test_novel_kg*.py`, long-chain integration tests | Partial long-form coverage |
 | Review/revision/publishing | `test_review_issue.py`, `test_publishing_center.py`, `test_publish_feedback_loop.py`, publishing fixtures | Stronger than earlier, still needs more production-ready fixtures |
 | Eval/quality | `test_evaluation_center_general.py`, `test_longform_quality_gate_e2e.py`, MKAOS quality tests | Partial production eval coverage |
+| V7 content intelligence | `test_genre_os.py`, `test_style_os.py`, `test_canon_graph_plugins.py`, `test_quality_eval_v2.py`, `test_long_chain_proof.py`, `test_publishing_feedback_adapters.py`, and V7 integration tests | Foundation coverage plus provider quality evidence, opt-in provider 50 proof, platform API adapter, routes, context, and proof fixtures |
 | UI | `npm --prefix web/admin test`, optional Playwright smoke | Node tests exist; browser smoke may be skipped without browsers |
 | Industrial services | `test_industrial_integration.py`, `test_online_backends_e2e.py`, Docker smoke targets | Optional, environment-dependent |
 

@@ -1,7 +1,7 @@
 # Module Map
 
 Updated: 2026-07-05
-Baseline checked: branch `backup/v6-post-mkaos-industrialization-20260705`, commit `e4f700c`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, starting commit `3f68522`
 
 This map lists current implementation areas and evidence paths. Status means code was found in the current repository; it does not imply complete product maturity.
 
@@ -16,6 +16,20 @@ This map lists current implementation areas and evidence paths. Status means cod
 | Product services | `src/novel_forge/api/services/` | API use cases, task helpers, fallback policy, asset index | Partially split | Continue moving use cases out of monolithic service methods |
 | Web console | `web/admin/app/` | Next.js route pages and feature components | Implemented shell | New routes need API helpers, tests/smoke, and docs |
 | Tests | `tests/` | Unit, integration, acceptance fixtures | Broad coverage | Add characterization tests before splitting large services |
+
+## V7 Content Intelligence Modules
+
+| Module | Path | Responsibility | Status | Tests / Evidence |
+|---|---|---|---|---|
+| Genre OS | `modules/genre_os/service.py` | Genre profiles, subgenre mechanics, platform fit, template binding, strategy packs, risk gates | Implemented foundation | `tests/unit/test_genre_os.py`, `api/routers/genre_os.py`, Web route `genre-console` |
+| Style OS | `modules/style_os/service.py` | Authorized style sample ingestion, abstract fingerprinting, style profile/policy/rule, drift gate | Implemented foundation | `tests/unit/test_style_os.py`, `api/routers/style_os.py`, Web route `style-console` |
+| Canon Graph 2.0 plugins | `modules/canon_graph/service.py` | Genre-specific canon reports and ReviewIssue conversion for critical conflicts | Implemented foundation | `tests/unit/test_canon_graph_plugins.py`, `/product/canon-graph/plugin`, Web route `canon-graph-v2` |
+| Quality Eval 2.0 | `modules/quality_eval/service.py` | Rubric packs, Opening 3/Golden 10/Volume 30/Longform 100 reports, provider-backed judge evidence, gates, annotation evidence | Implemented provider-evidence foundation | `tests/unit/test_quality_eval_v2.py`, `api/routers/quality_eval_v2.py`, Web route `quality-eval-v2` |
+| Long-chain Proof Center | `modules/long_chain_proof/service.py` | Deterministic/mock/state-only runs plus opt-in provider 50 proof, checkpoints, trends, acceptance/failure evidence | Implemented foundation | `tests/unit/test_long_chain_proof.py`, integration 50-chapter fixture, Web route `long-chain-proof` |
+| Publishing/Feedback Adapter 2.0 | `modules/publishing_feedback_adapters/service.py` | Manual upload package, generic HTTP platform publish adapter, receipts, metrics, comments, clustering, human-gated mutation proposal | Implemented foundation | `tests/unit/test_publishing_feedback_adapters.py`, Web route `publishing-feedback-v2` |
+| V7 Agent operations | `modules/agent_scheduler/service.py` | Scheduler operation specs/runners for new V7 build/run/import/cluster/proposal/provider/platform operations | Implemented foundation | Agent scheduler/registry tests |
+| V7 workflow processors | `modules/workflow_nodes/service.py` | Processor registry entries for V7 service operations, provider quality judge, and platform API publish | Implemented foundation | Workflow runtime smoke tests plus focused module tests |
+| V7 shared UI | `web/admin/app/features/content-intelligence/ContentIntelligencePages.tsx` | API-backed consoles plus Artifact Inspector for load/compare/needs-review actions | Implemented foundation | `npm --prefix web/admin run lint`, `npm --prefix web/admin test` |
 
 ## Creative Pipeline Modules
 

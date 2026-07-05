@@ -201,6 +201,153 @@ class AssetTypedEditRequest(BaseModel):
     fields: dict[str, Any]
 
 
+class GenreStrategyPackRequest(BaseModel):
+    genre: str
+    subgenre: str = ""
+    project_id: str = ""
+    platform_id: str = "local"
+    title: str = ""
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+    source_policy: dict[str, Any] = Field(default_factory=dict)
+
+
+class GenreRiskGateRequest(BaseModel):
+    strategy_pack_path: str
+    target_path: str | None = None
+    evidence: dict[str, Any] = Field(default_factory=dict)
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class StyleSampleIngestRequest(BaseModel):
+    sample_text: str
+    project_id: str = ""
+    rights: dict[str, Any] = Field(default_factory=dict)
+    title: str = "Style sample"
+    source: str = "operator-provided"
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class StyleFingerprintRequest(BaseModel):
+    sample_path: str
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class StyleProfileBuildRequest(BaseModel):
+    fingerprint_path: str
+    style_name: str = "Project style profile"
+    scope: str = "project"
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class StyleDriftGateRequest(BaseModel):
+    style_profile_path: str
+    target_path: str
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class QualityRubricPackRequest(BaseModel):
+    genre_id: str = ""
+    platform_id: str = "local"
+    style_profile_path: str = ""
+    scope: str = "chapter"
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class QualitySuiteRunRequest(BaseModel):
+    suite_type: str
+    target_paths: list[str]
+    rubric_path: str = ""
+    genre_strategy_pack_path: str = ""
+    style_profile_path: str = ""
+    platform_id: str = "local"
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class QualityGateRunRequest(BaseModel):
+    quality_report_path: str
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class CanonGraphPluginRequest(BaseModel):
+    plugin: str
+    target_path: str | None = None
+    artifact_text: str = ""
+    project_id: str = ""
+    workspace_path: str = ""
+    persist_issues: bool = True
+    persist_snapshot: bool = False
+
+
+class LongChainProofRunRequest(BaseModel):
+    project_id: str = "local-project"
+    mode: str = "deterministic_50"
+    target_chapter_count: int | None = None
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+    opt_in_slow_provider: bool = False
+
+
+class PlatformUploadPackageRequest(BaseModel):
+    release_package_path: str
+    platform_id: str = "manual"
+    book_metadata: dict[str, Any] = Field(default_factory=dict)
+    chapter_payloads: list[dict[str, Any]] = Field(default_factory=list)
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class PlatformReceiptRequest(BaseModel):
+    platform_id: str
+    platform_book_id: str
+    platform_chapter_id: str = ""
+    review_status: str = "submitted"
+    receipt_raw: dict[str, Any] = Field(default_factory=dict)
+    operator_note: str = ""
+    upload_package_path: str = ""
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class PlatformPublishRequest(BaseModel):
+    upload_package_path: str
+    platform_config: dict[str, Any] = Field(default_factory=dict)
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class PlatformMetricsImportRequest(BaseModel):
+    platform_id: str
+    chapter_metrics: list[dict[str, Any]]
+    book_metrics: dict[str, Any] = Field(default_factory=dict)
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class PlatformCommentsClusterRequest(BaseModel):
+    platform_id: str
+    comments: list[dict[str, Any]]
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+    persist_issues: bool = False
+
+
+class FeedbackMutationProposalRequest(BaseModel):
+    source_feedback_paths: list[str]
+    target_assets: list[dict[str, Any]]
+    proposed_changes: list[dict[str, Any]]
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
 class CreativeAssetCreateRequest(BaseModel):
     asset_type: str
     title: str
@@ -1359,6 +1506,23 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AssetEditRequest": AssetEditRequest,
         "AssetContentEditRequest": AssetContentEditRequest,
         "AssetTypedEditRequest": AssetTypedEditRequest,
+        "GenreStrategyPackRequest": GenreStrategyPackRequest,
+        "GenreRiskGateRequest": GenreRiskGateRequest,
+        "StyleSampleIngestRequest": StyleSampleIngestRequest,
+        "StyleFingerprintRequest": StyleFingerprintRequest,
+        "StyleProfileBuildRequest": StyleProfileBuildRequest,
+        "StyleDriftGateRequest": StyleDriftGateRequest,
+        "QualityRubricPackRequest": QualityRubricPackRequest,
+        "QualitySuiteRunRequest": QualitySuiteRunRequest,
+        "QualityGateRunRequest": QualityGateRunRequest,
+        "CanonGraphPluginRequest": CanonGraphPluginRequest,
+        "LongChainProofRunRequest": LongChainProofRunRequest,
+        "PlatformUploadPackageRequest": PlatformUploadPackageRequest,
+        "PlatformReceiptRequest": PlatformReceiptRequest,
+        "PlatformPublishRequest": PlatformPublishRequest,
+        "PlatformMetricsImportRequest": PlatformMetricsImportRequest,
+        "PlatformCommentsClusterRequest": PlatformCommentsClusterRequest,
+        "FeedbackMutationProposalRequest": FeedbackMutationProposalRequest,
         "CreativeAssetCreateRequest": CreativeAssetCreateRequest,
         "StyleDecomposeRequest": StyleDecomposeRequest,
         "StyleReviewRequest": StyleReviewRequest,

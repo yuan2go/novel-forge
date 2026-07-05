@@ -1083,6 +1083,216 @@ class LongChainAcceptanceReport(BaseAsset):
     type: str = "long_chain_acceptance_report"
 
 
+@dataclass
+class GenreProfile(BaseAsset):
+    type: str = "genre_profile"
+
+
+@dataclass
+class SubgenreMechanic(BaseAsset):
+    type: str = "subgenre_mechanic"
+
+
+@dataclass
+class GenreStrategyPack(BaseAsset):
+    type: str = "genre_strategy_pack"
+
+
+@dataclass
+class GenreRiskGate(BaseAsset):
+    type: str = "genre_risk_gate"
+
+
+@dataclass
+class PlatformGenreFit(BaseAsset):
+    type: str = "platform_genre_fit"
+
+
+@dataclass
+class GenreTemplateBinding(BaseAsset):
+    type: str = "genre_template_binding"
+
+
+@dataclass
+class StyleSample(BaseAsset):
+    type: str = "style_sample"
+
+
+@dataclass
+class StyleFingerprint(BaseAsset):
+    type: str = "style_fingerprint"
+
+
+@dataclass
+class StyleGenerationPolicy(BaseAsset):
+    type: str = "style_generation_policy"
+
+
+@dataclass
+class StyleReviewRule(BaseAsset):
+    type: str = "style_review_rule"
+
+
+@dataclass
+class StyleDriftReport(BaseAsset):
+    type: str = "style_drift_report"
+
+
+@dataclass
+class StyleRewriteTask(BaseAsset):
+    type: str = "style_rewrite_task"
+
+
+@dataclass
+class FantasyPowerScaleReport(BaseAsset):
+    type: str = "fantasy_power_scale_report"
+
+
+@dataclass
+class MysteryEvidenceChainReport(BaseAsset):
+    type: str = "mystery_evidence_chain_report"
+
+
+@dataclass
+class RomanceRelationshipStateReport(BaseAsset):
+    type: str = "romance_relationship_state_report"
+
+
+@dataclass
+class HistoricalFactionNetworkReport(BaseAsset):
+    type: str = "historical_faction_network_report"
+
+
+@dataclass
+class SciFiRuleConsistencyReport(BaseAsset):
+    type: str = "sci_fi_rule_consistency_report"
+
+
+@dataclass
+class HorrorRuleContaminationReport(BaseAsset):
+    type: str = "horror_rule_contamination_report"
+
+
+@dataclass
+class QualityRubricPack(BaseAsset):
+    type: str = "quality_rubric_pack"
+
+
+@dataclass
+class Opening3Report(BaseAsset):
+    type: str = "opening_3_report"
+
+
+@dataclass
+class Golden10Report(BaseAsset):
+    type: str = "golden_10_report"
+
+
+@dataclass
+class Volume30Report(BaseAsset):
+    type: str = "volume_30_report"
+
+
+@dataclass
+class Longform100Report(BaseAsset):
+    type: str = "longform_100_report"
+
+
+@dataclass
+class QualityRegressionReport(BaseAsset):
+    type: str = "quality_regression_report"
+
+
+@dataclass
+class ModelJudgeResult(BaseAsset):
+    type: str = "model_judge_result"
+
+
+@dataclass
+class HumanAnnotation(BaseAsset):
+    type: str = "human_annotation"
+
+
+@dataclass
+class LongChainRun(BaseAsset):
+    type: str = "long_chain_run"
+
+
+@dataclass
+class LongChainCheckpoint(BaseAsset):
+    type: str = "long_chain_checkpoint"
+
+
+@dataclass
+class LongChainFailureReport(BaseAsset):
+    type: str = "long_chain_failure_report"
+
+
+@dataclass
+class ChapterQualityTrend(BaseAsset):
+    type: str = "chapter_quality_trend"
+
+
+@dataclass
+class CanonConflictTrend(BaseAsset):
+    type: str = "canon_conflict_trend"
+
+
+@dataclass
+class StyleDriftTrend(BaseAsset):
+    type: str = "style_drift_trend"
+
+
+@dataclass
+class ReaderFatigueTrend(BaseAsset):
+    type: str = "reader_fatigue_trend"
+
+
+@dataclass
+class CostQualityTrend(BaseAsset):
+    type: str = "cost_quality_trend"
+
+
+@dataclass
+class PlatformUploadPackage(BaseAsset):
+    type: str = "platform_upload_package"
+
+
+@dataclass
+class PlatformPublishReceipt(BaseAsset):
+    type: str = "platform_publish_receipt"
+
+
+@dataclass
+class PlatformReviewStatus(BaseAsset):
+    type: str = "platform_review_status"
+
+
+@dataclass
+class PlatformMetricSnapshot(BaseAsset):
+    type: str = "platform_metric_snapshot"
+
+
+@dataclass
+class PlatformCommentBatch(BaseAsset):
+    type: str = "platform_comment_batch"
+
+
+@dataclass
+class CommentClusterReport(BaseAsset):
+    type: str = "comment_cluster_report"
+
+
+@dataclass
+class ChapterDropoffReport(BaseAsset):
+    type: str = "chapter_dropoff_report"
+
+
+@dataclass
+class FeedbackPlanMutationProposal(BaseAsset):
+    type: str = "feedback_plan_mutation_proposal"
+
+
 SCHEMA_CLASSES = {
     cls().type: cls
     for cls in [
@@ -1300,6 +1510,48 @@ SCHEMA_CLASSES = {
         AnalyticsMetricDefinition,
         LocalOpsDrillReport,
         LongChainAcceptanceReport,
+        GenreProfile,
+        SubgenreMechanic,
+        GenreStrategyPack,
+        GenreRiskGate,
+        PlatformGenreFit,
+        GenreTemplateBinding,
+        StyleSample,
+        StyleFingerprint,
+        StyleGenerationPolicy,
+        StyleReviewRule,
+        StyleDriftReport,
+        StyleRewriteTask,
+        FantasyPowerScaleReport,
+        MysteryEvidenceChainReport,
+        RomanceRelationshipStateReport,
+        HistoricalFactionNetworkReport,
+        SciFiRuleConsistencyReport,
+        HorrorRuleContaminationReport,
+        QualityRubricPack,
+        Opening3Report,
+        Golden10Report,
+        Volume30Report,
+        Longform100Report,
+        QualityRegressionReport,
+        ModelJudgeResult,
+        HumanAnnotation,
+        LongChainRun,
+        LongChainCheckpoint,
+        LongChainFailureReport,
+        ChapterQualityTrend,
+        CanonConflictTrend,
+        StyleDriftTrend,
+        ReaderFatigueTrend,
+        CostQualityTrend,
+        PlatformUploadPackage,
+        PlatformPublishReceipt,
+        PlatformReviewStatus,
+        PlatformMetricSnapshot,
+        PlatformCommentBatch,
+        CommentClusterReport,
+        ChapterDropoffReport,
+        FeedbackPlanMutationProposal,
     ]
 }
 

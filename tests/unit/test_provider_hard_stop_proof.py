@@ -168,6 +168,43 @@ class ProviderHardStopProofTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "allowlist"):
                 resolve_model_route(storage, task_type="draft", project_id="provider-allowlist-p", environment="production")
 
+    def test_production_model_route_defaults_to_claude_code_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            create_model_route(
+                storage,
+                task_type="draft",
+                provider="openai",
+                model_name="gpt-production",
+                approval_status="approved",
+                approval_id="approval-openai-default-deny",
+                project_id="provider-default-openai-p",
+            )
+
+            with self.assertRaisesRegex(ValueError, "allowlist"):
+                resolve_model_route(storage, task_type="draft", project_id="provider-default-openai-p", environment="production")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            create_model_route(
+                storage,
+                task_type="draft",
+                provider="claude-code",
+                model_name="codex",
+                approval_status="approved",
+                approval_id="approval-claude-code-default-pass",
+                approved_by="operator",
+                project_id="provider-default-claude-code-p",
+            )
+
+            route = resolve_model_route(storage, task_type="draft", project_id="provider-default-claude-code-p", environment="production")
+            policy = route["resolution"]["provider_policy"]
+
+            self.assertEqual(policy["status"], "passed")
+            self.assertEqual(policy["allowlist"], ["claude-code"])
+
     def test_production_model_route_blocks_mock_without_explicit_fixture_mode(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

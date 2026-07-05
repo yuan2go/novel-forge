@@ -97,6 +97,23 @@ WORKFLOW_SERVICE_OPERATIONS = {
     "pgvector_schema_plan": {"category": "retrieval", "checkpoint_strategy": "output_reuse", "aliases": ["create_pgvector_schema_plan"]},
     "embedding_job": {"category": "retrieval", "checkpoint_strategy": "output_reuse", "aliases": ["build_embedding_job"]},
     "hybrid_retrieval": {"category": "retrieval", "checkpoint_strategy": "output_reuse", "aliases": ["hybrid_retrieve"]},
+    "genre_strategy_pack": {"category": "genre_os", "checkpoint_strategy": "output_reuse", "aliases": ["build-genre-strategy-pack", "build_genre_strategy_pack"]},
+    "genre_risk_gate": {"category": "genre_os", "checkpoint_strategy": "output_reuse", "aliases": ["run-genre-risk-gate", "run_genre_risk_gate"]},
+    "style_sample_ingestion": {"category": "style_os", "checkpoint_strategy": "output_reuse", "aliases": ["ingest-style-sample", "ingest_style_sample"]},
+    "style_fingerprint": {"category": "style_os", "checkpoint_strategy": "output_reuse", "aliases": ["extract-style-fingerprint", "extract_style_fingerprint"]},
+    "style_profile": {"category": "style_os", "checkpoint_strategy": "output_reuse", "aliases": ["build-style-profile", "build_style_profile"]},
+    "style_drift_gate": {"category": "style_os", "checkpoint_strategy": "output_reuse", "aliases": ["run-style-drift-gate", "run_style_drift_gate"]},
+    "canon_graph_plugin": {"category": "canon_graph", "checkpoint_strategy": "output_reuse", "aliases": ["run-canon-graph-plugin", "run_canon_graph_plugin"]},
+    "quality_suite_run": {"category": "quality_eval", "checkpoint_strategy": "output_reuse", "aliases": ["run-quality-suite", "run_quality_suite"]},
+    "provider_quality_judge": {"category": "quality_eval", "checkpoint_strategy": "output_reuse", "aliases": ["run-provider-quality-judge", "run_provider_quality_judge"]},
+    "quality_gate": {"category": "quality_eval", "checkpoint_strategy": "output_reuse", "aliases": ["run-quality-gate", "run_quality_gate"]},
+    "long_chain_proof_run": {"category": "long_chain_proof", "checkpoint_strategy": "operation_state", "aliases": ["run-long-chain-proof", "run_long_chain_proof"]},
+    "platform_upload_package": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["build-platform-upload-package", "build_platform_upload_package"]},
+    "platform_api_publish": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["publish-platform-upload-package", "publish_platform_upload_package"]},
+    "platform_publish_receipt": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["record-platform-receipt", "record_platform_receipt"]},
+    "platform_metric_import": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["import-platform-metrics", "import_platform_metrics"]},
+    "comment_cluster": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["cluster-platform-comments", "cluster_platform_comments"]},
+    "feedback_mutation_proposal": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["create-feedback-mutation-proposal", "create_feedback_mutation_proposal"]},
 }
 
 
@@ -4093,6 +4110,232 @@ def _execute_registered_service_processor_impl(
             persist=True,
         )
         return {"status": "succeeded", "operation": operation, "contract": _service_processor_contract(operation), "output_assets": [str(result.get("path", ""))] if result.get("path") else [], "payload": {"path": result.get("path", "")}}
+    if operation in {"genre_strategy_pack", "build-genre-strategy-pack", "build_genre_strategy_pack"}:
+        from novel_forge.modules.genre_os import build_genre_strategy_pack
+
+        result = build_genre_strategy_pack(
+            storage,
+            genre=str(processor.get("genre") or "xuanhuan"),
+            subgenre=str(processor.get("subgenre") or ""),
+            project_id=str(processor.get("project_id") or ""),
+            platform_id=str(processor.get("platform_id") or "local"),
+            title=str(processor.get("title") or ""),
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+            source_policy=processor.get("source_policy") if isinstance(processor.get("source_policy"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"genre_risk_gate", "run-genre-risk-gate", "run_genre_risk_gate"}:
+        from novel_forge.modules.genre_os import run_genre_risk_gate
+
+        result = run_genre_risk_gate(
+            storage,
+            strategy_pack_path=_processor_path(processor, input_assets, "strategy_pack_path"),
+            target_path=str(processor.get("target_path") or "") or None,
+            evidence=processor.get("evidence") if isinstance(processor.get("evidence"), dict) else {},
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"style_sample_ingestion", "ingest-style-sample", "ingest_style_sample"}:
+        from novel_forge.modules.style_os import ingest_style_sample
+
+        result = ingest_style_sample(
+            storage,
+            sample_text=str(processor.get("sample_text") or ""),
+            project_id=str(processor.get("project_id") or ""),
+            rights=processor.get("rights") if isinstance(processor.get("rights"), dict) else None,
+            title=str(processor.get("title") or "Style sample"),
+            source=str(processor.get("source") or "workflow-processor"),
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"style_fingerprint", "extract-style-fingerprint", "extract_style_fingerprint"}:
+        from novel_forge.modules.style_os import extract_style_fingerprint
+
+        result = extract_style_fingerprint(
+            storage,
+            sample_path=_processor_path(processor, input_assets, "sample_path"),
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"style_profile", "build-style-profile", "build_style_profile"}:
+        from novel_forge.modules.style_os import build_style_profile
+
+        result = build_style_profile(
+            storage,
+            fingerprint_path=_processor_path(processor, input_assets, "fingerprint_path"),
+            style_name=str(processor.get("style_name") or "Project style profile"),
+            scope=str(processor.get("scope") or "project"),
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"style_drift_gate", "run-style-drift-gate", "run_style_drift_gate"}:
+        from novel_forge.modules.style_os import run_style_drift_gate
+
+        result = run_style_drift_gate(
+            storage,
+            style_profile_path=str(processor.get("style_profile_path") or ""),
+            target_path=_processor_path(processor, input_assets, "target_path"),
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"canon_graph_plugin", "run-canon-graph-plugin", "run_canon_graph_plugin"}:
+        from novel_forge.modules.canon_graph import run_canon_graph_plugin
+
+        result = run_canon_graph_plugin(
+            storage,
+            {
+                **processor,
+                "target_path": str(processor.get("target_path") or (input_assets[0] if input_assets else "")),
+                "workspace_path": str(processor.get("workspace_path") or workspace_path or ""),
+            },
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"quality_suite_run", "run-quality-suite", "run_quality_suite"}:
+        from novel_forge.modules.quality_eval import run_quality_suite
+
+        result = run_quality_suite(
+            storage,
+            suite_type=str(processor.get("suite_type") or "opening_3"),
+            target_paths=[str(item) for item in processor.get("target_paths", [])] if isinstance(processor.get("target_paths"), list) else input_assets,
+            rubric_path=str(processor.get("rubric_path") or ""),
+            genre_strategy_pack_path=str(processor.get("genre_strategy_pack_path") or ""),
+            style_profile_path=str(processor.get("style_profile_path") or ""),
+            platform_id=str(processor.get("platform_id") or "local"),
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"provider_quality_judge", "run-provider-quality-judge", "run_provider_quality_judge"}:
+        from novel_forge.modules.quality_eval import run_provider_quality_judge
+
+        class _ProcessorReviewAdapter:
+            def __init__(self, response: dict[str, Any]):
+                self.response = response
+
+            def review(self, payload: str, context: dict[str, Any]) -> dict[str, Any]:
+                return self.response
+
+        fixture_response = processor.get("fixture_judge_response") if isinstance(processor.get("fixture_judge_response"), dict) else None
+        result = run_provider_quality_judge(
+            storage,
+            suite_type=str(processor.get("suite_type") or "opening_3"),
+            target_paths=[str(item) for item in processor.get("target_paths", [])] if isinstance(processor.get("target_paths"), list) else input_assets,
+            rubric_path=str(processor.get("rubric_path") or ""),
+            adapter=_ProcessorReviewAdapter(fixture_response) if fixture_response else None,
+            genre_strategy_pack_path=str(processor.get("genre_strategy_pack_path") or ""),
+            style_profile_path=str(processor.get("style_profile_path") or ""),
+            platform_id=str(processor.get("platform_id") or "local"),
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+            provider_runtime_guard=processor.get("provider_runtime_guard") if isinstance(processor.get("provider_runtime_guard"), dict) else None,
+            allow_mock_fixture=bool(processor.get("allow_mock_fixture", False)),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"quality_gate", "run-quality-gate", "run_quality_gate"}:
+        from novel_forge.modules.quality_eval import run_quality_gate
+
+        result = run_quality_gate(
+            storage,
+            quality_report_path=_processor_path(processor, input_assets, "quality_report_path"),
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"long_chain_proof_run", "run-long-chain-proof", "run_long_chain_proof"}:
+        from novel_forge.modules.long_chain_proof import run_long_chain_proof
+
+        result = run_long_chain_proof(
+            storage,
+            project_id=str(processor.get("project_id") or "local-project"),
+            mode=str(processor.get("mode") or "deterministic_50"),
+            target_chapter_count=int(processor["target_chapter_count"]) if str(processor.get("target_chapter_count") or "").isdigit() else None,
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+            opt_in_slow_provider=bool(processor.get("opt_in_slow_provider", False)),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"platform_upload_package", "build-platform-upload-package", "build_platform_upload_package"}:
+        from novel_forge.modules.publishing_feedback_adapters import build_platform_upload_package
+
+        result = build_platform_upload_package(
+            storage,
+            release_package_path=_processor_path(processor, input_assets, "release_package_path"),
+            platform_id=str(processor.get("platform_id") or "manual"),
+            book_metadata=processor.get("book_metadata") if isinstance(processor.get("book_metadata"), dict) else None,
+            chapter_payloads=processor.get("chapter_payloads") if isinstance(processor.get("chapter_payloads"), list) else None,
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"platform_api_publish", "publish-platform-upload-package", "publish_platform_upload_package"}:
+        from novel_forge.modules.publishing_feedback_adapters import publish_platform_upload_package
+
+        result = publish_platform_upload_package(
+            storage,
+            upload_package_path=_processor_path(processor, input_assets, "upload_package_path"),
+            platform_config=processor.get("platform_config") if isinstance(processor.get("platform_config"), dict) else None,
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"platform_publish_receipt", "record-platform-receipt", "record_platform_receipt"}:
+        from novel_forge.modules.publishing_feedback_adapters import record_platform_receipt
+
+        result = record_platform_receipt(
+            storage,
+            platform_id=str(processor.get("platform_id") or "manual"),
+            platform_book_id=str(processor.get("platform_book_id") or ""),
+            platform_chapter_id=str(processor.get("platform_chapter_id") or ""),
+            review_status=str(processor.get("review_status") or "submitted"),
+            receipt_raw=processor.get("receipt_raw") if isinstance(processor.get("receipt_raw"), dict) else {},
+            operator_note=str(processor.get("operator_note") or ""),
+            upload_package_path=str(processor.get("upload_package_path") or (input_assets[0] if input_assets else "")),
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"platform_metric_import", "import-platform-metrics", "import_platform_metrics"}:
+        from novel_forge.modules.publishing_feedback_adapters import import_platform_metrics
+
+        result = import_platform_metrics(
+            storage,
+            platform_id=str(processor.get("platform_id") or "manual"),
+            chapter_metrics=processor.get("chapter_metrics") if isinstance(processor.get("chapter_metrics"), list) else [],
+            book_metrics=processor.get("book_metrics") if isinstance(processor.get("book_metrics"), dict) else {},
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"comment_cluster", "cluster-platform-comments", "cluster_platform_comments"}:
+        from novel_forge.modules.publishing_feedback_adapters import cluster_platform_comments
+
+        result = cluster_platform_comments(
+            storage,
+            platform_id=str(processor.get("platform_id") or "manual"),
+            comments=processor.get("comments") if isinstance(processor.get("comments"), list) else [],
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+            persist_issues=bool(processor.get("persist_issues", False)),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"feedback_mutation_proposal", "create-feedback-mutation-proposal", "create_feedback_mutation_proposal"}:
+        from novel_forge.modules.publishing_feedback_adapters import create_feedback_mutation_proposal
+
+        result = create_feedback_mutation_proposal(
+            storage,
+            source_feedback_paths=[str(item) for item in processor.get("source_feedback_paths", [])] if isinstance(processor.get("source_feedback_paths"), list) else input_assets,
+            target_assets=processor.get("target_assets") if isinstance(processor.get("target_assets"), list) else [],
+            proposed_changes=processor.get("proposed_changes") if isinstance(processor.get("proposed_changes"), list) else [],
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
     if operation in {"continuity_graph_snapshot", "create_continuity_graph_snapshot"}:
         from novel_forge.modules.continuity_graph import create_continuity_graph_snapshot
 

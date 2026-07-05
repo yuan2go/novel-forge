@@ -18,6 +18,7 @@ from novel_forge.modules.evaluation_center.service import (
     run_model_benchmark_batch,
     run_model_benchmark,
 )
+from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_quality_gate, run_quality_suite
 
 __all__ = [
     "compare_model_runs",
@@ -38,4 +39,7 @@ __all__ = [
     "run_evaluation_suite",
     "run_model_benchmark_batch",
     "run_model_benchmark",
+    "build_quality_rubric_pack",
+    "run_quality_gate",
+    "run_quality_suite",
 ]

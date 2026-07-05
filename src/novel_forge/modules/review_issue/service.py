@@ -22,11 +22,26 @@ ISSUE_TYPES = {
     "platform_policy_risk",
     "source_leakage",
     "context_budget_overflow",
+    "genre_risk",
+    "style_drift",
+    "quality_gate",
+    "canon_plugin_conflict",
+    "feedback_mutation_risk",
 }
 SEVERITIES = {"info", "low", "medium", "high", "critical"}
 ACTIVE_STATUSES = {"open", "acknowledged", "in_revision"}
 TERMINAL_STATUSES = {"resolved", "waived", "closed"}
-HIGH_BLOCKING_TYPES = {"mkaos_conflict", "canon_conflict", "source_leakage", "context_budget_overflow", "plot_logic_gap"}
+HIGH_BLOCKING_TYPES = {
+    "mkaos_conflict",
+    "canon_conflict",
+    "source_leakage",
+    "context_budget_overflow",
+    "plot_logic_gap",
+    "genre_risk",
+    "style_drift",
+    "quality_gate",
+    "canon_plugin_conflict",
+}
 
 
 def create_review_issue(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:

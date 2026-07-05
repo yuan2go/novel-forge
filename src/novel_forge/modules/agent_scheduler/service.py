@@ -1694,6 +1694,184 @@ def _operation_specs() -> list[AgentOperationSpec]:
             sla_seconds=900,
         ),
         AgentOperationSpec(
+            operation="build-genre-strategy-pack",
+            aliases=("genre-strategy-pack",),
+            runner=_run_build_genre_strategy_pack,
+            agent_key="outline",
+            input_types=(),
+            output_types=("genre_strategy_pack", "genre_profile", "subgenre_mechanic"),
+            required_tool="write_genre_strategy_pack",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="run-genre-risk-gate",
+            aliases=("genre-risk-gate",),
+            runner=_run_genre_risk_gate,
+            agent_key="review",
+            input_types=("genre_strategy_pack",),
+            output_types=("genre_risk_gate", "review_issue"),
+            required_tool="write_review_issue",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="ingest-style-sample",
+            aliases=("style-sample-ingestion",),
+            runner=_run_ingest_style_sample,
+            agent_key="knowledge",
+            input_types=(),
+            output_types=("style_sample",),
+            required_tool="write_style_sample",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="extract-style-fingerprint",
+            aliases=("style-fingerprint",),
+            runner=_run_extract_style_fingerprint,
+            agent_key="knowledge",
+            input_types=("style_sample",),
+            output_types=("style_fingerprint",),
+            required_tool="write_style_fingerprint",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="build-style-profile",
+            aliases=("style-profile",),
+            runner=_run_build_style_profile,
+            agent_key="knowledge",
+            input_types=("style_fingerprint",),
+            output_types=("style_profile", "style_generation_policy", "style_review_rule"),
+            required_tool="write_style_profile",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="run-style-drift-gate",
+            aliases=("style-drift-gate",),
+            runner=_run_style_drift_gate,
+            agent_key="review",
+            input_types=("style_profile", "draft_chapter"),
+            output_types=("style_drift_report", "style_rewrite_task", "review_issue", "revision_task"),
+            required_tool="write_review_issue",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="run-canon-graph-plugin",
+            aliases=("canon-graph-plugin",),
+            runner=_run_canon_graph_plugin_operation,
+            agent_key="continuity",
+            input_types=(),
+            output_types=(
+                "fantasy_power_scale_report",
+                "mystery_evidence_chain_report",
+                "romance_relationship_state_report",
+                "historical_faction_network_report",
+                "sci_fi_rule_consistency_report",
+                "horror_rule_contamination_report",
+                "review_issue",
+            ),
+            required_tool="write_review_issue",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="run-quality-suite",
+            aliases=("quality-suite",),
+            runner=_run_quality_suite_operation,
+            agent_key="model_evaluation",
+            input_types=(),
+            output_types=("opening_3_report", "golden_10_report", "volume_30_report", "longform_100_report", "review_issue", "revision_task"),
+            required_tool="write_review_issue",
+            sla_seconds=600,
+        ),
+        AgentOperationSpec(
+            operation="run-provider-quality-judge",
+            aliases=("provider-quality-judge",),
+            runner=_run_provider_quality_judge_operation,
+            agent_key="model_evaluation",
+            input_types=(),
+            output_types=("opening_3_report", "golden_10_report", "volume_30_report", "longform_100_report", "model_judge_result", "review_issue", "revision_task"),
+            required_tool="call_model",
+            sla_seconds=900,
+        ),
+        AgentOperationSpec(
+            operation="run-quality-gate",
+            aliases=("quality-gate",),
+            runner=_run_quality_gate_operation,
+            agent_key="quality",
+            input_types=(),
+            output_types=("evaluation_gate",),
+            required_tool="write_gate_result",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="run-long-chain-proof",
+            aliases=("long-chain-proof",),
+            runner=_run_long_chain_proof_operation,
+            agent_key="workflow",
+            input_types=(),
+            output_types=("long_chain_run", "long_chain_acceptance_report"),
+            required_tool="run_validation",
+            sla_seconds=1800,
+        ),
+        AgentOperationSpec(
+            operation="build-platform-upload-package",
+            aliases=("platform-upload-package",),
+            runner=_run_build_platform_upload_package,
+            agent_key="publishing",
+            input_types=("release_package",),
+            output_types=("platform_upload_package",),
+            required_tool="write_release_package",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="record-platform-receipt",
+            aliases=("platform-receipt",),
+            runner=_run_record_platform_receipt,
+            agent_key="publishing",
+            input_types=(),
+            output_types=("platform_publish_receipt", "platform_review_status"),
+            required_tool="write_publishing_log",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="publish-platform-upload-package",
+            aliases=("platform-api-publish",),
+            runner=_run_publish_platform_upload_package,
+            agent_key="publishing",
+            input_types=("platform_upload_package",),
+            output_types=("platform_publish_receipt", "platform_review_status"),
+            required_tool="network_publish",
+            sla_seconds=600,
+        ),
+        AgentOperationSpec(
+            operation="import-platform-metrics",
+            aliases=("platform-metrics-import",),
+            runner=_run_import_platform_metrics,
+            agent_key="feedback",
+            input_types=(),
+            output_types=("platform_metric_snapshot", "chapter_dropoff_report"),
+            required_tool="write_feedback",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="cluster-platform-comments",
+            aliases=("platform-comments-cluster",),
+            runner=_run_cluster_platform_comments,
+            agent_key="feedback",
+            input_types=(),
+            output_types=("platform_comment_batch", "comment_cluster_report"),
+            required_tool="write_feedback",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="create-feedback-mutation-proposal",
+            aliases=("feedback-mutation-proposal",),
+            runner=_run_create_feedback_mutation_proposal,
+            agent_key="feedback",
+            input_types=("comment_cluster_report", "chapter_dropoff_report"),
+            output_types=("feedback_plan_mutation_proposal",),
+            required_tool="write_feedback",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
             operation="create-platform-strategy-pack",
             aliases=("platform-strategy-pack", "platform-strategy", "platform-compliance"),
             runner=_run_platform_strategy_pack,
@@ -2231,6 +2409,272 @@ def _run_longform_recap(storage: LocalStorage, queue_item: dict[str, Any], agent
             "envelope": _envelope_from_evidence(evidence),
             "force": bool(evidence.get("force", True)),
         },
+    )
+
+
+def _run_build_genre_strategy_pack(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.genre_os import build_genre_strategy_pack
+
+    evidence = _evidence(agent_run)
+    return build_genre_strategy_pack(
+        storage,
+        genre=str(evidence.get("genre") or "xuanhuan"),
+        subgenre=str(evidence.get("subgenre") or ""),
+        project_id=_project_id(agent_run) or str(evidence.get("project_id") or ""),
+        platform_id=str(evidence.get("platform_id") or "local"),
+        title=str(evidence.get("title") or ""),
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+        source_policy=evidence.get("source_policy") if isinstance(evidence.get("source_policy"), dict) else None,
+    )
+
+
+def _run_genre_risk_gate(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.genre_os import run_genre_risk_gate
+
+    evidence = _evidence(agent_run)
+    return run_genre_risk_gate(
+        storage,
+        strategy_pack_path=str(evidence.get("strategy_pack_path") or _primary_input_path(agent_run)),
+        target_path=evidence.get("target_path") or None,
+        evidence=evidence.get("risk_evidence", {}) if isinstance(evidence.get("risk_evidence", {}), dict) else {},
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_ingest_style_sample(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.style_os import ingest_style_sample
+
+    evidence = _evidence(agent_run)
+    return ingest_style_sample(
+        storage,
+        sample_text=str(evidence.get("sample_text") or ""),
+        project_id=_project_id(agent_run) or str(evidence.get("project_id") or ""),
+        rights=evidence.get("rights") if isinstance(evidence.get("rights"), dict) else None,
+        title=str(evidence.get("title") or "Style sample"),
+        source=str(evidence.get("source") or "agent-operation"),
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_extract_style_fingerprint(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.style_os import extract_style_fingerprint
+
+    evidence = _evidence(agent_run)
+    return extract_style_fingerprint(
+        storage,
+        sample_path=str(evidence.get("sample_path") or _primary_input_path(agent_run)),
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_build_style_profile(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.style_os import build_style_profile
+
+    evidence = _evidence(agent_run)
+    return build_style_profile(
+        storage,
+        fingerprint_path=str(evidence.get("fingerprint_path") or _primary_input_path(agent_run)),
+        style_name=str(evidence.get("style_name") or "Project style profile"),
+        scope=str(evidence.get("scope") or "project"),
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_style_drift_gate(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.style_os import run_style_drift_gate
+
+    evidence = _evidence(agent_run)
+    return run_style_drift_gate(
+        storage,
+        style_profile_path=str(evidence.get("style_profile_path") or ""),
+        target_path=str(evidence.get("target_path") or _primary_input_path(agent_run)),
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_canon_graph_plugin_operation(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.canon_graph import run_canon_graph_plugin
+
+    evidence = _evidence(agent_run)
+    return run_canon_graph_plugin(
+        storage,
+        {
+            **evidence,
+            "plugin": str(evidence.get("plugin") or "mystery_evidence_chain_engine"),
+            "target_path": evidence.get("target_path") or _primary_input_path(agent_run),
+            "project_id": _project_id(agent_run) or evidence.get("project_id", ""),
+            "workspace_path": _workspace_path(agent_run) or evidence.get("workspace_path", ""),
+        },
+    )
+
+
+def _run_quality_suite_operation(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.quality_eval import run_quality_suite
+
+    evidence = _evidence(agent_run)
+    target_paths = _string_list(evidence.get("target_paths", [])) or _input_paths(agent_run)
+    return run_quality_suite(
+        storage,
+        suite_type=str(evidence.get("suite_type") or "opening_3"),
+        target_paths=target_paths,
+        rubric_path=str(evidence.get("rubric_path") or ""),
+        genre_strategy_pack_path=str(evidence.get("genre_strategy_pack_path") or ""),
+        style_profile_path=str(evidence.get("style_profile_path") or ""),
+        platform_id=str(evidence.get("platform_id") or "local"),
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+class _FixtureReviewAdapter:
+    def __init__(self, response: dict[str, Any]):
+        self.response = response
+
+    def review(self, payload: str, context: dict[str, Any]) -> dict[str, Any]:
+        return self.response
+
+
+def _run_provider_quality_judge_operation(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.quality_eval import run_provider_quality_judge
+
+    evidence = _evidence(agent_run)
+    target_paths = _string_list(evidence.get("target_paths", [])) or _input_paths(agent_run)
+    fixture_response = evidence.get("fixture_judge_response") if isinstance(evidence.get("fixture_judge_response"), dict) else None
+    adapter = _FixtureReviewAdapter(fixture_response) if fixture_response else None
+    return run_provider_quality_judge(
+        storage,
+        suite_type=str(evidence.get("suite_type") or "opening_3"),
+        target_paths=target_paths,
+        rubric_path=str(evidence.get("rubric_path") or ""),
+        adapter=adapter,
+        genre_strategy_pack_path=str(evidence.get("genre_strategy_pack_path") or ""),
+        style_profile_path=str(evidence.get("style_profile_path") or ""),
+        platform_id=str(evidence.get("platform_id") or "local"),
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+        provider_runtime_guard=evidence.get("provider_runtime_guard") if isinstance(evidence.get("provider_runtime_guard"), dict) else None,
+        allow_mock_fixture=bool(evidence.get("allow_mock_fixture", False)),
+    )
+
+
+def _run_quality_gate_operation(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.quality_eval import run_quality_gate
+
+    evidence = _evidence(agent_run)
+    return run_quality_gate(
+        storage,
+        quality_report_path=str(evidence.get("quality_report_path") or _primary_input_path(agent_run)),
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_long_chain_proof_operation(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.long_chain_proof import run_long_chain_proof
+
+    evidence = _evidence(agent_run)
+    return run_long_chain_proof(
+        storage,
+        project_id=_project_id(agent_run) or str(evidence.get("project_id") or "local-project"),
+        mode=str(evidence.get("mode") or "deterministic_50"),
+        target_chapter_count=int(evidence["target_chapter_count"]) if str(evidence.get("target_chapter_count") or "").isdigit() else None,
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+        opt_in_slow_provider=bool(evidence.get("opt_in_slow_provider", False)),
+    )
+
+
+def _run_build_platform_upload_package(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.publishing_feedback_adapters import build_platform_upload_package
+
+    evidence = _evidence(agent_run)
+    return build_platform_upload_package(
+        storage,
+        release_package_path=str(evidence.get("release_package_path") or _primary_input_path(agent_run)),
+        platform_id=str(evidence.get("platform_id") or "manual"),
+        book_metadata=evidence.get("book_metadata") if isinstance(evidence.get("book_metadata"), dict) else None,
+        chapter_payloads=evidence.get("chapter_payloads") if isinstance(evidence.get("chapter_payloads"), list) else None,
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_record_platform_receipt(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.publishing_feedback_adapters import record_platform_receipt
+
+    evidence = _evidence(agent_run)
+    return record_platform_receipt(
+        storage,
+        platform_id=str(evidence.get("platform_id") or "manual"),
+        platform_book_id=str(evidence.get("platform_book_id") or ""),
+        platform_chapter_id=str(evidence.get("platform_chapter_id") or ""),
+        review_status=str(evidence.get("review_status") or "submitted"),
+        receipt_raw=evidence.get("receipt_raw") if isinstance(evidence.get("receipt_raw"), dict) else {},
+        operator_note=str(evidence.get("operator_note") or ""),
+        upload_package_path=str(evidence.get("upload_package_path") or _primary_input_path(agent_run)),
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_publish_platform_upload_package(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.publishing_feedback_adapters import publish_platform_upload_package
+
+    evidence = _evidence(agent_run)
+    return publish_platform_upload_package(
+        storage,
+        upload_package_path=str(evidence.get("upload_package_path") or _primary_input_path(agent_run)),
+        platform_config=evidence.get("platform_config") if isinstance(evidence.get("platform_config"), dict) else None,
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_import_platform_metrics(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.publishing_feedback_adapters import import_platform_metrics
+
+    evidence = _evidence(agent_run)
+    return import_platform_metrics(
+        storage,
+        platform_id=str(evidence.get("platform_id") or "manual"),
+        chapter_metrics=evidence.get("chapter_metrics") if isinstance(evidence.get("chapter_metrics"), list) else [],
+        book_metrics=evidence.get("book_metrics") if isinstance(evidence.get("book_metrics"), dict) else {},
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_cluster_platform_comments(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.publishing_feedback_adapters import cluster_platform_comments
+
+    evidence = _evidence(agent_run)
+    return cluster_platform_comments(
+        storage,
+        platform_id=str(evidence.get("platform_id") or "manual"),
+        comments=evidence.get("comments") if isinstance(evidence.get("comments"), list) else [],
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+        persist_issues=bool(evidence.get("persist_issues", False)),
+    )
+
+
+def _run_create_feedback_mutation_proposal(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.publishing_feedback_adapters import create_feedback_mutation_proposal
+
+    evidence = _evidence(agent_run)
+    return create_feedback_mutation_proposal(
+        storage,
+        source_feedback_paths=_string_list(evidence.get("source_feedback_paths", [])) or _input_paths(agent_run),
+        target_assets=evidence.get("target_assets") if isinstance(evidence.get("target_assets"), list) else [],
+        proposed_changes=evidence.get("proposed_changes") if isinstance(evidence.get("proposed_changes"), list) else [],
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
     )
 
 

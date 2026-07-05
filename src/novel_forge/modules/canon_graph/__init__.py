@@ -10,6 +10,7 @@ from novel_forge.modules.canon_graph.service import (
     query_canon_graph_paths,
     query_canon_graph,
     reason_canon_graph,
+    run_canon_graph_plugin,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "query_canon_graph_paths",
     "query_canon_graph",
     "reason_canon_graph",
+    "run_canon_graph_plugin",
 ]

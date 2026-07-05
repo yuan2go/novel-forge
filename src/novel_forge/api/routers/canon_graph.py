@@ -17,6 +17,7 @@ from novel_forge.modules.canon_graph import (
     query_canon_graph_paths,
     reason_canon_graph,
     resolve_canon_change_approval,
+    run_canon_graph_plugin,
 )
 from novel_forge.storage.local import LocalStorage
 
@@ -59,6 +60,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.post("/product/canon-graph/check")
     async def canon_graph_check(request: Request) -> dict[str, Any]:
         return check_canon_graph_conflicts(LocalStorage(app_settings.root), await request.json())
+
+    @router.post("/product/canon-graph/plugin")
+    async def canon_graph_plugin(request: Request) -> dict[str, Any]:
+        return run_canon_graph_plugin(LocalStorage(app_settings.root), await request.json())
 
     @router.post("/product/canon-graph/issues")
     async def canon_graph_issues(request: Request) -> dict[str, Any]:

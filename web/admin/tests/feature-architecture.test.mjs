@@ -320,6 +320,22 @@ describe("Novel Forge admin feature architecture", () => {
     }
   });
 
+  it("keeps content intelligence artifact repairs review-only", () => {
+    const contentIntelligence = read("app/features/content-intelligence/ContentIntelligencePages.tsx");
+    for (const token of [
+      "Review-only repair boundary",
+      "It never edits outlines, chapters, characters, release packages, or platform state.",
+      "status: \"needs_review\"",
+      "Review note",
+      "Save review marker",
+      "No story plan, chapter, or release package was changed.",
+      "role=\"status\"",
+      "artifactSummaryGrid"
+    ]) {
+      assert.match(contentIntelligence, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    }
+  });
+
   it("contains an optional Playwright browser smoke test", () => {
     const smoke = read("tests/playwright-smoke.test.mjs");
     assert.match(smoke, /playwright/);

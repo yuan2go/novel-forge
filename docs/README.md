@@ -1,11 +1,26 @@
 # Novel Forge Documentation
 
 Updated: 2026-07-05
-Baseline checked: branch `backup/v6-post-mkaos-industrialization-20260705`, commit `e4f700c`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, starting commit `3f68522`
 
 This directory is the current documentation entrypoint for Novel Forge v6 / early Novel Operating System runtime.
 
 Use code and tests as the source of truth. Older design files and phase reports remain useful as history, but they are not authoritative unless a current document links them as active evidence.
+
+## V7 Content Intelligence Update
+
+The active branch adds the first V7 Content Intelligence Foundation on top of the existing Novel OS runtime. Verified implementation paths now include:
+
+- Genre OS: `src/novel_forge/modules/genre_os/`, `/product/genre/*`, `tests/unit/test_genre_os.py`
+- Style OS: `src/novel_forge/modules/style_os/`, `/product/style/*`, `tests/unit/test_style_os.py`
+- Canon Graph 2.0 plugins: `src/novel_forge/modules/canon_graph/service.py`, `tests/unit/test_canon_graph_plugins.py`
+- Quality Eval 2.0: `src/novel_forge/modules/quality_eval/`, `/product/quality/*`, `tests/unit/test_quality_eval_v2.py`
+- Long-chain Proof Center: `src/novel_forge/modules/long_chain_proof/`, `/product/long-chain-proof/*`, integration 50-chapter pressure fixture
+- Publishing/Feedback Adapter 2.0: `src/novel_forge/modules/publishing_feedback_adapters/`, `/product/publishing-adapters/*`, `/product/feedback-adapters/*`
+- Web Admin consoles: Genre, Style, Canon Graph 2.0, Quality Eval 2.0, Long-chain Proof, Publishing Feedback 2.0, and Agent Operation Coverage routes.
+
+Current report: [reports/v7-content-intelligence-foundation-report.md](reports/v7-content-intelligence-foundation-report.md).
+Risk closure addendum: [reports/v7-content-intelligence-risk-closure-report.md](reports/v7-content-intelligence-risk-closure-report.md).
 
 ## Recommended Reading Order
 
@@ -29,6 +44,8 @@ Use code and tests as the source of truth. Older design files and phase reports 
 | Engineering | [engineering/extension-guide.md](engineering/extension-guide.md) | Extension checklist for schema/service/API/UI/tests/docs |
 | Testing | [quality/regression-tests.md](quality/regression-tests.md) | Regression suite and command map |
 | Roadmap | [roadmap/current-roadmap.md](roadmap/current-roadmap.md) | Current implementation priorities |
+| V7 report | [reports/v7-content-intelligence-foundation-report.md](reports/v7-content-intelligence-foundation-report.md) | Verified V7 content intelligence foundation changes |
+| V7 risk closure | [reports/v7-content-intelligence-risk-closure-report.md](reports/v7-content-intelligence-risk-closure-report.md) | Provider judge, provider long-chain proof, platform API adapter, and UI artifact workflow closure |
 | Audit | [reports/docs-audit-current-state.md](reports/docs-audit-current-state.md) | Documentation drift audit |
 | Final state report | [reports/current-engineering-state.md](reports/current-engineering-state.md) | Result of the current docs audit pass |
 

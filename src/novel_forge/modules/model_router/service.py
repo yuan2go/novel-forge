@@ -20,17 +20,7 @@ from novel_forge.storage.local import LocalStorage
 
 MODEL_ROUTER_TYPES = {"model_route", "model_route_resolution"}
 MOCK_PROVIDER_NAMES = {"mock", "mock-provider", "local-mock", "mock-openai", "fixture-mock"}
-DEFAULT_PRODUCTION_PROVIDER_ALLOWLIST = {
-    "anthropic",
-    "azure-openai",
-    "bedrock",
-    "fallback-provider",
-    "local-provider",
-    "openai",
-    "primary-provider",
-    "unit-provider",
-    "vertex-ai",
-}
+DEFAULT_PRODUCTION_PROVIDER_ALLOWLIST = {"claude-code"}
 
 
 def create_model_route(
@@ -386,6 +376,7 @@ def call_model_via_router(
     trace: dict[str, Any] | None = None,
     environment: str = "",
     allow_mock_fixture: bool = False,
+    provider_runtime_guard: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Resolve ModelRouter before executing an adapter operation.
 
@@ -406,6 +397,9 @@ def call_model_via_router(
         environment=environment or str((context or {}).get("environment") or (context or {}).get("runtime_environment") or ""),
         allow_mock_fixture=allow_mock_fixture or bool((context or {}).get("allow_mock_fixture") or (context or {}).get("mock_provider_test_mode")),
     )
+    resolution = route.get("resolution", {}) if isinstance(route.get("resolution", {}), dict) else route.get("asset", {}).get("content", {})
+    provider = str(resolution.get("provider", "mock"))
+    model = str(resolution.get("model_name", "mock-model"))
     context_payload = {**(context or {}), "model_route": _compact_route_for_context(route), "runtime_operation": operation}
     started = utc_now()
     try:
@@ -432,6 +426,7 @@ def call_model_via_router(
             input_assets=input_assets or [],
             output_assets=output_assets or [],
             context_bundle_path=context_bundle_path,
+            provider_runtime_guard=provider_runtime_guard,
             usage={},
             cost={"amount": 0.0, "currency": "USD", "source": "model_router_adapter_exception"},
             status="failed",
@@ -456,6 +451,7 @@ def call_model_via_router(
         input_assets=input_assets or [],
         output_assets=output_assets or [],
         context_bundle_path=context_bundle_path,
+        provider_runtime_guard=provider_runtime_guard,
         usage=usage,
         cost=cost,
         status="succeeded",
@@ -464,11 +460,20 @@ def call_model_via_router(
         allow_mock_fixture=allow_mock_fixture or bool((context or {}).get("allow_mock_fixture") or (context or {}).get("mock_provider_test_mode")),
     )
     if isinstance(result, dict):
+        runtime_policy = gateway.get("runtime_policy", {}) if isinstance(gateway.get("runtime_policy", {}), dict) else {}
+        runtime_policy_gate = runtime_policy.get("gate_result", {}) if isinstance(runtime_policy.get("gate_result", {}), dict) else {}
+        runtime_policy_path = str(runtime_policy.get("path") or runtime_policy_gate.get("path", ""))
         result["model_route_resolution_path"] = str(route.get("path", ""))
         result["model_gateway_call"] = {
             "started_at": started,
             "status": gateway.get("status", ""),
             "model_call_log_path": gateway.get("model_call", {}).get("path", "") if isinstance(gateway.get("model_call", {}), dict) else "",
+            "runtime_policy_path": runtime_policy_path,
+            "cost_ledger_path": gateway.get("model_call", {}).get("cost_ledger", {}).get("path", "") if isinstance(gateway.get("model_call", {}).get("cost_ledger", {}), dict) else "",
+            "provider_policy": resolution.get("provider_policy", {}) if isinstance(resolution.get("provider_policy", {}), dict) else {},
+            "approval_evidence": resolution.get("approval_evidence", {}) if isinstance(resolution.get("approval_evidence", {}), dict) else {},
+            "provider": provider,
+            "model": model,
         }
     return result if isinstance(result, dict) else {"text": str(result), "model_route_resolution_path": str(route.get("path", "")), "model_gateway_call": gateway}
 

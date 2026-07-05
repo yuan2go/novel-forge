@@ -40,9 +40,11 @@ export type NavItemKey =
   | "agent_center"
   | "agent_registry"
   | "agent_dispatch"
+  | "agent_operation_coverage"
   | "audit_log"
   | "permission_center"
   | "canon_console"
+  | "canon_graph_v2"
   | "character_console"
   | "arc_console"
   | "foreshadowing_console"
@@ -56,6 +58,8 @@ export type NavItemKey =
   | "invalidation_map"
   | "review_rework_board"
   | "longform_stability"
+  | "long_chain_proof"
+  | "genre_console"
   | "topic_library"
   | "material_library"
   | "knowledge_library"
@@ -63,6 +67,7 @@ export type NavItemKey =
   | "novel_kg"
   | "setting_bible"
   | "style_center"
+  | "style_console_v2"
   | "writing_templates"
   | "quality_standards"
   | "analysis_center"
@@ -85,6 +90,8 @@ export type NavItemKey =
   | "production_control"
   | "change_impact"
   | "model_evaluation"
+  | "quality_eval_v2"
+  | "publishing_feedback_v2"
   | "analytics_dashboard"
   | "data_statistics"
   | "settings_center"
@@ -125,9 +132,11 @@ export const navGroups: NavGroup[] = [
       { key: "agent_center", label: "Agent Center", description: "AgentTask、Loop、Issue 和运行证据", href: "/agent-center", icon: <ListChecks size={17} /> },
       { key: "agent_registry", label: "Agent Registry", description: "Agent 元数据、生命周期和调度资格", href: "/agent-registry", icon: <ListChecks size={17} /> },
       { key: "agent_dispatch", label: "Agent Dispatch", description: "Agent queue、lease、recover 和 contract", href: "/agent-dispatch", icon: <ListChecks size={17} /> },
+      { key: "agent_operation_coverage", label: "Operation Coverage", description: "V7 Agent operation coverage", href: "/agent-operation-coverage", icon: <ListChecks size={17} /> },
       { key: "audit_log", label: "Audit Log", description: "治理级 audit trail 和证据导出", href: "/audit-log", icon: <FileSearch size={17} /> },
       { key: "permission_center", label: "Permission Center", description: "agent/tool/source/publish/bypass 权限和人工审批", href: "/permission-center", icon: <ShieldCheck size={17} /> },
       { key: "canon_console", label: "Canon Console", description: "正典、事实账本和设定规则", href: "/canon-console", icon: <BookOpenCheck size={17} /> },
+      { key: "canon_graph_v2", label: "Canon Graph 2.0", description: "题材插件一致性 gate", href: "/canon-graph-v2", icon: <Network size={17} /> },
       { key: "character_console", label: "Character Console", description: "人物卡和人物状态账本", href: "/character-console", icon: <BookMarked size={17} /> },
       { key: "arc_console", label: "Arc Console", description: "长篇主线、阶段弧线和章节状态", href: "/arc-console", icon: <GitPullRequest size={17} /> },
       { key: "foreshadowing_console", label: "Foreshadowing", description: "伏笔线程、伏笔图谱和回收状态", href: "/foreshadowing-console", icon: <Network size={17} /> },
@@ -140,7 +149,8 @@ export const navGroups: NavGroup[] = [
       { key: "cost_dashboard", label: "Cost Dashboard", description: "成本账本、模型调用和预算告警", href: "/cost-dashboard", icon: <CreditCard size={17} /> },
       { key: "invalidation_map", label: "Invalidation Map", description: "变更影响、KG dirty 和下游失效", href: "/invalidation", icon: <GitPullRequest size={17} /> },
       { key: "review_rework_board", label: "Review Rework", description: "审稿问题到发布门禁闭环", href: "/review-rework", icon: <ShieldCheck size={17} /> },
-      { key: "longform_stability", label: "Longform Stability", description: "正典、章节状态、卷级推进和 OS 验收", href: "/longform-stability", icon: <BookOpenCheck size={17} /> }
+      { key: "longform_stability", label: "Longform Stability", description: "正典、章节状态、卷级推进和 OS 验收", href: "/longform-stability", icon: <BookOpenCheck size={17} /> },
+      { key: "long_chain_proof", label: "Long-chain Proof", description: "50/100/300 章内容智能 proof", href: "/long-chain-proof", icon: <GitPullRequest size={17} /> }
     ]
   },
   {
@@ -152,8 +162,10 @@ export const navGroups: NavGroup[] = [
       { key: "knowledge_library", label: "知识库", description: "多学科知识卡", href: "/assets?library=knowledge", icon: <Database size={17} /> },
       { key: "mkaos", label: "MKAOS", description: "知识中枢、规则中枢和使用留痕", href: "/mkaos", icon: <Database size={17} /> },
       { key: "novel_kg", label: "Novel KG", description: "实体、关系、时间线和伏笔图谱", href: "/kg", icon: <Network size={17} /> },
+      { key: "genre_console", label: "Genre Console", description: "Genre OS 策略包和风险 gate", href: "/genre-console", icon: <Library size={17} /> },
       { key: "setting_bible", label: "设定书", description: "世界观、连续性和长篇设定", href: "/assets?library=bible", icon: <BookOpen size={17} /> },
       { key: "style_center", label: "文风中心", description: "参数化 style profile", href: "/assets?library=style", icon: <Wand2 size={17} /> },
+      { key: "style_console_v2", label: "Style Console", description: "Style OS 样本隔离和漂移 gate", href: "/style-console", icon: <Wand2 size={17} /> },
       { key: "writing_templates", label: "写作模板", description: "冲突、节奏、钩子和修辞模板", href: "/templates", icon: <PenLine size={17} /> },
       { key: "quality_standards", label: "精品标准", description: "质量标准和审稿规则", href: "/assets?library=quality", icon: <ShieldCheck size={17} /> }
     ]
@@ -194,6 +206,8 @@ export const navGroups: NavGroup[] = [
       { key: "production_control", label: "生产总控", description: "运行实体观测", href: "/control", icon: <Activity size={17} /> },
       { key: "change_impact", label: "变更影响", description: "长篇变更影响分析", href: "/impact", icon: <GitPullRequest size={17} /> },
       { key: "model_evaluation", label: "模型评测", description: "Benchmark 和模型路由", href: "/evaluation", icon: <SlidersHorizontal size={17} /> },
+      { key: "quality_eval_v2", label: "Quality Eval 2.0", description: "Opening/Golden/Volume/Longform 质量套件", href: "/quality-eval-v2", icon: <ShieldCheck size={17} /> },
+      { key: "publishing_feedback_v2", label: "Publish Feedback 2.0", description: "手动发布包、回执、评论聚类和回流提案", href: "/publishing-feedback-v2", icon: <Send size={17} /> },
       { key: "analytics_dashboard", label: "Analytics", description: "ClickHouse optional OLAP 离线投影", href: "/analytics", icon: <BarChart3 size={17} /> },
       { key: "data_statistics", label: "数据统计", description: "产能、质量、成本趋势", href: "/statistics", icon: <BarChart3 size={17} /> },
       { key: "settings_center", label: "设置中心", description: "本地生产配置", href: "/settings", icon: <Settings size={17} /> },

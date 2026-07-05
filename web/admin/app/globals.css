@@ -991,6 +991,10 @@ th {
   grid-template-columns: minmax(260px, 1fr) auto;
 }
 
+.contentIntelligenceRepairGrid {
+  grid-template-columns: minmax(240px, 1fr) minmax(240px, 1fr);
+}
+
 .formStack {
   display: grid;
   gap: 10px;
@@ -1031,6 +1035,55 @@ th {
 
 .quickActions button {
   min-height: 38px;
+}
+
+.repairBoundary {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.repairBoundary strong {
+  font-size: 13px;
+}
+
+.repairBoundary span {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.artifactSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.artifactSummaryGrid div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.artifactSummaryGrid span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.artifactSummaryGrid strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
 }
 
 .studioSelectorGrid {

@@ -11,7 +11,17 @@ from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.audit_log import record_audit_event
 from novel_forge.modules.review_issue import persist_issue_candidates
-from novel_forge.schemas import BaseAsset, CanonGraphSnapshot, validate_common_fields
+from novel_forge.schemas import (
+    BaseAsset,
+    CanonGraphSnapshot,
+    FantasyPowerScaleReport,
+    HistoricalFactionNetworkReport,
+    HorrorRuleContaminationReport,
+    MysteryEvidenceChainReport,
+    RomanceRelationshipStateReport,
+    SciFiRuleConsistencyReport,
+    validate_common_fields,
+)
 from novel_forge.storage.local import LocalStorage
 
 CANON_GRAPH_ASSET_TYPES = {
@@ -41,6 +51,15 @@ REASONING_RELATIONS = {
     "supports_arc_payoff",
     "constrains",
     "forbids_term",
+}
+
+CANON_PLUGIN_REPORTS = {
+    "fantasy_power_scale_engine": FantasyPowerScaleReport,
+    "mystery_evidence_chain_engine": MysteryEvidenceChainReport,
+    "romance_relationship_state_engine": RomanceRelationshipStateReport,
+    "historical_faction_network_engine": HistoricalFactionNetworkReport,
+    "sci_fi_rule_consistency_engine": SciFiRuleConsistencyReport,
+    "horror_rule_contamination_engine": HorrorRuleContaminationReport,
 }
 
 
@@ -258,6 +277,109 @@ def persist_canon_graph_issues(storage: LocalStorage, payload: dict[str, Any]) -
     result = check_canon_graph_conflicts(storage, payload)
     summary = persist_issue_candidates(storage, result["issue_candidates"], source_system="canon_graph")
     return {"status": result["status"], "check": result, "review_issue_summary": summary}
+
+
+def run_canon_graph_plugin(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    plugin = str(payload.get("plugin") or payload.get("plugin_name") or "").strip()
+    if plugin not in CANON_PLUGIN_REPORTS:
+        raise ValueError(f"unsupported canon graph plugin: {plugin}")
+    target_path = str(payload.get("target_path") or payload.get("asset_path") or "").strip()
+    artifact_text = str(payload.get("artifact_text") or payload.get("text") or "").strip()
+    target_asset_id = str(payload.get("target_asset_id") or "").strip()
+    target_asset_type = str(payload.get("target_asset_type") or "").strip()
+    project_id = str(payload.get("project_id") or "").strip()
+    workspace_path = str(payload.get("workspace_path") or "").strip()
+    evidence_refs: list[str] = []
+    chapter_no: int | str = 0
+    if target_path:
+        path = resolve_path(storage.root, target_path)
+        asset = storage.read_asset(path)
+        asset_data = asset.to_dict()
+        project = project_scope_from_asset(storage, asset, input_path=path, workspace_path=workspace_path)
+        project_id = project_id or str(project.get("project_id") or "")
+        asset_metadata = asset_data.get("metadata", {}) if isinstance(asset_data.get("metadata", {}), dict) else {}
+        asset_content = asset_data.get("content", {}) if isinstance(asset_data.get("content", {}), dict) else {}
+        if not project_id or project_id == "local-system":
+            project_id = str(asset_metadata.get("project_id") or asset_content.get("project_id") or project_id or "")
+        workspace_path = workspace_path or str(project.get("workspace_path") or "")
+        target_asset_id = target_asset_id or asset.id
+        target_asset_type = target_asset_type or asset.type
+        artifact_text = artifact_text or _asset_text(asset_data)
+        chapter_no = _chapter_no_from_asset(asset_data)
+        evidence_refs.append(_display_path(storage.root, path))
+    if not artifact_text:
+        raise ValueError("target_path or artifact_text is required for canon graph plugin")
+    graph = build_canon_graph(
+        storage,
+        project_id=project_id or None,
+        workspace_path=workspace_path or None,
+        persist=bool(payload.get("persist_snapshot", False)),
+    )
+    conflicts = _plugin_conflicts(plugin, artifact_text, graph)
+    issue_candidates = [
+        {
+            "issue_type": "canon_plugin_conflict",
+            "severity": conflict["severity"],
+            "blocking": conflict["severity"] in {"high", "critical"},
+            "target_asset_id": target_asset_id or "unknown-target",
+            "target_asset_type": target_asset_type or "artifact",
+            "target_asset_path": target_path,
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "message": conflict["message"],
+            "fix_suggestion": conflict["fix_suggestion"],
+            "evidence_refs": _dedupe([*evidence_refs, *conflict.get("evidence_refs", [])]),
+        }
+        for conflict in conflicts
+        if conflict.get("severity") in {"high", "critical"}
+    ]
+    issue_summary = (
+        persist_issue_candidates(storage, issue_candidates, source_system=f"canon_graph.{plugin}")
+        if payload.get("persist_issues", True)
+        else {"issues": [], "count": 0, "blocking_count": sum(1 for item in issue_candidates if item.get("blocking"))}
+    )
+    issue_paths = [str(path) for path in issue_summary.get("issue_paths", [])]
+    report_cls = CANON_PLUGIN_REPORTS[plugin]
+    report_type = report_cls().type
+    blocking_count = sum(1 for conflict in conflicts if conflict.get("severity") in {"high", "critical"})
+    report = report_cls(
+        title=f"{plugin} report for {target_asset_id or 'artifact'}",
+        source=target_asset_id or target_path,
+        tags=["canon-graph", "plugin", plugin, "blocked" if blocking_count else "passed"],
+        content={
+            "report_id": make_id(report_type, f"{plugin}-{target_asset_id or target_path}"),
+            "target_asset_id": target_asset_id or "unknown-target",
+            "project_id": project_id or "local-system",
+            "chapter_no": chapter_no,
+            "conflicts": conflicts,
+            "issue_candidates": issue_candidates,
+            "blocking_issue_count": blocking_count,
+            "evidence_refs": _dedupe([*evidence_refs, *graph.get("references", [])[:20]]),
+            "plugin": plugin,
+            "graph_summary": graph["summary"],
+            "review_issue_paths": issue_paths,
+        },
+        metadata={
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "target_asset_type": target_asset_type or "artifact",
+            "plugin": plugin,
+            "status": "blocked" if blocking_count else "passed",
+        },
+        references=_dedupe([*evidence_refs, *issue_paths]),
+    )
+    errors = validate_common_fields(report.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    report_path = storage.write_asset_auto(report)
+    return {
+        "status": "blocked" if blocking_count else "passed",
+        "path": _display_path(storage.root, report_path),
+        "asset": storage.read_json(report_path),
+        "conflicts": conflicts,
+        "review_issues": issue_paths,
+        "graph_summary": graph["summary"],
+    }
 
 
 def diff_canon_graph(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -1666,6 +1788,71 @@ def _dedupe(values: list[str]) -> list[str]:
             seen.add(item)
             result.append(item)
     return result
+
+
+def _plugin_conflicts(plugin: str, artifact_text: str, graph: dict[str, Any]) -> list[dict[str, Any]]:
+    text = artifact_text.lower()
+    checks = {
+        "fantasy_power_scale_engine": [
+            ("critical", ["无限越级", "无代价突破", "一击秒杀所有", "unlimited power"], "Power scale is bypassed without cost."),
+            ("high", ["突然满级", "境界无效"], "Progression rule appears to collapse."),
+        ],
+        "mystery_evidence_chain_engine": [
+            ("critical", ["凭空出现的证据", "突然想起真相", "新增关键证据", "new evidence appears from nowhere"], "Mystery reveal depends on unevidenced information."),
+            ("high", ["读者不可能知道", "没有线索"], "Evidence chain is not reader-fair."),
+        ],
+        "romance_relationship_state_engine": [
+            ("critical", ["互不相识却结婚", "毫无理由原谅", "relationship state reset"], "Relationship state jumps without emotional bridge."),
+            ("high", ["误会反复没有进展", "突然相爱"], "Relationship progression lacks state transition evidence."),
+        ],
+        "historical_faction_network_engine": [
+            ("critical", ["古代手机", "互联网", "现代枪械随处可得"], "Historical rule/faction context is contaminated by unsupported modern artifact."),
+            ("high", ["所有派系立刻归顺", "无代价夺权"], "Faction network changes without cost."),
+        ],
+        "sci_fi_rule_consistency_engine": [
+            ("critical", ["无限能源", "突破所有物理限制", "technology solves everything"], "Science rule is bypassed by unlimited capability."),
+            ("high", ["规则临时改变", "不再需要代价"], "Science rule consistency is weakened."),
+        ],
+        "horror_rule_contamination_engine": [
+            ("critical", ["规则失效", "不受污染", "怪物随意改变规则"], "Horror contamination rule loses consistency."),
+            ("high", ["安全区永远安全", "恐惧没有代价"], "Horror pressure no longer escalates."),
+        ],
+    }
+    conflicts: list[dict[str, Any]] = []
+    for severity, markers, message in checks.get(plugin, []):
+        matched = [marker for marker in markers if marker.lower() in text]
+        if matched:
+            conflicts.append(
+                {
+                    "severity": severity,
+                    "message": message,
+                    "matched_markers": matched,
+                    "fix_suggestion": _plugin_fix(plugin),
+                    "evidence_refs": graph.get("references", [])[:5],
+                }
+            )
+    if not conflicts:
+        conflicts.append(
+            {
+                "severity": "info",
+                "message": f"{plugin} found no blocking conflict in local heuristic pass",
+                "matched_markers": [],
+                "fix_suggestion": "No action required for local heuristic pass.",
+                "evidence_refs": graph.get("references", [])[:3],
+            }
+        )
+    return conflicts
+
+
+def _plugin_fix(plugin: str) -> str:
+    return {
+        "fantasy_power_scale_engine": "Restore power scale cost, level boundary, or payoff setup before release.",
+        "mystery_evidence_chain_engine": "Add prior evidence, fair misdirection, and reveal linkage.",
+        "romance_relationship_state_engine": "Insert relationship state transition and emotional cause.",
+        "historical_faction_network_engine": "Reconcile faction/resource changes with era constraints.",
+        "sci_fi_rule_consistency_engine": "Apply the established science rule and record any exception as canon.",
+        "horror_rule_contamination_engine": "Reinstate contamination rules, safe-zone limits, and fear escalation.",
+    }.get(plugin, "Resolve canon plugin conflict before release.")
 
 
 def _summary(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], *, reasoning: dict[str, Any] | None = None) -> dict[str, Any]:
