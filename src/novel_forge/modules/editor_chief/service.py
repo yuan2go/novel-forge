@@ -150,6 +150,7 @@ def _safe_governance_summary(storage: LocalStorage, *, project_id: str | None) -
         from novel_forge.modules.audit_log import audit_chain_summary
         from novel_forge.modules.clickhouse_analytics import agent_metrics, analytics_capabilities, evaluation_metrics
         from novel_forge.modules.evaluation_center import list_model_evaluation_assets
+        from novel_forge.modules.mkaos_production_gate import mkaos_gate_summary
         from novel_forge.modules.pgvector_store import pgvector_capabilities
 
         evaluation_rows = list_model_evaluation_assets(storage, project_id=project_id, limit=200)
@@ -165,6 +166,7 @@ def _safe_governance_summary(storage: LocalStorage, *, project_id: str | None) -
                 "capabilities": analytics_capabilities(storage, project_id=project_id or ""),
                 "agent_metrics": agent_metrics(storage, project_id=project_id or ""),
             },
+            "mkaos_gate": mkaos_gate_summary(storage, project_id=project_id or ""),
             "retrieval": pgvector_capabilities(storage, project_id=project_id or ""),
             "status": "ready",
         }

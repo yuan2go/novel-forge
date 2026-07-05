@@ -42,6 +42,9 @@ MKAOS has been upgraded from a P0 knowledge governance base into a first-slice K
 | 32. Abstraction quality benchmark | Complete first slice | `run_knowledge_abstraction_quality_benchmark` tests professional book, webnovel analysis, and classic analysis sources for transferable mechanism quality, actionability, anti-encyclopedia safety, flow coverage, and source overlap. |
 | 33. Canon semantic graph bridge | Complete first slice | `check_canon_semantic_graph_conflict` combines explicit MKAOS canon checks with Canon Graph reasoning and returns ReviewIssue-compatible issue candidates. |
 | 34. Longitudinal effect learning | Complete first slice | `run_longitudinal_knowledge_effect_learning` aggregates chapter quality, review scores, reader completion/ratings, platform retention, issue tags, and usage evidence into weight recommendations and optional updates. |
+| 35. Governed model extraction pipeline | Complete first slice | `mkaos_model_extraction` adds prompt versions, provider runner, output sanitizer, schema validator, confidence scoring, review queue, benchmark/regression, candidate approval and source-isolated provider evidence. |
+| 36. Automatic production gate | Complete first slice | `mkaos_production_gate` runs automatically from Context Builder and exposes run/list/latest/policy APIs. Gate reports persist source isolation, weak-card, ReviewIssue and recommendation evidence; production mode fails closed. |
+| 37. Deep lineage governance | Complete first slice | `mkaos_lineage` builds a local graph index and supports lineage path query, impact analysis, issue/gate/feedback attribution, feedback-to-knowledge attribution and dry-run weight governance. |
 
 ## Key Files
 
@@ -68,13 +71,19 @@ npm --prefix web/admin run build
 
 Latest results:
 
-- Previous Python discover: 399 tests passed, 2 skipped, 1586.770s.
+- Current Python discover: 473 tests passed, 2 skipped, 358.951s.
 - Current MKAOS focused regression: 62 tests passed, 100.148s.
 - Current targeted evolution/envelope/provider/conflict tests: 14 tests passed, 2.115s.
-- Current pipeline integration: passed, 600.329s.
+- Current pipeline integration: passed; sample pipeline second-run idempotency preserved after compat gate issue persistence and project-reference lookup hardening.
 - Current web/admin test: 9 passed, 1 optional Playwright smoke skipped.
 - Current web/admin lint: passed.
 - Current web/admin build: passed.
+- Current model extraction / production gate / deep lineage unit tests: 17 tests passed.
+- Current MKAOS governance integration tests: 6 tests passed.
+- Current product API route coverage: passed.
+- Current web/admin test: 10 pass, 1 optional Playwright smoke skipped.
+- Current web/admin build: passed, 67 routes generated.
+- Current quality gate / ingestion pack gate / pipeline regression: 6 tests passed, 57.531s.
 
 ## Idempotency Note
 
@@ -106,6 +115,34 @@ Selector decisions and knowledge pack mutation audits now use stable ids for rep
 - Full “越写越强” proof still needs longer multi-chapter production telemetry and real reader feedback volume beyond synthetic/local fixtures, although the longitudinal aggregation path now exists.
 - Abstraction quality benchmark uses local deterministic fixtures by default; large-scale professional-book, webnovel, and classic-novel corpus proof remains P2.
 - Canon semantic graph reasoning is integrated, but deeper semantic ambiguity still needs opt-in model judge or richer graph inference.
+- Model-level extraction is now governed and benchmarkable locally, but external provider E2E quality validation remains opt-in and has not been run in this default test pass.
+- Production gate now auto-runs from Context Builder; continued hardening should wire the same helper through every legacy non-Context Builder route until no compat-only entrypoint remains.
+- Deep lineage is local-index based; graph database scale, graph diff visualization and advanced semantic path ranking remain P2.
+
+## Latest Stabilization: Gate Coverage, Lineage Diff/Export, Explicit Weight Apply
+
+This pass closes the three remaining operational risks without changing the local-first architecture:
+
+- Added `mkaos_gate_coverage_report` so the system can audit core operations against observed `ContextBundle` and `mkaos_production_gate_report` artifacts. Missing historical entrypoints are now visible as `compat_gap`, and critical gaps are listed in `forbidden_bypass_operations`.
+- Added LocalStorage lineage diff/export reports. The export includes deterministic clusters, layout positions, relation counts, and semantic edge weights while keeping raw source fields excluded.
+- Added semantic path ranking for lineage query results. Paths are ranked by governance-critical relations such as gate blocks, review issues, feedback attribution, and production usage.
+- Changed lineage weight governance from advisory-only to explicit apply mode. Default remains dry-run; writes require `apply_updates=true` and `apply_policy=explicit` or `guarded_auto`.
+- Fixed feedback impact semantics: negative feedback attribution now recommends review/reduction instead of incorrectly boosting knowledge weight; positive feedback can still increase weight.
+- Added web/admin controls for gate coverage, lineage diff/export, and explicit weight governance apply.
+
+New targeted tests:
+
+```bash
+PYTHONPATH=src python3 -m unittest tests.unit.test_mkaos_production_gate_coverage tests.unit.test_mkaos_lineage_diff_export tests.unit.test_mkaos_weight_governance_apply_policy tests.unit.test_mkaos_feedback_attribution tests.unit.test_mkaos_production_gate_runner tests.unit.test_product_api_routes
+```
+
+Result: 10 tests passed.
+
+Updated residual risks:
+
+- Historical non-ContextBuilder entrypoints are now auditable through coverage reports, but any route marked `compat_gap` still needs migration before claiming full production surface closure.
+- Lineage remains a LocalStorage graph index. It now supports diff/export/ranking for local governance, but graph database scale, community detection, and complex animated visualization remain P2.
+- Weight governance is no longer silently advisory-only, but automatic write-back still requires explicit policy. Full human approval workflow and reviewer assignment remain P2.
 
 ## Current Distance To A Full Knowledge Asset OS
 

@@ -25,17 +25,31 @@
 - Web Admin 新增 `/agent-registry`、`/audit-log`、`/retrieval`、`/analytics`，并在 `/editor-chief` 显示 governance loop 摘要。
 - 本轮未实现 Permission Center；保留现有 ToolPermissionPolicy / runtime profile 兼容逻辑，不新增 RBAC、用户、组织或 SaaS 权限体系。
 
+2026-07-05 MKAOS P1 稳定化更新：
+
+- 新增 `mkaos_model_extraction`：模型级深度抽取治理链路，包含 prompt version、provider runner、provider output sanitizer、schema validator、confidence scoring、human review queue、benchmark/regression、candidate approve/reject 和 provider evidence hash。
+- 新增 `mkaos_production_gate`：统一生产门禁报告，Context Builder 自动执行 MKAOS gate；production/strict/operating_system 下 source leakage、blocking ReviewIssue、弱知识卡等风险 fail closed。
+- 新增 `mkaos_lineage`：LocalStorage 本地图谱血缘索引，支持 source -> knowledge -> pack -> context -> draft -> review issue -> feedback -> weight governance 的路径查询、影响分析、反馈归因和调权 dry-run。
+- 新增 MKAOS gate coverage、lineage diff/export 和显式 weight governance apply：历史非 ContextBuilder 入口可被 coverage report 标记，LocalStorage lineage 支持安全 diff/export/semantic ranking，权重写回必须显式 `apply_policy`。
+- Editor-in-Chief Console 的 governance loop 已增加 MKAOS Gate Summary，可显示 latest gate status、blocking issue count、weak knowledge card、leakage risk、lineage coverage 和 recommendation。
+- Web Admin 新增 `/mkaos/model-extraction/*`、`/mkaos/production-gate/*`、`/mkaos/knowledge-graph`、`/mkaos/lineage`、`/mkaos/impact`、`/mkaos/feedback-attribution` first-slice 页面。
+
 最终验证：
 
 | 测试命令 | 当前结果 |
 | -- | -- |
 | `python3 -m unittest tests/unit/test_mkaos.py` | 5 tests OK |
-| `python3 -m unittest discover -s tests -p 'test_*.py'` | 297 tests OK, skipped=1 |
-| `python3 -m unittest tests.integration.test_pipeline` | 1 test OK |
+| `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_*.py'` | 477 tests OK, skipped=2, 383.986s |
+| `PYTHONPATH=src python3 -m unittest tests.integration.test_pipeline` | 1 test OK; sample pipeline second-run idempotency preserved |
 | `python3 -m unittest tests.unit.test_longform_recap_agent tests.unit.test_loop_kernel tests.unit.test_publish_feedback_loop tests.unit.test_provider_hard_stop_proof tests.integration.test_novel_os_12_chapter_industrial_pressure` | 13 tests OK |
-| `npm --prefix web/admin test` | 8 pass, 1 Playwright smoke skipped |
-| `npm --prefix web/admin run build` | OK, 45 routes generated |
+| `npm --prefix web/admin test` | 10 pass, 1 Playwright smoke skipped |
+| `npm --prefix web/admin run build` | OK, 67 routes generated |
 | `PYTHONPATH=src python3 -m unittest tests.unit.test_agent_registry tests.unit.test_agent_registry_scheduler_integration tests.unit.test_audit_log tests.unit.test_pgvector_source_isolation tests.unit.test_clickhouse_analytics tests.unit.test_evaluation_center_general tests.integration.test_novel_os_governance_loop tests.unit.test_schemas tests.unit.test_product_api_routes` | 32 tests OK |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_mkaos_model_extraction_schema tests.unit.test_mkaos_model_extraction_sanitizer tests.unit.test_mkaos_model_extraction_confidence tests.unit.test_mkaos_model_extraction_prompt_registry tests.unit.test_mkaos_model_extraction_review_queue tests.unit.test_mkaos_production_gate_runner tests.unit.test_mkaos_lineage_index tests.unit.test_mkaos_asset_impact_analysis tests.unit.test_mkaos_feedback_attribution` | 17 tests OK |
+| `PYTHONPATH=src python3 -m unittest tests.integration.test_mkaos_model_extraction_to_knowledge_card tests.integration.test_mkaos_gate_context_builder_auto tests.integration.test_mkaos_gate_publish_release_package_auto tests.integration.test_mkaos_source_to_draft_lineage tests.integration.test_mkaos_feedback_to_weight_governance tests.integration.test_mkaos_novel_os_full_chain` | 6 tests OK |
+| `PYTHONPATH=src python3 -m unittest tests.unit.test_mkaos_extraction_quality tests.integration.test_mkaos_ingestion_knowledge_pack_gate tests.integration.test_pipeline` | 6 tests OK, 57.531s |
+| `npm --prefix web/admin test` | 10 pass, 1 optional Playwright smoke skipped |
+| `npm --prefix web/admin run build` | OK, 67 routes generated |
 
 ## 2. 工程能力分层
 
@@ -165,6 +179,15 @@ UI：
 - `GET /product/mkaos/packs/{pack_id}/prompt-preview`
 - `POST /product/mkaos/validate/artifact`
 - `POST /product/mkaos/validate/canon-conflict`
+- `POST /product/mkaos/model-extraction/jobs`
+- `GET /product/mkaos/model-extraction/review-queue`
+- `POST /product/mkaos/production-gate/run`
+- `GET /product/mkaos/production-gate/coverage`
+- `POST /product/mkaos/lineage/build-index`
+- `POST /product/mkaos/lineage/query-path`
+- `POST /product/mkaos/lineage/diff`
+- `POST /product/mkaos/lineage/export`
+- `POST /product/mkaos/lineage/weight-governance`
 - `POST /product/mkaos/usage-events`
 - `POST /product/mkaos/feedback/review`
 - `POST /product/mkaos/feedback/apply-weight-update`
@@ -174,12 +197,22 @@ UI：
 UI：
 
 - `/mkaos`
+- `/mkaos/model-extraction/*`
+- `/mkaos/production-gate/*`
+- `/mkaos/knowledge-graph`
+- `/mkaos/lineage`
+- `/mkaos/impact`
+- `/mkaos/feedback-attribution`
 
 核心文件：
 
 - `src/novel_forge/modules/mkaos/service.py`
+- `src/novel_forge/modules/mkaos_model_extraction/service.py`
+- `src/novel_forge/modules/mkaos_production_gate/service.py`
+- `src/novel_forge/modules/mkaos_lineage/service.py`
 - `src/novel_forge/api/routers/mkaos.py`
 - `web/admin/app/features/mkaos/MkaosConsolePage.tsx`
+- `web/admin/app/features/mkaos/MkaosIngestionPages.tsx`
 
 测试：
 
@@ -188,6 +221,10 @@ UI：
 - `tests/unit/test_mkaos_os_envelope.py`
 - `tests/unit/test_mkaos_selector_canon.py`
 - `tests/unit/test_mkaos_knowledge_graph_learning.py`
+- `tests/unit/test_mkaos_model_extraction_schema.py`
+- `tests/unit/test_mkaos_production_gate_coverage.py`
+- `tests/unit/test_mkaos_lineage_diff_export.py`
+- `tests/unit/test_mkaos_weight_governance_apply_policy.py`
 
 ### 3.3 Context Builder 与 RAG 隔离
 

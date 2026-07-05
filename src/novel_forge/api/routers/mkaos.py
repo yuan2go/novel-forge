@@ -8,6 +8,7 @@ from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules import mkaos as mkaos_service
 from novel_forge.modules import mkaos_converters, mkaos_ingestion, mkaos_quality
+from novel_forge.modules import mkaos_lineage, mkaos_model_extraction, mkaos_production_gate
 from novel_forge.storage.local import LocalStorage
 
 
@@ -270,6 +271,101 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/mkaos/model-extraction/jobs")
+    @router.post("/api/mkaos/model-extraction/jobs")
+    def create_model_extraction_job(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_model_extraction.create_model_extraction_job(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/mkaos/model-extraction/jobs")
+    @router.get("/api/mkaos/model-extraction/jobs")
+    def model_extraction_jobs(project_id: str | None = None, status: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
+        return mkaos_model_extraction.list_model_extraction_jobs(storage(), project_id=project_id, status=status, limit=limit)
+
+    @router.get("/product/mkaos/model-extraction/jobs/{job_id}")
+    @router.get("/api/mkaos/model-extraction/jobs/{job_id}")
+    def model_extraction_job(job_id: str) -> dict[str, Any]:
+        try:
+            return mkaos_model_extraction.get_model_extraction_job(storage(), job_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/model-extraction/jobs/{job_id}/run")
+    @router.post("/api/mkaos/model-extraction/jobs/{job_id}/run")
+    def run_model_extraction_job(job_id: str, payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_model_extraction.run_model_extraction_job(storage(), job_id, payload))
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/model-extraction/jobs/{job_id}/cancel")
+    @router.post("/api/mkaos/model-extraction/jobs/{job_id}/cancel")
+    def cancel_model_extraction_job(job_id: str, payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_model_extraction.cancel_model_extraction_job(storage(), job_id, payload))
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/model-extraction/candidates/{candidate_id}/approve")
+    @router.post("/api/mkaos/model-extraction/candidates/{candidate_id}/approve")
+    def approve_model_extraction_candidate(candidate_id: str, payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_model_extraction.approve_candidate(storage(), candidate_id, payload))
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/model-extraction/candidates/{candidate_id}/reject")
+    @router.post("/api/mkaos/model-extraction/candidates/{candidate_id}/reject")
+    def reject_model_extraction_candidate(candidate_id: str, payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_model_extraction.reject_candidate(storage(), candidate_id, payload))
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/mkaos/model-extraction/review-queue")
+    @router.get("/api/mkaos/model-extraction/review-queue")
+    def model_extraction_review_queue(project_id: str | None = None, status: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
+        return mkaos_model_extraction.list_review_queue(storage(), project_id=project_id, status=status, limit=limit)
+
+    @router.post("/product/mkaos/model-extraction/benchmark/run")
+    @router.post("/api/mkaos/model-extraction/benchmark/run")
+    def model_extraction_benchmark(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_model_extraction.run_benchmark(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/model-extraction/regression/run")
+    @router.post("/api/mkaos/model-extraction/regression/run")
+    def model_extraction_regression(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_model_extraction.run_regression(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/mkaos/model-extraction/prompts")
+    @router.get("/api/mkaos/model-extraction/prompts")
+    def model_extraction_prompts(source_type: str | None = None) -> list[dict[str, Any]]:
+        return mkaos_model_extraction.list_prompt_versions(storage(), source_type=source_type)
+
+    @router.post("/product/mkaos/model-extraction/prompts")
+    @router.post("/api/mkaos/model-extraction/prompts")
+    def create_model_extraction_prompt(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_model_extraction.create_prompt_version(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/convert/creative-assets")
     @router.post("/api/mkaos/convert/creative-assets")
     def convert_creative_assets(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
@@ -301,6 +397,51 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             return _mkaos_response(mkaos_quality.gate_knowledge_pack(storage(), payload))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/production-gate/run")
+    @router.post("/api/mkaos/production-gate/run")
+    def run_production_gate(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_production_gate.run_mkaos_production_gate(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/mkaos/production-gate/reports")
+    @router.get("/api/mkaos/production-gate/reports")
+    def production_gate_reports(project_id: str | None = None, flow: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
+        return mkaos_production_gate.list_gate_reports(storage(), project_id=project_id, flow=flow, limit=limit)
+
+    @router.get("/product/mkaos/production-gate/latest")
+    @router.get("/api/mkaos/production-gate/latest")
+    def production_gate_latest(project_id: str | None = None, flow: str | None = None) -> dict[str, Any]:
+        return mkaos_production_gate.latest_gate_report(storage(), project_id=project_id, flow=flow)
+
+    @router.post("/product/mkaos/production-gate/policy")
+    @router.post("/api/mkaos/production-gate/policy")
+    def production_gate_policy(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_production_gate.upsert_gate_policy(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/production-gate/coverage")
+    @router.post("/api/mkaos/production-gate/coverage")
+    def production_gate_coverage(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(
+                mkaos_production_gate.build_gate_coverage_report(
+                    storage(),
+                    project_id=payload.get("project_id"),
+                    persist=payload.get("persist", True),
+                )
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/mkaos/production-gate/coverage")
+    @router.get("/api/mkaos/production-gate/coverage")
+    def production_gate_coverage_get(project_id: str | None = None, persist: bool = False) -> dict[str, Any]:
+        return mkaos_production_gate.build_gate_coverage_report(storage(), project_id=project_id, persist=persist)
 
     @router.post("/product/mkaos/sources")
     @router.post("/api/mkaos/sources")
@@ -593,6 +734,96 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             return _mkaos_response(mkaos_service.query_lineage_audit(storage(), payload))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/lineage/build-index")
+    @router.post("/api/mkaos/lineage/build-index")
+    def lineage_build_index(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_lineage.build_lineage_index(storage(), project_id=payload.get("project_id"), persist=payload.get("persist", True)))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/mkaos/lineage/index")
+    @router.get("/api/mkaos/lineage/index")
+    def lineage_index(project_id: str | None = None) -> dict[str, Any]:
+        return mkaos_lineage.get_latest_lineage_index(storage(), project_id=project_id)
+
+    @router.post("/product/mkaos/lineage/query-path")
+    @router.post("/api/mkaos/lineage/query-path")
+    def lineage_query_path(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_lineage.query_lineage_path(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/lineage/diff")
+    @router.post("/api/mkaos/lineage/diff")
+    def lineage_diff(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_lineage.diff_lineage_indexes(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/lineage/export")
+    @router.post("/api/mkaos/lineage/export")
+    def lineage_export(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_lineage.export_lineage_graph(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/lineage/asset-impact")
+    @router.post("/api/mkaos/lineage/asset-impact")
+    def lineage_asset_impact(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_lineage.analyze_asset_impact(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/lineage/issue-attribution")
+    @router.post("/api/mkaos/lineage/issue-attribution")
+    def lineage_issue_attribution(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_lineage.query_issue_attribution(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/lineage/feedback-attribution")
+    @router.post("/api/mkaos/lineage/feedback-attribution")
+    def lineage_feedback_attribution(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_lineage.query_feedback_attribution(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/lineage/gate-attribution")
+    @router.post("/api/mkaos/lineage/gate-attribution")
+    def lineage_gate_attribution(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_lineage.query_gate_attribution(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/lineage/feedback-to-knowledge")
+    @router.post("/api/mkaos/lineage/feedback-to-knowledge")
+    def lineage_feedback_to_knowledge(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_lineage.attribute_feedback_to_knowledge(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/lineage/weight-governance")
+    @router.post("/api/mkaos/lineage/weight-governance")
+    def lineage_weight_governance(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_lineage.apply_lineage_weight_governance(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/mkaos/lineage/reports")
+    @router.get("/api/mkaos/lineage/reports")
+    def lineage_reports(project_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+        return mkaos_lineage.list_lineage_reports(storage(), project_id=project_id, limit=limit)
 
     @router.get("/product/mkaos/mutations")
     @router.get("/api/mkaos/mutations")

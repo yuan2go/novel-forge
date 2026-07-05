@@ -17,6 +17,7 @@ export type MkaosRow = {
   risk_level?: string;
   content: Record<string, any>;
   metadata: Record<string, any>;
+  references?: string[];
   asset?: Record<string, any>;
 };
 
@@ -247,5 +248,129 @@ export function gateMkaosKnowledgePack(knowledgePack: Record<string, any>) {
   return postJson("/product/mkaos/quality/gate-knowledge-pack", {
     knowledge_pack: knowledgePack,
     flow: "prose"
+  }).then(unwrapMkaos);
+}
+
+export function createMkaosModelExtractionJob(body: { sourceType: string; inputSummary: string; providerMode?: string }) {
+  return postJson("/product/mkaos/model-extraction/jobs", {
+    source_type: body.sourceType,
+    input_summary: body.inputSummary,
+    provider_mode: body.providerMode || "disabled"
+  }).then(unwrapMkaos);
+}
+
+export function loadMkaosModelExtractionJobs() {
+  return fetchJson<MkaosRow[]>("/product/mkaos/model-extraction/jobs");
+}
+
+export function runMkaosModelExtractionJob(jobId: string) {
+  return postJson(`/product/mkaos/model-extraction/jobs/${encodeURIComponent(jobId)}/run`, {
+    provider_mode: "disabled"
+  }).then(unwrapMkaos);
+}
+
+export function loadMkaosModelExtractionReviewQueue() {
+  return fetchJson<MkaosRow[]>("/product/mkaos/model-extraction/review-queue");
+}
+
+export function approveMkaosModelExtractionCandidate(candidateId: string) {
+  return postJson(`/product/mkaos/model-extraction/candidates/${encodeURIComponent(candidateId)}/approve`, {
+    note: "approved-from-web-admin"
+  }).then(unwrapMkaos);
+}
+
+export function rejectMkaosModelExtractionCandidate(candidateId: string) {
+  return postJson(`/product/mkaos/model-extraction/candidates/${encodeURIComponent(candidateId)}/reject`, {
+    reason: "rejected-from-web-admin"
+  }).then(unwrapMkaos);
+}
+
+export function runMkaosModelExtractionBenchmark() {
+  return postJson("/product/mkaos/model-extraction/benchmark/run", {
+    provider_mode: "disabled"
+  }).then(unwrapMkaos);
+}
+
+export function runMkaosModelExtractionRegression() {
+  return postJson("/product/mkaos/model-extraction/regression/run", {
+    provider_mode: "disabled"
+  }).then(unwrapMkaos);
+}
+
+export function loadMkaosModelExtractionPrompts() {
+  return fetchJson<MkaosRow[]>("/product/mkaos/model-extraction/prompts");
+}
+
+export function loadMkaosProductionGateReports() {
+  return fetchJson<MkaosRow[]>("/product/mkaos/production-gate/reports");
+}
+
+export function loadMkaosProductionGateLatest() {
+  return fetchJson<MkaosRow>("/product/mkaos/production-gate/latest");
+}
+
+export function runMkaosProductionGate(flow = "prose") {
+  return postJson("/product/mkaos/production-gate/run", {
+    flow,
+    environment: "compat",
+    target_asset: { id: "web-admin-gate-preview", type: "mkaos_preview", content: { summary: "safe preview" } },
+    knowledge_pack: { id: "web-admin-pack-preview", type: "knowledge_pack", content: { pack_items: [{ knowledge_id: "preview", creative_principle: "abstract only" }] } }
+  }).then(unwrapMkaos);
+}
+
+export function buildMkaosGateCoverage() {
+  return postJson("/product/mkaos/production-gate/coverage", { persist: true }).then(unwrapMkaos);
+}
+
+export function loadMkaosGateCoverage() {
+  return fetchJson<Record<string, any>>("/product/mkaos/production-gate/coverage");
+}
+
+export function buildMkaosLineageIndex() {
+  return postJson("/product/mkaos/lineage/build-index", { persist: true }).then(unwrapMkaos);
+}
+
+export function loadMkaosLineageIndex() {
+  return fetchJson<Record<string, any>>("/product/mkaos/lineage/index");
+}
+
+export function queryMkaosLineagePath(assetId: string) {
+  return postJson("/product/mkaos/lineage/query-path", { source_asset_id: assetId, max_depth: 6 }).then(unwrapMkaos);
+}
+
+export function diffMkaosLineageIndexes() {
+  return postJson("/product/mkaos/lineage/diff", { persist: true }).then(unwrapMkaos);
+}
+
+export function exportMkaosLineageGraph() {
+  return postJson("/product/mkaos/lineage/export", { persist: true, limit: 120 }).then(unwrapMkaos);
+}
+
+export function analyzeMkaosAssetImpact(assetId: string) {
+  return postJson("/product/mkaos/lineage/asset-impact", { asset_id: assetId }).then(unwrapMkaos);
+}
+
+export function attributeMkaosFeedback(assetId: string) {
+  return postJson("/product/mkaos/lineage/feedback-to-knowledge", {
+    feedback_id: "web-admin-feedback-preview",
+    generated_asset_id: assetId,
+    feedback_text: "节奏慢，设定太多"
+  }).then(unwrapMkaos);
+}
+
+export function dryRunMkaosWeightGovernance(assetId?: string) {
+  return postJson("/product/mkaos/lineage/weight-governance", {
+    asset_id: assetId,
+    dry_run: true
+  }).then(unwrapMkaos);
+}
+
+export function applyMkaosWeightGovernance(assetId?: string) {
+  return postJson("/product/mkaos/lineage/weight-governance", {
+    asset_id: assetId,
+    apply_updates: true,
+    apply_policy: "explicit",
+    environment: "compat",
+    bypass_reason: "web-admin-explicit-weight-governance"
   }).then(unwrapMkaos);
 }

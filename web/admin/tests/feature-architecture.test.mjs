@@ -213,10 +213,12 @@ describe("Novel Forge admin feature architecture", () => {
     assert.match(feedbackApi, /\/product\/feedback\/real-backflow/);
 
     const mkaosApi = read("app/features/mkaos/api.ts");
-    for (const endpoint of ["/product/mkaos/packs", "/product/mkaos/knowledge-graph/build", "/product/mkaos/evolution/run", "/product/mkaos/lineage/query", "/product/mkaos/mutations", "/product/mkaos/regression/run", "/product/mkaos/acceptance/knowledge-asset-os"]) {
+    for (const endpoint of ["/product/mkaos/packs", "/product/mkaos/knowledge-graph/build", "/product/mkaos/evolution/run", "/product/mkaos/lineage/query", "/product/mkaos/lineage/query-path", "/product/mkaos/lineage/diff", "/product/mkaos/lineage/export", "/product/mkaos/lineage/weight-governance", "/product/mkaos/production-gate/run", "/product/mkaos/production-gate/coverage", "/product/mkaos/model-extraction/jobs", "/product/mkaos/mutations", "/product/mkaos/regression/run", "/product/mkaos/acceptance/knowledge-asset-os"]) {
       assert.match(mkaosApi, new RegExp(endpoint.replaceAll("/", "\\/")));
     }
-    assert.match(mkaosApi, /unwrapMkaos/);
+    for (const token of ["unwrapMkaos", "applyMkaosWeightGovernance", "diffMkaosLineageIndexes", "exportMkaosLineageGraph", "buildMkaosGateCoverage"]) {
+      assert.match(mkaosApi, new RegExp(token));
+    }
   });
 
   it("upgrades the MKAOS console into a knowledge asset operations workbench", () => {
@@ -237,7 +239,18 @@ describe("Novel Forge admin feature architecture", () => {
       "app/mkaos/books/page.tsx",
       "app/mkaos/extraction-jobs/page.tsx",
       "app/mkaos/creative-assets/page.tsx",
-      "app/mkaos/quality/page.tsx"
+      "app/mkaos/quality/page.tsx",
+      "app/mkaos/model-extraction/page.tsx",
+      "app/mkaos/model-extraction/jobs/page.tsx",
+      "app/mkaos/model-extraction/review/page.tsx",
+      "app/mkaos/model-extraction/benchmarks/page.tsx",
+      "app/mkaos/model-extraction/prompts/page.tsx",
+      "app/mkaos/production-gate/page.tsx",
+      "app/mkaos/production-gate/reports/page.tsx",
+      "app/mkaos/knowledge-graph/page.tsx",
+      "app/mkaos/lineage/page.tsx",
+      "app/mkaos/impact/page.tsx",
+      "app/mkaos/feedback-attribution/page.tsx"
     ]) {
       assert.equal(existsSync(join(root, path)), true, `${path} should exist`);
     }
@@ -251,7 +264,18 @@ describe("Novel Forge admin feature architecture", () => {
       "/product/mkaos/convert/creative-assets",
       "/product/mkaos/quality/evaluate-extraction",
       "/product/mkaos/quality/check-leakage",
-      "/product/mkaos/quality/gate-knowledge-pack"
+      "/product/mkaos/quality/gate-knowledge-pack",
+      "/product/mkaos/model-extraction/jobs",
+      "/product/mkaos/model-extraction/review-queue",
+      "/product/mkaos/model-extraction/benchmark/run",
+      "/product/mkaos/model-extraction/regression/run",
+      "/product/mkaos/model-extraction/prompts",
+      "/product/mkaos/production-gate/reports",
+      "/product/mkaos/production-gate/latest",
+      "/product/mkaos/lineage/build-index",
+      "/product/mkaos/lineage/asset-impact",
+      "/product/mkaos/lineage/feedback-to-knowledge",
+      "/product/mkaos/lineage/weight-governance"
     ]) {
       assert.match(mkaosApi, new RegExp(endpoint.replaceAll("/", "\\/")));
     }
@@ -259,7 +283,7 @@ describe("Novel Forge admin feature architecture", () => {
       assert.match(mkaosApi, new RegExp(token.replaceAll("/", "\\/")));
     }
     const ingestionPage = read("app/features/mkaos/MkaosIngestionPages.tsx");
-    for (const token of ["titleForMode", "Parallel Pairs", "Creative Assets", "Extraction Quality Gate", "raw source text 只进入 evidence layer", "Resume Job", "Cancel Job"]) {
+    for (const token of ["titleForMode", "Parallel Pairs", "Creative Assets", "Extraction Quality Gate", "Model Extraction Jobs", "Extraction Review Queue", "MKAOS Production Gate", "Knowledge Graph / Lineage", "Feedback Attribution", "raw source text 只进入 evidence layer", "Resume Job", "Cancel Job"]) {
       assert.match(ingestionPage, new RegExp(token));
     }
   });

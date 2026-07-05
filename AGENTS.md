@@ -57,23 +57,23 @@ Agent is a role and permission boundary. Skill is a reusable capability. Use `do
 
 | Agent | Recommended Skills |
 |---|---|
-| Chief Editor Agent | `project-planning`, `quality-review`, `long-outline` |
-| Workflow Agent | `project-planning`, `quality-review` |
+| Chief Editor Agent | `project-planning`, `quality-review`, `long-outline`, `novel-os-engineering-audit`, `platform-strategy-os` |
+| Workflow Agent | `project-planning`, `quality-review`, `agent-loop-governance`, `review-issue-gate` |
 | Analysis Agent | `hot-novel-deconstruction`, `hot-novel-business-deconstruction`, `published-fiction-craft-analysis`, `classic-literary-depth-analysis`, `anti-copy-abstraction`, `analysis-to-asset-conversion` |
-| Knowledge Agent | `multidisciplinary-knowledge`, `anti-copy-abstraction`, `analysis-to-asset-conversion` |
-| Material Agent | `material-curation`, `analysis-to-asset-conversion`, `topic-development` |
-| Context Agent | `material-curation`, `quality-review`, `project-planning` |
-| Topic Agent | `topic-development`, `material-curation` |
-| Worldbuilding Agent | `worldbuilding`, `multidisciplinary-knowledge` |
-| Character Agent | `character-design`, `worldbuilding` |
-| Outline Agent | `long-outline`, `character-design`, `worldbuilding` |
-| Chapter Plan Agent | `chapter-outline`, `quality-review` |
-| Draft Agent | `prose-generation`, `chapter-outline` |
-| Editor Agent | `quality-review`, `prose-generation`, `chapter-outline` |
-| Review Agent | `quality-review`, `anti-copy-abstraction` |
-| Feedback Agent | `reader-feedback`, `quality-review` |
-| Publishing Agent | `quality-review`, `anti-copy-abstraction` |
-| Model Evaluation Agent | `quality-review`, `project-planning` |
+| Knowledge Agent | `mkaos-knowledge-asset-os`, `multidisciplinary-knowledge`, `anti-copy-abstraction`, `analysis-to-asset-conversion` |
+| Material Agent | `material-curation`, `mkaos-knowledge-asset-os`, `analysis-to-asset-conversion`, `topic-development` |
+| Context Agent | `context-builder-source-isolation`, `mkaos-knowledge-asset-os`, `material-curation`, `quality-review` |
+| Topic Agent | `topic-development`, `platform-strategy-os`, `material-curation` |
+| Worldbuilding Agent | `worldbuilding`, `multidisciplinary-knowledge`, `mkaos-knowledge-asset-os` |
+| Character Agent | `character-design`, `worldbuilding`, `context-builder-source-isolation` |
+| Outline Agent | `long-outline`, `character-design`, `worldbuilding`, `platform-strategy-os`, `context-builder-source-isolation` |
+| Chapter Plan Agent | `chapter-outline`, `quality-review`, `platform-strategy-os`, `context-builder-source-isolation` |
+| Draft Agent | `prose-generation`, `chapter-outline`, `context-builder-source-isolation`, `review-issue-gate` |
+| Editor Agent | `quality-review`, `review-issue-gate`, `prose-generation`, `chapter-outline` |
+| Review Agent | `quality-review`, `review-issue-gate`, `anti-copy-abstraction`, `mkaos-knowledge-asset-os` |
+| Feedback Agent | `reader-feedback`, `quality-review`, `mkaos-knowledge-asset-os`, `platform-strategy-os` |
+| Publishing Agent | `quality-review`, `review-issue-gate`, `platform-strategy-os`, `context-builder-source-isolation` |
+| Model Evaluation Agent | `quality-review`, `project-planning`, `novel-os-engineering-audit` |
 
 ## Execution Contract
 

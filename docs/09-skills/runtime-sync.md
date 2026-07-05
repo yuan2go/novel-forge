@@ -57,7 +57,9 @@ make check-skills
 
 - Root `skills/` is the source of truth.
 - `.claude/skills/` is generated runtime output and is ignored by Git.
+- Do not hand-edit `.claude/skills/`; edit root `skills/` and sync when runtime copies need to change.
 - Default sync copies or updates Skill directories but does not delete extra target Skills.
+- Runtime-only official/tool Skills may coexist in `.claude/skills/`; review them through `docs/skills-audit-report.md` or a fresh audit before pruning.
 - Use `--prune` only when you intentionally want to remove target Skill directories that no longer exist in the repository source.
 - The script only syncs directories containing `SKILL.md`.
 - `--check` exits non-zero when a runtime Skill is missing, modified, or extra target Skill directories would be pruned.

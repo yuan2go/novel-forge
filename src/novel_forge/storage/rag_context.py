@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from novel_forge.core.constants import DATA_DIRS
+from novel_forge.core.constants import ASSET_DIR_BY_TYPE, DATA_DIRS
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.model_adapters import embedding_provider_health
 from novel_forge.schemas import BaseAsset
@@ -732,16 +732,23 @@ def _matches_project_scope(storage: LocalStorage, data: dict[str, Any], path: st
 
 
 def _read_reference(storage: LocalStorage, reference: str) -> tuple[str, dict[str, Any]] | None:
+    reference = str(reference or "").strip()
     if not reference:
         return None
     candidate = storage.root / reference
+    if not candidate.exists() and not reference.startswith("data/"):
+        candidate = storage.data_root / reference
     if candidate.exists() and candidate.is_file():
         try:
             data = storage.read_json(candidate)
         except Exception:
             return None
         return (_relative_path(storage, candidate), data) if isinstance(data, dict) else None
-    for category in DATA_DIRS:
+    if "/" in reference or reference.endswith(".json"):
+        return None
+    for category in _candidate_categories_for_reference(reference):
+        if category == "runs":
+            continue
         for path in storage.list_json(category):
             try:
                 data = storage.read_json(path)
@@ -752,6 +759,18 @@ def _read_reference(storage: LocalStorage, reference: str) -> tuple[str, dict[st
             if reference in {str(data.get("id", "")), _relative_path(storage, path)}:
                 return _relative_path(storage, path), data
     return None
+
+
+def _candidate_categories_for_reference(reference: str) -> list[str]:
+    value = str(reference or "").strip()
+    categories: list[str] = []
+    for asset_type, category in ASSET_DIR_BY_TYPE.items():
+        prefix = asset_type.replace("_", "-")
+        if value.startswith(f"{prefix}-"):
+            categories.append(category)
+    if value.startswith(("project-", "workspace-")):
+        categories.append(ASSET_DIR_BY_TYPE.get("project_workspace_state", "workspaces"))
+    return list(dict.fromkeys(categories))
 
 
 def _ranker_name(items: list[dict[str, Any]]) -> str:

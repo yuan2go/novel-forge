@@ -921,10 +921,11 @@ def _has_cross_project_intrinsic_reference(storage: LocalStorage, data: dict, pr
             value = str(payload.get(key) or "")
             if value:
                 values.append(value)
-    for value in values:
-        if value and not filter_project_safe_references(storage, project_id, [value]):
-            return True
-    return False
+    values = list(dict.fromkeys(value for value in values if value))
+    if not values:
+        return False
+    safe = set(filter_project_safe_references(storage, project_id, values))
+    return any(value not in safe for value in values)
 
 
 def _attach_priority(storage: LocalStorage, path: Path) -> tuple[int, str]:

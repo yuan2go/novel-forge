@@ -5,52 +5,111 @@ import { useEffect, useMemo, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import {
+  analyzeMkaosAssetImpact,
+  approveMkaosModelExtractionCandidate,
+  applyMkaosWeightGovernance,
+  attributeMkaosFeedback,
+  buildMkaosGateCoverage,
+  buildMkaosLineageIndex,
   checkMkaosLeakage,
   convertMkaosCreativeAssets,
   createMkaosRepository,
+  createMkaosModelExtractionJob,
+  diffMkaosLineageIndexes,
+  dryRunMkaosWeightGovernance,
   evaluateMkaosExtraction,
+  exportMkaosLineageGraph,
   gateMkaosKnowledgePack,
   importMkaosRepository,
   loadMkaosBooks,
   loadMkaosIngestionJobs,
+  loadMkaosLineageIndex,
+  loadMkaosModelExtractionJobs,
+  loadMkaosModelExtractionPrompts,
+  loadMkaosModelExtractionReviewQueue,
   loadMkaosOverview,
   loadMkaosParallelPairs,
+  loadMkaosGateCoverage,
+  loadMkaosProductionGateReports,
   loadMkaosRepositories,
   cancelMkaosIngestionJob,
+  queryMkaosLineagePath,
+  rejectMkaosModelExtractionCandidate,
   resumeMkaosIngestionJob,
   runMkaosExtractionJob,
+  runMkaosModelExtractionBenchmark,
+  runMkaosModelExtractionJob,
+  runMkaosModelExtractionRegression,
+  runMkaosProductionGate,
   scanMkaosRepository,
   type MkaosRow
 } from "./api";
 
-type Mode = "import" | "repositories" | "books" | "extraction-jobs" | "creative-assets" | "quality";
+type Mode =
+  | "import"
+  | "repositories"
+  | "books"
+  | "extraction-jobs"
+  | "creative-assets"
+  | "quality"
+  | "model-extraction"
+  | "model-extraction-jobs"
+  | "model-extraction-review"
+  | "model-extraction-benchmarks"
+  | "model-extraction-prompts"
+  | "production-gate"
+  | "production-gate-reports"
+  | "knowledge-graph"
+  | "lineage"
+  | "impact"
+  | "feedback-attribution";
 
 export function MkaosIngestionPage({ mode }: { mode: Mode }) {
   const [repositories, setRepositories] = useState<MkaosRow[]>([]);
   const [books, setBooks] = useState<MkaosRow[]>([]);
   const [pairs, setPairs] = useState<MkaosRow[]>([]);
   const [jobs, setJobs] = useState<MkaosRow[]>([]);
+  const [modelJobs, setModelJobs] = useState<MkaosRow[]>([]);
+  const [modelReviews, setModelReviews] = useState<MkaosRow[]>([]);
+  const [modelPrompts, setModelPrompts] = useState<MkaosRow[]>([]);
+  const [gateReports, setGateReports] = useState<MkaosRow[]>([]);
+  const [gateCoverage, setGateCoverage] = useState<Record<string, any> | null>(null);
+  const [lineageIndex, setLineageIndex] = useState<Record<string, any> | null>(null);
   const [knowledge, setKnowledge] = useState<MkaosRow[]>([]);
   const [name, setName] = useState("Classical-Modern local corpus");
   const [localPath, setLocalPath] = useState("");
   const [sourceType, setSourceType] = useState("classical_text");
+  const [modelSummary, setModelSummary] = useState("制度、资源和风险约束如何转成角色行动、冲突与代价。");
+  const [lineageAssetId, setLineageAssetId] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<Record<string, any> | null>(null);
 
   async function refresh() {
-    const [repoRows, bookRows, pairRows, jobRows, overview] = await Promise.all([
+    const [repoRows, bookRows, pairRows, jobRows, overview, mxJobs, mxReviews, mxPrompts, gateRows, coverage, lineage] = await Promise.all([
       loadMkaosRepositories(),
       loadMkaosBooks(),
       loadMkaosParallelPairs(),
       loadMkaosIngestionJobs(),
-      loadMkaosOverview()
+      loadMkaosOverview(),
+      loadMkaosModelExtractionJobs(),
+      loadMkaosModelExtractionReviewQueue(),
+      loadMkaosModelExtractionPrompts(),
+      loadMkaosProductionGateReports(),
+      loadMkaosGateCoverage().catch(() => null),
+      loadMkaosLineageIndex().catch(() => null)
     ]);
     setRepositories(repoRows);
     setBooks(bookRows);
     setPairs(pairRows);
     setJobs(jobRows);
     setKnowledge(overview.knowledge ?? []);
+    setModelJobs(mxJobs);
+    setModelReviews(mxReviews);
+    setModelPrompts(mxPrompts);
+    setGateReports(gateRows);
+    setGateCoverage(coverage);
+    setLineageIndex(lineage);
   }
 
   async function runAction(action: () => Promise<any>, message: string) {
@@ -72,6 +131,9 @@ export function MkaosIngestionPage({ mode }: { mode: Mode }) {
 
   const selectedRepo = repositories[0];
   const selectedBook = books[0];
+  const selectedModelJob = modelJobs[0];
+  const selectedReview = modelReviews[0];
+  const selectedAssetId = lineageAssetId || knowledge[0]?.id || "";
   const creativeCards = useMemo(() => knowledge.filter((row) => row.metadata?.knowledge_subtype === "creative_knowledge_card" || row.content?.knowledge_subtype === "creative_knowledge_card"), [knowledge]);
 
   return (
@@ -84,6 +146,10 @@ export function MkaosIngestionPage({ mode }: { mode: Mode }) {
         <Metric label="Pairs" value={String(pairs.length)} />
         <Metric label="Jobs" value={String(jobs.length)} />
         <Metric label="Creative Cards" value={String(creativeCards.length)} />
+        <Metric label="Model Jobs" value={String(modelJobs.length)} />
+        <Metric label="Gate Reports" value={String(gateReports.length)} />
+        <Metric label="Gate Coverage" value={`${String(gateCoverage?.covered_count ?? 0)}/${String(gateCoverage?.operation_count ?? 0)}`} />
+        <Metric label="Lineage Nodes" value={String(lineageIndex?.node_count ?? 0)} />
       </section>
 
       {mode === "import" ? (
@@ -148,6 +214,120 @@ export function MkaosIngestionPage({ mode }: { mode: Mode }) {
         </section>
       ) : null}
 
+      {mode === "model-extraction" || mode === "model-extraction-jobs" ? (
+        <section className="workspaceGrid">
+          <div className="panel">
+            <PanelHeader title="Model Extraction Jobs" icon={<Sparkles size={18} />} />
+            <div className="formGrid">
+              <select value={sourceType} onChange={(event) => setSourceType(event.target.value)}>
+                {["classical_text", "professional_book", "webnovel_analysis", "mystery", "platform_rule", "training"].map((item) => <option key={item}>{item}</option>)}
+              </select>
+              <input value={modelSummary} onChange={(event) => setModelSummary(event.target.value)} placeholder="safe abstract input summary" />
+            </div>
+            <div className="buttonRow">
+              <button className="primaryButton" onClick={() => runAction(() => createMkaosModelExtractionJob({ sourceType, inputSummary: modelSummary, providerMode: "disabled" }), "Model extraction job created")}>Create Job</button>
+              <button onClick={() => selectedModelJob && runAction(() => runMkaosModelExtractionJob(selectedModelJob.id), "Model extraction job ran")}>Run First Job</button>
+            </div>
+            <DataTable emptyText="No model extraction jobs" columns={["Job", "Source", "Provider", "Status", "Candidates"]} rows={modelJobs.map((row) => [row.title, String(row.content.source_type || "-"), String(row.content.provider_mode || "-"), <span key={row.id} className={statusClass(String(row.content.status || ""))}>{String(row.content.status || "-")}</span>, String(row.content.candidate_count ?? "-")])} />
+          </div>
+        </section>
+      ) : null}
+
+      {mode === "model-extraction-review" ? (
+        <section className="workspaceGrid">
+          <div className="panel">
+            <PanelHeader title="Extraction Review Queue" icon={<ShieldAlert size={18} />} />
+            <div className="buttonRow">
+              <button className="primaryButton" onClick={() => selectedReview && runAction(() => approveMkaosModelExtractionCandidate(String(selectedReview.content.candidate_id || selectedReview.references?.[0] || selectedReview.id)), "Candidate approved")}>Approve First</button>
+              <button onClick={() => selectedReview && runAction(() => rejectMkaosModelExtractionCandidate(String(selectedReview.content.candidate_id || selectedReview.references?.[0] || selectedReview.id)), "Candidate rejected")}>Reject First</button>
+            </div>
+            <DataTable emptyText="No review queue items" columns={["Candidate", "Status", "Confidence", "Recommendation", "Forbidden"]} rows={modelReviews.map((row) => [String(row.content.candidate_id || row.title), <span key={row.id} className={statusClass(String(row.content.status || ""))}>{String(row.content.status || "-")}</span>, String(row.content.confidence ?? "-"), String(row.content.approval_recommendation || "-"), String(row.content.sanitizer?.forbidden_field_count ?? 0)])} />
+          </div>
+        </section>
+      ) : null}
+
+      {mode === "model-extraction-benchmarks" ? (
+        <section className="workspaceGrid">
+          <div className="panel">
+            <PanelHeader title="Extraction Benchmarks" icon={<CheckCircle2 size={18} />} />
+            <div className="buttonRow">
+              <button className="primaryButton" onClick={() => runAction(() => runMkaosModelExtractionBenchmark(), "Benchmark completed")}>Run Benchmark</button>
+              <button onClick={() => runAction(() => runMkaosModelExtractionRegression(), "Regression completed")}>Run Regression</button>
+            </div>
+            <p className="mutedText">默认使用 disabled provider + deterministic fixture，不调用真实外部模型。</p>
+          </div>
+        </section>
+      ) : null}
+
+      {mode === "model-extraction-prompts" ? (
+        <section className="workspaceGrid">
+          <div className="panel">
+            <PanelHeader title="Extraction Prompt Versions" icon={<FileSearch size={18} />} />
+            <DataTable emptyText="No prompt versions" columns={["Prompt", "Source Type", "Status", "Benchmark"]} rows={modelPrompts.map((row) => [row.title, String(row.content.source_type || "-"), String(row.content.status || "-"), String(row.content.benchmark_score ?? "-")])} />
+          </div>
+        </section>
+      ) : null}
+
+      {mode === "production-gate" || mode === "production-gate-reports" ? (
+        <section className="workspaceGrid">
+          <div className="panel">
+            <PanelHeader title="MKAOS Production Gate" icon={<ShieldAlert size={18} />} />
+            <div className="buttonRow">
+              <button className="primaryButton" onClick={() => runAction(() => runMkaosProductionGate("prose"), "Production gate preview ran")}>Run Prose Gate Preview</button>
+              <button onClick={() => runAction(() => runMkaosProductionGate("publish"), "Publish gate preview ran")}>Run Publish Gate Preview</button>
+              <button onClick={() => runAction(() => buildMkaosGateCoverage(), "Gate coverage report built")}>Build Coverage Report</button>
+            </div>
+            <section className="summaryBand manuscriptSummary">
+              <Metric label="Covered Operations" value={String(gateCoverage?.covered_count ?? 0)} />
+              <Metric label="Compat Gaps" value={String(gateCoverage?.compat_gap_count ?? 0)} />
+              <Metric label="Forbidden Bypass" value={String(gateCoverage?.forbidden_bypass_operations?.length ?? 0)} />
+            </section>
+            <DataTable emptyText="No coverage data" columns={["Operation", "Flow", "Status", "Bypass"]} rows={(Array.isArray(gateCoverage?.operations) ? gateCoverage.operations.slice(0, 16) : []).map((row: any) => [String(row.operation || "-"), String(row.flow || "-"), <span key={row.operation} className={statusClass(String(row.status || ""))}>{String(row.status || "-")}</span>, String(row.bypass_allowed)])} />
+            <DataTable emptyText="No gate reports" columns={["Flow", "Passed", "Blocking", "Recommendation", "Path"]} rows={gateReports.map((row) => [String(row.content.flow || "-"), String(row.content.passed), String(row.content.blocking_issue_count ?? 0), String(row.content.recommendation || "-"), <span className="pathText" key={row.id}>{row.path}</span>])} />
+          </div>
+        </section>
+      ) : null}
+
+      {mode === "knowledge-graph" || mode === "lineage" ? (
+        <LineagePanel
+          lineageIndex={lineageIndex}
+          assetId={lineageAssetId}
+          setAssetId={setLineageAssetId}
+          selectedAssetId={selectedAssetId}
+          runAction={runAction}
+        />
+      ) : null}
+
+      {mode === "impact" ? (
+        <section className="workspaceGrid">
+          <div className="panel">
+            <PanelHeader title="Asset Impact" icon={<GitBranch size={18} />} />
+            <input value={lineageAssetId} onChange={(event) => setLineageAssetId(event.target.value)} placeholder="asset id" />
+            <div className="buttonRow">
+              <button className="primaryButton" onClick={() => selectedAssetId && runAction(() => analyzeMkaosAssetImpact(selectedAssetId), "Impact analysis completed")}>Analyze Impact</button>
+              <button onClick={() => selectedAssetId && runAction(() => dryRunMkaosWeightGovernance(selectedAssetId), "Weight governance dry-run completed")}>Dry-run Weight Governance</button>
+              <button onClick={() => selectedAssetId && runAction(() => applyMkaosWeightGovernance(selectedAssetId), "Explicit weight governance apply completed")}>Explicit Apply</button>
+            </div>
+            <p className="mutedText">Impact 只显示 id、类型、风险、建议动作，不展示 source raw text。自动写权重需要 explicit apply policy。</p>
+          </div>
+        </section>
+      ) : null}
+
+      {mode === "feedback-attribution" ? (
+        <section className="workspaceGrid">
+          <div className="panel">
+            <PanelHeader title="Feedback Attribution" icon={<GitBranch size={18} />} />
+            <input value={lineageAssetId} onChange={(event) => setLineageAssetId(event.target.value)} placeholder="generated asset id" />
+            <div className="buttonRow">
+              <button className="primaryButton" onClick={() => selectedAssetId && runAction(() => attributeMkaosFeedback(selectedAssetId), "Feedback attributed")}>Attribute Feedback</button>
+              <button onClick={() => runAction(() => dryRunMkaosWeightGovernance(), "Global weight governance dry-run completed")}>Global Dry-run</button>
+              <button onClick={() => runAction(() => applyMkaosWeightGovernance(), "Global explicit weight governance apply completed")}>Global Explicit Apply</button>
+            </div>
+            <p className="mutedText">反馈先生成 attribution 和调权建议，默认不直接改权重；显式 apply 会写 mutation/version/audit。</p>
+          </div>
+        </section>
+      ) : null}
+
       {result ? (
         <section className="panel">
           <PanelHeader title="Last Result" icon={<CheckCircle2 size={18} />} />
@@ -191,6 +371,51 @@ function BooksPanel({ books, pairs }: { books: MkaosRow[]; pairs: MkaosRow[] }) 
   );
 }
 
+function LineagePanel({
+  lineageIndex,
+  assetId,
+  setAssetId,
+  selectedAssetId,
+  runAction
+}: {
+  lineageIndex: Record<string, any> | null;
+  assetId: string;
+  setAssetId: (value: string) => void;
+  selectedAssetId: string;
+  runAction: (action: () => Promise<any>, message: string) => Promise<void>;
+}) {
+  const nodes = Array.isArray(lineageIndex?.nodes) ? lineageIndex.nodes.slice(0, 50) : [];
+  const edges = Array.isArray(lineageIndex?.edges) ? lineageIndex.edges.slice(0, 50) : [];
+  return (
+    <section className="workspaceGrid">
+      <div className="panel">
+        <PanelHeader title="Knowledge Graph / Lineage" icon={<GitBranch size={18} />} />
+        <div className="buttonRow">
+          <button className="primaryButton" onClick={() => runAction(() => buildMkaosLineageIndex(), "Lineage index rebuilt")}>Build Index</button>
+          <button onClick={() => selectedAssetId && runAction(() => queryMkaosLineagePath(selectedAssetId), "Lineage path queried")}>Query Path</button>
+          <button onClick={() => runAction(() => diffMkaosLineageIndexes(), "Lineage diff report generated")}>Diff Latest</button>
+          <button onClick={() => runAction(() => exportMkaosLineageGraph(), "Lineage graph export generated")}>Export Graph</button>
+        </div>
+        <input value={assetId} onChange={(event) => setAssetId(event.target.value)} placeholder="asset id for lineage query" />
+        <section className="summaryBand manuscriptSummary">
+          <Metric label="Nodes" value={String(lineageIndex?.node_count ?? 0)} />
+          <Metric label="Edges" value={String(lineageIndex?.edge_count ?? 0)} />
+          <Metric label="Sources" value={String(lineageIndex?.source_asset_ids?.length ?? 0)} />
+        </section>
+      </div>
+      <div className="panel">
+        <PanelHeader title="Nodes" icon={<BookOpen size={18} />} />
+        <DataTable emptyText="No lineage nodes" columns={["Asset", "Type", "Flow", "Risk"]} rows={nodes.map((node: any) => [String(node.title || node.asset_id), String(node.asset_type || "-"), String(node.flow || "-"), String(node.risk_level || "-")])} />
+      </div>
+      <div className="panel">
+        <PanelHeader title="Edges" icon={<GitBranch size={18} />} />
+        <DataTable emptyText="No lineage edges" columns={["Source", "Relation", "Target"]} rows={edges.map((edge: any) => [String(edge.source || "-"), String(edge.relation_type || "-"), String(edge.target || "-")])} />
+        <p className="mutedText">Graph export includes deterministic cluster layout and semantic edge weights for LocalStorage-scale exploration.</p>
+      </div>
+    </section>
+  );
+}
+
 function titleForMode(mode: Mode) {
   const labels: Record<Mode, string> = {
     import: "Import",
@@ -198,7 +423,18 @@ function titleForMode(mode: Mode) {
     books: "Books",
     "extraction-jobs": "Extraction Jobs",
     "creative-assets": "Creative Assets",
-    quality: "Quality"
+    quality: "Quality",
+    "model-extraction": "Model Extraction",
+    "model-extraction-jobs": "Model Extraction Jobs",
+    "model-extraction-review": "Model Extraction Review",
+    "model-extraction-benchmarks": "Model Extraction Benchmarks",
+    "model-extraction-prompts": "Model Extraction Prompts",
+    "production-gate": "Production Gate",
+    "production-gate-reports": "Production Gate Reports",
+    "knowledge-graph": "Knowledge Graph",
+    lineage: "Lineage",
+    impact: "Impact",
+    "feedback-attribution": "Feedback Attribution"
   };
   return labels[mode];
 }

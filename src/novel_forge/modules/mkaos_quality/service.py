@@ -59,7 +59,8 @@ def gate_knowledge_pack(storage: LocalStorage, payload: dict[str, Any]) -> dict[
     empty_pack = not _pack_items(pack_payload)
     if empty_pack and flow in CRITICAL_FLOWS:
         issues.append({"issue_type": "mkaos_conflict", "severity": "high", "blocking": True, "message": f"{flow} KnowledgePack must not be empty"})
-    persisted = _persist_issues(storage, project_id, issues, source_system="mkaos.pack_gate") if issues else {"created_count": 0, "rows": []}
+    production = _is_production(payload)
+    persisted = _persist_issues(storage, project_id, issues, source_system="mkaos.pack_gate") if production and issues else {"created_count": 0, "rows": []}
     result = {
         "passed": not issues,
         "project_id": project_id,
@@ -69,7 +70,7 @@ def gate_knowledge_pack(storage: LocalStorage, payload: dict[str, Any]) -> dict[
         "review_issue_summary": persisted,
         "source_isolation": {"raw_text_included": False, "clean_text_included": False, "parallel_pair_text_included": False, "forbidden_field_count": len(forbidden)},
     }
-    if _is_production(payload) and issues:
+    if production and issues:
         raise ValueError("MKAOS KnowledgePack gate blocked production path")
     return result
 

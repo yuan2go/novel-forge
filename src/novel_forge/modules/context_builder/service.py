@@ -458,6 +458,8 @@ def build_flow_context_bundle(
     os_envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     target_file = resolve_path(storage.root, target_path)
+    target_asset = storage.read_asset(target_file)
+    target_metadata = target_asset.metadata if isinstance(target_asset.metadata, dict) else {}
     profile = context_profile or FLOW_CONTEXT_PROFILES.get(flow, "chapter_generation")
     mkaos_flow = _mkaos_flow_for_context(flow)
     policy = dict(source_policy or {})
@@ -487,6 +489,15 @@ def build_flow_context_bundle(
         )
         context_bundle = create_context_bundle(storage, context_plan["path"])
         bundle_file = resolve_path(storage.root, context_bundle["path"])
+    plan_asset = context_plan.get("asset", {}) if isinstance(context_plan.get("asset", {}), dict) else {}
+    plan_metadata = plan_asset.get("metadata", {}) if isinstance(plan_asset.get("metadata", {}), dict) else {}
+    bundle_asset = context_bundle.get("asset", {}) if isinstance(context_bundle.get("asset", {}), dict) else {}
+    bundle_metadata = bundle_asset.get("metadata", {}) if isinstance(bundle_asset.get("metadata", {}), dict) else {}
+    resolved_project_id = str(bundle_metadata.get("project_id") or plan_metadata.get("project_id") or target_metadata.get("project_id") or "")
+    if (not project_id or project_id == "local-system") and resolved_project_id:
+        project_id = resolved_project_id
+    else:
+        project_id = str(project_id or resolved_project_id or "")
     pack_policy = resolve_mkaos_pack_policy(mkaos_flow, environment=environment)
     try:
         mkaos_pack = build_knowledge_pack(
@@ -550,6 +561,7 @@ def build_flow_context_bundle(
         {
             "context_bundle_id": context_id,
             "context_builder_version": "context-builder-v2-mkaos",
+            "project_id": project_id or "local-system",
             "knowledge_context_contract": knowledge_context_contract,
             "task_type": flow,
             "mkaos_flow": mkaos_flow,
@@ -586,6 +598,7 @@ def build_flow_context_bundle(
     metadata.update(
         {
             "context_builder_unified": True,
+            "project_id": project_id or "local-system",
             "task_type": flow,
             "mkaos_flow": mkaos_flow,
             "source_policy": policy,
@@ -610,6 +623,34 @@ def build_flow_context_bundle(
         _dedupe([*[str(item) for item in bundle_data.get("references", []) if str(item).strip()], *evidence_refs]),
     )
     bundle_data["updated_at"] = utc_now()
+    storage.write_json(bundle_file, bundle_data)
+    from novel_forge.modules.mkaos_production_gate import run_mkaos_production_gate
+
+    gate_report = run_mkaos_production_gate(
+        storage,
+        {
+            "project_id": project_id or "local-system",
+            "flow": mkaos_flow,
+            "target_asset_path": _display_path(storage.root, target_file),
+            "context_bundle": bundle_data,
+            "knowledge_pack": mkaos_pack,
+            "environment": environment,
+            "os_envelope": os_envelope or {},
+        },
+    )
+    bundle_data = storage.read_json(bundle_file)
+    content = bundle_data.get("content", {}) if isinstance(bundle_data.get("content", {}), dict) else {}
+    metadata = bundle_data.get("metadata", {}) if isinstance(bundle_data.get("metadata", {}), dict) else {}
+    content["mkaos_production_gate"] = {
+        "passed": bool(gate_report.get("passed")),
+        "gate_report_path": gate_report.get("path", ""),
+        "recommendation": gate_report.get("recommendation", ""),
+        "blocking_issue_count": gate_report.get("blocking_issue_count", 0),
+    }
+    metadata["mkaos_production_gate_report_path"] = gate_report.get("path", "")
+    metadata["mkaos_production_gate_passed"] = bool(gate_report.get("passed"))
+    bundle_data["content"] = content
+    bundle_data["metadata"] = metadata
     storage.write_json(bundle_file, bundle_data)
     _record_context_span(
         storage,

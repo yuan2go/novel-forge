@@ -170,8 +170,10 @@ class LocalStorage:
         project_id = str(metadata.get("project_id") or content.get("project_id") or "")
         if not project_id:
             return
-        for ref in _asset_reference_values(data):
-            linked_project_id = _project_id_for_reference(self, ref)
+        refs = _asset_reference_values(data)
+        project_index = _project_id_index_for_references(self, refs)
+        for ref in refs:
+            linked_project_id = project_index.get(ref, "")
             if linked_project_id and linked_project_id != project_id:
                 relative = str(path.relative_to(self.root)) if path.is_relative_to(self.root) else str(path)
                 raise ValueError(
@@ -250,13 +252,18 @@ def _asset_reference_values(data: dict[str, Any]) -> set[str]:
 def _project_id_for_reference(storage: LocalStorage, reference: str) -> str:
     if not _reference_may_be_asset(reference):
         return ""
-    candidate = storage.root / reference
+    value = str(reference or "").strip()
+    candidate = storage.root / value
+    if not candidate.exists() and not value.startswith("data/"):
+        candidate = storage.data_root / value
     if candidate.exists() and candidate.is_file():
         try:
             data = storage.read_json(candidate)
         except Exception:
             return ""
         return _project_id_from_data(data)
+    if "/" in value or value.endswith(".json"):
+        return ""
     for category in _candidate_categories_for_reference(reference):
         for path in storage.list_json(category):
             try:
@@ -272,6 +279,74 @@ def _project_id_for_reference(storage: LocalStorage, reference: str) -> str:
             if reference in {str(data.get("id", "")), relative}:
                 return _project_id_from_data(data)
     return ""
+
+
+def _project_id_index_for_references(storage: LocalStorage, references: set[str]) -> dict[str, str]:
+    index: dict[str, str] = {}
+    categories: list[str] = []
+    for reference in references:
+        if not _reference_may_be_asset(reference):
+            continue
+        value = str(reference or "").strip()
+        candidate = storage.root / value
+        if not candidate.exists() and not value.startswith("data/"):
+            candidate = storage.data_root / value
+        if candidate.exists() and candidate.is_file():
+            try:
+                data = storage.read_json(candidate)
+            except Exception:
+                continue
+            _index_project_reference(storage, index, candidate, data)
+            continue
+        if "/" in value or value.endswith(".json"):
+            continue
+        categories.extend(_candidate_categories_for_reference(reference))
+    for category in list(dict.fromkeys(categories)):
+        if category == "runs":
+            continue
+        index.update(_cached_category_project_index(storage, category))
+    return index
+
+
+def _index_project_reference(storage: LocalStorage, index: dict[str, str], path: Path, data: Any) -> None:
+    if not isinstance(data, dict):
+        return
+    project_id = _project_id_from_data(data)
+    if not project_id:
+        return
+    asset_id = str(data.get("id", "") or "")
+    if asset_id:
+        index[asset_id] = project_id
+    try:
+        relative = str(path.relative_to(storage.root))
+    except ValueError:
+        relative = str(path)
+    index[relative] = project_id
+    index[str(path)] = project_id
+
+
+def _cached_category_project_index(storage: LocalStorage, category: str) -> dict[str, str]:
+    paths = storage.list_json(category)
+    signature = (
+        len(paths),
+        max((path.stat().st_mtime_ns for path in paths if path.exists()), default=0),
+    )
+    cache = getattr(storage, "_project_scope_write_guard_index_cache", None)
+    if not isinstance(cache, dict):
+        cache = {}
+        setattr(storage, "_project_scope_write_guard_index_cache", cache)
+    cached = cache.get(category)
+    if isinstance(cached, tuple) and len(cached) == 2 and cached[0] == signature and isinstance(cached[1], dict):
+        return cached[1]
+    index: dict[str, str] = {}
+    for path in paths:
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        _index_project_reference(storage, index, path, data)
+    cache[category] = (signature, index)
+    return index
 
 
 def _candidate_categories_for_reference(reference: str) -> list[str]:

@@ -42,17 +42,24 @@ skills/
 ├── hot-novel-business-deconstruction/
 ├── published-fiction-craft-analysis/
 ├── classic-literary-depth-analysis/
-└── training-exercise/
+├── training-exercise/
+├── mkaos-knowledge-asset-os/
+├── context-builder-source-isolation/
+├── review-issue-gate/
+├── agent-loop-governance/
+├── platform-strategy-os/
+└── novel-os-engineering-audit/
 
 docs/09-skills/
 ├── README.md
 ├── agent-skill-map.md
 ├── runtime-sync.md
+├── usage-policy.md
 ├── external-resource-intake.md
 └── github-knowledge-sources.md
 ```
 
-Root `skills/` is the repository source of truth. `.claude/skills/` is not used as source of truth; if Claude Code runtime mapping is needed later, map it from root `skills/`.
+Root `skills/` is the repository source of truth. `.claude/skills/` is generated runtime output and must not be hand-edited; if Claude Code runtime mapping is needed, sync it from root `skills/`.
 
 ## Execution Flow
 
@@ -83,16 +90,30 @@ Rules:
 - Skills do not store copyrighted content.
 - Skills store stable methods, output rules, and quality standards.
 - Agents call Skills to perform role-specific work, but workflow/Agent execution still runs through schema-backed artifacts, runtime policy, trace spans, cost ledgers, and gates when the output affects production state.
+- Project Skills must be schema-backed, gate-aware, and source-isolated when their outputs affect production state.
+- Every production-relevant Skill must include a Novel OS Runtime Contract covering schema output, Context Builder / Knowledge Pack / ReviewIssue / GateResult boundaries, source isolation, and traceability.
 - Drafting must pass through `chapter-outline` and `quality-review`.
 - Hot novel analysis must pass through `anti-copy-abstraction`.
 - Reader feedback, project planning, multidisciplinary knowledge, topic development, material curation, analysis conversion, published-fiction analysis, classic-literary analysis, and training exercise are implemented Skills.
+- MKAOS, Context Builder, ReviewIssue, Agent Loop, Platform Strategy, and Novel OS engineering audit now have dedicated Skills.
+
+## Usage And License Policy
+
+Use `docs/09-skills/usage-policy.md` as the detailed policy. The short version:
+
+- Root project Skills are local-first internal project instructions.
+- Runtime copies under `.claude/skills/` may include official or tool Skills with their own licenses and maintenance cadence.
+- Do not vendor external Skill content into root `skills/` unless the license permits repository use and the source is recorded.
+- External provider, network, browser, office-document, MCP, or platform operations must remain opt-in and must not bypass Runtime Policy.
+- Skills do not authorize copying protected expression or moving raw sources into generation contexts.
 
 ## Acceptance
 
 - `skills/` exists.
-- 18 Skills exist.
+- 24 root project Skills exist.
 - Every Skill has frontmatter with `name` and `description`.
 - Every Skill has required sections for inputs, workflow, output, quality, forbidden behavior, and module relationships.
+- Every project Skill that can influence production state contains a Novel OS Runtime Contract.
 - `novel-forge validate` checks core Skills.
 - `make sync-skills-dry-run` previews runtime mapping to `.claude/skills/`.
 - `.claude/commands/evaluate-claude-resource.md` provides a read-only static review template before importing external Claude Code resources.

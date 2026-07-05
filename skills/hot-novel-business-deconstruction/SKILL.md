@@ -3,6 +3,14 @@ name: hot-novel-business-deconstruction
 description: Analyze web fiction references into abstract commercial structure, reader promise, hooks, pacing, and reusable review constraints without copying protected expression.
 ---
 
+## Novel OS Runtime Contract
+
+- 需要进入生产链路的输出必须落到 schema-backed asset，而不是只停留在对话文本。
+- 产物必须保留 `project_id`、输入引用、来源边界、质量状态；涉及 Agent/Workflow 时必须保留 `trace_id` 或 handoff 依据。
+- 生成、审稿、修订、发布、复盘相关上下文必须通过 Context Builder / Knowledge Pack / ReviewIssue / GateResult 的现有边界。
+- 禁止 raw source text、参考作品表达、`source_chunk.raw_text` 或未抽象材料进入 prose、publish、recap 和 feedback backflow。
+- Markdown 输出格式只作为 operator handoff；写入工程时必须映射到对应资产 schema、测试或报告路径。
+
 ## 适用场景
 
 用于把网文或连载参考作品拆解成商业结构、爽点循环、章节钩子、人设压力和平台节奏。只输出抽象机制，不输出可直接复用的正文、角色名、设定名或情节顺序。
