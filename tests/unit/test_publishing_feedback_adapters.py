@@ -12,6 +12,8 @@ from novel_forge.modules.publishing_feedback_adapters import (
     fanqie_manual_adapter,
     import_platform_metrics,
     apply_feedback_mutation_application_chain,
+    parse_platform_receipt,
+    run_platform_adapter_gate,
     publish_platform_upload_package,
     qidian_manual_adapter,
     record_platform_receipt,
@@ -130,6 +132,7 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
             self.assertEqual(content["application_chain"]["patch_plan"]["genre_strategy_update"]["status"], "needs_review")
             self.assertFalse(content["application_chain"]["downstream_invalidation"]["apply"])
             self.assertTrue(content["application_chain"]["regeneration_task"]["requires_re_review"])
+            self.assertTrue(content["auto_application"]["application_report_path"])
             self.assertNotEqual(resolved["path"], proposal["path"])
 
             application = apply_feedback_mutation_application_chain(
@@ -211,6 +214,64 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
             qidian_wrapper = qidian_manual_adapter(storage, release_package_path=release_path, book_metadata={"volume_title": "第一卷"})
             self.assertEqual(fanqie_wrapper["asset"]["content"]["manual_adapter_contract"]["adapter_id"], "fanqie_manual_adapter")
             self.assertEqual(qidian_wrapper["asset"]["content"]["manual_adapter_contract"]["adapter_id"], "qidian_manual_adapter")
+
+    def test_platform_specific_adapter_gate_blocks_missing_qidian_volume(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            release = ReleasePackage(
+                title="release",
+                content={
+                    "target_asset_id": "draft-1",
+                    "publish_gate_report_id": "gate-1",
+                    "title_candidates": ["好看的书"],
+                    "summary": "简介",
+                    "tags": ["悬疑"],
+                    "channel": "manual",
+                    "status": "ready",
+                    "chapters": [{"title": "第一章", "body": "正文" * 400}],
+                },
+                metadata={"project_id": "p1"},
+            )
+            release_path = storage.write_asset_auto(release)
+            upload = build_platform_upload_package(storage, release_package_path=release_path, platform_id="qidian", book_metadata={"title": "好看的书", "synopsis": "简介", "cover_status": "not_required"})
+
+            gate = run_platform_adapter_gate(storage, upload_package_path=upload["path"], platform_id="qidian")
+
+            self.assertEqual(gate["asset"]["type"], "platform_review_status")
+            self.assertEqual(gate["asset"]["content"]["review_status"], "blocked")
+            self.assertTrue(gate["asset"]["content"]["adapter_gate"]["blocking"])
+            self.assertIn("volume_present", gate["asset"]["content"]["adapter_gate"]["missing_checklist"])
+            self.assertIn("qidian-manual-2026-07", gate["asset"]["content"]["adapter_gate"]["rules_version"])
+
+    def test_fanqie_qidian_receipt_parser_normalizes_review_status(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+
+            fanqie = parse_platform_receipt(
+                storage,
+                platform_id="fanqie",
+                receipt_text="作品ID：fq-book-7\n章节ID：fq-ch-9\n审核状态：审核中\n提交时间：2026-07-06",
+                upload_package_path="data/publishing/fanqie-package.json",
+            )
+            qidian = parse_platform_receipt(
+                storage,
+                platform_id="qidian",
+                receipt_text="作品号: qd-book-1\n卷号: vol-1\n章节号: qd-ch-2\n状态: 已退回\n原因: 标题格式不合规",
+                upload_package_path="data/publishing/qidian-package.json",
+            )
+
+            fanqie_content = fanqie["asset"]["content"]
+            qidian_content = qidian["asset"]["content"]
+            qidian_status = storage.read_json(storage.root / qidian["status_path"])["content"]
+
+            self.assertEqual(fanqie_content["platform_book_id"], "fq-book-7")
+            self.assertEqual(fanqie_content["platform_chapter_id"], "fq-ch-9")
+            self.assertEqual(fanqie_content["review_status"], "reviewing")
+            self.assertEqual(fanqie_content["receipt_parser"]["rules_version"], "fanqie-manual-2026-07")
+            self.assertEqual(qidian_content["platform_book_id"], "qd-book-1")
+            self.assertEqual(qidian_content["receipt_parser"]["parsed_fields"]["volume_id"], "vol-1")
+            self.assertEqual(qidian_content["review_status"], "rejected")
+            self.assertIn("manual_fix_required", qidian_status["status_contract"]["next_actions"])
 
     def test_platform_api_adapter_records_receipt_without_persisting_secret(self):
         with tempfile.TemporaryDirectory() as tmp:

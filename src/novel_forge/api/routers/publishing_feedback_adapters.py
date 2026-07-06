@@ -9,9 +9,11 @@ from novel_forge.modules.publishing_feedback_adapters import (
     cluster_platform_comments,
     create_feedback_mutation_proposal,
     import_platform_metrics,
+    parse_platform_receipt,
     publish_platform_upload_package,
     record_platform_receipt,
     resolve_feedback_mutation_proposal,
+    run_platform_adapter_gate,
 )
 from novel_forge.storage.local import LocalStorage
 
@@ -23,6 +25,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(tags=["product-publishing-feedback-adapters"])
     PlatformUploadPackageRequest = models["PlatformUploadPackageRequest"]
     PlatformReceiptRequest = models["PlatformReceiptRequest"]
+    PlatformReceiptParseRequest = models["PlatformReceiptParseRequest"]
+    PlatformAdapterGateRequest = models["PlatformAdapterGateRequest"]
     PlatformPublishRequest = models["PlatformPublishRequest"]
     PlatformMetricsImportRequest = models["PlatformMetricsImportRequest"]
     PlatformCommentsClusterRequest = models["PlatformCommentsClusterRequest"]
@@ -62,6 +66,38 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 environment=request.environment,
                 envelope=request.envelope or None,
             )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/publishing-adapters/receipt/parse")
+    def receipt_parse_endpoint(request: PlatformReceiptParseRequest) -> dict:
+        try:
+            return parse_platform_receipt(
+                LocalStorage(app_settings.root),
+                platform_id=request.platform_id,
+                receipt_text=request.receipt_text,
+                receipt_raw=request.receipt_raw,
+                operator_note=request.operator_note,
+                upload_package_path=request.upload_package_path,
+                environment=request.environment,
+                envelope=request.envelope or None,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/publishing-adapters/platform-gate")
+    def platform_adapter_gate_endpoint(request: PlatformAdapterGateRequest) -> dict:
+        try:
+            return run_platform_adapter_gate(
+                LocalStorage(app_settings.root),
+                upload_package_path=request.upload_package_path,
+                platform_id=request.platform_id,
+                receipt_path=request.receipt_path,
+                environment=request.environment,
+                envelope=request.envelope or None,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

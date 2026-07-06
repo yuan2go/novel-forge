@@ -14,6 +14,7 @@ from novel_forge.model_adapters import (
 )
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.content_intelligence_governance import content_intelligence_preflight_gate
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_pack, knowledge_context_contract_metadata
 from novel_forge.modules.mkaos import build_mkaos_flow_context_with_policy, mkaos_pack_metadata, record_pack_usage_for_artifact
 from novel_forge.modules.model_operation_governance import (
@@ -21,6 +22,7 @@ from novel_forge.modules.model_operation_governance import (
     enforce_model_operation_preflight,
     record_model_operation_final_governance,
 )
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.planning_context import build_planning_context, planning_context_metadata
 from novel_forge.modules.production_chain import create_outline_version
 from novel_forge.modules.production_context import filter_project_safe_references
@@ -64,6 +66,14 @@ def generate_outline(
         source_policy=source_policy,
     )
     knowledge_contract = knowledge_context_contract_from_pack(mkaos_pack)
+    content_intelligence = content_intelligence_preflight_gate(
+        storage,
+        target_asset_id=character.id,
+        target_asset_path=source_path,
+        project_id=project_id,
+        workspace_path=workspace,
+        required=is_production_environment(environment or (os_envelope or {}).get("environment")),
+    )
     preflight = enforce_model_operation_preflight(
         storage,
         operation="generate-outline",
@@ -79,6 +89,8 @@ def generate_outline(
         provider_runtime_gate=provider_runtime_gate,
         context_bundle_path=str(mkaos_pack.get("context_bundle_path") or ""),
         require_context_bundle=True,
+        extra_gate_statuses={"content_intelligence": content_intelligence},
+        extra_required_gates=["content_intelligence"],
     )
     with AgentExecutionContext(
         storage,
@@ -207,6 +219,8 @@ def generate_outline(
             preflight_governance=preflight,
             context_bundle_path=str(mkaos_pack.get("context_bundle_path") or ""),
             require_context_bundle=True,
+            extra_gate_statuses={"content_intelligence": content_intelligence},
+            extra_required_gates=["content_intelligence"],
         )
         attach_model_operation_governance(storage, path, final_governance)
         _record_mkaos_usage(storage, mkaos_pack, flow="outline", target_asset_id=asset.id, agent_name="OutlineAgent")

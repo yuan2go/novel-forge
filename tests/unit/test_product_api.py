@@ -1236,7 +1236,9 @@ class ProductApiTests(unittest.TestCase):
 
             self.assertEqual(len(workbench["chapter_plans"]), 1)
             self.assertEqual(len(workbench["drafts"]), 1)
+            self.assertEqual(len(workbench["revised_drafts"]), 1)
             self.assertEqual(len(workbench["reviews"]), 1)
+            self.assertEqual(len(workbench["post_revision_reviews"]), 1)
             self.assertEqual(len(workbench["revision_plans"]), 1)
 
 

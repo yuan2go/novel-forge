@@ -22,6 +22,7 @@ import {
   previewRollback,
   verifyRollbackResult,
   type MultiBookProductionReport,
+  type MultiBookProductionSchedule,
   type NovelOsCockpitSnapshot,
   type RuntimeCostDashboard,
   type RuntimeTraceTimeline
@@ -58,6 +59,7 @@ export function OperatingSystemConsolePage() {
   const [providerApproval, setProviderApproval] = useState<Record<string, unknown>>({});
   const [projectCockpit, setProjectCockpit] = useState<NovelOsCockpitSnapshot | null>(null);
   const [multiBookReport, setMultiBookReport] = useState<MultiBookProductionReport | null>(null);
+  const [multiBookSchedule, setMultiBookSchedule] = useState<MultiBookProductionSchedule | null>(null);
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [rollbackVerify, setRollbackVerify] = useState<Record<string, unknown> | null>(null);
   const [rollbackCoordination, setRollbackCoordination] = useState<Record<string, unknown> | null>(null);
@@ -95,6 +97,7 @@ export function OperatingSystemConsolePage() {
     setProviderApproval(approvalData);
     setProjectCockpit(cockpitData[0]);
     setMultiBookReport(cockpitData[1]);
+    setMultiBookSchedule(cockpitData[2]);
   }
 
   useEffect(() => {
@@ -128,10 +131,20 @@ export function OperatingSystemConsolePage() {
   const cockpitTaskHealth = cockpitContent.task_health || {};
   const cockpitAgentHealth = cockpitContent.agent_health || {};
   const cockpitRisks = cockpit.risk_summary || {};
-  const chapterQueue = cockpit.today_chapter_queue || [];
+  const productionControl = (cockpitContent.production_control_console as Record<string, unknown> | undefined) || {};
+  const productionBookState = (productionControl.book_state as Record<string, unknown> | undefined) || {};
+  const productionGateBoard = (productionControl.gate_status_board as Record<string, unknown> | undefined) || {};
+  const productionRiskSummary = (productionControl.risk_summary as Record<string, unknown> | undefined) || cockpitRisks;
+  const chapterQueue = (productionControl.chapter_queue as Array<Record<string, unknown>> | undefined) || cockpit.today_chapter_queue || [];
+  const feedbackApprovalQueue = (productionControl.feedback_approval_queue as Array<Record<string, unknown>> | undefined) || [];
   const multiBook = multiBookReport?.asset?.content?.multi_book_scheduler || {};
   const multiBookRows = multiBook.books || [];
   const multiBookBudget = multiBook.provider_budget_plan || {};
+  const costQualityDashboard = (multiBookReport?.asset?.content?.cost_quality_dashboard as Record<string, unknown> | undefined) || {};
+  const costQualityRows = (costQualityDashboard.books as Array<Record<string, unknown>> | undefined) || multiBookRows;
+  const schedule = multiBookSchedule?.asset?.content?.multi_book_parallel_schedule || {};
+  const scheduleLanes = schedule.parallel_lanes || [];
+  const scheduleGuard = schedule.cross_book_contamination_guard || {};
 
   return (
     <FeatureShell title="Novel Operating System Console" subtitle="Workflow、Agent、KG、Trace、Cost、Invalidation、Rework 的统一运行入口。" eyebrow="OS Runtime">
@@ -155,7 +168,7 @@ export function OperatingSystemConsolePage() {
         <div className="panel">
           <PanelHeader title="Project Cockpit" icon={<BookOpenCheck size={18} />} />
           <div className="summaryBand">
-            <Metric label="State" value={String(cockpit.book_production_state || "-")} />
+            <Metric label="State" value={String(productionBookState.status || cockpit.book_production_state || "-")} />
             <Metric label="Drafts" value={String(cockpitThroughput.draft_count ?? 0)} />
             <Metric label="Review" value={String(cockpitThroughput.review_count ?? 0)} />
             <Metric label="Blocking Issues" value={String(cockpitQuality.blocking_review_issue_count ?? 0)} />
@@ -174,7 +187,7 @@ export function OperatingSystemConsolePage() {
           <DataTable
             emptyText="暂无 V7 风险摘要"
             columns={["维度", "当前证据"]}
-            rows={Object.entries(cockpitRisks).map(([key, value]) => [key, String(value || "-")])}
+            rows={Object.entries(productionRiskSummary).map(([key, value]) => [key, String(value || "-")])}
           />
         </div>
 
@@ -185,22 +198,56 @@ export function OperatingSystemConsolePage() {
             <Metric label="Long-chain" value={String(cockpitQuality.latest_long_chain_status ?? "-")} />
             <Metric label="Books" value={String(multiBookReport?.book_count ?? multiBookRows.length)} />
             <Metric label="Daily Budget" value={String(multiBookBudget.daily_budget ?? "-")} />
+            <Metric label="Total Cost" value={String(costQualityDashboard.total_cost ?? "-")} />
+            <Metric label="Avg Quality" value={String(costQualityDashboard.average_quality_score ?? "-")} />
           </div>
           <DataTable
+            emptyText="暂无生产 gate 状态"
+            columns={["Gate", "Status"]}
+            rows={Object.entries(productionGateBoard).map(([key, value]) => [key, String(value || "-")])}
+          />
+          <DataTable
             emptyText="暂无多书调度数据"
-            columns={["Book", "Drafts", "Plans", "Blocking", "Memory"]}
-            rows={multiBookRows.slice(0, 8).map((row) => [
+            columns={["Book", "Drafts", "Plans", "Blocking", "Quality", "Cost", "Ratio"]}
+            rows={costQualityRows.slice(0, 8).map((row) => [
               String(row.project_id || "-"),
               String(row.draft_count ?? 0),
               String(row.chapter_plan_count ?? 0),
               String(row.blocking_review_issue_count ?? 0),
-              String(row.memory_isolation || "-")
+              String(row.latest_quality_score ?? "-"),
+              String(row.model_cost ?? "-"),
+              String(row.cost_quality_ratio ?? "-")
             ])}
+          />
+          <DataTable
+            emptyText="暂无反馈审批队列"
+            columns={["Feedback Proposal", "ID", "路径"]}
+            rows={feedbackApprovalQueue.slice(0, 6).map((row) => [
+              String(row.title || "-"),
+              String(row.id || "-"),
+              <span className="pathText" key={`${String(row.path)}-feedback`}>{String(row.path || "-")}</span>
+            ])}
+          />
+          <DataTable
+            emptyText="暂无并行生产 lane"
+            columns={["Lane", "Book", "Action", "Budget", "Quality Loop"]}
+            rows={scheduleLanes.slice(0, 8).map((row) => [
+              String(row.lane || "-"),
+              String(row.project_id || "-"),
+              String(row.action || "-"),
+              String(row.budget_cap ?? "-"),
+              String(row.requires_v7_quality_loop ? "required" : "-")
+            ])}
+          />
+          <DataTable
+            emptyText="暂无跨书隔离策略"
+            columns={["Guard", "Value"]}
+            rows={Object.entries(scheduleGuard).map(([key, value]) => [key, String(value)])}
           />
           <DataTable
             emptyText="暂无总控台建议"
             columns={["下一步"]}
-            rows={((cockpitContent.recommendations as string[] | undefined) || []).map((item) => [item])}
+            rows={[...((cockpitContent.recommendations as string[] | undefined) || []), ...((multiBookSchedule?.asset?.content?.recommendations as string[] | undefined) || [])].map((item) => [item])}
           />
         </div>
       </section>

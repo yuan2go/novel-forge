@@ -6,7 +6,13 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.model_adapters.runtime import ProviderRuntimeGuard, evaluate_provider_runtime_guard
-from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, provider_approval_evidence_report, resolve_model_route
+from novel_forge.modules.model_router import (
+    create_model_route,
+    execute_model_gateway_call,
+    provider_approval_evidence_report,
+    record_external_provider_proof,
+    resolve_model_route,
+)
 from novel_forge.modules.runtime_ledger import record_gate_result, record_model_call_log
 from novel_forge.modules.runtime_policy import provider_hard_stop_evidence_report
 from novel_forge.storage.local import LocalStorage
@@ -204,6 +210,50 @@ class ProviderHardStopProofTests(unittest.TestCase):
 
             self.assertEqual(policy["status"], "passed")
             self.assertEqual(policy["allowlist"], ["claude-code"])
+
+    def test_claude_code_local_cli_evidence_satisfies_strict_provider_proof(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            proof = record_external_provider_proof(
+                storage,
+                proof_type="single_chapter",
+                routed_result={
+                    "model_route_resolution_path": "data/runs/model-route-resolution.json",
+                    "model_gateway_call": {
+                        "provider": "claude-code",
+                        "model": "gpt-5.1-codex",
+                        "provider_policy": {"status": "passed", "blocking": False},
+                        "approval_evidence": {"approved": True, "approval_id": "approval-claude-code-real-proof"},
+                        "model_call_log_path": "data/runs/model-call.json",
+                        "runtime_policy_path": "data/runs/runtime-policy.json",
+                        "cost_ledger_path": "data/runs/cost-ledger.json",
+                    },
+                    "external_provider_evidence": {
+                        "external_call": True,
+                        "fixture": False,
+                        "mock": False,
+                        "simulated": False,
+                        "provider_runtime": "local_codex_cli_worker",
+                        "external_api": False,
+                        "provider_response_id": "claude-code-cli-response-1",
+                        "endpoint_host": "local-codex-cli",
+                        "rate_limit_policy": "operator-approved-local-cli-budget-and-timeout",
+                        "credential_ref": "CODEX_HOME",
+                    },
+                },
+                adapter=None,
+                project_id="claude-code-proof-p",
+                environment="production",
+                strict=True,
+            )
+
+            self.assertEqual(proof["status"], "passed")
+            asset = storage.read_json(storage.root / proof["path"])
+            evidence = asset["content"]["external_provider_evidence"]
+            self.assertEqual(evidence["provider_runtime"], "local_codex_cli_worker")
+            self.assertFalse(evidence["external_api"])
+            self.assertEqual(asset["content"]["credential_boundary"]["credential_ref"], "CODEX_HOME")
 
     def test_production_model_route_blocks_mock_without_explicit_fixture_mode(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -270,6 +270,11 @@ export function QualityEvalV2Page() {
   const [targetPath, setTargetPath] = useState("");
   const [reportPath, setReportPath] = useState("");
   const [suiteType, setSuiteType] = useState("opening_3");
+  const [providerMode, setProviderMode] = useState("fixture");
+  const [providerName, setProviderName] = useState("fixture-provider");
+  const [providerModel, setProviderModel] = useState("premium-judge-fixture");
+  const [budgetCap, setBudgetCap] = useState("1.0");
+  const [requireExternalProof, setRequireExternalProof] = useState(false);
 
   async function rubric() {
     const payload = await postJson("/product/quality/rubric-pack", { genre_id: "mystery", platform_id: "local" }) as RunResult;
@@ -279,6 +284,53 @@ export function QualityEvalV2Page() {
 
   async function suite() {
     const payload = await postJson("/product/quality/suite", { suite_type: suiteType, target_paths: targetPath ? [targetPath] : [], rubric_path: rubricPath }) as RunResult;
+    setReportPath(String(payload.path || ""));
+    return payload;
+  }
+
+  async function providerJudge() {
+    const fixture = {
+      text: JSON.stringify({
+        recommendation: "ready",
+        scores: {
+          genre_promise: 88,
+          platform_rhythm: 86,
+          style_adherence: 85,
+          hook_strength: 87,
+          conflict_density: 84,
+          character_motivation: 86,
+          canon_consistency: 90,
+          ai_flavor_risk: 83
+        },
+        rationale: "fixture provider judge for local UI smoke"
+      }),
+      usage: { input_tokens: 800, output_tokens: 160, total_tokens: 960 },
+      cost: { amount: 0.01, currency: "USD", source: "ui_fixture" },
+      provider: providerName,
+      model: providerModel
+    };
+    const payload = await postJson("/product/quality/provider-judge", {
+      suite_type: suiteType,
+      target_paths: targetPath ? [targetPath] : [],
+      rubric_path: rubricPath,
+      platform_id: "local",
+      mode: providerMode,
+      provider_config: { provider: providerName, model_name: providerModel, mode: providerMode },
+      provider_route: {
+        provider: providerName,
+        model_name: providerModel,
+        approval_status: "approved",
+        approval_id: "ui-operator-approval",
+        approved_by: "operator",
+        production_provider_allowlist: [providerName]
+      },
+      operator_approval: { status: "approved", approval_id: "ui-operator-approval", approved_by: "operator", reason: "manual UI run" },
+      budget_cap: Number(budgetCap || 0),
+      allow_mock_fixture: providerMode === "fixture",
+      fixture_judge_response: providerMode === "fixture" ? fixture : {},
+      require_external_provider_proof: requireExternalProof,
+      environment: providerMode === "real" ? "production" : ""
+    }) as RunResult;
     setReportPath(String(payload.path || ""));
     return payload;
   }
@@ -295,9 +347,21 @@ export function QualityEvalV2Page() {
           <input value={rubricPath} onChange={(event) => setRubricPath(event.target.value)} placeholder="rubric path" />
           <input value={targetPath} onChange={(event) => setTargetPath(event.target.value)} placeholder="target asset path" />
           <input value={reportPath} onChange={(event) => setReportPath(event.target.value)} placeholder="quality report path" />
+          <select value={providerMode} onChange={(event) => setProviderMode(event.target.value)}>
+            <option value="fixture">fixture provider</option>
+            <option value="real">real provider</option>
+          </select>
+          <input value={providerName} onChange={(event) => setProviderName(event.target.value)} placeholder="provider, e.g. claude-code" />
+          <input value={providerModel} onChange={(event) => setProviderModel(event.target.value)} placeholder="provider model" />
+          <input value={budgetCap} onChange={(event) => setBudgetCap(event.target.value)} placeholder="budget cap" />
+          <label className="inlineCheckbox">
+            <input type="checkbox" checked={requireExternalProof} onChange={(event) => setRequireExternalProof(event.target.checked)} />
+            <span>Require external provider proof</span>
+          </label>
           <div className="studioActions">
             <button className="primaryButton" disabled={busy} onClick={() => run(rubric)}>Build Rubric</button>
             <button className="secondaryButton" disabled={busy || !targetPath} onClick={() => run(suite)}>Run Suite</button>
+            <button className="secondaryButton" disabled={busy || !targetPath || !rubricPath} onClick={() => run(providerJudge)}>Run Provider Judge</button>
             <button className="secondaryButton" disabled={busy || !reportPath} onClick={() => run(() => postJson("/product/quality/gate", { quality_report_path: reportPath }))}>Run Gate</button>
           </div>
         </div>
@@ -336,9 +400,11 @@ export function PublishingFeedbackV2Page() {
   const [commentReportPath, setCommentReportPath] = useState("");
   const [platformEndpoint, setPlatformEndpoint] = useState("");
   const [tokenEnv, setTokenEnv] = useState("");
+  const [platformId, setPlatformId] = useState("fanqie");
+  const [receiptText, setReceiptText] = useState("作品ID：demo-book\n章节ID：demo-chapter\n审核状态：审核中");
 
   async function upload() {
-    const payload = await postJson("/product/publishing-adapters/upload-package", { release_package_path: releasePath, platform_id: "manual" }) as RunResult;
+    const payload = await postJson("/product/publishing-adapters/upload-package", { release_package_path: releasePath, platform_id: platformId }) as RunResult;
     setUploadPath(String(payload.path || ""));
     return payload;
   }
@@ -362,15 +428,23 @@ export function PublishingFeedbackV2Page() {
         <div className="panel">
           <PanelHeader title="Publishing / Feedback" icon={<Send size={18} />} />
           <input value={releasePath} onChange={(event) => setReleasePath(event.target.value)} placeholder="release package path" />
+          <select value={platformId} onChange={(event) => setPlatformId(event.target.value)}>
+            <option value="fanqie">Fanqie manual adapter</option>
+            <option value="qidian">Qidian manual adapter</option>
+            <option value="manual">Generic manual adapter</option>
+          </select>
           <input value={uploadPath} onChange={(event) => setUploadPath(event.target.value)} placeholder="upload package path" />
           <input value={commentReportPath} onChange={(event) => setCommentReportPath(event.target.value)} placeholder="comment cluster report path" />
           <input value={platformEndpoint} onChange={(event) => setPlatformEndpoint(event.target.value)} placeholder="platform API endpoint" />
           <input value={tokenEnv} onChange={(event) => setTokenEnv(event.target.value)} placeholder="token env var name" />
+          <textarea rows={3} value={receiptText} onChange={(event) => setReceiptText(event.target.value)} placeholder="platform receipt text" />
           <div className="studioActions">
             <button className="primaryButton" disabled={busy || !releasePath} onClick={() => run(upload)}>Build Upload Package</button>
-            <button className="secondaryButton" disabled={busy || !uploadPath} onClick={() => run(() => postJson("/product/publishing-adapters/receipt", { platform_id: "manual", platform_book_id: "manual-book", upload_package_path: uploadPath }))}>Record Receipt</button>
+            <button className="secondaryButton" disabled={busy || !uploadPath} onClick={() => run(() => postJson("/product/publishing-adapters/platform-gate", { platform_id: platformId, upload_package_path: uploadPath }))}>Run Platform Gate</button>
+            <button className="secondaryButton" disabled={busy || !uploadPath} onClick={() => run(() => postJson("/product/publishing-adapters/receipt/parse", { platform_id: platformId, receipt_text: receiptText, upload_package_path: uploadPath }))}>Parse Receipt</button>
+            <button className="secondaryButton" disabled={busy || !uploadPath} onClick={() => run(() => postJson("/product/publishing-adapters/receipt", { platform_id: platformId, platform_book_id: `${platformId}-book`, upload_package_path: uploadPath }))}>Record Receipt</button>
             <button className="secondaryButton" disabled={busy || !uploadPath || !platformEndpoint} onClick={() => run(() => postJson("/product/publishing-adapters/publish", { upload_package_path: uploadPath, platform_config: { platform_id: "api-platform", endpoint: platformEndpoint, token_env: tokenEnv } }))}>Publish via API</button>
-            <button className="secondaryButton" disabled={busy} onClick={() => run(() => postJson("/product/feedback-adapters/metrics", { platform_id: "manual", chapter_metrics: [{ chapter_no: 1, retention: 0.9 }, { chapter_no: 2, retention: 0.7 }] }))}>Import Metrics</button>
+            <button className="secondaryButton" disabled={busy} onClick={() => run(() => postJson("/product/feedback-adapters/metrics", { platform_id: platformId, chapter_metrics: [{ chapter_no: 1, retention: 0.9 }, { chapter_no: 2, retention: 0.7 }] }))}>Import Metrics</button>
             <button className="secondaryButton" disabled={busy} onClick={() => run(comments)}>Cluster Comments</button>
             <button className="secondaryButton" disabled={busy || !commentReportPath} onClick={() => run(() => postJson("/product/feedback-adapters/mutation-proposal", { source_feedback_paths: [commentReportPath], target_assets: [{ asset_type: "outline", path: "manual" }], proposed_changes: [{ domain: "outline", action: "tighten_next_hook" }] }))}>Create Mutation Proposal</button>
           </div>

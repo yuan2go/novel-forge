@@ -5,6 +5,37 @@ Last updated: 2026-07-06
 Branch: `feat/v7-content-intelligence-and-longform-proof`
 Scope: remaining V7 content intelligence risk closure after foundation pass
 
+## 2026-07-06 P0 Closure Delta
+
+| P0 item | Current state | Evidence | Remaining boundary |
+|---|---|---|---|
+| Real provider proof chain | Added a single `run_v7_provider_proof(...)` orchestration path that runs opening_3 provider judge, provider-generated single chapter proof plus content quality loop, and provider_50 long-chain proof through the same provider approval/runtime/cost/external-proof contract. | `src/novel_forge/modules/v7_provider_proof/service.py`, `tests/unit/test_v7_provider_proof.py`, Agent op `run-v7-provider-proof`, workflow processor `v7_provider_proof` | Unit tests use strict external-provider evidence fixtures. A credentialed `claude-code`/commercial provider run still requires operator-approved route, credentials, budget, and network/runtime controls. |
+| Claude Code provider proof evidence | `ClaudeCodeAdapter` / local Codex CLI worker now emits non-fixture provider evidence (`external_call`, response id, endpoint boundary, rate-limit policy, `CODEX_HOME` credential ref, sandbox/isolation) so strict provider proof can distinguish real CLI calls from mock/fixture adapters. | `src/novel_forge/model_adapters/providers.py`, `tests/unit/test_provider_hard_stop_proof.py` | The repository test suite verifies the evidence contract without spending 50 real provider calls. A full 50-chapter Codex run remains an operator-approved budgeted run. |
+| V7 gate moved upstream | Production `develop-topic`, `generate-outline`, and `generate-chapter-plan` now require `content_intelligence_preflight_gate` before model invocation, matching Draft/Revision governance. | `src/novel_forge/modules/topics/service.py`, `src/novel_forge/modules/outline/service.py`, `src/novel_forge/modules/chapter_plan/service.py`, `tests/unit/test_model_operation_governance.py` | Local/dev remains non-blocking for backward compatibility; production fails closed. |
+| Revision post-quality loop | `revise()` now attempts to execute the revision plan into a final draft via existing editor executor, then runs revised-draft content quality loop and optional re-review. Local failures are recorded as deferred evidence; production failures block. | `src/novel_forge/modules/revision/service.py`, `tests/unit/test_module_services.py`, `tests.unit.test_review_issue` | Existing editor executor still respects blocking ReviewIssue policy; some local plan-only revisions will remain deferred until a safe final draft exists. |
+| Feedback approval auto application | Approved feedback mutation proposals now automatically trigger the application chain, writing patch assets, invalidation evidence, and regeneration tasks while preserving `needs_review` and no silent story mutation. | `src/novel_forge/modules/publishing_feedback_adapters/service.py`, `tests/unit/test_publishing_feedback_adapters.py`, workflow processor tests | Actual downstream text regeneration remains a separate human-gated processor chain. |
+| Canon typed graph reducer | Canon state snapshots now include a typed reducer projection with stable machine index, domain/plugin indexes, transition timeline, conflict projection, and reducer diff. | `src/novel_forge/modules/canon_graph/service.py`, `tests/unit/test_canon_graph_plugins.py` | This is still JSON asset-backed reducer storage, not a dedicated graph database/UI repair workbench. |
+| Full regression corrections | Full `make test` exposed two integration-level contract issues and both are fixed: auto-created quality rubric packs now retain project scope, and draft workbench separates primary drafts/reviews from post-revision final drafts/re-reviews. | `src/novel_forge/modules/quality_eval/service.py`, `src/novel_forge/api/services/product.py`, `tests/unit/test_product_api.py`, `tests/integration/test_pipeline.py` | Extra workbench fields are additive API shape changes: `revised_drafts` and `post_revision_reviews`. |
+
+## 2026-07-06 P1 Productization Delta
+
+| P1 item | Current state | Evidence | Remaining boundary |
+|---|---|---|---|
+| Fanqie/Qidian platform rules and receipt parsing | Fanqie and Qidian now have manual-first platform profiles with rule versions, title/synopsis/chapter constraints, checklist requirements, review status maps, and labeled receipt parsers. Parsed receipts write `platform_publish_receipt` and normalized `platform_review_status` evidence. | `src/novel_forge/modules/publishing_feedback_adapters/service.py`, `src/novel_forge/api/routers/publishing_feedback_adapters.py`, `tests/unit/test_publishing_feedback_adapters.py` | These profiles are not official commercial SDK integrations and do not implement platform callbacks or rate-limit protocols. |
+| Project-level production Cockpit | OS Console now surfaces a project production control snapshot: book state, chapter queue, draft queue, agent queue, gate status board, V7 risk summary, feedback approval queue, rollback/recovery links, and multi-book cost/quality dashboard. | `src/novel_forge/modules/novel_os_cockpit/service.py`, `web/admin/app/features/os/OperatingSystemConsolePage.tsx`, `tests/unit/test_novel_os_cockpit.py`, Web Admin lint/tests | Guided repair remains conservative and review-only; the UI does not silently patch outlines, chapters, or release packages. |
+| Eval Center golden set and calibration | Eval Center now creates human annotation assets, builds golden-set evaluation suites, and calibrates provider judge outputs against expected scores with pass/fail calibration reports. | `src/novel_forge/modules/evaluation_center/service.py`, `src/novel_forge/api/routers/evaluation.py`, `tests/unit/test_quality_eval_v2.py` | Calibration tests use local assets/fixtures. Real premium judge calibration requires approved external provider routes, credentials, and budget. |
+| Multi-book schedule and cost/quality board | Multi-book production reports now include per-book latest quality score, model cost, cost/quality ratio, provider budget plan, total spend, and risk flags for blocked or low-quality books. | `src/novel_forge/modules/novel_os_cockpit/service.py`, `web/admin/app/features/os/api.ts`, `tests/unit/test_novel_os_cockpit.py` | This is an operations dashboard foundation, not a full capacity planner with automatic cross-book dispatch. |
+
+## 2026-07-06 P1 Closure Delta 2
+
+| P1/P0-adjacent item | Current state | Evidence | Remaining boundary |
+|---|---|---|---|
+| Per-chapter post-generation quality loop evidence | Every `run_content_quality_loop(...)` execution now writes a schema-backed `chapter_quality_trend` point and attaches it to the target draft plus loop report. Draft generation already calls the loop when V7 genre/style evidence is available, so each generated chapter has chapter-level quality evidence instead of only release-time checks. | `src/novel_forge/modules/content_quality_loop/service.py`, `src/novel_forge/modules/drafting/service.py`, `tests/unit/test_content_quality_loop.py` | Local drafts without project-scoped V7 evidence still mark the quality loop as deferred; production remains fail-closed. |
+| Provider judge API/UI/run report | Provider judge reports now include `provider_judge_run_report` with route resolution, model call log, runtime policy, cost ledger, approval evidence, and external proof status. Web Quality Eval Console exposes fixture vs real provider mode, provider/model, budget cap, operator approval, and external proof requirement. | `src/novel_forge/modules/quality_eval/service.py`, `src/novel_forge/api/routers/quality_eval_v2.py`, `web/admin/app/features/content-intelligence/ContentIntelligencePages.tsx`, `tests/unit/test_quality_eval_v2.py` | A credentialed real provider run still requires operator-approved route, credentials, budget, and network/runtime controls. |
+| Canon Graph genre state machine reducer | Canon state-machine snapshots now include `typed_graphs` by genre domain with state-machine nodes, transition edges, query contract, conflict projection, and reducer diff fields. | `src/novel_forge/modules/canon_graph/service.py`, `tests/unit/test_canon_graph_plugins.py` | Storage is still JSON asset-backed; richer graph traversal and UI repair workflows remain future depth. |
+| Platform-specific adapter gate | Fanqie/Qidian manual adapters now have a platform adapter gate that checks platform profile, checklist, chapter format, receipt status, and rules version, writing `platform_review_status` evidence. The Web Publishing Feedback Console can build platform packages, run the gate, and parse platform receipts. | `src/novel_forge/modules/publishing_feedback_adapters/service.py`, `src/novel_forge/api/routers/publishing_feedback_adapters.py`, `web/admin/app/features/content-intelligence/ContentIntelligencePages.tsx`, `tests/unit/test_publishing_feedback_adapters.py` | These are manual-first adapters, not official SDK/callback/rate-limit integrations. |
+| Novel OS Cockpit and multi-book schedule | Cockpit now loads project production control, multi-book cost/quality dashboard, and a parallel schedule with lane allocation, budget caps, V7 quality-loop requirements, and cross-book contamination guard. | `src/novel_forge/modules/novel_os_cockpit/service.py`, `src/novel_forge/api/routers/os_capabilities.py`, `web/admin/app/features/os/OperatingSystemConsolePage.tsx`, `tests/unit/test_novel_os_cockpit.py` | The schedule is evidence/planning output; it does not automatically dispatch multiple books until an operator or scheduler consumes the schedule. |
+
 ## Closed Or Reduced Risks
 
 | Risk | Current state | Evidence | Remaining boundary |
@@ -70,13 +101,36 @@ Scope: remaining V7 content intelligence risk closure after foundation pass
 | `npm --prefix web/admin run lint` | Passed |
 | `python3 -m compileall -q src/novel_forge tests` | Passed |
 | `git diff --check` | Passed |
+| `python3 -m unittest tests.unit.test_model_operation_governance tests.unit.test_canon_graph_plugins tests.unit.test_publishing_feedback_adapters tests.unit.test_v7_provider_proof` | Passed: 18 tests |
+| `python3 -m unittest tests.unit.test_module_services tests.unit.test_review_issue tests.unit.test_content_quality_loop tests.unit.test_quality_eval_v2 tests.unit.test_long_chain_proof tests.unit.test_workflow_executor` | Passed: 57 tests |
+| `python3 -m unittest tests.unit.test_agent_scheduler tests.unit.test_product_api_routes tests.unit.test_schemas tests.integration.test_novel_os_acceptance` | Passed: 32 tests; FastAPI TestClient deprecation warning only |
+| `python3 -m compileall -q src/novel_forge tests` | Passed |
+| `python3 -m unittest tests.integration.test_pipeline.PipelineTests.test_sample_pipeline_runs tests.unit.test_product_api.ProductApiTests.test_draft_workbench_groups_drafts_reviews_and_revisions` | Passed: 2 tests |
+| `make test` | Passed: Python 565 tests OK, skipped=2; Web Admin 11 passed, 1 optional Playwright browser smoke skipped |
+| `python3 -m compileall -q src/novel_forge tests` | Passed |
+| `git diff --check` | Passed |
+| `python3 -m unittest tests.unit.test_provider_hard_stop_proof tests.unit.test_quality_eval_v2 tests.unit.test_long_chain_proof tests.unit.test_v7_provider_proof` | Passed: 22 tests |
+| `make test` | Passed: Python 566 tests OK, skipped=2; Web Admin 11 passed, 1 optional Playwright browser smoke skipped |
+| `python3 -m unittest tests.unit.test_publishing_feedback_adapters tests.unit.test_novel_os_cockpit tests.unit.test_quality_eval_v2 tests.unit.test_product_api_routes tests.unit.test_schemas` | Passed: 38 tests; FastAPI TestClient deprecation warning only |
+| `npm --prefix web/admin run lint` | Passed |
+| `npm --prefix web/admin test` | Passed: 11 passed, 1 optional Playwright browser smoke skipped |
+| `python3 -m compileall -q src/novel_forge tests` | Passed |
+| `git diff --check` | Passed |
+| `python3 -m unittest tests.unit.test_content_quality_loop tests.unit.test_quality_eval_v2 tests.unit.test_canon_graph_plugins tests.unit.test_publishing_feedback_adapters tests.unit.test_novel_os_cockpit tests.unit.test_product_api_routes tests.unit.test_schemas` | Passed: 46 tests; FastAPI TestClient deprecation warning only |
+| `make test` | Passed: Python 571 tests OK, skipped=2; Web Admin 11 passed, 1 optional Playwright browser smoke skipped |
+| `make test` | Passed: Python 569 tests OK, skipped=2; Web Admin 11 passed, 1 optional Playwright browser smoke skipped |
+| `python3 -m unittest tests.unit.test_content_quality_loop tests.unit.test_quality_eval_v2 tests.unit.test_canon_graph_plugins tests.unit.test_publishing_feedback_adapters tests.unit.test_novel_os_cockpit tests.unit.test_product_api_routes` | Passed: 28 tests; FastAPI TestClient deprecation warning only |
+| `npm --prefix web/admin run lint` | Passed |
+| `npm --prefix web/admin test` | Passed: 11 passed, 1 optional Playwright browser smoke skipped |
+| `python3 -m compileall -q src/novel_forge tests` | Passed |
+| `git diff --check` | Passed |
 
 ## Residual Risk
 
-1. External-provider proof now has a strict evidence contract, but no real credentialed network provider run was executed in this repository session.
-2. The HTTP platform adapter is generic and safe by default; Fanqie/Qidian coverage is manual-first profile/checklist support, not commercial SDK/callback/rate-limit integration.
+1. External-provider proof now has a strict aggregate P0 runner plus `claude-code` local Codex CLI evidence contract, but no budgeted 50-call real provider run was executed in this repository session.
+2. The HTTP platform adapter is generic and safe by default; Fanqie/Qidian coverage is manual-first profile/checklist/gate/receipt parsing support, not commercial SDK/callback/rate-limit integration.
 3. UI artifact repair remains intentionally conservative: it marks assets for review instead of silently mutating outlines, chapters, or release packages.
 4. Decomposition and analysis still require a dedicated production policy for source-analysis text handling; do not treat those paths as generation-context clearance.
-5. Canon Graph now has typed ledger/snapshot/query/diff storage, but richer graph transition reducers and UI diff tooling remain future depth.
-6. Feedback approval can execute a workflow application step that records patch/invalidation/regeneration plans and patch assets, but actual downstream regeneration remains a separate human-gated processor chain.
-7. Cockpit is now visible in Web Admin OS Console, but guided artifact repair remains review-only and actual multi-book dispatch scheduling remains future work.
+5. Canon Graph now has typed ledger/snapshot/query/diff/reducer storage, but richer graph traversal and UI diff tooling remain future depth.
+6. Feedback approval now auto-triggers patch/invalidation/regeneration evidence, but actual downstream text regeneration remains a separate human-gated processor chain.
+7. Cockpit is now visible in Web Admin OS Console with project production control and multi-book cost/quality evidence, but guided artifact repair remains review-only and actual capacity-based multi-book dispatch scheduling remains future work.

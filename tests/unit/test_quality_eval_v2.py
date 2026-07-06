@@ -6,6 +6,11 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.model_router import create_model_route
+from novel_forge.modules.evaluation_center import (
+    build_golden_set,
+    calibrate_provider_judge,
+    create_human_annotation_asset,
+)
 from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
 from novel_forge.schemas import DraftChapter
 from novel_forge.storage.local import LocalStorage
@@ -153,6 +158,13 @@ class QualityEvalV2Tests(unittest.TestCase):
             })
 
             self.assertEqual(report["asset"]["content"]["judge_policy"]["mode"], "provider_backed_judge")
+            run_report = report["asset"]["content"]["provider_judge_run_report"]
+            self.assertEqual(run_report["status"], "completed")
+            self.assertEqual(run_report["provider"], "unit-provider")
+            self.assertTrue(run_report["route_resolution_path"])
+            self.assertTrue(run_report["model_call_log_path"])
+            self.assertTrue(run_report["cost_ledger_path"])
+            self.assertEqual(run_report["external_provider_proof_status"], "not_required")
             self.assertTrue(report["model_judge_result_paths"])
             judge = storage.read_json(storage.root / report["model_judge_result_paths"][0])
             evidence = judge["content"]["provider_evidence"]
@@ -264,6 +276,52 @@ class QualityEvalV2Tests(unittest.TestCase):
             self.assertEqual(gate["asset"]["content"]["status"], "blocked")
             self.assertTrue(gate["asset"]["content"]["blocking"])
             self.assertEqual(gate["asset"]["content"]["provider_judge_required"], True)
+
+    def test_eval_center_golden_set_human_annotation_and_provider_calibration(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            draft = DraftChapter(
+                title="golden chapter",
+                content={"chapter": 1, "text": "目标、冲突、情绪、反转、留存证据都完整。", "copyright_boundary": "original draft"},
+                metadata={"project_id": "p1"},
+            )
+            draft_path = storage.write_asset_auto(draft)
+            annotation = create_human_annotation_asset(
+                storage,
+                target_asset_path=str(draft_path),
+                annotator="chief-editor",
+                scores={"hook_strength": 0.9, "style_adherence": 0.8, "canon_consistency": 0.85},
+                verdict="pass",
+                comment="人工标注为高质量样本",
+            )
+            golden = build_golden_set(
+                storage,
+                name="Opening Golden Set",
+                case_specs=[
+                    {
+                        "target_asset_path": str(draft_path),
+                        "expected_scores": {"hook_strength": 0.88, "style_adherence": 0.82},
+                        "annotation_path": annotation["path"],
+                    }
+                ],
+                project_id="p1",
+            )
+            calibration = calibrate_provider_judge(
+                storage,
+                golden_set_path=golden["path"],
+                provider_judge_results=[
+                    {"target_asset_path": str(draft_path), "scores": {"hook_strength": 0.84, "style_adherence": 0.78}, "provider": "claude-code"}
+                ],
+                tolerance=0.08,
+                project_id="p1",
+            )
+
+            self.assertEqual(annotation["asset"]["type"], "human_annotation")
+            self.assertEqual(golden["asset"]["type"], "evaluation_suite")
+            self.assertTrue(golden["asset"]["content"]["golden_set"]["enabled"])
+            self.assertEqual(calibration["asset"]["type"], "evaluation_regression_report")
+            self.assertEqual(calibration["asset"]["content"]["calibration_status"], "passed")
+            self.assertLessEqual(calibration["asset"]["content"]["mean_absolute_error"], 0.08)
 
 
 def _production_rubric(storage: LocalStorage) -> dict:

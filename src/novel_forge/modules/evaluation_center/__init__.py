@@ -1,6 +1,9 @@
 from novel_forge.modules.evaluation_center.service import (
     compare_model_runs,
+    build_golden_set,
+    calibrate_provider_judge,
     create_benchmark_task_from_generation_run,
+    create_human_annotation_asset,
     create_model_routing_policy,
     create_model_benchmark_task,
     create_model_profile,
@@ -22,7 +25,10 @@ from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_qual
 
 __all__ = [
     "compare_model_runs",
+    "build_golden_set",
+    "calibrate_provider_judge",
     "create_benchmark_task_from_generation_run",
+    "create_human_annotation_asset",
     "create_model_routing_policy",
     "create_model_benchmark_task",
     "create_model_profile",

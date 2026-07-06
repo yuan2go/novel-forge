@@ -672,6 +672,182 @@ def create_evaluation_case(storage: LocalStorage, *, suite_id: str, target_asset
     return _write(storage, asset)
 
 
+def create_human_annotation_asset(
+    storage: LocalStorage,
+    *,
+    target_asset_path: str | Path,
+    annotator: str,
+    scores: dict[str, Any],
+    verdict: str = "needs_review",
+    comment: str = "",
+    project_id: str = "",
+) -> dict[str, Any]:
+    path = resolve_path(storage.root, target_asset_path)
+    target = storage.read_asset(path)
+    project = project_scope_from_asset(storage, target, input_path=path)
+    normalized_scores = {str(key): _score_0_1(value) for key, value in (scores or {}).items()}
+    overall = round(sum(normalized_scores.values()) / max(1, len(normalized_scores)), 4)
+    asset = BaseAsset(
+        type="human_annotation",
+        title=f"Human annotation {target.type}",
+        source=target.id,
+        tags=["evaluation", "human-annotation", verdict],
+        content={
+            "annotation_id": make_id("human_annotation", f"{target.id}-{annotator}-{utc_now()}"),
+            "target_asset_id": target.id,
+            "rubric_id": "eval-center-human-annotation",
+            "target_asset_type": target.type,
+            "target_asset_path": _display_path(storage.root, path),
+            "annotator": annotator,
+            "scores": normalized_scores,
+            "overall_score": overall,
+            "verdict": verdict,
+            "recommendation": verdict,
+            "comment": comment[:1000],
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id or project.get("project_id", ""), "target_asset_type": target.type, "overall_score": overall, "verdict": verdict},
+        references=filter_project_safe_references(storage, str(project_id or project.get("project_id", "")), [target.id, _display_path(storage.root, path)]),
+    )
+    return _write(storage, asset)
+
+
+def build_golden_set(
+    storage: LocalStorage,
+    *,
+    name: str,
+    case_specs: list[dict[str, Any]],
+    project_id: str = "",
+    status: str = "active",
+) -> dict[str, Any]:
+    if not case_specs:
+        raise ValueError("case_specs must not be empty")
+    case_rows = []
+    references: list[str] = []
+    metrics: set[str] = set()
+    for index, spec in enumerate(case_specs, start=1):
+        target_path = str(spec.get("target_asset_path") or "")
+        if not target_path:
+            raise ValueError("each golden set case requires target_asset_path")
+        target = storage.read_asset(resolve_path(storage.root, target_path))
+        expected_scores = {str(key): _score_0_1(value) for key, value in (spec.get("expected_scores", {}) if isinstance(spec.get("expected_scores", {}), dict) else {}).items()}
+        annotation_path = str(spec.get("annotation_path") or "")
+        annotation_summary = _annotation_summary(storage, annotation_path)
+        metrics.update(expected_scores.keys())
+        case_rows.append(
+            {
+                "case_id": make_id("golden_case", f"{name}-{index}-{target.id}"),
+                "target_asset_path": _display_path(storage.root, resolve_path(storage.root, target_path)),
+                "target_asset_id": target.id,
+                "target_asset_type": target.type,
+                "expected_scores": expected_scores,
+                "annotation_path": annotation_path,
+                "annotation_summary": annotation_summary,
+                "acceptance_band": float(spec.get("acceptance_band", 0.08) or 0.08),
+                "status": str(spec.get("status") or "active"),
+            }
+        )
+        references.extend([target.id, target_path, annotation_path])
+    asset = BaseAsset(
+        type="evaluation_suite",
+        title=name,
+        tags=["evaluation", "suite", "golden-set", status],
+        content={
+            "suite_id": make_id("evaluation_suite", f"golden-{name}"),
+            "name": name,
+            "target_asset_types": sorted({row["target_asset_type"] for row in case_rows}),
+            "metrics": sorted(metrics) or ["overall"],
+            "status": status,
+            "golden_set": {
+                "enabled": True,
+                "case_count": len(case_rows),
+                "cases": case_rows,
+                "calibration_policy": {
+                    "compare_provider_judge_to_human_or_expected_scores": True,
+                    "default_tolerance": 0.08,
+                    "fail_closed_for_production_release": True,
+                },
+            },
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "status": status, "golden_set": True, "case_count": len(case_rows)},
+        references=filter_project_safe_references(storage, project_id, _dedupe(references)),
+    )
+    return _write(storage, asset)
+
+
+def calibrate_provider_judge(
+    storage: LocalStorage,
+    *,
+    golden_set_path: str | Path,
+    provider_judge_results: list[dict[str, Any]],
+    tolerance: float = 0.08,
+    project_id: str = "",
+) -> dict[str, Any]:
+    golden_path = resolve_path(storage.root, golden_set_path)
+    golden = storage.read_json(golden_path)
+    content = golden.get("content", {}) if isinstance(golden.get("content", {}), dict) else {}
+    golden_set = content.get("golden_set", {}) if isinstance(content.get("golden_set", {}), dict) else {}
+    cases = golden_set.get("cases", []) if isinstance(golden_set.get("cases", []), list) else []
+    if not cases:
+        raise ValueError("golden_set_path must point to an evaluation_suite with golden_set cases")
+    result_by_target: dict[str, dict[str, Any]] = {}
+    for row in provider_judge_results:
+        if not isinstance(row, dict):
+            continue
+        for key in _target_lookup_keys(storage, row):
+            result_by_target[key] = row
+    comparisons = []
+    errors: list[float] = []
+    for case in cases:
+        if not isinstance(case, dict):
+            continue
+        target_path = str(case.get("target_asset_path") or "")
+        result = result_by_target.get(target_path) or result_by_target.get(str(case.get("target_asset_id") or "")) or {}
+        expected_scores = case.get("expected_scores", {}) if isinstance(case.get("expected_scores", {}), dict) else {}
+        judge_scores = result.get("scores", {}) if isinstance(result.get("scores", {}), dict) else {}
+        dimensions = sorted(set(expected_scores) | set(judge_scores))
+        dimension_errors = {}
+        for dimension in dimensions:
+            expected = _score_0_1(expected_scores.get(dimension, 0))
+            observed = _score_0_1(judge_scores.get(dimension, 0))
+            error = round(abs(observed - expected), 4)
+            dimension_errors[dimension] = {"expected": expected, "observed": observed, "absolute_error": error}
+            errors.append(error)
+        comparisons.append(
+            {
+                "case_id": case.get("case_id", ""),
+                "target_asset_path": target_path,
+                "provider": str(result.get("provider") or ""),
+                "dimension_errors": dimension_errors,
+                "status": "passed" if (sum(item["absolute_error"] for item in dimension_errors.values()) / max(1, len(dimension_errors))) <= tolerance else "needs_calibration",
+            }
+        )
+    mean_absolute_error = round(sum(errors) / max(1, len(errors)), 4)
+    status = "passed" if mean_absolute_error <= tolerance else "needs_calibration"
+    asset = BaseAsset(
+        type="evaluation_regression_report",
+        title=f"Provider judge calibration {status}",
+        source=str(golden.get("id") or ""),
+        tags=["evaluation", "provider-judge-calibration", status],
+        content={
+            "report_id": make_id("provider_judge_calibration", f"{golden.get('id', '')}-{utc_now()}"),
+            "golden_set_path": _display_path(storage.root, golden_path),
+            "baseline_path": _display_path(storage.root, golden_path),
+            "candidate_path": "inline_provider_judge_results",
+            "calibration_status": status,
+            "mean_absolute_error": mean_absolute_error,
+            "tolerance": float(tolerance),
+            "comparisons": comparisons,
+            "recommendation": "provider_judge_calibrated" if status == "passed" else "review rubric, prompt, or provider route before production use",
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id or golden.get("metadata", {}).get("project_id", ""), "status": status, "mean_absolute_error": mean_absolute_error},
+        references=filter_project_safe_references(storage, str(project_id or golden.get("metadata", {}).get("project_id", "")), [_display_path(storage.root, golden_path)]),
+    )
+    return _write(storage, asset)
+
+
 def evaluate_asset(
     storage: LocalStorage,
     target_asset_path: str | Path,
@@ -1021,6 +1197,34 @@ def _evaluation_judge_text(target: dict[str, Any]) -> str:
     content = target.get("content", {}) if isinstance(target.get("content", {}), dict) else {}
     text = str(content.get("text") or content.get("summary") or content.get("actual_context") or content)
     return text[:4000]
+
+
+def _annotation_summary(storage: LocalStorage, annotation_path: str) -> dict[str, Any]:
+    if not annotation_path:
+        return {}
+    try:
+        annotation = storage.read_json(resolve_path(storage.root, annotation_path))
+    except (FileNotFoundError, ValueError):
+        return {"path": annotation_path, "status": "missing"}
+    content = annotation.get("content", {}) if isinstance(annotation.get("content", {}), dict) else {}
+    return {
+        "path": annotation_path,
+        "annotation_id": content.get("annotation_id", annotation.get("id", "")),
+        "annotator": content.get("annotator", ""),
+        "overall_score": content.get("overall_score", 0),
+        "verdict": content.get("verdict", ""),
+    }
+
+
+def _target_lookup_keys(storage: LocalStorage, row: dict[str, Any]) -> list[str]:
+    keys = [str(row.get("target_asset_id") or ""), str(row.get("target_asset_path") or "")]
+    path = str(row.get("target_asset_path") or "")
+    if path:
+        try:
+            keys.append(_display_path(storage.root, resolve_path(storage.root, path)))
+        except (FileNotFoundError, ValueError):
+            pass
+    return _dedupe(keys)
 
 
 def _score_0_1(value: Any) -> float:

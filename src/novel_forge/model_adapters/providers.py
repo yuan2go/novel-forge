@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import importlib.util
 import os
@@ -164,9 +165,35 @@ class LocalCodexCliWorkerMixin:
             validated = validate_model_output(canonical, parsed)
             validated["usage"] = usage
             validated["runtime_events"] = controller.to_dict()["events"]
+            validated["external_provider_evidence"] = self._local_codex_provider_evidence(
+                raw_output=raw,
+                elapsed_ms=elapsed_ms,
+                usage=usage,
+            )
             if "cost" in parsed:
                 validated["cost"] = parsed["cost"]
             return validated
+
+    def _local_codex_provider_evidence(self, *, raw_output: str, elapsed_ms: int, usage: dict[str, Any]) -> dict[str, Any]:
+        response_hash = hashlib.sha256(
+            f"{self.config.provider}:{self._codex_model() or self.config.default_model}:{raw_output}:{elapsed_ms}".encode("utf-8")
+        ).hexdigest()[:24]
+        return {
+            "external_call": True,
+            "fixture": False,
+            "mock": False,
+            "simulated": False,
+            "provider_runtime": "local_codex_cli_worker",
+            "external_api": False,
+            "provider_response_id": f"{self.config.provider}-cli-{response_hash}",
+            "endpoint_host": "local-codex-cli",
+            "rate_limit_policy": "operator-approved-local-cli-budget-and-timeout",
+            "credential_ref": "CODEX_HOME",
+            "launch_command": self._launch_command_display(),
+            "automation_isolation": self._codex_automation_isolation(),
+            "elapsed_ms": elapsed_ms,
+            "usage_source": str(usage.get("usage_source") or ""),
+        }
 
     def _local_cli_health(self, base: dict[str, Any]) -> dict[str, Any]:
         enabled = self._local_cli_enabled()

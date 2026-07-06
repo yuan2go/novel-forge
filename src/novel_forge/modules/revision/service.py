@@ -36,6 +36,9 @@ def revise(
     post_quality_loop: bool = True,
     post_quality_loop_provider_adapter: Any | None = None,
     require_external_provider_proof: bool = False,
+    auto_execute_revision_plan: bool = True,
+    post_review: bool = True,
+    post_review_model: ModelAdapter | None = None,
 ) -> Path:
     model = model or model_from_env("revise")
     review_asset = read_previous(storage, "reviews", input_path)
@@ -143,7 +146,49 @@ def revise(
         )
         attach_model_operation_governance(storage, path, final_governance)
         quality_loop: dict[str, Any] = {}
+        revision_execution: dict[str, Any] = {}
+        re_review_path = ""
+        production = is_production_environment(environment or (os_envelope or {}).get("environment"))
         quality_target_path = str(result.get("revised_draft_path") or result.get("revised_draft_asset_path") or "")
+        deferred_reason = ""
+        if post_quality_loop and not quality_target_path and auto_execute_revision_plan:
+            try:
+                draft_file = _draft_path_for_review(storage, review_asset.to_dict())
+                context_bundle_path = str(context.get("path") or "")
+                if not context_bundle_path:
+                    raise ValueError("revision execution requires a context bundle")
+                revision_execution = execute_revision_plan(
+                    storage,
+                    draft_path=draft_file,
+                    review_path=review_path,
+                    revision_path=path,
+                    context_bundle_path=context_bundle_path,
+                    model=model,
+                    workspace_path=str(project.get("workspace_path", "")),
+                    environment=environment,
+                    os_envelope=os_envelope,
+                    source_policy=source_policy,
+                    provider_runtime_gate=provider_runtime_gate,
+                )
+                quality_target_path = str(revision_execution.get("final_draft_path") or "")
+                _attach_revision_execution(storage, path, revision_execution)
+                if post_review and quality_target_path:
+                    re_review_path = str(
+                        review_service.review(
+                            storage,
+                            quality_target_path,
+                            model=post_review_model or model,
+                            environment=environment,
+                            os_envelope=os_envelope,
+                            source_policy=source_policy,
+                            provider_runtime_gate=provider_runtime_gate,
+                        )
+                    )
+                    _attach_revision_re_review(storage, path, re_review_path)
+            except (FileNotFoundError, ValueError, RuntimeError) as exc:
+                if production:
+                    raise
+                deferred_reason = f"revision execution deferred: {exc}"
         if post_quality_loop and quality_target_path:
             quality_loop = run_content_quality_loop(
                 storage,
@@ -157,24 +202,28 @@ def revise(
                 envelope=os_envelope,
                 persist_issues=True,
             )
-            if quality_loop.get("blocking") and is_production_environment(environment or (os_envelope or {}).get("environment")):
+            if quality_loop.get("blocking") and production:
                 raise ValueError(f"revision post-quality loop blocked production output: {quality_loop.get('path')}")
         elif post_quality_loop:
-            _mark_revision_quality_loop_deferred(storage, path)
+            _mark_revision_quality_loop_deferred(storage, path, reason=deferred_reason or "revision_plan has no revised draft text")
         output_assets = [path]
+        if revision_execution.get("output_paths"):
+            output_assets.extend(str(item) for item in revision_execution.get("output_paths", []) if str(item).strip())
+        if re_review_path:
+            output_assets.append(re_review_path)
         if quality_loop.get("path"):
             output_assets.append(quality_loop["path"])
         agent_run.succeed(output_assets=output_assets, token_used=len(str(result)))
         return path
 
 
-def _mark_revision_quality_loop_deferred(storage: LocalStorage, path: Path) -> None:
+def _mark_revision_quality_loop_deferred(storage: LocalStorage, path: Path, *, reason: str = "revision_plan has no revised draft text") -> None:
     data = storage.read_json(path)
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
     marker = {
         "status": "deferred",
-        "reason": "revision_plan has no revised draft text",
+        "reason": reason,
         "required_next_stage": "execute_revision_plan_then_run_re_review_quality_loop",
     }
     content["post_quality_loop"] = marker
@@ -182,6 +231,42 @@ def _mark_revision_quality_loop_deferred(storage: LocalStorage, path: Path) -> N
     data["content"] = content
     data["metadata"] = metadata
     storage.write_json(path, data)
+
+
+def _attach_revision_execution(storage: LocalStorage, revision_path: Path, execution: dict[str, Any]) -> None:
+    data = storage.read_json(revision_path)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    summary = {
+        "status": "executed" if execution.get("final_draft_path") else "planned",
+        "final_draft_path": str(execution.get("final_draft_path") or ""),
+        "forward_patch_path": str(execution.get("forward_patch_path") or ""),
+        "rollback_patch_path": str(execution.get("rollback_patch_path") or ""),
+        "draft_diff_report_path": str(execution.get("final_diff_report_path") or ""),
+        "generation_run_path": str(execution.get("final_generation_run_path") or ""),
+        "agent_run_path": str(execution.get("agent_run_path") or ""),
+    }
+    content["revision_execution"] = summary
+    metadata["revision_execution_status"] = summary["status"]
+    metadata["final_draft_path"] = summary["final_draft_path"]
+    refs = data.get("references", []) if isinstance(data.get("references", []), list) else []
+    data["references"] = _dedupe([*refs, *[value for value in summary.values() if isinstance(value, str)]])
+    data["content"] = content
+    data["metadata"] = metadata
+    storage.write_json(revision_path, data)
+
+
+def _attach_revision_re_review(storage: LocalStorage, revision_path: Path, re_review_path: str) -> None:
+    data = storage.read_json(revision_path)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    content["post_revision_re_review"] = {"status": "completed", "review_path": re_review_path}
+    metadata["post_revision_re_review_path"] = re_review_path
+    refs = data.get("references", []) if isinstance(data.get("references", []), list) else []
+    data["references"] = _dedupe([*refs, re_review_path])
+    data["content"] = content
+    data["metadata"] = metadata
+    storage.write_json(revision_path, data)
 
 
 def create_revision_task(

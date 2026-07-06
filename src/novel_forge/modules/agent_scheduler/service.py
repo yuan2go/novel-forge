@@ -1862,6 +1862,16 @@ def _operation_specs() -> list[AgentOperationSpec]:
             sla_seconds=1800,
         ),
         AgentOperationSpec(
+            operation="run-v7-provider-proof",
+            aliases=("v7-provider-proof",),
+            runner=_run_v7_provider_proof_operation,
+            agent_key="quality",
+            input_types=(),
+            output_types=("project_metric_snapshot",),
+            required_tool="call_model",
+            sla_seconds=3600,
+        ),
+        AgentOperationSpec(
             operation="build-platform-upload-package",
             aliases=("platform-upload-package",),
             runner=_run_build_platform_upload_package,
@@ -2750,6 +2760,48 @@ def _run_long_chain_proof_operation(storage: LocalStorage, queue_item: dict[str,
         provider_adapter=_adapter_from_agent_evidence(evidence, fixture_response=fixture_response, default_operation="generate") if str(evidence.get("mode") or "").startswith("provider_") else None,
         provider_runtime_guard=evidence.get("provider_runtime_guard") if isinstance(evidence.get("provider_runtime_guard"), dict) else None,
         require_external_provider_proof=bool(evidence.get("require_external_provider_proof", False)),
+    )
+
+
+def _run_v7_provider_proof_operation(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.v7_provider_proof import run_v7_provider_proof
+
+    evidence = _evidence(agent_run)
+
+    class _SchedulerProviderProofAdapter:
+        def __init__(self, generate_response: dict[str, Any], review_response: dict[str, Any], external_evidence: dict[str, Any]):
+            self.generate_response = generate_response
+            self.review_response = review_response
+            self.external_provider_evidence = external_evidence
+            self.name = "scheduler-fixture-provider"
+
+        def generate(self, payload: str, context: dict[str, Any]) -> dict[str, Any]:
+            return self.generate_response
+
+        def review(self, payload: str, context: dict[str, Any]) -> dict[str, Any]:
+            return self.review_response
+
+    generate_response = evidence.get("fixture_chapter_response") if isinstance(evidence.get("fixture_chapter_response"), dict) else {}
+    review_response = evidence.get("fixture_review_response") if isinstance(evidence.get("fixture_review_response"), dict) else {}
+    if not generate_response or not review_response:
+        raise ValueError("run-v7-provider-proof requires fixture_chapter_response and fixture_review_response unless a real provider adapter runner is configured")
+    return run_v7_provider_proof(
+        storage,
+        provider_adapter=_SchedulerProviderProofAdapter(
+            generate_response,
+            review_response,
+            evidence.get("external_provider_evidence") if isinstance(evidence.get("external_provider_evidence"), dict) else {},
+        ),
+        project_id=_project_id(agent_run) or str(evidence.get("project_id") or "local-project"),
+        draft_path=str(evidence.get("draft_path") or ""),
+        genre_strategy_pack_path=str(evidence.get("genre_strategy_pack_path") or ""),
+        style_profile_path=str(evidence.get("style_profile_path") or ""),
+        platform_id=str(evidence.get("platform_id") or "local"),
+        provider_runtime_guard=evidence.get("provider_runtime_guard") if isinstance(evidence.get("provider_runtime_guard"), dict) else None,
+        require_external_provider_proof=bool(evidence.get("require_external_provider_proof", True)),
+        environment=str(evidence.get("environment") or "production"),
+        envelope=_envelope_from_evidence(evidence),
+        target_chapter_count=int(evidence.get("target_chapter_count") or 50),
     )
 
 

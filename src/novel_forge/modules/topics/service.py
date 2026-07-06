@@ -6,11 +6,13 @@ from typing import Any
 from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, resolve_path
+from novel_forge.modules.content_intelligence_governance import content_intelligence_preflight_gate
 from novel_forge.modules.model_operation_governance import (
     attach_model_operation_governance,
     enforce_model_operation_preflight,
     record_model_operation_final_governance,
 )
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.schemas import TopicSeed
 from novel_forge.storage.local import LocalStorage
 
@@ -30,6 +32,14 @@ def develop_topic(
     project_id = str(material.metadata.get("project_id") or "")
     workspace_path = str(material.metadata.get("workspace_path") or "")
     model = model or model_from_env("topic")
+    content_intelligence = content_intelligence_preflight_gate(
+        storage,
+        target_asset_id=material.id,
+        target_asset_path=material_path,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        required=is_production_environment(environment or (os_envelope or {}).get("environment")),
+    )
     preflight = enforce_model_operation_preflight(
         storage,
         operation="develop-topic",
@@ -43,6 +53,8 @@ def develop_topic(
         os_envelope=os_envelope,
         source_policy=source_policy,
         provider_runtime_gate=provider_runtime_gate,
+        extra_gate_statuses={"content_intelligence": content_intelligence},
+        extra_required_gates=["content_intelligence"],
     )
     with AgentExecutionContext(
         storage,
@@ -81,6 +93,8 @@ def develop_topic(
             os_envelope=os_envelope,
             provider_runtime_gate=provider_runtime_gate,
             preflight_governance=preflight,
+            extra_gate_statuses={"content_intelligence": content_intelligence},
+            extra_required_gates=["content_intelligence"],
         )
         attach_model_operation_governance(storage, path, final_governance)
         run.succeed(output_assets=[str(path.relative_to(storage.root)) if path.is_absolute() and path.is_relative_to(storage.root) else str(path)])

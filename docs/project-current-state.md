@@ -27,12 +27,12 @@ The current branch has implemented the first V7 content intelligence foundation 
 |---|---|---|---|
 | Genre OS | Implemented foundation | `modules/genre_os/`, `api/routers/genre_os.py`, `tests/unit/test_genre_os.py` | More calibrated packs per platform/genre and deeper draft-policy use |
 | Style OS | Implemented foundation | `modules/style_os/`, `api/routers/style_os.py`, `tests/unit/test_style_os.py` | Provider-assisted style review and richer corpus comparison |
-| Canon Graph 2.0 plugins | Implemented foundation | `modules/canon_graph/service.py`, `tests/unit/test_canon_graph_plugins.py` | Human-grade conflict resolution and graph UI depth |
-| Quality Eval 2.0 | Implemented provider-evidence foundation | `modules/quality_eval/`, `modules/model_router/`, `tests/unit/test_quality_eval_v2.py` | Real external provider calibration still requires credentials and operator approval |
-| Long-chain Proof Center | Implemented deterministic plus opt-in provider 50 proof | `modules/long_chain_proof/`, `tests/unit/test_long_chain_proof.py`, integration 50-chapter fixture | Real slow provider proof is not a default local test |
-| Publishing/Feedback Adapter 2.0 | Implemented manual plus generic HTTP API adapter | `modules/publishing_feedback_adapters/`, API router, unit tests | Platform-specific SDK/callback/rate-limit behavior remains future work |
-| Agent/Workflow coverage | Implemented foundation plus provider/platform operations | `modules/agent_scheduler/service.py`, `modules/workflow_nodes/service.py` | Production provider adapters still require explicit environment configuration |
-| Web Admin V7 consoles | Implemented foundation plus Artifact Inspector | `web/admin/app/features/content-intelligence/`, route pages | Browser smoke remains optional without Playwright |
+| Canon Graph 2.0 plugins | Implemented foundation plus typed graph reducer | `modules/canon_graph/service.py`, `tests/unit/test_canon_graph_plugins.py` | Human-grade conflict resolution and graph UI depth |
+| Quality Eval 2.0 | Implemented provider-evidence, provider run report, and golden-set calibration foundation | `modules/quality_eval/`, `modules/evaluation_center/`, `modules/model_router/`, `tests/unit/test_quality_eval_v2.py` | Real external provider calibration still requires credentials and operator approval |
+| Long-chain Proof Center | Implemented deterministic plus opt-in provider 50 proof and V7 provider proof aggregator | `modules/long_chain_proof/`, `modules/v7_provider_proof/`, `tests/unit/test_long_chain_proof.py`, `tests/unit/test_v7_provider_proof.py` | Real credentialed provider proof is not a default local test |
+| Publishing/Feedback Adapter 2.0 | Implemented manual plus generic HTTP API adapter, Fanqie/Qidian manual rules, adapter gate, receipt parser, approved feedback application chain | `modules/publishing_feedback_adapters/`, API router, unit tests | Commercial platform SDK/callback/rate-limit behavior remains future work |
+| Agent/Workflow coverage | Implemented foundation plus provider/platform/V7 proof operations | `modules/agent_scheduler/service.py`, `modules/workflow_nodes/service.py` | Production provider adapters still require explicit environment configuration |
+| Web Admin V7/OS consoles | Implemented foundation plus Artifact Inspector, provider judge controls, platform gate controls, and project production Cockpit | `web/admin/app/features/content-intelligence/`, `web/admin/app/features/os/`, route pages | Browser smoke remains optional without Playwright; guided repair remains review-only |
 
 ## Capability Fact Table
 
@@ -64,18 +64,18 @@ The current branch has implemented the first V7 content intelligence foundation 
 | OS Envelope | Partially implemented | `modules/os_envelope/service.py`, MKAOS envelope tests | Universal enforcement across all paths is incomplete | Yes | High |
 | Agent Center | Partially implemented | `modules/agent_registry/`, `modules/agent_scheduler/`, `web/admin/app/agent-*`, tests | Operation coverage and production UI depth remain partial | Yes | High |
 | Feedback loop | Partially implemented | `modules/feedback/`, `modules/feedback_backflow/`, `web/admin/app/feedback*`, tests | Real reader cohort analytics and plan mutation governance need depth | Yes | Medium |
-| Publishing/feedback adapters | Implemented manual plus generic HTTP adapter | `modules/publishing_feedback_adapters/service.py`, API router, `tests/unit/test_publishing_feedback_adapters.py` | Specific platform SDKs and callbacks are not integrated | Yes | Medium |
+| Publishing/feedback adapters | Implemented manual plus generic HTTP adapter and Fanqie/Qidian parser/status/gate slices | `modules/publishing_feedback_adapters/service.py`, API router, `tests/unit/test_publishing_feedback_adapters.py` | Specific platform SDKs and callbacks are not integrated | Yes | Medium |
 | Quality gate | Partially implemented | `modules/evaluation_center/`, `modules/mkaos_quality/`, `modules/mkaos_production_gate/`, tests | Unified gate semantics across all releases are still being hardened | Yes | High |
-| Quality Eval 2.0 | Implemented provider-evidence foundation | `modules/quality_eval/service.py`, `api/routers/quality_eval_v2.py`, `tests/unit/test_quality_eval_v2.py` | Real external provider calibration remains environment-dependent | Yes | High |
+| Quality Eval 2.0 | Implemented provider-evidence, provider run report, and golden-set calibration foundation | `modules/quality_eval/service.py`, `modules/evaluation_center/service.py`, API routers, `tests/unit/test_quality_eval_v2.py` | Real external provider calibration remains environment-dependent | Yes | High |
 | Release package / publishing | Partially implemented | `modules/publishing/`, `api/routers/audit.py`, `web/admin/app/publish-gate/page.tsx`, tests | Platform adapters/calendar and explicit gate checks need more production coverage | Yes | High |
-| UI console | Implemented shell, partial product depth | `web/admin/app/`, `web/admin/app/features/` | Some routes are reporting/console slices rather than full workflows | Yes | Medium |
+| UI console | Implemented shell plus project production Cockpit, provider/platform controls, and multi-book schedule depth | `web/admin/app/`, `web/admin/app/features/os/`, `web/admin/app/features/content-intelligence/` | Guided repair workflows remain review-only | Yes | Medium |
 | Database | Partially implemented | local JSON storage, `docker-compose.yml`, Postgres migrations/tests, `modules/pgvector_store/` | Postgres/local fallback strategy is still being hardened | Yes | High |
 | Tests | Implemented broad suite | `tests/unit`, `tests/integration`, `tests/acceptance`, `Makefile` | Browser smoke is optional; full provider tests need secrets/fixtures | Yes | Medium |
 | Export | Partially implemented | release package/publishing assets and storage/export paths | Platform-specific export adapters are partial | Yes | Medium |
 | Platform adaptation | Partially implemented | `modules/platform_strategy/service.py`, `skills/platform-strategy-os/` | Real platform policy/API integration is partial | Yes | Medium |
 | Skills | Implemented | root `skills/`, `.claude/skills/`, `scripts/sync_claude_skills.py`, tests | Runtime drift must stay checked; external runtime skills are not project source | Yes | Medium |
 | CLI / scripts | Implemented | `src/novel_forge/cli.py`, `scripts/`, `Makefile` | README commands must prefer module invocation unless package installed | Yes | Low |
-| Eval Center | Partially implemented | `modules/evaluation_center/service.py`, `web/admin/app/evaluation/page.tsx`, tests | Full provider benchmarking/routing governance is partial | Yes | High |
+| Eval Center | Partially implemented with golden set and calibration assets | `modules/evaluation_center/service.py`, `api/routers/evaluation.py`, `web/admin/app/evaluation/page.tsx`, tests | Full provider benchmarking/routing governance is partial | Yes | High |
 | Loop Engineering | Partially implemented | `modules/loop_kernel/service.py`, `web/admin/app/loop-runs/page.tsx`, tests | Productized planning/retry/learning loops need depth | Yes | Medium |
 | Longform Recap Agent | Partially implemented | `modules/longform_recap/service.py`, `api/routers/longform_recap.py`, tests | End-to-end production Agent coverage is not complete for all related roles | Yes | High |
 

@@ -54,9 +54,18 @@ def build_quality_rubric_pack(
     environment: str = "",
     envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    envelope_payload = dict(envelope or {})
+    if envelope_payload:
+        envelope_payload.update(
+            {
+                "operation": "build-quality-rubric-pack",
+                "task_type": "quality_eval",
+                "asset_type": "quality_rubric_pack",
+            }
+        )
     env = enforce_os_envelope(
         storage,
-        envelope_payload=envelope,
+        envelope_payload=envelope_payload or None,
         operation="build-quality-rubric-pack",
         project_id=str((envelope or {}).get("project_id") or ""),
         task_type="quality_eval",
@@ -96,7 +105,12 @@ def build_quality_rubric_pack(
             },
             "style_profile_path": style_profile_path,
         },
-        metadata={"platform_id": platform_id, "genre_id": genre_id, **envelope_asset_metadata(env)},
+        metadata={
+            "project_id": str(env.get("project_id") or ""),
+            "platform_id": platform_id,
+            "genre_id": genre_id,
+            **envelope_asset_metadata(env),
+        },
         references=[style_profile_path] if style_profile_path else [],
     )
     path = _write_asset(storage, asset)
@@ -266,6 +280,14 @@ def run_provider_quality_judge(
         else {"status": "not_required", "path": "", "blocking": False}
     )
     provider_evidence["external_provider_proof"] = external_proof
+    provider_judge_run_report = _provider_judge_run_report(
+        suite_type=suite_type,
+        provider_evidence=provider_evidence,
+        external_proof=external_proof,
+        require_external_provider_proof=require_external_provider_proof,
+        recommendation=recommendation,
+        overall=overall,
+    )
     issue_paths: list[str] = []
     scores = [
         {
@@ -322,6 +344,7 @@ def run_provider_quality_judge(
             "platform_id": platform_id,
             "model_judge_result_paths": judge_paths,
             "provider_runtime_evidence": provider_evidence,
+            "provider_judge_run_report": provider_judge_run_report,
             "judge_policy": {
                 "mode": "provider_backed_judge",
                 "does_not_claim_premium_judgment": False,
@@ -603,6 +626,37 @@ def _provider_evidence_from_routed(result: dict[str, Any]) -> dict[str, Any]:
         "approval_evidence": gateway.get("approval_evidence", {}) if isinstance(gateway.get("approval_evidence", {}), dict) else {},
         "provider": str(gateway.get("provider") or ""),
         "model": str(gateway.get("model") or ""),
+    }
+
+
+def _provider_judge_run_report(
+    *,
+    suite_type: str,
+    provider_evidence: dict[str, Any],
+    external_proof: dict[str, Any],
+    require_external_provider_proof: bool,
+    recommendation: str,
+    overall: float,
+) -> dict[str, Any]:
+    external_status = str(external_proof.get("status") or "not_required")
+    return {
+        "status": "completed" if recommendation in {"ready", "needs_revision", "blocked"} else "unknown",
+        "suite_type": suite_type,
+        "recommendation": recommendation,
+        "overall_score": overall,
+        "provider": str(provider_evidence.get("provider") or ""),
+        "model": str(provider_evidence.get("model") or ""),
+        "route_resolution_path": str(provider_evidence.get("model_route_resolution_path") or ""),
+        "model_call_log_path": str(provider_evidence.get("model_call_log_path") or ""),
+        "runtime_policy_path": str(provider_evidence.get("runtime_policy_path") or ""),
+        "cost_ledger_path": str(provider_evidence.get("cost_ledger_path") or ""),
+        "approval_evidence": provider_evidence.get("approval_evidence", {}) if isinstance(provider_evidence.get("approval_evidence", {}), dict) else {},
+        "provider_policy": provider_evidence.get("provider_policy", {}) if isinstance(provider_evidence.get("provider_policy", {}), dict) else {},
+        "external_provider_proof_required": bool(require_external_provider_proof),
+        "external_provider_proof_status": external_status,
+        "external_provider_proof_path": str(external_proof.get("path") or ""),
+        "production_ready_evidence": bool(provider_evidence.get("model_route_resolution_path") and provider_evidence.get("model_call_log_path") and provider_evidence.get("runtime_policy_path") and provider_evidence.get("cost_ledger_path")),
+        "credential_boundary": "credential references only; no raw provider secret is persisted",
     }
 
 

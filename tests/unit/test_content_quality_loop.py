@@ -62,8 +62,14 @@ class ContentQualityLoopTests(unittest.TestCase):
                 ],
             )
             self.assertTrue(result["asset"]["content"]["evidence_paths"])
+            self.assertTrue(result["asset"]["content"]["chapter_quality_trend_path"])
+            trend = storage.read_json(storage.root / result["asset"]["content"]["chapter_quality_trend_path"])
+            self.assertEqual(trend["type"], "chapter_quality_trend")
+            self.assertEqual(trend["content"]["points"][0]["chapter_no"], 1)
+            self.assertEqual(trend["content"]["points"][0]["content_quality_loop_status"], result["status"])
             updated = storage.read_json(draft_path)
             self.assertEqual(updated["metadata"]["content_quality_loop_path"], result["path"])
+            self.assertEqual(updated["metadata"]["chapter_quality_trend_path"], result["asset"]["content"]["chapter_quality_trend_path"])
             self.assertEqual(updated["content"]["content_quality_loop"]["path"], result["path"])
 
     def test_production_quality_loop_blocks_missing_provider_judge(self):

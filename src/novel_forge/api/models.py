@@ -345,6 +345,24 @@ class PlatformReceiptRequest(BaseModel):
     envelope: dict[str, Any] = Field(default_factory=dict)
 
 
+class PlatformReceiptParseRequest(BaseModel):
+    platform_id: str
+    receipt_text: str = ""
+    receipt_raw: dict[str, Any] = Field(default_factory=dict)
+    operator_note: str = ""
+    upload_package_path: str = ""
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class PlatformAdapterGateRequest(BaseModel):
+    upload_package_path: str
+    platform_id: str = ""
+    receipt_path: str = ""
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
 class PlatformPublishRequest(BaseModel):
     upload_package_path: str
     platform_config: dict[str, Any] = Field(default_factory=dict)
@@ -1566,6 +1584,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "LongChainProofRunRequest": LongChainProofRunRequest,
         "PlatformUploadPackageRequest": PlatformUploadPackageRequest,
         "PlatformReceiptRequest": PlatformReceiptRequest,
+        "PlatformReceiptParseRequest": PlatformReceiptParseRequest,
+        "PlatformAdapterGateRequest": PlatformAdapterGateRequest,
         "PlatformPublishRequest": PlatformPublishRequest,
         "PlatformMetricsImportRequest": PlatformMetricsImportRequest,
         "PlatformCommentsClusterRequest": PlatformCommentsClusterRequest,

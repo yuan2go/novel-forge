@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 from urllib import request
@@ -37,6 +38,26 @@ PLATFORM_UPLOAD_PROFILES = {
         "display_name": "番茄小说",
         "rules_version": "fanqie-manual-2026-07",
         "package_shape": "book_metadata_plus_chapter_text",
+        "platform_rules": {
+            "rule_source": "manual_profile_not_official_sdk",
+            "title_max_chars": 30,
+            "synopsis_min_chars": 80,
+            "chapter_body_min_chars": 800,
+            "chapter_body_max_chars": 6000,
+            "sensitive_check_required": True,
+            "formatting": ["no_nul_bytes", "normalize_line_endings", "chapter_title_required"],
+        },
+        "review_status_map": {
+            "审核中": "reviewing",
+            "待审核": "submitted",
+            "已通过": "approved",
+            "通过": "approved",
+            "已发布": "published",
+            "已退回": "rejected",
+            "退回": "rejected",
+            "拒绝": "rejected",
+            "失败": "failed",
+        },
         "manual_upload_steps": [
             "Open Fanqie author console and select the target book.",
             "Paste title, synopsis, tags, and chapter body from this package.",
@@ -45,12 +66,40 @@ PLATFORM_UPLOAD_PROFILES = {
         ],
         "checklist": ["title_present", "synopsis_present", "chapter_title_present", "chapter_body_present", "sensitive_word_checked", "format_checked", "cover_checked"],
         "receipt_fields": ["book_id", "chapter_id", "review_status", "submitted_at"],
+        "receipt_parser": {
+            "book_id_labels": ["作品ID", "书籍ID", "book_id", "platform_book_id"],
+            "chapter_id_labels": ["章节ID", "chapter_id", "platform_chapter_id"],
+            "status_labels": ["审核状态", "状态", "review_status", "status"],
+            "submitted_at_labels": ["提交时间", "submitted_at"],
+        },
         "review_risk_gate": ["sensitive_terms", "chapter_length", "duplicate_title", "formatting"],
     },
     "qidian": {
         "display_name": "起点中文网",
         "rules_version": "qidian-manual-2026-07",
         "package_shape": "volume_chapter_package",
+        "platform_rules": {
+            "rule_source": "manual_profile_not_official_sdk",
+            "title_max_chars": 30,
+            "synopsis_min_chars": 80,
+            "chapter_body_min_chars": 600,
+            "chapter_body_max_chars": 8000,
+            "volume_required": True,
+            "sensitive_check_required": True,
+            "formatting": ["volume_title_required", "chapter_sequence_required", "chapter_title_required"],
+        },
+        "review_status_map": {
+            "审核中": "reviewing",
+            "待审核": "submitted",
+            "已通过": "approved",
+            "通过": "approved",
+            "已发布": "published",
+            "已退回": "rejected",
+            "退回": "rejected",
+            "驳回": "rejected",
+            "拒绝": "rejected",
+            "失败": "failed",
+        },
         "manual_upload_steps": [
             "Open Qidian writer console and select volume/chapter editor.",
             "Confirm volume title and chapter sequence before pasting.",
@@ -59,6 +108,13 @@ PLATFORM_UPLOAD_PROFILES = {
         ],
         "checklist": ["title_present", "synopsis_present", "volume_present", "chapter_title_present", "chapter_body_present", "sensitive_word_checked", "format_checked"],
         "receipt_fields": ["book_id", "volume_id", "chapter_id", "review_status", "submitted_at"],
+        "receipt_parser": {
+            "book_id_labels": ["作品号", "作品ID", "书籍ID", "book_id", "platform_book_id"],
+            "volume_id_labels": ["卷号", "分卷ID", "volume_id"],
+            "chapter_id_labels": ["章节号", "章节ID", "chapter_id", "platform_chapter_id"],
+            "status_labels": ["审核状态", "状态", "review_status", "status"],
+            "submitted_at_labels": ["提交时间", "submitted_at"],
+        },
         "review_risk_gate": ["volume_sequence", "chapter_title", "sensitive_terms", "formatting"],
     },
 }
@@ -196,6 +252,10 @@ def record_platform_receipt(
     environment: str = "",
     envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    profile = _platform_upload_profile(platform_id)
+    parsed_receipt = _normalize_receipt_fields(platform_id, receipt_raw or {})
+    normalized_status = _normalize_review_status(platform_id, review_status or str(parsed_receipt.get("review_status") or "submitted"))
+    status_contract = _platform_review_status_contract(profile, normalized_status, receipt_raw or {})
     env = enforce_os_envelope(
         storage,
         envelope_payload=envelope,
@@ -208,17 +268,26 @@ def record_platform_receipt(
         require_for_production=True,
     )
     receipt = PlatformPublishReceipt(
-        title=f"{platform_id} receipt {platform_book_id}",
+        title=f"{platform_id} receipt {platform_book_id or parsed_receipt.get('book_id', '')}",
         source=upload_package_path,
-        tags=["publishing-feedback-adapter", "receipt", review_status],
+        tags=["publishing-feedback-adapter", "receipt", normalized_status],
         content={
-            "receipt_id": make_id("platform_publish_receipt", f"{platform_id}-{platform_book_id}-{platform_chapter_id}"),
+            "receipt_id": make_id("platform_publish_receipt", f"{platform_id}-{platform_book_id or parsed_receipt.get('book_id', '')}-{platform_chapter_id or parsed_receipt.get('chapter_id', '')}"),
             "platform_id": platform_id,
-            "platform_book_id": platform_book_id,
-            "platform_chapter_id": platform_chapter_id or "book-level",
+            "platform_book_id": platform_book_id or str(parsed_receipt.get("book_id") or ""),
+            "platform_chapter_id": platform_chapter_id or str(parsed_receipt.get("chapter_id") or "book-level"),
             "submitted_at": utc_now(),
-            "review_status": review_status,
+            "review_status": normalized_status,
             "receipt_raw": receipt_raw or {},
+            "parsed_receipt": parsed_receipt,
+            "receipt_parser": {
+                "platform_id": profile.get("platform_id"),
+                "rules_version": profile.get("rules_version"),
+                "parsed_fields": parsed_receipt,
+                "required_fields": profile.get("receipt_fields", []),
+                "missing_required_fields": _missing_receipt_fields(profile, parsed_receipt),
+            },
+            "status_contract": status_contract,
             "operator_note": operator_note or "manual receipt recorded",
         },
         metadata={"project_id": str(env.get("project_id") or ""), **envelope_asset_metadata(env)},
@@ -226,15 +295,16 @@ def record_platform_receipt(
     )
     receipt_path = _write_asset(storage, receipt)
     status = PlatformReviewStatus(
-        title=f"{platform_id} review status {review_status}",
+        title=f"{platform_id} review status {normalized_status}",
         source=receipt.id,
-        tags=["publishing-feedback-adapter", "review-status", review_status],
+        tags=["publishing-feedback-adapter", "review-status", normalized_status],
         content={
             "status_id": make_id("platform_review_status", receipt.id),
             "platform_id": platform_id,
             "receipt_id": receipt.content["receipt_id"],
-            "review_status": review_status,
-            "blocking_reasons": _blocking_reasons(review_status, receipt_raw or {}),
+            "review_status": normalized_status,
+            "status_contract": status_contract,
+            "blocking_reasons": _blocking_reasons(normalized_status, receipt_raw or {}),
             "updated_at": utc_now(),
         },
         metadata={"project_id": str(env.get("project_id") or ""), **envelope_asset_metadata(env)},
@@ -242,6 +312,131 @@ def record_platform_receipt(
     )
     status_path = _write_asset(storage, status)
     return {"receipt_path": receipt_path, "status_path": status_path, "asset": storage.read_json(resolve_path(storage.root, receipt_path)), "envelope": env}
+
+
+def parse_platform_receipt(
+    storage: LocalStorage,
+    *,
+    platform_id: str,
+    receipt_text: str = "",
+    receipt_raw: dict[str, Any] | None = None,
+    operator_note: str = "",
+    upload_package_path: str = "",
+    environment: str = "",
+    envelope: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    parsed = _parse_platform_receipt_payload(platform_id, receipt_text=receipt_text, receipt_raw=receipt_raw or {})
+    receipt = record_platform_receipt(
+        storage,
+        platform_id=platform_id,
+        platform_book_id=str(parsed.get("book_id") or ""),
+        platform_chapter_id=str(parsed.get("chapter_id") or ""),
+        review_status=str(parsed.get("review_status") or "submitted"),
+        receipt_raw={
+            **(receipt_raw or {}),
+            "receipt_text": receipt_text,
+            "parsed_fields": parsed,
+            "volume_id": parsed.get("volume_id", ""),
+            "reasons": parsed.get("reasons", []),
+        },
+        operator_note=operator_note or "parsed from platform receipt text",
+        upload_package_path=upload_package_path,
+        environment=environment,
+        envelope=envelope,
+    )
+    asset = receipt["asset"]
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    content["receipt_parser"] = {
+        **content.get("receipt_parser", {}),
+        "receipt_text_present": bool(receipt_text.strip()),
+        "parser_mode": "platform_specific_text_or_json",
+        "parsed_fields": parsed,
+    }
+    asset["content"] = content
+    storage.write_json(resolve_path(storage.root, receipt["receipt_path"]), asset)
+    return {**receipt, "asset": asset, "parsed_receipt": parsed}
+
+
+def run_platform_adapter_gate(
+    storage: LocalStorage,
+    *,
+    upload_package_path: str | Path,
+    platform_id: str = "",
+    receipt_path: str | Path = "",
+    environment: str = "",
+    envelope: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    upload_file = resolve_path(storage.root, upload_package_path)
+    upload = storage.read_json(upload_file)
+    if upload.get("type") != "platform_upload_package":
+        raise ValueError("upload_package_path must point to a platform_upload_package")
+    content = upload.get("content", {}) if isinstance(upload.get("content", {}), dict) else {}
+    resolved_platform_id = platform_id or str(content.get("platform_id") or "manual")
+    profile = _platform_upload_profile(resolved_platform_id)
+    env = enforce_os_envelope(
+        storage,
+        envelope_payload=envelope,
+        operation="run-platform-adapter-gate",
+        project_id=str(upload.get("metadata", {}).get("project_id") or (envelope or {}).get("project_id") or ""),
+        task_type="platform_adapter_gate",
+        asset_type="platform_review_status",
+        source_policy={"raw_source_text_allowed": False, "generation_rag_allowed": False},
+        environment=environment,
+        require_for_production=True,
+    )
+    checklist = content.get("checklist", {}) if isinstance(content.get("checklist", {}), dict) else {}
+    chapter_format = content.get("chapter_format_report", {}) if isinstance(content.get("chapter_format_report", {}), dict) else {}
+    missing_checklist = [str(key) for key, passed in checklist.items() if not passed]
+    blocking_reasons = [f"missing_checklist:{key}" for key in missing_checklist]
+    if chapter_format.get("status") == "blocked":
+        blocking_reasons.append("chapter_format_report:blocking")
+    receipt_status = ""
+    receipt_id = str(content.get("package_id") or upload.get("id") or "")
+    receipt_ref = ""
+    if receipt_path:
+        receipt_file = resolve_path(storage.root, receipt_path)
+        receipt = storage.read_json(receipt_file)
+        receipt_content = receipt.get("content", {}) if isinstance(receipt.get("content", {}), dict) else {}
+        receipt_status = str(receipt_content.get("review_status") or "")
+        receipt_id = str(receipt_content.get("receipt_id") or receipt.get("id") or receipt_id)
+        receipt_ref = _display_path(storage.root, receipt_file)
+        if receipt_status in {"rejected", "blocked", "failed"}:
+            blocking_reasons.append(f"platform_review_status:{receipt_status}")
+    review_status = "blocked" if blocking_reasons else "ready" if not receipt_status else _normalize_review_status(resolved_platform_id, receipt_status)
+    gate_contract = {
+        "platform_id": profile["platform_id"],
+        "specific_adapter": bool(profile.get("specific_adapter")),
+        "api_mode": profile.get("api_mode", "manual_first"),
+        "rules_version": str(profile.get("rules_version") or ""),
+        "package_shape": str(profile.get("package_shape") or ""),
+        "checklist": checklist,
+        "missing_checklist": missing_checklist,
+        "chapter_format_report": chapter_format,
+        "receipt_status": receipt_status,
+        "blocking": bool(blocking_reasons),
+        "blocking_reasons": blocking_reasons,
+        "manual_operator_required": True,
+        "supports_auto_publish": False,
+        "next_actions": ["fix_upload_package_and_rerun_gate"] if blocking_reasons else ["manual_submit_or_record_receipt"],
+    }
+    status = PlatformReviewStatus(
+        title=f"{profile['display_name']} adapter gate {review_status}",
+        source=str(upload.get("id") or ""),
+        tags=["publishing-feedback-adapter", "platform-adapter-gate", profile["platform_id"], review_status],
+        content={
+            "status_id": make_id("platform_review_status", f"{profile['platform_id']}-{receipt_id}-adapter-gate"),
+            "platform_id": profile["platform_id"],
+            "receipt_id": receipt_id,
+            "review_status": review_status,
+            "blocking_reasons": blocking_reasons,
+            "adapter_gate": gate_contract,
+            "updated_at": utc_now(),
+        },
+        metadata={"project_id": str(env.get("project_id") or ""), **envelope_asset_metadata(env)},
+        references=_dedupe([_display_path(storage.root, upload_file), receipt_ref]),
+    )
+    path = _write_asset(storage, status)
+    return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "status": review_status, "blocking": bool(blocking_reasons), "envelope": env}
 
 
 def publish_platform_upload_package(
@@ -527,6 +722,8 @@ def resolve_feedback_mutation_proposal(
     actor: str = "operator",
     decision_note: str = "",
     create_application_chain: bool = True,
+    auto_apply_application_chain: bool = True,
+    auto_apply_invalidation: bool = True,
     environment: str = "",
     envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -582,7 +779,18 @@ def resolve_feedback_mutation_proposal(
         references=_dedupe([_display_path(storage.root, proposal_path), *[str(path) for path in proposal.get("references", []) if str(path).strip()]]),
     )
     path = _write_asset(storage, resolved)
-    return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "envelope": env}
+    application_result: dict[str, Any] = {}
+    if approved and create_application_chain and auto_apply_application_chain:
+        application_result = apply_feedback_mutation_application_chain(
+            storage,
+            proposal_ref=path,
+            apply_invalidation=auto_apply_invalidation,
+            actor=actor,
+            environment=str(env.get("environment") or environment or ""),
+            envelope=env,
+        )
+        _attach_auto_application_result(storage, path, application_result)
+    return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "envelope": env, "application_result": application_result}
 
 
 def apply_feedback_mutation_application_chain(
@@ -659,6 +867,25 @@ def apply_feedback_mutation_application_chain(
     return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "envelope": env}
 
 
+def _attach_auto_application_result(storage: LocalStorage, proposal_path: str, application_result: dict[str, Any]) -> None:
+    data = storage.read_json(resolve_path(storage.root, proposal_path))
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    application_path = str(application_result.get("path") or "")
+    content["auto_application"] = {
+        "status": str((application_result.get("asset", {}).get("content", {}) if isinstance(application_result.get("asset", {}).get("content", {}), dict) else {}).get("status") or ""),
+        "application_report_path": application_path,
+        "triggered_at": utc_now(),
+        "silent_mutation_allowed": False,
+    }
+    metadata["auto_application_report_path"] = application_path
+    refs = data.get("references", []) if isinstance(data.get("references", []), list) else []
+    data["references"] = _dedupe([*refs, application_path])
+    data["content"] = content
+    data["metadata"] = metadata
+    storage.write_json(resolve_path(storage.root, proposal_path), data)
+
+
 def _book_metadata_from_release(release: dict[str, Any]) -> dict[str, Any]:
     content = release.get("content", {}) if isinstance(release.get("content"), dict) else {}
     return {
@@ -694,10 +921,14 @@ def _platform_upload_profile(platform_id: str) -> dict[str, Any]:
 
 
 def _platform_upload_checklist(metadata: dict[str, Any], chapters: list[dict[str, Any]], profile: dict[str, Any], *, chapter_format: dict[str, Any]) -> dict[str, bool]:
+    rules = profile.get("platform_rules", {}) if isinstance(profile.get("platform_rules", {}), dict) else {}
+    volume_present = bool(metadata.get("volume") or metadata.get("volume_title"))
+    if not rules.get("volume_required"):
+        volume_present = volume_present or len(chapters) <= 1
     values = {
         "title_present": bool(metadata.get("title")),
         "synopsis_present": bool(metadata.get("synopsis") or metadata.get("summary")),
-        "volume_present": bool(metadata.get("volume") or metadata.get("volume_title") or len(chapters) <= 1),
+        "volume_present": volume_present,
         "chapter_title_present": all(bool(row.get("title")) for row in chapters),
         "chapter_body_present": all(bool(row.get("body") or row.get("text")) for row in chapters),
         "cover_checked": bool(metadata.get("cover_path") or metadata.get("cover_status") == "not_required"),
@@ -744,6 +975,124 @@ def _manual_adapter_contract(profile: dict[str, Any]) -> dict[str, Any]:
         "receipt_fields": profile.get("receipt_fields", []),
         "review_risk_gate": profile.get("review_risk_gate", []),
     }
+
+
+def _parse_platform_receipt_payload(platform_id: str, *, receipt_text: str, receipt_raw: dict[str, Any]) -> dict[str, Any]:
+    profile = _platform_upload_profile(platform_id)
+    parser = profile.get("receipt_parser", {}) if isinstance(profile.get("receipt_parser", {}), dict) else {}
+    parsed = _normalize_receipt_fields(platform_id, receipt_raw)
+    text_values = {
+        "book_id": _first_labeled_value(receipt_text, parser.get("book_id_labels", [])),
+        "volume_id": _first_labeled_value(receipt_text, parser.get("volume_id_labels", [])),
+        "chapter_id": _first_labeled_value(receipt_text, parser.get("chapter_id_labels", [])),
+        "review_status": _first_labeled_value(receipt_text, parser.get("status_labels", [])),
+        "submitted_at": _first_labeled_value(receipt_text, parser.get("submitted_at_labels", [])),
+    }
+    parsed.update({key: value for key, value in text_values.items() if value})
+    parsed["review_status"] = _normalize_review_status(platform_id, str(parsed.get("review_status") or "submitted"))
+    reasons = parsed.get("reasons", [])
+    if not isinstance(reasons, list):
+        reasons = [str(reasons)]
+    reason_from_text = _first_labeled_value(receipt_text, ["原因", "退回原因", "reasons", "reason"])
+    if reason_from_text:
+        reasons.append(reason_from_text)
+    parsed["reasons"] = [str(item) for item in reasons if str(item).strip()]
+    parsed["platform_id"] = profile.get("platform_id")
+    parsed["rules_version"] = profile.get("rules_version")
+    return parsed
+
+
+def _normalize_receipt_fields(platform_id: str, receipt_raw: dict[str, Any]) -> dict[str, Any]:
+    raw = receipt_raw if isinstance(receipt_raw, dict) else {}
+    nested = raw.get("parsed_fields", {}) if isinstance(raw.get("parsed_fields", {}), dict) else {}
+    merged = {**raw, **nested}
+    status = str(
+        merged.get("review_status")
+        or merged.get("status")
+        or merged.get("audit_status")
+        or merged.get("审核状态")
+        or merged.get("状态")
+        or "submitted"
+    )
+    return {
+        "book_id": str(merged.get("platform_book_id") or merged.get("book_id") or merged.get("作品ID") or merged.get("作品号") or ""),
+        "volume_id": str(merged.get("volume_id") or merged.get("卷号") or merged.get("分卷ID") or ""),
+        "chapter_id": str(merged.get("platform_chapter_id") or merged.get("chapter_id") or merged.get("章节ID") or merged.get("章节号") or ""),
+        "review_status": _normalize_review_status(platform_id, status),
+        "submitted_at": str(merged.get("submitted_at") or merged.get("提交时间") or ""),
+        "remote_receipt_id": str(merged.get("remote_receipt_id") or merged.get("receipt_id") or ""),
+        "reasons": merged.get("reasons", []) if isinstance(merged.get("reasons", []), list) else [str(merged.get("reason") or merged.get("原因") or "")],
+    }
+
+
+def _normalize_review_status(platform_id: str, status: str) -> str:
+    value = str(status or "submitted").strip()
+    lowered = value.lower()
+    if lowered in {"submitted", "reviewing", "approved", "published", "rejected", "blocked", "failed", "scheduled"}:
+        return lowered
+    profile = _platform_upload_profile(platform_id)
+    status_map = profile.get("review_status_map", {}) if isinstance(profile.get("review_status_map", {}), dict) else {}
+    for token, normalized in status_map.items():
+        if str(token) and str(token) in value:
+            return str(normalized)
+    if any(token in value for token in ["退回", "拒", "驳回"]):
+        return "rejected"
+    if any(token in value for token in ["通过", "发布"]):
+        return "approved"
+    if any(token in value for token in ["审", "处理中"]):
+        return "reviewing"
+    if any(token in lowered for token in ["fail", "error", "失败"]):
+        return "failed"
+    return "submitted"
+
+
+def _platform_review_status_contract(profile: dict[str, Any], status: str, receipt: dict[str, Any]) -> dict[str, Any]:
+    blocking = status in {"rejected", "blocked", "failed"}
+    return {
+        "platform_id": profile.get("platform_id", ""),
+        "rules_version": profile.get("rules_version", ""),
+        "status": status,
+        "blocking": blocking,
+        "terminal": status in {"approved", "published", "rejected", "blocked", "failed"},
+        "next_actions": _platform_review_next_actions(status, receipt),
+        "manual_operator_required": status in {"submitted", "reviewing", "rejected", "blocked", "failed"},
+    }
+
+
+def _platform_review_next_actions(status: str, receipt: dict[str, Any]) -> list[str]:
+    if status in {"approved", "published"}:
+        return ["record_publish_receipt", "import_metrics_when_available"]
+    if status == "reviewing":
+        return ["poll_or_manually_backfill_review_status"]
+    if status == "submitted":
+        return ["wait_for_platform_review", "backfill_receipt_when_status_changes"]
+    if status in {"rejected", "blocked", "failed"}:
+        reasons = receipt.get("reasons", []) if isinstance(receipt.get("reasons", []), list) else []
+        return ["manual_fix_required", "create_review_issue", "rebuild_platform_upload_package", *[f"reason:{item}" for item in reasons if str(item).strip()][:3]]
+    return ["manual_review_required"]
+
+
+def _missing_receipt_fields(profile: dict[str, Any], parsed: dict[str, Any]) -> list[str]:
+    field_map = {"book_id": "book_id", "chapter_id": "chapter_id", "volume_id": "volume_id", "review_status": "review_status", "submitted_at": "submitted_at"}
+    missing = []
+    for field in profile.get("receipt_fields", []):
+        key = field_map.get(str(field), str(field))
+        if not parsed.get(key):
+            missing.append(str(field))
+    return missing
+
+
+def _first_labeled_value(text: str, labels: list[Any]) -> str:
+    body = str(text or "")
+    if not body.strip():
+        return ""
+    for label in labels:
+        escaped = re.escape(str(label))
+        pattern = rf"{escaped}\s*[:：]\s*([^\n\r;；]+)"
+        match = re.search(pattern, body, flags=re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+    return ""
 
 
 def _chapter_payloads_from_release(release: dict[str, Any]) -> list[dict[str, Any]]:

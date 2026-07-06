@@ -108,6 +108,7 @@ WORKFLOW_SERVICE_OPERATIONS = {
     "provider_quality_judge": {"category": "quality_eval", "checkpoint_strategy": "output_reuse", "aliases": ["run-provider-quality-judge", "run_provider_quality_judge"]},
     "quality_gate": {"category": "quality_eval", "checkpoint_strategy": "output_reuse", "aliases": ["run-quality-gate", "run_quality_gate"]},
     "long_chain_proof_run": {"category": "long_chain_proof", "checkpoint_strategy": "operation_state", "aliases": ["run-long-chain-proof", "run_long_chain_proof"]},
+    "v7_provider_proof": {"category": "v7_provider_proof", "checkpoint_strategy": "operation_state", "aliases": ["run-v7-provider-proof", "run_v7_provider_proof"]},
     "platform_upload_package": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["build-platform-upload-package", "build_platform_upload_package"]},
     "platform_api_publish": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["publish-platform-upload-package", "publish_platform_upload_package"]},
     "platform_publish_receipt": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["record-platform-receipt", "record_platform_receipt"]},
@@ -4283,6 +4284,45 @@ def _execute_registered_service_processor_impl(
             provider_adapter=_ProcessorGenerateAdapter(fixture_response, processor.get("external_provider_evidence") if isinstance(processor.get("external_provider_evidence"), dict) else None) if fixture_response else None,
             provider_runtime_guard=processor.get("provider_runtime_guard") if isinstance(processor.get("provider_runtime_guard"), dict) else None,
             require_external_provider_proof=bool(processor.get("require_external_provider_proof", False)),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"v7_provider_proof", "run-v7-provider-proof", "run_v7_provider_proof"}:
+        from novel_forge.modules.v7_provider_proof import run_v7_provider_proof
+
+        class _ProcessorProviderProofAdapter:
+            def __init__(self, generate_response: dict[str, Any], review_response: dict[str, Any], evidence: dict[str, Any] | None = None):
+                self.generate_response = generate_response
+                self.review_response = review_response
+                self.name = "workflow-fixture-provider"
+                self.external_provider_evidence = evidence or {}
+
+            def generate(self, payload: str, context: dict[str, Any]) -> dict[str, Any]:
+                return self.generate_response
+
+            def review(self, payload: str, context: dict[str, Any]) -> dict[str, Any]:
+                return self.review_response
+
+        fixture_generate = processor.get("fixture_chapter_response") if isinstance(processor.get("fixture_chapter_response"), dict) else None
+        fixture_review = processor.get("fixture_review_response") if isinstance(processor.get("fixture_review_response"), dict) else None
+        if not fixture_generate or not fixture_review:
+            raise ValueError("v7_provider_proof workflow processor requires fixture_chapter_response and fixture_review_response or a real adapter entrypoint")
+        result = run_v7_provider_proof(
+            storage,
+            provider_adapter=_ProcessorProviderProofAdapter(
+                fixture_generate,
+                fixture_review,
+                processor.get("external_provider_evidence") if isinstance(processor.get("external_provider_evidence"), dict) else None,
+            ),
+            project_id=str(processor.get("project_id") or "local-project"),
+            draft_path=str(processor.get("draft_path") or ""),
+            genre_strategy_pack_path=str(processor.get("genre_strategy_pack_path") or ""),
+            style_profile_path=str(processor.get("style_profile_path") or ""),
+            platform_id=str(processor.get("platform_id") or "local"),
+            provider_runtime_guard=processor.get("provider_runtime_guard") if isinstance(processor.get("provider_runtime_guard"), dict) else None,
+            require_external_provider_proof=bool(processor.get("require_external_provider_proof", True)),
+            environment=str(processor.get("environment") or "production"),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+            target_chapter_count=int(processor["target_chapter_count"]) if str(processor.get("target_chapter_count") or "").isdigit() else 50,
         )
         return _service_success(storage, operation, result)
     if operation in {"platform_upload_package", "build-platform-upload-package", "build_platform_upload_package"}:

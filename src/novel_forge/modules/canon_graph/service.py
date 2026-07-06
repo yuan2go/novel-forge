@@ -502,6 +502,7 @@ def build_canon_state_machine_snapshot(storage: LocalStorage, payload: dict[str,
     source_reports = _canon_state_machine_reports(storage, project_id=project_id, workspace_path=workspace_path)
     source_ledgers = _canon_state_machine_ledgers(storage, project_id=project_id, workspace_path=workspace_path)
     machines = _dedupe_state_machine_rows([*_flatten_state_machines(source_reports), *_flatten_state_machine_ledgers(source_ledgers)])
+    typed_reducer = _reduce_state_machines(machines)
     status = "ready" if machines else "empty"
     snapshot = CanonStateMachineSnapshot(
         title="Canon state machine snapshot",
@@ -512,6 +513,7 @@ def build_canon_state_machine_snapshot(storage: LocalStorage, payload: dict[str,
             "workspace_path": workspace_path,
             "machines": machines,
             "machine_count": len(machines),
+            "typed_reducer": typed_reducer,
             "source_report_paths": [row["path"] for row in source_reports],
             "source_ledger_paths": [row["path"] for row in source_ledgers],
             "status": status,
@@ -569,6 +571,10 @@ def diff_canon_state_machine(storage: LocalStorage, payload: dict[str, Any]) -> 
         after_public = _machine_public(after_rows[key])
         if before_public != after_public:
             changed.append({"machine_key": key, "before": before_public, "after": after_public})
+    reducer_diff = _reducer_diff(
+        before_content.get("typed_reducer", {}) if isinstance(before_content.get("typed_reducer", {}), dict) else {},
+        after_content.get("typed_reducer", {}) if isinstance(after_content.get("typed_reducer", {}), dict) else {},
+    )
     status = "changed" if added or removed or changed else "unchanged"
     diff = CanonStateMachineDiffReport(
         title="Canon state machine diff",
@@ -581,6 +587,7 @@ def diff_canon_state_machine(storage: LocalStorage, payload: dict[str, Any]) -> 
             "added_machines": added,
             "removed_machines": removed,
             "changed_machines": changed,
+            "typed_reducer_diff": reducer_diff,
             "summary": {"added": len(added), "removed": len(removed), "changed": len(changed)},
             "created_at": utc_now(),
         },
@@ -2066,8 +2073,160 @@ def _flatten_state_machine_ledgers(source_ledgers: list[dict[str, Any]]) -> list
 
 
 def _dedupe_state_machine_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    rows_by_key = {str(row.get("state_key") or _machine_key(row)): row for row in rows if isinstance(row, dict)}
+    rows_by_key = {str(row.get("state_key") or _machine_key(row)): _normalize_state_machine_row(row) for row in rows if isinstance(row, dict)}
     return [rows_by_key[key] for key in sorted(rows_by_key)]
+
+
+def _normalize_state_machine_row(row: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(row)
+    normalized["state_key"] = str(normalized.get("state_key") or _machine_key(normalized))
+    normalized["domain"] = str(normalized.get("domain") or "")
+    normalized["plugin"] = str(normalized.get("plugin") or "")
+    normalized["machine"] = str(normalized.get("machine") or "")
+    normalized["state"] = str(normalized.get("state") or "")
+    normalized["status"] = str(normalized.get("status") or "")
+    normalized["transition_contract"] = {
+        "stable_key": normalized["state_key"],
+        "requires_prior_state_or_evidence": True,
+        "requires_approved_patch_for_manual_change": True,
+        "rollback_rebuild_required": True,
+        "diff_fields": ["state", "observed_signals", "blocking_signals", "transition", "status"],
+    }
+    return normalized
+
+
+def _reduce_state_machines(machines: list[dict[str, Any]]) -> dict[str, Any]:
+    machine_index: dict[str, dict[str, Any]] = {}
+    domain_index: dict[str, list[str]] = {}
+    plugin_index: dict[str, list[str]] = {}
+    transition_timeline: list[dict[str, Any]] = []
+    conflict_projection: list[dict[str, Any]] = []
+    for row in machines:
+        if not isinstance(row, dict):
+            continue
+        key = str(row.get("state_key") or _machine_key(row))
+        machine_index[key] = _machine_public(row)
+        domain_index.setdefault(str(row.get("domain") or "unknown"), []).append(key)
+        plugin_index.setdefault(str(row.get("plugin") or "unknown"), []).append(key)
+        transition = row.get("transition", {}) if isinstance(row.get("transition", {}), dict) else {}
+        transition_timeline.append(
+            {
+                "state_key": key,
+                "domain": row.get("domain", ""),
+                "machine": row.get("machine", ""),
+                "chapter_no": row.get("chapter_no", ""),
+                "from": transition.get("from", ""),
+                "to": transition.get("to", row.get("state", "")),
+                "evidence": transition.get("evidence", row.get("observed_signals", [])),
+                "source_report_path": row.get("source_report_path", ""),
+                "source_ledger_path": row.get("source_ledger_path", ""),
+            }
+        )
+        blocking = row.get("blocking_signals", []) if isinstance(row.get("blocking_signals", []), list) else []
+        if blocking or str(row.get("status") or "") == "blocked":
+            conflict_projection.append(
+                {
+                    "state_key": key,
+                    "domain": row.get("domain", ""),
+                    "machine": row.get("machine", ""),
+                    "chapter_no": row.get("chapter_no", ""),
+                    "blocking_signals": blocking,
+                    "source_report_path": row.get("source_report_path", ""),
+                    "source_ledger_path": row.get("source_ledger_path", ""),
+                }
+            )
+    return {
+        "reducer_version": "v7.1",
+        "machine_index": machine_index,
+        "domain_index": {key: sorted(set(values)) for key, values in domain_index.items()},
+        "plugin_index": {key: sorted(set(values)) for key, values in plugin_index.items()},
+        "typed_graphs": _typed_graph_projection(machines),
+        "transition_timeline": sorted(transition_timeline, key=lambda item: (str(item.get("chapter_no", "")), str(item.get("state_key", "")))),
+        "conflict_projection": conflict_projection,
+        "query_contract": {
+            "stable_key": "domain|plugin|target_asset_id|chapter_no|machine",
+            "supported_filters": ["domain", "plugin", "machine", "state", "chapter_no", "target_asset_id"],
+            "rollback_rebuild_contract": "rebuild snapshot from canon_state_machine_ledger after rollback, then diff typed_reducer projections",
+        },
+        "summary": {
+            "machine_count": len(machine_index),
+            "domain_count": len(domain_index),
+            "transition_count": len(transition_timeline),
+            "conflict_count": len(conflict_projection),
+        },
+    }
+
+
+def _typed_graph_projection(machines: list[dict[str, Any]]) -> dict[str, Any]:
+    graphs: dict[str, dict[str, Any]] = {}
+    for row in machines:
+        if not isinstance(row, dict):
+            continue
+        domain = str(row.get("domain") or "unknown")
+        key = str(row.get("state_key") or _machine_key(row))
+        machine = str(row.get("machine") or "unknown_machine")
+        transition = row.get("transition", {}) if isinstance(row.get("transition", {}), dict) else {}
+        graph = graphs.setdefault(
+            domain,
+            {
+                "domain": domain,
+                "nodes": [],
+                "edges": [],
+                "state_machine_contract": {
+                    "domain": domain,
+                    "node_key": "state_key",
+                    "edge_key": "transition.from->transition.to",
+                    "manual_change_requires_approval": True,
+                    "rollback_rebuild_required": True,
+                },
+            },
+        )
+        graph["nodes"].append(
+            {
+                "id": key,
+                "kind": "state_machine",
+                "machine": machine,
+                "state": str(row.get("state") or ""),
+                "chapter_no": row.get("chapter_no", ""),
+                "status": str(row.get("status") or ""),
+                "blocking": bool(row.get("blocking_signals")),
+            }
+        )
+        graph["edges"].append(
+            {
+                "id": f"{key}:transition",
+                "from": str(transition.get("from") or "start"),
+                "to": str(transition.get("to") or row.get("state") or "unknown"),
+                "relation": "state_transition",
+                "machine": machine,
+                "state_key": key,
+                "evidence": transition.get("evidence", row.get("observed_signals", [])),
+            }
+        )
+    for graph in graphs.values():
+        graph["nodes"] = sorted(graph["nodes"], key=lambda item: str(item.get("id", "")))
+        graph["edges"] = sorted(graph["edges"], key=lambda item: str(item.get("id", "")))
+        graph["summary"] = {"node_count": len(graph["nodes"]), "edge_count": len(graph["edges"])}
+    return graphs
+
+
+def _reducer_diff(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
+    before_index = before.get("machine_index", {}) if isinstance(before.get("machine_index", {}), dict) else {}
+    after_index = after.get("machine_index", {}) if isinstance(after.get("machine_index", {}), dict) else {}
+    before_conflicts = {str(row.get("state_key") or "") for row in before.get("conflict_projection", []) if isinstance(row, dict)}
+    after_conflicts = {str(row.get("state_key") or "") for row in after.get("conflict_projection", []) if isinstance(row, dict)}
+    before_graphs = before.get("typed_graphs", {}) if isinstance(before.get("typed_graphs", {}), dict) else {}
+    after_graphs = after.get("typed_graphs", {}) if isinstance(after.get("typed_graphs", {}), dict) else {}
+    return {
+        "machine_index_added": sorted(set(after_index) - set(before_index)),
+        "machine_index_removed": sorted(set(before_index) - set(after_index)),
+        "conflicts_added": sorted(after_conflicts - before_conflicts),
+        "conflicts_removed": sorted(before_conflicts - after_conflicts),
+        "typed_graph_domains_added": sorted(set(after_graphs) - set(before_graphs)),
+        "typed_graph_domains_removed": sorted(set(before_graphs) - set(after_graphs)),
+        "transition_count_delta": len(after.get("transition_timeline", []) if isinstance(after.get("transition_timeline", []), list) else [])
+        - len(before.get("transition_timeline", []) if isinstance(before.get("transition_timeline", []), list) else []),
+    }
 
 
 def _state_machine_entries_from_projection(

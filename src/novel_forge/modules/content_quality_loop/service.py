@@ -12,7 +12,7 @@ from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_
 from novel_forge.modules.production_context import project_scope_from_asset
 from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
 from novel_forge.modules.style_os import run_style_drift_gate
-from novel_forge.schemas import ContentQualityLoopReport, validate_common_fields
+from novel_forge.schemas import ChapterQualityTrend, ContentQualityLoopReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 GENRE_PLUGIN_BY_ID = {
@@ -238,9 +238,24 @@ def run_content_quality_loop(
         references=_dedupe([_display_path(storage.root, target_file), *evidence_paths, *review_issue_paths, *revision_task_paths]),
     )
     path = _write_asset(storage, report)
+    trend_path = _write_chapter_quality_trend(
+        storage,
+        report_path=path,
+        report=report.to_dict(),
+        target_file=target_file,
+        target=target.to_dict(),
+        steps=steps,
+        review_issue_paths=review_issue_paths,
+        revision_task_paths=revision_task_paths,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        status=status,
+        blocking=bool(blocking_issues),
+    )
+    _attach_trend_to_report(storage, path, trend_path)
     if attach_to_target:
-        _attach_loop_to_target(storage, target_file, path, status=status, blocking=bool(blocking_issues))
-    return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "status": status, "blocking": bool(blocking_issues), "envelope": env}
+        _attach_loop_to_target(storage, target_file, path, status=status, blocking=bool(blocking_issues), chapter_quality_trend_path=trend_path)
+    return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "status": status, "blocking": bool(blocking_issues), "envelope": env, "chapter_quality_trend_path": trend_path}
 
 
 def _record_step(name: str, result: dict[str, Any]) -> dict[str, Any]:
@@ -334,7 +349,94 @@ def _step_summary(content: dict[str, Any]) -> dict[str, Any]:
     return {key: content.get(key) for key in keys if key in content}
 
 
-def _attach_loop_to_target(storage: LocalStorage, target_file: Path, report_path: str, *, status: str, blocking: bool) -> None:
+def _write_chapter_quality_trend(
+    storage: LocalStorage,
+    *,
+    report_path: str,
+    report: dict[str, Any],
+    target_file: Path,
+    target: dict[str, Any],
+    steps: list[dict[str, Any]],
+    review_issue_paths: list[str],
+    revision_task_paths: list[str],
+    project_id: str,
+    workspace_path: str,
+    status: str,
+    blocking: bool,
+) -> str:
+    content = report.get("content", {}) if isinstance(report.get("content", {}), dict) else {}
+    target_content = target.get("content", {}) if isinstance(target.get("content", {}), dict) else {}
+    chapter_no = _chapter_no(target_content)
+    provider_step = _step_by_name(steps, "provider_quality_judge")
+    quality_gate_step = _step_by_name(steps, "quality_gate")
+    quality_suite_step = _step_by_name(steps, "quality_suite")
+    point = {
+        "chapter_no": chapter_no,
+        "stage": str(content.get("stage") or ""),
+        "target_asset_id": str(target.get("id") or ""),
+        "target_asset_type": str(target.get("type") or ""),
+        "target_asset_path": _display_path(storage.root, target_file),
+        "content_quality_loop_path": report_path,
+        "content_quality_loop_status": status,
+        "blocking": blocking,
+        "provider_judge_status": str(provider_step.get("status") or "missing"),
+        "provider_judge_path": str(provider_step.get("path") or ""),
+        "quality_suite_status": str(quality_suite_step.get("status") or ""),
+        "quality_suite_path": str(quality_suite_step.get("path") or ""),
+        "quality_gate_status": str(quality_gate_step.get("status") or ""),
+        "quality_gate_path": str(quality_gate_step.get("path") or ""),
+        "review_issue_count": len(_dedupe(review_issue_paths)),
+        "revision_task_count": len(_dedupe(revision_task_paths)),
+        "created_at": utc_now(),
+    }
+    trend = ChapterQualityTrend(
+        title=f"Chapter {chapter_no} quality trend point",
+        source=str(target.get("id") or ""),
+        tags=["chapter-quality-trend", status, str(content.get("stage") or "")],
+        content={
+            "trend_id": make_id("chapter_quality_trend", f"{project_id or 'local'}-{chapter_no}-{content.get('loop_id', '')}"),
+            "run_id": str(content.get("loop_id") or ""),
+            "points": [point],
+            "summary": {
+                "latest_chapter": chapter_no,
+                "latest_status": status,
+                "blocking": blocking,
+                "provider_judge_status": point["provider_judge_status"],
+                "review_issue_count": point["review_issue_count"],
+                "revision_task_count": point["revision_task_count"],
+            },
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "status": status},
+        references=_dedupe([report_path, _display_path(storage.root, target_file), point["provider_judge_path"], point["quality_suite_path"], point["quality_gate_path"], *review_issue_paths, *revision_task_paths]),
+    )
+    return _write_asset(storage, trend)
+
+
+def _attach_trend_to_report(storage: LocalStorage, report_path: str, trend_path: str) -> None:
+    data = storage.read_json(resolve_path(storage.root, report_path))
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    refs = data.get("references", []) if isinstance(data.get("references", []), list) else []
+    content["chapter_quality_trend_path"] = trend_path
+    data["content"] = content
+    data["references"] = _dedupe([*refs, trend_path])
+    storage.write_json(resolve_path(storage.root, report_path), data)
+
+
+def _chapter_no(content: dict[str, Any]) -> int:
+    try:
+        return int(content.get("chapter") or content.get("chapter_no") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _step_by_name(steps: list[dict[str, Any]], name: str) -> dict[str, Any]:
+    for step in steps:
+        if step.get("name") == name:
+            return step
+    return {}
+
+
+def _attach_loop_to_target(storage: LocalStorage, target_file: Path, report_path: str, *, status: str, blocking: bool, chapter_quality_trend_path: str = "") -> None:
     data = storage.read_json(target_file)
     if not isinstance(data, dict):
         return
@@ -343,7 +445,9 @@ def _attach_loop_to_target(storage: LocalStorage, target_file: Path, report_path
     metadata["content_quality_loop_path"] = report_path
     metadata["content_quality_loop_status"] = status
     metadata["content_quality_loop_blocking"] = blocking
-    content["content_quality_loop"] = {"path": report_path, "status": status, "blocking": blocking}
+    if chapter_quality_trend_path:
+        metadata["chapter_quality_trend_path"] = chapter_quality_trend_path
+    content["content_quality_loop"] = {"path": report_path, "status": status, "blocking": blocking, "chapter_quality_trend_path": chapter_quality_trend_path}
     data["metadata"] = metadata
     data["content"] = content
     storage.write_json(target_file, data)

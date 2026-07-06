@@ -8,11 +8,13 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.content_intelligence_governance import content_intelligence_preflight_gate
+from novel_forge.modules.chapter_plan import service as chapter_plan_service
 from novel_forge.modules.genre_os.service import build_genre_strategy_pack
 from novel_forge.modules.model_operation_governance import enforce_model_operation_preflight
+from novel_forge.modules.outline import service as outline_service
 from novel_forge.modules.style_os.service import build_style_profile, extract_style_fingerprint, ingest_style_sample
 from novel_forge.modules.topics import service as topics_service
-from novel_forge.schemas import MaterialCard
+from novel_forge.schemas import CharacterCard, MaterialCard, Outline
 from novel_forge.storage.local import LocalStorage
 
 
@@ -61,6 +63,7 @@ class ModelOperationGovernanceTests(unittest.TestCase):
             storage = LocalStorage(tmp)
             storage.ensure_layout()
             material_path = _material(storage, project_id="topic-prod")
+            _genre_and_style_evidence(storage, project_id="topic-prod")
             model = CountingTopicModel()
 
             topic_path = topics_service.develop_topic(
@@ -87,6 +90,52 @@ class ModelOperationGovernanceTests(unittest.TestCase):
             self.assertEqual(report["type"], "production_governance_report")
             self.assertEqual(report["content"]["operation"], "develop-topic")
             self.assertEqual(report["content"]["gate_statuses"]["provider_runtime_gate"]["status"], "passed")
+            self.assertEqual(report["content"]["gate_statuses"]["content_intelligence"]["status"], "passed")
+
+    def test_outline_and_chapter_plan_production_require_v7_content_intelligence_before_model_call(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            model = CountingTopicModel()
+            character_path = storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="Governed character",
+                    content={"name": "林乔", "motivation": "solve the clock case"},
+                    metadata={"project_id": "plan-prod"},
+                ),
+            )
+            outline_path = storage.write_asset(
+                "outlines",
+                Outline(
+                    title="Governed outline",
+                    content={"acts": [{"act": 1, "goal": "open", "turn": "case expands", "chapters": [{"chapter": 1, "promise": "hook", "hook": "clock rings"}]}]},
+                    metadata={"project_id": "plan-prod"},
+                ),
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "content_intelligence"):
+                outline_service.generate_outline(
+                    storage,
+                    str(character_path),
+                    model=model,
+                    environment="production",
+                    os_envelope=_envelope("plan-prod", "generate-outline", "outline"),
+                    source_policy={"source_isolation_required": True, "raw_source_text_allowed": False},
+                    provider_runtime_gate=_provider_gate(),
+                )
+            with self.assertRaisesRegex(RuntimeError, "content_intelligence"):
+                chapter_plan_service.generate_chapter_plan(
+                    storage,
+                    str(outline_path),
+                    model=model,
+                    environment="production",
+                    os_envelope=_envelope("plan-prod", "generate-chapter-plan", "chapter_plan"),
+                    source_policy={"source_isolation_required": True, "raw_source_text_allowed": False},
+                    provider_runtime_gate=_provider_gate(),
+                )
+
+            self.assertEqual(model.calls, 0)
 
     def test_content_intelligence_preflight_blocks_production_model_operation_without_genre_style_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -201,6 +250,15 @@ def _envelope(project_id: str, task_type: str, asset_type: str) -> dict:
         "trace_id": f"trace-{project_id}-{task_type}",
         "environment": "production",
         "source_policy": {"source_isolation_required": True, "raw_source_text_allowed": False},
+    }
+
+
+def _provider_gate() -> dict:
+    return {
+        "status": "passed",
+        "provider": "fixture-provider",
+        "model": "fixture-model",
+        "path": "runs/provider-runtime-gate.json",
     }
 
 

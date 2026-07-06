@@ -1,3 +1,3 @@
-from .service import build_multi_book_daily_production_report, build_project_cockpit_snapshot
+from .service import build_multi_book_daily_production_report, build_multi_book_production_schedule, build_project_cockpit_snapshot
 
-__all__ = ["build_project_cockpit_snapshot", "build_multi_book_daily_production_report"]
+__all__ = ["build_project_cockpit_snapshot", "build_multi_book_daily_production_report", "build_multi_book_production_schedule"]

@@ -116,11 +116,21 @@ class CanonGraphPluginTests(unittest.TestCase):
 
             self.assertEqual(before["asset"]["type"], "canon_state_machine_snapshot")
             self.assertTrue(before["asset"]["content"]["source_ledger_paths"])
+            reducer = after["asset"]["content"]["typed_reducer"]
+            self.assertEqual(reducer["reducer_version"], "v7.1")
+            self.assertTrue(reducer["machine_index"])
+            self.assertIn("mystery", reducer["domain_index"])
+            self.assertIn("mystery", reducer["typed_graphs"])
+            self.assertTrue(reducer["typed_graphs"]["mystery"]["nodes"])
+            self.assertTrue(reducer["typed_graphs"]["mystery"]["edges"])
+            self.assertEqual(reducer["typed_graphs"]["mystery"]["state_machine_contract"]["domain"], "mystery")
+            self.assertTrue(reducer["transition_timeline"])
             self.assertEqual(query["match_count"], 1)
             self.assertEqual(query["matches"][0]["machine"], "EvidenceChainGraph")
             self.assertEqual(diff["asset"]["type"], "canon_state_machine_diff_report")
             self.assertEqual(diff["status"], "changed")
             self.assertTrue(diff["asset"]["content"]["changed_machines"])
+            self.assertTrue(diff["asset"]["content"]["typed_reducer_diff"]["conflicts_added"])
 
 
 if __name__ == "__main__":

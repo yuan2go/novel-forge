@@ -54,6 +54,7 @@ export type NovelOsCockpitSnapshot = {
       task_health?: Record<string, unknown>;
       agent_health?: Record<string, unknown>;
       recommendations?: string[];
+      production_control_console?: Record<string, unknown>;
       cockpit?: {
         book_production_state?: string;
         today_chapter_queue?: Array<Record<string, unknown>>;
@@ -70,12 +71,30 @@ export type MultiBookProductionReport = {
   book_count?: number;
   asset?: {
     content?: {
+      cost_quality_dashboard?: Record<string, unknown>;
       multi_book_scheduler?: {
         books?: Array<Record<string, unknown>>;
         provider_budget_plan?: Record<string, unknown>;
       };
       quality?: Record<string, unknown>;
       agent_health?: Record<string, unknown>;
+    };
+  };
+};
+
+export type MultiBookProductionSchedule = {
+  path?: string;
+  status?: string;
+  book_count?: number;
+  asset?: {
+    content?: {
+      multi_book_parallel_schedule?: {
+        books?: Array<Record<string, unknown>>;
+        parallel_lanes?: Array<Record<string, unknown>>;
+        provider_budget_plan?: Record<string, unknown>;
+        cross_book_contamination_guard?: Record<string, unknown>;
+      };
+      recommendations?: string[];
     };
   };
 };
@@ -200,7 +219,8 @@ export function loadNovelOsCockpitData(projectId?: string) {
   if (projectId) params.set("project_id", projectId);
   return Promise.all([
     fetchJson<NovelOsCockpitSnapshot>(`/product/os/cockpit/project?${params.toString()}`),
-    fetchJson<MultiBookProductionReport>("/product/os/cockpit/multi-book")
+    fetchJson<MultiBookProductionReport>("/product/os/cockpit/multi-book"),
+    fetchJson<MultiBookProductionSchedule>("/product/os/cockpit/multi-book/schedule?provider_budget=25&max_parallel_books=2")
   ]);
 }
 

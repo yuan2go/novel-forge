@@ -3709,10 +3709,20 @@ def _handoff_row(storage: LocalStorage, path: Path, data: dict[str, Any]) -> dic
 
 
 def draft_workbench(storage: LocalStorage, project_id: str | None = None) -> dict[str, Any]:
+    draft_rows = _asset_rows(storage, "drafts", asset_type="draft_chapter", project_id=project_id)
+    revision_statuses = {"final", "revised"}
+    primary_drafts = [row for row in draft_rows if str(row.get("draft_status") or "").lower() not in revision_statuses]
+    revised_drafts = [row for row in draft_rows if str(row.get("draft_status") or "").lower() in revision_statuses]
+    revised_draft_ids = {str(row.get("id") or "") for row in revised_drafts if row.get("id")}
+    review_rows = _asset_rows(storage, "reviews", asset_type="review_report", project_id=project_id)
+    primary_reviews = [row for row in review_rows if str(row.get("source") or "") not in revised_draft_ids]
+    post_revision_reviews = [row for row in review_rows if str(row.get("source") or "") in revised_draft_ids]
     return {
         "chapter_plans": _asset_rows(storage, "chapter_plans", asset_type="chapter_plan", project_id=project_id),
-        "drafts": _asset_rows(storage, "drafts", asset_type="draft_chapter", project_id=project_id),
-        "reviews": _asset_rows(storage, "reviews", asset_type="review_report", project_id=project_id),
+        "drafts": primary_drafts,
+        "revised_drafts": revised_drafts,
+        "reviews": primary_reviews,
+        "post_revision_reviews": post_revision_reviews,
         "revision_plans": _asset_rows(storage, "reviews", asset_type="revision_plan", project_id=project_id),
         "workspace": [project_detail(storage, project_id)] if project_id else list_projects(storage)[:1],
     }
@@ -3969,6 +3979,8 @@ def _asset_rows(
                 "score": data.get("score"),
                 "risk_level": data.get("risk_level") or data.get("metadata", {}).get("risk_level", ""),
                 "asset_status": data.get("metadata", {}).get("asset_status", ""),
+                "draft_status": data.get("metadata", {}).get("draft_status", ""),
+                "project_asset_role": data.get("metadata", {}).get("project_asset_role", ""),
                 "updated_at": data.get("updated_at", ""),
                 "summary": _content_preview(content),
                 "tags": data.get("tags", []),

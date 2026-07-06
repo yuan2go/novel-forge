@@ -7,12 +7,15 @@ from fastapi import APIRouter, HTTPException, Query
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.api.routers.runtime_request import normalize_product_api_runtime_request
 from novel_forge.modules.evaluation_center import (
+    build_golden_set,
+    calibrate_provider_judge,
     compare_model_runs,
     create_benchmark_task_from_generation_run,
     create_evaluation_case,
     create_evaluation_dashboard_snapshot,
     create_evaluation_gate,
     create_evaluation_suite,
+    create_human_annotation_asset,
     create_model_routing_policy,
     create_model_benchmark_task,
     create_model_profile,
@@ -220,6 +223,47 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 target_asset_path=str(payload.get("target_asset_path") or ""),
                 expected=payload.get("expected") if isinstance(payload.get("expected"), dict) else {},
                 status=str(payload.get("status") or "active"),
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/evaluation/human-annotation")
+    def human_annotation_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return create_human_annotation_asset(
+                LocalStorage(app_settings.root),
+                target_asset_path=str(payload.get("target_asset_path") or ""),
+                annotator=str(payload.get("annotator") or "human"),
+                scores=payload.get("scores") if isinstance(payload.get("scores"), dict) else {},
+                verdict=str(payload.get("verdict") or "needs_review"),
+                comment=str(payload.get("comment") or ""),
+                project_id=str(payload.get("project_id") or ""),
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/evaluation/golden-set")
+    def golden_set_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return build_golden_set(
+                LocalStorage(app_settings.root),
+                name=str(payload.get("name") or "Novel OS Golden Set"),
+                case_specs=payload.get("case_specs") if isinstance(payload.get("case_specs"), list) else [],
+                project_id=str(payload.get("project_id") or ""),
+                status=str(payload.get("status") or "active"),
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/evaluation/provider-calibration")
+    def provider_calibration_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return calibrate_provider_judge(
+                LocalStorage(app_settings.root),
+                golden_set_path=str(payload.get("golden_set_path") or ""),
+                provider_judge_results=payload.get("provider_judge_results") if isinstance(payload.get("provider_judge_results"), list) else [],
+                tolerance=float(payload.get("tolerance", 0.08) or 0.08),
+                project_id=str(payload.get("project_id") or ""),
             )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

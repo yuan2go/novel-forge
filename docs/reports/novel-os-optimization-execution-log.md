@@ -142,6 +142,29 @@
 | `npm --prefix web/admin run lint` | 通过 | 最终 TypeScript `tsc --noEmit` 通过 |
 | `python3 -m compileall -q src/novel_forge tests` | 通过 | 最终 Python 编译通过 |
 | `git diff --check` | 通过 | 最终 whitespace 检查通过 |
+| `python3 -m unittest tests.unit.test_model_operation_governance tests.unit.test_canon_graph_plugins tests.unit.test_publishing_feedback_adapters tests.unit.test_v7_provider_proof` | 通过 | 18 个 P0 V7 upstream gate、Canon reducer、feedback auto application、provider proof 聚合 tests 通过 |
+| `python3 -m unittest tests.unit.test_module_services tests.unit.test_review_issue tests.unit.test_content_quality_loop tests.unit.test_quality_eval_v2 tests.unit.test_long_chain_proof tests.unit.test_workflow_executor` | 通过 | 57 个 revision/workflow/quality/long-chain 受影响回归通过 |
+| `python3 -m unittest tests.unit.test_agent_scheduler tests.unit.test_product_api_routes tests.unit.test_schemas tests.integration.test_novel_os_acceptance` | 通过 | 32 个 scheduler/API/schema/acceptance 回归通过；FastAPI TestClient deprecation warning 不影响结果 |
+| `python3 -m compileall -q src/novel_forge tests` | 通过 | 本轮 P0 新增模块和测试语法检查通过 |
+| `python3 -m unittest tests.integration.test_pipeline.PipelineTests.test_sample_pipeline_runs tests.unit.test_product_api.ProductApiTests.test_draft_workbench_groups_drafts_reviews_and_revisions` | 通过 | 修复全量回归暴露的 quality rubric project scope 与 draft/review workbench 分组后，2 个 pipeline/product 回归通过 |
+| `make test` | 通过 | Python 565 tests OK，2 skipped；Web Admin node tests 11 passed，1 optional Playwright browser smoke skipped |
+| `python3 -m compileall -q src/novel_forge tests` | 通过 | 最终 Python 编译通过 |
+| `git diff --check` | 通过 | 最终 whitespace 检查通过 |
+| `python3 -m unittest tests.unit.test_provider_hard_stop_proof tests.unit.test_quality_eval_v2 tests.unit.test_long_chain_proof tests.unit.test_v7_provider_proof` | 通过 | 22 个 provider hard-stop、external proof、quality judge、long-chain、V7 proof tests 通过；新增 `claude-code` local Codex CLI proof evidence contract |
+| `make test` | 通过 | Python 566 tests OK，2 skipped；Web Admin node tests 11 passed，1 optional Playwright browser smoke skipped |
+| `python3 -m unittest tests.unit.test_publishing_feedback_adapters tests.unit.test_novel_os_cockpit tests.unit.test_quality_eval_v2 tests.unit.test_product_api_routes tests.unit.test_schemas` | 通过 | 38 个 Fanqie/Qidian receipt parser、Project Cockpit、Eval golden set/calibration、API/schema focused tests 通过；FastAPI TestClient deprecation warning 不影响结果 |
+| `npm --prefix web/admin run lint` | 通过 | TypeScript `tsc --noEmit` 通过 |
+| `npm --prefix web/admin test` | 通过 | Web Admin node tests 11 passed，1 optional Playwright browser smoke skipped |
+| `python3 -m compileall -q src/novel_forge tests` | 通过 | 本轮 P1 平台/Cockpit/Eval/API/UI 修改语法检查通过 |
+| `git diff --check` | 通过 | 本轮 whitespace 检查通过 |
+| `make test` | 通过 | Python 569 tests OK，2 skipped；Web Admin node tests 11 passed，1 optional Playwright browser smoke skipped |
+| `python3 -m unittest tests.unit.test_content_quality_loop tests.unit.test_quality_eval_v2 tests.unit.test_canon_graph_plugins tests.unit.test_publishing_feedback_adapters tests.unit.test_novel_os_cockpit tests.unit.test_product_api_routes` | 通过 | 28 个章节质量趋势、provider judge run report、Canon typed graph、平台 adapter gate、Cockpit schedule、API route tests 通过；FastAPI TestClient deprecation warning 不影响结果 |
+| `npm --prefix web/admin run lint` | 通过 | TypeScript `tsc --noEmit` 通过；Quality Eval provider judge、Publishing platform gate、OS schedule UI 通过类型检查 |
+| `npm --prefix web/admin test` | 通过 | Web Admin node tests 11 passed，1 optional Playwright browser smoke skipped |
+| `python3 -m compileall -q src/novel_forge tests` | 通过 | 本轮 P1 闭环修改语法检查通过 |
+| `git diff --check` | 通过 | 本轮 whitespace 检查通过 |
+| `python3 -m unittest tests.unit.test_content_quality_loop tests.unit.test_quality_eval_v2 tests.unit.test_canon_graph_plugins tests.unit.test_publishing_feedback_adapters tests.unit.test_novel_os_cockpit tests.unit.test_product_api_routes tests.unit.test_schemas` | 通过 | 46 个章节质量趋势、provider judge run report、Canon typed graph、平台 adapter gate、Cockpit schedule、API/schema focused tests 通过 |
+| `make test` | 通过 | Python 571 tests OK，2 skipped；Web Admin node tests 11 passed，1 optional Playwright browser smoke skipped |
 
 ## Correction During Validation
 
