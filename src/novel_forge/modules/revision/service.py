@@ -7,6 +7,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, resolve_path
+from novel_forge.modules.content_quality_loop import run_content_quality_loop
 from novel_forge.modules.content_intelligence_governance import content_intelligence_preflight_gate
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.editor import execute_revision_plan
@@ -32,6 +33,9 @@ def revise(
     os_envelope: dict[str, Any] | None = None,
     source_policy: dict[str, Any] | None = None,
     provider_runtime_gate: dict[str, Any] | None = None,
+    post_quality_loop: bool = True,
+    post_quality_loop_provider_adapter: Any | None = None,
+    require_external_provider_proof: bool = False,
 ) -> Path:
     model = model or model_from_env("revise")
     review_asset = read_previous(storage, "reviews", input_path)
@@ -138,8 +142,46 @@ def revise(
             extra_required_gates=["content_intelligence"],
         )
         attach_model_operation_governance(storage, path, final_governance)
-        agent_run.succeed(output_assets=[path], token_used=len(str(result)))
+        quality_loop: dict[str, Any] = {}
+        quality_target_path = str(result.get("revised_draft_path") or result.get("revised_draft_asset_path") or "")
+        if post_quality_loop and quality_target_path:
+            quality_loop = run_content_quality_loop(
+                storage,
+                target_path=quality_target_path,
+                stage="revised_draft",
+                provider_adapter=post_quality_loop_provider_adapter,
+                provider_runtime_guard=provider_runtime_gate,
+                allow_mock_fixture=not is_production_environment(environment or (os_envelope or {}).get("environment")),
+                require_external_provider_proof=require_external_provider_proof,
+                environment=environment,
+                envelope=os_envelope,
+                persist_issues=True,
+            )
+            if quality_loop.get("blocking") and is_production_environment(environment or (os_envelope or {}).get("environment")):
+                raise ValueError(f"revision post-quality loop blocked production output: {quality_loop.get('path')}")
+        elif post_quality_loop:
+            _mark_revision_quality_loop_deferred(storage, path)
+        output_assets = [path]
+        if quality_loop.get("path"):
+            output_assets.append(quality_loop["path"])
+        agent_run.succeed(output_assets=output_assets, token_used=len(str(result)))
         return path
+
+
+def _mark_revision_quality_loop_deferred(storage: LocalStorage, path: Path) -> None:
+    data = storage.read_json(path)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    marker = {
+        "status": "deferred",
+        "reason": "revision_plan has no revised draft text",
+        "required_next_stage": "execute_revision_plan_then_run_re_review_quality_loop",
+    }
+    content["post_quality_loop"] = marker
+    metadata["content_quality_loop_status"] = "deferred"
+    data["content"] = content
+    data["metadata"] = metadata
+    storage.write_json(path, data)
 
 
 def create_revision_task(

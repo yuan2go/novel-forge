@@ -36,6 +36,7 @@ def run_long_chain_proof(
     opt_in_slow_provider: bool = False,
     provider_adapter: Any | None = None,
     provider_runtime_guard: dict[str, Any] | None = None,
+    require_external_provider_proof: bool = False,
 ) -> dict[str, Any]:
     if mode not in SUPPORTED_MODES:
         raise ValueError(f"unsupported long-chain proof mode: {mode}")
@@ -68,6 +69,7 @@ def run_long_chain_proof(
             adapter=provider_adapter,
             envelope=env,
             provider_runtime_guard=provider_runtime_guard or {},
+            require_external_provider_proof=require_external_provider_proof,
         )
     checkpoints: list[str] = []
     checkpoint_payloads: list[dict[str, Any]] = []
@@ -124,7 +126,7 @@ def run_long_chain_proof(
             "provider_generation_evidence": provider_evidence,
         },
         metadata={"project_id": project_id, **envelope_asset_metadata(env)},
-        references=[*checkpoints, *trend_paths.values(), *provider_evidence.get("draft_paths", []), *provider_evidence.get("model_call_log_paths", [])],
+        references=[*checkpoints, *trend_paths.values(), *provider_evidence.get("draft_paths", []), *provider_evidence.get("model_call_log_paths", []), *provider_evidence.get("external_provider_proof_paths", [])],
     )
     run_path = _write_asset(storage, run)
     acceptance = LongChainAcceptanceReport(
@@ -145,7 +147,7 @@ def run_long_chain_proof(
             "provider_generation_evidence": provider_evidence,
         },
         metadata={"project_id": project_id, **envelope_asset_metadata(env)},
-        references=[run_path, *checkpoints, *trend_paths.values(), *provider_evidence.get("draft_paths", []), *provider_evidence.get("model_call_log_paths", [])],
+        references=[run_path, *checkpoints, *trend_paths.values(), *provider_evidence.get("draft_paths", []), *provider_evidence.get("model_call_log_paths", []), *provider_evidence.get("external_provider_proof_paths", [])],
     )
     acceptance_path = _write_asset(storage, acceptance)
     failure_path = ""
@@ -210,14 +212,16 @@ def _run_provider_chapter_generation(
     adapter: Any,
     envelope: dict[str, Any],
     provider_runtime_guard: dict[str, Any],
+    require_external_provider_proof: bool,
 ) -> dict[str, Any]:
-    from novel_forge.modules.model_router import call_model_via_router
+    from novel_forge.modules.model_router import call_model_via_router, record_external_provider_proof
 
     draft_paths: list[str] = []
     model_call_paths: list[str] = []
     route_paths: list[str] = []
     runtime_policy_paths: list[str] = []
     cost_ledger_paths: list[str] = []
+    external_proof_paths: list[str] = []
     provider_policy: dict[str, Any] = {}
     approval_evidence: dict[str, Any] = {}
     for chapter_no in range(1, chapter_count + 1):
@@ -243,6 +247,22 @@ def _run_provider_chapter_generation(
             provider_runtime_guard=provider_runtime_guard,
         )
         gateway = result.get("model_gateway_call", {}) if isinstance(result.get("model_gateway_call", {}), dict) else {}
+        external_proof = (
+            record_external_provider_proof(
+                storage,
+                proof_type=f"long_chain_chapter:{chapter_no}",
+                routed_result=result,
+                adapter=adapter,
+                project_id=project_id,
+                environment=str(envelope.get("environment") or ""),
+                target_refs=[],
+                strict=require_external_provider_proof,
+            )
+            if require_external_provider_proof
+            else {"status": "not_required", "path": "", "blocking": False}
+        )
+        if external_proof.get("path"):
+            external_proof_paths.append(str(external_proof["path"]))
         provider_policy = gateway.get("provider_policy", {}) if isinstance(gateway.get("provider_policy", {}), dict) else provider_policy
         approval_evidence = gateway.get("approval_evidence", {}) if isinstance(gateway.get("approval_evidence", {}), dict) else approval_evidence
         model_call_paths.append(str(gateway.get("model_call_log_path") or ""))
@@ -263,10 +283,11 @@ def _run_provider_chapter_generation(
                     "model_call_log_path": str(gateway.get("model_call_log_path") or ""),
                     "runtime_policy_path": str(gateway.get("runtime_policy_path") or ""),
                     "cost_ledger_path": str(gateway.get("cost_ledger_path") or ""),
+                    "external_provider_proof_path": str(external_proof.get("path") or ""),
                 },
             },
             metadata={"project_id": project_id, **envelope_asset_metadata(envelope)},
-            references=[value for value in [str(result.get("model_route_resolution_path") or ""), str(gateway.get("model_call_log_path") or ""), str(gateway.get("runtime_policy_path") or ""), str(gateway.get("cost_ledger_path") or "")] if value],
+            references=[value for value in [str(result.get("model_route_resolution_path") or ""), str(gateway.get("model_call_log_path") or ""), str(gateway.get("runtime_policy_path") or ""), str(gateway.get("cost_ledger_path") or ""), str(external_proof.get("path") or "")] if value],
         )
         draft_paths.append(_write_asset(storage, draft))
     return {
@@ -278,6 +299,8 @@ def _run_provider_chapter_generation(
         "model_call_log_paths": [path for path in model_call_paths if path],
         "runtime_policy_paths": [path for path in runtime_policy_paths if path],
         "cost_ledger_paths": [path for path in cost_ledger_paths if path],
+        "external_provider_proof_required": bool(require_external_provider_proof),
+        "external_provider_proof_paths": external_proof_paths,
         "provider_policy": provider_policy,
         "approval_evidence": approval_evidence,
     }
@@ -309,6 +332,18 @@ def _acceptance_checks(chapter_count: int, checkpoints: list[dict[str, Any]], tr
                 "blocking": True,
             }
         )
+        if provider_evidence.get("external_provider_proof_required"):
+            checks.append(
+                {
+                    "check": "external_provider_proof_coverage",
+                    "passed": len(provider_evidence.get("external_provider_proof_paths", []) or []) == chapter_count,
+                    "evidence": {
+                        "external_provider_proof_count": len(provider_evidence.get("external_provider_proof_paths", []) or []),
+                        "target_chapter_count": chapter_count,
+                    },
+                    "blocking": True,
+                }
+            )
     return checks
 
 

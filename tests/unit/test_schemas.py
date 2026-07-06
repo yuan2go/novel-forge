@@ -50,7 +50,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 258)
+        self.assertEqual(len(SCHEMA_CLASSES), 265)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("source_chunk", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
@@ -117,6 +117,7 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("originality_report", SCHEMA_CLASSES)
         self.assertIn("publish_gate_report", SCHEMA_CLASSES)
         self.assertIn("release_package", SCHEMA_CLASSES)
+        self.assertIn("content_quality_loop_report", SCHEMA_CLASSES)
         self.assertIn("common_novel_analysis_report", SCHEMA_CLASSES)
         self.assertIn("web_fiction_business_analysis_report", SCHEMA_CLASSES)
         self.assertIn("published_fiction_analysis_report", SCHEMA_CLASSES)
@@ -204,9 +205,11 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("platform_comment_batch", SCHEMA_CLASSES)
         self.assertIn("comment_cluster_report", SCHEMA_CLASSES)
         self.assertIn("feedback_plan_mutation_proposal", SCHEMA_CLASSES)
+        self.assertIn("feedback_mutation_patch", SCHEMA_CLASSES)
         self.assertIn("chapter_continuity_report", SCHEMA_CLASSES)
         self.assertIn("continuity_graph_snapshot", SCHEMA_CLASSES)
         self.assertIn("canon_graph_snapshot", SCHEMA_CLASSES)
+        self.assertIn("canon_state_machine_ledger", SCHEMA_CLASSES)
         self.assertIn("novel_kg_snapshot", SCHEMA_CLASSES)
         self.assertIn("semantic_extraction_report", SCHEMA_CLASSES)
         self.assertIn("kg_identity_resolution", SCHEMA_CLASSES)

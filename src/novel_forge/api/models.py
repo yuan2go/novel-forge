@@ -277,6 +277,26 @@ class QualityGateRunRequest(BaseModel):
     envelope: dict[str, Any] = Field(default_factory=dict)
 
 
+class ProviderQualityJudgeRequest(BaseModel):
+    suite_type: str = "opening_3"
+    target_paths: list[str]
+    rubric_path: str
+    genre_strategy_pack_path: str = ""
+    style_profile_path: str = ""
+    platform_id: str = "local"
+    provider_route: dict[str, Any] = Field(default_factory=dict)
+    provider_config: dict[str, Any] = Field(default_factory=dict)
+    provider_runtime_guard: dict[str, Any] = Field(default_factory=dict)
+    operator_approval: dict[str, Any] = Field(default_factory=dict)
+    budget_cap: float = 0.0
+    mode: str = "fixture"
+    fixture_judge_response: dict[str, Any] = Field(default_factory=dict)
+    allow_mock_fixture: bool = False
+    require_external_provider_proof: bool = False
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
 class CanonGraphPluginRequest(BaseModel):
     plugin: str
     target_path: str | None = None
@@ -294,6 +314,14 @@ class LongChainProofRunRequest(BaseModel):
     environment: str = ""
     envelope: dict[str, Any] = Field(default_factory=dict)
     opt_in_slow_provider: bool = False
+    provider_route: dict[str, Any] = Field(default_factory=dict)
+    provider_config: dict[str, Any] = Field(default_factory=dict)
+    provider_runtime_guard: dict[str, Any] = Field(default_factory=dict)
+    operator_approval: dict[str, Any] = Field(default_factory=dict)
+    budget_cap: float = 0.0
+    fixture_chapter_response: dict[str, Any] = Field(default_factory=dict)
+    allow_mock_fixture: bool = False
+    require_external_provider_proof: bool = False
 
 
 class PlatformUploadPackageRequest(BaseModel):
@@ -354,6 +382,14 @@ class FeedbackMutationResolveRequest(BaseModel):
     actor: str = "operator"
     decision_note: str = ""
     create_application_chain: bool = True
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class FeedbackMutationApplyRequest(BaseModel):
+    proposal_ref: str
+    apply_invalidation: bool = True
+    actor: str = "workflow"
     environment: str = ""
     envelope: dict[str, Any] = Field(default_factory=dict)
 
@@ -1525,6 +1561,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "QualityRubricPackRequest": QualityRubricPackRequest,
         "QualitySuiteRunRequest": QualitySuiteRunRequest,
         "QualityGateRunRequest": QualityGateRunRequest,
+        "ProviderQualityJudgeRequest": ProviderQualityJudgeRequest,
         "CanonGraphPluginRequest": CanonGraphPluginRequest,
         "LongChainProofRunRequest": LongChainProofRunRequest,
         "PlatformUploadPackageRequest": PlatformUploadPackageRequest,
@@ -1534,6 +1571,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "PlatformCommentsClusterRequest": PlatformCommentsClusterRequest,
         "FeedbackMutationProposalRequest": FeedbackMutationProposalRequest,
         "FeedbackMutationResolveRequest": FeedbackMutationResolveRequest,
+        "FeedbackMutationApplyRequest": FeedbackMutationApplyRequest,
         "CreativeAssetCreateRequest": CreativeAssetCreateRequest,
         "StyleDecomposeRequest": StyleDecomposeRequest,
         "StyleReviewRequest": StyleReviewRequest,

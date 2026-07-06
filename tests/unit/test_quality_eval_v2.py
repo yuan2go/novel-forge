@@ -20,6 +20,25 @@ class ProviderJudgeAdapter:
         }
 
 
+class ExternalProviderJudgeAdapter:
+    external_provider_evidence = {
+        "external_call": True,
+        "fixture": False,
+        "provider_response_id": "resp-quality-1",
+        "endpoint_host": "api.provider.example",
+        "credential_ref": "env:QUALITY_PROVIDER_API_KEY",
+        "rate_limit_policy": {"requests_per_minute": 60, "burst": 5},
+    }
+
+    def review(self, payload: str, context: dict):
+        return {
+            "text": '{"recommendation":"ready","scores":{"genre_promise":91,"platform_rhythm":88,"style_adherence":86,"hook_strength":90,"conflict_density":87,"character_motivation":88,"canon_consistency":92,"ai_flavor_risk":85},"rationale":"external provider contract judgment"}',
+            "usage": {"input_tokens": 1200, "output_tokens": 240, "total_tokens": 1440, "usage_source": "external_provider"},
+            "cost": {"amount": 0.012, "currency": "USD", "source": "external_provider"},
+            "external_provider_evidence": self.external_provider_evidence,
+        }
+
+
 class QualityEvalV2Tests(unittest.TestCase):
     def test_quality_suite_ready_report_and_gate_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -144,6 +163,77 @@ class QualityEvalV2Tests(unittest.TestCase):
             self.assertEqual(evidence["provider_policy"]["status"], "passed")
             self.assertEqual(gate["asset"]["content"]["status"], "passed")
 
+    def test_provider_quality_judge_external_proof_blocks_fixture_adapter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            create_model_route(
+                storage,
+                task_type="quality_judge",
+                provider="unit-provider",
+                model_name="premium-judge-v1",
+                project_id="p1",
+                environment="production",
+                approval_status="approved",
+                approval_id="approval-quality-external-block",
+                approved_by="qa-lead",
+                production_provider_allowlist=["unit-provider"],
+                max_cost_per_run=1.0,
+            )
+            rubric = _production_rubric(storage)
+            draft_path = _ready_draft(storage)
+
+            with self.assertRaisesRegex(ValueError, "external provider proof"):
+                run_provider_quality_judge(
+                    storage,
+                    suite_type="opening_3",
+                    target_paths=[str(draft_path)],
+                    rubric_path=rubric["path"],
+                    adapter=ProviderJudgeAdapter(),
+                    environment="production",
+                    envelope=_envelope("quality_judge", "opening_3_report", "trace-quality-external-block"),
+                    provider_runtime_guard={"max_total_tokens": 2000},
+                    require_external_provider_proof=True,
+                )
+
+    def test_provider_quality_judge_external_proof_records_passed_report(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            create_model_route(
+                storage,
+                task_type="quality_judge",
+                provider="external-provider",
+                model_name="premium-judge-v1",
+                project_id="p1",
+                environment="production",
+                approval_status="approved",
+                approval_id="approval-quality-external-pass",
+                approved_by="qa-lead",
+                production_provider_allowlist=["external-provider"],
+                max_cost_per_run=1.0,
+            )
+            rubric = _production_rubric(storage)
+            draft_path = _ready_draft(storage)
+
+            report = run_provider_quality_judge(
+                storage,
+                suite_type="opening_3",
+                target_paths=[str(draft_path)],
+                rubric_path=rubric["path"],
+                adapter=ExternalProviderJudgeAdapter(),
+                environment="production",
+                envelope=_envelope("quality_judge", "opening_3_report", "trace-quality-external-pass"),
+                provider_runtime_guard={"max_total_tokens": 2000},
+                require_external_provider_proof=True,
+            )
+
+            proof = report["external_provider_proof"]
+            self.assertEqual(proof["status"], "passed")
+            proof_asset = storage.read_json(storage.root / proof["path"])
+            self.assertEqual(proof_asset["type"], "external_provider_proof_report")
+            self.assertEqual(proof_asset["content"]["credential_boundary"]["credential_ref"], "env:QUALITY_PROVIDER_API_KEY")
+            self.assertFalse(proof_asset["content"]["credential_boundary"]["secret_material_persisted"])
+            self.assertIn(proof["path"], report["asset"]["references"])
+
     def test_production_quality_gate_blocks_local_heuristic_without_provider_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -174,6 +264,42 @@ class QualityEvalV2Tests(unittest.TestCase):
             self.assertEqual(gate["asset"]["content"]["status"], "blocked")
             self.assertTrue(gate["asset"]["content"]["blocking"])
             self.assertEqual(gate["asset"]["content"]["provider_judge_required"], True)
+
+
+def _production_rubric(storage: LocalStorage) -> dict:
+    return build_quality_rubric_pack(
+        storage,
+        genre_id="mystery",
+        platform_id="local",
+        environment="production",
+        envelope=_envelope("quality_eval", "quality_rubric_pack", "trace-quality-rubric"),
+    )
+
+
+def _ready_draft(storage: LocalStorage) -> Path:
+    draft = DraftChapter(
+        title="provider judged chapter",
+        content={
+            "chapter": 1,
+            "text": ("目标、案件、关系和冲突同时推进。然而新证据带来代价，下一章真相会继续逼近。主角必须选择。 " * 30),
+            "copyright_boundary": "original draft",
+        },
+        metadata={"project_id": "p1"},
+    )
+    return storage.write_asset_auto(draft)
+
+
+def _envelope(task_type: str, asset_type: str, trace_id: str) -> dict:
+    return {
+        "project_id": "p1",
+        "task_type": task_type,
+        "asset_type": asset_type,
+        "actor_type": "service",
+        "source": "test",
+        "trace_id": trace_id,
+        "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
+        "environment": "production",
+    }
 
 
 if __name__ == "__main__":

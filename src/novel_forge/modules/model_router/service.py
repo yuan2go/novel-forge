@@ -15,7 +15,7 @@ from novel_forge.modules.production_context import filter_project_safe_reference
 from novel_forge.modules.prompt_registry import resolve_prompt
 from novel_forge.modules.runtime_ledger import check_budget_policy, record_gate_result, record_model_call_log, record_trace_span
 from novel_forge.modules.runtime_policy import runtime_policy_envelope
-from novel_forge.schemas import ModelRoute, ModelRouteResolution, validate_common_fields
+from novel_forge.schemas import ExternalProviderProofReport, ModelRoute, ModelRouteResolution, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 MODEL_ROUTER_TYPES = {"model_route", "model_route_resolution"}
@@ -478,6 +478,82 @@ def call_model_via_router(
     return result if isinstance(result, dict) else {"text": str(result), "model_route_resolution_path": str(route.get("path", "")), "model_gateway_call": gateway}
 
 
+def record_external_provider_proof(
+    storage: LocalStorage,
+    *,
+    proof_type: str,
+    routed_result: dict[str, Any],
+    adapter: Any | None = None,
+    project_id: str = "",
+    environment: str = "",
+    target_refs: list[str] | None = None,
+    strict: bool = False,
+) -> dict[str, Any]:
+    """Persist auditable evidence that a routed call was a real external provider call.
+
+    This is intentionally stricter than provider route approval. A route can be
+    approved while tests still use a fixture adapter; this proof requires the
+    adapter/result to expose external-call evidence without secrets.
+    """
+
+    gateway = routed_result.get("model_gateway_call", {}) if isinstance(routed_result.get("model_gateway_call", {}), dict) else {}
+    provider = str(gateway.get("provider") or "")
+    provider_policy = gateway.get("provider_policy", {}) if isinstance(gateway.get("provider_policy", {}), dict) else {}
+    approval_evidence = gateway.get("approval_evidence", {}) if isinstance(gateway.get("approval_evidence", {}), dict) else {}
+    external_evidence = _external_provider_evidence(routed_result, adapter)
+    credential_boundary = _credential_boundary(external_evidence)
+    blocking_issues = _external_provider_proof_issues(
+        provider=provider,
+        provider_policy=provider_policy,
+        approval_evidence=approval_evidence,
+        external_evidence=external_evidence,
+        credential_boundary=credential_boundary,
+    )
+    status = "passed" if not blocking_issues else "blocked"
+    proof = ExternalProviderProofReport(
+        title=f"External provider proof {proof_type}",
+        tags=["model-router", "provider-proof", proof_type, status],
+        content={
+            "proof_id": make_id("external_provider_proof_report", f"{proof_type}-{utc_now()}"),
+            "proof_type": proof_type,
+            "status": status,
+            "provider": provider,
+            "model": str(gateway.get("model") or ""),
+            "external_provider_evidence": external_evidence,
+            "credential_boundary": credential_boundary,
+            "provider_policy": provider_policy,
+            "approval_evidence": approval_evidence,
+            "blocking_issues": blocking_issues,
+            "evidence_refs": _dedupe(
+                [
+                    str(routed_result.get("model_route_resolution_path") or ""),
+                    str(gateway.get("model_call_log_path") or ""),
+                    str(gateway.get("runtime_policy_path") or ""),
+                    str(gateway.get("cost_ledger_path") or ""),
+                    *(target_refs or []),
+                ]
+            ),
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "environment": environment, "status": status},
+        references=_dedupe(
+            [
+                str(routed_result.get("model_route_resolution_path") or ""),
+                str(gateway.get("model_call_log_path") or ""),
+                str(gateway.get("runtime_policy_path") or ""),
+                str(gateway.get("cost_ledger_path") or ""),
+                *(target_refs or []),
+            ]
+        ),
+    )
+    written = _write(storage, proof)
+    result = {"status": status, "blocking": bool(blocking_issues), "path": written["path"], "asset": written["asset"], "blocking_issues": blocking_issues}
+    if strict and blocking_issues:
+        dimensions = ", ".join(str(issue.get("dimension") or "") for issue in blocking_issues)
+        raise ValueError(f"external provider proof blocked: {dimensions}")
+    return result
+
+
 def list_model_router_assets(storage: LocalStorage, *, project_id: str | None = None, task_type: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for path in storage.list_json("runs"):
@@ -898,7 +974,86 @@ def _record_model_gateway_audit(
         pass
 
 
-def _write(storage: LocalStorage, asset: ModelRoute | ModelRouteResolution) -> dict[str, Any]:
+def _external_provider_evidence(routed_result: dict[str, Any], adapter: Any | None) -> dict[str, Any]:
+    from_result = routed_result.get("external_provider_evidence", {}) if isinstance(routed_result.get("external_provider_evidence", {}), dict) else {}
+    nested = routed_result.get("provider_evidence", {}) if isinstance(routed_result.get("provider_evidence", {}), dict) else {}
+    from_nested = nested.get("external_provider_evidence", {}) if isinstance(nested.get("external_provider_evidence", {}), dict) else {}
+    from_adapter = getattr(adapter, "external_provider_evidence", {})
+    adapter_payload = from_adapter() if callable(from_adapter) else from_adapter
+    if not isinstance(adapter_payload, dict):
+        adapter_payload = {}
+    return _redact({**adapter_payload, **from_nested, **from_result})
+
+
+def _credential_boundary(evidence: dict[str, Any]) -> dict[str, Any]:
+    credential_ref = str(evidence.get("credential_ref") or evidence.get("credential_env") or evidence.get("token_env") or "")
+    return {
+        "credential_ref": credential_ref,
+        "secret_material_persisted": _contains_secret_material(evidence),
+        "allowed_secret_forms": ["env-var-name", "secret-manager-reference"],
+        "raw_secret_values_allowed": False,
+    }
+
+
+def _external_provider_proof_issues(
+    *,
+    provider: str,
+    provider_policy: dict[str, Any],
+    approval_evidence: dict[str, Any],
+    external_evidence: dict[str, Any],
+    credential_boundary: dict[str, Any],
+) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    provider_name = provider.strip().lower()
+    if provider_name in MOCK_PROVIDER_NAMES:
+        issues.append({"dimension": "external_provider.mock_provider", "severity": "critical", "message": "mock provider cannot satisfy external provider proof"})
+    if provider_policy.get("status") != "passed":
+        issues.append({"dimension": "external_provider.provider_policy", "severity": "critical", "message": "production provider policy must pass"})
+    if not approval_evidence.get("approved"):
+        issues.append({"dimension": "external_provider.approval", "severity": "high", "message": "provider route approval evidence is required"})
+    if not bool(external_evidence.get("external_call")):
+        issues.append({"dimension": "external_provider.external_call", "severity": "critical", "message": "external_call=true evidence is required"})
+    if bool(external_evidence.get("fixture") or external_evidence.get("mock") or external_evidence.get("simulated")):
+        issues.append({"dimension": "external_provider.fixture_denied", "severity": "critical", "message": "fixture/mock/simulated responses cannot satisfy external provider proof"})
+    for key in ["provider_response_id", "endpoint_host", "rate_limit_policy"]:
+        if not external_evidence.get(key):
+            issues.append({"dimension": f"external_provider.{key}", "severity": "high", "message": f"{key} is required for external provider proof"})
+    if not credential_boundary.get("credential_ref"):
+        issues.append({"dimension": "external_provider.credential_ref", "severity": "high", "message": "credential boundary must reference an env var or secret manager key"})
+    if credential_boundary.get("secret_material_persisted"):
+        issues.append({"dimension": "external_provider.secret_material", "severity": "critical", "message": "raw credential material must not be persisted"})
+    return issues
+
+
+def _redact(value: Any) -> Any:
+    if isinstance(value, dict):
+        result = {}
+        for key, item in value.items():
+            lowered = str(key).lower()
+            result[key] = "[redacted]" if any(token in lowered for token in ["secret", "token", "api_key", "password", "authorization"]) and lowered not in {"token_env"} else _redact(item)
+        return result
+    if isinstance(value, list):
+        return [_redact(item) for item in value]
+    return value
+
+
+def _contains_secret_material(value: Any) -> bool:
+    text = json.dumps(value, ensure_ascii=False, sort_keys=True).lower()
+    return any(marker in text for marker in ["sk-", "bearer ", "api_key=", "authorization:"])
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        item = str(value or "").strip()
+        if item and item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
+
+
+def _write(storage: LocalStorage, asset: Any) -> dict[str, Any]:
     errors = validate_common_fields(asset.to_dict())
     if errors:
         raise ValueError("; ".join(errors))

@@ -198,9 +198,10 @@ def run_provider_quality_judge(
     envelope: dict[str, Any] | None = None,
     provider_runtime_guard: dict[str, Any] | None = None,
     allow_mock_fixture: bool = False,
+    require_external_provider_proof: bool = False,
     persist_issues: bool = True,
 ) -> dict[str, Any]:
-    from novel_forge.modules.model_router import call_model_via_router
+    from novel_forge.modules.model_router import call_model_via_router, record_external_provider_proof
 
     if suite_type not in QUALITY_SUITE_REPORTS:
         raise ValueError(f"unsupported quality suite type: {suite_type}")
@@ -250,6 +251,21 @@ def run_provider_quality_judge(
     if recommendation not in {"ready", "needs_revision", "blocked"}:
         recommendation = _recommendation(overall, rubric.get("content", {}))
     provider_evidence = _provider_evidence_from_routed(routed)
+    external_proof = (
+        record_external_provider_proof(
+            storage,
+            proof_type=f"quality_judge:{suite_type}",
+            routed_result=routed,
+            adapter=adapter,
+            project_id=str(env.get("project_id") or ""),
+            environment=str(env.get("environment") or environment or ""),
+            target_refs=_dedupe([str(rubric_path), *[row["path"] for row in target_assets]]),
+            strict=require_external_provider_proof,
+        )
+        if require_external_provider_proof
+        else {"status": "not_required", "path": "", "blocking": False}
+    )
+    provider_evidence["external_provider_proof"] = external_proof
     issue_paths: list[str] = []
     scores = [
         {
@@ -310,11 +326,12 @@ def run_provider_quality_judge(
                 "mode": "provider_backed_judge",
                 "does_not_claim_premium_judgment": False,
                 "provider_runtime_evidence_required": True,
+                "external_provider_proof_required": bool(require_external_provider_proof),
                 "provider_judge_required_for_production_release": True,
             },
         },
         metadata={"project_id": str(env.get("project_id") or ""), "suite_type": suite_type, **envelope_asset_metadata(env)},
-        references=_dedupe([str(rubric_path), genre_strategy_pack_path, style_profile_path, *[row["path"] for row in target_assets], *issue_paths, *judge_paths]),
+        references=_dedupe([str(rubric_path), genre_strategy_pack_path, style_profile_path, *[row["path"] for row in target_assets], *issue_paths, *judge_paths, str(external_proof.get("path", ""))]),
     )
     report_path = _write_asset(storage, report)
     revision_task_path = ""
@@ -330,6 +347,7 @@ def run_provider_quality_judge(
         "review_issues": issue_paths,
         "revision_task_path": revision_task_path,
         "provider_evidence": provider_evidence,
+        "external_provider_proof": external_proof,
         "envelope": env,
     }
 

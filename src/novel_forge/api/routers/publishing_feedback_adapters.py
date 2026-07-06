@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.publishing_feedback_adapters import (
+    apply_feedback_mutation_application_chain,
     build_platform_upload_package,
     cluster_platform_comments,
     create_feedback_mutation_proposal,
@@ -27,6 +28,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     PlatformCommentsClusterRequest = models["PlatformCommentsClusterRequest"]
     FeedbackMutationProposalRequest = models["FeedbackMutationProposalRequest"]
     FeedbackMutationResolveRequest = models["FeedbackMutationResolveRequest"]
+    FeedbackMutationApplyRequest = models["FeedbackMutationApplyRequest"]
 
     @router.post("/product/publishing-adapters/upload-package")
     def upload_package_endpoint(request: PlatformUploadPackageRequest) -> dict:
@@ -130,6 +132,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 actor=request.actor,
                 decision_note=request.decision_note,
                 create_application_chain=request.create_application_chain,
+                environment=request.environment,
+                envelope=request.envelope or None,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/feedback-adapters/mutation-proposal/apply")
+    def mutation_proposal_apply_endpoint(request: FeedbackMutationApplyRequest) -> dict:
+        try:
+            return apply_feedback_mutation_application_chain(
+                LocalStorage(app_settings.root),
+                proposal_ref=request.proposal_ref,
+                apply_invalidation=request.apply_invalidation,
+                actor=request.actor,
                 environment=request.environment,
                 envelope=request.envelope or None,
             )

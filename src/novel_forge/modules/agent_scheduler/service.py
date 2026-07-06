@@ -2615,8 +2615,13 @@ def _run_quality_suite_operation(storage: LocalStorage, queue_item: dict[str, An
 
 
 class _FixtureReviewAdapter:
-    def __init__(self, response: dict[str, Any]):
+    def __init__(self, response: dict[str, Any], *, provider_name: str = "fixture-provider", external_provider_evidence: dict[str, Any] | None = None):
         self.response = response
+        self.name = provider_name
+        self.external_provider_evidence = external_provider_evidence or {}
+
+    def generate(self, payload: str, context: dict[str, Any]) -> dict[str, Any]:
+        return self.response
 
     def review(self, payload: str, context: dict[str, Any]) -> dict[str, Any]:
         return self.response
@@ -2627,8 +2632,9 @@ def _run_provider_quality_judge_operation(storage: LocalStorage, queue_item: dic
 
     evidence = _evidence(agent_run)
     target_paths = _string_list(evidence.get("target_paths", [])) or _input_paths(agent_run)
+    _ensure_agent_model_route(storage, evidence, task_type="quality_judge", project_id=_project_id(agent_run), workspace_path=_workspace_path(agent_run))
     fixture_response = evidence.get("fixture_judge_response") if isinstance(evidence.get("fixture_judge_response"), dict) else None
-    adapter = _FixtureReviewAdapter(fixture_response) if fixture_response else None
+    adapter = _adapter_from_agent_evidence(evidence, fixture_response=fixture_response, default_operation="review")
     return run_provider_quality_judge(
         storage,
         suite_type=str(evidence.get("suite_type") or "opening_3"),
@@ -2642,6 +2648,7 @@ def _run_provider_quality_judge_operation(storage: LocalStorage, queue_item: dic
         envelope=_envelope_from_evidence(evidence),
         provider_runtime_guard=evidence.get("provider_runtime_guard") if isinstance(evidence.get("provider_runtime_guard"), dict) else None,
         allow_mock_fixture=bool(evidence.get("allow_mock_fixture", False)),
+        require_external_provider_proof=bool(evidence.get("require_external_provider_proof", False)),
     )
 
 
@@ -2657,10 +2664,81 @@ def _run_quality_gate_operation(storage: LocalStorage, queue_item: dict[str, Any
     )
 
 
+def _ensure_agent_model_route(storage: LocalStorage, evidence: dict[str, Any], *, task_type: str, project_id: str, workspace_path: str) -> None:
+    route = evidence.get("provider_route", {}) if isinstance(evidence.get("provider_route", {}), dict) else {}
+    provider_config = evidence.get("provider_config", {}) if isinstance(evidence.get("provider_config", {}), dict) else {}
+    if not route and not provider_config:
+        return
+    from novel_forge.modules.model_router import create_model_route
+
+    approval = evidence.get("operator_approval", {}) if isinstance(evidence.get("operator_approval", {}), dict) else {}
+    route_allowlist = route.get("production_provider_allowlist")
+    config_allowlist = provider_config.get("production_provider_allowlist")
+    production_provider_allowlist = route_allowlist if isinstance(route_allowlist, list) else config_allowlist if isinstance(config_allowlist, list) else None
+    create_model_route(
+        storage,
+        task_type=str(route.get("task_type") or task_type),
+        provider=str(route.get("provider") or provider_config.get("provider") or "mock"),
+        model_name=str(route.get("model_name") or provider_config.get("model_name") or provider_config.get("model") or "mock-model"),
+        fallbacks=route.get("fallbacks") if isinstance(route.get("fallbacks"), list) else [],
+        selection_rule=str(route.get("selection_rule") or "balanced"),
+        max_cost_per_run=float(route.get("max_cost_per_run") or evidence.get("budget_cap") or provider_config.get("budget_cap") or 0.0),
+        max_latency_ms=int(route.get("max_latency_ms") or provider_config.get("max_latency_ms") or 0),
+        status=str(route.get("status") or "active"),
+        project_id=project_id,
+        workspace_path=workspace_path,
+        environment=str(route.get("environment") or evidence.get("environment") or ""),
+        approval_status=str(route.get("approval_status") or approval.get("status") or ""),
+        approval_id=str(route.get("approval_id") or approval.get("approval_id") or ""),
+        approved_by=str(route.get("approved_by") or approval.get("approved_by") or ""),
+        approval_reason=str(route.get("approval_reason") or approval.get("reason") or ""),
+        production_provider_allowlist=production_provider_allowlist,
+        mock_provider_test_mode=bool(route.get("mock_provider_test_mode") or evidence.get("allow_mock_fixture") or provider_config.get("mock_provider_test_mode")),
+    )
+
+
+def _adapter_from_agent_evidence(evidence: dict[str, Any], *, fixture_response: dict[str, Any] | None, default_operation: str) -> Any | None:
+    provider_config = evidence.get("provider_config", {}) if isinstance(evidence.get("provider_config", {}), dict) else {}
+    provider = str(provider_config.get("provider") or evidence.get("provider") or "").strip().lower()
+    mode = str(evidence.get("mode") or provider_config.get("mode") or ("fixture" if fixture_response else "real")).strip().lower()
+    if fixture_response:
+        if mode == "real" and not evidence.get("allow_mock_fixture"):
+            raise ValueError("fixture provider response requires allow_mock_fixture=true unless mode is fixture")
+        return _FixtureReviewAdapter(
+            fixture_response,
+            provider_name=provider or "fixture-provider",
+            external_provider_evidence=provider_config.get("external_provider_evidence") if isinstance(provider_config.get("external_provider_evidence"), dict) else {},
+        )
+    if mode == "fixture":
+        raise ValueError(f"{default_operation} fixture mode requires fixture response evidence")
+    if not provider:
+        return None
+    from novel_forge.model_adapters import ModelAdapterConfig, PROVIDER_ADAPTERS
+
+    adapter_cls = PROVIDER_ADAPTERS.get(provider)
+    if adapter_cls is None:
+        raise ValueError(f"unsupported provider adapter: {provider}")
+    model_name = str(provider_config.get("model_name") or provider_config.get("model") or "").strip()
+    if model_name:
+        base = adapter_cls.config
+        return adapter_cls(
+            ModelAdapterConfig(
+                provider=base.provider,
+                role=base.role,
+                default_model=model_name,
+                required_env_vars=list(base.required_env_vars),
+                external_api=base.external_api,
+            )
+        )
+    return adapter_cls()
+
+
 def _run_long_chain_proof_operation(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
     from novel_forge.modules.long_chain_proof import run_long_chain_proof
 
     evidence = _evidence(agent_run)
+    _ensure_agent_model_route(storage, evidence, task_type="chapter_draft", project_id=_project_id(agent_run), workspace_path=_workspace_path(agent_run))
+    fixture_response = evidence.get("fixture_chapter_response") if isinstance(evidence.get("fixture_chapter_response"), dict) else None
     return run_long_chain_proof(
         storage,
         project_id=_project_id(agent_run) or str(evidence.get("project_id") or "local-project"),
@@ -2669,6 +2747,9 @@ def _run_long_chain_proof_operation(storage: LocalStorage, queue_item: dict[str,
         environment=str(evidence.get("environment") or ""),
         envelope=_envelope_from_evidence(evidence),
         opt_in_slow_provider=bool(evidence.get("opt_in_slow_provider", False)),
+        provider_adapter=_adapter_from_agent_evidence(evidence, fixture_response=fixture_response, default_operation="generate") if str(evidence.get("mode") or "").startswith("provider_") else None,
+        provider_runtime_guard=evidence.get("provider_runtime_guard") if isinstance(evidence.get("provider_runtime_guard"), dict) else None,
+        require_external_provider_proof=bool(evidence.get("require_external_provider_proof", False)),
     )
 
 

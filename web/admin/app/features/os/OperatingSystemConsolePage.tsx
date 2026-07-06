@@ -11,6 +11,7 @@ import {
   loadAgentDispatchData,
   loadCostDashboardData,
   loadInvalidationData,
+  loadNovelOsCockpitData,
   loadProviderApprovalEvidence,
   loadProviderHardStopEvidence,
   loadRuntimePolicyEnforcement,
@@ -20,6 +21,8 @@ import {
   loadWorkflowRuntimeData,
   previewRollback,
   verifyRollbackResult,
+  type MultiBookProductionReport,
+  type NovelOsCockpitSnapshot,
   type RuntimeCostDashboard,
   type RuntimeTraceTimeline
 } from "./api";
@@ -53,13 +56,15 @@ export function OperatingSystemConsolePage() {
   const [surfaceCoverage, setSurfaceCoverage] = useState<Record<string, unknown>>({});
   const [providerHardStop, setProviderHardStop] = useState<Record<string, unknown>>({});
   const [providerApproval, setProviderApproval] = useState<Record<string, unknown>>({});
+  const [projectCockpit, setProjectCockpit] = useState<NovelOsCockpitSnapshot | null>(null);
+  const [multiBookReport, setMultiBookReport] = useState<MultiBookProductionReport | null>(null);
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [rollbackVerify, setRollbackVerify] = useState<Record<string, unknown> | null>(null);
   const [rollbackCoordination, setRollbackCoordination] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState("");
 
   async function refresh() {
-    const [workflowData, agentData, traceData, costData, invalidationData, policyData, legacyAuditData, surfaceData, hardStopData, approvalData] = await Promise.all([
+    const [workflowData, agentData, traceData, costData, invalidationData, policyData, legacyAuditData, surfaceData, hardStopData, approvalData, cockpitData] = await Promise.all([
       loadWorkflowRuntimeData(),
       loadAgentDispatchData(),
       loadTraceTimelineData(),
@@ -69,7 +74,8 @@ export function OperatingSystemConsolePage() {
       loadRuntimePolicyLegacyAudit(),
       loadRuntimePolicySurfaceCoverage(),
       loadProviderHardStopEvidence(),
-      loadProviderApprovalEvidence()
+      loadProviderApprovalEvidence(),
+      loadNovelOsCockpitData()
     ]);
     setProjects(workflowData[0]);
     setTaskControl(workflowData[1]);
@@ -87,6 +93,8 @@ export function OperatingSystemConsolePage() {
     setSurfaceCoverage(surfaceData);
     setProviderHardStop(hardStopData);
     setProviderApproval(approvalData);
+    setProjectCockpit(cockpitData[0]);
+    setMultiBookReport(cockpitData[1]);
   }
 
   useEffect(() => {
@@ -113,6 +121,17 @@ export function OperatingSystemConsolePage() {
   const rollbackTransactionPaths = rollbackRows.filter((asset) => asset.type === "operation_transaction").map((asset) => asset.path);
   const queued = agentQueue.filter((item) => ["queued", "claimed", "retry_scheduled"].includes(String(item.status || ""))).length;
   const blockedRuns = workflowRuns.filter((run) => Boolean(run.blocked_node_id) || ["blocked", "waiting_human", "failed"].includes(run.status));
+  const cockpitContent = projectCockpit?.asset?.content || {};
+  const cockpit = cockpitContent.cockpit || {};
+  const cockpitThroughput = cockpitContent.throughput || {};
+  const cockpitQuality = cockpitContent.quality || {};
+  const cockpitTaskHealth = cockpitContent.task_health || {};
+  const cockpitAgentHealth = cockpitContent.agent_health || {};
+  const cockpitRisks = cockpit.risk_summary || {};
+  const chapterQueue = cockpit.today_chapter_queue || [];
+  const multiBook = multiBookReport?.asset?.content?.multi_book_scheduler || {};
+  const multiBookRows = multiBook.books || [];
+  const multiBookBudget = multiBook.provider_budget_plan || {};
 
   return (
     <FeatureShell title="Novel Operating System Console" subtitle="Workflow、Agent、KG、Trace、Cost、Invalidation、Rework 的统一运行入口。" eyebrow="OS Runtime">
@@ -130,6 +149,60 @@ export function OperatingSystemConsolePage() {
         <Metric label="Surface" value={String(surfaceCoverage.status || "-")} />
         <Metric label="Hard Stops" value={String(hardStopSummary.covered_hard_stop_dimension_count ?? 0)} />
         <Metric label="Provider Approval" value={String(providerApproval.status || "-")} />
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
+          <PanelHeader title="Project Cockpit" icon={<BookOpenCheck size={18} />} />
+          <div className="summaryBand">
+            <Metric label="State" value={String(cockpit.book_production_state || "-")} />
+            <Metric label="Drafts" value={String(cockpitThroughput.draft_count ?? 0)} />
+            <Metric label="Review" value={String(cockpitThroughput.review_count ?? 0)} />
+            <Metric label="Blocking Issues" value={String(cockpitQuality.blocking_review_issue_count ?? 0)} />
+            <Metric label="Agent Runs" value={String(cockpitAgentHealth.agent_run_count ?? 0)} />
+            <Metric label="Queue Ready/Running" value={String(cockpitTaskHealth.ready_or_running ?? 0)} />
+          </div>
+          <DataTable
+            emptyText="暂无章节队列"
+            columns={["章节计划", "ID", "路径"]}
+            rows={chapterQueue.slice(0, 8).map((row) => [
+              String(row.title || "-"),
+              String(row.id || "-"),
+              <span className="pathText" key={`${String(row.path)}-path`}>{String(row.path || "-")}</span>
+            ])}
+          />
+          <DataTable
+            emptyText="暂无 V7 风险摘要"
+            columns={["维度", "当前证据"]}
+            rows={Object.entries(cockpitRisks).map(([key, value]) => [key, String(value || "-")])}
+          />
+        </div>
+
+        <div className="panel">
+          <PanelHeader title="Production Control" icon={<Activity size={18} />} />
+          <div className="summaryBand">
+            <Metric label="Release" value={String(cockpitQuality.latest_release_status ?? "-")} />
+            <Metric label="Long-chain" value={String(cockpitQuality.latest_long_chain_status ?? "-")} />
+            <Metric label="Books" value={String(multiBookReport?.book_count ?? multiBookRows.length)} />
+            <Metric label="Daily Budget" value={String(multiBookBudget.daily_budget ?? "-")} />
+          </div>
+          <DataTable
+            emptyText="暂无多书调度数据"
+            columns={["Book", "Drafts", "Plans", "Blocking", "Memory"]}
+            rows={multiBookRows.slice(0, 8).map((row) => [
+              String(row.project_id || "-"),
+              String(row.draft_count ?? 0),
+              String(row.chapter_plan_count ?? 0),
+              String(row.blocking_review_issue_count ?? 0),
+              String(row.memory_isolation || "-")
+            ])}
+          />
+          <DataTable
+            emptyText="暂无总控台建议"
+            columns={["下一步"]}
+            rows={((cockpitContent.recommendations as string[] | undefined) || []).map((item) => [item])}
+          />
+        </div>
       </section>
 
       <section className="osConsoleGrid">

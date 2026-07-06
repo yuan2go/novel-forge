@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.agent_runs import list_agent_runs
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, create_budget_policy, scheduler_lease_status
+from novel_forge.modules.publishing_feedback_adapters import create_feedback_mutation_proposal, resolve_feedback_mutation_proposal
 from novel_forge.modules.workflow_nodes import (
     build_ready_node_queue,
     build_workflow_runtime_console,
@@ -1324,6 +1325,51 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertIn("chapter_stability_preflight", registry_operations)
             self.assertIn("quality_score_report", registry_operations)
             self.assertIn("originality_report", registry_operations)
+
+    def test_feedback_mutation_application_processor_executes_approved_chain(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            outline_path = storage.write_asset(
+                "outlines",
+                Outline(title="Outline", content={"project_id": "p1", "volumes": [{"title": "V1"}]}, metadata={"project_id": "p1"}),
+            )
+            proposal = create_feedback_mutation_proposal(
+                storage,
+                source_feedback_paths=["data/feedback/comment-cluster.json"],
+                target_assets=[{"asset_type": "outline", "path": str(outline_path.relative_to(storage.root))}],
+                proposed_changes=[{"domain": "outline", "change": "tighten hook after reader dropoff"}],
+            )
+            resolved = resolve_feedback_mutation_proposal(
+                storage,
+                proposal_ref=proposal["path"],
+                approved=True,
+                actor="lead-editor",
+                decision_note="approved for workflow test",
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Feedback Mutation Application",
+                entry_node_id="apply-feedback",
+                nodes=[
+                    {
+                        "node_id": "apply-feedback",
+                        "node_type": "feedback",
+                        "operation": "feedback_mutation_application",
+                        "output_types": ["feedback_mutation_application_report"],
+                        "processor": {"kind": "service", "proposal_ref": resolved["path"], "apply_invalidation": False},
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"])
+
+            self.assertEqual(result["status"], "completed")
+            output_types = {storage.read_asset(path).type for path in result["workflow_run"]["asset"]["content"]["outputs"]}
+            self.assertIn("feedback_mutation_application_report", output_types)
+            reports = [storage.read_json(path) for path in storage.list_json("feedback") if storage.read_json(path).get("type") == "feedback_mutation_application_report"]
+            self.assertEqual(reports[-1]["content"]["status"], "planned")
+            self.assertTrue(reports[-1]["content"]["regeneration_tasks"])
 
 
 def _run_asset_types(storage: LocalStorage) -> set[str]:

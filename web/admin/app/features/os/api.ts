@@ -44,6 +44,42 @@ export type RuntimeCostDashboard = {
   };
 };
 
+export type NovelOsCockpitSnapshot = {
+  path?: string;
+  asset?: {
+    content?: {
+      project_id?: string;
+      throughput?: Record<string, unknown>;
+      quality?: Record<string, unknown>;
+      task_health?: Record<string, unknown>;
+      agent_health?: Record<string, unknown>;
+      recommendations?: string[];
+      cockpit?: {
+        book_production_state?: string;
+        today_chapter_queue?: Array<Record<string, unknown>>;
+        risk_summary?: Record<string, unknown>;
+        rollback_recovery_entry?: string;
+      };
+    };
+  };
+  summary?: Record<string, unknown>;
+};
+
+export type MultiBookProductionReport = {
+  path?: string;
+  book_count?: number;
+  asset?: {
+    content?: {
+      multi_book_scheduler?: {
+        books?: Array<Record<string, unknown>>;
+        provider_budget_plan?: Record<string, unknown>;
+      };
+      quality?: Record<string, unknown>;
+      agent_health?: Record<string, unknown>;
+    };
+  };
+};
+
 export type AgentOperationContracts = {
   contracts: Array<Record<string, unknown>>;
 };
@@ -157,6 +193,15 @@ export function loadWorkflowRuntimeConsole(payload: {
   if (payload.workflow_run_path_or_id) params.set("workflow_run_path_or_id", payload.workflow_run_path_or_id);
   for (const path of payload.input_assets || []) params.append("input_assets", path);
   return fetchJson<Record<string, unknown>>(`/product/workflow/runtime-console?${params.toString()}`);
+}
+
+export function loadNovelOsCockpitData(projectId?: string) {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  return Promise.all([
+    fetchJson<NovelOsCockpitSnapshot>(`/product/os/cockpit/project?${params.toString()}`),
+    fetchJson<MultiBookProductionReport>("/product/os/cockpit/multi-book")
+  ]);
 }
 
 export function executeWorkflow(payload: { workflow_path_or_id: string; input_assets?: string[]; max_nodes?: number; execute_agents?: boolean; workspace_path?: string }) {

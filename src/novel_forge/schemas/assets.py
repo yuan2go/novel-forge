@@ -1219,6 +1219,16 @@ class ModelJudgeResult(BaseAsset):
 
 
 @dataclass
+class ExternalProviderProofReport(BaseAsset):
+    type: str = "external_provider_proof_report"
+
+
+@dataclass
+class ContentQualityLoopReport(BaseAsset):
+    type: str = "content_quality_loop_report"
+
+
+@dataclass
 class HumanAnnotation(BaseAsset):
     type: str = "human_annotation"
 
@@ -1231,6 +1241,21 @@ class LongChainRun(BaseAsset):
 @dataclass
 class LongChainCheckpoint(BaseAsset):
     type: str = "long_chain_checkpoint"
+
+
+@dataclass
+class CanonStateMachineSnapshot(BaseAsset):
+    type: str = "canon_state_machine_snapshot"
+
+
+@dataclass
+class CanonStateMachineDiffReport(BaseAsset):
+    type: str = "canon_state_machine_diff_report"
+
+
+@dataclass
+class CanonStateMachineLedger(BaseAsset):
+    type: str = "canon_state_machine_ledger"
 
 
 @dataclass
@@ -1301,6 +1326,16 @@ class ChapterDropoffReport(BaseAsset):
 @dataclass
 class FeedbackPlanMutationProposal(BaseAsset):
     type: str = "feedback_plan_mutation_proposal"
+
+
+@dataclass
+class FeedbackMutationApplicationReport(BaseAsset):
+    type: str = "feedback_mutation_application_report"
+
+
+@dataclass
+class FeedbackMutationPatch(BaseAsset):
+    type: str = "feedback_mutation_patch"
 
 
 SCHEMA_CLASSES = {
@@ -1547,9 +1582,14 @@ SCHEMA_CLASSES = {
         Longform100Report,
         QualityRegressionReport,
         ModelJudgeResult,
+        ExternalProviderProofReport,
+        ContentQualityLoopReport,
         HumanAnnotation,
         LongChainRun,
         LongChainCheckpoint,
+        CanonStateMachineSnapshot,
+        CanonStateMachineDiffReport,
+        CanonStateMachineLedger,
         LongChainFailureReport,
         ChapterQualityTrend,
         CanonConflictTrend,
@@ -1564,6 +1604,8 @@ SCHEMA_CLASSES = {
         CommentClusterReport,
         ChapterDropoffReport,
         FeedbackPlanMutationProposal,
+        FeedbackMutationApplicationReport,
+        FeedbackMutationPatch,
     ]
 }
 

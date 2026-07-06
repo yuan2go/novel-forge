@@ -9,8 +9,11 @@ from novel_forge.modules.publishing_feedback_adapters import (
     build_platform_upload_package,
     cluster_platform_comments,
     create_feedback_mutation_proposal,
+    fanqie_manual_adapter,
     import_platform_metrics,
+    apply_feedback_mutation_application_chain,
     publish_platform_upload_package,
+    qidian_manual_adapter,
     record_platform_receipt,
     resolve_feedback_mutation_proposal,
 )
@@ -129,6 +132,24 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
             self.assertTrue(content["application_chain"]["regeneration_task"]["requires_re_review"])
             self.assertNotEqual(resolved["path"], proposal["path"])
 
+            application = apply_feedback_mutation_application_chain(
+                storage,
+                proposal_ref=resolved["path"],
+                apply_invalidation=False,
+                actor="workflow",
+            )
+
+            app_content = application["asset"]["content"]
+            self.assertEqual(application["asset"]["type"], "feedback_mutation_application_report")
+            self.assertEqual(app_content["status"], "planned")
+            self.assertFalse(app_content["silent_mutation_allowed"])
+            self.assertTrue(app_content["regeneration_tasks"])
+            self.assertTrue(app_content["re_review_required"])
+            self.assertTrue(app_content["patch_artifacts"])
+            patch = storage.read_json(storage.root / app_content["patch_artifacts"][0]["path"])
+            self.assertEqual(patch["type"], "feedback_mutation_patch")
+            self.assertEqual(patch["content"]["status"], "needs_review")
+
     def test_comment_cluster_can_persist_review_issue_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -144,6 +165,52 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
             issue = storage.read_json(storage.root / result["review_issues"][0])
             self.assertEqual(issue["type"], "review_issue")
             self.assertEqual(issue["content"]["issue_type"], "feedback_mutation_risk")
+
+    def test_platform_specific_upload_profile_and_embedding_feedback_clusters(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            release = ReleasePackage(
+                title="release",
+                content={
+                    "target_asset_id": "draft-1",
+                    "publish_gate_report_id": "gate-1",
+                    "title_candidates": ["好看的书"],
+                    "summary": "简介",
+                    "tags": ["悬疑"],
+                    "channel": "manual",
+                    "status": "ready",
+                    "chapters": [{"title": "第一章", "body": "正文"}],
+                },
+                metadata={"project_id": "p1"},
+            )
+            release_path = storage.write_asset_auto(release)
+
+            fanqie = build_platform_upload_package(storage, release_package_path=release_path, platform_id="fanqie")
+            qidian = build_platform_upload_package(storage, release_package_path=release_path, platform_id="qidian", book_metadata={"title": "好看的书", "synopsis": "简介", "volume_title": "第一卷", "cover_status": "not_required"})
+            comments = cluster_platform_comments(
+                storage,
+                platform_id="fanqie",
+                comments=[
+                    {"text": "第二章节奏太慢", "embedding": [1.0, 0.0, 0.0]},
+                    {"text": "这里有点水，想弃书", "embedding": [0.98, 0.02, 0.0]},
+                    {"text": "反转刺激", "embedding": [0.0, 1.0, 0.0]},
+                ],
+            )
+
+            self.assertTrue(fanqie["asset"]["content"]["platform_profile"]["specific_adapter"])
+            self.assertEqual(fanqie["asset"]["content"]["platform_profile"]["rules_version"], "fanqie-manual-2026-07")
+            self.assertEqual(fanqie["asset"]["content"]["manual_adapter_contract"]["adapter_id"], "fanqie_manual_adapter")
+            self.assertIn("chapter_format_report", fanqie["asset"]["content"])
+            self.assertIn("sensitive_terms", fanqie["asset"]["content"]["platform_profile"]["review_risk_gate"])
+            self.assertEqual(qidian["asset"]["content"]["platform_profile"]["package_shape"], "volume_chapter_package")
+            self.assertTrue(qidian["asset"]["content"]["checklist"]["volume_present"])
+            self.assertEqual(comments["asset"]["content"]["embedding_mode"], "provided_embeddings")
+            self.assertTrue(any(cluster["size"] == 2 for cluster in comments["asset"]["content"]["embedding_clusters"]))
+
+            fanqie_wrapper = fanqie_manual_adapter(storage, release_package_path=release_path)
+            qidian_wrapper = qidian_manual_adapter(storage, release_package_path=release_path, book_metadata={"volume_title": "第一卷"})
+            self.assertEqual(fanqie_wrapper["asset"]["content"]["manual_adapter_contract"]["adapter_id"], "fanqie_manual_adapter")
+            self.assertEqual(qidian_wrapper["asset"]["content"]["manual_adapter_contract"]["adapter_id"], "qidian_manual_adapter")
 
     def test_platform_api_adapter_records_receipt_without_persisting_secret(self):
         with tempfile.TemporaryDirectory() as tmp:

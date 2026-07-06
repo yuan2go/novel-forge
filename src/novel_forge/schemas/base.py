@@ -623,6 +623,8 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "longform_100_report": ["report_id", "suite_id", "target_asset_ids", "overall_score", "scores", "recommendation", "review_issue_paths"],
     "quality_regression_report": ["suite_id", "case_count", "passed_count", "failed_count", "score_delta", "blocked_assets", "recommendation"],
     "model_judge_result": ["judge_id", "target_asset_id", "rubric_id", "scores", "recommendation", "provider_evidence"],
+    "external_provider_proof_report": ["proof_id", "proof_type", "status", "external_provider_evidence", "credential_boundary", "evidence_refs"],
+    "content_quality_loop_report": ["loop_id", "target_asset_id", "stage", "status", "steps", "evidence_paths", "blocking_issues"],
     "human_annotation": ["annotation_id", "target_asset_id", "rubric_id", "scores", "annotator", "recommendation"],
     "tool_definition": ["tool_id", "name", "tool_kind", "input_schema", "output_schema", "status"],
     "tool_invocation": ["invocation_id", "tool_id", "status", "input", "output", "created_at"],
@@ -661,6 +663,9 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "long_chain_checkpoint": ["checkpoint_id", "run_id", "chapter_no", "coverage", "resume_token", "rollback_refs"],
     "long_chain_acceptance_report": ["run_id", "chapter_count", "checks", "quality_trends", "canon_conflicts", "publish_gate_summary", "recommendation"],
     "long_chain_failure_report": ["failure_id", "run_id", "chapter_no", "failure_type", "message", "recovery_instruction"],
+    "canon_state_machine_snapshot": ["snapshot_id", "project_id", "machines", "source_report_paths", "status"],
+    "canon_state_machine_diff_report": ["diff_id", "status", "before_snapshot_id", "after_snapshot_id", "added_machines", "removed_machines", "changed_machines"],
+    "canon_state_machine_ledger": ["ledger_id", "project_id", "entries", "source_report_path", "status"],
     "chapter_quality_trend": ["trend_id", "run_id", "points", "summary"],
     "canon_conflict_trend": ["trend_id", "run_id", "points", "summary"],
     "style_drift_trend": ["trend_id", "run_id", "points", "summary"],
@@ -674,6 +679,8 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "comment_cluster_report": ["report_id", "source_comment_batch_id", "clusters", "pain_points", "pleasure_points", "character_heat", "dropoff_reasons"],
     "chapter_dropoff_report": ["report_id", "platform_metric_snapshot_id", "dropoff_points", "risk_level", "recommendations"],
     "feedback_plan_mutation_proposal": ["proposal_id", "source_feedback_paths", "target_assets", "proposed_changes", "risk_assessment", "human_gate"],
+    "feedback_mutation_application_report": ["application_id", "proposal_id", "status", "patch_plan", "invalidation_results", "regeneration_tasks", "re_review_required"],
+    "feedback_mutation_patch": ["patch_id", "proposal_id", "domain", "status", "target_assets", "proposed_changes", "human_gate"],
 }
 
 TOP_LEVEL_REQUIRED_FIELDS: dict[str, list[str]] = {

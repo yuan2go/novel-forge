@@ -114,6 +114,8 @@ WORKFLOW_SERVICE_OPERATIONS = {
     "platform_metric_import": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["import-platform-metrics", "import_platform_metrics"]},
     "comment_cluster": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["cluster-platform-comments", "cluster_platform_comments"]},
     "feedback_mutation_proposal": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["create-feedback-mutation-proposal", "create_feedback_mutation_proposal"]},
+    "feedback_mutation_resolution": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "operation_state", "aliases": ["resolve-feedback-mutation-proposal", "resolve_feedback_mutation_proposal"]},
+    "feedback_mutation_application": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "operation_state", "aliases": ["apply-feedback-mutation-application-chain", "apply_feedback_mutation_application_chain"]},
 }
 
 
@@ -4222,8 +4224,10 @@ def _execute_registered_service_processor_impl(
         from novel_forge.modules.quality_eval import run_provider_quality_judge
 
         class _ProcessorReviewAdapter:
-            def __init__(self, response: dict[str, Any]):
+            def __init__(self, response: dict[str, Any], evidence: dict[str, Any] | None = None):
                 self.response = response
+                self.name = "workflow-fixture-provider"
+                self.external_provider_evidence = evidence or {}
 
             def review(self, payload: str, context: dict[str, Any]) -> dict[str, Any]:
                 return self.response
@@ -4234,7 +4238,7 @@ def _execute_registered_service_processor_impl(
             suite_type=str(processor.get("suite_type") or "opening_3"),
             target_paths=[str(item) for item in processor.get("target_paths", [])] if isinstance(processor.get("target_paths"), list) else input_assets,
             rubric_path=str(processor.get("rubric_path") or ""),
-            adapter=_ProcessorReviewAdapter(fixture_response) if fixture_response else None,
+            adapter=_ProcessorReviewAdapter(fixture_response, processor.get("external_provider_evidence") if isinstance(processor.get("external_provider_evidence"), dict) else None) if fixture_response else None,
             genre_strategy_pack_path=str(processor.get("genre_strategy_pack_path") or ""),
             style_profile_path=str(processor.get("style_profile_path") or ""),
             platform_id=str(processor.get("platform_id") or "local"),
@@ -4242,6 +4246,7 @@ def _execute_registered_service_processor_impl(
             envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
             provider_runtime_guard=processor.get("provider_runtime_guard") if isinstance(processor.get("provider_runtime_guard"), dict) else None,
             allow_mock_fixture=bool(processor.get("allow_mock_fixture", False)),
+            require_external_provider_proof=bool(processor.get("require_external_provider_proof", False)),
         )
         return _service_success(storage, operation, result)
     if operation in {"quality_gate", "run-quality-gate", "run_quality_gate"}:
@@ -4257,6 +4262,16 @@ def _execute_registered_service_processor_impl(
     if operation in {"long_chain_proof_run", "run-long-chain-proof", "run_long_chain_proof"}:
         from novel_forge.modules.long_chain_proof import run_long_chain_proof
 
+        class _ProcessorGenerateAdapter:
+            def __init__(self, response: dict[str, Any], evidence: dict[str, Any] | None = None):
+                self.response = response
+                self.name = "workflow-fixture-provider"
+                self.external_provider_evidence = evidence or {}
+
+            def generate(self, payload: str, context: dict[str, Any]) -> dict[str, Any]:
+                return self.response
+
+        fixture_response = processor.get("fixture_chapter_response") if isinstance(processor.get("fixture_chapter_response"), dict) else None
         result = run_long_chain_proof(
             storage,
             project_id=str(processor.get("project_id") or "local-project"),
@@ -4265,6 +4280,9 @@ def _execute_registered_service_processor_impl(
             environment=str(processor.get("environment") or ""),
             envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
             opt_in_slow_provider=bool(processor.get("opt_in_slow_provider", False)),
+            provider_adapter=_ProcessorGenerateAdapter(fixture_response, processor.get("external_provider_evidence") if isinstance(processor.get("external_provider_evidence"), dict) else None) if fixture_response else None,
+            provider_runtime_guard=processor.get("provider_runtime_guard") if isinstance(processor.get("provider_runtime_guard"), dict) else None,
+            require_external_provider_proof=bool(processor.get("require_external_provider_proof", False)),
         )
         return _service_success(storage, operation, result)
     if operation in {"platform_upload_package", "build-platform-upload-package", "build_platform_upload_package"}:
@@ -4339,6 +4357,32 @@ def _execute_registered_service_processor_impl(
             source_feedback_paths=[str(item) for item in processor.get("source_feedback_paths", [])] if isinstance(processor.get("source_feedback_paths"), list) else input_assets,
             target_assets=processor.get("target_assets") if isinstance(processor.get("target_assets"), list) else [],
             proposed_changes=processor.get("proposed_changes") if isinstance(processor.get("proposed_changes"), list) else [],
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"feedback_mutation_resolution", "resolve-feedback-mutation-proposal", "resolve_feedback_mutation_proposal"}:
+        from novel_forge.modules.publishing_feedback_adapters import resolve_feedback_mutation_proposal
+
+        result = resolve_feedback_mutation_proposal(
+            storage,
+            proposal_ref=_processor_path(processor, input_assets, "proposal_ref"),
+            approved=bool(processor.get("approved", False)),
+            actor=str(processor.get("actor") or "workflow"),
+            decision_note=str(processor.get("decision_note") or ""),
+            create_application_chain=bool(processor.get("create_application_chain", True)),
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"feedback_mutation_application", "apply-feedback-mutation-application-chain", "apply_feedback_mutation_application_chain"}:
+        from novel_forge.modules.publishing_feedback_adapters import apply_feedback_mutation_application_chain
+
+        result = apply_feedback_mutation_application_chain(
+            storage,
+            proposal_ref=_processor_path(processor, input_assets, "proposal_ref"),
+            apply_invalidation=bool(processor.get("apply_invalidation", True)),
+            actor=str(processor.get("actor") or "workflow"),
             environment=str(processor.get("environment") or ""),
             envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
         )

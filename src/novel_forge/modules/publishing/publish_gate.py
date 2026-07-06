@@ -8,6 +8,7 @@ from novel_forge.core.ids import utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
+from novel_forge.modules.content_intelligence_governance import platform_upload_checklist_for_release, release_content_intelligence_gate
 from novel_forge.modules.longform_stability import create_revision_task_from_gate, evaluate_longform_stability_gate
 from novel_forge.modules.mkaos import list_risk_knowledge
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment, normalize_runtime_request_policy
@@ -110,6 +111,26 @@ def create_publish_gate_report(
     platform_strategy_gate = platform_strategy_gate_summary(storage, context, project_id=str(project.get("project_id", "")), required=production_policy)
     gate_data["gates"]["platform_strategy_gate_passed"] = not platform_strategy_gate["blocking"]
     gate_data["blocking_issues"].extend(platform_strategy_gate["blocking_issues"])
+    target_content = target.content if isinstance(target.content, dict) else {}
+    project_config = context.get("project_config", {}) if isinstance(context.get("project_config", {}), dict) else {}
+    upload_checklist = platform_upload_checklist_for_release(
+        title=target.title,
+        summary=str(target_content.get("summary") or target_content.get("synopsis") or ""),
+        text=str(target_content.get("text") or target_content.get("body") or ""),
+        channel=str(project.get("target_platform") or project_config.get("target_platform") or "manual"),
+        cover={"required": False},
+    )
+    content_intelligence_gate = release_content_intelligence_gate(
+        storage,
+        target_asset_id=target.id,
+        target_asset_path=path,
+        project_id=str(project.get("project_id", "")),
+        workspace_path=str(project.get("workspace_path", "")),
+        platform_upload_checklist=upload_checklist,
+        required=production_policy,
+    )
+    gate_data["gates"]["content_intelligence_gate_passed"] = not content_intelligence_gate["blocking"]
+    gate_data["blocking_issues"].extend(content_intelligence_gate["blocking_issues"])
     blocking = gate_data["blocking_issues"]
     decision = "ready"
     if any(issue.get("severity") in {"high", "critical"} for issue in blocking):
@@ -136,6 +157,11 @@ def create_publish_gate_report(
             "evaluation_gate": evaluation_gate,
             "provider_runtime_gate": provider_runtime_gate,
             "platform_strategy_gate": platform_strategy_gate,
+            "content_intelligence_gate": {
+                "status": content_intelligence_gate["status"],
+                "blocking": content_intelligence_gate["blocking"],
+                "path": "",
+            },
         },
         source_policy=resolved_source_policy,
         evidence_refs=[
@@ -143,6 +169,7 @@ def create_publish_gate_report(
             str(publish_context.get("path", "")),
             str(evaluation_gate.get("path", "")),
             str(platform_strategy_gate.get("platform_strategy_pack_path", "")),
+            *[str(item) for item in content_intelligence_gate.get("evidence_refs", [])],
         ],
         rollback_plan={
             "rollback_action": "do_not_create_release_package",
@@ -172,6 +199,8 @@ def create_publish_gate_report(
             "evaluation_gate": evaluation_gate,
             "provider_runtime_gate": provider_runtime_gate,
             "platform_strategy_gate": platform_strategy_gate,
+            "content_intelligence_gate": content_intelligence_gate,
+            "platform_upload_checklist": upload_checklist,
             "production_governance": {
                 "status": production_governance["status"],
                 "path": production_governance["path"],
@@ -204,7 +233,7 @@ def create_publish_gate_report(
         references=filter_project_safe_references(
             storage,
             str(project.get("project_id", "")),
-            dedupe([target.id, asset_id(audit), str(publish_context.get("path", "")), *context.get("profile_references", [])]),
+                dedupe([target.id, asset_id(audit), str(publish_context.get("path", "")), *content_intelligence_gate.get("evidence_refs", []), *context.get("profile_references", [])]),
         ),
     )
     with AgentExecutionContext(

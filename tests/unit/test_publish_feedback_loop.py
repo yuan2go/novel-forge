@@ -210,15 +210,16 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             self.assertEqual(package.metadata["os_envelope"]["environment"], "production")
             self.assertEqual(package.metadata["os_envelope"]["asset_type"], "release_package")
 
-    def test_release_package_blocks_ready_gate_without_v7_content_intelligence_evidence(self):
+    def test_publish_gate_blocks_without_v7_content_intelligence_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
             storage.ensure_layout()
             fixture = create_production_ready_release_inputs(storage, include_v7=False)
             gate = storage.read_asset(fixture["publish_gate_path"])
 
-            self.assertEqual(gate.content["decision"], "ready", gate.content["blocking_issues"])
-            with self.assertRaisesRegex(ValueError, "content_intelligence"):
+            self.assertEqual(gate.content["decision"], "blocked")
+            self.assertTrue(any(issue["dimension"] == "content_intelligence.genre_strategy" for issue in gate.content["blocking_issues"]))
+            with self.assertRaisesRegex(ValueError, "publish gate decision"):
                 create_release_package(
                     storage,
                     fixture["draft_path"],

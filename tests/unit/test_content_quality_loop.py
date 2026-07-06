@@ -1,0 +1,117 @@
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+
+from novel_forge.modules.content_quality_loop import run_content_quality_loop
+from novel_forge.modules.genre_os import build_genre_strategy_pack
+from novel_forge.modules.style_os import build_style_profile, extract_style_fingerprint, ingest_style_sample
+from novel_forge.schemas import DraftChapter
+from novel_forge.storage.local import LocalStorage
+
+
+class ContentQualityLoopTests(unittest.TestCase):
+    def test_draft_quality_loop_runs_v7_gates_and_attaches_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            build_genre_strategy_pack(storage, genre="mystery", subgenre="police_procedural", project_id="p1")
+            sample = ingest_style_sample(
+                storage,
+                project_id="p1",
+                sample_text=("异常现场出现后，侦探先确认目标，再让证据和嫌疑关系同时推进。危险逼近，但每次反转都有代价。 " * 8),
+                rights={"license": "project-owned", "allowed_usage": "style_parameter_extraction"},
+            )
+            fingerprint = extract_style_fingerprint(storage, sample_path=sample["path"])
+            profile = build_style_profile(storage, fingerprint_path=fingerprint["path"])
+            draft = DraftChapter(
+                title="Ready mystery draft",
+                content={
+                    "chapter": 1,
+                    "text": ("异常现场留下第一条误导线索，侦探检查指纹证据，嫌疑人的关系和动机同时推进。"
+                             "主角必须在危险逼近前证伪假设，新的真相钩子指向下一章。 " * 32),
+                    "copyright_boundary": "original fixture",
+                },
+                metadata={"project_id": "p1"},
+            )
+            draft_path = storage.write_asset_auto(draft)
+
+            result = run_content_quality_loop(
+                storage,
+                target_path=draft_path,
+                stage="draft",
+                genre_strategy_pack_path="",
+                style_profile_path=profile["style_profile_path"],
+                platform_id="local",
+            )
+
+            self.assertEqual(result["asset"]["type"], "content_quality_loop_report")
+            self.assertIn(result["status"], {"passed", "passed_with_warnings"})
+            step_names = [step["name"] for step in result["asset"]["content"]["steps"]]
+            self.assertEqual(
+                step_names,
+                [
+                    "genre_risk_gate",
+                    "style_drift_gate",
+                    "canon_graph_plugin_gate",
+                    "quality_rubric_pack",
+                    "quality_suite",
+                    "provider_quality_judge",
+                    "quality_gate",
+                ],
+            )
+            self.assertTrue(result["asset"]["content"]["evidence_paths"])
+            updated = storage.read_json(draft_path)
+            self.assertEqual(updated["metadata"]["content_quality_loop_path"], result["path"])
+            self.assertEqual(updated["content"]["content_quality_loop"]["path"], result["path"])
+
+    def test_production_quality_loop_blocks_missing_provider_judge(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            build_genre_strategy_pack(storage, genre="mystery", project_id="p1", environment="production", envelope=_envelope("genre_strategy", "genre_strategy_pack", "trace-genre"))
+            sample = ingest_style_sample(
+                storage,
+                project_id="p1",
+                sample_text=("异常现场、证据、嫌疑关系和真相钩子持续推进。 " * 20),
+                rights={"license": "project-owned", "allowed_usage": "style_parameter_extraction"},
+                environment="production",
+                envelope=_envelope("style_ingestion", "style_sample", "trace-style-sample", raw_allowed=True),
+            )
+            fingerprint = extract_style_fingerprint(storage, sample_path=sample["path"], environment="production", envelope=_envelope("style_fingerprint", "style_fingerprint", "trace-style-fp"))
+            profile = build_style_profile(storage, fingerprint_path=fingerprint["path"], environment="production", envelope=_envelope("style_profile", "style_profile", "trace-style-profile"))
+            draft = DraftChapter(
+                title="Production draft",
+                content={"chapter": 1, "text": ("异常现场和证据链推进，嫌疑关系制造冲突，真相钩子持续压迫。 " * 30), "copyright_boundary": "original fixture"},
+                metadata={"project_id": "p1"},
+            )
+            draft_path = storage.write_asset_auto(draft)
+
+            result = run_content_quality_loop(
+                storage,
+                target_path=draft_path,
+                stage="draft",
+                style_profile_path=profile["style_profile_path"],
+                environment="production",
+                envelope=_envelope("content_quality_loop", "content_quality_loop_report", "trace-content-quality-loop"),
+            )
+
+            self.assertEqual(result["status"], "blocked")
+            self.assertTrue(any(issue["dimension"] == "content_quality_loop.provider_quality_judge" for issue in result["asset"]["content"]["blocking_issues"]))
+
+
+def _envelope(task_type: str, asset_type: str, trace_id: str, *, raw_allowed: bool = False) -> dict:
+    return {
+        "project_id": "p1",
+        "task_type": task_type,
+        "asset_type": asset_type,
+        "actor_type": "service",
+        "source": "test",
+        "trace_id": trace_id,
+        "source_policy": {"raw_source_text_allowed": raw_allowed, "generation_rag_allowed": False},
+        "environment": "production",
+    }
+
+
+if __name__ == "__main__":
+    unittest.main()

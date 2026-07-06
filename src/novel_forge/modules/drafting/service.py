@@ -6,6 +6,7 @@ from typing import Any
 from novel_forge.agents import agent_runtime_profile, enforce_agent_action
 from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.content_quality_loop import run_content_quality_loop
 from novel_forge.modules.content_intelligence_governance import content_intelligence_preflight_gate
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.context_builder import build_flow_context_bundle, create_context_build_plan, create_context_bundle, knowledge_context_contract_from_pack, knowledge_context_contract_metadata
@@ -41,6 +42,9 @@ def draft(
     os_envelope: dict[str, Any] | None = None,
     source_policy: dict[str, Any] | None = None,
     provider_runtime_gate: dict[str, Any] | None = None,
+    post_quality_loop: bool = True,
+    post_quality_loop_provider_adapter: Any | None = None,
+    require_external_provider_proof: bool = False,
 ) -> Path:
     agent_profile = agent_runtime_profile("draft")
     model = model or model_from_env("draft")
@@ -337,8 +341,58 @@ def draft(
             content["longform_stability_artifacts"] = longform_artifacts
             data["content"] = content
             storage.write_json(path, data)
-        agent_run.succeed(output_assets=[path, draft_version.get("path", ""), generation_run.get("path", "")], token_used=len(draft_text))
+        quality_loop: dict[str, Any] = {}
+        production = is_production_environment(environment or (os_envelope or {}).get("environment"))
+        if _should_run_draft_quality_loop(post_quality_loop=post_quality_loop, production=production, project_id=project_id, content_intelligence=content_intelligence):
+            quality_loop = run_content_quality_loop(
+                storage,
+                target_path=path,
+                stage="draft",
+                platform_id=str(project_config.get("target_platform") or "local"),
+                provider_adapter=post_quality_loop_provider_adapter,
+                provider_runtime_guard=provider_runtime_gate,
+                allow_mock_fixture=not production,
+                require_external_provider_proof=require_external_provider_proof,
+                environment=environment,
+                envelope=os_envelope,
+                persist_issues=True,
+            )
+            if quality_loop.get("blocking") and production:
+                raise ValueError(f"draft post-quality loop blocked production output: {quality_loop.get('path')}")
+        elif post_quality_loop:
+            _mark_draft_quality_loop_deferred(storage, path, reason="local draft has no project-scoped V7 genre/style evidence")
+        output_assets = [path, draft_version.get("path", ""), generation_run.get("path", "")]
+        if quality_loop.get("path"):
+            output_assets.append(quality_loop["path"])
+        agent_run.succeed(output_assets=output_assets, token_used=len(draft_text))
         return path
+
+
+def _should_run_draft_quality_loop(*, post_quality_loop: bool, production: bool, project_id: str, content_intelligence: dict[str, Any]) -> bool:
+    if not post_quality_loop:
+        return False
+    if production:
+        return True
+    statuses = content_intelligence.get("gate_statuses", {}) if isinstance(content_intelligence.get("gate_statuses", {}), dict) else {}
+    genre = statuses.get("genre_strategy", {}) if isinstance(statuses.get("genre_strategy", {}), dict) else {}
+    style = statuses.get("style_policy", {}) if isinstance(statuses.get("style_policy", {}), dict) else {}
+    return bool(project_id and genre.get("status") != "missing" and style.get("status") != "missing")
+
+
+def _mark_draft_quality_loop_deferred(storage: LocalStorage, path: Path, *, reason: str) -> None:
+    data = storage.read_json(path)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    marker = {
+        "status": "deferred",
+        "reason": reason,
+        "required_next_stage": "attach_project_genre_style_evidence_then_run_content_quality_loop",
+    }
+    content["content_quality_loop"] = marker
+    metadata["content_quality_loop_status"] = "deferred"
+    data["content"] = content
+    data["metadata"] = metadata
+    storage.write_json(path, data)
 
 
 def _checked_model_generate(agent_profile: dict, model: ModelAdapter, prompt: str, context: dict) -> dict:

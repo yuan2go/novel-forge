@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.canon_graph import run_canon_graph_plugin
+from novel_forge.modules.canon_graph import build_canon_state_machine_snapshot, diff_canon_state_machine, query_canon_state_machine, run_canon_graph_plugin
 from novel_forge.schemas import DraftChapter, PowerScaleRule
 from novel_forge.storage.local import LocalStorage
 
@@ -40,6 +40,11 @@ class CanonGraphPluginTests(unittest.TestCase):
             )
             self.assertTrue(state_machine["rollback_rebuild_contract"]["requires_rebuild_after_rollback"])
             self.assertTrue(result["review_issues"])
+            self.assertTrue(result["state_machine_ledger_path"])
+            ledger = storage.read_json(storage.root / result["state_machine_ledger_path"])
+            self.assertEqual(ledger["type"], "canon_state_machine_ledger")
+            self.assertEqual(ledger["content"]["status"], "blocked")
+            self.assertEqual(ledger["content"]["entries"][0]["machine"], "PowerScaleGraph")
 
     def test_all_plugins_have_schema_backed_pass_report(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -79,6 +84,43 @@ class CanonGraphPluginTests(unittest.TestCase):
                 ["EvidenceChainGraph", "SuspectMatrix", "RevealSchedule"],
             )
             self.assertTrue(all(machine["state"] == "observed" for machine in state_machine["machines"]))
+
+    def test_canon_state_machine_snapshot_query_and_diff_are_schema_backed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            run_canon_graph_plugin(
+                storage,
+                {
+                    "plugin": "mystery_evidence_chain_engine",
+                    "artifact_text": "侦探检查指纹证据，重新排列嫌疑人的动机，并把真相揭示留到下一章。",
+                    "project_id": "p1",
+                    "target_asset_id": "draft-1",
+                    "persist_issues": False,
+                },
+            )
+            before = build_canon_state_machine_snapshot(storage, {"project_id": "p1"})
+            run_canon_graph_plugin(
+                storage,
+                {
+                    "plugin": "mystery_evidence_chain_engine",
+                    "artifact_text": "新增关键证据凭空出现，读者没有线索。",
+                    "project_id": "p1",
+                    "target_asset_id": "draft-1",
+                    "persist_issues": False,
+                },
+            )
+            after = build_canon_state_machine_snapshot(storage, {"project_id": "p1"})
+
+            query = query_canon_state_machine(storage, {"snapshot_path": after["path"], "domain": "mystery", "machine": "EvidenceChainGraph"})
+            diff = diff_canon_state_machine(storage, {"before_snapshot_path": before["path"], "after_snapshot_path": after["path"]})
+
+            self.assertEqual(before["asset"]["type"], "canon_state_machine_snapshot")
+            self.assertTrue(before["asset"]["content"]["source_ledger_paths"])
+            self.assertEqual(query["match_count"], 1)
+            self.assertEqual(query["matches"][0]["machine"], "EvidenceChainGraph")
+            self.assertEqual(diff["asset"]["type"], "canon_state_machine_diff_report")
+            self.assertEqual(diff["status"], "changed")
+            self.assertTrue(diff["asset"]["content"]["changed_machines"])
 
 
 if __name__ == "__main__":

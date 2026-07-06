@@ -279,6 +279,8 @@ def _ready_draft(storage: LocalStorage, *, project_id: str, workspace_path: str)
             title="Chapter 1",
             content={
                 "chapter": 1,
+                "summary": "阿照在夜档司旧库追查桥南隐税卷，发现旧税筹与师父旧名相连，下一步必须独自去井口验灰。",
+                "synopsis": "阿照在夜档司旧库追查桥南隐税卷，发现旧税筹与师父旧名相连。",
                 "text": "阿照为了确认桥南隐税卷，必须在夜档司旧库里重新排账。因为陶主簿把旧竹筹藏进铺牌，所以她先把纸灯下的账页排成三列，但第三列却全都指向同一枚旧印。这个线索证明旧城隐税机制仍在运转，也让陶主簿想逼夜档司承接旧债的目标暴露。阿照决定不立刻摊牌，她选择留下半枚税筹作饵，代价是明夜必须独自去井口验灰。她刚锁上账册，井口忽然传来第二声钟，她发现半枚税筹背面还刻着师父的旧名。",
                 "rag_quality_gate": {
                     "report_path": str(rag_path.relative_to(storage.root)),

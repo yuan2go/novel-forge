@@ -14,6 +14,9 @@ from novel_forge.modules.review_issue import persist_issue_candidates
 from novel_forge.schemas import (
     BaseAsset,
     CanonGraphSnapshot,
+    CanonStateMachineDiffReport,
+    CanonStateMachineLedger,
+    CanonStateMachineSnapshot,
     FantasyPowerScaleReport,
     HistoricalFactionNetworkReport,
     HorrorRuleContaminationReport,
@@ -430,6 +433,20 @@ def run_canon_graph_plugin(storage: LocalStorage, payload: dict[str, Any]) -> di
     if errors:
         raise ValueError("; ".join(errors))
     report_path = storage.write_asset_auto(report)
+    ledger = append_canon_state_machine_ledger(
+        storage,
+        {
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "source_report_path": _display_path(storage.root, report_path),
+            "plugin": plugin,
+            "target_asset_id": target_asset_id or "unknown-target",
+            "target_asset_type": target_asset_type or "artifact",
+            "target_asset_path": target_path,
+            "chapter_no": chapter_no,
+            "genre_state_machine": state_machine,
+        },
+    )
     return {
         "status": "blocked" if blocking_count else "passed",
         "path": _display_path(storage.root, report_path),
@@ -437,7 +454,144 @@ def run_canon_graph_plugin(storage: LocalStorage, payload: dict[str, Any]) -> di
         "conflicts": conflicts,
         "review_issues": issue_paths,
         "graph_summary": graph["summary"],
+        "state_machine_ledger_path": ledger["path"],
     }
+
+
+def append_canon_state_machine_ledger(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    state_machine = payload.get("genre_state_machine", {}) if isinstance(payload.get("genre_state_machine", {}), dict) else {}
+    project_id = str(payload.get("project_id") or "local-system")
+    workspace_path = str(payload.get("workspace_path") or "")
+    entries = _state_machine_entries_from_projection(
+        state_machine,
+        plugin=str(payload.get("plugin") or ""),
+        target_asset_id=str(payload.get("target_asset_id") or ""),
+        target_asset_type=str(payload.get("target_asset_type") or ""),
+        target_asset_path=str(payload.get("target_asset_path") or ""),
+        chapter_no=payload.get("chapter_no", 0),
+        source_report_path=str(payload.get("source_report_path") or ""),
+    )
+    status = "blocked" if str(state_machine.get("status") or "") == "blocked" else "ready" if entries else "empty"
+    ledger = CanonStateMachineLedger(
+        title="Canon state machine ledger",
+        tags=["canon-graph", "state-machine", "ledger", status],
+        content={
+            "ledger_id": make_id("canon_state_machine_ledger", f"{project_id or workspace_path or 'global'}-{utc_now()}"),
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "entries": entries,
+            "entry_count": len(entries),
+            "source_report_path": str(payload.get("source_report_path") or ""),
+            "status": status,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "status": status},
+        references=_dedupe([str(payload.get("source_report_path") or "")]),
+    )
+    errors = validate_common_fields(ledger.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset_auto(ledger)
+    return {"status": status, "path": _display_path(storage.root, path), "asset": storage.read_json(path), "entry_count": len(entries)}
+
+
+def build_canon_state_machine_snapshot(storage: LocalStorage, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = payload or {}
+    project_id = str(payload.get("project_id") or "").strip()
+    workspace_path = str(payload.get("workspace_path") or "").strip()
+    source_reports = _canon_state_machine_reports(storage, project_id=project_id, workspace_path=workspace_path)
+    source_ledgers = _canon_state_machine_ledgers(storage, project_id=project_id, workspace_path=workspace_path)
+    machines = _dedupe_state_machine_rows([*_flatten_state_machines(source_reports), *_flatten_state_machine_ledgers(source_ledgers)])
+    status = "ready" if machines else "empty"
+    snapshot = CanonStateMachineSnapshot(
+        title="Canon state machine snapshot",
+        tags=["canon-graph", "state-machine", status],
+        content={
+            "snapshot_id": make_id("canon_state_machine_snapshot", f"{project_id or workspace_path or 'global'}-{utc_now()}"),
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "machines": machines,
+            "machine_count": len(machines),
+            "source_report_paths": [row["path"] for row in source_reports],
+            "source_ledger_paths": [row["path"] for row in source_ledgers],
+            "status": status,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "status": status},
+        references=[*[row["path"] for row in source_reports], *[row["path"] for row in source_ledgers]],
+    )
+    errors = validate_common_fields(snapshot.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset_auto(snapshot)
+    return {"status": status, "path": _display_path(storage.root, path), "asset": storage.read_json(path), "machine_count": len(machines)}
+
+
+def query_canon_state_machine(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    snapshot_ref = str(payload.get("snapshot_path") or payload.get("snapshot_ref") or "").strip()
+    snapshot = _load_state_machine_snapshot(storage, snapshot_ref) if snapshot_ref else build_canon_state_machine_snapshot(storage, payload)["asset"]
+    content = snapshot.get("content", {}) if isinstance(snapshot.get("content", {}), dict) else {}
+    machines = content.get("machines", []) if isinstance(content.get("machines", []), list) else []
+    domain = str(payload.get("domain") or "").strip()
+    machine_name = str(payload.get("machine") or payload.get("machine_name") or "").strip()
+    state = str(payload.get("state") or "").strip()
+    rows = []
+    for machine in machines:
+        if domain and str(machine.get("domain") or "") != domain:
+            continue
+        if machine_name and str(machine.get("machine") or "") != machine_name:
+            continue
+        if state and str(machine.get("state") or "") != state:
+            continue
+        rows.append(machine)
+    return {
+        "status": "ready",
+        "snapshot_id": content.get("snapshot_id", ""),
+        "query": {"domain": domain, "machine": machine_name, "state": state},
+        "matches": rows,
+        "match_count": len(rows),
+        "machine_count": len(machines),
+    }
+
+
+def diff_canon_state_machine(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    before = _load_state_machine_snapshot(storage, str(payload.get("before_snapshot_path") or payload.get("baseline_snapshot_path") or ""))
+    after = _load_state_machine_snapshot(storage, str(payload.get("after_snapshot_path") or payload.get("candidate_snapshot_path") or ""))
+    before_content = before.get("content", {}) if isinstance(before.get("content", {}), dict) else {}
+    after_content = after.get("content", {}) if isinstance(after.get("content", {}), dict) else {}
+    before_rows = {_machine_key(row): row for row in before_content.get("machines", []) if isinstance(row, dict)}
+    after_rows = {_machine_key(row): row for row in after_content.get("machines", []) if isinstance(row, dict)}
+    added = [after_rows[key] for key in sorted(set(after_rows) - set(before_rows))]
+    removed = [before_rows[key] for key in sorted(set(before_rows) - set(after_rows))]
+    changed = []
+    for key in sorted(set(before_rows) & set(after_rows)):
+        before_public = _machine_public(before_rows[key])
+        after_public = _machine_public(after_rows[key])
+        if before_public != after_public:
+            changed.append({"machine_key": key, "before": before_public, "after": after_public})
+    status = "changed" if added or removed or changed else "unchanged"
+    diff = CanonStateMachineDiffReport(
+        title="Canon state machine diff",
+        tags=["canon-graph", "state-machine", "diff", status],
+        content={
+            "diff_id": make_id("canon_state_machine_diff_report", f"{before_content.get('snapshot_id', '')}->{after_content.get('snapshot_id', '')}"),
+            "status": status,
+            "before_snapshot_id": before_content.get("snapshot_id", ""),
+            "after_snapshot_id": after_content.get("snapshot_id", ""),
+            "added_machines": added,
+            "removed_machines": removed,
+            "changed_machines": changed,
+            "summary": {"added": len(added), "removed": len(removed), "changed": len(changed)},
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": str(payload.get("project_id") or after.get("metadata", {}).get("project_id") or before.get("metadata", {}).get("project_id") or ""), "status": status},
+        references=_dedupe([str(payload.get("before_snapshot_path") or payload.get("baseline_snapshot_path") or ""), str(payload.get("after_snapshot_path") or payload.get("candidate_snapshot_path") or "")]),
+    )
+    errors = validate_common_fields(diff.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset_auto(diff)
+    return {"status": status, "path": _display_path(storage.root, path), "asset": storage.read_json(path), "summary": diff.content["summary"]}
 
 
 def diff_canon_graph(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -1835,6 +1989,160 @@ def _resolve_asset_by_type(storage: LocalStorage, value: str | Path, asset_type:
         if str(data.get("id", "")) == str(value) or str(content.get("approval_id", "")) == str(value):
             return path
     raise FileNotFoundError(f"{asset_type} not found: {value}")
+
+
+def _canon_state_machine_reports(storage: LocalStorage, *, project_id: str, workspace_path: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    report_types = {cls().type for cls in CANON_PLUGIN_REPORTS.values()}
+    for path in storage.list_json("continuity"):
+        data = _read_json_safe(storage, path)
+        if data.get("type") not in report_types:
+            continue
+        if not _project_matches(data, project_id=project_id or None, workspace_path=workspace_path or None):
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if not isinstance(content.get("genre_state_machine", {}), dict):
+            continue
+        rows.append({**data, "path": _display_path(storage.root, path)})
+    return sorted(rows, key=lambda row: str(row.get("updated_at") or row.get("created_at") or ""))
+
+
+def _canon_state_machine_ledgers(storage: LocalStorage, *, project_id: str, workspace_path: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in storage.list_json("continuity"):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != "canon_state_machine_ledger":
+            continue
+        if not _project_matches(data, project_id=project_id or None, workspace_path=workspace_path or None):
+            continue
+        rows.append({**data, "path": _display_path(storage.root, path)})
+    return sorted(rows, key=lambda row: str(row.get("updated_at") or row.get("created_at") or ""))
+
+
+def _flatten_state_machines(source_reports: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows_by_key: dict[str, dict[str, Any]] = {}
+    for report in source_reports:
+        content = report.get("content", {}) if isinstance(report.get("content", {}), dict) else {}
+        state_machine = content.get("genre_state_machine", {}) if isinstance(content.get("genre_state_machine", {}), dict) else {}
+        machines = state_machine.get("machines", []) if isinstance(state_machine.get("machines", []), list) else []
+        for machine in machines:
+            if not isinstance(machine, dict):
+                continue
+            row = {
+                "state_key": _machine_key(
+                    {
+                        "domain": state_machine.get("domain", ""),
+                        "plugin": state_machine.get("plugin", content.get("plugin", "")),
+                        "target_asset_id": content.get("target_asset_id", ""),
+                        "chapter_no": state_machine.get("chapter_no", content.get("chapter_no", "")),
+                        "machine": machine.get("machine", ""),
+                    }
+                ),
+                "domain": str(state_machine.get("domain") or ""),
+                "plugin": str(state_machine.get("plugin") or content.get("plugin") or ""),
+                "machine": str(machine.get("machine") or ""),
+                "state": str(machine.get("state") or ""),
+                "target_asset_id": str(content.get("target_asset_id") or ""),
+                "chapter_no": state_machine.get("chapter_no", content.get("chapter_no", "")),
+                "observed_signals": machine.get("observed_signals", []) if isinstance(machine.get("observed_signals", []), list) else [],
+                "blocking_signals": state_machine.get("blocking_signals", []) if isinstance(state_machine.get("blocking_signals", []), list) else [],
+                "transition": machine.get("transition", {}) if isinstance(machine.get("transition", {}), dict) else {},
+                "source_report_path": str(report.get("path") or ""),
+                "status": state_machine.get("status", ""),
+            }
+            rows_by_key[row["state_key"]] = row
+    return [rows_by_key[key] for key in sorted(rows_by_key)]
+
+
+def _flatten_state_machine_ledgers(source_ledgers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for ledger in source_ledgers:
+        content = ledger.get("content", {}) if isinstance(ledger.get("content", {}), dict) else {}
+        for entry in content.get("entries", []) if isinstance(content.get("entries", []), list) else []:
+            if not isinstance(entry, dict):
+                continue
+            rows.append({**entry, "source_ledger_path": str(ledger.get("path") or "")})
+    return rows
+
+
+def _dedupe_state_machine_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows_by_key = {str(row.get("state_key") or _machine_key(row)): row for row in rows if isinstance(row, dict)}
+    return [rows_by_key[key] for key in sorted(rows_by_key)]
+
+
+def _state_machine_entries_from_projection(
+    state_machine: dict[str, Any],
+    *,
+    plugin: str,
+    target_asset_id: str,
+    target_asset_type: str,
+    target_asset_path: str,
+    chapter_no: Any,
+    source_report_path: str,
+) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    machines = state_machine.get("machines", []) if isinstance(state_machine.get("machines", []), list) else []
+    for machine in machines:
+        if not isinstance(machine, dict):
+            continue
+        row = {
+            "domain": str(state_machine.get("domain") or ""),
+            "plugin": str(plugin or state_machine.get("plugin") or ""),
+            "machine": str(machine.get("machine") or ""),
+            "state": str(machine.get("state") or ""),
+            "target_asset_id": target_asset_id,
+            "target_asset_type": target_asset_type,
+            "target_asset_path": target_asset_path,
+            "chapter_no": state_machine.get("chapter_no", chapter_no),
+            "observed_signals": machine.get("observed_signals", []) if isinstance(machine.get("observed_signals", []), list) else [],
+            "blocking_signals": state_machine.get("blocking_signals", []) if isinstance(state_machine.get("blocking_signals", []), list) else [],
+            "transition": machine.get("transition", {}) if isinstance(machine.get("transition", {}), dict) else {},
+            "source_report_path": source_report_path,
+            "status": str(state_machine.get("status") or ""),
+            "created_at": utc_now(),
+        }
+        row["state_key"] = _machine_key(row)
+        entries.append(row)
+    return entries
+
+
+def _load_state_machine_snapshot(storage: LocalStorage, ref: str) -> dict[str, Any]:
+    if not ref:
+        raise ValueError("state machine snapshot ref is required")
+    direct = resolve_path(storage.root, ref)
+    if direct.exists():
+        data = storage.read_json(direct)
+        if data.get("type") == "canon_state_machine_snapshot":
+            return data
+    for path in reversed(storage.list_json("continuity")):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != "canon_state_machine_snapshot":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if ref in {str(data.get("id", "")), str(content.get("snapshot_id", "")), _display_path(storage.root, path)}:
+            return data
+    raise FileNotFoundError(f"canon state machine snapshot not found: {ref}")
+
+
+def _machine_key(row: dict[str, Any]) -> str:
+    return "|".join(
+        [
+            str(row.get("domain") or ""),
+            str(row.get("plugin") or ""),
+            str(row.get("target_asset_id") or ""),
+            str(row.get("chapter_no") or ""),
+            str(row.get("machine") or ""),
+        ]
+    )
+
+
+def _machine_public(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "state": row.get("state", ""),
+        "observed_signals": row.get("observed_signals", []),
+        "blocking_signals": row.get("blocking_signals", []),
+        "status": row.get("status", ""),
+    }
 
 
 def _dedupe(values: list[str]) -> list[str]:

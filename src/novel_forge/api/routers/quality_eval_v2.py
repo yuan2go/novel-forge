@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
+from novel_forge.api.provider_adapters import adapter_from_provider_payload, ensure_model_route_from_payload
 from novel_forge.api.routers.context import ProductRouterContext
-from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_quality_gate, run_quality_suite
+from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
 from novel_forge.storage.local import LocalStorage
 
 
@@ -15,6 +16,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     QualityRubricPackRequest = models["QualityRubricPackRequest"]
     QualitySuiteRunRequest = models["QualitySuiteRunRequest"]
     QualityGateRunRequest = models["QualityGateRunRequest"]
+    ProviderQualityJudgeRequest = models["ProviderQualityJudgeRequest"]
 
     @router.post("/product/quality/rubric-pack")
     def quality_rubric_pack_endpoint(request: QualityRubricPackRequest) -> dict:
@@ -59,6 +61,49 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 environment=request.environment,
                 envelope=request.envelope or None,
             )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/quality/provider-judge")
+    def provider_quality_judge_endpoint(request: ProviderQualityJudgeRequest) -> dict:
+        storage = LocalStorage(app_settings.root)
+        payload = request.model_dump()
+        try:
+            route = ensure_model_route_from_payload(
+                storage,
+                task_type="quality_judge",
+                payload=payload,
+                project_id=str((request.envelope or {}).get("project_id") or ""),
+                environment=request.environment,
+            )
+            adapter = adapter_from_provider_payload(
+                {
+                    **payload,
+                    "fixture_response": request.fixture_judge_response or None,
+                    "allow_mock_fixture": request.allow_mock_fixture,
+                },
+                default_operation="review",
+            )
+            result = run_provider_quality_judge(
+                storage,
+                suite_type=request.suite_type,
+                target_paths=request.target_paths,
+                rubric_path=request.rubric_path,
+                adapter=adapter,
+                genre_strategy_pack_path=request.genre_strategy_pack_path,
+                style_profile_path=request.style_profile_path,
+                platform_id=request.platform_id,
+                environment=request.environment,
+                envelope=request.envelope or None,
+                provider_runtime_guard=request.provider_runtime_guard or None,
+                allow_mock_fixture=request.allow_mock_fixture,
+                require_external_provider_proof=request.require_external_provider_proof,
+            )
+            if route:
+                result["model_route_path"] = route["path"]
+            return result
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
