@@ -21,6 +21,7 @@ from novel_forge.modules.source_intake import (
     list_source_policies,
     plan_source_connector_execution,
     plan_source_diff_repair,
+    rollback_source_diff_repair,
     run_source_connector,
 )
 from novel_forge.modules.permission_center import resolve_approval_request
@@ -510,6 +511,35 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertEqual(stale["metadata"]["asset_status"], "stale")
             self.assertFalse(stale["metadata"]["use_in_generation_rag"])
             self.assertIn("approved_pending_dispatch", task_statuses)
+
+            rollback_blocked = rollback_source_diff_repair(storage, {"rollback_plan_path": applied["rollback_plan"]["path"], "project_id": "source-p6"})
+            self.assertEqual(rollback_blocked["status"], "approval_required")
+            self.assertEqual(storage.read_json(knowledge_path)["metadata"]["asset_status"], "stale")
+            rollback_approval_path = rollback_blocked["approval_request"]["path"]
+            resolve_approval_request(storage, rollback_approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve rollback"})
+            rollback_ready = rollback_source_diff_repair(
+                storage,
+                {"rollback_plan_path": applied["rollback_plan"]["path"], "approval_request_path": rollback_approval_path, "project_id": "source-p6"},
+            )
+            self.assertEqual(rollback_ready["status"], "ready_for_confirm")
+            rolled_back = rollback_source_diff_repair(
+                storage,
+                {
+                    "rollback_plan_path": applied["rollback_plan"]["path"],
+                    "approval_request_path": rollback_approval_path,
+                    "confirm_rollback": True,
+                    "actor": "unit-test",
+                    "project_id": "source-p6",
+                },
+            )
+            restored = storage.read_json(knowledge_path)
+            restored_task_statuses = {storage.read_json(storage.root / path)["content"]["status"] for path in plan["asset"]["content"]["agent_task_paths"]}
+            self.assertEqual(rolled_back["status"], "applied")
+            self.assertTrue(rolled_back["rollback_applied"])
+            self.assertEqual(rolled_back["rollback_result"]["asset"]["type"], "rollback_result")
+            self.assertEqual(restored["metadata"]["asset_status"], "active")
+            self.assertTrue(restored["metadata"]["use_in_generation_rag"])
+            self.assertIn("needs_review", restored_task_statuses)
 
     def test_source_connector_runner_executes_approved_local_file_in_sandbox(self):
         with tempfile.TemporaryDirectory() as tmp:

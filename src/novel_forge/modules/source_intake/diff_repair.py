@@ -7,7 +7,7 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.source_intake.service import _asset_ref, _dedupe, _display_path, _metadata_value, _resolve_governance_asset, _short_ref_key, _strings
-from novel_forge.schemas import ChangeImpactReport, RollbackPlan, validate_common_fields
+from novel_forge.schemas import ChangeImpactReport, RollbackPlan, RollbackResult, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 
@@ -182,7 +182,7 @@ def apply_source_diff_repair(storage: LocalStorage, payload: dict[str, Any]) -> 
         approval_path=str(approval.get("path") or payload.get("approval_request_path") or payload.get("approval_request_ref") or ""),
         actor=str(payload.get("actor") or "operator"),
     )
-    task_updates = _mark_source_diff_agent_tasks_dispatch_ready(
+    task_updates, task_rollback_actions = _mark_source_diff_agent_tasks_dispatch_ready(
         storage,
         content.get("agent_task_paths", []) if isinstance(content.get("agent_task_paths", []), list) else [],
         approval_path=str(approval.get("path") or payload.get("approval_request_path") or payload.get("approval_request_ref") or ""),
@@ -192,7 +192,7 @@ def apply_source_diff_repair(storage: LocalStorage, payload: dict[str, Any]) -> 
         report,
         report_path=_display_path(storage.root, report_path),
         approval_path=str(approval.get("path") or payload.get("approval_request_path") or payload.get("approval_request_ref") or ""),
-        actions=rollback_actions,
+        actions=[*rollback_actions, *task_rollback_actions],
         project_id=project_id,
         workspace_path=workspace_path,
     )
@@ -228,6 +228,74 @@ def apply_source_diff_repair(storage: LocalStorage, payload: dict[str, Any]) -> 
         "errors": errors,
         "mutation_applied": bool(updated_assets),
         "dispatch_applied": False,
+    }
+
+
+def rollback_source_diff_repair(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    plan_path = resolve_path(storage.root, payload.get("rollback_plan_path") or payload.get("plan_path"))
+    plan = storage.read_json(plan_path)
+    if not isinstance(plan, dict) or plan.get("type") != "rollback_plan":
+        raise ValueError("rollback_plan_path must point to a rollback_plan asset")
+    content = plan.get("content", {}) if isinstance(plan.get("content", {}), dict) else {}
+    project_id = str(payload.get("project_id") or _metadata_value(plan, "project_id") or "")
+    workspace_path = str(payload.get("workspace_path") or _metadata_value(plan, "workspace_path") or "")
+    approval = _source_diff_rollback_approval(storage, payload, plan_path, plan, project_id=project_id, workspace_path=workspace_path)
+    approval_status = _approval_status(approval)
+    if approval_status != "approved":
+        return {
+            "status": "approval_required",
+            "rollback_plan_path": _display_path(storage.root, plan_path),
+            "approval_request": approval,
+            "applied_actions": [],
+            "rollback_result": {},
+            "rollback_applied": False,
+            "reason": "source diff repair rollback requires approved ApprovalRequest",
+        }
+    if not bool(payload.get("confirm_rollback")):
+        return {
+            "status": "ready_for_confirm",
+            "rollback_plan_path": _display_path(storage.root, plan_path),
+            "approval_request": approval,
+            "applied_actions": [],
+            "rollback_result": {},
+            "rollback_applied": False,
+            "reason": "approved rollback requires confirm_rollback=true",
+        }
+    actions = content.get("actions", []) if isinstance(content.get("actions", []), list) else []
+    applied_actions, errors = _apply_source_diff_rollback_actions(storage, actions, actor=str(payload.get("actor") or "operator"))
+    status = "failed" if errors else "applied"
+    result = _write_source_diff_rollback_result(
+        storage,
+        plan,
+        plan_path=_display_path(storage.root, plan_path),
+        status=status,
+        applied_actions=applied_actions,
+        errors=errors,
+        approval_path=str(approval.get("path") or payload.get("approval_request_path") or payload.get("approval_request_ref") or ""),
+        project_id=project_id,
+        workspace_path=workspace_path,
+    )
+    content["rollback_status"] = status
+    content["rollback_result_path"] = result.get("path", "")
+    content["rolled_back_at"] = utc_now()
+    plan["content"] = content
+    metadata = plan.get("metadata", {}) if isinstance(plan.get("metadata", {}), dict) else {}
+    metadata["asset_status"] = status
+    plan["metadata"] = metadata
+    plan["updated_at"] = utc_now()
+    validation_errors = validate_common_fields(plan)
+    if validation_errors:
+        raise ValueError("; ".join(validation_errors))
+    storage.write_json(plan_path, plan)
+    return {
+        "status": status,
+        "rollback_plan_path": _display_path(storage.root, plan_path),
+        "approval_request": approval,
+        "applied_actions": applied_actions,
+        "errors": errors,
+        "rollback_result": result,
+        "rollback_applied": bool(applied_actions) and not errors,
     }
 
 
@@ -367,8 +435,137 @@ def _apply_source_diff_stale_marks(
     return updated, rollback_actions, errors
 
 
-def _mark_source_diff_agent_tasks_dispatch_ready(storage: LocalStorage, task_paths: list[Any], *, approval_path: str) -> list[dict[str, Any]]:
+def _source_diff_rollback_approval(
+    storage: LocalStorage,
+    payload: dict[str, Any],
+    plan_path: Path,
+    plan: dict[str, Any],
+    *,
+    project_id: str,
+    workspace_path: str,
+) -> dict[str, Any]:
+    approval_ref = str(payload.get("approval_request_path") or payload.get("approval_request_ref") or "").strip()
+    if approval_ref:
+        approval = _read_approval_request(storage, approval_ref)
+        if approval:
+            return approval
+    from novel_forge.modules.permission_center import create_approval_request
+
+    content = plan.get("content", {}) if isinstance(plan.get("content", {}), dict) else {}
+    target_refs = [str(action.get("target_path") or "") for action in content.get("actions", []) if isinstance(action, dict)]
+    return create_approval_request(
+        storage,
+        {
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "scope": "source",
+            "action": "approve_source_diff_repair_rollback",
+            "environment": str(payload.get("environment") or "local"),
+            "risk_level": "high" if target_refs else "medium",
+            "blocking": True,
+            "target_type": "rollback_plan",
+            "target_id": f"source-diff-rollback-{_short_ref_key(str(plan.get('id') or ''))}",
+            "target_path": _display_path(storage.root, plan_path),
+            "target_refs": target_refs,
+            "evidence_refs": _dedupe([_display_path(storage.root, plan_path), str(content.get("source_diff_repair_report_path") or ""), *_strings(payload.get("evidence_refs"))]),
+            "reason": "Rollback source diff repair stale marking and dispatch-ready task state",
+            "required_before": ["source_diff_repair_rollback"],
+            "rollback_plan": {
+                "available": False,
+                "strategy": "manual_reapply_source_diff_repair_if_rollback_was_incorrect",
+                "requires_operator_review": True,
+            },
+        },
+    )
+
+
+def _apply_source_diff_rollback_actions(storage: LocalStorage, actions: list[dict[str, Any]], *, actor: str) -> tuple[list[dict[str, Any]], list[str]]:
+    applied: list[dict[str, Any]] = []
+    errors: list[str] = []
+    for action in actions:
+        if not isinstance(action, dict):
+            continue
+        action_type = str(action.get("action") or "")
+        path_ref = str(action.get("target_path") or "")
+        if not path_ref:
+            continue
+        try:
+            path = resolve_path(storage.root, path_ref)
+            data = storage.read_json(path)
+            if not isinstance(data, dict):
+                raise ValueError("rollback target is not a JSON object")
+            if action_type == "restore_asset_metadata":
+                data["metadata"] = dict(action.get("before_metadata", {}) if isinstance(action.get("before_metadata", {}), dict) else {})
+            elif action_type == "restore_agent_task_state":
+                content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+                before_content = action.get("before_content", {}) if isinstance(action.get("before_content", {}), dict) else {}
+                content["status"] = str(before_content.get("status") or content.get("status") or "needs_review")
+                content["evidence"] = before_content.get("evidence", {}) if isinstance(before_content.get("evidence", {}), dict) else {}
+                content["updated_at"] = utc_now()
+                data["content"] = content
+                data["metadata"] = dict(action.get("before_metadata", {}) if isinstance(action.get("before_metadata", {}), dict) else {})
+            else:
+                raise ValueError(f"unsupported rollback action: {action_type}")
+            metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            metadata["source_diff_rollback_at"] = utc_now()
+            metadata["source_diff_rollback_actor"] = actor
+            data["metadata"] = metadata
+            data["updated_at"] = utc_now()
+            validation_errors = validate_common_fields(data)
+            if validation_errors:
+                raise ValueError("; ".join(validation_errors))
+            storage.write_json(path, data)
+            applied.append({"action": action_type, "target_path": path_ref, "status": "applied"})
+        except (OSError, TypeError, ValueError) as exc:
+            errors.append(f"{path_ref}: {exc}")
+    return applied, errors
+
+
+def _write_source_diff_rollback_result(
+    storage: LocalStorage,
+    plan: dict[str, Any],
+    *,
+    plan_path: str,
+    status: str,
+    applied_actions: list[dict[str, Any]],
+    errors: list[str],
+    approval_path: str,
+    project_id: str,
+    workspace_path: str,
+) -> dict[str, Any]:
+    content = plan.get("content", {}) if isinstance(plan.get("content", {}), dict) else {}
+    result_id = make_id("rollback_result", f"{content.get('plan_id', plan.get('id', ''))}:{status}:{utc_now()}")
+    result_content = {
+        "result_id": result_id,
+        "plan_id": str(content.get("plan_id") or plan.get("id") or ""),
+        "transaction_id": str(content.get("transaction_id") or ""),
+        "status": status,
+        "applied_actions": applied_actions,
+        "errors": errors,
+        "approval_request_path": approval_path,
+        "created_at": utc_now(),
+        "raw_source_text_included": False,
+    }
+    asset = RollbackResult(
+        id=result_id,
+        title=f"Source diff repair rollback {status}",
+        source=str(content.get("plan_id") or plan.get("id") or ""),
+        tags=["source-governance", "source-diff", "rollback-result", status],
+        content=result_content,
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "asset_status": status, "use_in_generation_rag": False},
+        references=_dedupe([plan_path, approval_path, *[str(item.get("target_path") or "") for item in applied_actions]]),
+    )
+    data = asset.to_dict()
+    validation_errors = validate_common_fields(data)
+    if validation_errors:
+        raise ValueError("; ".join(validation_errors))
+    path = storage.write_asset_auto(asset)
+    return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
+
+
+def _mark_source_diff_agent_tasks_dispatch_ready(storage: LocalStorage, task_paths: list[Any], *, approval_path: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     updates: list[dict[str, Any]] = []
+    rollback_actions: list[dict[str, Any]] = []
     for item in task_paths:
         path_ref = str(item or "").strip()
         if not path_ref:
@@ -379,6 +576,8 @@ def _mark_source_diff_agent_tasks_dispatch_ready(storage: LocalStorage, task_pat
             if not isinstance(data, dict) or data.get("type") != "agent_task":
                 raise ValueError("task path does not point to an agent_task")
             content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            before_content = {"status": content.get("status", ""), "evidence": content.get("evidence", {}) if isinstance(content.get("evidence", {}), dict) else {}}
+            before_metadata = dict(data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {})
             evidence = content.get("evidence", {}) if isinstance(content.get("evidence", {}), dict) else {}
             evidence.update(
                 {
@@ -403,9 +602,18 @@ def _mark_source_diff_agent_tasks_dispatch_ready(storage: LocalStorage, task_pat
                 raise ValueError("; ".join(validation_errors))
             storage.write_json(path, data)
             updates.append({"path": path_ref, "status": "approved_pending_dispatch", "dispatch_applied": False})
+            rollback_actions.append(
+                {
+                    "action": "restore_agent_task_state",
+                    "target_path": path_ref,
+                    "target_asset_id": str(data.get("id") or ""),
+                    "before_content": before_content,
+                    "before_metadata": before_metadata,
+                }
+            )
         except (OSError, TypeError, ValueError) as exc:
             updates.append({"path": path_ref, "status": "failed", "error": str(exc), "dispatch_applied": False})
-    return updates
+    return updates, rollback_actions
 
 
 def _write_source_diff_rollback_plan(

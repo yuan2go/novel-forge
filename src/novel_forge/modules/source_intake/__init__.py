@@ -12,7 +12,7 @@ from novel_forge.modules.source_intake.service import (
     list_source_policies,
     plan_source_connector_execution,
 )
-from novel_forge.modules.source_intake.diff_repair import apply_source_diff_repair, plan_source_diff_repair
+from novel_forge.modules.source_intake.diff_repair import apply_source_diff_repair, plan_source_diff_repair, rollback_source_diff_repair
 from novel_forge.modules.source_intake.connector_runner import run_source_connector
 
 __all__ = [
@@ -30,5 +30,6 @@ __all__ = [
     "plan_source_connector_execution",
     "apply_source_diff_repair",
     "plan_source_diff_repair",
+    "rollback_source_diff_repair",
     "run_source_connector",
 ]
