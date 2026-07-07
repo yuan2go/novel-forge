@@ -83,6 +83,47 @@ class LongformStabilityTests(unittest.TestCase):
             self.assertTrue(any(issue["severity"] == "high" for issue in issues))
             self.assertTrue(any("investigation_method" in issue["message"] for issue in issues))
 
+    def test_longform_artifacts_reduce_to_canon_state_machine_snapshot_and_diff(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            create_arc_plan(
+                storage,
+                arc_id="arc-hidden-tax",
+                title="桥南隐税卷",
+                chapter_range="1-10",
+                arc_question="谁在复活旧城隐税机制？",
+                protagonist_goal="找到隐税机制源头",
+                villain_goal="逼夜档司承接旧债",
+                project_id="project1",
+            )
+            draft = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Chapter 1",
+                    content={
+                        "chapter": 1,
+                        "text": "阿照在旧井旁验灰，发现纸页显字。官署封存桥南账册，师父旧债又添一笔。",
+                        "copyright_boundary": "test fixture original draft",
+                    },
+                    metadata={"project_id": "project1"},
+                ),
+            )
+
+            result = create_longform_artifacts_for_draft(storage, draft)
+            ledger = storage.read_json(storage.root / result["canon_state_machine_ledger_path"])
+            snapshot = storage.read_json(storage.root / result["canon_state_machine_snapshot_path"])
+            diff = storage.read_json(storage.root / result["canon_state_machine_diff_report_path"])
+            linked_draft = storage.read_asset(draft)
+
+            self.assertEqual(ledger["type"], "canon_state_machine_ledger")
+            self.assertEqual(snapshot["type"], "canon_state_machine_snapshot")
+            self.assertEqual(diff["type"], "canon_state_machine_diff_report")
+            self.assertTrue(any(entry["plugin"] == "v1_longform_reducer" for entry in ledger["content"]["entries"]))
+            self.assertIn("longform", snapshot["content"]["typed_reducer"]["typed_graphs"])
+            self.assertEqual(diff["content"]["status"], "changed")
+            self.assertEqual(linked_draft.content["longform_stability_artifacts"]["canon_state_machine_snapshot_path"], result["canon_state_machine_snapshot_path"])
+
     def test_publish_gate_writes_revision_task_for_longform_failures(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

@@ -78,7 +78,7 @@ This map lists current implementation areas and evidence paths. Status means cod
 | Canon graph | `modules/canon_graph/service.py` | Canon graph snapshots/conflict/impact | Partially implemented | Human-grade merge workflows remain partial |
 | Novel KG | `modules/novel_kg/` | Typed ontology/KG workbench | Partially implemented | Graph backend depth remains partial |
 | Continuity graph | `modules/continuity_graph/service.py` | Continuity reports and graph slices | Partially implemented | Long-form consistency remains high-risk |
-| Longform recap/stability | `modules/longform_recap/`, `modules/longform_stability/` | Long-chain state, recap, stability gates | Partially implemented | Full novel-scale autonomous proof not complete |
+| Longform recap/stability | `modules/longform_recap/`, `modules/longform_stability/` | Long-chain state, v1 reducer into CanonGraph state-machine ledger/snapshot/diff, recap, stability gates | Partially implemented | Recap cadence and full novel-scale autonomous proof not complete |
 
 ## Quality, Publishing, And Operations
 

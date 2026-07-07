@@ -7,6 +7,7 @@ from typing import Any
 
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.modules.canon_graph import append_canon_state_machine_ledger, build_canon_state_machine_snapshot, diff_canon_state_machine
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_governance import record_fallback_decision
@@ -907,8 +908,206 @@ def create_longform_artifacts_for_draft(
         "reward_ledger_path": create_reward_ledger(storage, draft_path, workspace_path=workspace_path)["path"],
         "review_score_system_report_path": create_review_score_system_report(storage, draft_path, workspace_path=workspace_path)["path"],
     }
+    reducer = reduce_longform_state_for_draft(storage, draft_path, artifact_paths=results, workspace_path=workspace_path)
+    results.update(
+        {
+            "canon_state_machine_ledger_path": reducer.get("canon_state_machine_ledger_path", ""),
+            "canon_state_machine_snapshot_path": reducer.get("canon_state_machine_snapshot_path", ""),
+            "canon_state_machine_diff_report_path": reducer.get("canon_state_machine_diff_report_path", ""),
+        }
+    )
     _link_draft_longform_artifacts(storage, draft_path, results)
     return results
+
+
+def reduce_longform_state_for_draft(
+    storage: LocalStorage,
+    draft_path: str | Path,
+    *,
+    artifact_paths: dict[str, str] | None = None,
+    workspace_path: str | None = None,
+) -> dict[str, Any]:
+    """Project chapter artifacts into the shared CanonGraph state-machine ledger.
+
+    This is the v1 long-form reducer. It does not create a second canon system:
+    it writes chapter continuity projections into the existing
+    canon_state_machine_ledger/snapshot/diff assets used by Canon Graph 2.0.
+    """
+
+    path = resolve_path(storage.root, draft_path)
+    draft = storage.read_asset(path)
+    project = project_scope_from_asset(storage, draft, input_path=path, workspace_path=workspace_path)
+    draft_content = draft.content if isinstance(draft.content, dict) else {}
+    draft_metadata = draft.metadata if isinstance(draft.metadata, dict) else {}
+    project_id = str(project.get("project_id") or draft_metadata.get("project_id") or draft_content.get("project_id") or "local-system")
+    workspace = str(project.get("workspace_path") or workspace_path or draft_metadata.get("workspace_path") or draft_content.get("workspace_path") or "")
+    chapter_no = _chapter_no(draft.to_dict())
+    paths = artifact_paths if isinstance(artifact_paths, dict) else {}
+    required = ["chapter_state_path", "fact_ledger_path", "character_state_ledger_path", "foreshadowing_graph_path", "reward_ledger_path"]
+    missing = [key for key in required if not str(paths.get(key, "")).strip()]
+    if missing:
+        raise ValueError(f"longform reducer missing required artifact paths: {', '.join(missing)}")
+    before_snapshot = build_canon_state_machine_snapshot(storage, {"project_id": project_id, "workspace_path": workspace})
+    projection = _longform_state_machine_projection(storage, draft_id=draft.id, draft_path=_display_path(storage.root, path), chapter_no=chapter_no, artifact_paths=paths)
+    ledger = append_canon_state_machine_ledger(
+        storage,
+        {
+            "project_id": project_id,
+            "workspace_path": workspace,
+            "source_report_path": str(paths.get("chapter_state_path") or _display_path(storage.root, path)),
+            "plugin": "v1_longform_reducer",
+            "target_asset_id": draft.id,
+            "target_asset_type": draft.type,
+            "target_asset_path": _display_path(storage.root, path),
+            "chapter_no": chapter_no,
+            "genre_state_machine": projection,
+        },
+    )
+    after_snapshot = build_canon_state_machine_snapshot(storage, {"project_id": project_id, "workspace_path": workspace})
+    diff = diff_canon_state_machine(
+        storage,
+        {
+            "project_id": project_id,
+            "before_snapshot_path": before_snapshot["path"],
+            "after_snapshot_path": after_snapshot["path"],
+        },
+    )
+    return {
+        "status": "ready",
+        "chapter_no": chapter_no,
+        "canon_state_machine_ledger_path": ledger["path"],
+        "canon_state_machine_snapshot_path": after_snapshot["path"],
+        "canon_state_machine_before_snapshot_path": before_snapshot["path"],
+        "canon_state_machine_diff_report_path": diff["path"],
+        "state_machine_status": projection["status"],
+        "machine_count": len(projection["machines"]),
+        "diff_status": diff["status"],
+        "typed_reducer_summary": after_snapshot["asset"].get("content", {}).get("typed_reducer", {}).get("summary", {}),
+    }
+
+
+def _longform_state_machine_projection(
+    storage: LocalStorage,
+    *,
+    draft_id: str,
+    draft_path: str,
+    chapter_no: int,
+    artifact_paths: dict[str, str],
+) -> dict[str, Any]:
+    chapter_state = _asset_content_at(storage, artifact_paths.get("chapter_state_path", ""))
+    fact_ledger = _asset_content_at(storage, artifact_paths.get("fact_ledger_path", ""))
+    character_ledger = _asset_content_at(storage, artifact_paths.get("character_state_ledger_path", ""))
+    foreshadowing_graph = _asset_content_at(storage, artifact_paths.get("foreshadowing_graph_path", ""))
+    reward_ledger = _asset_content_at(storage, artifact_paths.get("reward_ledger_path", ""))
+    facts = fact_ledger.get("facts", []) if isinstance(fact_ledger.get("facts", []), list) else []
+    clues = foreshadowing_graph.get("clues", []) if isinstance(foreshadowing_graph.get("clues", []), list) else []
+    characters = character_ledger.get("characters", []) if isinstance(character_ledger.get("characters", []), list) else []
+    rewards = reward_ledger.get("rewards", []) if isinstance(reward_ledger.get("rewards", []), list) else []
+    costs = reward_ledger.get("costs", []) if isinstance(reward_ledger.get("costs", []), list) else []
+    blocking_signals = []
+    if foreshadowing_graph.get("issues"):
+        blocking_signals.extend(str(item.get("message") or item) for item in foreshadowing_graph.get("issues", []) if isinstance(item, dict))
+    machines = [
+        {
+            "machine": "ChapterStateReducer",
+            "state": f"chapter_{chapter_no}_accepted",
+            "observed_signals": _dedupe(
+                [
+                    *[str(item) for item in chapter_state.get("active_entities", []) if str(item).strip()],
+                    *[str(item) for item in chapter_state.get("active_locations", []) if str(item).strip()],
+                    *[str(item) for item in chapter_state.get("active_organizations", []) if str(item).strip()],
+                ]
+            )[:20],
+            "transition": {
+                "from": f"chapter_{max(0, chapter_no - 1)}_accepted",
+                "to": f"chapter_{chapter_no}_accepted",
+                "evidence": [artifact_paths.get("chapter_state_path", ""), draft_path],
+            },
+        },
+        {
+            "machine": "TimelineEventReducer",
+            "state": f"{len(facts)}_facts_committed",
+            "observed_signals": [str(item.get("text") or "") for item in facts[:20] if isinstance(item, dict)],
+            "transition": {
+                "from": "previous_timeline_state",
+                "to": f"chapter_{chapter_no}_timeline_committed",
+                "evidence": [artifact_paths.get("fact_ledger_path", "")],
+            },
+        },
+        {
+            "machine": "ForeshadowingReducer",
+            "state": f"{len(clues)}_active_clues",
+            "observed_signals": [str(item.get("name") or item.get("clue_id") or "") for item in clues[:20] if isinstance(item, dict)],
+            "transition": {
+                "from": "previous_foreshadowing_state",
+                "to": f"chapter_{chapter_no}_foreshadowing_committed",
+                "evidence": [artifact_paths.get("foreshadowing_graph_path", "")],
+            },
+        },
+        {
+            "machine": "CharacterStateReducer",
+            "state": f"{len(characters)}_characters_tracked",
+            "observed_signals": _character_state_signals(characters),
+            "transition": {
+                "from": "previous_character_state",
+                "to": f"chapter_{chapter_no}_character_state_committed",
+                "evidence": [artifact_paths.get("character_state_ledger_path", "")],
+            },
+        },
+        {
+            "machine": "ReaderPromiseReducer",
+            "state": f"{len(rewards)}_rewards_{len(costs)}_costs",
+            "observed_signals": _dedupe([*[str(item) for item in rewards if str(item).strip()], *[str(item) for item in costs if str(item).strip()]])[:20],
+            "transition": {
+                "from": "previous_reader_promise_state",
+                "to": f"chapter_{chapter_no}_promise_state_committed",
+                "evidence": [artifact_paths.get("reward_ledger_path", "")],
+            },
+        },
+    ]
+    return {
+        "domain": "longform",
+        "plugin": "v1_longform_reducer",
+        "chapter_no": chapter_no,
+        "target_asset_id": draft_id,
+        "target_asset_path": draft_path,
+        "status": "blocked" if blocking_signals else "ready",
+        "blocking_signals": _dedupe(blocking_signals),
+        "machines": machines,
+        "reducer_contract": {
+            "contract_id": "v1-canon-timeline-foreshadow-reducer",
+            "source_artifacts_required": [
+                "chapter_state",
+                "fact_ledger",
+                "character_state_ledger",
+                "foreshadowing_graph",
+                "reward_ledger",
+            ],
+            "rollback_rebuild": "rebuild canon_state_machine_snapshot from canon_state_machine_ledger and diff against previous snapshot",
+        },
+    }
+
+
+def _asset_content_at(storage: LocalStorage, ref: str | Path) -> dict[str, Any]:
+    data = storage.read_json(resolve_path(storage.root, ref))
+    if not isinstance(data, dict):
+        return {}
+    return data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+
+
+def _character_state_signals(characters: list[Any]) -> list[str]:
+    signals: list[str] = []
+    for item in characters:
+        if not isinstance(item, dict):
+            continue
+        character_id = str(item.get("character_id") or "character")
+        authority = str(item.get("authority") or "")
+        burdens = item.get("active_burdens", []) if isinstance(item.get("active_burdens", []), list) else []
+        if authority:
+            signals.append(f"{character_id}:authority={authority}")
+        for burden in burdens[:8]:
+            signals.append(f"{character_id}:burden={burden}")
+    return _dedupe(signals)
 
 
 def evaluate_longform_stability_gate(

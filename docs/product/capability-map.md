@@ -40,9 +40,9 @@ This map describes the product capability surface as verified from current code.
 | Review | ReviewIssue gate | Implemented/partial | `modules/review_issue/`, `skills/review-issue-gate/` | Full release gate coverage continues to harden |
 | Review | Editor/revision | Implemented | `modules/editor/`, `modules/revision/`, `web/admin/app/editor/page.tsx` | Versioned rollback UX remains partial |
 | Long-form stability | Canon | Partially implemented | `modules/canon_graph/`, `web/admin/app/canon-console/page.tsx` | Merge/conflict handling remains an expansion area |
-| Long-form stability | Canon Graph 2.0 plugins | Implemented foundation | `modules/canon_graph/service.py`, `web/admin/app/canon-graph-v2/page.tsx` | Plugin outputs exist; operator repair UX remains partial |
+| Long-form stability | Canon Graph 2.0 plugins and v1 reducer | Implemented foundation plus accepted-chapter reducer evidence | `modules/canon_graph/service.py`, `modules/longform_stability/service.py`, `web/admin/app/canon-graph-v2/page.tsx` | Plugin outputs and v1 reducer snapshots exist; operator repair UX remains partial |
 | Long-form stability | Arc | Partially implemented | schemas, `web/admin/app/arc-console/page.tsx` | Service depth is limited |
-| Long-form stability | Foreshadowing | Partially implemented | schemas, `web/admin/app/foreshadowing-console/page.tsx` | Service depth is limited |
+| Long-form stability | Foreshadowing | Partially implemented with reducer projection | schemas, `modules/longform_stability/service.py`, `web/admin/app/foreshadowing-console/page.tsx` | Payoff SLA/status transition workflows remain limited |
 | Long-form stability | Longform recap | Partially implemented | `modules/longform_recap/`, `web/admin/app/longform-recap/page.tsx` | Agent operation exists for slices, not all related roles |
 | Long-form stability | Long-chain acceptance | Partially implemented | `tests/integration/test_novel_os_long_chain_*` | Full-novel production not proven |
 | Long-form stability | Long-chain Proof Center | Implemented deterministic foundation | `modules/long_chain_proof/`, `tests/integration/test_long_chain_50_chapter_content_intelligence.py` | State/evidence proof exists; provider-backed slow proof is opt-in |

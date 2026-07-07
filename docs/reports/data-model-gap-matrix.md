@@ -57,9 +57,9 @@ Status legend:
 | CharacterArc | 人物弧光 | partial | `ArcPlan`, CharacterCard fields | standalone arc state | partial | Outline/Long-form | P1 |
 | RelationshipEdge | 关系边 | partial | Novel KG edges/content | typed relationship state machine | partial | Novel KG, Canon | P1 |
 | VoiceProfile | 口吻档案 | partial | `StyleProfile`, character fields | per-character voice model | embedded | Style/Character | P1 |
-| CanonFact | 正史事实 | partial | `FactLedger`, `CanonDatabase` | fact ids, confidence, span, status | usable foundation | Canon/Long-form | P0 |
-| TimelineEvent | 时间线事件 | partial | `FactLedger`, chapter state | first-class timeline event | embedded | Long-form OS | P0 |
-| ForeshadowItem | 伏笔项 | yes | `ForeshadowingThread`, `ForeshadowingGraph` | payoff SLA/status transitions | usable foundation | Long-form OS | P0 |
+| CanonFact | 正史事实 | partial | `FactLedger`, `CanonDatabase`, v1 `canon_state_machine_ledger` projection | confidence/span can deepen | reducer-backed foundation | Canon/Long-form | P0 |
+| TimelineEvent | 时间线事件 | partial | `FactLedger`, chapter state, `TimelineEventReducer` projection in CanonGraph state-machine assets | first-class timeline event asset | reducer-backed embedded | Long-form OS | P0 |
+| ForeshadowItem | 伏笔项 | yes | `ForeshadowingThread`, `ForeshadowingGraph`, `ForeshadowingReducer` projection | payoff SLA/status transitions can deepen | reducer-backed foundation | Long-form OS | P0 |
 | ReaderPromise | 读者承诺 | partial | blueprint docs, reward/foreshadow fields | standalone promise ledger | missing/embedded | Web Novel Enhancement | P1 |
 | PleasurePoint | 爽点 | partial | `RewardLedger` | explicit pleasure point taxonomy | partial | Web Novel Enhancement | P1 |
 | ConflictItem | 冲突项 | partial | `ConflictPattern`, chapter plan content | active conflict lifecycle | embedded/basic | Outline/Chapter | P1 |
@@ -116,7 +116,7 @@ Status legend:
 3. `SourcePolicy` / `SourceRiskReport`: needed before using large external corpora in production contexts.
 4. Readable prose/page-turning/mobile review models: needed after `chapter-blueprint-contract-v1` so draft quality is not limited by thin prose gates.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
-6. `CanonFact` / `TimelineEvent` / `ReaderPromise` reducers: needed to keep 10-30 chapters coherent.
+6. `ReaderPromise` reducer and payoff lifecycle: CanonFact/TimelineEvent/Foreshadow reducer foundation exists; promise lifecycle remains needed for 10-30 chapter coherence.
 
 ## Notes
 
