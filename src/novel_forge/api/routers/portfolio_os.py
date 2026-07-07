@@ -3,7 +3,12 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from novel_forge.api.routers.context import ProductRouterContext
-from novel_forge.modules.portfolio_os import build_book_potential_scores, build_resource_allocation_plan, create_portfolio_project
+from novel_forge.modules.portfolio_os import (
+    build_book_potential_scores,
+    build_cross_book_similarity_report,
+    build_resource_allocation_plan,
+    create_portfolio_project,
+)
 from novel_forge.storage.local import LocalStorage
 
 
@@ -15,6 +20,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     PortfolioProjectRequest = models["PortfolioProjectRequest"]
     PortfolioScoreRequest = models["PortfolioScoreRequest"]
     PortfolioAllocationRequest = models["PortfolioAllocationRequest"]
+    PortfolioSimilarityRequest = models["PortfolioSimilarityRequest"]
 
     @router.post("/product/portfolio/project")
     def portfolio_project_endpoint(request: PortfolioProjectRequest) -> dict:
@@ -53,6 +59,21 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 provider_budget=request.provider_budget,
                 max_parallel_books=request.max_parallel_books,
                 daily_chapter_goal=request.daily_chapter_goal,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/portfolio/cross-book-similarity")
+    def portfolio_cross_book_similarity_endpoint(request: PortfolioSimilarityRequest) -> dict:
+        try:
+            return build_cross_book_similarity_report(
+                LocalStorage(app_settings.root),
+                portfolio_ref=request.portfolio_ref,
+                project_ids=request.project_ids or None,
+                medium_threshold=request.medium_threshold,
+                high_threshold=request.high_threshold,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

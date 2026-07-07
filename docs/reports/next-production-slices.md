@@ -27,6 +27,7 @@ Implementation status note:
 - 2026-07-08: `P2-S1 Platform-Specific Manual Adapters` was implemented as a development slice. Fanqie/Qidian upload packages now persist project-scoped `platform_publish_adapter` rule snapshots, platform rule snapshots, package sections, feedback import contracts, parser confidence, sensitive receipt redaction, and fail-closed platform adapter gate checks for missing/mismatched rule evidence. Agent Scheduler and Workflow Nodes now expose `run-platform-adapter-gate`. Unit/API route coverage exists in `tests/unit/test_publishing_feedback_adapters.py`, `tests/unit/test_agent_scheduler.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 - 2026-07-08: `P2-S2 Feedback Mutation Apply Workflow` was implemented as a development slice. Approved feedback mutation applications now produce patch artifacts, invalidation evidence, regeneration RevisionTasks, planned AgentTasks for regeneration/quality gate/publish gate rerun, workflow dispatch plans, re-review plans, publish-gate rerun plans, and mutation-control contracts that explicitly forbid silent outline/chapter/release mutation. Agent Scheduler now registers resolve/apply mutation operations. Unit/API route coverage exists in `tests/unit/test_publishing_feedback_adapters.py`, `tests/unit/test_agent_scheduler.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 - 2026-07-08: `P3-S1 Portfolio Project Model` was implemented as a development slice. `portfolio_project`, `book_potential_score`, and `resource_allocation_plan` are now schema-backed assets under the workspace boundary. `/product/portfolio/*` APIs create portfolio projects, score books, and build non-dispatching allocation plans with per-book memory/context isolation, cost-quality rollup, and operator approval boundary. Unit/API route coverage exists in `tests/unit/test_portfolio_os.py`, `tests/unit/test_schemas.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
+- 2026-07-08: `P3-S2 Cross-Book Similarity Guard` was implemented as a development slice. `cross_book_similarity_report` is now a schema-backed Portfolio OS asset. `/product/portfolio/cross-book-similarity` produces pairwise premise/style/mechanism overlap evidence, contamination risk levels, and a fail-closed shared-context guard without storing raw drafts in the report. Unit/API route coverage exists in `tests/unit/test_portfolio_os.py`, `tests/unit/test_schemas.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
@@ -49,20 +50,22 @@ Implementation status note:
 | P2-S1 Platform-Specific Manual Adapters | Harden Fanqie/Qidian manual package/checklist/receipt | Useful after export and publish gate | Publishing Feedback Adapters | PlatformUploadPackage, PlatformPublishReceipt, PlatformReviewStatus, PlatformPublishAdapter | Implemented: project-scoped rule snapshot, manual package sections, parser confidence, receipt redaction, platform adapter gate, Agent/Workflow operation | Rule snapshot, missing-rule gate, receipt parser, and operation-contract fixtures | Publishing docs updated through this slice matrix | Real APIs/SDK/callback/rate-limit binding remain out of scope |
 | P2-S2 Feedback Mutation Apply Workflow | Approval -> patch -> invalidation -> regeneration task | Closes feedback loop safely | Feedback, Workflow, Change Impact, Agent Scheduler | FeedbackPlanMutationProposal, FeedbackMutationPatch, ChangeImpactReport, RevisionTask, AgentTask | Implemented: approved proposal creates patch artifacts, invalidation evidence, regeneration tasks, planned AgentTasks, workflow dispatch plan, re-review gate plan, and publish gate rerun plan | Approval/apply/non-approved-blocking/operation-contract fixtures | Feedback docs updated through this slice matrix | Does not silently mutate story; follow-up tasks are planned, not auto-dispatched |
 | P3-S1 Portfolio Project Model | Introduce multi-book project portfolio boundary | Needed before multi-book scheduling | Portfolio, Project, Cost Dashboard | PortfolioProject, BookPotentialScore, ResourceAllocationPlan | Implemented: schema-backed portfolio project, book potential score, allocation plan, `/product/portfolio/*` API, per-book isolation contract, cost/quality rollup | Two-book isolation/scoring/allocation fixture plus schema/route coverage | Portfolio docs updated through this slice matrix | Plans do not auto-dispatch and do not replace v1 single-book loop |
-| P3-S2 Cross-Book Similarity Guard | Detect repeated style/premise/mechanism | Prevents multi-book sameness | Portfolio, Style, Genre, MKAOS | CrossBookSimilarityReport, StyleProfile, GenreProfile | Similarity service | Similar/different book fixtures | Portfolio docs | Needs corpus and embeddings later |
+| P3-S2 Cross-Book Similarity Guard | Detect repeated style/premise/mechanism | Prevents multi-book sameness | Portfolio, Style, Genre, MKAOS | CrossBookSimilarityReport, StyleProfile, GenreProfile | Implemented: `/product/portfolio/cross-book-similarity` writes pairwise similarity, risk, and shared-context guard decision | Similar/different book fixtures plus schema/route coverage | Portfolio docs updated through this slice matrix | Current fingerprint uses local token/Jaccard signals; embeddings can replace scoring later |
+| P3-S3 Multi-Book Scheduler Plan Boundary | Turn portfolio allocation into approval-gated scheduler plan evidence | Needed before any automatic multi-book dispatch | Portfolio, Agent Scheduler, Permission Center, Cost Ledger | ResourceAllocationPlan, CrossBookSimilarityReport, ApprovalRequest, AgentTask | Scheduler plan service, no automatic dispatch | Blocked/no-approval/high-similarity fixtures | Portfolio/Agent docs | Must not run multiple books automatically before approval and v1 acceptance |
 
 ## Recommended Next Slice
 
-Continue from `P3-S2 Cross-Book Similarity Guard`.
+Continue from `P3-S3 Multi-Book Scheduler Plan Boundary`.
 
-The current highest-priority development slice is to add a cross-book similarity guard on top of the portfolio boundary:
+The current highest-priority development slice is to turn portfolio allocation into an approval-gated scheduler plan boundary:
 
 ```text
 portfolio project
+-> allocation plan
 -> cross-book similarity report
--> premise/style/mechanism overlap evidence
--> contamination risk level
--> block shared context unless guard passes
+-> approval request
+-> scheduler plan evidence
+-> no automatic dispatch until guard and approval pass
 ```
 
 Do not run chapter acceptance during the development loop. Keep the 2026-07-07 slow report as the current baseline until the final unified acceptance phase.

@@ -739,6 +739,11 @@ class ResourceAllocationPlan(BaseAsset):
 
 
 @dataclass
+class CrossBookSimilarityReport(BaseAsset):
+    type: str = "cross_book_similarity_report"
+
+
+@dataclass
 class ChangeImpactReport(BaseAsset):
     type: str = "change_impact_report"
 
@@ -1566,6 +1571,7 @@ SCHEMA_CLASSES = {
         PortfolioProject,
         BookPotentialScore,
         ResourceAllocationPlan,
+        CrossBookSimilarityReport,
         ChangeImpactReport,
         AgentContract,
         AgentTask,

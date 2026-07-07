@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+from itertools import combinations
 from pathlib import Path
 from typing import Any
 
@@ -7,7 +9,7 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.review_issue import list_review_issues
-from novel_forge.schemas import BookPotentialScore, PortfolioProject, ResourceAllocationPlan
+from novel_forge.schemas import BookPotentialScore, CrossBookSimilarityReport, PortfolioProject, ResourceAllocationPlan
 from novel_forge.storage.local import LocalStorage
 
 
@@ -91,6 +93,66 @@ def build_book_potential_scores(
         score_paths.append(path)
         scores.append(storage.read_json(storage.root / path))
     return {"score_paths": score_paths, "scores": scores, "portfolio": portfolio}
+
+
+def build_cross_book_similarity_report(
+    storage: LocalStorage,
+    *,
+    portfolio_ref: str | Path = "",
+    project_ids: list[str] | None = None,
+    medium_threshold: float = 0.35,
+    high_threshold: float = 0.55,
+) -> dict[str, Any]:
+    portfolio = _portfolio_from_ref(storage, portfolio_ref)
+    ids = _clean_ids(project_ids or portfolio.get("content", {}).get("project_ids", []))
+    if len(ids) < 2:
+        raise ValueError("at least two project_ids are required for cross-book similarity")
+    thresholds = _similarity_thresholds(medium_threshold, high_threshold)
+    fingerprints = [_project_fingerprint(storage, project_id) for project_id in ids]
+    pairs = [_compare_project_fingerprints(left, right, thresholds) for left, right in combinations(fingerprints, 2)]
+    high_pairs = [row for row in pairs if row["risk_level"] == "high"]
+    medium_pairs = [row for row in pairs if row["risk_level"] == "medium"]
+    max_similarity = max((float(row.get("overall_similarity") or 0.0) for row in pairs), default=0.0)
+    risk_level = "high" if high_pairs else ("medium" if medium_pairs else "low")
+    guard_decision = {
+        "status": "blocked" if high_pairs else "passed",
+        "risk_level": risk_level,
+        "shared_context_allowed": not high_pairs,
+        "shared_assets_allowed": not high_pairs,
+        "requires_operator_review": bool(high_pairs or medium_pairs),
+        "blocking_pair_count": len(high_pairs),
+        "medium_pair_count": len(medium_pairs),
+        "reason": "high cross-book overlap" if high_pairs else ("medium cross-book overlap requires review" if medium_pairs else "no high-risk overlap detected"),
+    }
+    portfolio_id = str(portfolio.get("content", {}).get("portfolio_id") or portfolio.get("id") or make_id("portfolio", ",".join(ids)))
+    report = CrossBookSimilarityReport(
+        title=f"Cross-book similarity report {portfolio.get('title') or portfolio_id}",
+        source=str(portfolio.get("id") or portfolio_ref or ""),
+        tags=["portfolio-os", "cross-book-similarity", risk_level],
+        content={
+            "report_id": make_id("cross_book_similarity_report", f"{portfolio_id}:{max_similarity}:{utc_now()}"),
+            "portfolio_id": portfolio_id,
+            "project_ids": ids,
+            "thresholds": thresholds,
+            "risk_level": risk_level,
+            "max_similarity": round(max_similarity, 4),
+            "pair_count": len(pairs),
+            "pairwise_similarity": pairs,
+            "project_fingerprints": [_redacted_fingerprint(row) for row in fingerprints],
+            "guard_decision": guard_decision,
+            "generation_context_boundary": {
+                "raw_drafts_included": False,
+                "raw_reference_sources_included": False,
+                "stores_fingerprint_only": True,
+                "block_shared_context_when_status_blocked": True,
+            },
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": portfolio_id, "portfolio_id": portfolio_id, "portfolio_os": True, "use_in_generation_rag": False},
+        references=_dedupe([str(portfolio.get("path") or "")]),
+    )
+    path = _write_asset(storage, report)
+    return {"path": path, "asset": storage.read_json(storage.root / path)}
 
 
 def build_resource_allocation_plan(
@@ -180,6 +242,75 @@ def _book_evidence(storage: LocalStorage, project_id: str) -> dict[str, Any]:
     }
 
 
+def _project_fingerprint(storage: LocalStorage, project_id: str) -> dict[str, Any]:
+    rows = _project_assets(storage, project_id)
+    buckets = {"premise": [], "style": [], "mechanism": []}
+    evidence_paths: list[str] = []
+    type_counts = _type_counts(rows)
+    for row in rows:
+        asset_type = str(row.get("type") or "")
+        if asset_type not in _fingerprint_source_types():
+            continue
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        title = str(row.get("title") or "")
+        text = _fingerprint_text(content, title=title)
+        if not text:
+            continue
+        if asset_type in {"genre_profile", "genre_strategy_pack", "subgenre_mechanic", "outline", "outline_version", "chapter_plan", "chapter_plan_version"}:
+            buckets["premise"].append(text)
+            buckets["mechanism"].append(_selected_text(content, ["genre", "subgenre", "mechanic", "beat", "hook", "conflict", "promise", "system", "rule"]))
+        if asset_type in {"style_profile", "style_fingerprint", "style_generation_policy", "style_review_rule", "draft_chapter", "draft_version"}:
+            buckets["style"].append(_selected_text(content, ["style", "voice", "tone", "rhythm", "sentence", "dialogue", "perspective", "pace", "distance"]))
+        if asset_type in {"knowledge_pack", "rule_card", "template_card", "review_rule", "quality_rubric_pack"}:
+            buckets["mechanism"].append(text)
+        evidence_paths.append(str(row.get("path") or ""))
+    return {
+        "project_id": project_id,
+        "asset_type_counts": type_counts,
+        "fingerprint_tokens": {bucket: _top_tokens(" ".join(parts), limit=36) for bucket, parts in buckets.items()},
+        "evidence_paths": _dedupe(evidence_paths)[:20],
+        "fingerprint_source_count": len(evidence_paths),
+    }
+
+
+def _compare_project_fingerprints(left: dict[str, Any], right: dict[str, Any], thresholds: dict[str, float]) -> dict[str, Any]:
+    left_tokens = left.get("fingerprint_tokens", {}) if isinstance(left.get("fingerprint_tokens", {}), dict) else {}
+    right_tokens = right.get("fingerprint_tokens", {}) if isinstance(right.get("fingerprint_tokens", {}), dict) else {}
+    dimensions: dict[str, dict[str, Any]] = {}
+    for key in ["premise", "style", "mechanism"]:
+        left_set = set(left_tokens.get(key, []) if isinstance(left_tokens.get(key, []), list) else [])
+        right_set = set(right_tokens.get(key, []) if isinstance(right_tokens.get(key, []), list) else [])
+        overlap = sorted(left_set.intersection(right_set))[:12]
+        dimensions[key] = {
+            "similarity": _jaccard(left_set, right_set),
+            "overlap_terms": overlap,
+            "left_token_count": len(left_set),
+            "right_token_count": len(right_set),
+        }
+    premise = float(dimensions["premise"]["similarity"])
+    style = float(dimensions["style"]["similarity"])
+    mechanism = float(dimensions["mechanism"]["similarity"])
+    overall = round((premise * 0.4) + (style * 0.25) + (mechanism * 0.35), 4)
+    strongest = max(dimensions.items(), key=lambda item: float(item[1].get("similarity") or 0.0), default=("premise", {}))
+    high_threshold = float(thresholds["high"])
+    medium_threshold = float(thresholds["medium"])
+    risk_level = "high" if overall >= high_threshold or float(strongest[1].get("similarity") or 0.0) >= high_threshold else ("medium" if overall >= medium_threshold else "low")
+    return {
+        "left_project_id": left.get("project_id", ""),
+        "right_project_id": right.get("project_id", ""),
+        "overall_similarity": overall,
+        "risk_level": risk_level,
+        "strongest_dimension": strongest[0],
+        "dimension_scores": dimensions,
+        "contamination_guard": {
+            "block_shared_context": risk_level == "high",
+            "requires_operator_review": risk_level in {"high", "medium"},
+            "recommended_action": _similarity_recommendation(risk_level, strongest[0]),
+        },
+        "evidence_paths": _dedupe([*(left.get("evidence_paths", [])[:6]), *(right.get("evidence_paths", [])[:6])]),
+    }
+
+
 def _potential_dimensions(evidence: dict[str, Any]) -> dict[str, float]:
     plan_count = int(evidence.get("chapter_plan_count") or 0)
     draft_count = int(evidence.get("draft_count") or 0)
@@ -201,6 +332,137 @@ def _score_weights(weights: dict[str, float]) -> dict[str, float]:
     merged = {key: float(weights.get(key, defaults[key])) for key in defaults}
     total = sum(max(0.0, value) for value in merged.values()) or 1.0
     return {key: round(max(0.0, value) / total, 4) for key, value in merged.items()}
+
+
+def _similarity_thresholds(medium_threshold: float, high_threshold: float) -> dict[str, float]:
+    medium = max(0.0, min(1.0, float(medium_threshold)))
+    high = max(medium, min(1.0, float(high_threshold)))
+    return {"medium": round(medium, 4), "high": round(high, 4)}
+
+
+def _fingerprint_source_types() -> set[str]:
+    return {
+        "genre_profile",
+        "subgenre_mechanic",
+        "genre_strategy_pack",
+        "style_profile",
+        "style_fingerprint",
+        "style_generation_policy",
+        "style_review_rule",
+        "outline",
+        "outline_version",
+        "chapter_plan",
+        "chapter_plan_version",
+        "draft_chapter",
+        "draft_version",
+        "knowledge_pack",
+        "rule_card",
+        "template_card",
+        "review_rule",
+        "quality_rubric_pack",
+    }
+
+
+def _redacted_fingerprint(row: dict[str, Any]) -> dict[str, Any]:
+    tokens = row.get("fingerprint_tokens", {}) if isinstance(row.get("fingerprint_tokens", {}), dict) else {}
+    return {
+        "project_id": row.get("project_id", ""),
+        "fingerprint_source_count": row.get("fingerprint_source_count", 0),
+        "asset_type_counts": row.get("asset_type_counts", {}),
+        "fingerprint_tokens": {key: list(value)[:12] for key, value in tokens.items() if isinstance(value, list)},
+        "evidence_paths": row.get("evidence_paths", [])[:8],
+    }
+
+
+def _fingerprint_text(value: Any, *, title: str = "") -> str:
+    parts = [title] if title else []
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in {"raw_text", "body", "content", "draft_text", "text"} and isinstance(item, str):
+                parts.append(item[:1200])
+            elif isinstance(item, (dict, list)):
+                parts.append(_fingerprint_text(item))
+            elif isinstance(item, (str, int, float, bool)):
+                parts.append(str(item))
+    elif isinstance(value, list):
+        parts.extend(_fingerprint_text(item) for item in value[:30])
+    elif isinstance(value, (str, int, float, bool)):
+        parts.append(str(value))
+    return " ".join(part for part in parts if part)
+
+
+def _selected_text(value: Any, keys: list[str]) -> str:
+    parts: list[str] = []
+    if isinstance(value, dict):
+        for key, item in value.items():
+            lowered = str(key).lower()
+            if any(marker in lowered for marker in keys):
+                parts.append(_fingerprint_text(item))
+            elif isinstance(item, (dict, list)):
+                nested = _selected_text(item, keys)
+                if nested:
+                    parts.append(nested)
+    elif isinstance(value, list):
+        parts.extend(_selected_text(item, keys) for item in value[:30])
+    return " ".join(part for part in parts if part)
+
+
+def _top_tokens(text: str, *, limit: int) -> list[str]:
+    normalized = text.lower()
+    words = re.findall(r"[a-z0-9_]{3,}|[\u4e00-\u9fff]{2,}", normalized)
+    tokens: dict[str, int] = {}
+    for word in words:
+        if re.fullmatch(r"[\u4e00-\u9fff]+", word) and len(word) > 4:
+            candidates = [word[index : index + 4] for index in range(0, max(1, len(word) - 3))]
+        else:
+            candidates = [word]
+        for candidate in candidates:
+            if candidate in _stop_tokens() or len(candidate) < 2:
+                continue
+            tokens[candidate] = tokens.get(candidate, 0) + 1
+    ranked = sorted(tokens.items(), key=lambda item: (-item[1], item[0]))
+    return [token for token, _count in ranked[:limit]]
+
+
+def _stop_tokens() -> set[str]:
+    return {
+        "the",
+        "and",
+        "with",
+        "from",
+        "this",
+        "that",
+        "chapter",
+        "project",
+        "style",
+        "genre",
+        "content",
+        "true",
+        "false",
+        "一个",
+        "一种",
+        "这个",
+        "那个",
+        "他们",
+        "自己",
+        "故事",
+        "章节",
+        "主角",
+    }
+
+
+def _jaccard(left: set[str], right: set[str]) -> float:
+    if not left or not right:
+        return 0.0
+    return round(len(left.intersection(right)) / len(left.union(right)), 4)
+
+
+def _similarity_recommendation(risk_level: str, dimension: str) -> str:
+    if risk_level == "high":
+        return f"block shared context and rewrite {dimension} identity before parallel scheduling"
+    if risk_level == "medium":
+        return f"operator review required; differentiate {dimension} signals before shared assets"
+    return "safe to keep books isolated; no shared context expansion implied"
 
 
 def _project_assets(storage: LocalStorage, project_id: str) -> list[dict[str, Any]]:

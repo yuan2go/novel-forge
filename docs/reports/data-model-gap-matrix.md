@@ -96,7 +96,7 @@ Status legend:
 | PortfolioProject | 项目组合项 | yes-foundation | `PortfolioProject`, `modules/portfolio_os/service.py` | pause/kill lifecycle depth | active/planning asset | Portfolio OS | P3 |
 | BookPotentialScore | 单书潜力评分 | yes-foundation | `BookPotentialScore`, `modules/portfolio_os/service.py` | richer market/reader calibration | generated score asset | Portfolio OS | P3 |
 | ResourceAllocationPlan | 资源分配计划 | yes-foundation | `ResourceAllocationPlan`, `modules/portfolio_os/service.py` | automatic dispatch approval route | non-dispatching plan asset | Portfolio OS | P3 |
-| CrossBookSimilarityReport | 跨书相似报告 | no | Not found | similarity vectors/evidence | missing | Portfolio OS | P3 |
+| CrossBookSimilarityReport | 跨书相似报告 | yes-foundation | `CrossBookSimilarityReport`, `modules/portfolio_os/service.py` | embedding/vector calibration and scheduler approval integration | generated guard report asset | Portfolio OS | P3 |
 | AgentTask | Agent 任务 | yes | `AgentTask` | business v1 task coverage | usable | Agent OS | P0 |
 | AgentRun | Agent 运行 | yes | `AgentRun` | provider hard-stop coverage per op | usable | Agent OS | P0 |
 | TaskPlan | 任务计划 | partial | `WorkflowDefinition`, `LoopRun`, task DAG | standalone plan model | partial | Workflow/Agent | P1 |
@@ -115,7 +115,7 @@ Status legend:
 
 1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 2. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
-3. CrossBookSimilarityReport: needed next so portfolio scheduling can detect premise/style/mechanism overlap before allowing shared context or assets.
+3. Multi-book scheduler plan boundary: needed next so ResourceAllocationPlan and CrossBookSimilarityReport can create approval-gated AgentTask planning evidence without automatic multi-book dispatch.
 4. Readable prose/page-turning/mobile review models: foundations exist for readable prose and mobile reading; PageTurningReport and AntiAIReport can deepen provider/human calibration later.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
 6. `ReaderPromise`, `ChapterEconomyReport`, `ProtagonistCharmReport`, `AntagonistPressureReport`, and `MobileReadingReport` calibration and cockpit depth: foundations exist, but detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.

@@ -5,8 +5,13 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.portfolio_os import build_book_potential_scores, build_resource_allocation_plan, create_portfolio_project
-from novel_forge.schemas import ChapterPlan, DraftChapter, QualityScoreReport, ReviewIssue
+from novel_forge.modules.portfolio_os import (
+    build_book_potential_scores,
+    build_cross_book_similarity_report,
+    build_resource_allocation_plan,
+    create_portfolio_project,
+)
+from novel_forge.schemas import ChapterPlan, DraftChapter, GenreProfile, Outline, QualityScoreReport, ReviewIssue, StyleProfile
 from novel_forge.storage.local import LocalStorage
 
 
@@ -42,6 +47,31 @@ class PortfolioOSTests(unittest.TestCase):
             blocked = [row for row in content["allocations"] if row["project_id"] == "book-b"][0]
             self.assertTrue(blocked["blocked"])
             self.assertEqual(blocked["recommended_action"], "resolve_blocking_review_issues")
+
+    def test_cross_book_similarity_report_blocks_shared_context_for_high_overlap(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            self._write_book_identity(storage, "book-a", "都市刑侦", "冷峻第一人称", "旧案重启 证据链 嫌疑人 反转 真相")
+            self._write_book_identity(storage, "book-b", "都市刑侦", "冷峻第一人称", "旧案重启 证据链 嫌疑人 反转 真相")
+            self._write_book_identity(storage, "book-c", "科幻远征", "明快第三人称", "星舰 生态危机 外星规则 技术代价")
+            portfolio = create_portfolio_project(storage, title="Guard Portfolio", project_ids=["book-a", "book-b", "book-c"])
+
+            report = build_cross_book_similarity_report(storage, portfolio_ref=portfolio["path"], high_threshold=0.45)
+
+            self.assertEqual(report["asset"]["type"], "cross_book_similarity_report")
+            content = report["asset"]["content"]
+            self.assertEqual(content["guard_decision"]["status"], "blocked")
+            pair_by_books = {frozenset([row["left_project_id"], row["right_project_id"]]): row for row in content["pairwise_similarity"]}
+            self.assertEqual(pair_by_books[frozenset(["book-a", "book-b"])]["risk_level"], "high")
+            self.assertNotEqual(pair_by_books[frozenset(["book-a", "book-c"])]["risk_level"], "high")
+            self.assertFalse(content["guard_decision"]["shared_context_allowed"])
+            self.assertTrue(content["generation_context_boundary"]["stores_fingerprint_only"])
+
+    def _write_book_identity(self, storage: LocalStorage, project_id: str, genre: str, style: str, premise: str) -> None:
+        metadata = {"project_id": project_id}
+        storage.write_asset_auto(GenreProfile(title=f"{project_id} genre", content={"genre": genre, "core_conflict": premise, "core_reader_promise": premise}, metadata=metadata))
+        storage.write_asset_auto(StyleProfile(title=f"{project_id} style", content={"voice": style, "rhythm": style, "tone": style}, metadata=metadata))
+        storage.write_asset_auto(Outline(title=f"{project_id} outline", content={"premise": premise, "main_arc": premise, "hook_plan": premise}, metadata=metadata))
 
 
 if __name__ == "__main__":

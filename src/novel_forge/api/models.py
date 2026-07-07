@@ -486,6 +486,13 @@ class PortfolioAllocationRequest(BaseModel):
     daily_chapter_goal: int = 1
 
 
+class PortfolioSimilarityRequest(BaseModel):
+    portfolio_ref: str = ""
+    project_ids: list[str] = Field(default_factory=list)
+    medium_threshold: float = 0.35
+    high_threshold: float = 0.55
+
+
 class CreativeAssetCreateRequest(BaseModel):
     asset_type: str
     title: str
@@ -1757,6 +1764,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "PortfolioProjectRequest": PortfolioProjectRequest,
         "PortfolioScoreRequest": PortfolioScoreRequest,
         "PortfolioAllocationRequest": PortfolioAllocationRequest,
+        "PortfolioSimilarityRequest": PortfolioSimilarityRequest,
         "CreativeAssetCreateRequest": CreativeAssetCreateRequest,
         "StyleDecomposeRequest": StyleDecomposeRequest,
         "StyleReviewRequest": StyleReviewRequest,
