@@ -19,11 +19,11 @@ Status legend:
 | 数据模型 | 蓝图用途 | 当前是否存在 | 当前实现位置 | 缺失字段 | 生命周期状态 | 关联模块 | 优先级 |
 |---|---|---|---|---|---|---|---|
 | Source | 外部/内部来源登记 | partial | `SourceDocument`, importer metadata, Source Governance assets | source snapshot diff, sync refresh state, usage feedback | evidence asset plus governance foundation | MKAOS ingestion, source governance | P0 |
-| SourcePolicy | 来源使用规则 | yes-foundation | `SourcePolicy`, `modules/source_intake/service.py` | connector-level expiry/renewal policy, per-stage budget | create/evaluate asset lifecycle | Context Builder, MKAOS | P0 |
+| SourcePolicy | 来源使用规则 | yes-foundation | `SourcePolicy`, `modules/source_intake/service.py`; consumed by `modules/mkaos/service.py` and `modules/materials/service.py` | connector-level expiry/renewal policy, per-stage budget, analysis/context caller refs | create/evaluate asset lifecycle plus MKAOS/material caller contract | Context Builder, MKAOS, Materials | P0 |
 | SourceSyncJob | 来源同步任务 | yes-foundation | `SourceSyncJob`, `modules/source_intake/service.py` | schedule runner, cursor retry execution, connector adapter binding | planned/checkpoint asset lifecycle | Source Governance OS | P2 |
 | SourceSnapshot | 来源快照 | yes-foundation | `SourceSnapshot`, `modules/source_intake/service.py` | snapshot diff and retention policy | evidence-only snapshot asset | Source Governance OS | P2 |
 | LicenseCheckResult | 许可检查结果 | yes-foundation | `LicenseCheckResult`, `modules/source_intake/service.py` | expiry/renewal and legal reviewer workflow | create asset lifecycle | Source Governance OS | P0 |
-| SourceRiskReport | 来源风险报告 | yes-foundation | `SourceRiskReport`, `modules/source_intake/service.py` | Context Builder/MKAOS caller migration and recurring risk refresh | R0-R4 report asset lifecycle | MKAOS, Context Builder | P0 |
+| SourceRiskReport | 来源风险报告 | yes-foundation | `SourceRiskReport`, `modules/source_intake/service.py`; `source-eligibility-caller-contract-v1` on MKAOS knowledge/material assets | analysis conversion/context caller migration and recurring risk refresh | R0-R4 report asset lifecycle plus production fail-closed consumption in MKAOS/material seams | MKAOS, Materials, Context Builder | P0 |
 | RawDocument | 原始文档 | partial | `SourceDocument` | raw/document distinction, storage boundary | basic asset | MKAOS ingestion | P1 |
 | CleanDocument | 清洗后文档 | yes | `CleanedText` | stronger provenance spans | basic asset | Analysis, MKAOS | P1 |
 | DocumentChunk | 切片 | yes | `SourceChunk`, `KnowledgeChunk`, `MemoryChunk` | chunk policy, leakage flags | usable | RAG, MKAOS | P1 |
@@ -34,7 +34,7 @@ Status legend:
 | MaterialFunction | 素材功能 | partial | content fields | stage/function enum | embedded | MKAOS | P1 |
 | MaterialRisk | 素材风险 | partial | risk fields/gates | standalone risk report | embedded | Source Governance, MKAOS | P0 |
 | MaterialUsage | 素材使用追踪 | partial | `KnowledgeUsageEvent`, `KnowledgeUsageBinding` | material-specific usage ledger | nearby asset | MKAOS, Context Builder | P1 |
-| KnowledgeAsset | 知识资产 | yes | `KnowledgeCard` | lifecycle states can deepen | usable | MKAOS | P0 |
+| KnowledgeAsset | 知识资产 | yes | `KnowledgeCard` | lifecycle states and approved-candidate promotion can deepen | usable; source-derived cards now carry SourcePolicy/SourceRiskReport eligibility and fail closed in production without passed governance | MKAOS | P0 |
 | CreativePrinciple | 创作原则 | partial | `RuleCard`, `KnowledgeCard` | standalone principle type | embedded | MKAOS, Review | P2 |
 | NarrativeMechanism | 叙事机制 | partial | `NarrativePattern`, `CommercialPattern` | lifecycle and usage feedback | basic asset | Analysis, MKAOS | P1 |
 | TemplateAsset | 模板资产 | yes | `TemplateCard`, `WritingTemplate`, `CraftTemplate` | approval/versioning | basic asset | MKAOS, creation | P1 |

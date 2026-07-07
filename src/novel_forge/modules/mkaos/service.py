@@ -361,8 +361,19 @@ def create_knowledge_card(storage: LocalStorage, payload: dict[str, Any]) -> dic
     project_id = str(payload.get("project_id") or "local-system").strip()
     workspace_path = str(payload.get("workspace_path") or "").strip()
     os_envelope = _mkaos_envelope(storage, payload, operation="mkaos.knowledge_create", asset_type="knowledge_card", project_id=project_id, task_type="knowledge_create")
-    status = _normalize_knowledge_status(str(payload.get("status") or "verified").strip())
-    risk_level = str(payload.get("risk_level") or "low").strip()
+    source_eligibility = _build_source_eligibility_contract(
+        storage,
+        payload,
+        source_chunk_ids=source_chunk_ids,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        environment=str(os_envelope.get("environment") or payload.get("environment") or "local"),
+    )
+    _enforce_source_eligibility_for_knowledge_card(source_eligibility, payload)
+    requested_status = str(payload.get("status") or "").strip()
+    default_status = "needs_review" if source_chunk_ids and source_eligibility.get("status") != "passed" else "verified"
+    status = _normalize_knowledge_status(requested_status or default_status)
+    risk_level = str(payload.get("risk_level") or source_eligibility.get("risk_level") or "low").strip()
     quality_dimensions = _quality_dimensions(payload)
     overall_quality = _float(payload.get("overall_quality_score"), _overall_quality_score(quality_dimensions))
     evidence_span_refs = _strings(payload.get("evidence_span_refs"))
@@ -390,6 +401,7 @@ def create_knowledge_card(storage: LocalStorage, payload: dict[str, Any]) -> dic
         "overall_quality_score": overall_quality,
         "weight": _float(payload.get("weight"), 1.0),
         "metadata": payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {},
+        "source_eligibility": source_eligibility,
     }
     asset = KnowledgeCard(
         title=concept_name,
@@ -408,6 +420,10 @@ def create_knowledge_card(storage: LocalStorage, payload: dict[str, Any]) -> dic
             "weight": content["weight"],
             "source_chunk_ids": source_chunk_ids,
             "evidence_span_refs": evidence_span_refs,
+            "source_eligibility_status": source_eligibility.get("status", ""),
+            "source_policy_refs": source_eligibility.get("source_policy_refs", []),
+            "source_risk_report_refs": source_eligibility.get("source_risk_report_refs", []),
+            "use_in_generation_rag": bool(source_eligibility.get("generation_context_allowed")) and not bool(source_eligibility.get("evidence_only")) and status not in DO_NOT_SELECT_STATUSES,
             "copyright_boundary": "abstract structure knowledge card derived from source evidence; no raw source expression for prose",
             "run_metadata": run_metadata("mkaos.create_knowledge_card", KnowledgeCard(title=concept_name, content={"principles": [core]})),
             **envelope_asset_metadata(os_envelope),
@@ -3465,6 +3481,197 @@ def _quality_dimensions(payload: Any) -> dict[str, float]:
     return result
 
 
+def _build_source_eligibility_contract(
+    storage: LocalStorage,
+    payload: dict[str, Any],
+    *,
+    source_chunk_ids: list[str],
+    project_id: str,
+    workspace_path: str,
+    environment: str,
+) -> dict[str, Any]:
+    base = {
+        "version": "source-eligibility-caller-contract-v1",
+        "caller": "mkaos.create_knowledge_card",
+        "environment": environment or "local",
+        "status": "not_required",
+        "risk_level": "",
+        "generation_context_allowed": False,
+        "evidence_only": False,
+        "structure_only": False,
+        "quarantine": False,
+        "approval_required": False,
+        "source_policy_refs": [],
+        "source_risk_report_refs": [],
+        "license_check_refs": [],
+        "entries": [],
+        "missing_governance": [],
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False, "source_chunk_ids_only": True},
+    }
+    if not source_chunk_ids:
+        return base
+
+    from novel_forge.modules.source_intake import evaluate_source_context_eligibility
+
+    grouped: dict[str, dict[str, Any]] = {}
+    missing_chunks: list[str] = []
+    for chunk_id in source_chunk_ids:
+        try:
+            chunk_path, chunk = _find_asset(storage, chunk_id, asset_type="source_chunk", categories=["raw"])
+        except (OSError, TypeError, ValueError):
+            missing_chunks.append(chunk_id)
+            continue
+        chunk_content = chunk.get("content", {}) if isinstance(chunk.get("content", {}), dict) else {}
+        source_path, source_doc = _resolve_source_document_for_chunk(storage, chunk, chunk_content)
+        source_content = source_doc.get("content", {}) if isinstance(source_doc.get("content", {}), dict) else {}
+        source_ref = str(
+            payload.get("source_ref")
+            or source_content.get("source_uri")
+            or source_doc.get("source")
+            or source_doc.get("id")
+            or chunk_content.get("source_document_id")
+            or chunk.get("source")
+            or chunk_id
+        )
+        key = f"{source_ref}:{source_path or chunk_content.get('source_document_path') or ''}"
+        grouped.setdefault(
+            key,
+            {
+                "source_ref": source_ref,
+                "source_document_id": str(source_doc.get("id") or chunk_content.get("source_document_id") or ""),
+                "source_document_path": source_path or str(chunk_content.get("source_document_path") or ""),
+                "source_chunk_ids": [],
+                "source_chunk_paths": [],
+            },
+        )
+        grouped[key]["source_chunk_ids"].append(chunk_id)
+        grouped[key]["source_chunk_paths"].append(_display_path(storage.root, chunk_path))
+
+    entries: list[dict[str, Any]] = []
+    for item in grouped.values():
+        eligibility = evaluate_source_context_eligibility(
+            storage,
+            {
+                "project_id": project_id,
+                "workspace_path": workspace_path,
+                "source_ref": item["source_ref"],
+                "asset_path": item["source_document_path"],
+                "source_policy_path": payload.get("source_policy_path") or payload.get("policy_ref"),
+                "license_check_path": payload.get("license_check_path") or payload.get("license_ref"),
+                "risk_report_path": payload.get("source_risk_report_path") or payload.get("risk_report_path") or payload.get("risk_ref"),
+                "risk_tier": payload.get("risk_tier") or payload.get("source_risk_tier"),
+                "environment": environment,
+                "intended_stage": payload.get("intended_stage") or payload.get("stage") or "knowledge_card",
+                "target_refs": [*item["source_chunk_ids"], *_strings(payload.get("target_refs"))],
+                "evidence_refs": _strings(payload.get("evidence_refs")) or _strings(payload.get("evidence_span_refs")),
+                "create_approval_request": bool(payload.get("create_source_approval_request")),
+            },
+        )
+        governance = eligibility.get("source_governance", {}) if isinstance(eligibility.get("source_governance"), dict) else {}
+        entry = {
+            "source_ref": item["source_ref"],
+            "source_document_id": item["source_document_id"],
+            "source_document_path": item["source_document_path"],
+            "source_chunk_ids": _dedupe(item["source_chunk_ids"]),
+            "source_chunk_paths": _dedupe(item["source_chunk_paths"]),
+            "risk_tier": eligibility.get("risk_tier", ""),
+            "risk_level": eligibility.get("risk_level", ""),
+            "generation_context_allowed": bool(eligibility.get("generation_context_allowed")),
+            "evidence_only": bool(eligibility.get("evidence_only")),
+            "structure_only": bool(eligibility.get("structure_only")),
+            "quarantine": bool(eligibility.get("quarantine")),
+            "approval_required": bool(eligibility.get("approval_required")),
+            "blocking": bool(eligibility.get("blocking")),
+            "usable_context_form": eligibility.get("usable_context_form", ""),
+            "reason": eligibility.get("reason", ""),
+            "policy_ref": eligibility.get("policy_ref", ""),
+            "risk_report_ref": eligibility.get("risk_report_ref", ""),
+            "license_check_ref": eligibility.get("license_check_ref", ""),
+            "governance": governance,
+        }
+        entries.append(entry)
+
+    missing_governance: list[dict[str, Any]] = []
+    for entry in entries:
+        governance = entry.get("governance", {}) if isinstance(entry.get("governance"), dict) else {}
+        missing = [
+            field
+            for field, present in {
+                "source_policy": governance.get("policy_present"),
+                "source_risk_report": governance.get("risk_report_present"),
+            }.items()
+            if not present
+        ]
+        if missing:
+            missing_governance.append({"source_ref": entry.get("source_ref", ""), "missing": missing})
+    for chunk_id in missing_chunks:
+        missing_governance.append({"source_ref": chunk_id, "missing": ["source_chunk"]})
+
+    risks = [_normalize_risk_level(str(entry.get("risk_level") or "")) for entry in entries]
+    risk_level = _max_source_risk_level(risks)
+    generation_allowed = bool(entries) and all(bool(entry.get("generation_context_allowed")) for entry in entries)
+    evidence_only = any(bool(entry.get("evidence_only")) for entry in entries)
+    blocked = bool(missing_chunks) or any(bool(entry.get("blocking") or entry.get("quarantine")) for entry in entries)
+    production_blocked = is_production_environment(environment) and (
+        bool(missing_governance)
+        or not generation_allowed
+        or evidence_only
+        or blocked
+    )
+    if production_blocked or blocked:
+        status = "blocked"
+    elif missing_governance or evidence_only or any(bool(entry.get("approval_required")) for entry in entries):
+        status = "needs_review"
+    else:
+        status = "passed"
+    return {
+        **base,
+        "status": status,
+        "risk_level": risk_level,
+        "generation_context_allowed": generation_allowed,
+        "evidence_only": evidence_only,
+        "structure_only": any(bool(entry.get("structure_only")) for entry in entries),
+        "quarantine": any(bool(entry.get("quarantine")) for entry in entries),
+        "approval_required": any(bool(entry.get("approval_required")) for entry in entries),
+        "source_policy_refs": _dedupe([str(entry.get("policy_ref") or "") for entry in entries if entry.get("policy_ref")]),
+        "source_risk_report_refs": _dedupe([str(entry.get("risk_report_ref") or "") for entry in entries if entry.get("risk_report_ref")]),
+        "license_check_refs": _dedupe([str(entry.get("license_check_ref") or "") for entry in entries if entry.get("license_check_ref")]),
+        "entries": entries,
+        "missing_governance": missing_governance,
+        "source_chunk_count": len(source_chunk_ids),
+    }
+
+
+def _resolve_source_document_for_chunk(storage: LocalStorage, chunk: dict[str, Any], content: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    for ref in [content.get("source_document_path"), content.get("source_document_id"), chunk.get("source")]:
+        try:
+            path, source_doc = _find_asset(storage, str(ref or ""), asset_type="source_document", categories=["raw"])
+            return _display_path(storage.root, path), source_doc
+        except (OSError, TypeError, ValueError):
+            continue
+    return "", {}
+
+
+def _max_source_risk_level(risks: list[str]) -> str:
+    order = {"": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
+    selected = ""
+    for risk in risks:
+        if order.get(risk, 0) > order.get(selected, 0):
+            selected = risk
+    return selected
+
+
+def _enforce_source_eligibility_for_knowledge_card(source_eligibility: dict[str, Any], payload: dict[str, Any]) -> None:
+    environment = str(source_eligibility.get("environment") or payload.get("environment") or "")
+    if not is_production_environment(environment):
+        return
+    if source_eligibility.get("status") in {"not_required", "passed"}:
+        return
+    missing = source_eligibility.get("missing_governance") if isinstance(source_eligibility.get("missing_governance"), list) else []
+    reason = "missing SourcePolicy/SourceRiskReport evidence" if missing else str(source_eligibility.get("status") or "blocked")
+    raise ValueError(f"MKAOS source eligibility blocks production knowledge card: {reason}")
+
+
 def _overall_quality_score(dimensions: dict[str, Any]) -> float:
     values: list[float] = []
     for key, fallback in QUALITY_DIMENSIONS.items():
@@ -4095,6 +4302,7 @@ def _query_row(row: dict[str, Any], bindings: list[dict[str, Any]]) -> dict[str,
         "binding_count": len(bindings),
         "selection_score": round((quality * weight) + priority_bonus, 4),
         "source_chunk_ids": content.get("source_chunk_ids", []),
+        "source_eligibility": content.get("source_eligibility", {}) if isinstance(content.get("source_eligibility", {}), dict) else {},
     }
 
 
@@ -5492,6 +5700,7 @@ def _pack_item_from_binding(
         "priority": content.get("priority", 100),
         "risk_level": content.get("risk_level", kcontent.get("risk_level", "low")),
         "status": status,
+        "source_eligibility": kcontent.get("source_eligibility", {}) if isinstance(kcontent.get("source_eligibility", {}), dict) else {},
         "applicable_genres": kcontent.get("applicable_genres", []),
         "applicable_platforms": kcontent.get("applicable_platforms", []),
         "platform_weights": kcontent.get("platform_weights", {}) if isinstance(kcontent.get("platform_weights", {}), dict) else {},
@@ -5546,6 +5755,17 @@ def _selector_decision(
     risk_level = _normalize_risk_level(str(item.get("risk_level") or "low"))
     excluded_risks = set(_strings(selector_policy.get("exclude_risk_levels")))
     estimated_tokens = _estimate_pack_item_tokens(item)
+    source_eligibility = item.get("source_eligibility") if isinstance(item.get("source_eligibility"), dict) else {}
+    if _source_eligibility_blocks_pack_selection(item, source_eligibility, selector_policy):
+        return {
+            "selected": False,
+            "reason": "source_eligibility_blocks_production_context",
+            "selection_score": 0.0,
+            "quality_adjusted_score": 0.0,
+            "estimated_tokens": estimated_tokens,
+            "risk_level": risk_level,
+            "source_eligibility_status": source_eligibility.get("status", "missing"),
+        }
     if risk_level in excluded_risks:
         return {
             "selected": False,
@@ -5613,6 +5833,22 @@ def _selector_decision(
             "source_policy_penalty": round(source_policy_penalty, 4),
         },
     }
+
+
+def _source_eligibility_blocks_pack_selection(item: dict[str, Any], source_eligibility: dict[str, Any], selector_policy: dict[str, Any]) -> bool:
+    if not is_production_environment(str(selector_policy.get("environment") or "")):
+        return False
+    if not _strings(item.get("source_chunk_ids")):
+        return False
+    if not source_eligibility:
+        return True
+    if source_eligibility.get("status") != "passed":
+        return True
+    if not bool(source_eligibility.get("generation_context_allowed")):
+        return True
+    if bool(source_eligibility.get("evidence_only") or source_eligibility.get("quarantine")):
+        return True
+    return False
 
 
 def _select_pack_items(items: list[dict[str, Any]], *, flow: str, budget: dict[str, Any]) -> list[dict[str, Any]]:

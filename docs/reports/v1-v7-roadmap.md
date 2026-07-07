@@ -47,7 +47,7 @@ Current evidence:
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
-- Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job assets and context eligibility evaluation; caller migration into every Context Builder/MKAOS/material path still needs tightening.
+- Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job assets and context eligibility evaluation; MKAOS knowledge/material seams consume eligibility evidence, while analysis conversion and context selected-asset summaries still need tightening.
 - ReaderPromise, PleasurePoint/ChapterEconomy, Character Pressure, and Mobile Reading lifecycles now have schema-backed local foundations and draft-to-longform or chapter-bus integration; payoff, scene-value, agency, pressure, and mobile rhythm detection remain deterministic and need calibration plus final multi-chapter proof.
 
 推荐切片:
@@ -279,7 +279,7 @@ Current evidence:
 - Phase 1 single-book loop not yet proven.
 
 推荐切片:
-- SourceRiskReport eligibility caller migration for remaining MKAOS/material paths.
+- SourceRiskReport eligibility caller migration for remaining analysis/context paths.
 - Book-level scheduler using existing Agent scheduler.
 - Cost/quality dashboard by project.
 

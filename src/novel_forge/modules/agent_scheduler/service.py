@@ -2034,7 +2034,8 @@ def _run_decompose(storage: LocalStorage, queue_item: dict[str, Any], agent_run:
 def _run_build_materials(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
     from novel_forge.modules.materials import build_materials
 
-    return {"path": build_materials(storage, _required_input_path(agent_run))}
+    evidence = _evidence(agent_run)
+    return {"path": build_materials(storage, _required_input_path(agent_run), environment=str(evidence.get("environment") or ""))}
 
 
 def _run_generate_outline(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
