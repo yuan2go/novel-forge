@@ -82,7 +82,7 @@ Status legend:
 | SceneDraft | 场景正文 | partial | DraftChapter content | scene-level draft model | embedded | Drafting | P2 |
 | DialoguePass | 对话专项稿 | no | Not found | pass type, diff, review | missing | Revision/Style | P2 |
 | StyleProfile | 风格档案 | yes | `StyleProfile`, Style OS assets | authorized sample lifecycle | usable | Style OS | P1 |
-| ReadabilityReport | 可读性报告 | partial | `QualityScoreReport`, `ChapterAuditReport` | standalone readability metrics | embedded/report | Quality/Readable Prose | P0 |
+| ReadabilityReport | 可读性报告 | partial as `quality_score_report` | `readable-prose-gate-v1` writes `QualityScoreReport`, ReviewIssue, RevisionTask | standalone readability asset and calibration set | usable embedded report | Quality/Readable Prose | P0 |
 | AntiAIReport | AI 味报告 | partial | review/quality fields | standalone anti-AI metrics | embedded | Quality/Revision | P0 |
 | PageTurningReport | 追读报告 | partial | `Opening3Report`, platform retention risk | standalone page-turning gate | embedded/report | Quality/Web Novel | P0 |
 | MobileReadingReport | 移动阅读报告 | no | Not found | paragraph rhythm, mobile scan metrics | missing | Quality/Web Novel | P1 |
@@ -115,7 +115,7 @@ Status legend:
 2. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 3. `SourcePolicy` / `SourceRiskReport`: needed before using large external corpora in production contexts.
 4. Readable prose/page-turning/mobile review models: needed after `chapter-blueprint-contract-v1` so draft quality is not limited by thin prose gates.
-5. `ReadabilityReport` / `PageTurningReport` / `AntiAIReport`: needed to convert readable prose goals into blocking gates.
+5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
 6. `CanonFact` / `TimelineEvent` / `ReaderPromise` reducers: needed to keep 10-30 chapters coherent.
 
 ## Notes

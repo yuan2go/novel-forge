@@ -55,6 +55,7 @@ class ContentQualityLoopTests(unittest.TestCase):
                     "genre_risk_gate",
                     "style_drift_gate",
                     "canon_graph_plugin_gate",
+                    "readable_prose_gate",
                     "quality_rubric_pack",
                     "quality_suite",
                     "provider_quality_judge",
@@ -71,6 +72,39 @@ class ContentQualityLoopTests(unittest.TestCase):
             self.assertEqual(updated["metadata"]["content_quality_loop_path"], result["path"])
             self.assertEqual(updated["metadata"]["chapter_quality_trend_path"], result["asset"]["content"]["chapter_quality_trend_path"])
             self.assertEqual(updated["content"]["content_quality_loop"]["path"], result["path"])
+
+    def test_readable_prose_gate_blocks_thin_draft_and_creates_repair_assets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            draft = DraftChapter(
+                title="Thin draft",
+                content={
+                    "chapter": 1,
+                    "text": "他想了很多事情。命运似乎很复杂。一切都很重要。然后故事继续。",
+                    "copyright_boundary": "original fixture",
+                },
+                metadata={"project_id": "p-readable"},
+            )
+            draft_path = storage.write_asset_auto(draft)
+
+            result = run_content_quality_loop(
+                storage,
+                target_path=draft_path,
+                stage="draft",
+                platform_id="local",
+            )
+
+            self.assertEqual(result["status"], "blocked")
+            readable_step = next(step for step in result["asset"]["content"]["steps"] if step["name"] == "readable_prose_gate")
+            self.assertEqual(readable_step["status"], "blocked")
+            self.assertTrue(readable_step["review_issue_paths"])
+            self.assertTrue(result["asset"]["content"]["revision_task_paths"])
+            issue = storage.read_json(storage.root / readable_step["review_issue_paths"][0])
+            self.assertEqual(issue["type"], "review_issue")
+            self.assertEqual(issue["content"]["source_system"], "readable_prose_gate.v1")
+            task = storage.read_json(storage.root / result["asset"]["content"]["revision_task_paths"][0])
+            self.assertEqual(task["type"], "revision_task")
+            self.assertEqual(task["metadata"]["source_system"], "readable_prose_gate.v1")
 
     def test_production_quality_loop_blocks_missing_provider_judge(self):
         with tempfile.TemporaryDirectory() as tmp:

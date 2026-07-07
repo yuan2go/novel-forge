@@ -34,20 +34,20 @@ Current evidence:
 - Development after that baseline added compact sequence task-status recording and lazy single-profile Agent Registry sync. This is runtime governance work only; no new chapter acceptance was run.
 - Context Builder now emits and enforces `stage-context-profile-v1` contracts for topic/world/character/outline/chapter-plan/prose/review/revision/recap/publish/feedback contexts. Bundles include source policy, source isolation, allowed/forbidden asset types, and manual-selection policy rejections. Unit coverage is in `tests/unit/test_context_builder_stage_profiles.py`.
 - Chapter planning now emits `chapter-blueprint-contract-v1` inside `ChapterPlan`, preserves it in `ChapterPlanVersion`, and hands it into `DraftChapter` as `chapter_plan_blueprint` evidence. Unit coverage is in `tests/unit/test_chapter_blueprint_contract.py`.
+- Content quality loop now includes `readable-prose-gate-v1` as a local explainable gate that writes `quality_score_report`, blocking `ReviewIssue`, and `RevisionTask` assets for thin or unreadable prose. Unit coverage is in `tests/unit/test_content_quality_loop.py`.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
-- Readable prose/page-turning/mobile gates are not first-class hard blockers.
+- Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
 - ApprovalRequest missing.
 - Source policy lifecycle still needs tightening beyond the Context Builder stage profile contract.
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. Readable Prose Gate + Golden Opening Gate + Toxic Point Gate.
-3. ReviewIssue-to-RevisionPlan strategy mapping with re-review evidence.
-4. Canon/timeline/foreshadow reducer and recap cadence.
-5. Export package.
+2. ReviewIssue-to-RevisionPlan strategy mapping with re-review evidence.
+3. Canon/timeline/foreshadow reducer and recap cadence.
+4. Export package.
 
 验收标准:
 - Create one project.

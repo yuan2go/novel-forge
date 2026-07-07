@@ -62,7 +62,7 @@ Current verified result for the V7 foundation and risk closure pass: all command
 | Chapter blueprint | `test_chapter_blueprint_contract.py`, `test_context_and_production_chain.py`, `test_module_services.py` | Embedded `chapter-blueprint-contract-v1` is covered across plan, version, and draft handoff |
 | MKAOS | Many `test_mkaos_*.py`, MKAOS integration and acceptance tests | Broad coverage, still evolving |
 | Canon/KG/continuity | `test_canon_graph*.py`, `test_novel_kg*.py`, long-chain integration tests | Partial long-form coverage |
-| Review/revision/publishing | `test_review_issue.py`, `test_publishing_center.py`, `test_publish_feedback_loop.py`, publishing fixtures | Stronger than earlier, still needs more production-ready fixtures |
+| Review/revision/publishing | `test_review_issue.py`, `test_content_quality_loop.py`, `test_publishing_center.py`, `test_publish_feedback_loop.py`, publishing fixtures | Readable prose gate now creates ReviewIssue/RevisionTask evidence; revision strategy depth still needs more fixtures |
 | Eval/quality | `test_evaluation_center_general.py`, `test_longform_quality_gate_e2e.py`, MKAOS quality tests | Partial production eval coverage |
 | V7 content intelligence | `test_genre_os.py`, `test_style_os.py`, `test_canon_graph_plugins.py`, `test_quality_eval_v2.py`, `test_long_chain_proof.py`, `test_publishing_feedback_adapters.py`, and V7 integration tests | Foundation coverage plus provider quality evidence, opt-in provider 50 proof, platform API adapter, routes, context, and proof fixtures |
 | UI | `npm --prefix web/admin test`, optional Playwright smoke | Node tests exist; browser smoke may be skipped without browsers |

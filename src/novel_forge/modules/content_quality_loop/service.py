@@ -11,8 +11,9 @@ from novel_forge.modules.genre_os import run_genre_risk_gate
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment
 from novel_forge.modules.production_context import project_scope_from_asset
 from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
+from novel_forge.modules.review_issue import create_review_issue
 from novel_forge.modules.style_os import run_style_drift_gate
-from novel_forge.schemas import ChapterQualityTrend, ContentQualityLoopReport, validate_common_fields
+from novel_forge.schemas import ChapterQualityTrend, ContentQualityLoopReport, QualityScoreReport, RevisionTask, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 GENRE_PLUGIN_BY_ID = {
@@ -137,6 +138,22 @@ def run_content_quality_loop(
     evidence_paths.extend(result["paths"])
     review_issue_paths.extend(result["review_issue_paths"])
 
+    readable = _run_readable_prose_gate(
+        storage,
+        target_file=target_file,
+        target=target.to_dict(),
+        stage=stage,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        persist_issues=persist_issues,
+    )
+    readable_step = _record_step("readable_prose_gate", readable)
+    steps.append(readable_step)
+    evidence_paths.extend(readable_step["paths"])
+    review_issue_paths.extend(readable_step["review_issue_paths"])
+    if readable.get("revision_task_path"):
+        revision_task_paths.append(str(readable["revision_task_path"]))
+
     resolved_rubric_path = str(rubric_path or "")
     if not resolved_rubric_path:
         rubric = build_quality_rubric_pack(
@@ -256,6 +273,231 @@ def run_content_quality_loop(
     if attach_to_target:
         _attach_loop_to_target(storage, target_file, path, status=status, blocking=bool(blocking_issues), chapter_quality_trend_path=trend_path)
     return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "status": status, "blocking": bool(blocking_issues), "envelope": env, "chapter_quality_trend_path": trend_path}
+
+
+def _run_readable_prose_gate(
+    storage: LocalStorage,
+    *,
+    target_file: Path,
+    target: dict[str, Any],
+    stage: str,
+    project_id: str,
+    workspace_path: str,
+    persist_issues: bool,
+) -> dict[str, Any]:
+    target_content = target.get("content", {}) if isinstance(target.get("content", {}), dict) else {}
+    text = str(target_content.get("text") or target_content.get("chapter_text") or "")
+    metrics = _readable_prose_metrics(text)
+    findings = _readable_prose_findings(text, metrics)
+    blocking_findings = [item for item in findings if item.get("blocking")]
+    scores = metrics["scores"]
+    overall = int(round(sum(scores.values()) / max(len(scores), 1)))
+    status = "blocked" if blocking_findings else "passed"
+    recommendation = "block" if blocking_findings else "pass"
+    report = QualityScoreReport(
+        title=f"Readable prose gate for {target.get('title') or target.get('id')}",
+        source=str(target.get("id") or ""),
+        tags=["readable-prose-gate", stage, status],
+        content={
+            "target_asset_id": str(target.get("id") or ""),
+            "target_asset_path": _display_path(storage.root, target_file),
+            "standard_id": "readable-prose-gate-v1",
+            "overall_score": overall,
+            "scores": scores,
+            "gate_results": {
+                "status": status,
+                "blocking": bool(blocking_findings),
+                "blocking_issue_count": len(blocking_findings),
+                "issue_count": len(findings),
+                "metrics": metrics,
+            },
+            "recommendation": recommendation,
+            "status": status,
+            "blocking": bool(blocking_findings),
+            "blocking_issue_count": len(blocking_findings),
+            "issues": findings,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "source_system": "readable_prose_gate.v1"},
+        references=[_display_path(storage.root, target_file)],
+    )
+    report_path = _write_asset(storage, report)
+    review_issue_paths: list[str] = []
+    if persist_issues:
+        for issue in findings:
+            if not issue.get("blocking"):
+                continue
+            created = create_review_issue(
+                storage,
+                {
+                    "issue_type": "quality_gate",
+                    "severity": issue.get("severity", "high"),
+                    "blocking": bool(issue.get("blocking")),
+                    "message": issue.get("message", ""),
+                    "fix_suggestion": issue.get("fix_suggestion", ""),
+                    "target_asset_id": str(target.get("id") or ""),
+                    "target_asset_type": str(target.get("type") or ""),
+                    "target_asset_path": _display_path(storage.root, target_file),
+                    "review_report_id": report.id,
+                    "review_report_path": report_path,
+                    "project_id": project_id,
+                    "workspace_path": workspace_path,
+                    "evidence_refs": [report_path, _display_path(storage.root, target_file)],
+                    "source_system": "readable_prose_gate.v1",
+                    "source_issue": issue,
+                },
+            )
+            review_issue_paths.append(created["path"])
+    revision_task_path = ""
+    if blocking_findings:
+        revision_task_path = _write_readable_prose_revision_task(
+            storage,
+            report_path=report_path,
+            target_path=_display_path(storage.root, target_file),
+            target_id=str(target.get("id") or ""),
+            findings=blocking_findings,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            review_issue_paths=review_issue_paths,
+        )
+    data = storage.read_json(resolve_path(storage.root, report_path))
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    content["review_issue_paths"] = review_issue_paths
+    content["revision_task_path"] = revision_task_path
+    data["content"] = content
+    data["references"] = _dedupe([*[str(item) for item in data.get("references", []) if str(item).strip()], *review_issue_paths, revision_task_path])
+    storage.write_json(resolve_path(storage.root, report_path), data)
+    return {
+        "path": report_path,
+        "asset": storage.read_json(resolve_path(storage.root, report_path)),
+        "status": status,
+        "blocking": bool(blocking_findings),
+        "review_issues": review_issue_paths,
+        "revision_task_path": revision_task_path,
+    }
+
+
+def _readable_prose_metrics(text: str) -> dict[str, Any]:
+    stripped = text.strip()
+    paragraphs = [part.strip() for part in stripped.splitlines() if part.strip()] or ([stripped] if stripped else [])
+    sentences = [part.strip() for part in _split_sentences(stripped) if part.strip()]
+    opening = stripped[:300]
+    ending = stripped[-220:]
+    pressure_terms = ["异常", "危险", "证据", "冲突", "逼", "必须", "选择", "代价", "发现", "出现", "失踪", "死", "risk", "must", "evidence", "conflict"]
+    action_terms = ["看", "听", "走", "抓", "问", "查", "推", "打开", "追", "挡", "拿", "承认", "选择", "逼", "检查", "发现", "decide", "search", "open"]
+    hook_terms = ["下一", "然而", "没想到", "忽然", "门外", "真相", "钩子", "谁", "为何", "再次", "却", "but", "next", "truth"]
+    abstract_terms = ["复杂", "重要", "某种", "一种", "似乎", "仿佛", "感觉", "命运", "内心", "东西", "事情", "意义", "无法形容", "不可名状"]
+    max_paragraph = max((len(item) for item in paragraphs), default=0)
+    scores = {
+        "opening_pressure": _score_bool(len(opening) >= 80 and _contains_any(opening, pressure_terms)),
+        "scene_progression": min(100, 35 + _count_terms(stripped, action_terms) * 8 + min(len(sentences), 8) * 4),
+        "conflict_strength": min(100, 30 + _count_terms(stripped, pressure_terms) * 9),
+        "specificity": max(0, 100 - _count_terms(stripped, abstract_terms) * 9),
+        "ending_hook": _score_bool(len(ending) >= 60 and _contains_any(ending, hook_terms)),
+        "mobile_rhythm": 100 if max_paragraph <= 420 else 72 if max_paragraph <= 760 else 48,
+    }
+    return {
+        "char_count": len(stripped),
+        "paragraph_count": len(paragraphs),
+        "sentence_count": len(sentences),
+        "max_paragraph_chars": max_paragraph,
+        "scores": scores,
+    }
+
+
+def _readable_prose_findings(text: str, metrics: dict[str, Any]) -> list[dict[str, Any]]:
+    scores = metrics.get("scores", {}) if isinstance(metrics.get("scores", {}), dict) else {}
+    findings: list[dict[str, Any]] = []
+    if int(metrics.get("char_count", 0) or 0) < 600:
+        findings.append(_readable_issue("readable_prose.length", "high", True, "chapter draft is too short to prove readable prose", "expand into full scenes with action, conflict, and sensory progression"))
+    if float(scores.get("opening_pressure", 0) or 0) < 70:
+        findings.append(_readable_issue("readable_prose.opening_pressure", "high", True, "opening lacks a concrete event, pressure, or abnormal signal", "rewrite the first 300-800 characters around a visible disturbance, goal, and cost"))
+    if float(scores.get("scene_progression", 0) or 0) < 65:
+        findings.append(_readable_issue("readable_prose.scene_progression", "high", True, "chapter has too little observable action progression", "convert exposition into scene actions, decisions, and consequences"))
+    if float(scores.get("conflict_strength", 0) or 0) < 65:
+        findings.append(_readable_issue("readable_prose.conflict_strength", "high", True, "chapter conflict pressure is too weak for v1 production", "add an obstacle, cost, or antagonist pressure that forces a choice"))
+    if float(scores.get("ending_hook", 0) or 0) < 70:
+        findings.append(_readable_issue("readable_prose.ending_hook", "high", True, "ending does not create a next-chapter question or reversal", "end with unresolved pressure, new evidence, or a changed objective"))
+    if float(scores.get("specificity", 0) or 0) < 70:
+        findings.append(_readable_issue("readable_prose.ai_flavor", "medium", False, "draft leans on abstract or generic phrasing", "replace abstract summary with concrete objects, actions, and subtext"))
+    if float(scores.get("mobile_rhythm", 0) or 0) < 70:
+        findings.append(_readable_issue("readable_prose.mobile_rhythm", "medium", False, "paragraphs are too dense for mobile web-novel reading", "split long paragraphs around action turns and dialogue pressure"))
+    return findings
+
+
+def _readable_issue(dimension: str, severity: str, blocking: bool, message: str, fix: str) -> dict[str, Any]:
+    return {
+        "dimension": dimension,
+        "severity": severity,
+        "blocking": blocking,
+        "message": message,
+        "fix_suggestion": fix,
+        "source_system": "readable_prose_gate.v1",
+    }
+
+
+def _split_sentences(text: str) -> list[str]:
+    rows: list[str] = []
+    current: list[str] = []
+    for char in text:
+        current.append(char)
+        if char in {"。", "！", "？", ".", "!", "?", "\n"}:
+            sentence = "".join(current).strip()
+            if sentence:
+                rows.append(sentence)
+            current = []
+    tail = "".join(current).strip()
+    if tail:
+        rows.append(tail)
+    return rows
+
+
+def _contains_any(text: str, terms: list[str]) -> bool:
+    lowered = text.lower()
+    return any(term.lower() in lowered for term in terms)
+
+
+def _count_terms(text: str, terms: list[str]) -> int:
+    lowered = text.lower()
+    return sum(lowered.count(term.lower()) for term in terms)
+
+
+def _score_bool(value: bool) -> int:
+    return 100 if value else 35
+
+
+def _write_readable_prose_revision_task(
+    storage: LocalStorage,
+    *,
+    report_path: str,
+    target_path: str,
+    target_id: str,
+    findings: list[dict[str, Any]],
+    project_id: str,
+    workspace_path: str,
+    review_issue_paths: list[str],
+) -> str:
+    task = RevisionTask(
+        title="Readable prose revision task",
+        source=report_path,
+        tags=["readable-prose-gate", "revision-task"],
+        content={
+            "task_id": make_id("revision_task", f"readable-prose-{target_id}-{report_path}"),
+            "review_path": report_path,
+            "source_draft_path": target_path,
+            "issue_indexes": list(range(len(findings))),
+            "issues": findings,
+            "status": "open",
+            "created_at": utc_now(),
+            "outputs": {
+                "required_strategy": "rewrite blocked prose spans before re-review",
+                "review_issue_paths": review_issue_paths,
+            },
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "source_system": "readable_prose_gate.v1"},
+        references=[report_path, target_path, *review_issue_paths],
+    )
+    return _write_asset(storage, task)
 
 
 def _record_step(name: str, result: dict[str, Any]) -> dict[str, Any]:

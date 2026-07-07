@@ -47,7 +47,7 @@ This map lists current implementation areas and evidence paths. Status means cod
 | Outline | `modules/outline/service.py`, `modules/long_planning/service.py` | Long outline and planning | Implemented | module tests |
 | Chapter plan | `modules/chapter_plan/service.py` | Chapter-level plan with embedded blueprint contract | Implemented | `test_chapter_blueprint_contract.py` plus module tests |
 | Drafting | `modules/drafting/service.py` | Draft chapter candidate using chapter blueprint evidence | Implemented for local/runtime slices | provider/runtime and blueprint handoff tests |
-| Review / revision / editor | `modules/review/`, `modules/revision/`, `modules/editor/`, `modules/review_issue/` | Review report, issue, revision task, editor patch | Implemented, still deepening | review issue and editor tests |
+| Review / revision / editor | `modules/review/`, `modules/revision/`, `modules/editor/`, `modules/review_issue/`, `modules/content_quality_loop/` | Review report, readable gate, issue, revision task, editor patch | Implemented, still deepening | review issue, content quality loop, and editor tests |
 | Feedback | `modules/feedback/`, `modules/feedback_backflow/` | Reader feedback import/analysis/backflow | Partially implemented | feedback tests |
 
 ## Novel OS Runtime Modules
