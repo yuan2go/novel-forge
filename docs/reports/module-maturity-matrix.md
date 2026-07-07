@@ -28,13 +28,14 @@ Implementation status note:
 - 2026-07-08: Longform recap cadence now distinguishes 5-chapter light recap, 10-chapter formal recap, overdue formal recap, exception recap, and forced chapter checkpoints. Story Bible / Long-form OS remains M3 until final unified multi-chapter proof and operator configuration/UI are added.
 - 2026-07-08: V1 export package hardening now writes local markdown plus an export manifest with provenance, source isolation, operator checklist, rollback metadata, and manual handoff. Exporter remains M3 until final unified multi-chapter proof and publish-gate handoff coverage are run.
 - 2026-07-08: ApprovalRequest foundation now exists as a schema-backed Permission Center asset/API with approve/reject/expire lifecycle and snapshot aggregation. Agent OS remains M3 until high-risk source/context/publish/story mutation callers migrate to ApprovalRequest refs.
+- 2026-07-08: Project Cockpit now exposes V1 artifact coverage from chapter production runs, reducer/recap/export coverage, and ApprovalRequest summaries. UI/ops maturity remains M3 because this is evidence display, not final acceptance proof.
 
 ## Core OS Layer
 
 | 层级 | 模块 | 蓝图目标 | 当前状态 | 成熟度 | 缺口 | 风险 | 优先级 | 建议实现顺序 |
 |---|---|---|---|---|---|---|---|---|
 | Core OS | Agent OS | Autonomous task lifecycle, execution, retries, approvals, trace, cost | Agent contracts/tasks/runs/scheduler/dispatch/leases/retry/dead-letter/rollback and ApprovalRequest foundation exist | M3 | ApprovalRequest caller migration and v1 operation coverage incomplete | Workflow appears autonomous but business loop can still be partial | P0 | Register and test v1 chapter-loop operations and migrate high-risk calls to ApprovalRequest refs before expanding agents |
-| Core OS | Source / Material Governance OS | Source policy, license, risk, material inbox, usage tracking | SourceDocument/SourceChunk/MKAOS ingestion/source isolation/Classical-Modern slow importer exist | M3 | SourcePolicy, LicenseCheckResult, SourceSyncJob, SourceSnapshot are not first-class lifecycle models | Copyright and leakage risk | P0 | Add source policy lifecycle and leakage tests |
+| Core OS | Source / Material Governance OS | Source policy, license, risk, material inbox, usage tracking | SourceDocument/SourceChunk/MKAOS ingestion/source isolation/Classical-Modern slow importer exist | M3 | SourcePolicy, LicenseCheckResult, SourceSyncJob, SourceSnapshot are not first-class lifecycle models | Copyright and leakage risk | P0 | Next add source policy lifecycle and leakage tests |
 | Core OS | MKAOS | Evidence-only knowledge asset operating system | Knowledge cards/packs/quality/lineage/model extraction/production gates exist | M3 | Lifecycle, approval, usage feedback, and query contract need v1 standardization | Ordinary RAG drift | P0 | Standardize MKAOS query contract for topic/world/outline/chapter/review |
 | Core OS | Context Builder OS | Safe ContextPackage builder | Plans/bundles/RAG quality/source isolation/MKAOS contract and stage-specific profile enforcement exist | M3 | Final unified workflow验收 has not yet proved every v1 stage uses the correct profile | Context pollution and token bloat if callers bypass Context Builder | P0 | Keep profiles mandatory in chapter loop and add final workflow assertions later |
 | Core OS | Story Bible / Long-form OS | Canon, timeline, characters, foreshadowing, promises, long review | Canon graph, Novel KG, longform ledgers, v1 reducer, and explicit light/formal recap cadence exist | M3 | Promise lifecycle, operator cadence configuration, UI depth, and final multi-chapter proof remain deferred | Long-form continuity drift if reducer/recap evidence is skipped | P0 | Harden export package, then expose reducer/recap status in dashboard data |
@@ -100,7 +101,7 @@ Implementation status note:
 ## Highest-Leverage Next Order
 
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
-2. Dashboard coverage for reducer, recap, export, and approval outputs.
+2. Source governance lifecycle and generation-context eligibility.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Extend v1 export package evidence to 30 chapters during final unified acceptance.
 5. Source governance lifecycle.

@@ -40,6 +40,7 @@ Current evidence:
 - Longform recap trigger policy now distinguishes 5-chapter light recap, 10-chapter formal recap, overdue formal recap, exception recap, and forced chapter checkpoints. Reports persist recap level, cadence boundary, next recap chapters, and forced checkpoint status.
 - Local export package hardening now writes a generated-draft-only markdown file plus a JSON manifest containing hash/size, provenance over review/revision/canon/reducer/recap evidence, source-isolation policy, operator checklist, rollback instructions, and manual handoff to operator review before publish gate.
 - ApprovalRequest foundation now exists as a schema-backed Permission Center asset/API with approve/reject/expire lifecycle, risk/environment/blocking policy, evidence refs, rollback plan, and snapshot aggregation.
+- Project cockpit snapshots now expose V1 artifact coverage from chapter production run outputs, reducer/recap/export status, and ApprovalRequest summaries for operator inspection without running a chapter acceptance pass.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
@@ -50,7 +51,7 @@ Current evidence:
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. Dashboard data for reducer/recap/export/approval coverage.
+2. Source governance lifecycle for SourcePolicy/SourceRiskReport/generation-context eligibility.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 

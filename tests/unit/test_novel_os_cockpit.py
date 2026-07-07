@@ -6,7 +6,9 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.novel_os_cockpit import build_multi_book_daily_production_report, build_multi_book_production_schedule, build_project_cockpit_snapshot
+from novel_forge.modules.permission_center import create_approval_request, resolve_approval_request
 from novel_forge.modules.runtime_ledger import record_model_call_log
+from novel_forge.modules.chapter_production_bus.service import V1_SEQUENCE_REQUIRED_OUTPUTS
 from novel_forge.schemas import BaseAsset, ChapterPlan, DraftChapter
 from novel_forge.storage.local import LocalStorage
 
@@ -18,6 +20,49 @@ class NovelOsCockpitTests(unittest.TestCase):
             storage.ensure_layout()
             storage.write_asset_auto(ChapterPlan(title="P1 plan", content={"chapter": 1}, metadata={"project_id": "book-a"}))
             storage.write_asset_auto(DraftChapter(title="P1 draft", content={"chapter": 1, "text": "原创章节"}, metadata={"project_id": "book-a"}))
+            outputs = {key: f"data/v1/{key}.json" for key in V1_SEQUENCE_REQUIRED_OUTPUTS}
+            storage.write_asset_auto(
+                BaseAsset(
+                    type="chapter_production_run",
+                    title="Chapter 1 run",
+                    content={
+                        "run_id": "run-1",
+                        "status": "succeeded",
+                        "current_step": "completed",
+                        "chapter": 1,
+                        "step_order": ["chapter_plan", "draft", "review", "revision", "export"],
+                        "steps": {},
+                        "timeline": [],
+                        "outputs": outputs,
+                        "created_at": "2026-07-08T00:00:00Z",
+                        "updated_at": "2026-07-08T00:00:01Z",
+                    },
+                    metadata={"project_id": "book-a"},
+                )
+            )
+            pending_approval = create_approval_request(
+                storage,
+                {
+                    "project_id": "book-a",
+                    "scope": "publish",
+                    "action": "submit_release_package",
+                    "environment": "production",
+                    "risk_level": "high",
+                    "target_type": "release_package",
+                    "target_id": "release-1",
+                },
+            )
+            approved_approval = create_approval_request(
+                storage,
+                {
+                    "project_id": "book-a",
+                    "scope": "context",
+                    "action": "override_context_bundle",
+                    "environment": "local",
+                    "risk_level": "medium",
+                },
+            )
+            resolve_approval_request(storage, approved_approval["asset"]["content"]["request_id"], {"decision": "approved", "actor": "unit-test", "reason": "fixture"})
 
             snapshot = build_project_cockpit_snapshot(storage, project_id="book-a")
 
@@ -29,6 +74,13 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertIn("production_control_console", snapshot["asset"]["content"])
             self.assertIn("chapter_queue", snapshot["asset"]["content"]["production_control_console"])
             self.assertIn("gate_status_board", snapshot["asset"]["content"]["production_control_console"])
+            self.assertEqual(snapshot["asset"]["content"]["v1_artifact_coverage"]["summary"]["latest_coverage_ratio"], 1.0)
+            self.assertEqual(snapshot["asset"]["content"]["v1_artifact_coverage"]["summary"]["full_coverage_run_count"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["approval_gate_summary"]["summary"]["request_count"], 2)
+            self.assertEqual(snapshot["asset"]["content"]["approval_gate_summary"]["blocking_pending_count"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["artifact_coverage"]["latest_chapter"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["approval_gate_summary"]["pending_count"], 1)
+            self.assertEqual(pending_approval["asset"]["content"]["scope"], "publish")
 
     def test_multi_book_daily_production_report_tracks_isolation_and_capacity(self):
         with tempfile.TemporaryDirectory() as tmp:

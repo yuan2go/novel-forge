@@ -92,6 +92,7 @@ For large service splits, add characterization tests before refactoring. Keep te
 - True V1 10-chapter slow acceptance passed on 2026-07-07 with 10/10 coverage and 1460.716s runtime. It is intentionally not part of default `make test`; run `make v1-slow-acceptance` when changing chapter bus, context/review/revision loops, or longform/export coverage.
 - V1 local export package hardening is covered by the focused `test_chapter_production_bus_runs_and_resumes_end_to_end` fixture, which checks markdown export, manifest path, provenance evidence, source-isolation handoff, and operator checklist. This is development verification, not a replacement for the deferred unified chapter acceptance phase.
 - ApprovalRequest foundation is covered by `tests.unit.test_permission_center` plus the product router OpenAPI fixture. These tests cover local non-blocking requests, production/high-risk blocking requests, approved/rejected decisions, expiry, snapshot aggregation, and route registration.
+- V1 cockpit artifact coverage is covered by `tests.unit.test_novel_os_cockpit`, which verifies `project_metric_snapshot` includes V1 required-output coverage, reducer/recap/export status, and ApprovalRequest summary. This is operator evidence display, not the deferred chapter acceptance pass.
 - Optional industrial services require Docker and ports; local unit tests should not depend on them.
 - Some UI pages are console/reporting slices and need more end-to-end operator workflow tests.
 

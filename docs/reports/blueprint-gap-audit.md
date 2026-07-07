@@ -77,7 +77,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 - Need runtime growth controls: true 10-chapter slow acceptance took 1460.716s and wrote/updated 7,615 local assets.
 - Need hard negative fixtures for source leakage into generation context at each v1 stage.
 - Need readable-prose/page-turning/mobile gates with positive and negative fixtures.
-- Need approval gate fixtures for high-risk material and major plot mutation.
+- Need caller-level ApprovalRequest integration for high-risk material and major plot mutation.
 - Need service-seam characterization tests before further splitting `product.py`, MKAOS, and scheduler.
 
 ## Documentation Drift
@@ -134,9 +134,9 @@ Current implementation proves many slices and fixtures, including a true one-cha
 Do not add another broad V7 surface first. The next production slice should be:
 
 ```text
-V1 dashboard data before unified acceptance:
-expose project-level artifact coverage for reducer, recap, export, and approval evidence
-so operators can inspect workflow truth without running a new chapter acceptance pass.
+P1 Source Governance lifecycle:
+add first-class source policy/risk/eligibility assets so external sources can remain
+evidence-only unless explicitly allowed for generation context.
 ```
 
 During the current development loop, do not run chapter acceptance. Use targeted unit and compile checks only, then run the unified acceptance phase after the production slices are complete.
