@@ -36,6 +36,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     SourceConnectorRunRequest = models['SourceConnectorRunRequest']
     SourceDiffRepairRollbackRequest = models['SourceDiffRepairRollbackRequest']
     SourceStaleQuarantineSweepRequest = models['SourceStaleQuarantineSweepRequest']
+    SourceRetentionExpirySweepRequest = models['SourceRetentionExpirySweepRequest']
     SourceContextEligibilityRequest = models['SourceContextEligibilityRequest']
     HandoffOutputRequest = models['HandoffOutputRequest']
     HandoffAcceptanceRequest = models['HandoffAcceptanceRequest']
@@ -166,6 +167,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def sweep_source_stale_quarantine_endpoint(request: SourceStaleQuarantineSweepRequest) -> dict[str, Any]:
         try:
             return sweep_source_stale_quarantine(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/retention-sweep")
+    def sweep_source_retention_expiry_endpoint(request: SourceRetentionExpirySweepRequest) -> dict[str, Any]:
+        try:
+            return sweep_source_retention_expiry(LocalStorage(app_settings.root), _model_data(request))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

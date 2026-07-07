@@ -1737,6 +1737,18 @@ class SourceStaleQuarantineSweepRequest(BaseModel):
     evidence_refs: list[str] = Field(default_factory=list)
 
 
+class SourceRetentionExpirySweepRequest(BaseModel):
+    project_id: str = ""
+    workspace_path: str = ""
+    max_snapshot_age_days: int = 30
+    max_source_derived_age_days: int = 90
+    retention_policy: dict[str, Any] = Field(default_factory=dict)
+    max_assets: int = 1000
+    include_global: bool = False
+    environment: str = "local"
+    evidence_refs: list[str] = Field(default_factory=list)
+
+
 class SourceContextEligibilityRequest(BaseModel):
     source_ref: str
     asset_path: str = ""
@@ -2021,6 +2033,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "SourceConnectorRunRequest": SourceConnectorRunRequest,
         "SourceDiffRepairRollbackRequest": SourceDiffRepairRollbackRequest,
         "SourceStaleQuarantineSweepRequest": SourceStaleQuarantineSweepRequest,
+        "SourceRetentionExpirySweepRequest": SourceRetentionExpirySweepRequest,
         "SourceContextEligibilityRequest": SourceContextEligibilityRequest,
         "HandoffOutputRequest": HandoffOutputRequest,
         "HandoffAcceptanceRequest": HandoffAcceptanceRequest,

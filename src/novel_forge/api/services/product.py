@@ -39,6 +39,7 @@ from novel_forge.modules.source_intake import (
     plan_source_diff_repair,
     rollback_source_diff_repair,
     run_source_connector,
+    sweep_source_retention_expiry,
     sweep_source_stale_quarantine,
 )
 from novel_forge.agents import enforce_agent_action

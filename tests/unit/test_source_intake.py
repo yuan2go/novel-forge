@@ -25,6 +25,7 @@ from novel_forge.modules.source_intake import (
     plan_source_diff_repair,
     rollback_source_diff_repair,
     run_source_connector,
+    sweep_source_retention_expiry,
     sweep_source_stale_quarantine,
 )
 from novel_forge.modules.permission_center import resolve_approval_request
@@ -827,6 +828,67 @@ class SourceIntakeTests(unittest.TestCase):
             task_operations = {item["asset"]["content"]["operation"] for item in result["agent_tasks"]}
             self.assertIn("review-source-stale-quarantine-sweep", task_operations)
             self.assertIn("plan-source-context-exclusions", task_operations)
+
+    def test_source_retention_expiry_sweep_writes_no_delete_cleanup_plan(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(storage, {"source_ref": "aging-source", "risk_tier": "R1", "project_id": "source-p12"})
+            risk = create_source_risk_report(storage, {"source_ref": "aging-source", "source_policy_path": policy["path"], "project_id": "source-p12"})
+            snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "aging-source",
+                    "source_type": "local_manifest",
+                    "content_hash": "old-hash",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p12",
+                },
+            )
+            snapshot_data = storage.read_json(storage.root / snapshot["path"])
+            snapshot_data["content"]["captured_at"] = "2000-01-01T00:00:00+00:00"
+            storage.write_json(storage.root / snapshot["path"], snapshot_data)
+            derived_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Aging source-derived abstraction",
+                    source="aging-source",
+                    tags=["source-derived"],
+                    content={"principle": "Abstract mechanism.", "source_snapshot_ref": snapshot["asset"]["id"]},
+                    metadata={"project_id": "source-p12", "asset_status": "active", "use_in_generation_rag": True},
+                    references=[snapshot["path"], snapshot["asset"]["id"]],
+                )
+            )
+            same_source_clean_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Same source but no expired snapshot binding",
+                    source="aging-source",
+                    tags=["source-derived"],
+                    content={"principle": "Not bound to a specific expired snapshot."},
+                    metadata={"project_id": "source-p12", "asset_status": "active", "use_in_generation_rag": True},
+                )
+            )
+
+            result = sweep_source_retention_expiry(
+                storage,
+                {"project_id": "source-p12", "max_snapshot_age_days": 1, "max_assets": 50},
+            )
+            report_content = result["retention_report"]["asset"]["content"]
+            impacted_paths = {item["path"] for item in report_content["impacted_assets"]}
+            task_operations = {item["asset"]["content"]["operation"] for item in result["agent_tasks"]}
+
+            self.assertEqual(result["status"], "review_required")
+            self.assertFalse(result["delete_applied"])
+            self.assertFalse(report_content["cleanup_plan"]["delete_allowed"])
+            self.assertFalse(report_content["cleanup_plan"]["auto_invalidate_allowed"])
+            self.assertIn(snapshot["path"], impacted_paths)
+            self.assertIn(str(derived_path.relative_to(storage.root)), impacted_paths)
+            self.assertNotIn(str(same_source_clean_path.relative_to(storage.root)), impacted_paths)
+            self.assertTrue((storage.root / snapshot["path"]).exists())
+            self.assertTrue(derived_path.exists())
+            self.assertEqual(result["review_issue"]["asset"]["content"]["issue_type"], "source_snapshot_drift")
+            self.assertTrue(result["review_issue"]["asset"]["content"]["blocking"])
+            self.assertIn("review-source-retention-expiry-sweep", task_operations)
+            self.assertIn("plan-source-retention-cleanup", task_operations)
 
     def test_high_risk_source_stays_evidence_only_and_creates_blocking_production_approval(self):
         with tempfile.TemporaryDirectory() as tmp:
