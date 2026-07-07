@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.api.product import create_github_knowledge_handoff
 from novel_forge.modules.source_intake import (
+    apply_governance_recommendations,
     apply_source_diff_repair,
     create_license_check_result,
     create_source_policy,
@@ -23,13 +24,14 @@ from novel_forge.modules.source_intake import (
     plan_source_connector_adapter_lifecycle,
     plan_source_connector_execution,
     plan_source_diff_repair,
+    rollback_governance_application,
     rollback_source_diff_repair,
     run_source_connector,
     sweep_source_retention_expiry,
     sweep_source_stale_quarantine,
 )
 from novel_forge.modules.permission_center import resolve_approval_request
-from novel_forge.schemas import KnowledgeCard, MaterialCard, validate_common_fields
+from novel_forge.schemas import BaseAsset, ChangeImpactReport, KnowledgeCard, MaterialCard, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 
@@ -544,6 +546,173 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertEqual(restored["metadata"]["asset_status"], "active")
             self.assertTrue(restored["metadata"]["use_in_generation_rag"])
             self.assertIn("needs_review", restored_task_statuses)
+
+    def test_governance_application_applies_mkaos_recommendation_only_after_approval_and_can_rollback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            knowledge_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    id="knowledge-governed-1",
+                    title="Governed abstraction",
+                    source="manual",
+                    tags=["mkaos"],
+                    content={"principles": ["Use abstract historical pressure mechanism."], "principle": "Use abstract historical pressure mechanism.", "weight": 1.0},
+                    metadata={
+                        "project_id": "source-p16",
+                        "asset_status": "active",
+                        "use_in_generation_rag": True,
+                        "weight": 1.0,
+                        "copyright_boundary": "abstract structure only; no raw source expression",
+                    },
+                    references=[],
+                )
+            )
+            report_path = storage.write_asset_auto(
+                BaseAsset(
+                    id="mkaos-weight-governance-p16",
+                    type="mkaos_weight_governance_report",
+                    title="MKAOS weight governance",
+                    source="lineage",
+                    tags=["mkaos", "governance"],
+                    content={
+                        "weight_governance_report_id": "mkaos-weight-governance-p16",
+                        "project_id": "source-p16",
+                        "dry_run": True,
+                        "apply_updates": False,
+                        "apply_policy": "advisory",
+                        "recommendations": [
+                            {
+                                "asset_id": "knowledge-governed-1",
+                                "asset_type": "knowledge_card",
+                                "recommended_action": "quarantine",
+                                "weight_delta": -1.0,
+                                "risk_level": "high",
+                                "review_required_before_apply": True,
+                                "invalidation_recommendations": [{"reason": "stale source"}],
+                            }
+                        ],
+                        "applied_updates": [],
+                        "applied_count": 0,
+                        "source_isolation": {"raw_text_included": False, "source_text_included": False, "target_text_included": False},
+                        "generated_at": "2026-07-08T00:00:00Z",
+                    },
+                    metadata={"project_id": "source-p16", "asset_status": "needs_review", "use_in_generation_rag": False},
+                    references=["knowledge-governed-1"],
+                )
+            )
+
+            blocked = apply_governance_recommendations(storage, {"governance_report_path": str(report_path.relative_to(storage.root)), "project_id": "source-p16"})
+            self.assertEqual(blocked["status"], "approval_required")
+            unchanged = storage.read_json(knowledge_path)
+            self.assertEqual(unchanged["metadata"]["asset_status"], "active")
+            self.assertEqual(unchanged["content"]["weight"], 1.0)
+
+            approval_path = blocked["approval_request"]["path"]
+            resolve_approval_request(storage, approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve governance"})
+            ready = apply_governance_recommendations(storage, {"governance_report_path": str(report_path.relative_to(storage.root)), "approval_request_path": approval_path, "project_id": "source-p16"})
+            self.assertEqual(ready["status"], "ready_for_confirm")
+            self.assertEqual(storage.read_json(knowledge_path)["metadata"]["asset_status"], "active")
+
+            applied = apply_governance_recommendations(
+                storage,
+                {
+                    "governance_report_path": str(report_path.relative_to(storage.root)),
+                    "approval_request_path": approval_path,
+                    "confirm_apply": True,
+                    "actor": "unit-test",
+                    "project_id": "source-p16",
+                },
+            )
+            governed = storage.read_json(knowledge_path)
+            self.assertEqual(applied["status"], "applied")
+            self.assertTrue(applied["mutation_applied"])
+            self.assertEqual(applied["mutation_scope"], "metadata_only")
+            self.assertEqual(governed["metadata"]["asset_status"], "quarantined")
+            self.assertFalse(governed["metadata"]["use_in_generation_rag"])
+            self.assertFalse(governed["metadata"]["mkaos_governance_content_weight_mutated"])
+            self.assertEqual(governed["content"]["weight"], 1.0)
+            self.assertEqual(applied["rollback_plan"]["asset"]["type"], "rollback_plan")
+
+            rollback_blocked = rollback_governance_application(storage, {"rollback_plan_path": applied["rollback_plan"]["path"], "project_id": "source-p16"})
+            self.assertEqual(rollback_blocked["status"], "approval_required")
+            rollback_approval_path = rollback_blocked["approval_request"]["path"]
+            resolve_approval_request(storage, rollback_approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve governance rollback"})
+            rollback_ready = rollback_governance_application(storage, {"rollback_plan_path": applied["rollback_plan"]["path"], "approval_request_path": rollback_approval_path, "project_id": "source-p16"})
+            self.assertEqual(rollback_ready["status"], "ready_for_confirm")
+            rolled_back = rollback_governance_application(
+                storage,
+                {
+                    "rollback_plan_path": applied["rollback_plan"]["path"],
+                    "approval_request_path": rollback_approval_path,
+                    "confirm_rollback": True,
+                    "actor": "unit-test",
+                    "project_id": "source-p16",
+                },
+            )
+            restored = storage.read_json(knowledge_path)
+            self.assertEqual(rolled_back["status"], "applied")
+            self.assertTrue(rolled_back["rollback_applied"])
+            self.assertEqual(rolled_back["rollback_result"]["asset"]["type"], "rollback_result")
+            self.assertEqual(restored["metadata"]["asset_status"], "active")
+            self.assertTrue(restored["metadata"]["use_in_generation_rag"])
+            self.assertEqual(restored["content"]["weight"], 1.0)
+
+    def test_governance_application_marks_change_impact_targets_metadata_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            knowledge_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    id="knowledge-impact-1",
+                    title="Impacted abstraction",
+                    source="source-a",
+                    tags=["mkaos"],
+                    content={"principles": ["Abstract mechanism."], "principle": "Abstract mechanism."},
+                    metadata={
+                        "project_id": "source-p16b",
+                        "asset_status": "active",
+                        "use_in_generation_rag": True,
+                        "copyright_boundary": "abstract structure only; no raw source expression",
+                    },
+                    references=[],
+                )
+            )
+            report_path = storage.write_asset_auto(
+                ChangeImpactReport(
+                    id="change-impact-p16",
+                    title="Change impact governance",
+                    source="source-a",
+                    tags=["source-governance", "needs-review"],
+                    content={
+                        "target_asset_id": "source-a",
+                        "target_path": "sources/source-a",
+                        "impacted_assets": [{"id": "knowledge-impact-1", "path": str(knowledge_path.relative_to(storage.root)), "severity": "blocking"}],
+                        "impact_edges": [{"source": "source-a", "target": str(knowledge_path.relative_to(storage.root)), "relation": "source_governance"}],
+                        "severity_summary": {"blocking": 1, "high": 0, "medium": 0, "low": 0},
+                        "recommendation": "block_until_resolved",
+                        "project_id": "source-p16b",
+                    },
+                    metadata={"project_id": "source-p16b", "asset_status": "needs_review", "use_in_generation_rag": False},
+                    references=[str(knowledge_path.relative_to(storage.root))],
+                )
+            )
+            blocked = apply_governance_recommendations(storage, {"governance_report_path": str(report_path.relative_to(storage.root)), "project_id": "source-p16b"})
+            approval_path = blocked["approval_request"]["path"]
+            resolve_approval_request(storage, approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve impact"})
+            applied = apply_governance_recommendations(
+                storage,
+                {
+                    "governance_report_path": str(report_path.relative_to(storage.root)),
+                    "approval_request_path": approval_path,
+                    "confirm_apply": True,
+                    "project_id": "source-p16b",
+                },
+            )
+            impacted = storage.read_json(knowledge_path)
+            self.assertEqual(applied["status"], "applied")
+            self.assertEqual(impacted["metadata"]["asset_status"], "stale")
+            self.assertFalse(impacted["metadata"]["use_in_generation_rag"])
+            self.assertFalse(impacted["metadata"]["governance_content_mutated"])
+            self.assertEqual(impacted["content"]["principle"], "Abstract mechanism.")
 
     def test_source_connector_runner_executes_approved_local_file_in_sandbox(self):
         with tempfile.TemporaryDirectory() as tmp:

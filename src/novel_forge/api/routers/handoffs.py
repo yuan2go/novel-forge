@@ -35,6 +35,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     SourceDiffRepairApplyRequest = models['SourceDiffRepairApplyRequest']
     SourceConnectorRunRequest = models['SourceConnectorRunRequest']
     SourceDiffRepairRollbackRequest = models['SourceDiffRepairRollbackRequest']
+    SourceGovernanceApplyRequest = models['SourceGovernanceApplyRequest']
+    SourceGovernanceRollbackRequest = models['SourceGovernanceRollbackRequest']
     SourceStaleQuarantineSweepRequest = models['SourceStaleQuarantineSweepRequest']
     SourceRetentionExpirySweepRequest = models['SourceRetentionExpirySweepRequest']
     SourceContextEligibilityRequest = models['SourceContextEligibilityRequest']
@@ -160,6 +162,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def rollback_source_diff_repair_endpoint(request: SourceDiffRepairRollbackRequest) -> dict[str, Any]:
         try:
             return rollback_source_diff_repair(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/governance-apply")
+    def apply_source_governance_recommendations_endpoint(request: SourceGovernanceApplyRequest) -> dict[str, Any]:
+        try:
+            return apply_governance_recommendations(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/governance-rollback")
+    def rollback_source_governance_application_endpoint(request: SourceGovernanceRollbackRequest) -> dict[str, Any]:
+        try:
+            return rollback_governance_application(LocalStorage(app_settings.root), _model_data(request))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

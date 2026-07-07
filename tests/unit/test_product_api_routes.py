@@ -250,6 +250,8 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/sources/diff-repair-plan",
                 "/product/sources/diff-repair-apply",
                 "/product/sources/diff-repair-rollback",
+                "/product/sources/governance-apply",
+                "/product/sources/governance-rollback",
                 "/product/sources/stale-sweep",
                 "/product/sources/retention-sweep",
                 "/product/sources/context-eligibility",

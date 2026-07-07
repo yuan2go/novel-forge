@@ -1727,6 +1727,29 @@ class SourceDiffRepairRollbackRequest(BaseModel):
     evidence_refs: list[str] = Field(default_factory=list)
 
 
+class SourceGovernanceApplyRequest(BaseModel):
+    governance_report_path: str
+    approval_request_path: str = ""
+    selected_target_refs: list[str] = Field(default_factory=list)
+    confirm_apply: bool = False
+    actor: str = "operator"
+    environment: str = "local"
+    project_id: str = ""
+    workspace_path: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+
+
+class SourceGovernanceRollbackRequest(BaseModel):
+    rollback_plan_path: str
+    approval_request_path: str = ""
+    confirm_rollback: bool = False
+    actor: str = "operator"
+    environment: str = "local"
+    project_id: str = ""
+    workspace_path: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+
+
 class SourceStaleQuarantineSweepRequest(BaseModel):
     project_id: str = ""
     workspace_path: str = ""
@@ -2032,6 +2055,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "SourceDiffRepairApplyRequest": SourceDiffRepairApplyRequest,
         "SourceConnectorRunRequest": SourceConnectorRunRequest,
         "SourceDiffRepairRollbackRequest": SourceDiffRepairRollbackRequest,
+        "SourceGovernanceApplyRequest": SourceGovernanceApplyRequest,
+        "SourceGovernanceRollbackRequest": SourceGovernanceRollbackRequest,
         "SourceStaleQuarantineSweepRequest": SourceStaleQuarantineSweepRequest,
         "SourceRetentionExpirySweepRequest": SourceRetentionExpirySweepRequest,
         "SourceContextEligibilityRequest": SourceContextEligibilityRequest,
