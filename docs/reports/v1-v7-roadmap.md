@@ -224,7 +224,7 @@ Current evidence:
 - Approval Router and calling-module migration.
 - Security / Sandbox OS.
 - Prompt Injection Guard.
-- Source diff repair plans and approval-bound stale marking are available; next work is a sandboxed connector runner and rollback execution rather than automatic source mutation.
+- Source diff repair plans, approval-bound stale marking, and sandboxed local-file connector runner are available; next work is source-aware rollback execution and broader non-local connector adapter lifecycle.
 
 当前完成度: 30%.
 

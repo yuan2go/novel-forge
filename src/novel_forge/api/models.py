@@ -1686,6 +1686,19 @@ class SourceDiffRepairApplyRequest(BaseModel):
     evidence_refs: list[str] = Field(default_factory=list)
 
 
+class SourceConnectorRunRequest(BaseModel):
+    sync_job_path: str
+    approval_request_path: str = ""
+    source_path: str = ""
+    allowed_roots: list[str] = Field(default_factory=list)
+    previous_snapshot_path: str = ""
+    create_diff_repair_plan: bool = True
+    environment: str = "local"
+    project_id: str = ""
+    workspace_path: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+
+
 class SourceContextEligibilityRequest(BaseModel):
     source_ref: str
     asset_path: str = ""
@@ -1966,6 +1979,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "SourceConnectorExecutionPlanRequest": SourceConnectorExecutionPlanRequest,
         "SourceDiffRepairPlanRequest": SourceDiffRepairPlanRequest,
         "SourceDiffRepairApplyRequest": SourceDiffRepairApplyRequest,
+        "SourceConnectorRunRequest": SourceConnectorRunRequest,
         "SourceContextEligibilityRequest": SourceContextEligibilityRequest,
         "HandoffOutputRequest": HandoffOutputRequest,
         "HandoffAcceptanceRequest": HandoffAcceptanceRequest,

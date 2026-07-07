@@ -32,6 +32,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     SourceConnectorExecutionPlanRequest = models['SourceConnectorExecutionPlanRequest']
     SourceDiffRepairPlanRequest = models['SourceDiffRepairPlanRequest']
     SourceDiffRepairApplyRequest = models['SourceDiffRepairApplyRequest']
+    SourceConnectorRunRequest = models['SourceConnectorRunRequest']
     SourceContextEligibilityRequest = models['SourceContextEligibilityRequest']
     HandoffOutputRequest = models['HandoffOutputRequest']
     HandoffAcceptanceRequest = models['HandoffAcceptanceRequest']
@@ -116,6 +117,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def create_source_connector_execution_plan_endpoint(request: SourceConnectorExecutionPlanRequest) -> dict[str, Any]:
         try:
             return plan_source_connector_execution(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/connector-run")
+    def run_source_connector_endpoint(request: SourceConnectorRunRequest) -> dict[str, Any]:
+        try:
+            return run_source_connector(LocalStorage(app_settings.root), _model_data(request))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

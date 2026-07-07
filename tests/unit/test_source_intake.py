@@ -1,4 +1,5 @@
 from pathlib import Path
+import hashlib
 import json
 import sys
 import tempfile
@@ -20,6 +21,7 @@ from novel_forge.modules.source_intake import (
     list_source_policies,
     plan_source_connector_execution,
     plan_source_diff_repair,
+    run_source_connector,
 )
 from novel_forge.modules.permission_center import resolve_approval_request
 from novel_forge.schemas import KnowledgeCard, validate_common_fields
@@ -508,6 +510,125 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertEqual(stale["metadata"]["asset_status"], "stale")
             self.assertFalse(stale["metadata"]["use_in_generation_rag"])
             self.assertIn("approved_pending_dispatch", task_statuses)
+
+    def test_source_connector_runner_executes_approved_local_file_in_sandbox(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            source_dir = Path(tmp) / "sources"
+            source_dir.mkdir(parents=True, exist_ok=True)
+            source_file = source_dir / "manifest.txt"
+            source_file.write_text("manifest version two", encoding="utf-8")
+            policy = create_source_policy(storage, {"source_ref": "local-corpus", "risk_tier": "R1", "project_id": "source-p7"})
+            risk = create_source_risk_report(storage, {"source_ref": "local-corpus", "source_policy_path": policy["path"], "project_id": "source-p7"})
+            old_snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "old-hash",
+                    "source_path": "sources/manifest.txt",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p7",
+                },
+            )
+            refresh = create_source_refresh_report(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "snapshot_path": old_snapshot["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p7",
+                },
+            )
+            pending = plan_source_connector_execution(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "connector_id": "local_manifest_connector",
+                    "source_refresh_report_path": refresh["path"],
+                    "environment": "production",
+                    "execute": True,
+                    "source_path": "sources/manifest.txt",
+                    "project_id": "source-p7",
+                },
+            )
+            approval_path = pending["approval_request"]["path"]
+            resolve_approval_request(storage, approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve connector"})
+            ready = plan_source_connector_execution(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "connector_id": "local_manifest_connector",
+                    "source_refresh_report_path": refresh["path"],
+                    "approval_request_path": approval_path,
+                    "environment": "production",
+                    "execute": True,
+                    "source_path": "sources/manifest.txt",
+                    "project_id": "source-p7",
+                },
+            )
+
+            result = run_source_connector(
+                storage,
+                {
+                    "sync_job_path": ready["sync_job"]["path"],
+                    "approval_request_path": approval_path,
+                    "source_path": "sources/manifest.txt",
+                    "allowed_roots": ["sources"],
+                    "previous_snapshot_path": old_snapshot["path"],
+                    "project_id": "source-p7",
+                },
+            )
+
+            self.assertEqual(result["status"], "completed")
+            self.assertTrue(result["execution_receipt"]["execution_performed"])
+            self.assertTrue(result["file_access_used"])
+            self.assertFalse(result["network_access_used"])
+            self.assertEqual(result["snapshot"]["asset"]["content"]["content_hash"], hashlib.sha256(b"manifest version two").hexdigest())
+            self.assertFalse(result["snapshot"]["asset"]["content"]["raw_text_included"])
+            self.assertEqual(result["sync_job"]["asset"]["content"]["status"], "completed")
+            self.assertEqual(result["refresh_report"]["asset"]["type"], "source_refresh_report")
+            self.assertEqual(result["diff_repair_plan"]["asset"]["type"], "change_impact_report")
+            self.assertTrue(result["trace_span_path"])
+            self.assertTrue(result["cost_ledger_path"])
+
+    def test_source_connector_runner_blocks_path_outside_sandbox(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            outside = Path(tmp).parent / "outside-source-runner.txt"
+            outside.write_text("outside", encoding="utf-8")
+            policy = create_source_policy(storage, {"source_ref": "local-corpus", "risk_tier": "R1", "project_id": "source-p8"})
+            refresh = create_source_refresh_report(storage, {"source_ref": "local-corpus", "source_policy_path": policy["path"], "project_id": "source-p8"})
+            pending = plan_source_connector_execution(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "connector_id": "local_manifest_connector",
+                    "source_refresh_report_path": refresh["path"],
+                    "environment": "production",
+                    "execute": True,
+                    "source_path": str(outside),
+                    "project_id": "source-p8",
+                },
+            )
+            approval_path = pending["approval_request"]["path"]
+            resolve_approval_request(storage, approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve connector"})
+
+            blocked = run_source_connector(
+                storage,
+                {
+                    "sync_job_path": pending["sync_job"]["path"],
+                    "approval_request_path": approval_path,
+                    "source_path": str(outside),
+                    "allowed_roots": ["sources"],
+                    "project_id": "source-p8",
+                },
+            )
+
+            self.assertEqual(blocked["status"], "blocked_path_outside_allowed_roots")
+            self.assertFalse(blocked["execution_performed"])
+            self.assertFalse(blocked["file_access_used"])
 
     def test_high_risk_source_stays_evidence_only_and_creates_blocking_production_approval(self):
         with tempfile.TemporaryDirectory() as tmp:

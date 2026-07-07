@@ -244,6 +244,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/sources/sync-job",
                 "/product/sources/refresh-report",
                 "/product/sources/connector-execution-plan",
+                "/product/sources/connector-run",
                 "/product/sources/diff-repair-plan",
                 "/product/sources/diff-repair-apply",
                 "/product/sources/context-eligibility",
@@ -352,6 +353,9 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(connector_plan.status_code, 200, connector_plan.text)
             self.assertEqual(connector_plan.json()["sync_job"]["asset"]["type"], "source_sync_job")
             self.assertFalse(connector_plan.json()["execution_receipt"]["execution_performed"])
+            connector_run = client.post("/product/sources/connector-run", json={"sync_job_path": connector_plan.json()["sync_job"]["path"]})
+            self.assertEqual(connector_run.status_code, 200, connector_run.text)
+            self.assertEqual(connector_run.json()["status"], "approval_required")
             old_snapshot = client.post(
                 "/product/sources/snapshot",
                 json={
