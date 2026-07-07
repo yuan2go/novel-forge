@@ -18,7 +18,9 @@ from novel_forge.modules.source_intake import (
     create_source_sync_job,
     evaluate_source_context_eligibility,
     list_github_knowledge_sources,
+    list_source_connector_adapters,
     list_source_policies,
+    plan_source_connector_adapter_lifecycle,
     plan_source_connector_execution,
     plan_source_diff_repair,
     rollback_source_diff_repair,
@@ -660,6 +662,89 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertEqual(blocked["status"], "blocked_path_outside_allowed_roots")
             self.assertFalse(blocked["execution_performed"])
             self.assertFalse(blocked["file_access_used"])
+
+    def test_non_local_connector_adapter_lifecycle_is_auditable_and_network_blocked_by_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(storage, {"source_ref": "remote-metadata-source", "risk_tier": "R2", "project_id": "source-p10"})
+            refresh = create_source_refresh_report(storage, {"source_ref": "remote-metadata-source", "source_policy_path": policy["path"], "project_id": "source-p10"})
+            adapters = {item["connector_id"]: item for item in list_source_connector_adapters()}
+            self.assertIn("generic_http_metadata_connector", adapters)
+            self.assertTrue(adapters["generic_http_metadata_connector"]["network_access"])
+            self.assertFalse(adapters["generic_http_metadata_connector"]["default_network_execution_allowed"])
+
+            planned = plan_source_connector_adapter_lifecycle(
+                storage,
+                {
+                    "source_ref": "remote-metadata-source",
+                    "connector_id": "generic_http_metadata_connector",
+                    "source_refresh_report_path": refresh["path"],
+                    "execute_requested": True,
+                    "environment": "production",
+                    "callback_url": "https://example.com/private/callback?token=SECRET",
+                    "rate_limit_policy": {"max_requests_per_minute": 2},
+                    "project_id": "source-p10",
+                },
+            )
+
+            receipt = planned["execution_receipt"]
+            self.assertEqual(planned["status"], "approval_required")
+            self.assertFalse(planned["allowed"])
+            self.assertFalse(receipt["execution_performed"])
+            self.assertFalse(receipt["network_access_used"])
+            self.assertEqual(receipt["rate_limit_policy"]["max_requests_per_minute"], 2)
+            self.assertEqual(receipt["callback_policy"]["callback_url_redacted"], "https://example.com/...")
+            self.assertEqual(planned["approval_request"]["asset"]["content"]["action"], "approve_source_connector_adapter_policy")
+            self.assertTrue(planned["sync_job"]["asset"]["content"]["execution_receipt"]["trace_span_path"])
+            self.assertTrue(planned["sync_job"]["asset"]["content"]["execution_receipt"]["cost_ledger_path"])
+
+    def test_source_connector_runner_writes_blocked_receipt_for_network_connector(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(storage, {"source_ref": "remote-metadata-source", "risk_tier": "R2", "project_id": "source-p11"})
+            refresh = create_source_refresh_report(storage, {"source_ref": "remote-metadata-source", "source_policy_path": policy["path"], "project_id": "source-p11"})
+            pending = plan_source_connector_execution(
+                storage,
+                {
+                    "source_ref": "remote-metadata-source",
+                    "connector_id": "generic_http_metadata_connector",
+                    "source_refresh_report_path": refresh["path"],
+                    "execute": True,
+                    "environment": "production",
+                    "project_id": "source-p11",
+                },
+            )
+            approval_path = pending["approval_request"]["path"]
+            resolve_approval_request(storage, approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve network connector policy"})
+            ready = plan_source_connector_execution(
+                storage,
+                {
+                    "source_ref": "remote-metadata-source",
+                    "connector_id": "generic_http_metadata_connector",
+                    "source_refresh_report_path": refresh["path"],
+                    "approval_request_path": approval_path,
+                    "execute": True,
+                    "environment": "production",
+                    "project_id": "source-p11",
+                },
+            )
+
+            blocked = run_source_connector(
+                storage,
+                {
+                    "sync_job_path": ready["sync_job"]["path"],
+                    "approval_request_path": approval_path,
+                    "project_id": "source-p11",
+                },
+            )
+
+            self.assertEqual(ready["status"], "network_execution_blocked_by_default")
+            self.assertFalse(ready["allowed"])
+            self.assertEqual(blocked["status"], "blocked_network_connector")
+            self.assertFalse(blocked["execution_receipt"]["execution_performed"])
+            self.assertFalse(blocked["execution_receipt"]["network_access_used"])
+            self.assertEqual(blocked["sync_job"]["asset"]["content"]["status"], "blocked_network_connector")
+            self.assertEqual(blocked["sync_job"]["asset"]["content"]["connector_execution"]["execution_boundary"], "plan_only_no_connector_invocation")
 
     def test_source_stale_quarantine_sweep_writes_reviewable_context_denial_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:

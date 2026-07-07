@@ -224,7 +224,7 @@ Current evidence:
 - Approval Router and calling-module migration.
 - Security / Sandbox OS.
 - Prompt Injection Guard.
-- Source diff repair plans, approval-bound stale marking, sandboxed local-file connector runner, source-aware rollback execution, and stale/quarantine sweep evidence are available; next work is broader non-local connector adapter lifecycle plus retention/governance application policy.
+- Source diff repair plans, approval-bound stale marking, sandboxed local-file connector runner, non-local connector adapter lifecycle receipts, source-aware rollback execution, and stale/quarantine sweep evidence are available; next work is retention/expiry plus governance application policy.
 
 当前完成度: 30%.
 

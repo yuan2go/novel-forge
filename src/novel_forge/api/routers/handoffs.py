@@ -30,6 +30,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     SourceSyncJobRequest = models['SourceSyncJobRequest']
     SourceRefreshReportRequest = models['SourceRefreshReportRequest']
     SourceConnectorExecutionPlanRequest = models['SourceConnectorExecutionPlanRequest']
+    SourceConnectorAdapterLifecycleRequest = models['SourceConnectorAdapterLifecycleRequest']
     SourceDiffRepairPlanRequest = models['SourceDiffRepairPlanRequest']
     SourceDiffRepairApplyRequest = models['SourceDiffRepairApplyRequest']
     SourceConnectorRunRequest = models['SourceConnectorRunRequest']
@@ -72,6 +73,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         max_risk: str | None = None,
     ) -> list[dict[str, Any]]:
         return list_github_knowledge_sources(category=category, allowed_pipeline=allowed_pipeline, max_risk=max_risk)
+
+    @router.get("/product/sources/connectors")
+    def source_connector_adapters(include_network: bool = True) -> list[dict[str, Any]]:
+        return list_source_connector_adapters(include_network=include_network)
 
     @router.post("/product/sources/policy")
     def create_source_policy_endpoint(request: SourcePolicyCreateRequest) -> dict[str, Any]:
@@ -119,6 +124,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def create_source_connector_execution_plan_endpoint(request: SourceConnectorExecutionPlanRequest) -> dict[str, Any]:
         try:
             return plan_source_connector_execution(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/connector-adapter-lifecycle")
+    def create_source_connector_adapter_lifecycle_endpoint(request: SourceConnectorAdapterLifecycleRequest) -> dict[str, Any]:
+        try:
+            return plan_source_connector_adapter_lifecycle(LocalStorage(app_settings.root), _model_data(request))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

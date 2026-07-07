@@ -1665,6 +1665,23 @@ class SourceConnectorExecutionPlanRequest(BaseModel):
     workspace_path: str = ""
 
 
+class SourceConnectorAdapterLifecycleRequest(BaseModel):
+    source_ref: str
+    connector_id: str = "generic_http_metadata_connector"
+    execute_requested: bool = False
+    environment: str = "local"
+    source_policy_path: str = ""
+    source_refresh_report_path: str = ""
+    approval_request_path: str = ""
+    endpoint: str = ""
+    callback_url: str = ""
+    rate_limit_policy: dict[str, Any] = Field(default_factory=dict)
+    callback_policy: dict[str, Any] = Field(default_factory=dict)
+    project_id: str = ""
+    workspace_path: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+
+
 class SourceDiffRepairPlanRequest(BaseModel):
     source_ref: str = ""
     old_snapshot_path: str
@@ -1998,6 +2015,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "SourceSyncJobRequest": SourceSyncJobRequest,
         "SourceRefreshReportRequest": SourceRefreshReportRequest,
         "SourceConnectorExecutionPlanRequest": SourceConnectorExecutionPlanRequest,
+        "SourceConnectorAdapterLifecycleRequest": SourceConnectorAdapterLifecycleRequest,
         "SourceDiffRepairPlanRequest": SourceDiffRepairPlanRequest,
         "SourceDiffRepairApplyRequest": SourceDiffRepairApplyRequest,
         "SourceConnectorRunRequest": SourceConnectorRunRequest,

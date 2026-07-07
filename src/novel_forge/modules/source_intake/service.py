@@ -385,9 +385,47 @@ GITHUB_KNOWLEDGE_SOURCES: list[dict[str, Any]] = [
 ]
 
 SOURCE_CONNECTOR_ALLOWLIST = {
-    "manual_metadata_connector": {"connector_kind": "manual", "network_access": False, "file_access": False, "risk_level": "low"},
-    "local_manifest_connector": {"connector_kind": "local_file", "network_access": False, "file_access": True, "risk_level": "medium"},
-    "classical_modern_local_manifest": {"connector_kind": "local_file", "network_access": False, "file_access": True, "risk_level": "medium"},
+    "manual_metadata_connector": {
+        "connector_kind": "manual",
+        "network_access": False,
+        "file_access": False,
+        "risk_level": "low",
+        "default_network_execution_allowed": False,
+        "rate_limit_policy": {"mode": "manual", "max_requests_per_minute": 0, "burst": 0},
+        "callback_policy": {"supported": False, "requires_signature": False},
+        "receipt_schema": ["receipt_id", "status", "source_ref", "connector_id", "execution_performed"],
+    },
+    "local_manifest_connector": {
+        "connector_kind": "local_file",
+        "network_access": False,
+        "file_access": True,
+        "risk_level": "medium",
+        "default_network_execution_allowed": False,
+        "rate_limit_policy": {"mode": "local_file", "max_requests_per_minute": 0, "burst": 0},
+        "callback_policy": {"supported": False, "requires_signature": False},
+        "receipt_schema": ["receipt_id", "status", "source_ref", "connector_id", "source_path", "content_hash"],
+    },
+    "classical_modern_local_manifest": {
+        "connector_kind": "local_file",
+        "network_access": False,
+        "file_access": True,
+        "risk_level": "medium",
+        "default_network_execution_allowed": False,
+        "rate_limit_policy": {"mode": "local_file", "max_requests_per_minute": 0, "burst": 0},
+        "callback_policy": {"supported": False, "requires_signature": False},
+        "receipt_schema": ["receipt_id", "status", "source_ref", "connector_id", "source_path", "content_hash"],
+    },
+    "generic_http_metadata_connector": {
+        "connector_kind": "http_metadata",
+        "network_access": True,
+        "file_access": False,
+        "risk_level": "high",
+        "default_network_execution_allowed": False,
+        "adapter_lifecycle_required": True,
+        "rate_limit_policy": {"mode": "network", "max_requests_per_minute": 10, "burst": 1, "retry_after_required": True},
+        "callback_policy": {"supported": True, "requires_signature": True, "store_raw_callback_body": False},
+        "receipt_schema": ["receipt_id", "status", "source_ref", "connector_id", "adapter_policy", "rate_limit_policy", "callback_policy"],
+    },
 }
 
 
@@ -604,13 +642,21 @@ def plan_source_connector_execution(storage: LocalStorage, payload: dict[str, An
             },
         )
         approval_status = "pending"
-    allowed = bool(connector_policy and (not execute_requested or approval_status == "approved") and not connector_policy["network_access"])
-    status = "approved_execution_ready" if execute_requested and approval_status == "approved" else "approval_required" if approval_required and approval_status != "approved" else "dry_run_ready"
+    network_connector = bool(connector_policy.get("network_access"))
+    allowed = bool(connector_policy and (not execute_requested or approval_status == "approved") and not network_connector)
+    if network_connector and execute_requested and approval_status == "approved":
+        status = "network_execution_blocked_by_default"
+    elif execute_requested and approval_status == "approved":
+        status = "approved_execution_ready"
+    elif approval_required and approval_status != "approved":
+        status = "approval_required"
+    else:
+        status = "dry_run_ready"
     receipt = _connector_execution_receipt(
         connector_id=connector_id,
         source_ref=source_ref,
         status=status,
-        reason="execution is planned only; connector runner must use this receipt and approval evidence",
+        reason="network connector requires adapter lifecycle and cannot be executed by the local runner" if network_connector else "execution is planned only; connector runner must use this receipt and approval evidence",
         approval_status=approval_status,
         execute_requested=execute_requested,
         connector_policy=connector_policy,
@@ -1255,6 +1301,7 @@ def _connector_execution_receipt(
     connector_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     policy = connector_policy or {}
+    allowlisted = bool(connector_policy and policy.get("allowlisted", True))
     return {
         "receipt_id": make_id("source_connector_execution_receipt", f"{_short_ref_key(source_ref)}:{connector_id}:{status}:{utc_now()}"),
         "status": status,
@@ -1268,10 +1315,19 @@ def _connector_execution_receipt(
         "connector_execution": {
             "connector_id": connector_id,
             "connector_kind": str(policy.get("connector_kind") or "unknown"),
-            "allowlisted": bool(connector_policy),
+            "allowlisted": allowlisted,
             "network_access_allowed": bool(policy.get("network_access")),
             "file_access_allowed": bool(policy.get("file_access")),
+            "default_network_execution_allowed": bool(policy.get("default_network_execution_allowed")),
+            "adapter_lifecycle_required": bool(policy.get("adapter_lifecycle_required")),
             "execution_boundary": "plan_only_no_connector_invocation",
+        },
+        "adapter_policy": {
+            "default_network_execution_allowed": bool(policy.get("default_network_execution_allowed")),
+            "adapter_lifecycle_required": bool(policy.get("adapter_lifecycle_required")),
+            "rate_limit_policy": policy.get("rate_limit_policy", {}) if isinstance(policy.get("rate_limit_policy", {}), dict) else {},
+            "callback_policy": policy.get("callback_policy", {}) if isinstance(policy.get("callback_policy", {}), dict) else {},
+            "receipt_schema": policy.get("receipt_schema", []) if isinstance(policy.get("receipt_schema", []), list) else [],
         },
         "reason": reason,
         "rollback_plan": ["no external side effects were performed", "discard SourceSyncJob plan if approval is rejected"],

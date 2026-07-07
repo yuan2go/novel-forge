@@ -11,6 +11,7 @@ from novel_forge.modules.source_intake.diff_repair import plan_source_diff_repai
 from novel_forge.modules.source_intake.service import (
     SOURCE_CONNECTOR_ALLOWLIST,
     _asset_ref,
+    _connector_execution_receipt,
     _content_value,
     _dedupe,
     _display_path,
@@ -46,7 +47,21 @@ def run_source_connector(storage: LocalStorage, payload: dict[str, Any]) -> dict
         return _blocked_result("blocked_connector_not_allowed", "connector is not in SOURCE_CONNECTOR_ALLOWLIST", trace)
     if bool(connector_policy.get("network_access")):
         trace = _record_connector_trace(storage, trace_id, "failed", connector_id, source_ref, project_id, workspace_path, {"reason": "network_connectors_denied"})
-        return _blocked_result("blocked_network_connector", "network connector execution is denied by the local sandbox", trace)
+        receipt = _connector_execution_receipt(
+            connector_id=connector_id,
+            source_ref=source_ref,
+            status="blocked_network_connector",
+            reason="network connector execution is denied by the local sandbox; use connector adapter lifecycle evidence first",
+            approval_status=_approval_status(approval),
+            execute_requested=True,
+            connector_policy=connector_policy,
+        )
+        sync_update = _update_connector_sync_job(storage, sync_path, sync_job, status="blocked_network_connector", receipt=receipt)
+        return {
+            **_blocked_result("blocked_network_connector", "network connector execution is denied by the local sandbox", trace),
+            "sync_job": sync_update,
+            "execution_receipt": sync_update["asset"]["content"]["execution_receipt"],
+        }
     source_path = str(payload.get("source_path") or "").strip()
     if not source_path:
         trace = _record_connector_trace(storage, trace_id, "failed", connector_id, source_ref, project_id, workspace_path, {"reason": "source_path_required"})
@@ -204,8 +219,9 @@ def _update_connector_sync_job(storage: LocalStorage, sync_path: Path, sync_job:
     content["status"] = status
     content["execution_receipt"] = receipt
     connector_execution = content.get("connector_execution", {}) if isinstance(content.get("connector_execution", {}), dict) else {}
-    connector_execution["execution_boundary"] = "sandboxed_local_file_connector"
-    connector_execution["execution_performed"] = True
+    receipt_execution = receipt.get("connector_execution", {}) if isinstance(receipt.get("connector_execution", {}), dict) else {}
+    connector_execution["execution_boundary"] = str(receipt_execution.get("execution_boundary") or "sandboxed_local_file_connector")
+    connector_execution["execution_performed"] = bool(receipt.get("execution_performed"))
     content["connector_execution"] = connector_execution
     content["updated_at"] = utc_now()
     sync_job["content"] = content
