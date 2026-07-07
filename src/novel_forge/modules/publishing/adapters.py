@@ -96,11 +96,19 @@ def prepare_platform_release(
     project = project_scope_from_asset(storage, package, input_path=package_file)
     plan_ref = _display_path(storage.root, resolve_path(storage.root, publishing_plan_path)) if publishing_plan_path else ""
     payload = _platform_payload(package, package_file, adapter, plan_ref=plan_ref)
+    approval_request = _create_platform_publish_approval_request(
+        storage,
+        adapter=adapter,
+        project_id=str(project.get("project_id") or "publishing"),
+        release_package_path=_display_path(storage.root, package_file),
+        publishing_plan_path=plan_ref,
+        dry_run=dry_run,
+    ) if adapter.external else {}
+    approval_summary = _approval_request_summary(approval_request, required=adapter.external)
     executed = False
     execution_result: dict[str, Any] = {"status": "dry_run", "message": "external execution disabled"}
     if adapter.key == "external_webhook" and not dry_run:
-        execution_result = _call_external_webhook(payload)
-        executed = execution_result.get("status") == "sent"
+        execution_result = {"status": "approval_required", "message": "external webhook publish requires approved ApprovalRequest before execution"}
     elif adapter.key == "local_file" and not dry_run:
         execution_result = {"status": "prepared", "message": "local payload prepared"}
         executed = True
@@ -136,6 +144,7 @@ def prepare_platform_release(
                 "dry_run": dry_run,
                 "adapter_payload": payload,
                 "adapter_result": execution_result,
+                "approval_request": approval_summary,
                 "rollback_plan": {
                     "available": True,
                     "status": "manual_required" if adapter.external else "local",
@@ -158,6 +167,67 @@ def prepare_platform_release(
         output = storage.write_asset_auto(log)
         run.succeed(output_assets=[_display_path(storage.root, output)])
     return {"path": _display_path(storage.root, output), "adapter": adapter.key, "dry_run": dry_run, "payload": payload, "result": execution_result}
+
+
+def _create_platform_publish_approval_request(
+    storage: LocalStorage,
+    *,
+    adapter: PlatformAdapter,
+    project_id: str,
+    release_package_path: str,
+    publishing_plan_path: str,
+    dry_run: bool,
+) -> dict[str, Any]:
+    from novel_forge.modules.permission_center import create_approval_request
+
+    return create_approval_request(
+        storage,
+        {
+            "project_id": project_id or "publishing",
+            "scope": "publish",
+            "action": "approve_platform_publish",
+            "risk_level": "high",
+            "environment": "local" if dry_run else "production",
+            "blocking": True,
+            "target_type": "platform_publish_adapter",
+            "target_id": adapter.key,
+            "target_refs": _dedupe([release_package_path, publishing_plan_path]),
+            "evidence_refs": _dedupe([release_package_path, publishing_plan_path]),
+            "requested_by": "publishing-adapter",
+            "subject_type": "agent",
+            "subject_id": "publishing-agent",
+            "reason": "external platform publishing requires operator approval before manual submission or webhook execution",
+            "required_before": ["external_platform_submission", "platform_webhook_call", "manual_platform_publish"],
+            "rollback_plan": {
+                "automatic_publish_allowed": False,
+                "rollback_action": "do not submit externally until approval request is approved",
+                "release_package_path": release_package_path,
+            },
+        },
+    )
+
+
+def _approval_request_summary(approval_request: dict[str, Any], *, required: bool) -> dict[str, Any]:
+    asset = approval_request.get("asset", {}) if isinstance(approval_request, dict) else {}
+    content = asset.get("content", {}) if isinstance(asset, dict) and isinstance(asset.get("content", {}), dict) else {}
+    return {
+        "required": bool(required),
+        "path": str(approval_request.get("path", "")) if isinstance(approval_request, dict) else "",
+        "request_id": str(content.get("request_id") or ""),
+        "scope": str(content.get("scope") or ("publish" if required else "")),
+        "status": str(content.get("status") or ""),
+    }
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        item = str(value or "").strip()
+        if item and item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
 
 
 def _platform_payload(package: Any, package_file: Path, adapter: PlatformAdapter, *, plan_ref: str) -> dict[str, Any]:

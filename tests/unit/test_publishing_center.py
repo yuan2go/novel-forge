@@ -41,7 +41,21 @@ class PublishingCenterTests(unittest.TestCase):
                 "drafts",
                 DraftChapter(
                     title="Chapter 1",
-                    content={"chapter": 1, "text": "原创章节文本，包含明确章节钩子和发布摘要。"},
+                    content={
+                        "chapter": 1,
+                        "text": (
+                            "雨夜里，林澈在封存的卷宗里发现一枚带血的登记铜牌，这条线索指向三年前被掩盖的真相。"
+                            "官署黑手逼近，威胁要扣押他的师父；林澈却选择拒绝退让，决定当众查明旧案。"
+                            "他赌上自己的官职和名声，把铜牌塞到证人手中，逼对方承认账册被调包。"
+                            "然而反转忽然出现，证人交出的不是账册，而是反派提前准备的空匣。"
+                            "林澈承责保住证人，证明旧案仍有活口，也让新的疑点和下一章钩子同时浮出水面。"
+                        ),
+                        "chapter_plan_blueprint": {
+                            "pleasure_beats": ["发现一枚带血的登记铜牌", "选择拒绝退让", "反转忽然出现"],
+                            "payoff_target": {"local_payoff": "证明旧案仍有活口", "withheld_question": "账册去了哪里"},
+                            "conflict_beats": [{"choice": "选择拒绝退让", "cost": "赌上自己的官职和名声", "reversal": "反转忽然出现"}],
+                        },
+                    },
                     metadata={"project_id": "project_publish", "workspace_path": str(workspace_path.relative_to(storage.root))},
                     references=[str(workspace_path.relative_to(storage.root))],
                 ),
@@ -112,6 +126,9 @@ class PublishingCenterTests(unittest.TestCase):
             self.assertEqual(adapter_result["adapter"], "manual_web")
             adapter_log = storage.read_asset(adapter_result["path"])
             self.assertEqual(adapter_log.content["adapter_result"]["status"], "manual_required")
+            self.assertTrue(adapter_log.content["approval_request"]["required"])
+            self.assertEqual(adapter_log.content["approval_request"]["scope"], "publish")
+            self.assertTrue(adapter_log.content["approval_request"]["path"])
             self.assertTrue(adapter_log.content["adapter_payload"]["manual_checklist"])
 
 
