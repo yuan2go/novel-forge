@@ -6,7 +6,9 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.api.product import create_project_with_defaults
+from novel_forge.modules import mkaos
 from novel_forge.modules.analysis import convert_analysis_report, create_analysis_handoff, list_analysis_reports, run_analysis
+from novel_forge.modules.source_intake import create_source_policy, create_source_risk_report
 from novel_forge.schemas import SourceDocument, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -87,6 +89,51 @@ class AnalysisServiceTests(unittest.TestCase):
             self.assertEqual(approved_data["metadata"]["asset_status"], "active")
             self.assertTrue(approved_data["metadata"]["use_in_generation_rag"])
 
+    def test_production_analysis_conversion_requires_source_eligibility_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = create_project_with_defaults(tmp, "Analysis Source Eligibility Project")
+            storage = LocalStorage(tmp)
+            source_path = self._write_source(storage, project)
+            report = run_analysis(storage, source_path, "web_fiction_business", workspace_path=project["path"])
+            _seed_review_mkaos_fixture(storage, project["project_id"])
+
+            with self.assertRaisesRegex(ValueError, "Analysis source eligibility blocks production conversion"):
+                convert_analysis_report(
+                    storage,
+                    report["path"],
+                    targets=["material_card"],
+                    workspace_path=project["path"],
+                    human_approved=True,
+                    environment="production",
+                    os_envelope=_production_envelope(project["project_id"]),
+                )
+
+            policy = create_source_policy(storage, {"project_id": project["project_id"], "source_ref": "fixture.txt", "risk_tier": "R1"})
+            risk = create_source_risk_report(
+                storage,
+                {
+                    "project_id": project["project_id"],
+                    "source_ref": "fixture.txt",
+                    "source_policy_path": policy["path"],
+                    "risk_tier": "R1",
+                },
+            )
+            converted = convert_analysis_report(
+                storage,
+                report["path"],
+                targets=["material_card"],
+                workspace_path=project["path"],
+                human_approved=True,
+                environment="production",
+                os_envelope=_production_envelope(project["project_id"]),
+            )
+
+            data = storage.read_json(converted["created_assets"][0]["path"])
+            self.assertTrue(data["metadata"]["use_in_generation_rag"])
+            self.assertEqual(data["content"]["source_eligibility"]["status"], "passed")
+            self.assertIn(policy["asset"]["id"], data["metadata"]["source_policy_refs"])
+            self.assertIn(risk["asset"]["id"], data["metadata"]["source_risk_report_refs"])
+
     def test_analysis_handoff_uses_analysis_agent_and_expected_type(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = create_project_with_defaults(tmp, "Analysis Handoff Project")
@@ -129,6 +176,33 @@ class AnalysisServiceTests(unittest.TestCase):
             ),
         )
         return str(path.relative_to(storage.root))
+
+
+def _production_envelope(project_id: str) -> dict:
+    return {
+        "envelope_id": f"env-{project_id}",
+        "trace_id": f"trace-{project_id}",
+        "environment": "production",
+        "project_id": project_id,
+        "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False, "source_chunk_raw_text_allowed": False},
+    }
+
+
+def _seed_review_mkaos_fixture(storage: LocalStorage, project_id: str) -> None:
+    card = mkaos.create_knowledge_card(
+        storage,
+        {
+            "project_id": project_id,
+            "concept_name": "analysis conversion review boundary",
+            "discipline": "source governance",
+            "core_explanation": "Converted analysis assets must remain abstract and source-isolated.",
+        },
+    )
+    mkaos.create_usage_binding(
+        storage,
+        card["asset"]["id"],
+        {"flow": "review", "usage_type": "review_rule", "input_role": "review_rule", "priority": 10},
+    )
 
 
 if __name__ == "__main__":

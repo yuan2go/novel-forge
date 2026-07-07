@@ -132,6 +132,7 @@ def create_context_build_plan(
     quality_memory_enabled: bool = True,
     context_profile: str = "chapter_generation",
     workspace_path: str | None = None,
+    environment: str = "",
 ) -> dict[str, Any]:
     target_file = resolve_path(storage.root, target_path)
     target_asset = storage.read_asset(target_file)
@@ -179,6 +180,7 @@ def create_context_build_plan(
             "query": retrieved_context.get("query", context_query),
             "top_k": int(top_k),
             "context_profile": context_profile,
+            "environment": environment,
             "context_profile_policy": profile_policy,
             "ranker": retrieved_context.get("ranker", ""),
             "requested_backend": retrieved_context.get("requested_backend", resolved_backend),
@@ -233,6 +235,7 @@ def create_context_build_plan(
             "project_id": project_id,
             "workspace_path": workspace,
             "retrieval_backend": retrieved_context.get("retrieval_backend", ""),
+            "environment": environment,
             "retrieval_ranker": retrieved_context.get("ranker", ""),
             "retrieval_top_k": retrieved_context.get("top_k", top_k),
             "retrieval_query": retrieved_context.get("query", context_query),
@@ -372,7 +375,12 @@ def create_context_bundle(
     if plan.type != "context_build_plan":
         raise ValueError("build_plan_path must point to a context_build_plan asset")
     content = plan.content
-    candidates = [item for item in content.get("candidate_assets", []) if isinstance(item, dict)]
+    environment = str(plan.metadata.get("environment") or content.get("environment") or "")
+    candidates = [
+        _enrich_candidate_source_eligibility(storage, item)
+        for item in content.get("candidate_assets", [])
+        if isinstance(item, dict)
+    ]
     manual_selection = _manual_selection(selected_asset_paths or [], disabled_asset_paths or [], priority_asset_paths or [], final_confirmed=final_confirmed)
     selected = _select_candidates(
         candidates,
@@ -381,9 +389,10 @@ def create_context_bundle(
         disabled_paths=manual_selection["disabled_asset_paths"],
         priority_paths=manual_selection["priority_asset_paths"],
         profile_policy=content.get("context_profile_policy", {}) if isinstance(content.get("context_profile_policy", {}), dict) else {},
+        environment=environment,
     )
     profile_policy = content.get("context_profile_policy", {}) if isinstance(content.get("context_profile_policy", {}), dict) else {}
-    policy_rejections = _selection_policy_rejections(storage, content, candidates, manual_selection, profile_policy=profile_policy)
+    policy_rejections = _selection_policy_rejections(storage, content, candidates, manual_selection, profile_policy=profile_policy, environment=environment)
     selected_ids = _dedupe([str(item.get("asset_id", "")) for item in selected if item.get("asset_id")])
     kg_context = content.get("kg_context", {}) if isinstance(content.get("kg_context", {}), dict) else {"items": [], "source_asset_ids": [], "recommendation": "kg_context_missing_from_plan"}
     kg_source_ids = [str(item) for item in kg_context.get("source_asset_ids", []) if str(item).strip()] if isinstance(kg_context.get("source_asset_ids", []), list) else []
@@ -413,6 +422,7 @@ def create_context_bundle(
             "kg_context_enabled": bool(content.get("kg_context_enabled", True)),
             "quality_memory_enabled": bool(content.get("quality_memory_enabled", True)),
             "context_profile": content.get("context_profile", ""),
+            "environment": environment,
             "context_profile_policy": profile_policy,
             "stage_context_contract": _stage_context_contract(profile_policy),
             "source_policy": _stage_source_policy(profile_policy),
@@ -549,6 +559,7 @@ def build_flow_context_bundle(
             backend="auto",
             context_profile=profile,
             workspace_path=workspace_path or None,
+            environment=environment,
         )
         context_bundle = create_context_bundle(storage, context_plan["path"])
         bundle_file = resolve_path(storage.root, context_bundle["path"])
@@ -1236,6 +1247,8 @@ def _candidate_payload(item: dict[str, Any]) -> dict[str, Any]:
         "token_estimate": _estimate_tokens(summary),
         "summary": summary,
         "copyright": item.get("copyright", {}) if isinstance(item.get("copyright", {}), dict) else {},
+        "source_eligibility": item.get("source_eligibility", {}) if isinstance(item.get("source_eligibility", {}), dict) else {},
+        "source_chunk_ids": item.get("source_chunk_ids", []) if isinstance(item.get("source_chunk_ids", []), list) else [],
         "recall_explanation": item.get("recall_explanation", {}) if isinstance(item.get("recall_explanation", {}), dict) else {},
         "selected_by_default": str(item.get("type", "")) not in RAW_OR_REPORT_TYPES,
     }
@@ -1243,6 +1256,34 @@ def _candidate_payload(item: dict[str, Any]) -> dict[str, Any]:
 
 def _candidate_payloads(items: Any) -> list[dict[str, Any]]:
     return [_candidate_payload(item) for item in items if isinstance(item, dict)] if isinstance(items, list) else []
+
+
+def _enrich_candidate_source_eligibility(storage: LocalStorage, candidate: dict[str, Any]) -> dict[str, Any]:
+    if candidate.get("source_eligibility") or not str(candidate.get("path", "")).strip():
+        return candidate
+    data = _read_asset_policy_candidate(storage, str(candidate.get("path", "")))
+    if not data:
+        return candidate
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    source_eligibility = content.get("source_eligibility") if isinstance(content.get("source_eligibility"), dict) else {}
+    source_chunk_ids = content.get("source_chunk_ids") if isinstance(content.get("source_chunk_ids"), list) else []
+    enriched = {
+        **candidate,
+        "source_eligibility": source_eligibility,
+        "source_chunk_ids": [str(item) for item in source_chunk_ids if str(item).strip()],
+    }
+    if source_eligibility:
+        copyright = enriched.get("copyright", {}) if isinstance(enriched.get("copyright", {}), dict) else {}
+        enriched["copyright"] = {
+            **copyright,
+            "source_eligibility_status": source_eligibility.get("status", ""),
+            "source_policy_refs": source_eligibility.get("source_policy_refs", []),
+            "source_risk_report_refs": source_eligibility.get("source_risk_report_refs", []),
+        }
+    elif metadata.get("source_eligibility_status"):
+        enriched["source_eligibility"] = {"status": metadata.get("source_eligibility_status")}
+    return enriched
 
 
 def _kg_context_for_plan(
@@ -1502,6 +1543,7 @@ def _select_candidates(
     disabled_paths: list[str] | None = None,
     priority_paths: list[str] | None = None,
     profile_policy: dict[str, Any] | None = None,
+    environment: str = "",
 ) -> list[dict[str, Any]]:
     disabled = set(disabled_paths or [])
     explicit_selected = set(selected_paths or [])
@@ -1515,6 +1557,7 @@ def _select_candidates(
         and str(candidate.get("type", "")) not in RAW_OR_REPORT_TYPES
         and _candidate_allowed_by_profile(candidate, profile)
         and _candidate_allowed_by_copyright(candidate)
+        and _candidate_allowed_by_source_eligibility(candidate, environment=environment)
     ]
     if priority:
         order = {path: index for index, path in enumerate(priority)}
@@ -1552,6 +1595,24 @@ def _candidate_allowed_by_copyright(candidate: dict[str, Any]) -> bool:
     return str(copyright.get("risk_level", "unknown")) != "high"
 
 
+def _candidate_allowed_by_source_eligibility(candidate: dict[str, Any], *, environment: str) -> bool:
+    if not is_production_environment(environment):
+        return True
+    source_eligibility = candidate.get("source_eligibility") if isinstance(candidate.get("source_eligibility"), dict) else {}
+    source_chunk_ids = [str(item) for item in candidate.get("source_chunk_ids", []) if str(item).strip()] if isinstance(candidate.get("source_chunk_ids", []), list) else []
+    if source_chunk_ids and not source_eligibility:
+        return False
+    if not source_eligibility:
+        return True
+    if source_eligibility.get("status") != "passed":
+        return False
+    if not bool(source_eligibility.get("generation_context_allowed")):
+        return False
+    if bool(source_eligibility.get("evidence_only") or source_eligibility.get("quarantine")):
+        return False
+    return True
+
+
 def _candidate_allowed_by_profile(candidate: dict[str, Any], profile_policy: dict[str, Any]) -> bool:
     return _profile_rejection_reason(candidate, profile_policy) == ""
 
@@ -1584,6 +1645,7 @@ def _selection_policy_rejections(
     manual_selection: dict[str, Any],
     *,
     profile_policy: dict[str, Any] | None = None,
+    environment: str = "",
 ) -> list[dict[str, Any]]:
     profile = profile_policy if isinstance(profile_policy, dict) else {}
     candidate_by_path = {str(item.get("path", "")): item for item in candidates if isinstance(item, dict) and str(item.get("path", "")).strip()}
@@ -1626,6 +1688,17 @@ def _selection_policy_rejections(
             copyright = candidate.get("copyright", {}) if isinstance(candidate.get("copyright", {}), dict) else {}
             rejections.append(_candidate_rejection(candidate, reason=str(copyright.get("reason") or "copyright policy rejected candidate"), requested_by=requested_by_path.get(path, [])))
             seen.add(path)
+        elif not _candidate_allowed_by_source_eligibility(candidate, environment=environment):
+            source_eligibility = candidate.get("source_eligibility") if isinstance(candidate.get("source_eligibility"), dict) else {}
+            rejections.append(
+                _candidate_rejection(
+                    candidate,
+                    reason=f"source eligibility rejected candidate for production context: {source_eligibility.get('status') or 'missing'}",
+                    requested_by=requested_by_path.get(path, []),
+                    signals=["source_eligibility_rejected"],
+                )
+            )
+            seen.add(path)
 
     for path, requested_by in requested_by_path.items():
         if path in disabled or path in seen:
@@ -1665,6 +1738,23 @@ def _selection_policy_rejections(
                         "reason": policy["reason"],
                         "signals": policy["signals"],
                         "requested_by": requested_by,
+                    }
+                )
+                seen.add(path)
+                continue
+            candidate = _enrich_candidate_source_eligibility(storage, candidate)
+            if not _candidate_allowed_by_source_eligibility(candidate, environment=environment):
+                source_eligibility = candidate.get("source_eligibility") if isinstance(candidate.get("source_eligibility"), dict) else {}
+                rejections.append(
+                    {
+                        "path": path,
+                        "asset_id": str(data.get("id", "")),
+                        "type": str(data.get("type", "")),
+                        "title": str(data.get("title") or data.get("name") or ""),
+                        "reason": f"source eligibility rejected candidate for production context: {source_eligibility.get('status') or 'missing'}",
+                        "signals": ["source_eligibility_rejected"],
+                        "requested_by": requested_by,
+                        "source_eligibility": source_eligibility,
                     }
                 )
                 seen.add(path)
@@ -1770,6 +1860,7 @@ def _plan_exclusion_index(plan_content: dict[str, Any]) -> dict[str, dict[str, A
 def _candidate_rejection(candidate: dict[str, Any], *, reason: str, requested_by: list[str], signals: list[str] | None = None) -> dict[str, Any]:
     copyright = candidate.get("copyright", {}) if isinstance(candidate.get("copyright", {}), dict) else {}
     base_signals = copyright.get("signals", []) if isinstance(copyright.get("signals", []), list) else []
+    source_eligibility = candidate.get("source_eligibility") if isinstance(candidate.get("source_eligibility"), dict) else {}
     return {
         "path": str(candidate.get("path", "")),
         "asset_id": str(candidate.get("asset_id", "")),
@@ -1778,6 +1869,7 @@ def _candidate_rejection(candidate: dict[str, Any], *, reason: str, requested_by
         "reason": reason,
         "signals": _dedupe([*[str(item) for item in base_signals], *[str(item) for item in signals or []]]),
         "requested_by": requested_by,
+        "source_eligibility": source_eligibility,
     }
 
 
@@ -1789,8 +1881,8 @@ def _read_asset_policy_candidate(storage: LocalStorage, path: str) -> dict[str, 
     return data if isinstance(data, dict) else None
 
 
-def _bucket_selected(selected: list[dict[str, Any]]) -> dict[str, list[dict[str, str]]]:
-    buckets: dict[str, list[dict[str, str]]] = {}
+def _bucket_selected(selected: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    buckets: dict[str, list[dict[str, Any]]] = {}
     for item in selected:
         categories = item.get("categories", []) if isinstance(item.get("categories", []), list) else []
         if not categories:
@@ -1803,6 +1895,7 @@ def _bucket_selected(selected: list[dict[str, Any]]) -> dict[str, list[dict[str,
                     "type": str(item.get("type", "")),
                     "title": str(item.get("title", "")),
                     "summary": _compact(str(item.get("summary", "")), 480),
+                    "source_eligibility": item.get("source_eligibility", {}) if isinstance(item.get("source_eligibility", {}), dict) else {},
                 }
             )
     return buckets

@@ -19,11 +19,11 @@ Status legend:
 | 数据模型 | 蓝图用途 | 当前是否存在 | 当前实现位置 | 缺失字段 | 生命周期状态 | 关联模块 | 优先级 |
 |---|---|---|---|---|---|---|---|
 | Source | 外部/内部来源登记 | partial | `SourceDocument`, importer metadata, Source Governance assets | source snapshot diff, sync refresh state, usage feedback | evidence asset plus governance foundation | MKAOS ingestion, source governance | P0 |
-| SourcePolicy | 来源使用规则 | yes-foundation | `SourcePolicy`, `modules/source_intake/service.py`; consumed by `modules/mkaos/service.py` and `modules/materials/service.py` | connector-level expiry/renewal policy, per-stage budget, analysis/context caller refs | create/evaluate asset lifecycle plus MKAOS/material caller contract | Context Builder, MKAOS, Materials | P0 |
+| SourcePolicy | 来源使用规则 | yes-foundation | `SourcePolicy`, `modules/source_intake/service.py`; consumed by `modules/mkaos/service.py`, `modules/materials/service.py`, `modules/analysis/service.py`, and `modules/context_builder/service.py` | connector-level expiry/renewal policy and per-stage budget | create/evaluate asset lifecycle plus MKAOS/material/analysis/context caller contract | Context Builder, MKAOS, Materials, Analysis | P0 |
 | SourceSyncJob | 来源同步任务 | yes-foundation | `SourceSyncJob`, `modules/source_intake/service.py` | schedule runner, cursor retry execution, connector adapter binding | planned/checkpoint asset lifecycle | Source Governance OS | P2 |
 | SourceSnapshot | 来源快照 | yes-foundation | `SourceSnapshot`, `modules/source_intake/service.py` | snapshot diff and retention policy | evidence-only snapshot asset | Source Governance OS | P2 |
 | LicenseCheckResult | 许可检查结果 | yes-foundation | `LicenseCheckResult`, `modules/source_intake/service.py` | expiry/renewal and legal reviewer workflow | create asset lifecycle | Source Governance OS | P0 |
-| SourceRiskReport | 来源风险报告 | yes-foundation | `SourceRiskReport`, `modules/source_intake/service.py`; `source-eligibility-caller-contract-v1` on MKAOS knowledge/material assets | analysis conversion/context caller migration and recurring risk refresh | R0-R4 report asset lifecycle plus production fail-closed consumption in MKAOS/material seams | MKAOS, Materials, Context Builder | P0 |
+| SourceRiskReport | 来源风险报告 | yes-foundation | `SourceRiskReport`, `modules/source_intake/service.py`; `source-eligibility-caller-contract-v1` on MKAOS knowledge/material/analysis/context assets | recurring risk refresh and stale evidence detection | R0-R4 report asset lifecycle plus production fail-closed consumption in MKAOS/material/analysis/context seams | MKAOS, Materials, Analysis, Context Builder | P0 |
 | RawDocument | 原始文档 | partial | `SourceDocument` | raw/document distinction, storage boundary | basic asset | MKAOS ingestion | P1 |
 | CleanDocument | 清洗后文档 | yes | `CleanedText` | stronger provenance spans | basic asset | Analysis, MKAOS | P1 |
 | DocumentChunk | 切片 | yes | `SourceChunk`, `KnowledgeChunk`, `MemoryChunk` | chunk policy, leakage flags | usable | RAG, MKAOS | P1 |
@@ -41,7 +41,7 @@ Status legend:
 | ReviewRule | 审稿规则 | partial | `RuleCard`, `ReviewRulePack`, `StyleReviewRule` | rule execution lifecycle | usable pack | Review/Eval | P0 |
 | EvalCase | 评测用例 | yes | `EvaluationCase` | generation linkage and golden-set status | usable | Eval Center | P1 |
 | SourceEvidence | 来源证据 | partial | source refs/evidence fields across assets | standalone evidence span model | embedded | All source-derived assets | P0 |
-| ContextPackage | Agent 上下文包 | yes as `ContextBundle` | `ContextBundle`, `ContextBuildPlan`, `stage-context-profile-v1` bundle contract | blueprint name differs; final full-loop profile assertions still pending | usable with stage contract | Context Builder | P0 |
+| ContextPackage | Agent 上下文包 | yes as `ContextBundle` | `ContextBundle`, `ContextBuildPlan`, `stage-context-profile-v1` bundle contract, production source-eligibility candidate rejection | blueprint name differs; final full-loop profile assertions still pending | usable with stage contract and source eligibility summaries | Context Builder | P0 |
 | NovelProject | 小说项目 | partial | `ProjectWorkspaceState`, project API records | full project lifecycle, genre/platform/readers | usable foundation | Projects, Product API | P0 |
 | GenreProfile | 题材画像 | yes | `GenreProfile`, `GenreMarketProfile` | lifecycle/versioning | usable | Genre OS | P1 |
 | PlatformProfile | 平台画像 | yes | `PlatformProfile` | platform-specific rules can deepen | usable | Platform Strategy | P1 |
@@ -116,7 +116,7 @@ Status legend:
 
 1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 2. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
-3. Source eligibility caller migration: needed next so MKAOS/material/context callers consistently consume SourceRiskReport/SourcePolicy evidence and fail closed in production.
+3. Source refresh and usage feedback: needed next so SourceSyncJob/SourceSnapshot evidence and material/knowledge usage feedback keep source governance current after eligibility caller migration.
 4. Readable prose/page-turning/mobile review models: foundations exist for readable prose and mobile reading; PageTurningReport and AntiAIReport can deepen provider/human calibration later.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
 6. `ReaderPromise`, `ChapterEconomyReport`, `ProtagonistCharmReport`, `AntagonistPressureReport`, and `MobileReadingReport` calibration and cockpit depth: foundations exist, but detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.

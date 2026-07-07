@@ -17,6 +17,7 @@ from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.creative_assets import create_creative_asset
 from novel_forge.modules.handoff.service import create_analysis_handoff as _create_analysis_handoff
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import project_scope_from_asset
 from novel_forge.schemas import (
     AnalysisConversionReport,
@@ -192,6 +193,7 @@ def convert_analysis_report(
             reuse_scope=reuse_scope,
             human_approved=human_approved,
             approval_note=approval_note,
+            environment=environment,
         )
         created_assets.append(
             {
@@ -752,15 +754,23 @@ def _create_converted_asset(
     reuse_scope: str,
     human_approved: bool,
     approval_note: str,
+    environment: str,
 ) -> dict[str, Any]:
     project_id = str(project.get("project_id", ""))
     workspace_path = str(project.get("workspace_path", ""))
     report_content = report.content if isinstance(report.content, dict) else {}
     title = f"{_converted_title_prefix(target)} from {report.title or report.name}"
     copyright_risk = _risk_from_report(report)
+    source_eligibility = _analysis_source_eligibility(storage, report, project=project, environment=environment)
+    _enforce_analysis_conversion_source_eligibility(source_eligibility, target=target, environment=environment)
+    source_governance_allows_generation = (
+        not is_production_environment(environment)
+        or source_eligibility.get("status") in {"not_required", "passed"}
+    )
     generation_allowed = (
         human_approved
         and copyright_risk != "high"
+        and source_governance_allows_generation
         and target in {"material_card", "knowledge_card", "writing_template", "craft_template", "review_rule_pack"}
     )
     metadata = {
@@ -775,6 +785,9 @@ def _create_converted_asset(
         "abstraction_level": "template" if target in {"writing_template", "craft_template", "review_rule_pack"} else "mechanism",
         "copyright_boundary": "abstracted from analysis report; no protected text, names, settings, or plot sequence copied",
         "use_in_generation_rag": generation_allowed,
+        "source_eligibility_status": source_eligibility.get("status", ""),
+        "source_policy_refs": source_eligibility.get("source_policy_refs", []),
+        "source_risk_report_refs": source_eligibility.get("source_risk_report_refs", []),
         "asset_status": "active" if human_approved else "needs_human_gate",
         "human_gate_required": True,
         "human_gate_status": "approved" if human_approved else "waiting_human",
@@ -792,11 +805,116 @@ def _create_converted_asset(
             "workspace_path": workspace_path,
             "source": report.id,
             "tags": ["analysis-converted", report.type.replace("_", "-")],
-            "content": _converted_content(target, report, report_content),
+            "content": {**_converted_content(target, report, report_content), "source_eligibility": source_eligibility},
             "metadata": metadata,
             "references": [report.id, _relative_path(storage, report_file)],
         },
     )
+
+
+def _analysis_source_eligibility(storage: LocalStorage, report: BaseAsset, *, project: dict[str, Any], environment: str) -> dict[str, Any]:
+    source_path, source_asset = _source_asset_for_analysis_report(storage, report)
+    if not source_asset:
+        return {
+            "version": "source-eligibility-caller-contract-v1",
+            "caller": "analysis.convert_analysis_report",
+            "environment": environment or "local",
+            "status": "not_required",
+            "generation_context_allowed": False,
+            "evidence_only": False,
+            "source_policy_refs": [],
+            "source_risk_report_refs": [],
+            "entries": [],
+            "source_isolation": {"raw_text_included": False, "clean_text_included": False},
+        }
+    from novel_forge.modules.source_intake import evaluate_source_context_eligibility
+
+    source_content = source_asset.get("content", {}) if isinstance(source_asset.get("content", {}), dict) else {}
+    source_ref = str(source_content.get("source_uri") or source_asset.get("source") or source_asset.get("id") or report.source)
+    eligibility = evaluate_source_context_eligibility(
+        storage,
+        {
+            "project_id": str(project.get("project_id", "")),
+            "workspace_path": str(project.get("workspace_path", "")),
+            "source_ref": source_ref,
+            "asset_path": source_path,
+            "environment": environment,
+            "intended_stage": "analysis_conversion",
+            "target_refs": [report.id],
+            "evidence_refs": [report.id, source_path],
+        },
+    )
+    governance = eligibility.get("source_governance", {}) if isinstance(eligibility.get("source_governance"), dict) else {}
+    missing = [
+        field
+        for field, present in {
+            "source_policy": governance.get("policy_present"),
+            "source_risk_report": governance.get("risk_report_present"),
+        }.items()
+        if not present
+    ]
+    generation_allowed = bool(eligibility.get("generation_context_allowed"))
+    evidence_only = bool(eligibility.get("evidence_only"))
+    production_blocked = is_production_environment(environment) and (missing or not generation_allowed or evidence_only or bool(eligibility.get("quarantine")))
+    if production_blocked or bool(eligibility.get("blocking") or eligibility.get("quarantine")):
+        status = "blocked"
+    elif missing or evidence_only or bool(eligibility.get("approval_required")):
+        status = "needs_review"
+    else:
+        status = "passed"
+    return {
+        "version": "source-eligibility-caller-contract-v1",
+        "caller": "analysis.convert_analysis_report",
+        "environment": environment or "local",
+        "status": status,
+        "source_ref": source_ref,
+        "source_asset_id": str(source_asset.get("id") or ""),
+        "source_asset_path": source_path,
+        "risk_tier": eligibility.get("risk_tier", ""),
+        "risk_level": eligibility.get("risk_level", ""),
+        "generation_context_allowed": generation_allowed,
+        "evidence_only": evidence_only,
+        "structure_only": bool(eligibility.get("structure_only")),
+        "quarantine": bool(eligibility.get("quarantine")),
+        "approval_required": bool(eligibility.get("approval_required")),
+        "source_policy_refs": [str(eligibility.get("policy_ref") or "")] if eligibility.get("policy_ref") else [],
+        "source_risk_report_refs": [str(eligibility.get("risk_report_ref") or "")] if eligibility.get("risk_report_ref") else [],
+        "license_check_refs": [str(eligibility.get("license_check_ref") or "")] if eligibility.get("license_check_ref") else [],
+        "missing_governance": [{"source_ref": source_ref, "missing": missing}] if missing else [],
+        "source_isolation": {"raw_text_included": False, "clean_text_included": False},
+    }
+
+
+def _source_asset_for_analysis_report(storage: LocalStorage, report: BaseAsset) -> tuple[str, dict[str, Any]]:
+    refs = [str(report.source or ""), *[str(ref) for ref in report.references if str(ref).strip()]]
+    for ref in refs:
+        if not ref:
+            continue
+        try:
+            data = storage.read_json(resolve_path(storage.root, ref))
+            if isinstance(data, dict) and data.get("type") == "source_document":
+                return ref, data
+        except (OSError, TypeError, ValueError):
+            pass
+        for category in ["raw", "runs"]:
+            for path in reversed(storage.list_json(category)):
+                try:
+                    data = storage.read_json(path)
+                except (OSError, TypeError, ValueError):
+                    continue
+                if isinstance(data, dict) and data.get("type") == "source_document" and ref in {str(data.get("id", "")), _relative_path(storage, path)}:
+                    return _relative_path(storage, path), data
+    return "", {}
+
+
+def _enforce_analysis_conversion_source_eligibility(source_eligibility: dict[str, Any], *, target: str, environment: str) -> None:
+    if not is_production_environment(environment):
+        return
+    if target not in {"material_card", "knowledge_card", "writing_template", "craft_template", "review_rule_pack"}:
+        return
+    if source_eligibility.get("status") in {"not_required", "passed"}:
+        return
+    raise ValueError(f"Analysis source eligibility blocks production conversion: {source_eligibility.get('status') or 'missing'}")
 
 
 def _converted_content(target: str, report: BaseAsset, content: dict[str, Any]) -> dict[str, Any]:

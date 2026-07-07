@@ -144,6 +144,61 @@ class ContextBuilderStageProfileTests(unittest.TestCase):
             self.assertTrue(content["approval_requests"][0]["approval_request_path"])
             self.assertNotIn("REVISION_RAW_SOURCE_SENTINEL", content["actual_context"])
 
+    def test_production_context_rejects_source_eligibility_failed_materials(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace_ref, project_id = _workspace(storage, "Eligibility Context Project")
+            outline_path = _outline(storage, project_id, workspace_ref)
+            passed_path = storage.write_asset_auto(
+                MaterialCard(
+                    title="Governed material",
+                    content={
+                        "usable_patterns": ["approved abstract mechanism"],
+                        "source_chunk_ids": ["chunk-ok"],
+                        "source_eligibility": {
+                            "status": "passed",
+                            "generation_context_allowed": True,
+                            "evidence_only": False,
+                            "source_policy_refs": ["policy-ok"],
+                            "source_risk_report_refs": ["risk-ok"],
+                        },
+                    },
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref, "use_in_generation_rag": True},
+                )
+            )
+            blocked_path = storage.write_asset_auto(
+                MaterialCard(
+                    title="Ungoverned material",
+                    content={
+                        "usable_patterns": ["unreviewed abstract mechanism"],
+                        "source_chunk_ids": ["chunk-blocked"],
+                        "source_eligibility": {"status": "needs_review", "generation_context_allowed": False, "evidence_only": True},
+                    },
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref, "use_in_generation_rag": True},
+                )
+            )
+
+            plan = create_context_build_plan(storage, outline_path, query="outline material", context_profile="outline", environment="production")
+            _replace_candidates(storage, plan["path"], [passed_path, blocked_path])
+            bundle = create_context_bundle(
+                storage,
+                plan["path"],
+                selected_asset_paths=[_rel(storage, passed_path), _rel(storage, blocked_path)],
+                final_confirmed=True,
+            )
+            content = bundle["asset"]["content"]
+            selected_paths = {item["path"] for item in content["selected_assets"]}
+            rejected_by_path = {item["path"]: item for item in content["policy_rejections"]}
+
+            self.assertIn(_rel(storage, passed_path), selected_paths)
+            self.assertNotIn(_rel(storage, blocked_path), selected_paths)
+            selected = next(item for item in content["selected_assets"] if item["path"] == _rel(storage, passed_path))
+            self.assertEqual(selected["source_eligibility"]["status"], "passed")
+            self.assertEqual(content["compressed_context"]["material_cards"][0]["source_eligibility"]["status"], "passed")
+            self.assertIn(_rel(storage, blocked_path), rejected_by_path)
+            self.assertIn("source_eligibility_rejected", rejected_by_path[_rel(storage, blocked_path)]["signals"])
+
 
 def _workspace(storage: LocalStorage, title: str) -> tuple[str, str]:
     workspace_path = init_workspace(storage, title)
