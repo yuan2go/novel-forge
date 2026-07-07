@@ -23,6 +23,7 @@ from novel_forge.schemas import (
     PlatformCommentBatch,
     PlatformMetricSnapshot,
     PlatformPublishReceipt,
+    PlatformPublishAdapter,
     PlatformReviewStatus,
     PlatformUploadPackage,
     RevisionTask,
@@ -175,6 +176,10 @@ def build_platform_upload_package(
     profile = _platform_upload_profile(platform_id)
     chapter_format = _chapter_format_report(chapters, profile)
     checklist = _platform_upload_checklist(metadata, chapters, profile, chapter_format=chapter_format)
+    project_id = str(release.get("metadata", {}).get("project_id") or env.get("project_id") or "")
+    publish_adapter = _platform_manual_publish_adapter(profile, project_id=project_id)
+    publish_adapter_path = _write_asset(storage, publish_adapter)
+    platform_rule_snapshot = _platform_rule_snapshot(profile)
     asset = PlatformUploadPackage(
         title=f"{profile['display_name']} manual upload package",
         source=str(release.get("id") or ""),
@@ -189,11 +194,15 @@ def build_platform_upload_package(
             "manual_upload_steps": profile["manual_upload_steps"],
             "checklist": checklist,
             "chapter_format_report": chapter_format,
+            "platform_rule_snapshot": platform_rule_snapshot,
+            "platform_publish_adapter_path": publish_adapter_path,
+            "platform_package_sections": _platform_package_sections(metadata, chapters, profile, chapter_format=chapter_format),
+            "feedback_import_contract": _feedback_import_contract(profile),
             "manual_adapter_contract": _manual_adapter_contract(profile),
             "status": "manual_ready",
         },
-        metadata={"project_id": str(release.get("metadata", {}).get("project_id") or ""), **envelope_asset_metadata(env)},
-        references=[_display_path(storage.root, release_path)],
+        metadata={"project_id": project_id, **envelope_asset_metadata(env)},
+        references=[_display_path(storage.root, release_path), publish_adapter_path],
     )
     path = _write_asset(storage, asset)
     return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "envelope": env}
@@ -254,8 +263,9 @@ def record_platform_receipt(
 ) -> dict[str, Any]:
     profile = _platform_upload_profile(platform_id)
     parsed_receipt = _normalize_receipt_fields(platform_id, receipt_raw or {})
+    redacted_receipt_raw = _redact(receipt_raw or {})
     normalized_status = _normalize_review_status(platform_id, review_status or str(parsed_receipt.get("review_status") or "submitted"))
-    status_contract = _platform_review_status_contract(profile, normalized_status, receipt_raw or {})
+    status_contract = _platform_review_status_contract(profile, normalized_status, {**redacted_receipt_raw, "reasons": parsed_receipt.get("reasons", [])})
     env = enforce_os_envelope(
         storage,
         envelope_payload=envelope,
@@ -278,7 +288,7 @@ def record_platform_receipt(
             "platform_chapter_id": platform_chapter_id or str(parsed_receipt.get("chapter_id") or "book-level"),
             "submitted_at": utc_now(),
             "review_status": normalized_status,
-            "receipt_raw": receipt_raw or {},
+            "receipt_raw": redacted_receipt_raw,
             "parsed_receipt": parsed_receipt,
             "receipt_parser": {
                 "platform_id": profile.get("platform_id"),
@@ -286,6 +296,8 @@ def record_platform_receipt(
                 "parsed_fields": parsed_receipt,
                 "required_fields": profile.get("receipt_fields", []),
                 "missing_required_fields": _missing_receipt_fields(profile, parsed_receipt),
+                "parser_confidence": _receipt_parser_confidence(profile, parsed_receipt, receipt_text=str((receipt_raw or {}).get("receipt_text") or "")),
+                "redaction_applied": redacted_receipt_raw != (receipt_raw or {}),
             },
             "status_contract": status_contract,
             "operator_note": operator_note or "manual receipt recorded",
@@ -304,7 +316,7 @@ def record_platform_receipt(
             "receipt_id": receipt.content["receipt_id"],
             "review_status": normalized_status,
             "status_contract": status_contract,
-            "blocking_reasons": _blocking_reasons(normalized_status, receipt_raw or {}),
+            "blocking_reasons": _blocking_reasons(normalized_status, {**redacted_receipt_raw, "reasons": parsed_receipt.get("reasons", [])}),
             "updated_at": utc_now(),
         },
         metadata={"project_id": str(env.get("project_id") or ""), **envelope_asset_metadata(env)},
@@ -351,6 +363,8 @@ def parse_platform_receipt(
         "receipt_text_present": bool(receipt_text.strip()),
         "parser_mode": "platform_specific_text_or_json",
         "parsed_fields": parsed,
+        "parser_confidence": _receipt_parser_confidence(_platform_upload_profile(platform_id), parsed, receipt_text=receipt_text),
+        "missing_required_fields": _missing_receipt_fields(_platform_upload_profile(platform_id), parsed),
     }
     asset["content"] = content
     storage.write_json(resolve_path(storage.root, receipt["receipt_path"]), asset)
@@ -386,8 +400,15 @@ def run_platform_adapter_gate(
     )
     checklist = content.get("checklist", {}) if isinstance(content.get("checklist", {}), dict) else {}
     chapter_format = content.get("chapter_format_report", {}) if isinstance(content.get("chapter_format_report", {}), dict) else {}
+    rule_snapshot = content.get("platform_rule_snapshot", {}) if isinstance(content.get("platform_rule_snapshot", {}), dict) else {}
     missing_checklist = [str(key) for key, passed in checklist.items() if not passed]
     blocking_reasons = [f"missing_checklist:{key}" for key in missing_checklist]
+    if profile.get("specific_adapter") and not rule_snapshot:
+        blocking_reasons.append("platform_rule_snapshot:missing")
+    if rule_snapshot and str(rule_snapshot.get("rules_version") or "") != str(profile.get("rules_version") or ""):
+        blocking_reasons.append("platform_rule_snapshot:rules_version_mismatch")
+    if profile.get("specific_adapter") and not str(content.get("platform_publish_adapter_path") or "").strip():
+        blocking_reasons.append("platform_publish_adapter_path:missing")
     if chapter_format.get("status") == "blocked":
         blocking_reasons.append("chapter_format_report:blocking")
     receipt_status = ""
@@ -409,6 +430,8 @@ def run_platform_adapter_gate(
         "api_mode": profile.get("api_mode", "manual_first"),
         "rules_version": str(profile.get("rules_version") or ""),
         "package_shape": str(profile.get("package_shape") or ""),
+        "platform_rule_snapshot": rule_snapshot,
+        "platform_publish_adapter_path": str(content.get("platform_publish_adapter_path") or ""),
         "checklist": checklist,
         "missing_checklist": missing_checklist,
         "chapter_format_report": chapter_format,
@@ -896,6 +919,131 @@ def _book_metadata_from_release(release: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _platform_manual_publish_adapter(profile: dict[str, Any], *, project_id: str = "") -> PlatformPublishAdapter:
+    platform_id = str(profile.get("platform_id") or "manual")
+    rules = profile.get("platform_rules", {}) if isinstance(profile.get("platform_rules", {}), dict) else {}
+    return PlatformPublishAdapter(
+        id=make_id("platform_publish_adapter", f"{platform_id}-{profile.get('rules_version', '')}-{project_id or 'global'}-manual"),
+        title=f"{profile.get('display_name', platform_id)} manual publish adapter",
+        source=str(profile.get("rules_version") or "manual-platform-rules"),
+        tags=["publishing-feedback-adapter", "manual-platform-adapter", platform_id],
+        content={
+            "adapter_id": f"{platform_id}_manual_adapter",
+            "platform_id": platform_id,
+            "rules_version": str(profile.get("rules_version") or ""),
+            "package_rules": {
+                "shape": str(profile.get("package_shape") or ""),
+                "chapter_body_min_chars": rules.get("chapter_body_min_chars", 1),
+                "chapter_body_max_chars": rules.get("chapter_body_max_chars", 0),
+                "title_max_chars": rules.get("title_max_chars", 0),
+                "synopsis_min_chars": rules.get("synopsis_min_chars", 0),
+                "volume_required": bool(rules.get("volume_required", False)),
+            },
+            "metadata_rules": {
+                "required_fields": [field.replace("_present", "") for field in profile.get("checklist", []) if str(field).endswith("_present")],
+                "receipt_fields": profile.get("receipt_fields", []),
+                "review_status_values": sorted(set(str(value) for value in (profile.get("review_status_map", {}) if isinstance(profile.get("review_status_map", {}), dict) else {}).values())),
+            },
+            "release_cadence": "manual_operator_controlled",
+            "checklist": profile.get("checklist", []),
+            "export_contract": {
+                "format": str(profile.get("package_shape") or "generic_manual_package"),
+                "requires_publish_gate": True,
+                "requires_platform_strategy_pack": True,
+                "requires_platform_rule_snapshot": True,
+                "official_sdk_bound": False,
+                "callback_bound": False,
+                "rate_limit_policy": "manual_operator_controlled",
+            },
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id or "global", "use_in_generation_rag": False, "manual_platform_adapter": True},
+    )
+
+
+def _platform_rule_snapshot(profile: dict[str, Any]) -> dict[str, Any]:
+    rules = profile.get("platform_rules", {}) if isinstance(profile.get("platform_rules", {}), dict) else {}
+    return {
+        "platform_id": str(profile.get("platform_id") or "manual"),
+        "display_name": str(profile.get("display_name") or profile.get("platform_id") or "manual"),
+        "rules_version": str(profile.get("rules_version") or ""),
+        "rule_source": str(rules.get("rule_source") or "manual_profile_not_official_sdk"),
+        "package_shape": str(profile.get("package_shape") or ""),
+        "upload_constraints": {
+            "title_max_chars": rules.get("title_max_chars", 0),
+            "synopsis_min_chars": rules.get("synopsis_min_chars", 0),
+            "chapter_body_min_chars": rules.get("chapter_body_min_chars", 1),
+            "chapter_body_max_chars": rules.get("chapter_body_max_chars", 0),
+            "volume_required": bool(rules.get("volume_required", False)),
+            "sensitive_check_required": bool(rules.get("sensitive_check_required", False)),
+            "formatting": rules.get("formatting", []) if isinstance(rules.get("formatting", []), list) else [],
+        },
+        "checklist_fields": profile.get("checklist", []),
+        "receipt_fields": profile.get("receipt_fields", []),
+        "review_risk_gate": profile.get("review_risk_gate", []),
+        "review_status_map": profile.get("review_status_map", {}) if isinstance(profile.get("review_status_map", {}), dict) else {},
+        "automation_boundary": {
+            "manual_upload_only": True,
+            "official_sdk_bound": False,
+            "callback_bound": False,
+            "rate_limit_bound": False,
+            "requires_operator_receipt_backfill": True,
+        },
+    }
+
+
+def _platform_package_sections(metadata: dict[str, Any], chapters: list[dict[str, Any]], profile: dict[str, Any], *, chapter_format: dict[str, Any]) -> list[dict[str, Any]]:
+    platform_id = str(profile.get("platform_id") or "manual")
+    common = [
+        {
+            "section": "book_metadata",
+            "copy_order": ["title", "synopsis", "tags", "cover_status"],
+            "fields_present": {
+                "title": bool(metadata.get("title")),
+                "synopsis": bool(metadata.get("synopsis") or metadata.get("summary")),
+                "cover_status": bool(metadata.get("cover_path") or metadata.get("cover_status")),
+            },
+        },
+        {
+            "section": "chapter_submission",
+            "copy_order": ["chapter_title", "chapter_body"],
+            "chapter_count": len(chapters),
+            "format_status": chapter_format.get("status"),
+        },
+    ]
+    if platform_id == "qidian":
+        common.insert(
+            1,
+            {
+                "section": "volume",
+                "copy_order": ["volume_title", "chapter_sequence"],
+                "fields_present": {"volume_title": bool(metadata.get("volume_title") or metadata.get("volume")), "chapter_sequence": True},
+                "operator_note": "Qidian manual package requires an explicit volume before chapter paste.",
+            },
+        )
+    if platform_id == "fanqie":
+        common.append({"section": "fanqie_review_check", "copy_order": ["sensitive_word_check", "format_check", "cover_check"], "operator_note": "Fanqie remains manual; record receipt/status after console submission."})
+    else:
+        common.append({"section": "review_backfill", "copy_order": ["receipt_text", "review_status", "platform_ids"], "operator_note": "Backfill platform receipt/status; no callback is bound."})
+    return common
+
+
+def _feedback_import_contract(profile: dict[str, Any]) -> dict[str, Any]:
+    platform_id = str(profile.get("platform_id") or "manual")
+    return {
+        "platform_id": platform_id,
+        "rules_version": str(profile.get("rules_version") or ""),
+        "supported_imports": ["chapter_metrics", "book_metrics", "comments"],
+        "metric_fields": ["chapter_no", "retention", "completion_rate", "read_through", "follow_read", "new_favorites"],
+        "comment_fields": ["text", "chapter_no", "characters", "sentiment", "embedding"],
+        "mutation_policy": {
+            "silent_mutation_allowed": False,
+            "requires_human_gate": True,
+            "outputs": ["comment_cluster_report", "chapter_dropoff_report", "feedback_plan_mutation_proposal"],
+        },
+    }
+
+
 def _platform_upload_profile(platform_id: str) -> dict[str, Any]:
     key = str(platform_id or "manual").strip().lower()
     profile = PLATFORM_UPLOAD_PROFILES.get(key)
@@ -940,13 +1088,21 @@ def _platform_upload_checklist(metadata: dict[str, Any], chapters: list[dict[str
 
 def _chapter_format_report(chapters: list[dict[str, Any]], profile: dict[str, Any]) -> dict[str, Any]:
     issues: list[dict[str, Any]] = []
-    min_len = 600 if profile.get("platform_id") == "qidian" else 800 if profile.get("platform_id") == "fanqie" else 1
+    rules = profile.get("platform_rules", {}) if isinstance(profile.get("platform_rules", {}), dict) else {}
+    min_len = int(rules.get("chapter_body_min_chars") or (600 if profile.get("platform_id") == "qidian" else 800 if profile.get("platform_id") == "fanqie" else 1))
+    max_len = int(rules.get("chapter_body_max_chars") or 0)
+    title_max = int(rules.get("title_max_chars") or 0)
     for index, chapter in enumerate(chapters, start=1):
+        title = str(chapter.get("title") or "")
         body = str(chapter.get("body") or chapter.get("text") or "")
-        if not str(chapter.get("title") or "").strip():
+        if not title.strip():
             issues.append({"chapter_index": index, "severity": "high", "message": "chapter title is missing"})
+        if title_max and len(title.strip()) > title_max:
+            issues.append({"chapter_index": index, "severity": "high", "message": f"chapter title exceeds platform manual guideline: {len(title.strip())} > {title_max}"})
         if len(body.strip()) < min_len:
             issues.append({"chapter_index": index, "severity": "medium", "message": f"chapter body is shorter than platform manual guideline: {len(body.strip())} < {min_len}"})
+        if max_len and len(body.strip()) > max_len:
+            issues.append({"chapter_index": index, "severity": "medium", "message": f"chapter body is longer than platform manual guideline: {len(body.strip())} > {max_len}"})
         if "\x00" in body:
             issues.append({"chapter_index": index, "severity": "critical", "message": "chapter body contains NUL byte"})
         if "\r\n" in body:
@@ -954,6 +1110,10 @@ def _chapter_format_report(chapters: list[dict[str, Any]], profile: dict[str, An
     return {
         "status": "blocked" if any(issue["severity"] in {"critical", "high"} for issue in issues) else "passed",
         "rules_version": str(profile.get("rules_version") or ""),
+        "platform_id": str(profile.get("platform_id") or "manual"),
+        "min_body_chars": min_len,
+        "max_body_chars": max_len,
+        "title_max_chars": title_max,
         "issue_count": len(issues),
         "issues": issues,
     }
@@ -971,6 +1131,13 @@ def _manual_adapter_contract(profile: dict[str, Any]) -> dict[str, Any]:
             "comment_import": True,
             "follow_read_metric_import": True,
             "automatic_publish": False,
+        },
+        "production_boundaries": {
+            "official_sdk_bound": False,
+            "callback_bound": False,
+            "rate_limit_bound": False,
+            "manual_operator_required": True,
+            "does_not_publish_without_external_adapter": True,
         },
         "receipt_fields": profile.get("receipt_fields", []),
         "review_risk_gate": profile.get("review_risk_gate", []),
@@ -1052,11 +1219,23 @@ def _platform_review_status_contract(profile: dict[str, Any], status: str, recei
         "platform_id": profile.get("platform_id", ""),
         "rules_version": profile.get("rules_version", ""),
         "status": status,
+        "status_category": _review_status_category(status),
         "blocking": blocking,
         "terminal": status in {"approved", "published", "rejected", "blocked", "failed"},
         "next_actions": _platform_review_next_actions(status, receipt),
         "manual_operator_required": status in {"submitted", "reviewing", "rejected", "blocked", "failed"},
+        "operator_evidence_required": status in {"submitted", "reviewing", "rejected", "blocked", "failed"},
     }
+
+
+def _review_status_category(status: str) -> str:
+    if status in {"approved", "published"}:
+        return "success"
+    if status in {"rejected", "blocked", "failed"}:
+        return "blocking"
+    if status in {"submitted", "reviewing", "scheduled"}:
+        return "pending"
+    return "unknown"
 
 
 def _platform_review_next_actions(status: str, receipt: dict[str, Any]) -> list[str]:
@@ -1080,6 +1259,25 @@ def _missing_receipt_fields(profile: dict[str, Any], parsed: dict[str, Any]) -> 
         if not parsed.get(key):
             missing.append(str(field))
     return missing
+
+
+def _receipt_parser_confidence(profile: dict[str, Any], parsed: dict[str, Any], *, receipt_text: str = "") -> dict[str, Any]:
+    required = [str(item) for item in profile.get("receipt_fields", [])]
+    missing = _missing_receipt_fields(profile, parsed)
+    present_required = len(required) - len(missing)
+    base = present_required / max(1, len(required))
+    if str(parsed.get("review_status") or "") in {"submitted", "reviewing", "approved", "published", "rejected", "blocked", "failed", "scheduled"}:
+        base = min(1.0, base + 0.1)
+    if receipt_text.strip():
+        base = min(1.0, base + 0.05)
+    level = "high" if base >= 0.85 else "medium" if base >= 0.55 else "low"
+    return {
+        "score": round(base, 3),
+        "level": level,
+        "required_fields": required,
+        "missing_required_fields": missing,
+        "receipt_text_present": bool(receipt_text.strip()),
+    }
 
 
 def _first_labeled_value(text: str, labels: list[Any]) -> str:

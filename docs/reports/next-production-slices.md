@@ -24,6 +24,7 @@ Implementation status note:
 - 2026-07-08: `P1-S4 Character Charm and Antagonist Pressure` was implemented as a development slice. `protagonist_charm_report` and `antagonist_pressure_report` are now schema-backed assets. The gate scores protagonist agency/charm and opposition pressure, creates `protagonist_charm_drop` / `antagonist_pressure_drop` ReviewIssue plus a bounded RevisionTask strategy, feeds Content Quality Loop, writes both report paths in the chapter production bus, and projects into the longform reducer through `CharacterPressureReducer`. Unit/API route coverage exists in `tests/unit/test_character_pressure.py`, `tests/unit/test_content_quality_loop.py`, `tests/unit/test_longform_stability.py`, `tests/unit/test_context_and_production_chain.py`, `tests/unit/test_schemas.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 - 2026-07-08: `P1-S5 Mobile Reading Gate` was implemented as a development slice. `mobile_reading_report` is now a schema-backed asset. The gate scores paragraph density, long paragraphs, dense sentence beats, dialogue-line ratio, and mobile score, creates `mobile_reading_friction` ReviewIssue plus a bounded `mobile_paragraph_reflow` RevisionTask, feeds Content Quality Loop, writes `mobile_reading_report_path` in the chapter production bus, and exposes `/product/quality/mobile-reading`. Unit/API route coverage exists in `tests/unit/test_mobile_reading.py`, `tests/unit/test_content_quality_loop.py`, `tests/unit/test_longform_stability.py`, `tests/unit/test_context_and_production_chain.py`, `tests/unit/test_schemas.py`, `tests/unit/test_review_issue.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 - 2026-07-08: `P1-S6 Provider Proof Harness` was implemented as a development slice. The existing V7 provider proof runner now writes a `provider-proof-harness-v1` manifest that classifies opening judge, single-chapter generation, single-chapter quality judge, and long-chain proof evidence as `external_provider`, `fixture_or_mock`, `missing`, or `not_required`. The manifest is a blocking check when external proof is required. `/product/provider-proof/v7` now exposes the runner and writes route approval evidence for both `chapter_draft` and `quality_judge`. Unit/API route coverage exists in `tests/unit/test_v7_provider_proof.py`, `tests/unit/test_quality_eval_v2.py`, `tests/unit/test_provider_hard_stop_proof.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
+- 2026-07-08: `P2-S1 Platform-Specific Manual Adapters` was implemented as a development slice. Fanqie/Qidian upload packages now persist project-scoped `platform_publish_adapter` rule snapshots, platform rule snapshots, package sections, feedback import contracts, parser confidence, sensitive receipt redaction, and fail-closed platform adapter gate checks for missing/mismatched rule evidence. Agent Scheduler and Workflow Nodes now expose `run-platform-adapter-gate`. Unit/API route coverage exists in `tests/unit/test_publishing_feedback_adapters.py`, `tests/unit/test_agent_scheduler.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
@@ -43,23 +44,24 @@ Implementation status note:
 | P1-S4 Character Charm and Antagonist Pressure | Score protagonist agency and villain pressure | Core web novel quality lever | Character, Longform, Review | ProtagonistCharmReport, AntagonistPressureReport, CharacterStateLedger, VillainOperationPlan, ReviewIssue, RevisionTask | Implemented: character pressure service/API, quality loop step, longform reducer, and chapter bus output | Positive agency/pressure fixture, weak agency/pressure fixture, content loop and chapter bus coverage | Character/quality docs updated through this slice matrix | Heuristic false positives remain; provider/human calibration deferred |
 | P1-S5 Mobile Reading Gate | Check paragraph rhythm and mobile scanability | Web novel reading happens on mobile | Readable Prose, Quality, Chapter Production Bus | MobileReadingReport, ReviewIssue, RevisionTask | Implemented: mobile reading service/API, quality loop step, chapter bus output, and ReviewIssue/RevisionTask hook | Mobile-friendly and dense-single-paragraph fixtures plus content loop and chapter bus coverage | Quality docs updated through this slice matrix | Heuristic false positives remain; provider/human calibration deferred |
 | P1-S6 Provider Proof Harness | Separate real provider proof from fixture/local proof | Prevents false production claims | Model Router, Quality Eval, Runtime Ledger, Long-chain Proof | ModelRouteResolution, ExternalProviderProofReport, ModelJudgeResult, ProjectMetricSnapshot | Implemented: V7 provider proof manifest, route/API, external/fixture/missing classification, and blocking manifest check | External-provider positive fixture, fixture-denied negative fixture, route coverage, quality/provider hard-stop coverage | Ops/provider docs updated through this slice matrix | Real provider execution still requires credentials/budget/operator approval |
-| P2-S1 Platform-Specific Manual Adapters | Harden Fanqie/Qidian manual package/checklist/receipt | Useful after export and publish gate | Publishing Feedback Adapters | PlatformUploadPackage, PlatformPublishReceipt, PlatformReviewStatus | Adapter service/API | Receipt parser fixtures | Publishing docs | Real APIs remain out of scope |
+| P2-S1 Platform-Specific Manual Adapters | Harden Fanqie/Qidian manual package/checklist/receipt | Useful after export and publish gate | Publishing Feedback Adapters | PlatformUploadPackage, PlatformPublishReceipt, PlatformReviewStatus, PlatformPublishAdapter | Implemented: project-scoped rule snapshot, manual package sections, parser confidence, receipt redaction, platform adapter gate, Agent/Workflow operation | Rule snapshot, missing-rule gate, receipt parser, and operation-contract fixtures | Publishing docs updated through this slice matrix | Real APIs/SDK/callback/rate-limit binding remain out of scope |
 | P2-S2 Feedback Mutation Apply Workflow | Approval -> patch -> invalidation -> regeneration task | Closes feedback loop safely | Feedback, Workflow, Change Impact, Agent Scheduler | FeedbackPlanMutationProposal, FeedbackMutationPatch, ChangeImpactReport, AgentTask | Workflow processor | Approval/apply/invalidate tests | Feedback docs | Must not silently mutate story |
 | P3-S1 Portfolio Project Model | Introduce multi-book project portfolio boundary | Needed before multi-book scheduling | Portfolio, Project, Cost Dashboard | PortfolioProject, BookPotentialScore, ResourceAllocationPlan | Portfolio service/API | Two-book isolation fixture | Portfolio docs | Do not distract from v1 |
 | P3-S2 Cross-Book Similarity Guard | Detect repeated style/premise/mechanism | Prevents multi-book sameness | Portfolio, Style, Genre, MKAOS | CrossBookSimilarityReport, StyleProfile, GenreProfile | Similarity service | Similar/different book fixtures | Portfolio docs | Needs corpus and embeddings later |
 
 ## Recommended Next Slice
 
-Continue from `P2-S1 Platform-Specific Manual Adapters`.
+Continue from `P2-S2 Feedback Mutation Apply Workflow`.
 
-The current highest-priority development slice is to harden platform-specific manual adapters without claiming real platform API automation:
+The current highest-priority development slice is to deepen feedback mutation application without silently mutating story assets:
 
 ```text
-platform rule version
--> Fanqie/Qidian upload package and checklist
--> receipt parser / review status
--> importable metric/comment hooks
--> publishing gate evidence
+feedback mutation proposal
+-> human approval evidence
+-> patch artifacts
+-> context invalidation evidence
+-> regeneration task dispatch
+-> re-review / publish-gate rerun evidence
 ```
 
 Do not run chapter acceptance during the development loop. Keep the 2026-07-07 slow report as the current baseline until the final unified acceptance phase.

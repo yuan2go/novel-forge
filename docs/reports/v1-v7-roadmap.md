@@ -52,7 +52,7 @@ Current evidence:
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. Platform-specific manual adapters so Fanqie/Qidian publishing evidence is not generic.
+2. Feedback mutation approval -> patch -> invalidation -> regeneration task workflow.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
@@ -301,7 +301,7 @@ Current evidence:
 - Turn the local production system into a platform-aware serial workflow with feedback backflow.
 
 范围:
-- Platform-specific adapters.
+- Platform-specific manual adapters with rule snapshots.
 - Serialization Engine.
 - Publishing gates and receipts.
 - Platform metric import.
@@ -311,21 +311,20 @@ Current evidence:
 - Autonomy dashboard.
 - Full regression harness.
 
-当前完成度: 30%.
+当前完成度: 35%.
 
 阻塞项:
-- Current adapters are manual/foundation-level, not real platform SDK/callback/rate-limit integrations.
-- Feedback mutation application exists as foundation but should depend on approval and impact analysis.
+- Current adapters are manual/rule-snapshot-level, not real platform SDK/callback/rate-limit integrations.
+- Feedback mutation application exists as foundation but should deepen workflow dispatch, invalidation evidence, and re-review/publish gate rerun evidence.
 - Real platform accounts/APIs may require credentials and manual policy decisions.
 
 推荐切片:
-- Fanqie/Qidian manual adapters with platform rule versions.
-- Receipt parser/status backfill hardening.
 - Feedback mutation approval -> patch -> invalidation -> regeneration task workflow.
+- ApprovalRequest caller migration for high-risk platform publish/story mutation decisions.
 - Full regression suite for release/publish gates.
 
 验收标准:
-- Manual platform package includes checklist, status, receipt, and rule version.
+- Manual platform package includes checklist, status, receipt, parser confidence, project-scoped rule snapshot, and rule version.
 - Feedback does not silently mutate story plans.
 - Approved feedback mutation creates patch, impact analysis, invalidation, and regeneration task.
 

@@ -112,6 +112,7 @@ WORKFLOW_SERVICE_OPERATIONS = {
     "platform_upload_package": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["build-platform-upload-package", "build_platform_upload_package"]},
     "platform_api_publish": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["publish-platform-upload-package", "publish_platform_upload_package"]},
     "platform_publish_receipt": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["record-platform-receipt", "record_platform_receipt"]},
+    "platform_adapter_gate": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["run-platform-adapter-gate", "run_platform_adapter_gate"]},
     "platform_metric_import": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["import-platform-metrics", "import_platform_metrics"]},
     "comment_cluster": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["cluster-platform-comments", "cluster_platform_comments"]},
     "feedback_mutation_proposal": {"category": "publishing_feedback_adapters", "checkpoint_strategy": "output_reuse", "aliases": ["create-feedback-mutation-proposal", "create_feedback_mutation_proposal"]},
@@ -4361,6 +4362,18 @@ def _execute_registered_service_processor_impl(
             receipt_raw=processor.get("receipt_raw") if isinstance(processor.get("receipt_raw"), dict) else {},
             operator_note=str(processor.get("operator_note") or ""),
             upload_package_path=str(processor.get("upload_package_path") or (input_assets[0] if input_assets else "")),
+            environment=str(processor.get("environment") or ""),
+            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"platform_adapter_gate", "run-platform-adapter-gate", "run_platform_adapter_gate"}:
+        from novel_forge.modules.publishing_feedback_adapters import run_platform_adapter_gate
+
+        result = run_platform_adapter_gate(
+            storage,
+            upload_package_path=str(processor.get("upload_package_path") or (input_assets[0] if input_assets else "")),
+            platform_id=str(processor.get("platform_id") or ""),
+            receipt_path=str(processor.get("receipt_path") or ""),
             environment=str(processor.get("environment") or ""),
             envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
         )

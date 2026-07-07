@@ -35,6 +35,7 @@ class AgentSchedulerTests(unittest.TestCase):
             "run-review-revision-publish-loop",
             "preview-provider-fallback",
             "approve-provider-fallback",
+            "run-platform-adapter-gate",
         ]:
             self.assertIn(operation, contracts)
             self.assertEqual(contracts[operation]["runner_kind"], "local_service")

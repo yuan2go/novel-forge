@@ -60,7 +60,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 - Independent lifecycle models for many blueprint concepts currently represented as fields inside broad assets.
 - Full typed graph state/query/diff storage for all Canon topic state machines.
 - Full provider-backed premium judge and 50-chapter proof using real external credentials and operator-approved budget. The provider proof harness now separates external/fixture/missing proof, but local tests still use fixtures.
-- Platform-specific production adapters beyond manual/checklist/fallback foundations.
+- Platform-specific production adapters beyond manual/checklist/fallback/rule-snapshot foundations.
 - Full autonomous multi-book Portfolio OS.
 
 ## Architecture Debt
@@ -120,7 +120,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 | Engine | Readable Prose Engine | Readable, page-turning prose gates | `readable-prose-gate-v1` exists inside content quality loop and writes QualityScoreReport/ReviewIssue/RevisionTask assets; readable failures map to revision strategies | Calibration and final multi-chapter proof pending | AI-like or summary-like chapters if quality loop is skipped | P0 | Keep readable gate mandatory in draft/revision loops and calibrate later | `modules/content_quality_loop/service.py`, `tests/unit/test_content_quality_loop.py`, `tests/unit/test_review_issue.py` | Bad/good prose fixtures now; full-loop proof later |
 | Engine | Revision Engine | Issue-type strategy and re-review | Revision tasks/plans, rework loop, re-review links, and `review-issue-revision-strategy-v1` exist | Need real improvement metrics and issue-to-diff verification in final proof | Revisions may be cosmetic if future callers bypass strategy contract | P0 | Use the strategy contract in Canon/Timeline/Foreshadow repair and final unified acceptance | `modules/review_issue/service.py`, `modules/revision/service.py`, `modules/loop_kernel/service.py`, `modules/agent_scheduler/service.py` | Candidate, task/plan, provider-loop, local-loop, and Agent Scheduler dispatch strategy fixtures |
 | Engine | Feedback Analysis Engine | Reader feedback to human-gated mutation | Feedback adapters/backflow/mutation application exist | Real embedding/sentiment/drop-off evidence partial | Feedback over-applied or ignored | P2 | Keep human approval; add evidence chain later | `modules/publishing_feedback_adapters`, `modules/feedback` | Approval/apply/invalidate tests |
-| Engine | Publishing Adapter Engine | Manual/real platform packages and status | Manual packages, receipt parser, platform gates exist | Real platform SDK/callback/rate limits not bound | False automation claims | P2 | Keep manual adapters, add platform rule versions | `modules/publishing_feedback_adapters`, `modules/publishing` | Fanqie/Qidian parser fixtures |
+| Engine | Publishing Adapter Engine | Manual/real platform packages and status | Manual packages, project-scoped rule snapshots, receipt parser confidence, and platform gates exist | Real platform SDK/callback/rate limits not bound | False automation claims | P2 | Keep manual adapters explicit; only add real SDK behind approval | `modules/publishing_feedback_adapters`, `modules/publishing` | Fanqie/Qidian parser/gate fixtures |
 | Engine | Style Identity Engine | Style policy, drift and rewrite tasks | Style OS exists | Authorized sample lifecycle and deep drift calibration still partial | Style imitation or drift | P1 | Harden rights/source isolation and v1 style gate | `modules/style_os` | Style sample leakage tests |
 | Enhancement | Golden Opening Lab | Opening hook and first 300-800 chars gate | Quality Eval opening reports and platform opening gates exist | Not a v1 hard gate yet | Weak start reduces追读 | P0 | Add opening gate to chapter 1-3 v1 loop | `modules/quality_eval`, `modules/platform_strategy` | Opening positive/negative fixtures |
 | Enhancement | Reader Promise Ledger | Track promises and payoff | `ReaderPromise`/`ReaderPromiseLedger` assets, promise ledger service/API, longform reducer, chapter bus output, and ReviewIssue/RevisionTask hook exist | Deterministic payoff detection still needs calibration and UI repair workflow depth | Unpaid promises if future callers bypass ledger | P1 | Calibrate promise payoff after chapter economy gate and prove in final unified workflow | `schemas/assets.py`, `modules/reader_promise`, `modules/longform_stability`, `modules/chapter_production_bus` | Normal/broken promise fixtures plus reducer/chapter bus route tests |
@@ -136,8 +136,8 @@ Current implementation proves many slices and fixtures, including a true one-cha
 Do not add another broad V7 surface first. The next production slice should be:
 
 ```text
-P2 Platform-Specific Manual Adapters:
-harden Fanqie/Qidian manual upload package, checklist, receipt parsing, and review status so publishing evidence is platform-specific without claiming real platform SDK automation.
+P2 Feedback Mutation Apply Workflow:
+deepen the approved feedback mutation path so patch artifacts, invalidation evidence, regeneration tasks, and re-review/publish-gate rerun evidence are produced without silent story mutation.
 ```
 
 During the current development loop, do not run chapter acceptance. Use targeted unit and compile checks only, then run the unified acceptance phase after the production slices are complete.

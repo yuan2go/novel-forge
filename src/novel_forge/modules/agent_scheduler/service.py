@@ -1892,6 +1892,16 @@ def _operation_specs() -> list[AgentOperationSpec]:
             sla_seconds=300,
         ),
         AgentOperationSpec(
+            operation="run-platform-adapter-gate",
+            aliases=("platform-adapter-gate",),
+            runner=_run_platform_adapter_gate,
+            agent_key="publishing",
+            input_types=("platform_upload_package",),
+            output_types=("platform_review_status",),
+            required_tool="run_validation",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
             operation="publish-platform-upload-package",
             aliases=("platform-api-publish",),
             runner=_run_publish_platform_upload_package,
@@ -2833,6 +2843,20 @@ def _run_record_platform_receipt(storage: LocalStorage, queue_item: dict[str, An
         receipt_raw=evidence.get("receipt_raw") if isinstance(evidence.get("receipt_raw"), dict) else {},
         operator_note=str(evidence.get("operator_note") or ""),
         upload_package_path=str(evidence.get("upload_package_path") or _primary_input_path(agent_run)),
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_platform_adapter_gate(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.publishing_feedback_adapters import run_platform_adapter_gate
+
+    evidence = _evidence(agent_run)
+    return run_platform_adapter_gate(
+        storage,
+        upload_package_path=str(evidence.get("upload_package_path") or _primary_input_path(agent_run)),
+        platform_id=str(evidence.get("platform_id") or ""),
+        receipt_path=str(evidence.get("receipt_path") or ""),
         environment=str(evidence.get("environment") or ""),
         envelope=_envelope_from_evidence(evidence),
     )
