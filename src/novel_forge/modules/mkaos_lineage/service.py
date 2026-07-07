@@ -57,6 +57,9 @@ NODE_TYPES = {
     "evaluation_result",
     "mkaos_production_gate_report",
     "mkaos_feedback_attribution",
+    "knowledge_usage_event",
+    "material_usage_event",
+    "source_refresh_report",
 }
 
 RELATION_WEIGHTS = {
@@ -119,7 +122,7 @@ def get_latest_lineage_index(storage: LocalStorage, project_id: str | None = Non
     for path in reversed(storage.list_json("runs")):
         try:
             data = storage.read_json(path)
-        except Exception:
+        except (OSError, TypeError, ValueError):
             continue
         if not isinstance(data, dict) or data.get("type") != "mkaos_lineage_index":
             continue
@@ -262,12 +265,18 @@ def analyze_asset_impact(storage: LocalStorage, payload: dict[str, Any] | str) -
     downstream_nodes = [nodes[item] for item in downstream if item in nodes]
     review_issues = [node for node in downstream_nodes if node.get("asset_type") == "review_issue"]
     feedback_signals = [node for node in downstream_nodes if node.get("asset_type") in {"reader_feedback", "mkaos_feedback_attribution"}]
+    usage_feedback_signals = [node for node in downstream_nodes if node.get("asset_type") in {"knowledge_usage_event", "material_usage_event"}]
+    source_refresh_signals = _source_refresh_signals_for_asset(storage, nodes.get(asset_id, {}), project_id=project_id)
+    source_refresh_risky = [item for item in source_refresh_signals if str(item.get("decision") or "") not in {"", "current"}]
     gate_blocks = [node for node in downstream_nodes if node.get("asset_type") == "mkaos_production_gate_report" and node.get("status") == "blocked"]
     negative_feedback = any(str(node.get("risk_level") or "") in {"medium", "high", "critical"} for node in feedback_signals)
     positive_feedback = bool(feedback_signals) and not negative_feedback
-    risk_level = "high" if gate_blocks or len(review_issues) >= 2 else "medium" if review_issues or negative_feedback else "low"
-    action = "quarantine" if gate_blocks else "review" if review_issues or negative_feedback else "increase_weight" if positive_feedback else "keep"
+    quarantined_source = any(str(item.get("decision") or "") == "blocked_quarantined" for item in source_refresh_signals)
+    stale_source = bool(source_refresh_risky)
+    risk_level = "high" if gate_blocks or len(review_issues) >= 2 or quarantined_source else "medium" if review_issues or negative_feedback or stale_source else "low"
+    action = "quarantine" if gate_blocks or quarantined_source else "review" if review_issues or negative_feedback or stale_source else "increase_weight" if positive_feedback else "keep"
     weight_delta = -0.25 if action == "quarantine" else -0.1 if action == "review" else 0.08 if action == "increase_weight" else 0.0
+    invalidation_recommendations = _source_refresh_invalidation_recommendations(asset_id, source_refresh_risky)
     report = {
         "impact_report_id": make_id("mkaos_asset_impact_report", f"{asset_id} {utc_now()}"),
         "project_id": project_id,
@@ -278,8 +287,14 @@ def analyze_asset_impact(storage: LocalStorage, payload: dict[str, Any] | str) -
         "used_in_flows": sorted({node.get("flow", "") for node in downstream_nodes if node.get("flow")}),
         "review_issues": review_issues,
         "feedback_signals": feedback_signals,
+        "usage_feedback_signals": usage_feedback_signals,
+        "usage_feedback_count": len(usage_feedback_signals),
         "negative_feedback_signal": negative_feedback,
         "positive_feedback_signal": positive_feedback,
+        "source_refresh_signals": source_refresh_signals,
+        "source_refresh_signal_count": len(source_refresh_signals),
+        "stale_source_signal": stale_source,
+        "invalidation_recommendations": invalidation_recommendations,
         "gate_blocks": gate_blocks,
         "risk_level": risk_level,
         "recommended_action": action,
@@ -290,6 +305,100 @@ def analyze_asset_impact(storage: LocalStorage, payload: dict[str, Any] | str) -
     if payload.get("persist", True):
         _persist_report(storage, "mkaos_asset_impact_report", report["impact_report_id"], "MKAOS asset impact report", report, project_id=project_id, references=[asset_id])
     return report
+
+
+def _source_refresh_signals_for_asset(storage: LocalStorage, node: dict[str, Any], *, project_id: str) -> list[dict[str, Any]]:
+    asset_id = str(node.get("asset_id") or "")
+    if not asset_id:
+        return []
+    asset = _asset_data_for_node(storage, node)
+    content = _content(asset)
+    metadata = _metadata(asset)
+    source_eligibility = content.get("source_eligibility") if isinstance(content.get("source_eligibility"), dict) else {}
+    if not source_eligibility and isinstance(metadata.get("source_eligibility"), dict):
+        source_eligibility = metadata.get("source_eligibility", {})
+    ref_keys: set[str] = set()
+    for field in ["source_policy_refs", "source_risk_report_refs", "source_snapshot_refs"]:
+        values = source_eligibility.get(field, [])
+        if isinstance(values, list):
+            ref_keys.update(str(item) for item in values if str(item).strip())
+    source_refs = {str(item) for item in source_eligibility.get("source_refs", []) if str(item).strip()} if isinstance(source_eligibility.get("source_refs", []), list) else set()
+    if not ref_keys and not source_refs:
+        return []
+    signals: list[dict[str, Any]] = []
+    for path in reversed(storage.list_json("runs")):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "source_refresh_report":
+            continue
+        if project_id and _project_id(data) not in {"", project_id}:
+            continue
+        refresh = _content(data)
+        governance_refs = refresh.get("governance_refs", {}) if isinstance(refresh.get("governance_refs"), dict) else {}
+        refresh_refs = {str(value) for value in governance_refs.values() if str(value).strip()}
+        refresh_source_ref = str(refresh.get("source_ref") or "")
+        if not (ref_keys & refresh_refs or (refresh_source_ref and refresh_source_ref in source_refs)):
+            continue
+        signals.append(
+            {
+                "source_refresh_report_id": str(data.get("id") or refresh.get("refresh_report_id") or ""),
+                "path": _display_path(storage, path),
+                "source_ref": refresh_source_ref,
+                "decision": str(refresh.get("decision") or ""),
+                "stale_flags": _strip_raw(refresh.get("stale_flags", []) if isinstance(refresh.get("stale_flags", []), list) else []),
+                "governance_refs": governance_refs,
+                "next_actions": refresh.get("next_actions", []) if isinstance(refresh.get("next_actions", []), list) else [],
+            }
+        )
+    return signals[:20]
+
+
+def _source_refresh_invalidation_recommendations(asset_id: str, source_refresh_signals: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    recommendations: list[dict[str, Any]] = []
+    for signal in source_refresh_signals:
+        decision = str(signal.get("decision") or "")
+        if not decision or decision == "current":
+            continue
+        stale_codes = {
+            str(item.get("code") or "")
+            for item in signal.get("stale_flags", [])
+            if isinstance(item, dict)
+        }
+        recommendations.append(
+            {
+                "target_asset_id": asset_id,
+                "source_refresh_report_id": str(signal.get("source_refresh_report_id") or ""),
+                "decision": decision,
+                "recommended_action": "quarantine_source_derived_asset" if decision == "blocked_quarantined" else "review_source_governance",
+                "downstream_action": "invalidate_context_and_regenerate_after_review" if {"content_hash_drift", "source_snapshot_stale"} & stale_codes else "operator_review_before_next_context_selection",
+                "auto_applied": False,
+                "requires_operator_review": True,
+                "reason": f"source refresh decision={decision}; stale_flags={', '.join(sorted(stale_codes)) or 'none'}",
+            }
+        )
+    return recommendations
+
+
+def _asset_data_for_node(storage: LocalStorage, node: dict[str, Any]) -> dict[str, Any]:
+    path = str(node.get("path") or "").strip()
+    if path:
+        try:
+            data = storage.read_json(storage.root / path)
+            return data if isinstance(data, dict) else {}
+        except (OSError, TypeError, ValueError):
+            pass
+    asset_id = str(node.get("asset_id") or "")
+    for category in DATA_DIRS:
+        for candidate in storage.list_json(category):
+            try:
+                data = storage.read_json(candidate)
+            except (OSError, TypeError, ValueError):
+                continue
+            if isinstance(data, dict) and str(data.get("id") or "") == asset_id:
+                return data
+    return {}
 
 
 def query_issue_attribution(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -386,7 +495,11 @@ def apply_lineage_weight_governance(storage: LocalStorage, payload: dict[str, An
                 "weight_delta": impact.get("weight_delta_suggestion", 0.0),
                 "risk_level": impact.get("risk_level", "low"),
                 "dry_run": dry_run,
-                "reason": f"{len(impact.get('review_issues', []))} review issues, {len(impact.get('feedback_signals', []))} feedback signals, {len(impact.get('gate_blocks', []))} gate blocks",
+                "reason": f"{len(impact.get('review_issues', []))} review issues, {len(impact.get('feedback_signals', []))} feedback signals, {len(impact.get('usage_feedback_signals', []))} usage events, {len(impact.get('source_refresh_signals', []))} source refresh signals, {len(impact.get('gate_blocks', []))} gate blocks",
+                "usage_feedback_count": impact.get("usage_feedback_count", 0),
+                "source_refresh_signal_count": impact.get("source_refresh_signal_count", 0),
+                "invalidation_recommendations": impact.get("invalidation_recommendations", []),
+                "review_required_before_apply": bool(impact.get("stale_source_signal") or impact.get("invalidation_recommendations")),
             }
         )
     applied_updates: list[dict[str, Any]] = []
@@ -448,6 +561,12 @@ def apply_lineage_weight_governance(storage: LocalStorage, payload: dict[str, An
         "recommendations": recommendations,
         "applied_updates": applied_updates,
         "applied_count": len(applied_updates),
+        "governance_contract": {
+            "contract_version": "usage-feedback-weight-governance-v1",
+            "usage_feedback_auto_applied": False,
+            "source_refresh_auto_invalidated": False,
+            "operator_review_required_for_invalidation": True,
+        },
         "source_isolation": {"raw_text_included": False, "source_text_included": False, "target_text_included": False},
         "generated_at": utc_now(),
     }
@@ -507,6 +626,8 @@ def _derive_edges(rows: list[dict[str, Any]], *, by_id: dict[str, dict[str, Any]
             add(ref, asset_id, "derived_from", ref)
         for ref in _strings(content.get("knowledge_id")) + _strings(content.get("knowledge_ids")) + _strings(content.get("selected_knowledge_ids")) + _strings(content.get("related_knowledge_ids")):
             add(ref, asset_id, _relation_for_knowledge_target(asset_type), ref)
+        for ref in _strings(content.get("material_id")) + _strings(content.get("material_ids")):
+            add(ref, asset_id, "used_in_context" if asset_type == "material_usage_event" else "used_in_generation", ref)
         for ref in _strings(content.get("creative_asset_ids")) + _strings(content.get("creative_asset_ids_used")):
             add(ref, asset_id, "converted_to" if asset_type.endswith("_card") else "used_in_generation", ref)
         for ref in _strings(content.get("knowledge_pack_id")) + _strings(content.get("mkaos_pack_id")) + _strings(content.get("mkaos_knowledge_pack_id")) + _strings(content.get("related_knowledge_pack_id")):
@@ -647,6 +768,10 @@ def _safe_summary(content: dict[str, Any]) -> dict[str, Any]:
         "confidence",
         "selector_policy_version",
         "recommendation",
+        "decision",
+        "stale_flags",
+        "source_eligibility",
+        "material_id",
         "passed",
         "blocking_issue_count",
         "positive_signals",

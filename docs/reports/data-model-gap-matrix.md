@@ -18,10 +18,10 @@ Status legend:
 
 | 数据模型 | 蓝图用途 | 当前是否存在 | 当前实现位置 | 缺失字段 | 生命周期状态 | 关联模块 | 优先级 |
 |---|---|---|---|---|---|---|---|
-| Source | 外部/内部来源登记 | partial | `SourceDocument`, importer metadata, Source Governance assets | connector execution diff repair, usage-based invalidation | evidence asset plus governance/refresh foundation | MKAOS ingestion, source governance | P0 |
+| Source | 外部/内部来源登记 | partial | `SourceDocument`, importer metadata, Source Governance assets | connector execution diff repair | evidence asset plus governance/refresh/usage-invalidation foundation | MKAOS ingestion, source governance | P0 |
 | SourcePolicy | 来源使用规则 | yes-foundation | `SourcePolicy`, `modules/source_intake/service.py`; consumed by `modules/mkaos/service.py`, `modules/materials/service.py`, `modules/analysis/service.py`, and `modules/context_builder/service.py` | connector-level expiry/renewal policy and per-stage budget | create/evaluate asset lifecycle plus MKAOS/material/analysis/context caller contract | Context Builder, MKAOS, Materials, Analysis | P0 |
 | SourceSyncJob | 来源同步任务 | yes-foundation | `SourceSyncJob`, `SourceRefreshReport`, `modules/source_intake/service.py` | schedule runner, cursor retry execution, connector adapter binding | planned/checkpoint asset lifecycle plus audit-only refresh status | Source Governance OS | P2 |
-| SourceRefreshReport | 来源刷新审计 | yes-foundation | `SourceRefreshReport`, `modules/source_intake/service.py` | connector execution approval path and source diff repair | audit-only stale/hash/sync report | Source Governance OS | P1 |
+| SourceRefreshReport | 来源刷新审计 | yes-foundation | `SourceRefreshReport`, `modules/source_intake/service.py`, `modules/mkaos_lineage/service.py` | connector execution approval path and source diff repair | audit-only stale/hash/sync report plus weight-governance signal | Source Governance OS | P1 |
 | SourceSnapshot | 来源快照 | yes-foundation | `SourceSnapshot`, `modules/source_intake/service.py` | snapshot diff and retention policy | evidence-only snapshot asset | Source Governance OS | P2 |
 | LicenseCheckResult | 许可检查结果 | yes-foundation | `LicenseCheckResult`, `modules/source_intake/service.py` | expiry/renewal and legal reviewer workflow | create asset lifecycle | Source Governance OS | P0 |
 | SourceRiskReport | 来源风险报告 | yes-foundation | `SourceRiskReport`, `modules/source_intake/service.py`; `source-eligibility-caller-contract-v1` on MKAOS knowledge/material/analysis/context assets | recurring risk refresh and stale evidence detection | R0-R4 report asset lifecycle plus production fail-closed consumption in MKAOS/material/analysis/context seams | MKAOS, Materials, Analysis, Context Builder | P0 |
@@ -34,7 +34,7 @@ Status legend:
 | MaterialTag | 素材标签 | partial | asset tags/content fields | controlled taxonomy | embedded | MKAOS, assets | P2 |
 | MaterialFunction | 素材功能 | partial | content fields | stage/function enum | embedded | MKAOS | P1 |
 | MaterialRisk | 素材风险 | partial | risk fields/gates | standalone risk report | embedded | Source Governance, MKAOS | P0 |
-| MaterialUsage | 素材使用追踪 | yes-foundation | `MaterialUsageEvent`, `KnowledgeUsageEvent`, `KnowledgeUsageBinding`, `ContextBundle.usage_feedback_events` | usage aggregation, weight governance, downstream invalidation | context-selected usage event lifecycle | MKAOS, Context Builder, Materials | P1 |
+| MaterialUsage | 素材使用追踪 | yes-foundation | `MaterialUsageEvent`, `KnowledgeUsageEvent`, `KnowledgeUsageBinding`, `ContextBundle.usage_feedback_events`, `MKAOSWeightGovernanceReport` | guarded apply workflow and calibrated effect scoring | context-selected usage event lifecycle plus reviewable weight/invalidation governance | MKAOS, Context Builder, Materials | P1 |
 | KnowledgeAsset | 知识资产 | yes | `KnowledgeCard` | lifecycle states and approved-candidate promotion can deepen | usable; source-derived cards now carry SourcePolicy/SourceRiskReport eligibility and fail closed in production without passed governance | MKAOS | P0 |
 | CreativePrinciple | 创作原则 | partial | `RuleCard`, `KnowledgeCard` | standalone principle type | embedded | MKAOS, Review | P2 |
 | NarrativeMechanism | 叙事机制 | partial | `NarrativePattern`, `CommercialPattern` | lifecycle and usage feedback | basic asset | Analysis, MKAOS | P1 |
@@ -117,7 +117,7 @@ Status legend:
 
 1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 2. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
-3. Usage feedback governance: SourceRefreshReport and MaterialUsageEvent now exist; needed next is aggregation into reviewable weight/invalidation recommendations without automatic source promotion or context mutation.
+3. Source connector execution: SourceRefreshReport, MaterialUsageEvent, and reviewable weight/invalidation governance now exist; needed next is approval-gated connector execution and source diff repair without unsafe network/file access.
 4. Readable prose/page-turning/mobile review models: foundations exist for readable prose and mobile reading; PageTurningReport and AntiAIReport can deepen provider/human calibration later.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
 6. `ReaderPromise`, `ChapterEconomyReport`, `ProtagonistCharmReport`, `AntagonistPressureReport`, and `MobileReadingReport` calibration and cockpit depth: foundations exist, but detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.
