@@ -42,6 +42,195 @@ HIGH_BLOCKING_TYPES = {
     "quality_gate",
     "canon_plugin_conflict",
 }
+REVISION_EVIDENCE_CHAIN = [
+    "revision_task_path",
+    "revision_plan_path",
+    "editor_patch_path",
+    "draft_version_path",
+    "re_review_path",
+]
+REVISION_STRATEGY_DEFAULT = {
+    "strategy_id": "targeted_revision",
+    "strategy_name": "Targeted issue repair",
+    "patch_scope": "affected_span",
+    "instructions": [
+        "Resolve the specific ReviewIssue without changing unrelated story facts.",
+        "Preserve project-owned prose, canon boundaries, and chapter hook.",
+        "Record before/after evidence and send the revised draft through re-review.",
+    ],
+    "re_review_focus": ["issue resolved", "no new canon/style/quality regression"],
+    "risk_controls": ["bounded_patch", "versioned_draft", "rollback_patch", "re_review_required"],
+}
+REVISION_STRATEGY_RULES = [
+    {
+        "strategy_id": "rewrite_opening_pressure",
+        "strategy_name": "Rewrite opening pressure",
+        "issue_types": {"quality_gate", "pacing_collapse"},
+        "keywords": {"opening_pressure", "opening", "first 300", "开头", "压力"},
+        "patch_scope": "opening_300_800_words",
+        "instructions": [
+            "Rewrite the opening so an event, abnormal signal, pressure, or irreversible choice appears immediately.",
+            "Keep the original premise and viewpoint while replacing exposition with observable action.",
+            "End the repaired opening with a question, threat, discovery, or cost that pulls the reader forward.",
+        ],
+        "re_review_focus": ["opening pressure", "event arrives early", "reader hook strengthened"],
+        "risk_controls": ["preserve_premise", "no_raw_reference_text", "mobile_reading_check"],
+    },
+    {
+        "strategy_id": "scene_action_rewrite",
+        "strategy_name": "Convert summary into scene action",
+        "issue_types": {"quality_gate", "pacing_collapse", "ai_style"},
+        "keywords": {"scene_progression", "推进", "说明", "summary", "exposition"},
+        "patch_scope": "stalled_scene_or_paragraphs",
+        "instructions": [
+            "Convert abstract explanation into concrete actions, sensory details, choices, and consequences.",
+            "Ensure each repaired paragraph changes information, emotion, risk, or character position.",
+            "Remove redundant summary sentences that do not alter the scene state.",
+        ],
+        "re_review_focus": ["scene progression", "paragraph-level state change", "reduced exposition"],
+        "risk_controls": ["bounded_scene_patch", "specificity_required", "re_review_required"],
+    },
+    {
+        "strategy_id": "raise_conflict_cost",
+        "strategy_name": "Raise conflict cost and opposition",
+        "issue_types": {"quality_gate", "plot_logic_gap", "pacing_collapse"},
+        "keywords": {"conflict_strength", "conflict", "阻碍", "代价", "压力", "weak conflict"},
+        "patch_scope": "conflict_beats",
+        "instructions": [
+            "Add an active obstacle, cost, or credible opponent response to the weak conflict beat.",
+            "Make the protagonist choose under pressure instead of simply receiving information.",
+            "Show a consequence that changes the next beat or chapter hook.",
+        ],
+        "re_review_focus": ["conflict intensity", "cost visible", "choice under pressure"],
+        "risk_controls": ["canon_aligned_conflict", "no_deus_ex_machina", "payoff_preserved"],
+    },
+    {
+        "strategy_id": "concretize_language",
+        "strategy_name": "Concretize AI-flavored language",
+        "issue_types": {"quality_gate", "ai_style", "repetition"},
+        "keywords": {"ai_flavor", "ai style", "abstract", "具体", "套话", "重复"},
+        "patch_scope": "abstract_or_repetitive_paragraphs",
+        "instructions": [
+            "Replace generic conclusion language with concrete actions, objects, reactions, and subtext.",
+            "Vary sentence rhythm without imitating any reference source.",
+            "Remove repeated abstract nouns unless they are carried by scene evidence.",
+        ],
+        "re_review_focus": ["specificity", "anti-AI style", "sentence rhythm"],
+        "risk_controls": ["source_isolation", "no_reference_phrasing", "style_policy_check"],
+    },
+    {
+        "strategy_id": "strengthen_closing_hook",
+        "strategy_name": "Strengthen closing hook",
+        "issue_types": {"quality_gate", "pacing_collapse"},
+        "keywords": {"ending_hook", "closing hook", "结尾", "钩子", "hook"},
+        "patch_scope": "last_300_words",
+        "instructions": [
+            "Rebuild the ending around an unresolved question, reversal, discovery, threat, or emotional debt.",
+            "Tie the hook to the chapter plan payoff target instead of appending a decorative cliffhanger.",
+            "Keep the reader promise visible for the next chapter.",
+        ],
+        "re_review_focus": ["ending hook", "next-chapter pull", "payoff promise"],
+        "risk_controls": ["promise_ledger_check", "no_fake_twist", "re_review_required"],
+    },
+    {
+        "strategy_id": "mobile_paragraph_reflow",
+        "strategy_name": "Reflow for mobile reading",
+        "issue_types": {"quality_gate"},
+        "keywords": {"mobile_rhythm", "mobile", "paragraph", "段落"},
+        "patch_scope": "paragraph_layout",
+        "instructions": [
+            "Split oversized paragraphs and keep each mobile screen beat easy to scan.",
+            "Preserve sentence meaning while improving rhythm, white space, and beat transitions.",
+            "Avoid adding filler text during reflow.",
+        ],
+        "re_review_focus": ["mobile paragraph rhythm", "no filler", "readability"],
+        "risk_controls": ["meaning_preserved", "diff_review", "re_review_required"],
+    },
+    {
+        "strategy_id": "canon_aligned_rewrite",
+        "strategy_name": "Canon-aligned rewrite",
+        "issue_types": {"canon_conflict", "canon_plugin_conflict"},
+        "keywords": {"canon", "continuity", "设定", "状态机", "rule"},
+        "patch_scope": "canon_conflicting_span",
+        "instructions": [
+            "Recheck canon facts, typed graph state, and chapter state before changing prose.",
+            "Rewrite only the contradictory span or update the upstream plan through an explicit approval path.",
+            "Attach canon gate evidence after the repair.",
+        ],
+        "re_review_focus": ["canon conflict resolved", "typed graph still consistent", "no new continuity drift"],
+        "risk_controls": ["canon_gate_required", "approval_for_canon_change", "rollback_patch"],
+    },
+    {
+        "strategy_id": "restore_character_voice_motivation",
+        "strategy_name": "Restore character voice and motivation",
+        "issue_types": {"character_drift"},
+        "keywords": {"character", "voice", "motivation", "人物", "动机", "口吻"},
+        "patch_scope": "character_action_or_dialogue",
+        "instructions": [
+            "Compare the character state, motivation, relationship pressure, and voice profile before editing.",
+            "Rewrite the action/dialogue so the choice follows current desire, fear, wound, or constraint.",
+            "Show the motivation through behavior or subtext rather than explanation.",
+        ],
+        "re_review_focus": ["character motivation", "voice consistency", "relationship state"],
+        "risk_controls": ["character_state_check", "no_personality_reset", "re_review_required"],
+    },
+    {
+        "strategy_id": "restore_foreshadow_payoff",
+        "strategy_name": "Restore foreshadow and payoff chain",
+        "issue_types": {"foreshadowing_drop"},
+        "keywords": {"foreshadow", "payoff", "伏笔", "回收"},
+        "patch_scope": "foreshadow_or_payoff_beat",
+        "instructions": [
+            "Identify the missing setup, reminder, or payoff from the foreshadow ledger.",
+            "Repair the beat without revealing more than the chapter plan allows.",
+            "Update the payoff evidence for later longform recap.",
+        ],
+        "re_review_focus": ["foreshadow chain", "payoff timing", "information release"],
+        "risk_controls": ["info_release_check", "ledger_update_required", "re_review_required"],
+    },
+    {
+        "strategy_id": "style_policy_rewrite",
+        "strategy_name": "Rewrite under style policy",
+        "issue_types": {"style_drift"},
+        "keywords": {"style", "drift", "voice", "风格"},
+        "patch_scope": "style_drift_span",
+        "instructions": [
+            "Use the style profile policy, not raw sample text, to rewrite the drifted span.",
+            "Keep rights isolation intact and do not import sample wording into draft prose.",
+            "Run style drift gate after the edit.",
+        ],
+        "re_review_focus": ["style drift reduced", "rights isolation preserved", "no copied sample phrasing"],
+        "risk_controls": ["style_gate_required", "source_isolation", "no_raw_sample_text"],
+    },
+    {
+        "strategy_id": "genre_promise_repair",
+        "strategy_name": "Repair genre promise delivery",
+        "issue_types": {"genre_risk"},
+        "keywords": {"genre", "promise", "reader promise", "爽点", "题材"},
+        "patch_scope": "genre_promise_beat",
+        "instructions": [
+            "Repair the beat against the active Genre Strategy Pack and reader promise.",
+            "Make the required genre signal visible through action, conflict, reward, or threat.",
+            "Avoid adding generic trope decoration that does not affect the scene.",
+        ],
+        "re_review_focus": ["genre promise", "reader expectation", "platform fit"],
+        "risk_controls": ["genre_gate_required", "trope_fatigue_check", "re_review_required"],
+    },
+    {
+        "strategy_id": "source_isolation_rewrite",
+        "strategy_name": "Remove source leakage",
+        "issue_types": {"source_leakage", "mkaos_conflict"},
+        "keywords": {"source", "leakage", "raw_text", "copy", "copyright", "版权"},
+        "patch_scope": "source_risk_span",
+        "instructions": [
+            "Remove leaked source expression and replace it with project-owned prose or abstracted structure.",
+            "Keep source evidence out of the revised draft context.",
+            "Run source isolation and originality risk checks before re-review.",
+        ],
+        "re_review_focus": ["source leakage removed", "originality boundary", "source isolation"],
+        "risk_controls": ["source_isolation_gate", "originality_gate", "blocking_until_clean"],
+    },
+]
 
 
 def create_review_issue(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -230,17 +419,46 @@ def review_issues_to_gate_issues(rows: list[dict[str, Any]]) -> list[dict[str, A
     return result
 
 
+def revision_strategy_for_issue(issue: dict[str, Any]) -> dict[str, Any]:
+    content = issue.get("content", issue) if isinstance(issue.get("content", issue), dict) else {}
+    issue_type = _issue_type(content)
+    signal = _issue_signal(content)
+    rule = next((item for item in REVISION_STRATEGY_RULES if _strategy_matches(item, issue_type, signal)), REVISION_STRATEGY_DEFAULT)
+    strategy = {
+        "strategy_id": rule["strategy_id"],
+        "strategy_name": rule["strategy_name"],
+        "issue_type": issue_type,
+        "patch_scope": rule["patch_scope"],
+        "instructions": list(rule["instructions"]),
+        "required_inputs": ["source_draft", "review_issue", "context_bundle", "canon_state"],
+        "required_output_evidence": list(REVISION_EVIDENCE_CHAIN),
+        "re_review_required": True,
+        "re_review_focus": list(rule["re_review_focus"]),
+        "quality_gate_required": True,
+        "risk_controls": list(rule["risk_controls"]),
+        "selection_signal": signal[:500],
+    }
+    return strategy
+
+
 def review_issue_to_revision_task_candidate(issue: dict[str, Any]) -> dict[str, Any]:
     content = issue.get("content", issue) if isinstance(issue.get("content", issue), dict) else {}
+    strategy = revision_strategy_for_issue({"content": content})
     return {
         "revision_task_type": "fix_review_issue",
         "source_issue_id": content.get("issue_id", ""),
         "target_asset_id": content.get("target_asset_id", ""),
         "target_asset_path": content.get("target_asset_path", ""),
-        "issue_type": content.get("issue_type", ""),
+        "issue_type": strategy["issue_type"],
         "severity": content.get("severity", ""),
         "instructions": content.get("fix_suggestion") or content.get("message", ""),
         "blocking": bool(content.get("blocking", False)),
+        "revision_strategy_id": strategy["strategy_id"],
+        "revision_strategy": strategy,
+        "required_output_evidence": strategy["required_output_evidence"],
+        "re_review_required": strategy["re_review_required"],
+        "re_review_focus": strategy["re_review_focus"],
+        "quality_gate_required": strategy["quality_gate_required"],
     }
 
 
@@ -341,6 +559,50 @@ def _issue_type(payload: dict[str, Any]) -> str:
     if str(payload.get("source_system") or "").startswith("mkaos") or "知识" in text or "百科" in text:
         return "mkaos_conflict"
     return "plot_logic_gap"
+
+
+def _issue_signal(payload: dict[str, Any]) -> str:
+    values = []
+    for key in [
+        "issue_type",
+        "dimension",
+        "rule_type",
+        "rule_id",
+        "rule_name",
+        "source_system",
+        "message",
+        "summary",
+        "description",
+        "fix_suggestion",
+        "recommendation",
+        "source_issue_id",
+    ]:
+        value = payload.get(key)
+        if value is not None:
+            values.append(str(value))
+    source_issue = payload.get("source_issue")
+    if isinstance(source_issue, dict):
+        for key in ["dimension", "rule_id", "rule_name", "message", "recommendation"]:
+            value = source_issue.get(key)
+            if value is not None:
+                values.append(str(value))
+    metadata = payload.get("metadata")
+    if isinstance(metadata, dict):
+        for key in ["dimension", "rule_id", "source_system"]:
+            value = metadata.get(key)
+            if value is not None:
+                values.append(str(value))
+    return " ".join(values).lower()
+
+
+def _strategy_matches(rule: dict[str, Any], issue_type: str, signal: str) -> bool:
+    issue_types = rule.get("issue_types", set())
+    if issue_type not in issue_types:
+        return False
+    keywords = rule.get("keywords", set())
+    if not keywords:
+        return True
+    return any(str(keyword).lower() in signal for keyword in keywords)
 
 
 def _source_system(payload: dict[str, Any]) -> str:

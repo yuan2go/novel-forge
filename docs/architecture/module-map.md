@@ -1,6 +1,6 @@
 # Module Map
 
-Updated: 2026-07-05
+Updated: 2026-07-08
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, starting commit `3f68522`
 
 This map lists current implementation areas and evidence paths. Status means code was found in the current repository; it does not imply complete product maturity.
@@ -47,7 +47,7 @@ This map lists current implementation areas and evidence paths. Status means cod
 | Outline | `modules/outline/service.py`, `modules/long_planning/service.py` | Long outline and planning | Implemented | module tests |
 | Chapter plan | `modules/chapter_plan/service.py` | Chapter-level plan with embedded blueprint contract | Implemented | `test_chapter_blueprint_contract.py` plus module tests |
 | Drafting | `modules/drafting/service.py` | Draft chapter candidate using chapter blueprint evidence | Implemented for local/runtime slices | provider/runtime and blueprint handoff tests |
-| Review / revision / editor | `modules/review/`, `modules/revision/`, `modules/editor/`, `modules/review_issue/`, `modules/content_quality_loop/` | Review report, readable gate, issue, revision task, editor patch | Implemented, still deepening | review issue, content quality loop, and editor tests |
+| Review / revision / editor | `modules/review/`, `modules/revision/`, `modules/editor/`, `modules/review_issue/`, `modules/content_quality_loop/` | Review report, readable gate, issue strategy contract, revision task, revision plan, editor patch, re-review evidence | Implemented, still deepening | `test_review_issue.py`, `test_content_quality_loop.py`, `test_module_services.py`, `test_loop_kernel.py`, and editor tests |
 | Feedback | `modules/feedback/`, `modules/feedback_backflow/` | Reader feedback import/analysis/backflow | Partially implemented | feedback tests |
 
 ## Novel OS Runtime Modules

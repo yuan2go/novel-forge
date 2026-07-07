@@ -20,6 +20,7 @@ from novel_forge.modules.publishing import create_publish_gate_report
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.review import service as review_service
+from novel_forge.modules.review_issue import review_issue_to_revision_task_candidate
 from novel_forge.schemas import ContextBundle, RevisionPlan, RevisionTask, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -103,15 +104,23 @@ def revise(
         target_score = result.get("target_score")
         if target_score is None:
             target_score = max(80, int(review_asset.score) + 8 if hasattr(review_asset, "score") else 80)
+        review_dict = review_asset.to_dict()
+        strategy_plan = _revision_strategy_plan_from_review(review_dict)
+        strategy_steps = _revision_strategy_steps(strategy_plan)
         agent_run.guard("write_revision_plan", "revision_plan")
         asset = RevisionPlan(
             title=f"Revision plan for {review_asset.title}",
             source=review_asset.id,
             tags=["revision", "plan"],
             content={
-                "steps": result["plan"],
+                "steps": _dedupe([*strategy_steps, *[str(item) for item in result["plan"] if str(item).strip()]]),
                 "target_score": target_score,
                 "must_preserve": result.get("must_preserve") or ["original premise", "copyright boundary", "chapter hook"],
+                "revision_strategy_plan": strategy_plan,
+                "required_output_evidence": strategy_plan["required_output_evidence"],
+                "re_review_required": strategy_plan["re_review_required"],
+                "re_review_focus": strategy_plan["re_review_focus"],
+                "quality_gate_required": strategy_plan["quality_gate_required"],
                 "knowledge_context_contract": knowledge_contract,
                 "agent_run_path": agent_run.path,
                 "model_output": result,
@@ -120,6 +129,8 @@ def revise(
                 "model": model.name,
                 "provider": result.get("provider", model.name),
                 "agent_run_path": agent_run.path,
+                "revision_strategy_ids": strategy_plan["strategy_ids"],
+                "re_review_required": strategy_plan["re_review_required"],
                 **knowledge_context_contract_metadata(knowledge_contract),
                 "project_id": project.get("project_id", ""),
                 "workspace_path": project.get("workspace_path", ""),
@@ -288,6 +299,8 @@ def create_revision_task(
     draft = storage.read_asset(draft_file)
     project = project_scope_from_asset(storage, draft, input_path=draft_file, workspace_path=workspace_path)
     issues = _selected_review_issues(review, issue_indexes)
+    strategy_plan = _revision_strategy_plan(issues)
+    issues = strategy_plan["issues"]
     indexes = [int(issue.get("issue_index", issue.get("_source_index", index))) for index, issue in enumerate(issues)]
     now = utc_now()
     task_id = make_id("revision_task", f"{review.get('id', '')}-{draft.id}-{','.join(str(item) for item in indexes)}-{now}")
@@ -300,6 +313,12 @@ def create_revision_task(
         "issue_indexes": indexes,
         "review_issue_ids": [str(issue.get("issue_id") or f"{review.get('id', '')}:issue:{index}") for index, issue in enumerate(issues)],
         "issues": issues,
+        "revision_strategy_plan": strategy_plan,
+        "revision_strategy_ids": strategy_plan["strategy_ids"],
+        "required_output_evidence": strategy_plan["required_output_evidence"],
+        "re_review_required": strategy_plan["re_review_required"],
+        "re_review_focus": strategy_plan["re_review_focus"],
+        "quality_gate_required": strategy_plan["quality_gate_required"],
         "status": "open",
         "stage": "revision_task_created",
         "outputs": {},
@@ -316,6 +335,8 @@ def create_revision_task(
             "workspace_path": project.get("workspace_path", ""),
             "source_review_path": _display_path(storage.root, review_file),
             "source_draft_path": _display_path(storage.root, draft_file),
+            "revision_strategy_ids": strategy_plan["strategy_ids"],
+            "re_review_required": strategy_plan["re_review_required"],
         },
         references=filter_project_safe_references(
             storage,
@@ -442,6 +463,72 @@ def _selected_review_issues(review: dict[str, Any], issue_indexes: list[int] | N
     ]
 
 
+def _revision_strategy_plan_from_review(review: dict[str, Any]) -> dict[str, Any]:
+    return _revision_strategy_plan(_selected_review_issues(review, None))
+
+
+def _revision_strategy_plan(issues: list[dict[str, Any]]) -> dict[str, Any]:
+    enriched: list[dict[str, Any]] = []
+    strategies: list[dict[str, Any]] = []
+    for index, issue in enumerate(issues):
+        candidate = review_issue_to_revision_task_candidate(issue)
+        strategy = candidate.get("revision_strategy", {}) if isinstance(candidate.get("revision_strategy", {}), dict) else {}
+        issue_id = str(issue.get("issue_id") or candidate.get("source_issue_id") or f"review-issue-{index}")
+        enriched_issue = {
+            **issue,
+            "issue_id": issue_id,
+            "revision_task_candidate": candidate,
+            "revision_strategy": strategy,
+            "revision_strategy_id": str(strategy.get("strategy_id") or candidate.get("revision_strategy_id") or "targeted_revision"),
+            "re_review_required": bool(candidate.get("re_review_required", True)),
+            "re_review_focus": candidate.get("re_review_focus", []),
+            "required_output_evidence": candidate.get("required_output_evidence", []),
+        }
+        enriched.append(enriched_issue)
+        strategies.append(
+            {
+                "issue_id": issue_id,
+                "issue_index": int(issue.get("issue_index", issue.get("_source_index", index))),
+                "issue_type": str(issue.get("issue_type") or issue.get("dimension") or candidate.get("issue_type") or ""),
+                "severity": str(issue.get("severity") or candidate.get("severity") or ""),
+                "blocking": bool(issue.get("blocking", candidate.get("blocking", False))),
+                "strategy": strategy,
+            }
+        )
+    strategy_ids = _dedupe([str(item.get("strategy", {}).get("strategy_id", "")) for item in strategies])
+    re_review_focus = _dedupe([focus for item in strategies for focus in (item.get("strategy", {}).get("re_review_focus", []) if isinstance(item.get("strategy", {}).get("re_review_focus", []), list) else [])])
+    required_evidence = _dedupe([evidence for item in strategies for evidence in (item.get("strategy", {}).get("required_output_evidence", []) if isinstance(item.get("strategy", {}).get("required_output_evidence", []), list) else [])])
+    if not required_evidence:
+        required_evidence = ["revision_task_path", "revision_plan_path", "editor_patch_path", "draft_version_path", "re_review_path"]
+    return {
+        "contract_version": "review-issue-revision-strategy-v1",
+        "strategy_ids": strategy_ids or ["targeted_revision"],
+        "issues": enriched,
+        "strategies": strategies,
+        "required_output_evidence": required_evidence,
+        "re_review_required": True,
+        "re_review_focus": re_review_focus or ["issue resolved", "no new regression"],
+        "quality_gate_required": True,
+        "strategy_count": len(strategies),
+    }
+
+
+def _revision_strategy_steps(strategy_plan: dict[str, Any]) -> list[str]:
+    steps: list[str] = []
+    for item in strategy_plan.get("strategies", []) if isinstance(strategy_plan.get("strategies", []), list) else []:
+        strategy = item.get("strategy", {}) if isinstance(item.get("strategy", {}), dict) else {}
+        issue_id = str(item.get("issue_id") or "")
+        strategy_id = str(strategy.get("strategy_id") or "targeted_revision")
+        for instruction in strategy.get("instructions", []) if isinstance(strategy.get("instructions", []), list) else []:
+            text = str(instruction).strip()
+            if text:
+                prefix = f"{strategy_id}"
+                if issue_id:
+                    prefix = f"{prefix} for {issue_id}"
+                steps.append(f"{prefix}: {text}")
+    return _dedupe(steps)
+
+
 def _draft_path_for_review(storage: LocalStorage, review: dict[str, Any]) -> Path:
     source_id = str(review.get("source", ""))
     for path in storage.list_json("drafts"):
@@ -488,6 +575,8 @@ def _create_rework_context_bundle(
         "draft_title": draft.title,
         "review_score": getattr(review, "score", 0),
         "review_issues": task.content.get("issues", []),
+        "revision_strategy_plan": task.content.get("revision_strategy_plan", {}),
+        "re_review_focus": task.content.get("re_review_focus", []),
         "revision_steps": revision.content.get("steps", []),
         "must_preserve": revision.content.get("must_preserve", []),
         "copyright_boundary": draft.content.get("copyright_boundary", ""),

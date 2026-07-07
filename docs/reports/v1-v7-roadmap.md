@@ -35,6 +35,7 @@ Current evidence:
 - Context Builder now emits and enforces `stage-context-profile-v1` contracts for topic/world/character/outline/chapter-plan/prose/review/revision/recap/publish/feedback contexts. Bundles include source policy, source isolation, allowed/forbidden asset types, and manual-selection policy rejections. Unit coverage is in `tests/unit/test_context_builder_stage_profiles.py`.
 - Chapter planning now emits `chapter-blueprint-contract-v1` inside `ChapterPlan`, preserves it in `ChapterPlanVersion`, and hands it into `DraftChapter` as `chapter_plan_blueprint` evidence. Unit coverage is in `tests/unit/test_chapter_blueprint_contract.py`.
 - Content quality loop now includes `readable-prose-gate-v1` as a local explainable gate that writes `quality_score_report`, blocking `ReviewIssue`, and `RevisionTask` assets for thin or unreadable prose. Unit coverage is in `tests/unit/test_content_quality_loop.py`.
+- ReviewIssue repair now uses `review-issue-revision-strategy-v1`: issue types and readable-prose dimensions map to strategy ids, patch scope, required output evidence, and re-review focus. `RevisionTask`, `RevisionPlan`, Loop Kernel, and Agent Scheduler dispatch preserve this contract.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
@@ -45,8 +46,8 @@ Current evidence:
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. ReviewIssue-to-RevisionPlan strategy mapping with re-review evidence.
-3. Canon/timeline/foreshadow reducer and recap cadence.
+2. Canon/Timeline/Foreshadow reducer for accepted revised chapters.
+3. Longform recap cadence on top of reducer evidence.
 4. Export package.
 
 验收标准:

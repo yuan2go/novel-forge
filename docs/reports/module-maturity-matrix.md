@@ -23,6 +23,7 @@ Implementation status note:
 - 2026-07-08: Context Builder now has `stage-context-profile-v1` contracts with per-stage allowed/forbidden asset type enforcement and source-isolation rejections. Maturity remains M3 until the final unified v1 workflow验收 proves the profiles inside the full production loop.
 - 2026-07-08: Chapter Blueprint now has an embedded `chapter-blueprint-contract-v1` in `ChapterPlan`, version preservation in `ChapterPlanVersion`, and draft evidence in `DraftChapter`. Maturity remains M3 until the final unified v1 workflow验收 proves it across multi-chapter production.
 - 2026-07-08: Readable Prose Gate now runs inside `content_quality_loop` and creates `quality_score_report`, `ReviewIssue`, and `RevisionTask` evidence. Maturity remains M3 until provider/human calibration and final full-loop proof are added.
+- 2026-07-08: ReviewIssue-to-Revision Strategy now exists as `review-issue-revision-strategy-v1`. Direct revision service, Loop Kernel, and Agent Scheduler review-issue dispatch preserve strategy ids, patch scope, required evidence, and re-review focus. Revision Engine remains M3 until real chapter improvement metrics and final unified v1 acceptance are run.
 
 ## Core OS Layer
 
@@ -49,7 +50,7 @@ Implementation status note:
 | Engine | Outline Engine | Long outline, volume arcs, foreshadow plan | Outline/OutlineVersion/LongFormMacroPlan exist | M3 | 30-chapter plan proof missing | Draft path not guided enough | P0 | Canonical outline-to-chapter-plan workflow |
 | Engine | Chapter Blueprint Engine | Scene beats, conflicts, hooks, emotion curve | `ChapterPlan` now carries `chapter-blueprint-contract-v1`; `ChapterPlanVersion` preserves it; `DraftChapter` persists blueprint evidence; one-chapter/10-chapter baseline evidence exists | M3 | SceneBeat/ConflictBeat/HookPlan remain embedded fields rather than standalone lifecycle assets; deferred unified multi-chapter acceptance pending | Thin prose and weak hooks if callers bypass generated blueprint contracts | P0 | Next add readable-prose gates over drafts/revisions |
 | Engine | Readable Prose Engine | Immersive page-turning prose | `readable-prose-gate-v1` checks opening pressure, progression, conflict, specificity, ending hook, and mobile rhythm inside content quality loop | M3 | Heuristic needs calibration and final multi-chapter proof | AI-like chapter output if gate is skipped | P0 | Tie gate failures to deterministic revision strategies |
-| Engine | Revision Engine | Issue-driven revision with re-review | RevisionTask/Plan, rework loop, re-review, publish links exist | M3 | Strategy coverage and measurable improvement need hard tests | Cosmetic revisions | P0 | Map issue types to strategies and re-review evidence |
+| Engine | Revision Engine | Issue-driven revision with re-review | RevisionTask/Plan, rework loop, re-review, publish links, and deterministic issue strategy contract exist | M3 | Real chapter improvement metrics and final unified workflow proof remain deferred | Cosmetic revisions if later gates bypass strategy | P0 | Use strategy contract in V1-S6 continuity repair and later provider/human calibrated review loops |
 | Engine | Ending / Closure Engine | Ending plan, payoff, closure gates | No clear implementation beyond outline/release concepts | M1 | Ending-specific models and tests absent | Longform payoff risk | P3 | Defer until longform arcs mature |
 | Engine | Feedback Analysis Engine | Reader feedback to human-gated mutations | Feedback adapters, clusters, mutation proposals/application reports exist | M3 | Embedding/sentiment/drop-off attribution partial | Feedback can be shallow | P2 | Add stronger evidence chain after v1 loop |
 | Engine | Publishing Adapter Engine | Platform packages, receipts, status, rules | Manual upload, receipt parsing, platform gate, publish logs exist | M3 | Real platform SDK/callback/rate limit absent | False platform automation | P2 | Keep manual platform-specific adapters first |
@@ -95,7 +96,7 @@ Implementation status note:
 ## Highest-Leverage Next Order
 
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
-2. ReviewIssue-to-RevisionPlan strategy mapping with re-review evidence.
+2. Canon/Timeline/Foreshadow reducer for accepted revised chapters.
 3. Canon/timeline/foreshadow update reducer and 5/10 chapter recap cadence.
 4. Extend v1 export package evidence to 30 chapters during final unified acceptance.
 5. Source governance lifecycle and ApprovalRequest.

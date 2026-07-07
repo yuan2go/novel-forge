@@ -3019,6 +3019,10 @@ def _create_revision_task_from_review_issue(
     task_id = make_id("revision_task", f"agent-center-{issue_id}-{now}")
     review_path = str(content.get("review_report_path") or metadata.get("review_report_path") or issue_display_path)
     draft_path = str(content.get("target_asset_path") or candidate.get("target_asset_path") or "")
+    strategy = candidate.get("revision_strategy", {}) if isinstance(candidate.get("revision_strategy", {}), dict) else {}
+    required_evidence = candidate.get("required_output_evidence", []) if isinstance(candidate.get("required_output_evidence", []), list) else []
+    re_review_focus = candidate.get("re_review_focus", []) if isinstance(candidate.get("re_review_focus", []), list) else []
+    strategy_id = str(candidate.get("revision_strategy_id") or strategy.get("strategy_id") or "targeted_revision")
     task_content = {
         "task_id": task_id,
         "review_id": str(content.get("review_report_id") or ""),
@@ -3036,8 +3040,50 @@ def _create_revision_task_from_review_issue(
                 "fix_suggestion": content.get("fix_suggestion", candidate.get("instructions", "")),
                 "blocking": bool(content.get("blocking", candidate.get("blocking", False))),
                 "review_issue_path": issue_display_path,
+                "revision_strategy_id": strategy_id,
+                "revision_strategy": strategy,
+                "re_review_required": bool(candidate.get("re_review_required", True)),
+                "re_review_focus": re_review_focus,
+                "required_output_evidence": required_evidence,
             }
         ],
+        "revision_strategy_plan": {
+            "contract_version": "review-issue-revision-strategy-v1",
+            "strategy_ids": [strategy_id],
+            "issues": [
+                {
+                    "issue_id": issue_id,
+                    "issue_type": content.get("issue_type", candidate.get("issue_type", "")),
+                    "severity": content.get("severity", candidate.get("severity", "")),
+                    "blocking": bool(content.get("blocking", candidate.get("blocking", False))),
+                    "revision_strategy_id": strategy_id,
+                    "revision_strategy": strategy,
+                    "re_review_required": bool(candidate.get("re_review_required", True)),
+                    "re_review_focus": re_review_focus,
+                    "required_output_evidence": required_evidence,
+                }
+            ],
+            "strategies": [
+                {
+                    "issue_id": issue_id,
+                    "issue_index": 0,
+                    "issue_type": content.get("issue_type", candidate.get("issue_type", "")),
+                    "severity": content.get("severity", candidate.get("severity", "")),
+                    "blocking": bool(content.get("blocking", candidate.get("blocking", False))),
+                    "strategy": strategy,
+                }
+            ],
+            "required_output_evidence": required_evidence,
+            "re_review_required": bool(candidate.get("re_review_required", True)),
+            "re_review_focus": re_review_focus,
+            "quality_gate_required": bool(candidate.get("quality_gate_required", True)),
+            "strategy_count": 1,
+        },
+        "revision_strategy_ids": [strategy_id],
+        "required_output_evidence": required_evidence,
+        "re_review_required": bool(candidate.get("re_review_required", True)),
+        "re_review_focus": re_review_focus,
+        "quality_gate_required": bool(candidate.get("quality_gate_required", True)),
         "status": "open",
         "stage": "agent_center_dispatch",
         "outputs": {"revision_task_candidate": candidate},
@@ -3054,6 +3100,8 @@ def _create_revision_task_from_review_issue(
             "workspace_path": workspace_path,
             "source_review_issue_path": issue_display_path,
             "source_draft_path": draft_path,
+            "revision_strategy_ids": [strategy_id],
+            "re_review_required": bool(candidate.get("re_review_required", True)),
             "agent_center_dispatch": True,
         },
         references=filter_project_safe_references(

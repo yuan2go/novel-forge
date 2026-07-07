@@ -87,10 +87,10 @@ Status legend:
 | PageTurningReport | 追读报告 | partial | `Opening3Report`, platform retention risk | standalone page-turning gate | embedded/report | Quality/Web Novel | P0 |
 | MobileReadingReport | 移动阅读报告 | no | Not found | paragraph rhythm, mobile scan metrics | missing | Quality/Web Novel | P1 |
 | ReviewReport | 审稿报告 | yes | `ReviewReport` | v1 hard-block coverage | usable | Review | P0 |
-| ReviewIssue | 审稿问题 | yes | `ReviewIssue` | consistent issue type taxonomy | usable | Review/Revision/Gates | P0 |
-| RevisionPlan | 修订计划 | yes | `RevisionPlan` | strategy taxonomy can deepen | usable | Revision | P0 |
+| ReviewIssue | 审稿问题 | yes | `ReviewIssue`, `review-issue-revision-strategy-v1` candidate contract | issue taxonomy can keep expanding with new gates | usable | Review/Revision/Gates | P0 |
+| RevisionPlan | 修订计划 | yes | `RevisionPlan` now carries `revision_strategy_plan`, `required_output_evidence`, and `re_review_focus` | real improvement metrics and provider/human calibration | usable | Revision | P0 |
 | RevisionDraft | 修订稿 | partial | `DraftVersion`, `EditorPatch` | standalone revised draft asset | partial | Revision/Editor | P0 |
-| RevisionDiff | 修订差异 | yes | `DraftDiffReport`, `EditorPatch` | issue-to-diff verification | usable | Revision/Editor | P1 |
+| RevisionDiff | 修订差异 | yes | `DraftDiffReport`, `EditorPatch` | issue-to-diff verification against strategy ids | usable | Revision/Editor | P1 |
 | PortfolioProject | 项目组合项 | no | Not found | portfolio metadata/lifecycle | missing | Portfolio OS | P3 |
 | BookPotentialScore | 单书潜力评分 | no | Not found | scoring dimensions/evidence | missing | Portfolio OS | P3 |
 | ResourceAllocationPlan | 资源分配计划 | no | Not found | capacity/budget/priority | missing | Portfolio OS | P3 |

@@ -746,6 +746,9 @@ def _loop_revision_plan(
     steps = payload.get("revision_steps", []) if isinstance(payload.get("revision_steps", []), list) else []
     if not steps:
         steps = [str(item) for item in review.get("revision_suggestions", []) if str(item).strip()] or ["tighten continuity and preserve chapter hook"]
+    strategy_plan = task_content.get("revision_strategy_plan", {}) if isinstance(task_content.get("revision_strategy_plan", {}), dict) else {}
+    strategy_steps = _revision_strategy_steps_from_task(task_content)
+    steps = _dedupe([*strategy_steps, *[str(item) for item in steps if str(item).strip()]])
     asset = RevisionPlan(
         title=f"Loop revision plan for {review.get('title') or review.get('id')}",
         source=str(review.get("id", "")),
@@ -759,10 +762,21 @@ def _loop_revision_plan(
             "review_issues": review_content.get("issues", []),
             "revision_task_path": revision_task_path,
             "review_issue_indexes": issue_indexes,
+            "revision_strategy_plan": strategy_plan,
+            "required_output_evidence": task_content.get("required_output_evidence", []),
+            "re_review_required": bool(task_content.get("re_review_required", True)),
+            "re_review_focus": task_content.get("re_review_focus", []),
+            "quality_gate_required": bool(task_content.get("quality_gate_required", True)),
             "os_envelope_id": envelope.get("envelope_id", ""),
             "created_at": utc_now(),
         },
-        metadata={"project_id": project_id, "workspace_path": workspace_path, **envelope_asset_metadata(envelope)},
+        metadata={
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "revision_strategy_ids": task_content.get("revision_strategy_ids", []),
+            "re_review_required": bool(task_content.get("re_review_required", True)),
+            **envelope_asset_metadata(envelope),
+        },
         references=filter_project_safe_references(storage, project_id, [str(review.get("id", "")), review_path, target.get("asset_id", ""), target.get("path", "")]),
     )
     _ensure_valid(asset.to_dict())
@@ -909,6 +923,9 @@ def _loop_re_review(
     draft_path = str(loop_outputs.get("final_draft_path") or target.get("path") or "").strip()
     if not draft_path:
         raise ValueError("re_review step requires final_draft_path")
+    revision_task_content = _revision_task_content(storage, str(loop_outputs.get("revision_task_path") or ""))
+    re_review_focus = revision_task_content.get("re_review_focus", []) if isinstance(revision_task_content.get("re_review_focus", []), list) else []
+    revision_strategy_plan = revision_task_content.get("revision_strategy_plan", {}) if isinstance(revision_task_content.get("revision_strategy_plan", {}), dict) else {}
     review_model = payload.get("review_model")
     if review_model is not None:
         from novel_forge.modules.review import service as review_service
@@ -938,6 +955,9 @@ def _loop_re_review(
             "target_asset_path": draft_path,
             "source_review_path": loop_outputs.get("review_report_path", ""),
             "revision_plan_path": loop_outputs.get("revision_plan_path", ""),
+            "revision_strategy_plan": revision_strategy_plan,
+            "re_review_focus": re_review_focus,
+            "required_output_evidence": revision_task_content.get("required_output_evidence", []),
             "issues": [],
             "created_at": utc_now(),
             "os_envelope_id": envelope.get("envelope_id", ""),
@@ -957,6 +977,7 @@ def _loop_re_review(
                 "source_review_path": str(loop_outputs.get("review_report_path") or payload.get("review_path") or ""),
                 "editor_patch_path": str(loop_outputs.get("editor_patch_path") or ""),
                 "draft_version_path": str(loop_outputs.get("draft_version_path") or ""),
+                "re_review_focus": re_review_focus,
             },
             **envelope_asset_metadata(envelope),
         },
@@ -1013,17 +1034,56 @@ def _loop_publish_gate(storage: LocalStorage, payload: dict[str, Any], *, target
     return {"status": "succeeded", "message": f"publish gate created: {decision}", "outputs": {"publish_gate_report_path": gate_ref, "publish_decision": decision, "revision_task_status": _loop_revision_task_status_from_gate(decision)}}
 
 
+def _revision_strategy_steps_from_task(task_content: dict[str, Any]) -> list[str]:
+    plan = task_content.get("revision_strategy_plan", {}) if isinstance(task_content.get("revision_strategy_plan", {}), dict) else {}
+    steps: list[str] = []
+    for item in plan.get("strategies", []) if isinstance(plan.get("strategies", []), list) else []:
+        strategy = item.get("strategy", {}) if isinstance(item.get("strategy", {}), dict) else {}
+        issue_id = str(item.get("issue_id") or "")
+        strategy_id = str(strategy.get("strategy_id") or "targeted_revision")
+        for instruction in strategy.get("instructions", []) if isinstance(strategy.get("instructions", []), list) else []:
+            text = str(instruction).strip()
+            if text:
+                prefix = f"{strategy_id}"
+                if issue_id:
+                    prefix = f"{prefix} for {issue_id}"
+                steps.append(f"{prefix}: {text}")
+    return _dedupe(steps)
+
+
+def _revision_task_content(storage: LocalStorage, revision_task_path: str | Path) -> dict[str, Any]:
+    if not str(revision_task_path or "").strip():
+        return {}
+    try:
+        data = storage.read_json(resolve_path(storage.root, revision_task_path))
+    except (FileNotFoundError, ValueError, OSError):
+        return {}
+    if not isinstance(data, dict) or data.get("type") != "revision_task":
+        return {}
+    return data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+
+
 def _link_loop_revision_plan(storage: LocalStorage, revision_path: str | Path, *, revision_task_path: str, issue_indexes: list[int], envelope: dict[str, Any]) -> None:
     path = resolve_path(storage.root, revision_path)
     data = storage.read_json(path)
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    task_content = _revision_task_content(storage, revision_task_path)
     content["revision_task_path"] = revision_task_path
     content["review_issue_indexes"] = issue_indexes
     content["loop_kernel"] = {"loop_type": "review_revision_publish", "os_envelope_id": envelope.get("envelope_id", "")}
+    if task_content and not isinstance(content.get("revision_strategy_plan"), dict):
+        content["revision_strategy_plan"] = task_content.get("revision_strategy_plan", {})
+        content["required_output_evidence"] = task_content.get("required_output_evidence", [])
+        content["re_review_required"] = bool(task_content.get("re_review_required", True))
+        content["re_review_focus"] = task_content.get("re_review_focus", [])
+        content["quality_gate_required"] = bool(task_content.get("quality_gate_required", True))
     data["content"] = content
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
     metadata["revision_task_path"] = revision_task_path
     metadata["review_issue_indexes"] = issue_indexes
+    if task_content:
+        metadata["revision_strategy_ids"] = task_content.get("revision_strategy_ids", [])
+        metadata["re_review_required"] = bool(task_content.get("re_review_required", True))
     data["metadata"] = {**metadata, **envelope_asset_metadata(envelope)}
     data["references"] = _dedupe([*[str(item) for item in data.get("references", [])], revision_task_path])
     data["updated_at"] = utc_now()
@@ -1075,6 +1135,7 @@ def _link_loop_rework_metadata(
     data = storage.read_json(path)
     if not isinstance(data, dict):
         return
+    task_content = _revision_task_content(storage, revision_task_path)
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
     metadata["rework_loop"] = {
         "runner": "loop_kernel",
@@ -1085,6 +1146,8 @@ def _link_loop_rework_metadata(
         "draft_version_path": str(outputs.get("draft_version_path") or ""),
         "final_draft_path": str(outputs.get("final_draft_path") or ""),
         "loop_run_path": str(outputs.get("loop_run_path") or ""),
+        "revision_strategy_ids": task_content.get("revision_strategy_ids", []),
+        "re_review_focus": task_content.get("re_review_focus", []),
     }
     data["metadata"] = metadata
     data["references"] = _dedupe([*[str(item) for item in data.get("references", [])], revision_task_path, source_review_path])

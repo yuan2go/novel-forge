@@ -156,8 +156,13 @@ class LoopKernelTests(unittest.TestCase):
             self.assertEqual(storage.read_json(storage.root / outputs["draft_version_path"])["type"], "draft_version")
             self.assertEqual(storage.read_json(storage.root / outputs["publish_gate_report_path"])["type"], "publish_gate_report")
             task = storage.read_json(storage.root / outputs["revision_task_path"])
+            revision_plan = storage.read_json(storage.root / outputs["revision_plan_path"])
             self.assertEqual(task["content"]["outputs"]["loop_run_path"], result["loop_run_path"])
             self.assertEqual(task["content"]["outputs"]["loop_report_path"], result["loop_report_path"])
+            self.assertTrue(task["content"]["revision_strategy_ids"])
+            self.assertTrue(task["content"]["re_review_required"])
+            self.assertEqual(revision_plan["content"]["revision_strategy_plan"]["strategy_ids"], task["content"]["revision_strategy_ids"])
+            self.assertTrue(revision_plan["content"]["re_review_required"])
 
 
 def _draft(storage: LocalStorage, *, project_id: str) -> Path:

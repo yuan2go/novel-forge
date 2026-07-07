@@ -16,7 +16,9 @@ from novel_forge.modules.review_issue import (
     create_review_issue,
     list_review_issues,
     persist_issue_candidates,
+    review_issue_to_revision_task_candidate,
 )
+from novel_forge.modules.revision import service as revision_service
 from novel_forge.schemas import ContextBundle, DraftChapter, ReviewReport, RevisionPlan
 from novel_forge.storage.local import LocalStorage
 
@@ -106,6 +108,94 @@ class ReviewIssueTests(unittest.TestCase):
             self.assertEqual(rows[0]["content"]["issue_type"], "canon_conflict")
             self.assertTrue(rows[0]["content"]["blocking"])
             self.assertEqual(rows[0]["content"]["revision_task_candidate"]["source_issue_id"], rows[0]["content"]["issue_id"])
+            self.assertEqual(rows[0]["content"]["revision_task_candidate"]["revision_strategy_id"], "canon_aligned_rewrite")
+
+    def test_review_issue_candidate_selects_readable_prose_revision_strategy(self):
+        candidate = review_issue_to_revision_task_candidate(
+            {
+                "content": {
+                    "issue_id": "issue-opening-pressure",
+                    "issue_type": "quality_gate",
+                    "severity": "high",
+                    "blocking": True,
+                    "target_asset_id": "draft-readable-1",
+                    "target_asset_path": "data/drafts/draft-readable-1.json",
+                    "source_system": "readable_prose_gate.v1",
+                    "message": "opening_pressure failed: opening lacks pressure",
+                    "fix_suggestion": "rewrite the opening with immediate pressure",
+                }
+            }
+        )
+
+        self.assertEqual(candidate["revision_strategy_id"], "rewrite_opening_pressure")
+        self.assertTrue(candidate["re_review_required"])
+        self.assertIn("re_review_path", candidate["required_output_evidence"])
+        self.assertIn("opening pressure", candidate["re_review_focus"])
+
+    def test_revision_task_and_plan_preserve_strategy_and_re_review_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Thin draft",
+                    content={"chapter": 1, "text": "他说这很重要。\n\n于是继续。", "copyright_boundary": "project-owned test draft"},
+                    metadata={"project_id": "strategy-p"},
+                ),
+            )
+            draft = storage.read_asset(draft_path)
+            review_path = storage.write_asset(
+                "reviews",
+                ReviewReport(
+                    title="Readable prose gate review",
+                    source=draft.id,
+                    content={"rubric": "readable_prose_gate_v1", "summary": "opening blocked"},
+                    score=62,
+                    strengths=[],
+                    weaknesses=["opening pressure"],
+                    issues=[
+                        {
+                            "issue_id": "readable-opening-1",
+                            "issue_index": 0,
+                            "issue_type": "quality_gate",
+                            "severity": "high",
+                            "blocking": True,
+                            "source_system": "readable_prose_gate.v1",
+                            "dimension": "opening_pressure",
+                            "message": "opening_pressure failed",
+                            "recommendation": "rewrite opening with event pressure",
+                        }
+                    ],
+                    risk_level="high",
+                    revision_suggestions=["repair opening pressure"],
+                    next_action="revise",
+                    metadata={"project_id": "strategy-p"},
+                ),
+            )
+
+            task = revision_service.create_revision_task(storage, review_path, draft_path=draft_path)
+            task_asset = storage.read_asset(task["path"])
+            strategy_plan = task_asset.content["revision_strategy_plan"]
+
+            self.assertEqual(strategy_plan["strategy_ids"], ["rewrite_opening_pressure"])
+            self.assertTrue(task_asset.content["re_review_required"])
+            self.assertIn("re_review_path", task_asset.content["required_output_evidence"])
+            self.assertEqual(task_asset.content["issues"][0]["revision_strategy_id"], "rewrite_opening_pressure")
+
+            revision_plan_path = revision_service.revise(
+                storage,
+                str(review_path),
+                model=MockModelAdapter(),
+                post_quality_loop=False,
+                auto_execute_revision_plan=False,
+                post_review=False,
+            )
+            revision_plan = storage.read_asset(revision_plan_path)
+
+            self.assertEqual(revision_plan.content["revision_strategy_plan"]["strategy_ids"], ["rewrite_opening_pressure"])
+            self.assertTrue(revision_plan.content["re_review_required"])
+            self.assertTrue(any("rewrite_opening_pressure" in step for step in revision_plan.content["steps"]))
 
     def test_blocking_review_issue_prevents_final_draft_promotion(self):
         with tempfile.TemporaryDirectory() as tmp:

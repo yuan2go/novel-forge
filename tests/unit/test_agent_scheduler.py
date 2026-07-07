@@ -133,7 +133,11 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertTrue(any(node.get("type") == "loop_run" for node in snapshot["run_graph"]["nodes"]))
             self.assertTrue(any(edge.get("type") == "task_run" for edge in snapshot["run_graph"]["edges"]))
             task_asset = storage.read_json(storage.root / dispatch["agent_task_path"])
+            revision_task_asset = storage.read_json(storage.root / dispatch["revision_task_path"])
             self.assertFalse(generation_context_policy(task_asset)["eligible"])
+            self.assertEqual(revision_task_asset["content"]["revision_strategy_ids"], ["canon_aligned_rewrite"])
+            self.assertTrue(revision_task_asset["content"]["re_review_required"])
+            self.assertIn("re_review_path", revision_task_asset["content"]["required_output_evidence"])
             self.assertEqual(storage.read_json(storage.root / loop["loop_run_path"])["metadata"]["project_id"], "agent-center-p")
 
     def test_strict_scheduler_requires_active_budget_policy(self):
