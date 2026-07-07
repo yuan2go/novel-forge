@@ -27,7 +27,7 @@ from novel_forge.modules.review import service as review_service
 from novel_forge.modules.revision import service as revision_service
 from novel_forge.modules.workflow_nodes import record_node_run
 from novel_forge.modules.workspace.service import update_workspace
-from novel_forge.schemas import ChapterProductionRun, PublishingPlan, TaskStatus, validate_common_fields
+from novel_forge.schemas import ChapterProductionRun, LongChainAcceptanceReport, PublishingPlan, TaskStatus, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 CHAPTER_PRODUCTION_STEPS = [
@@ -186,6 +186,86 @@ def start_chapter_production(
     if not execute:
         return chapter_production_run_detail(storage, run_path)
     return resume_chapter_production(storage, run_path, run_to=run_to)
+
+
+def run_chapter_production_sequence(
+    storage: LocalStorage,
+    *,
+    outline_path: str | Path,
+    workspace_path: str | None = None,
+    start_chapter: int = 1,
+    chapter_count: int = 10,
+    chapter_plan_path: str | Path | None = None,
+    max_chapters: int = 30,
+) -> dict[str, Any]:
+    storage.ensure_layout()
+    total = _bounded_chapter_count(chapter_count, max_chapters=max_chapters)
+    first_chapter = _positive_chapter(start_chapter)
+    outline_file = resolve_path(storage.root, outline_path)
+    outline = storage.read_asset(outline_file)
+    if outline.type != "outline":
+        raise ValueError("outline_path must point to an outline asset")
+    project = project_scope_from_asset(storage, outline, input_path=outline_file, workspace_path=workspace_path)
+    project_id = str(project.get("project_id", ""))
+    workspace = str(project.get("workspace_path", "") or workspace_path or "")
+    if not project_id or not workspace:
+        raise ValueError("chapter production sequence requires a project workspace; pass workspace_path or project-bound outline")
+    current_plan = str(chapter_plan_path or "")
+    runs: list[dict[str, Any]] = []
+    failures: list[dict[str, Any]] = []
+    for offset in range(total):
+        chapter = first_chapter + offset
+        try:
+            run = start_chapter_production(
+                storage,
+                outline_path=_display_path(storage.root, outline_file),
+                chapter_plan_path=current_plan or None,
+                workspace_path=workspace,
+                chapter=chapter,
+                run_to="next_chapter_plan",
+            )
+        except Exception as exc:
+            failure = {"chapter": chapter, "status": "failed", "error": f"{type(exc).__name__}: {exc}", "run_path": ""}
+            failures.append(failure)
+            runs.append(failure)
+            break
+        coverage = _v1_run_coverage(run)
+        row = {
+            "chapter": chapter,
+            "status": str(run.get("status", "")),
+            "run_path": str(run.get("path", "")),
+            "current_step": str(run.get("current_step", "")),
+            "coverage": coverage,
+            "outputs": _v1_sequence_outputs(run),
+        }
+        runs.append(row)
+        if row["status"] != "succeeded" or coverage["status"] != "passed":
+            failures.append(row)
+            break
+        current_plan = str(run.get("outputs", {}).get("next_chapter_plan_path", "") or "")
+    acceptance = _write_sequence_acceptance_report(
+        storage,
+        project_id=project_id,
+        workspace_path=workspace,
+        outline_path=_display_path(storage.root, outline_file),
+        requested_chapter_count=total,
+        completed_chapters=sum(1 for item in runs if item.get("status") == "succeeded" and item.get("coverage", {}).get("status") == "passed"),
+        runs=runs,
+        failures=failures,
+    )
+    return {
+        "status": "succeeded" if not failures and len(runs) == total else "failed",
+        "project_id": project_id,
+        "workspace_path": workspace,
+        "start_chapter": first_chapter,
+        "chapter_count": total,
+        "completed_chapters": sum(1 for item in runs if item.get("status") == "succeeded" and item.get("coverage", {}).get("status") == "passed"),
+        "runs": runs,
+        "failures": failures,
+        "next_chapter_plan_path": current_plan,
+        "acceptance_report_path": acceptance["path"],
+        "acceptance_report": acceptance,
+    }
 
 
 def resume_chapter_production(
@@ -654,6 +734,156 @@ def _create_next_chapter_plan(storage: LocalStorage, data: dict[str, Any]) -> di
     next_ref = _display_path(storage.root, next_path)
     version = create_chapter_plan_version(storage, next_path, change_summary="chapter production next-chapter seed", status="draft")
     return {"next_chapter_plan_path": next_ref, "next_chapter_plan_version_path": version["path"]}
+
+
+V1_SEQUENCE_REQUIRED_OUTPUTS = [
+    "chapter_plan_path",
+    "context_bundle_path",
+    "draft_v0_path",
+    "review_path",
+    "revision_plan_path",
+    "final_draft_path",
+    "chapter_state_path",
+    "fact_ledger_path",
+    "character_state_ledger_path",
+    "foreshadowing_graph_path",
+    "reward_ledger_path",
+    "review_score_system_report_path",
+    "longform_recap_report_path",
+    "export_package_path",
+    "export_markdown_path",
+    "next_chapter_plan_path",
+]
+
+
+def _v1_run_coverage(run: dict[str, Any]) -> dict[str, Any]:
+    outputs = run.get("outputs", {}) if isinstance(run.get("outputs", {}), dict) else {}
+    missing = [key for key in V1_SEQUENCE_REQUIRED_OUTPUTS if not str(outputs.get(key, "")).strip()]
+    return {
+        "status": "passed" if not missing else "failed",
+        "observed": len(V1_SEQUENCE_REQUIRED_OUTPUTS) - len(missing),
+        "expected": len(V1_SEQUENCE_REQUIRED_OUTPUTS),
+        "missing_outputs": missing,
+    }
+
+
+def _v1_sequence_outputs(run: dict[str, Any]) -> dict[str, str]:
+    outputs = run.get("outputs", {}) if isinstance(run.get("outputs", {}), dict) else {}
+    return {key: str(outputs.get(key, "") or "") for key in V1_SEQUENCE_REQUIRED_OUTPUTS}
+
+
+def _write_sequence_acceptance_report(
+    storage: LocalStorage,
+    *,
+    project_id: str,
+    workspace_path: str,
+    outline_path: str,
+    requested_chapter_count: int,
+    completed_chapters: int,
+    runs: list[dict[str, Any]],
+    failures: list[dict[str, Any]],
+) -> dict[str, Any]:
+    checks = _v1_sequence_checks(requested_chapter_count=requested_chapter_count, completed_chapters=completed_chapters, runs=runs, failures=failures)
+    recommendation = "pass" if completed_chapters == requested_chapter_count and not failures and all(item["status"] == "passed" for item in checks) else "block"
+    output_counts = _v1_output_counts(runs)
+    report_id = make_id("long_chain_acceptance", f"v1-sequence-{project_id}-{requested_chapter_count}-{utc_now()}")
+    asset = LongChainAcceptanceReport(
+        id=report_id,
+        title=f"V1 single-book sequence acceptance {completed_chapters}/{requested_chapter_count} chapters",
+        tags=["acceptance", "v1-single-book-loop", f"chapters-{requested_chapter_count}", recommendation],
+        content={
+            "run_id": report_id,
+            "project_id": project_id,
+            "chapter_count": requested_chapter_count,
+            "completed_chapters": completed_chapters,
+            "checks": checks,
+            "quality_trends": {
+                "mode": "artifact_coverage",
+                "chapter_run_count": len(runs),
+                "completed_chapters": completed_chapters,
+                "quality_record_count": output_counts.get("review_score_system_report_path", 0),
+                "trend": "sufficient_v1_coverage" if completed_chapters == requested_chapter_count else "incomplete",
+            },
+            "canon_conflicts": [
+                {
+                    "chapter": item.get("chapter", ""),
+                    "severity": "high",
+                    "message": item.get("error") or f"coverage failed: {item.get('coverage', {}).get('missing_outputs', [])}",
+                    "run_path": item.get("run_path", ""),
+                }
+                for item in failures
+            ],
+            "publish_gate_summary": {
+                "ready": 0,
+                "needs_revision": 0,
+                "blocked": 0 if not failures else len(failures),
+                "local_export_ready": output_counts.get("export_package_path", 0),
+            },
+            "acceptance_mode": "v1_single_book_sequence",
+            "outline_path": outline_path,
+            "workspace_path": workspace_path,
+            "output_counts": output_counts,
+            "runs": runs,
+            "failures": failures,
+            "recommendation": recommendation,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "workflow": "v1-single-book-sequence", "risk_level": "low" if recommendation == "pass" else "high"},
+        references=filter_project_safe_references(
+            storage,
+            project_id,
+            _dedupe([outline_path, workspace_path, *[str(item.get("run_path", "")) for item in runs], *[path for item in runs for path in item.get("outputs", {}).values() if str(path).strip()]]),
+        ),
+    )
+    errors = validate_common_fields(asset.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset("runs", asset)
+    return {"path": _display_path(storage.root, path), "id": asset.id, "asset": asset.to_dict(), "validation": {"ok": True, "errors": []}}
+
+
+def _v1_sequence_checks(*, requested_chapter_count: int, completed_chapters: int, runs: list[dict[str, Any]], failures: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    checks = [
+        {
+            "check": "chapter_sequence_completed",
+            "status": "passed" if completed_chapters == requested_chapter_count and not failures else "failed",
+            "observed": completed_chapters,
+            "expected": requested_chapter_count,
+        }
+    ]
+    output_counts = _v1_output_counts(runs)
+    for key in V1_SEQUENCE_REQUIRED_OUTPUTS:
+        checks.append(
+            {
+                "check": key,
+                "status": "passed" if output_counts.get(key, 0) >= requested_chapter_count else "failed",
+                "observed": output_counts.get(key, 0),
+                "expected": requested_chapter_count,
+            }
+        )
+    return checks
+
+
+def _v1_output_counts(runs: list[dict[str, Any]]) -> dict[str, int]:
+    counts = {key: 0 for key in V1_SEQUENCE_REQUIRED_OUTPUTS}
+    for item in runs:
+        outputs = item.get("outputs", {}) if isinstance(item.get("outputs", {}), dict) else {}
+        for key in V1_SEQUENCE_REQUIRED_OUTPUTS:
+            if str(outputs.get(key, "") or "").strip():
+                counts[key] += 1
+    return counts
+
+
+def _bounded_chapter_count(value: Any, *, max_chapters: int) -> int:
+    try:
+        count = int(value)
+    except Exception:
+        count = 10
+    count = max(count, 1)
+    limit = max(int(max_chapters or 30), 1)
+    if count > limit:
+        raise ValueError(f"chapter_count must be <= {limit} for a single local sequence run")
+    return count
 
 
 def _read_run_data(storage: LocalStorage, run_file: Path) -> dict[str, Any]:

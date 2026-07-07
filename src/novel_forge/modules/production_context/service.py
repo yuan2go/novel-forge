@@ -302,41 +302,70 @@ def _project_id_index_for_references(storage: LocalStorage, references: list[str
     return index
 
 
-def _index_project_reference(storage: LocalStorage, index: dict[str, str], path: Path, data: Any) -> None:
+def _index_project_reference(storage: LocalStorage, index: dict[str, str], path: Path, data: Any) -> list[str]:
     if not isinstance(data, dict):
-        return
+        return []
     project_id = _project_id_from_data(data)
     if not project_id:
-        return
+        return []
+    keys: list[str] = []
     asset_id = str(data.get("id", "") or "")
     if asset_id:
         index[asset_id] = project_id
+        keys.append(asset_id)
     display_path = _display_path(storage.root, path)
     index[display_path] = project_id
+    keys.append(display_path)
     index[str(path)] = project_id
+    keys.append(str(path))
+    return keys
 
 
 def _cached_category_project_index(storage: LocalStorage, category: str) -> dict[str, str]:
     paths = storage.list_json(category)
-    signature = (
-        len(paths),
-        max((path.stat().st_mtime_ns for path in paths if path.exists()), default=0),
-    )
     cache = getattr(storage, "_production_context_project_ref_index_cache", None)
     if not isinstance(cache, dict):
         cache = {}
         setattr(storage, "_production_context_project_ref_index_cache", cache)
-    cached = cache.get(category)
-    if isinstance(cached, tuple) and len(cached) == 2 and cached[0] == signature and isinstance(cached[1], dict):
-        return cached[1]
-    index: dict[str, str] = {}
+    cached = cache.setdefault(category, {"index": {}, "paths": {}})
+    if not isinstance(cached, dict):
+        cached = {"index": {}, "paths": {}}
+        cache[category] = cached
+    index = cached.get("index")
+    path_entries = cached.get("paths")
+    if not isinstance(index, dict) or not isinstance(path_entries, dict):
+        index = {}
+        path_entries = {}
+        cached["index"] = index
+        cached["paths"] = path_entries
+    current_paths = {str(path): path for path in paths}
+    for path_key in list(path_entries.keys()):
+        if path_key in current_paths:
+            continue
+        entry = path_entries.pop(path_key, {})
+        for key in entry.get("keys", []) if isinstance(entry, dict) else []:
+            index.pop(key, None)
     for path in paths:
+        path_key = str(path)
+        try:
+            mtime_ns = path.stat().st_mtime_ns
+        except OSError:
+            continue
+        entry = path_entries.get(path_key)
+        if isinstance(entry, dict) and entry.get("mtime_ns") == mtime_ns:
+            continue
+        if isinstance(entry, dict):
+            for key in entry.get("keys", []):
+                index.pop(key, None)
         try:
             data = storage.read_json(path)
         except Exception:
+            path_entries[path_key] = {"mtime_ns": mtime_ns, "keys": []}
             continue
-        _index_project_reference(storage, index, path, data)
-    cache[category] = (signature, index)
+        path_entries[path_key] = {
+            "mtime_ns": mtime_ns,
+            "keys": _index_project_reference(storage, index, path, data),
+        }
     return index
 
 

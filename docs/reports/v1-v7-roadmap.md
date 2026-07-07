@@ -2,7 +2,7 @@
 
 Date: 2026-07-07
 
-Baseline: branch `feat/v7-content-intelligence-and-longform-proof`, commit `75bb3e3`.
+Baseline: branch `feat/v7-content-intelligence-and-longform-proof`, last audited committed slice `6ccc1bd`.
 
 This roadmap translates the project blueprints into engineering phases. It does not rename the repository/package/CLI; `novel-forge` remains the codebase name. The product target is Autonomous Novel OS.
 
@@ -21,22 +21,24 @@ This roadmap translates the project blueprints into engineering phases. It does 
 - 5/10 chapter longform recap cadence.
 - Export package for operator review.
 
-当前完成度: 50%.
+当前完成度: 55%.
 
 Current evidence:
 - Core schemas and many services exist in `src/novel_forge/schemas/assets.py` and `src/novel_forge/modules/`.
 - Draft/review/revision services exist.
 - Context Builder, MKAOS, Agent runtime, longform stability, and quality foundations exist.
 - `chapter_production_bus` now provides a single-chapter canonical contract through chapter plan, context bundle, draft, review, revision, final draft, canon/longform update, local export package, and next chapter plan.
+- `run_chapter_production_sequence()` adds a 10-chapter sequence contract and writes a strict `long_chain_acceptance_report` over required V1 artifact paths.
+- `production_context` project-safe reference indexing now updates incrementally so repeated chapter runs do not rescan unchanged project assets.
 
 阻塞项:
-- No acceptance slice proving 10-30 chapter loop artifact coverage.
+- True 10-30 chapter local slow acceptance is not yet passing inside an acceptable runtime envelope.
 - Readable prose/page-turning/mobile gates are not first-class hard blockers.
 - ApprovalRequest missing.
 - Source policy lifecycle and v1 context source rules need tightening.
 
 推荐切片:
-1. Extend canonical v1 chapter loop from one chapter to 10 chapters, then 30 chapters.
+1. Run and optimize the true 10-chapter local slow acceptance, then extend to 30 chapters.
 2. Stage-specific ContextPackage/MKAOS contract profiles.
 3. Readable Prose Gate + Golden Opening Gate + Toxic Point Gate.
 4. ReviewIssue-to-RevisionPlan strategy mapping with re-review evidence.
@@ -53,7 +55,7 @@ Current evidence:
 
 测试策略:
 - `tests.integration.test_novel_os_acceptance` expanded or paired with a v1-specific acceptance test.
-- Deterministic 10-chapter and 30-chapter local tests.
+- Deterministic 10-chapter sequence contract regression plus explicit slow 10-chapter and 30-chapter local acceptance runs.
 - Positive/negative quality gate fixtures.
 - Source leakage regression tests.
 - Export package fixture.

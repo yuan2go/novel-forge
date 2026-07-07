@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -17,6 +18,7 @@ from novel_forge.modules.chapter_production_bus import (
     pause_chapter_production,
     recover_chapter_production,
     resume_chapter_production,
+    run_chapter_production_sequence,
     start_chapter_production,
 )
 from novel_forge.modules.change_impact import mark_downstream_assets_stale
@@ -24,6 +26,7 @@ from novel_forge.modules.editor import apply_editor_patch
 from novel_forge.modules.long_planning import create_long_form_macro_plan
 from novel_forge.modules.operations import create_local_ops_drill_report, create_long_chain_acceptance_report
 from novel_forge.modules.publishing import create_publishing_log, create_publishing_plan
+from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.production_chain import (
     create_chapter_plan_version,
     create_draft_version,
@@ -623,6 +626,109 @@ class ContextAndProductionChainTests(unittest.TestCase):
             rollback_result = apply_editor_patch(storage, run["outputs"]["final_rollback_patch_path"])
             self.assertTrue(rollback_result["applied"])
             self.assertEqual(storage.read_asset(rollback_result["diff_report"]["path"]).type, "draft_diff_report")
+
+    def test_chapter_production_sequence_runs_10_chapter_v1_acceptance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = init_workspace(storage, "Ten Chapter Bus Project")
+            workspace_asset = storage.read_asset(workspace)
+            project_id = workspace_asset.content["project_id"]
+            workspace_ref = str(workspace.relative_to(storage.root))
+            outline = storage.write_asset(
+                "outlines",
+                Outline(
+                    title="Ten Chapter Outline",
+                    content={"acts": [{"act": 1, "goal": "open and escalate the clock mystery over ten chapters"}]},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+            calls = []
+
+            def fake_start_chapter_production(storage_arg, **kwargs):
+                chapter = int(kwargs["chapter"])
+                calls.append(kwargs)
+                export_markdown_path = Path("data/exports") / f"chapter-{chapter}.md"
+                absolute_export = storage_arg.root / export_markdown_path
+                absolute_export.parent.mkdir(parents=True, exist_ok=True)
+                absolute_export.write_text(f"# Chapter {chapter}\n\nGenerated fixture text.\n", encoding="utf-8")
+                outputs = {
+                    "chapter_plan_path": str(kwargs.get("chapter_plan_path") or f"data/chapter_plans/chapter-{chapter}.json"),
+                    "context_bundle_path": f"data/context/chapter-{chapter}-context.json",
+                    "draft_v0_path": f"data/drafts/chapter-{chapter}-v0.json",
+                    "review_path": f"data/reviews/chapter-{chapter}-review.json",
+                    "revision_plan_path": f"data/revisions/chapter-{chapter}-plan.json",
+                    "final_draft_path": f"data/drafts/chapter-{chapter}-final.json",
+                    "chapter_state_path": f"data/longform/chapter-{chapter}-state.json",
+                    "fact_ledger_path": f"data/longform/chapter-{chapter}-facts.json",
+                    "character_state_ledger_path": f"data/longform/chapter-{chapter}-characters.json",
+                    "foreshadowing_graph_path": f"data/longform/chapter-{chapter}-foreshadowing.json",
+                    "reward_ledger_path": f"data/longform/chapter-{chapter}-rewards.json",
+                    "review_score_system_report_path": f"data/reviews/chapter-{chapter}-scores.json",
+                    "longform_recap_report_path": f"data/longform/chapter-{chapter}-recap.json",
+                    "export_package_path": f"data/publishing/chapter-{chapter}-export.json",
+                    "export_markdown_path": str(export_markdown_path),
+                    "next_chapter_plan_path": f"data/chapter_plans/chapter-{chapter + 1}.json",
+                }
+                return {
+                    "status": "succeeded",
+                    "path": f"data/runs/chapter-{chapter}-production-run.json",
+                    "current_step": "next_chapter_plan",
+                    "outputs": outputs,
+                }
+
+            with patch("novel_forge.modules.chapter_production_bus.service.start_chapter_production", side_effect=fake_start_chapter_production):
+                result = run_chapter_production_sequence(
+                    storage,
+                    outline_path=str(outline.relative_to(storage.root)),
+                    workspace_path=workspace_ref,
+                    chapter_count=10,
+                )
+
+            self.assertEqual(result["status"], "succeeded")
+            self.assertEqual(result["completed_chapters"], 10)
+            self.assertEqual(len(result["runs"]), 10)
+            self.assertEqual(len(calls), 10)
+            self.assertIsNone(calls[0]["chapter_plan_path"])
+            self.assertEqual(calls[1]["chapter_plan_path"], "data/chapter_plans/chapter-2.json")
+            self.assertTrue(result["next_chapter_plan_path"])
+            acceptance = storage.read_asset(result["acceptance_report_path"])
+            self.assertEqual(acceptance.type, "long_chain_acceptance_report")
+            self.assertEqual(acceptance.content["acceptance_mode"], "v1_single_book_sequence")
+            self.assertEqual(acceptance.content["chapter_count"], 10)
+            self.assertEqual(acceptance.content["completed_chapters"], 10)
+            self.assertEqual(acceptance.content["recommendation"], "pass")
+            self.assertTrue(all(check["status"] == "passed" for check in acceptance.content["checks"]))
+            self.assertEqual(acceptance.content["output_counts"]["context_bundle_path"], 10)
+            self.assertEqual(acceptance.content["output_counts"]["final_draft_path"], 10)
+            self.assertEqual(acceptance.content["output_counts"]["longform_recap_report_path"], 10)
+            self.assertEqual(acceptance.content["output_counts"]["export_package_path"], 10)
+            for row in result["runs"]:
+                self.assertEqual(row["status"], "succeeded")
+                self.assertEqual(row["coverage"]["status"], "passed")
+                self.assertTrue(row["outputs"]["export_markdown_path"])
+                self.assertTrue((storage.root / row["outputs"]["export_markdown_path"]).exists())
+
+    def test_project_safe_reference_index_updates_incrementally(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            first = storage.write_asset(
+                "materials",
+                MaterialCard(title="Project A material", content={"usable_patterns": ["A"]}, metadata={"project_id": "project-a"}),
+            )
+            first_id = storage.read_asset(first).id
+            self.assertEqual(filter_project_safe_references(storage, "project-a", [first_id]), [first_id])
+
+            second = storage.write_asset(
+                "materials",
+                MaterialCard(title="Project B material", content={"usable_patterns": ["B"]}, metadata={"project_id": "project-b"}),
+            )
+            second_id = storage.read_asset(second).id
+
+            self.assertEqual(filter_project_safe_references(storage, "project-b", [second_id]), [second_id])
+            self.assertEqual(filter_project_safe_references(storage, "project-a", [second_id]), [])
 
     def test_chapter_production_bus_pause_cancel_recover_and_worker_task(self):
         with tempfile.TemporaryDirectory() as tmp:

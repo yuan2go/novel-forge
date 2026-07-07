@@ -7,6 +7,7 @@ from novel_forge.modules.chapter_production_bus.service import (
     pause_chapter_production,
     recover_chapter_production,
     resume_chapter_production,
+    run_chapter_production_sequence,
     start_chapter_production,
 )
 
@@ -19,5 +20,6 @@ __all__ = [
     "pause_chapter_production",
     "recover_chapter_production",
     "resume_chapter_production",
+    "run_chapter_production_sequence",
     "start_chapter_production",
 ]
