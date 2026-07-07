@@ -168,6 +168,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 actor=request.actor,
                 decision_note=request.decision_note,
                 create_application_chain=request.create_application_chain,
+                auto_apply_application_chain=request.auto_apply_application_chain,
+                auto_apply_invalidation=request.auto_apply_invalidation,
                 environment=request.environment,
                 envelope=request.envelope or None,
             )

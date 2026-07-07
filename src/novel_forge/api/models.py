@@ -451,6 +451,8 @@ class FeedbackMutationResolveRequest(BaseModel):
     actor: str = "operator"
     decision_note: str = ""
     create_application_chain: bool = True
+    auto_apply_application_chain: bool = True
+    auto_apply_invalidation: bool = True
     environment: str = ""
     envelope: dict[str, Any] = Field(default_factory=dict)
 

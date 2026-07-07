@@ -52,7 +52,7 @@ Current evidence:
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. Feedback mutation approval -> patch -> invalidation -> regeneration task workflow.
+2. Portfolio project boundary for future multi-book scheduling and cost/quality rollups.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
@@ -311,15 +311,15 @@ Current evidence:
 - Autonomy dashboard.
 - Full regression harness.
 
-当前完成度: 35%.
+当前完成度: 38%.
 
 阻塞项:
 - Current adapters are manual/rule-snapshot-level, not real platform SDK/callback/rate-limit integrations.
-- Feedback mutation application exists as foundation but should deepen workflow dispatch, invalidation evidence, and re-review/publish gate rerun evidence.
+- Feedback mutation application now creates patch, invalidation, regeneration, AgentTask, re-review, and publish-gate rerun plans; automatic dispatch remains future work.
 - Real platform accounts/APIs may require credentials and manual policy decisions.
 
 推荐切片:
-- Feedback mutation approval -> patch -> invalidation -> regeneration task workflow.
+- Portfolio project model and book-level resource boundary.
 - ApprovalRequest caller migration for high-risk platform publish/story mutation decisions.
 - Full regression suite for release/publish gates.
 

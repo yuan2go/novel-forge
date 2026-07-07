@@ -61,7 +61,7 @@ Implementation status note:
 | Engine | Readable Prose Engine | Immersive page-turning prose | `readable-prose-gate-v1` checks opening pressure, progression, conflict, specificity, ending hook, and mobile rhythm inside content quality loop | M3 | Heuristic needs calibration and final multi-chapter proof | AI-like chapter output if gate is skipped | P0 | Tie gate failures to deterministic revision strategies |
 | Engine | Revision Engine | Issue-driven revision with re-review | RevisionTask/Plan, rework loop, re-review, publish links, and deterministic issue strategy contract exist | M3 | Real chapter improvement metrics and final unified workflow proof remain deferred | Cosmetic revisions if later gates bypass strategy | P0 | Use strategy contract in V1-S6 continuity repair and later provider/human calibrated review loops |
 | Engine | Ending / Closure Engine | Ending plan, payoff, closure gates | No clear implementation beyond outline/release concepts | M1 | Ending-specific models and tests absent | Longform payoff risk | P3 | Defer until longform arcs mature |
-| Engine | Feedback Analysis Engine | Reader feedback to human-gated mutations | Feedback adapters, clusters, mutation proposals/application reports exist | M3 | Embedding/sentiment/drop-off attribution partial | Feedback can be shallow | P2 | Add stronger evidence chain after v1 loop |
+| Engine | Feedback Analysis Engine | Reader feedback to human-gated mutations | Feedback adapters, clusters, mutation proposals, patch artifacts, application reports, and planned AgentTasks exist | M3 | Embedding/sentiment/drop-off attribution partial; tasks are planned, not auto-dispatched | Feedback can be shallow | P2 | Add stronger evidence chain after v1 loop |
 | Engine | Publishing Adapter Engine | Platform packages, receipts, status, rules | Manual upload, project-scoped Fanqie/Qidian rule snapshots, receipt parsing confidence, platform gate, publish logs exist | M3 | Real platform SDK/callback/rate limit absent | False platform automation | P2 | Keep manual adapters explicit; add real SDK/callback only behind approvals |
 | Engine | Reader Simulation Engine | Simulated reader reports | ReaderSimulationReport foundation exists | M2 | Not integrated into v1 quality loop | Weak market signal | P3 | Add as optional eval suite later |
 | Engine | Style Identity Engine | Style sample, fingerprint, policy, drift | Style OS assets/services/API/tests exist | M3 | Provider calibration and authorized-sample governance can deepen | Style drift or imitation risk | P1 | Enforce style policy in v1 draft/revision |
@@ -105,7 +105,7 @@ Implementation status note:
 ## Highest-Leverage Next Order
 
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
-2. Feedback mutation apply workflow from approved proposal to patch, invalidation, regeneration, and re-review evidence.
+2. Portfolio project model so multi-book scheduling has an explicit boundary without contaminating v1 book state.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Extend v1 export package evidence to 30 chapters during final unified acceptance.
 5. Provider/human calibration for reader promise, chapter economy, character pressure, and mobile reading gates.

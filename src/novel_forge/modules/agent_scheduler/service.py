@@ -1942,6 +1942,26 @@ def _operation_specs() -> list[AgentOperationSpec]:
             sla_seconds=300,
         ),
         AgentOperationSpec(
+            operation="resolve-feedback-mutation-proposal",
+            aliases=("feedback-mutation-resolution",),
+            runner=_run_resolve_feedback_mutation_proposal,
+            agent_key="feedback",
+            input_types=("feedback_plan_mutation_proposal",),
+            output_types=("feedback_plan_mutation_proposal", "feedback_mutation_application_report"),
+            required_tool="write_feedback",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
+            operation="apply-feedback-mutation-application-chain",
+            aliases=("feedback-mutation-application",),
+            runner=_run_apply_feedback_mutation_application_chain,
+            agent_key="feedback",
+            input_types=("feedback_plan_mutation_proposal",),
+            output_types=("feedback_mutation_application_report", "feedback_mutation_patch", "revision_task", "agent_task"),
+            required_tool="write_feedback",
+            sla_seconds=300,
+        ),
+        AgentOperationSpec(
             operation="create-platform-strategy-pack",
             aliases=("platform-strategy-pack", "platform-strategy", "platform-compliance"),
             runner=_run_platform_strategy_pack,
@@ -2912,6 +2932,38 @@ def _run_create_feedback_mutation_proposal(storage: LocalStorage, queue_item: di
         source_feedback_paths=_string_list(evidence.get("source_feedback_paths", [])) or _input_paths(agent_run),
         target_assets=evidence.get("target_assets") if isinstance(evidence.get("target_assets"), list) else [],
         proposed_changes=evidence.get("proposed_changes") if isinstance(evidence.get("proposed_changes"), list) else [],
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_resolve_feedback_mutation_proposal(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.publishing_feedback_adapters import resolve_feedback_mutation_proposal
+
+    evidence = _evidence(agent_run)
+    return resolve_feedback_mutation_proposal(
+        storage,
+        proposal_ref=str(evidence.get("proposal_ref") or _primary_input_path(agent_run)),
+        approved=bool(evidence.get("approved", False)),
+        actor=str(evidence.get("actor") or "agent-scheduler"),
+        decision_note=str(evidence.get("decision_note") or ""),
+        create_application_chain=bool(evidence.get("create_application_chain", True)),
+        auto_apply_application_chain=bool(evidence.get("auto_apply_application_chain", True)),
+        auto_apply_invalidation=bool(evidence.get("auto_apply_invalidation", True)),
+        environment=str(evidence.get("environment") or ""),
+        envelope=_envelope_from_evidence(evidence),
+    )
+
+
+def _run_apply_feedback_mutation_application_chain(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.publishing_feedback_adapters import apply_feedback_mutation_application_chain
+
+    evidence = _evidence(agent_run)
+    return apply_feedback_mutation_application_chain(
+        storage,
+        proposal_ref=str(evidence.get("proposal_ref") or _primary_input_path(agent_run)),
+        apply_invalidation=bool(evidence.get("apply_invalidation", True)),
+        actor=str(evidence.get("actor") or "agent-scheduler"),
         environment=str(evidence.get("environment") or ""),
         envelope=_envelope_from_evidence(evidence),
     )

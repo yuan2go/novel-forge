@@ -149,9 +149,33 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
             self.assertTrue(app_content["regeneration_tasks"])
             self.assertTrue(app_content["re_review_required"])
             self.assertTrue(app_content["patch_artifacts"])
+            self.assertTrue(app_content["agent_task_plans"])
+            self.assertEqual(app_content["workflow_dispatch_plan"]["dispatch_mode"], "planned_agent_tasks_and_workflow_nodes")
+            self.assertFalse(app_content["workflow_dispatch_plan"]["silent_mutation_allowed"])
+            self.assertTrue(app_content["re_review_gate_plan"]["required"])
+            self.assertTrue(app_content["publish_gate_rerun_plan"]["required"])
+            self.assertFalse(app_content["mutation_control_contract"]["direct_outline_mutation"])
+            self.assertIn("run-quality-gate", {task["operation"] for task in app_content["agent_task_plans"]})
+            self.assertIn("create-publish-gate-report", {task["operation"] for task in app_content["agent_task_plans"]})
+            agent_task = storage.read_json(storage.root / app_content["agent_task_plans"][0]["path"])
+            self.assertEqual(agent_task["type"], "agent_task")
+            self.assertFalse(agent_task["content"]["evidence"]["silent_mutation_allowed"])
             patch = storage.read_json(storage.root / app_content["patch_artifacts"][0]["path"])
             self.assertEqual(patch["type"], "feedback_mutation_patch")
             self.assertEqual(patch["content"]["status"], "needs_review")
+
+    def test_feedback_mutation_application_requires_approved_human_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            proposal = create_feedback_mutation_proposal(
+                storage,
+                source_feedback_paths=["data/feedback/comment-cluster.json"],
+                target_assets=[{"asset_type": "outline", "path": "data/outlines/o1.json"}],
+                proposed_changes=[{"domain": "outline", "change": "tighten chapter 2 hook"}],
+            )
+
+            with self.assertRaisesRegex(ValueError, "approved human_gate"):
+                apply_feedback_mutation_application_chain(storage, proposal_ref=proposal["path"])
 
     def test_comment_cluster_can_persist_review_issue_paths(self):
         with tempfile.TemporaryDirectory() as tmp:

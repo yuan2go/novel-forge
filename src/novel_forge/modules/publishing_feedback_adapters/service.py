@@ -15,6 +15,7 @@ from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_
 from novel_forge.modules.review_issue import persist_issue_candidates
 from novel_forge.modules.publishing_feedback_adapters.fallbacks import record_platform_publish_failure
 from novel_forge.schemas import (
+    AgentTask,
     ChapterDropoffReport,
     CommentClusterReport,
     FeedbackMutationApplicationReport,
@@ -862,6 +863,22 @@ def apply_feedback_mutation_application_chain(
         project_id=str(env.get("project_id") or metadata.get("project_id") or ""),
         envelope=env,
     )
+    agent_task_plans = _write_feedback_agent_task_plans(
+        storage,
+        proposal_id=str(content.get("proposal_id") or proposal.get("id") or ""),
+        proposal_path=_display_path(storage.root, proposal_path),
+        patch_artifacts=patch_artifacts,
+        invalidations=invalidations,
+        regeneration_tasks=regeneration_tasks,
+        project_id=str(env.get("project_id") or metadata.get("project_id") or ""),
+        envelope=env,
+    )
+    workflow_dispatch_plan = _feedback_workflow_dispatch_plan(
+        patch_artifacts=patch_artifacts,
+        invalidations=invalidations,
+        regeneration_tasks=regeneration_tasks,
+        agent_task_plans=agent_task_plans,
+    )
     status = "applied" if apply_invalidation else "planned"
     report = FeedbackMutationApplicationReport(
         title="Feedback mutation application chain",
@@ -878,13 +895,35 @@ def apply_feedback_mutation_application_chain(
             "impact_analysis": chain.get("impact_analysis", {}),
             "invalidation_results": invalidations,
             "regeneration_tasks": regeneration_tasks,
+            "agent_task_plans": agent_task_plans,
+            "workflow_dispatch_plan": workflow_dispatch_plan,
+            "re_review_gate_plan": _feedback_re_review_gate_plan(patch_artifacts, regeneration_tasks, agent_task_plans),
+            "publish_gate_rerun_plan": _feedback_publish_gate_rerun_plan(patch_artifacts, invalidations, regeneration_tasks, agent_task_plans),
+            "approval_evidence": {
+                "actor": actor,
+                "human_gate": human_gate,
+                "source_proposal_path": _display_path(storage.root, proposal_path),
+            },
             "re_review_required": True,
             "publish_gate_rerun_required": True,
             "silent_mutation_allowed": False,
+            "mutation_control_contract": {
+                "patch_review_required": True,
+                "automatic_story_asset_mutation": False,
+                "direct_outline_mutation": False,
+                "direct_chapter_plan_mutation": False,
+                "direct_release_package_mutation": False,
+            },
             "created_at": utc_now(),
         },
         metadata={"project_id": str(env.get("project_id") or metadata.get("project_id") or ""), **envelope_asset_metadata(env)},
-        references=_dedupe([_display_path(storage.root, proposal_path), *[str(item.get("path", "")) for item in patch_artifacts if isinstance(item, dict)], *[str(item.get("path", "")) for item in invalidations if isinstance(item, dict)], *[str(item.get("path", "")) for item in regeneration_tasks if isinstance(item, dict)]]),
+        references=_dedupe([
+            _display_path(storage.root, proposal_path),
+            *[str(item.get("path", "")) for item in patch_artifacts if isinstance(item, dict)],
+            *[str(item.get("path", "")) for item in invalidations if isinstance(item, dict)],
+            *[str(item.get("path", "")) for item in regeneration_tasks if isinstance(item, dict)],
+            *[str(item.get("path", "")) for item in agent_task_plans if isinstance(item, dict)],
+        ]),
     )
     path = _write_asset(storage, report)
     return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "envelope": env}
@@ -1451,6 +1490,197 @@ def _write_feedback_regeneration_tasks(
         path = _write_asset(storage, task)
         tasks.append({"status": "created", "path": path, "target_asset_type": asset_type, "target_asset_path": path_ref})
     return tasks
+
+
+def _write_feedback_agent_task_plans(
+    storage: LocalStorage,
+    *,
+    proposal_id: str,
+    proposal_path: str,
+    patch_artifacts: list[dict[str, Any]],
+    invalidations: list[dict[str, Any]],
+    regeneration_tasks: list[dict[str, Any]],
+    project_id: str,
+    envelope: dict[str, Any],
+) -> list[dict[str, Any]]:
+    plans: list[dict[str, Any]] = []
+    patch_paths = [str(item.get("path") or "") for item in patch_artifacts if isinstance(item, dict) and str(item.get("path") or "").strip()]
+    regeneration_paths = [str(item.get("path") or "") for item in regeneration_tasks if isinstance(item, dict) and str(item.get("path") or "").strip()]
+    invalidation_paths = [str(item.get("path") or "") for item in invalidations if isinstance(item, dict) and str(item.get("path") or "").strip()]
+    for task in regeneration_tasks:
+        if not isinstance(task, dict) or not str(task.get("path") or "").strip():
+            continue
+        plans.append(
+            _write_feedback_agent_task_plan(
+                storage,
+                proposal_id=proposal_id,
+                agent_type="editor",
+                operation="run-review-revision-publish-loop",
+                input_paths=_dedupe([proposal_path, str(task.get("path") or ""), *patch_paths]),
+                output_targets=[
+                    {"asset_type": "draft_chapter", "reason": "regenerate downstream draft after approved feedback mutation"},
+                    {"asset_type": "review_report", "reason": "re-review regenerated content"},
+                    {"asset_type": "publish_gate_report", "reason": "rerun publish gate after feedback-driven regeneration"},
+                ],
+                project_id=project_id,
+                envelope=envelope,
+                linked_revision_task_path=str(task.get("path") or ""),
+                evidence={"target_asset_type": task.get("target_asset_type", ""), "target_asset_path": task.get("target_asset_path", "")},
+            )
+        )
+    if patch_paths or regeneration_paths:
+        plans.append(
+            _write_feedback_agent_task_plan(
+                storage,
+                proposal_id=proposal_id,
+                agent_type="quality",
+                operation="run-quality-gate",
+                input_paths=_dedupe([proposal_path, *patch_paths, *regeneration_paths]),
+                output_targets=[{"asset_type": "quality_gate_report", "reason": "verify feedback mutation repair before release"}],
+                project_id=project_id,
+                envelope=envelope,
+                evidence={"requires_re_review": True},
+            )
+        )
+    plans.append(
+        _write_feedback_agent_task_plan(
+            storage,
+            proposal_id=proposal_id,
+            agent_type="publishing",
+            operation="create-publish-gate-report",
+            input_paths=_dedupe([proposal_path, *patch_paths, *regeneration_paths, *invalidation_paths]),
+            output_targets=[{"asset_type": "publish_gate_report", "reason": "rerun publish gate after approved feedback mutation"}],
+            project_id=project_id,
+            envelope=envelope,
+            evidence={"requires_release_package_rebuild": True, "requires_platform_gate_rerun": True},
+        )
+    )
+    return plans
+
+
+def _write_feedback_agent_task_plan(
+    storage: LocalStorage,
+    *,
+    proposal_id: str,
+    agent_type: str,
+    operation: str,
+    input_paths: list[str],
+    output_targets: list[dict[str, Any]],
+    project_id: str,
+    envelope: dict[str, Any],
+    linked_revision_task_path: str = "",
+    evidence: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    task = AgentTask(
+        title=f"Feedback mutation follow-up: {operation}",
+        source=proposal_id,
+        tags=["feedback-mutation", "agent-task", agent_type, operation, "planned"],
+        content={
+            "task_id": make_id("agent_task", f"feedback-mutation-{operation}-{proposal_id}-{utc_now()}"),
+            "agent_type": agent_type,
+            "operation": operation,
+            "status": "planned",
+            "input_assets": [{"path": path, "asset_ref": path} for path in input_paths if str(path).strip()],
+            "output_targets": output_targets,
+            "linked_loop_run_path": "",
+            "linked_context_bundle_path": "",
+            "linked_review_issue_path": "",
+            "linked_revision_task_path": linked_revision_task_path,
+            "agent_run_path": "",
+            "dispatch_queue_path": "",
+            "evidence": {
+                "feedback_mutation_proposal_id": proposal_id,
+                "silent_mutation_allowed": False,
+                "requires_human_patch_review": True,
+                "requires_re_review": True,
+                "requires_publish_gate_rerun": True,
+                **(evidence or {}),
+            },
+            "created_at": utc_now(),
+            "updated_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "agent_type": agent_type, "operation": operation, "asset_status": "planned", **envelope_asset_metadata(envelope)},
+        references=_dedupe(input_paths),
+    )
+    path = _write_asset(storage, task)
+    return {"status": "planned", "path": path, "agent_type": agent_type, "operation": operation, "linked_revision_task_path": linked_revision_task_path}
+
+
+def _feedback_workflow_dispatch_plan(
+    *,
+    patch_artifacts: list[dict[str, Any]],
+    invalidations: list[dict[str, Any]],
+    regeneration_tasks: list[dict[str, Any]],
+    agent_task_plans: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "dispatch_mode": "planned_agent_tasks_and_workflow_nodes",
+        "silent_mutation_allowed": False,
+        "nodes": [
+            {
+                "node_id": "patch_review",
+                "operation": "human-review-feedback-mutation-patches",
+                "status": "planned",
+                "input_paths": [str(item.get("path") or "") for item in patch_artifacts if isinstance(item, dict)],
+            },
+            {
+                "node_id": "downstream_invalidation",
+                "operation": "mark-downstream-assets-stale",
+                "status": "applied" if any(bool(item.get("apply")) for item in invalidations if isinstance(item, dict)) else "planned",
+                "evidence_paths": [str(item.get("path") or "") for item in invalidations if isinstance(item, dict)],
+            },
+            {
+                "node_id": "regeneration",
+                "operation": "run-review-revision-publish-loop",
+                "status": "planned",
+                "revision_task_paths": [str(item.get("path") or "") for item in regeneration_tasks if isinstance(item, dict)],
+                "agent_task_paths": [str(item.get("path") or "") for item in agent_task_plans if isinstance(item, dict) and item.get("operation") == "run-review-revision-publish-loop"],
+            },
+            {
+                "node_id": "quality_gate",
+                "operation": "run-quality-gate",
+                "status": "planned",
+                "agent_task_paths": [str(item.get("path") or "") for item in agent_task_plans if isinstance(item, dict) and item.get("operation") == "run-quality-gate"],
+            },
+            {
+                "node_id": "publish_gate_rerun",
+                "operation": "create-publish-gate-report",
+                "status": "planned",
+                "agent_task_paths": [str(item.get("path") or "") for item in agent_task_plans if isinstance(item, dict) and item.get("operation") == "create-publish-gate-report"],
+            },
+        ],
+    }
+
+
+def _feedback_re_review_gate_plan(patch_artifacts: list[dict[str, Any]], regeneration_tasks: list[dict[str, Any]], agent_task_plans: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "required": True,
+        "status": "planned",
+        "patch_review_required": True,
+        "quality_gate_operation": "run-quality-gate",
+        "patch_artifact_paths": [str(item.get("path") or "") for item in patch_artifacts if isinstance(item, dict)],
+        "regeneration_task_paths": [str(item.get("path") or "") for item in regeneration_tasks if isinstance(item, dict)],
+        "agent_task_paths": [str(item.get("path") or "") for item in agent_task_plans if isinstance(item, dict) and item.get("operation") == "run-quality-gate"],
+    }
+
+
+def _feedback_publish_gate_rerun_plan(
+    patch_artifacts: list[dict[str, Any]],
+    invalidations: list[dict[str, Any]],
+    regeneration_tasks: list[dict[str, Any]],
+    agent_task_plans: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "required": True,
+        "status": "planned",
+        "publish_gate_operation": "create-publish-gate-report",
+        "release_package_rebuild_required": True,
+        "platform_adapter_gate_rerun_required": True,
+        "patch_artifact_paths": [str(item.get("path") or "") for item in patch_artifacts if isinstance(item, dict)],
+        "invalidation_evidence_paths": [str(item.get("path") or "") for item in invalidations if isinstance(item, dict)],
+        "regeneration_task_paths": [str(item.get("path") or "") for item in regeneration_tasks if isinstance(item, dict)],
+        "agent_task_paths": [str(item.get("path") or "") for item in agent_task_plans if isinstance(item, dict) and item.get("operation") == "create-publish-gate-report"],
+    }
 
 
 def _write_feedback_patch_assets(
