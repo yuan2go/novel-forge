@@ -59,7 +59,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 - ApprovalRequest caller migration and approval routing for high-risk material/context/publishing/story changes.
 - Independent lifecycle models for many blueprint concepts currently represented as fields inside broad assets.
 - Full typed graph state/query/diff storage for all Canon topic state machines.
-- Full provider-backed premium judge and 50-chapter proof using real external credentials and operator-approved budget.
+- Full provider-backed premium judge and 50-chapter proof using real external credentials and operator-approved budget. The provider proof harness now separates external/fixture/missing proof, but local tests still use fixtures.
 - Platform-specific production adapters beyond manual/checklist/fallback foundations.
 - Full autonomous multi-book Portfolio OS.
 
@@ -89,7 +89,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 ## High-Risk Areas
 
 - Copyright/source leakage: Classical-Modern and other external sources must remain evidence-only unless source policy explicitly permits context use.
-- Mock/fallback confusion: local heuristic/provider fixture proof must not be reported as real provider-backed premium quality proof.
+- Mock/fallback confusion: reduced by `provider-proof-harness-v1`, but real external provider execution still depends on credentials, route approval, budget, and operator policy.
 - Workflow bypass: draft/revision/release must not bypass Context Builder, MKAOS policy, Canon/KG, ReviewIssue, provider runtime guard, Evaluation Gate, Publish Gate, trace/cost ledger.
 - Over-engineering: the codebase already has broad v6/v7 surfaces; the next phase must prioritize v1 chapter production closure over adding more consoles or distant P6/P7 features.
 
@@ -136,8 +136,8 @@ Current implementation proves many slices and fixtures, including a true one-cha
 Do not add another broad V7 surface first. The next production slice should be:
 
 ```text
-P1 Provider Proof Harness:
-separate fixture/local proof from real external provider proof so quality reports, release gates, and future calibration can cite provider evidence without false production claims.
+P2 Platform-Specific Manual Adapters:
+harden Fanqie/Qidian manual upload package, checklist, receipt parsing, and review status so publishing evidence is platform-specific without claiming real platform SDK automation.
 ```
 
 During the current development loop, do not run chapter acceptance. Use targeted unit and compile checks only, then run the unified acceptance phase after the production slices are complete.

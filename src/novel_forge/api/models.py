@@ -354,6 +354,27 @@ class LongChainProofRunRequest(BaseModel):
     require_external_provider_proof: bool = False
 
 
+class V7ProviderProofRequest(BaseModel):
+    project_id: str = "local-project"
+    draft_path: str = ""
+    genre_strategy_pack_path: str = ""
+    style_profile_path: str = ""
+    platform_id: str = "local"
+    provider_route: dict[str, Any] = Field(default_factory=dict)
+    provider_config: dict[str, Any] = Field(default_factory=dict)
+    provider_runtime_guard: dict[str, Any] = Field(default_factory=dict)
+    operator_approval: dict[str, Any] = Field(default_factory=dict)
+    budget_cap: float = 0.0
+    mode: str = "real"
+    fixture_chapter_response: dict[str, Any] = Field(default_factory=dict)
+    fixture_review_response: dict[str, Any] = Field(default_factory=dict)
+    allow_mock_fixture: bool = False
+    require_external_provider_proof: bool = True
+    environment: str = "production"
+    envelope: dict[str, Any] = Field(default_factory=dict)
+    target_chapter_count: int = 50
+
+
 class PlatformUploadPackageRequest(BaseModel):
     release_package_path: str
     platform_id: str = "manual"
@@ -1699,6 +1720,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "ProviderQualityJudgeRequest": ProviderQualityJudgeRequest,
         "CanonGraphPluginRequest": CanonGraphPluginRequest,
         "LongChainProofRunRequest": LongChainProofRunRequest,
+        "V7ProviderProofRequest": V7ProviderProofRequest,
         "PlatformUploadPackageRequest": PlatformUploadPackageRequest,
         "PlatformReceiptRequest": PlatformReceiptRequest,
         "PlatformReceiptParseRequest": PlatformReceiptParseRequest,

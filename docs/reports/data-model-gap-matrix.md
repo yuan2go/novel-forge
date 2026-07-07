@@ -115,7 +115,7 @@ Status legend:
 
 1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 2. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
-3. Provider proof evidence models and caller discipline: needed next so fixture/local proof cannot be confused with real provider-backed proof.
+3. Platform-specific publishing adapter models: needed next so Fanqie/Qidian package, receipt, and review status evidence is not generic.
 4. Readable prose/page-turning/mobile review models: foundations exist for readable prose and mobile reading; PageTurningReport and AntiAIReport can deepen provider/human calibration later.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
 6. `ReaderPromise`, `ChapterEconomyReport`, `ProtagonistCharmReport`, `AntagonistPressureReport`, and `MobileReadingReport` calibration and cockpit depth: foundations exist, but detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.

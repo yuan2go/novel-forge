@@ -52,6 +52,7 @@ def run_v7_provider_proof(
         require_for_production=True,
     )
     resolved_draft_path = str(draft_path or "")
+    single_generation: dict[str, Any] = {}
     if not resolved_draft_path:
         single = _run_provider_single_chapter_draft(
             storage,
@@ -62,7 +63,10 @@ def run_v7_provider_proof(
             require_external_provider_proof=require_external_provider_proof,
         )
         resolved_draft_path = single["draft_path"]
+        single_generation = single
     draft_asset = storage.read_asset(resolve_path(storage.root, resolved_draft_path))
+    if not single_generation:
+        single_generation = _single_generation_evidence_from_draft(storage, resolved_draft_path, draft_asset.to_dict())
     scope = project_scope_from_asset(storage, draft_asset, input_path=resolve_path(storage.root, resolved_draft_path))
     rubric = build_quality_rubric_pack(
         storage,
@@ -123,11 +127,21 @@ def run_v7_provider_proof(
         provider_runtime_guard=provider_runtime_guard or {},
         require_external_provider_proof=require_external_provider_proof,
     )
+    proof_manifest = _provider_proof_manifest(
+        storage,
+        opening=opening,
+        single_generation=single_generation,
+        single_quality=single_quality,
+        long_chain=long_chain,
+        target_chapter_count=target_chapter_count,
+        require_external_provider_proof=require_external_provider_proof,
+    )
     checks = [
         _check("opening_3_provider_judge", opening["asset"]["content"].get("recommendation") == "ready", opening["path"]),
         _check("opening_3_quality_gate", opening_gate["asset"]["content"].get("status") == "passed", opening_gate["path"]),
         _check("provider_single_chapter_quality_loop", single_quality.get("status") in {"passed", "passed_with_warnings"}, single_quality.get("path", "")),
         _check("provider_50_long_chain_proof", long_chain["asset"]["content"].get("status") == "ready", long_chain["acceptance_report_path"]),
+        _check("provider_proof_manifest", not proof_manifest["blocking"], ""),
     ]
     status = "passed" if all(row["passed"] for row in checks) else "blocked"
     evidence_refs = _dedupe(
@@ -162,6 +176,7 @@ def run_v7_provider_proof(
             "opening_3": {"report_path": opening["path"], "gate_path": opening_gate["path"], "external_provider_proof": opening.get("external_provider_proof", {})},
             "single_chapter": {"draft_path": resolved_draft_path, "content_quality_loop_path": single_quality.get("path", ""), "status": single_quality.get("status", "")},
             "long_chain_50": {"run_path": long_chain.get("run_path", ""), "acceptance_report_path": long_chain.get("acceptance_report_path", ""), "status": long_chain["asset"]["content"].get("status", "")},
+            "provider_proof_manifest": proof_manifest,
             "provider_runtime_guard": provider_runtime_guard or {},
             "external_provider_proof_required": bool(require_external_provider_proof),
             "evidence_refs": evidence_refs,
@@ -172,6 +187,112 @@ def run_v7_provider_proof(
     )
     path = _write_asset(storage, snapshot)
     return {"status": status, "path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "evidence_refs": evidence_refs, "envelope": env}
+
+
+def _provider_proof_manifest(
+    storage: LocalStorage,
+    *,
+    opening: dict[str, Any],
+    single_generation: dict[str, Any],
+    single_quality: dict[str, Any],
+    long_chain: dict[str, Any],
+    target_chapter_count: int,
+    require_external_provider_proof: bool,
+) -> dict[str, Any]:
+    opening_proof = opening.get("external_provider_proof", {}) if isinstance(opening.get("external_provider_proof", {}), dict) else {}
+    single_proof = single_generation.get("external_provider_proof", {}) if isinstance(single_generation.get("external_provider_proof", {}), dict) else {}
+    single_quality_proof = _proof_from_content_quality_loop(storage, single_quality)
+    long_chain_report = long_chain.get("asset", {}).get("content", {}) if isinstance(long_chain.get("asset", {}).get("content", {}), dict) else {}
+    provider_generation = long_chain_report.get("provider_generation_evidence", {}) if isinstance(long_chain_report.get("provider_generation_evidence", {}), dict) else {}
+    long_chain_paths = [str(path) for path in provider_generation.get("external_provider_proof_paths", []) if str(path).strip()] if isinstance(provider_generation.get("external_provider_proof_paths", []), list) else []
+    long_chain_statuses = [_proof_status_from_path(storage, path) for path in long_chain_paths]
+    segments = {
+        "opening_3_provider_judge": _proof_summary(opening_proof, required=require_external_provider_proof),
+        "single_chapter_generation": _proof_summary(single_proof, required=require_external_provider_proof),
+        "single_chapter_quality_judge": _proof_summary(single_quality_proof, required=require_external_provider_proof),
+        "long_chain_50_generation": {
+            "status": "passed" if long_chain_statuses and all(item.get("status") == "passed" for item in long_chain_statuses) and len(long_chain_statuses) == target_chapter_count else "not_required" if not require_external_provider_proof else "missing",
+            "classification": "external_provider" if long_chain_statuses and all(item.get("status") == "passed" for item in long_chain_statuses) and len(long_chain_statuses) == target_chapter_count else "not_required" if not require_external_provider_proof else "missing",
+            "proof_count": len(long_chain_statuses),
+            "target_count": target_chapter_count,
+            "paths": long_chain_paths[:10],
+        },
+    }
+    blocking: list[dict[str, Any]] = []
+    if require_external_provider_proof:
+        for segment, summary in segments.items():
+            if summary.get("classification") != "external_provider" or summary.get("status") != "passed":
+                blocking.append(
+                    {
+                        "segment": segment,
+                        "status": summary.get("status", ""),
+                        "classification": summary.get("classification", ""),
+                        "message": f"{segment} lacks real external provider proof",
+                    }
+                )
+    return {
+        "contract": "provider-proof-harness-v1",
+        "external_provider_proof_required": bool(require_external_provider_proof),
+        "status": "blocked" if blocking else "passed",
+        "blocking": bool(blocking),
+        "segments": segments,
+        "blocking_issues": blocking,
+        "ledger_requirements": ["model_route_resolution", "model_call_log", "runtime_policy", "cost_ledger", "external_provider_proof_report"],
+        "credential_boundary": "credential references only; no raw provider secret is persisted",
+    }
+
+
+def _proof_summary(proof: dict[str, Any], *, required: bool) -> dict[str, Any]:
+    status = str(proof.get("status") or "")
+    path = str(proof.get("path") or "")
+    if status == "passed" and path:
+        return {"status": "passed", "classification": "external_provider", "path": path}
+    if not required:
+        return {"status": status or "not_required", "classification": "not_required", "path": path}
+    if status == "blocked":
+        issues = proof.get("blocking_issues", []) if isinstance(proof.get("blocking_issues", []), list) else []
+        if any("fixture" in str(issue.get("dimension", "")).lower() for issue in issues if isinstance(issue, dict)):
+            return {"status": "blocked", "classification": "fixture_or_mock", "path": path, "blocking_issues": issues}
+        return {"status": "blocked", "classification": "blocked", "path": path, "blocking_issues": issues}
+    return {"status": "missing", "classification": "missing", "path": path}
+
+
+def _proof_status_from_path(storage: LocalStorage, path: str) -> dict[str, Any]:
+    try:
+        data = storage.read_json(resolve_path(storage.root, path))
+    except FileNotFoundError:
+        return {"status": "missing", "path": path}
+    content = data.get("content", {}) if isinstance(data.get("content"), dict) else {}
+    return {"status": str(content.get("status") or ""), "path": path}
+
+
+def _proof_from_content_quality_loop(storage: LocalStorage, single_quality: dict[str, Any]) -> dict[str, Any]:
+    asset = single_quality.get("asset", {}) if isinstance(single_quality.get("asset", {}), dict) else {}
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    steps = content.get("steps", []) if isinstance(content.get("steps", []), list) else []
+    for step in steps:
+        if not isinstance(step, dict) or step.get("name") != "provider_quality_judge":
+            continue
+        for path in step.get("paths", []) if isinstance(step.get("paths", []), list) else []:
+            try:
+                data = storage.read_json(resolve_path(storage.root, path))
+            except FileNotFoundError:
+                continue
+            if data.get("type") != "external_provider_proof_report":
+                continue
+            status = str((data.get("content", {}) if isinstance(data.get("content"), dict) else {}).get("status") or "")
+            return {"status": status, "path": str(path)}
+    return {"status": "missing", "path": ""}
+
+
+def _single_generation_evidence_from_draft(storage: LocalStorage, draft_path: str, draft: dict[str, Any]) -> dict[str, Any]:
+    content = draft.get("content", {}) if isinstance(draft.get("content"), dict) else {}
+    evidence = content.get("provider_generation_evidence", {}) if isinstance(content.get("provider_generation_evidence", {}), dict) else {}
+    proof_path = str(evidence.get("external_provider_proof_path") or "")
+    proof = {"status": "missing", "path": "", "blocking": True}
+    if proof_path:
+        proof = _proof_status_from_path(storage, proof_path) | {"blocking": False}
+    return {"draft_path": draft_path, "external_provider_proof": proof}
 
 
 def _run_provider_single_chapter_draft(

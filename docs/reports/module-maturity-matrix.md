@@ -32,6 +32,7 @@ Implementation status note:
 - 2026-07-08: Source Governance now has schema-backed SourcePolicy, SourceSyncJob, SourceSnapshot, LicenseCheckResult, and SourceRiskReport lifecycle plus R0-R4 context eligibility and ApprovalRequest hooks. It remains M3 until Context Builder/MKAOS/material importers consume eligibility reports everywhere.
 - 2026-07-08: Character pressure now has schema-backed ProtagonistCharmReport and AntagonistPressureReport assets, a quality-loop step, chapter-bus output paths, longform reducer projection, and ReviewIssue/RevisionTask repair hooks. Maturity remains M2 until provider/human calibration and guided repair UX are added.
 - 2026-07-08: Mobile Reading Gate now has schema-backed MobileReadingReport assets, a quality-loop step, chapter-bus output path, and ReviewIssue/RevisionTask repair hooks. Maturity remains M2 until provider/human calibration and guided repair UX are added.
+- 2026-07-08: Provider Proof Harness now writes a blocking `provider-proof-harness-v1` manifest and exposes `/product/provider-proof/v7`. Quality/Eval maturity remains M3 because real external provider execution still requires credentials, budget approval, and operator policy.
 
 ## Core OS Layer
 
@@ -104,7 +105,7 @@ Implementation status note:
 ## Highest-Leverage Next Order
 
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
-2. Provider Proof Harness so local fixture proof and real external provider proof remain separate.
+2. Platform-specific manual adapters for Fanqie/Qidian packages, receipt parsing, and review status.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Extend v1 export package evidence to 30 chapters during final unified acceptance.
 5. Provider/human calibration for reader promise, chapter economy, character pressure, and mobile reading gates.

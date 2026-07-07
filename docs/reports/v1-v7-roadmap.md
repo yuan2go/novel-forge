@@ -52,7 +52,7 @@ Current evidence:
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. Provider Proof Harness so real provider proof is not conflated with local fixture proof.
+2. Platform-specific manual adapters so Fanqie/Qidian publishing evidence is not generic.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
@@ -75,7 +75,7 @@ Current evidence:
 风险:
 - Over-building distant v6/v7 features while v1 remains fragmented.
 - Treating UI consoles as workflow proof.
-- Fallback/provider fixture proof being confused with real provider proof.
+- Fallback/provider fixture proof confusion is reduced by the provider proof manifest; real execution still requires credentials and operator budget.
 
 是否依赖前置阶段: no.
 
@@ -99,7 +99,7 @@ Current evidence:
 - Longform reports exist, but reducers/query/diff are uneven.
 
 推荐切片:
-- Provider Proof Harness.
+- Platform-specific manual adapters.
 - Reader Promise provider/human payoff calibration.
 - Pleasure Point / Chapter Economy provider-human calibration.
 - Character Pressure provider/human calibration.

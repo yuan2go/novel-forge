@@ -24,7 +24,14 @@ class ExternalV7ProviderAdapter:
 
     def generate(self, payload: str, context: dict):
         return {
-            "text": ("外部 provider 原创单章证明：案件目标清晰，证据链推进，人物必须选择，结尾真相钩子逼近下一章。 " * 30),
+            "text": "\n".join(
+                [
+                    "外部 provider 原创单章证明：案件目标清晰，证据链推进。",
+                    "人物必须在危险逼近前选择，代价立刻落到眼前。",
+                    "结尾真相钩子逼近下一章，新的证据改变了局面。",
+                ]
+                * 12
+            ),
             "usage": {"input_tokens": 900, "output_tokens": 360, "total_tokens": 1260, "usage_source": "external_provider"},
             "cost": {"amount": 0.006, "currency": "USD", "source": "external_provider"},
             "external_provider_evidence": {**self.external_provider_evidence, "provider_response_id": f"resp-v7-generate-{context.get('chapter_no', 'single')}"},
@@ -68,6 +75,36 @@ class V7ProviderProofTests(unittest.TestCase):
             self.assertTrue(all(check["passed"] for check in content["checks"]))
             self.assertTrue(content["opening_3"]["external_provider_proof"]["path"])
             self.assertEqual(content["long_chain_50"]["status"], "ready")
+            manifest = content["provider_proof_manifest"]
+            self.assertEqual(manifest["contract"], "provider-proof-harness-v1")
+            self.assertEqual(manifest["status"], "passed")
+            self.assertFalse(manifest["blocking"])
+            self.assertEqual(manifest["segments"]["opening_3_provider_judge"]["classification"], "external_provider")
+            self.assertEqual(manifest["segments"]["single_chapter_generation"]["classification"], "external_provider")
+            self.assertEqual(manifest["segments"]["single_chapter_quality_judge"]["classification"], "external_provider")
+            self.assertEqual(manifest["segments"]["long_chain_50_generation"]["classification"], "external_provider")
+
+    def test_v7_provider_proof_blocks_fixture_when_external_proof_required(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            _routes(storage)
+            genre = build_genre_strategy_pack(storage, genre="mystery", subgenre="police_procedural", project_id="p1")
+            style = _style_profile(storage)
+
+            with self.assertRaisesRegex(ValueError, "external provider proof blocked"):
+                run_v7_provider_proof(
+                    storage,
+                    provider_adapter=FixtureV7ProviderAdapter(),
+                    project_id="p1",
+                    genre_strategy_pack_path=genre["genre_strategy_pack_path"],
+                    style_profile_path=style,
+                    provider_runtime_guard={"max_total_tokens": 3000},
+                    require_external_provider_proof=True,
+                    environment="production",
+                    envelope=_envelope("trace-v7-provider-proof-fixture"),
+                    target_chapter_count=50,
+                )
 
 
 def _routes(storage: LocalStorage) -> None:
@@ -97,6 +134,16 @@ def _style_profile(storage: LocalStorage) -> str:
     fingerprint = extract_style_fingerprint(storage, sample_path=sample["path"])
     profile = build_style_profile(storage, fingerprint_path=fingerprint["path"])
     return profile["style_profile_path"]
+
+
+class FixtureV7ProviderAdapter(ExternalV7ProviderAdapter):
+    external_provider_evidence = {
+        "external_call": False,
+        "fixture": True,
+        "provider_response_id": "fixture-v7-proof",
+        "endpoint_host": "fixture.local",
+        "credential_ref": "none",
+    }
 
 
 def _envelope(trace_id: str) -> dict:
