@@ -99,4 +99,4 @@ The current branch has implemented the first V7 content intelligence foundation 
 
 ## Next Priorities
 
-See [reports/v1-v7-roadmap.md](reports/v1-v7-roadmap.md) and [reports/next-production-slices.md](reports/next-production-slices.md). The most important next work is to close the v1 single-book production loop, then continue runtime hardening: approval caller migration, provider evidence, release/publish gates, scheduler operation coverage, context/KG consistency, calibrated reader-promise/chapter-economy/character-pressure/mobile-reading detection, and productized UI verification.
+See [reports/v1-v7-roadmap.md](reports/v1-v7-roadmap.md) and [reports/next-production-slices.md](reports/next-production-slices.md). The most important next work is to close the v1 single-book production loop, then continue runtime hardening: publish/context ApprovalRequest caller migration, provider evidence, release/publish gates, scheduler operation coverage, context/KG consistency, calibrated reader-promise/chapter-economy/character-pressure/mobile-reading detection, and productized UI verification.

@@ -92,6 +92,9 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
             self.assertEqual(comments["asset"]["type"], "comment_cluster_report")
             self.assertTrue(comments["asset"]["content"]["pain_points"])
             self.assertTrue(proposal["asset"]["content"]["human_gate"]["required"])
+            self.assertEqual(proposal["approval_request"]["asset"]["type"], "approval_request")
+            self.assertEqual(proposal["asset"]["content"]["human_gate"]["approval_request_path"], proposal["approval_request"]["path"])
+            self.assertEqual(proposal["asset"]["content"]["risk_assessment"]["approval_request_path"], proposal["approval_request"]["path"])
             self.assertFalse(proposal["asset"]["content"]["risk_assessment"]["silent_mutation_allowed"])
 
     def test_feedback_mutation_approval_creates_planned_application_chain_without_silent_patch(self):
@@ -124,6 +127,7 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
 
             content = resolved["asset"]["content"]
             self.assertEqual(content["human_gate"]["status"], "approved")
+            self.assertTrue(content["human_gate"]["approval_request_path"])
             self.assertEqual(content["application_status"], "planned")
             self.assertFalse(content["application_chain"]["silent_mutation_allowed"])
             self.assertEqual(content["application_chain"]["patch_plan"]["outline_patch"]["status"], "needs_review")

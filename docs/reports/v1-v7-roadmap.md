@@ -279,7 +279,7 @@ Current evidence:
 - Phase 1 single-book loop not yet proven.
 
 推荐切片:
-- ApprovalRequest caller migration for remaining high-risk paths.
+- Publish/context ApprovalRequest caller migration for remaining high-risk paths.
 - Book-level scheduler using existing Agent scheduler.
 - Cost/quality dashboard by project.
 

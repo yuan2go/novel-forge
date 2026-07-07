@@ -97,7 +97,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 
 1. Chapter Blueprint, Draft, Review, Revision, Canon Update, Longform Recap, and Export are proven for one true chapter, a 10-chapter sequence contract, and a true 10-chapter slow run; development slices after that baseline add stronger local evidence but are not yet proven in a true 30-chapter slow run.
 2. ReviewIssue-to-RevisionPlan strategy mapping now exists as `review-issue-revision-strategy-v1`; remaining risk is proving real chapter improvement across the final unified acceptance phase.
-3. ApprovalRequest and Source Governance foundations exist, but full caller migration is still needed for high-risk material, context injection, publishing, and major story mutations.
+3. ApprovalRequest and Source Governance foundations exist; feedback mutation and Portfolio callers now record ApprovalRequest refs, but full caller migration is still needed for high-risk material, context injection, and publishing.
 4. Several blueprint data models are represented as flexible content fields rather than typed lifecycle assets.
 
 ## Gap Matrix
@@ -137,7 +137,7 @@ Do not add another broad V7 surface first. The next production slice should be:
 
 ```text
 P3 Portfolio Project Model:
-migrate remaining high-risk callers so source/context/publish/story mutation paths record Permission Center approval refs instead of local approval notes.
+migrate remaining high-risk publish/context/source callers so they record Permission Center approval refs instead of local approval notes.
 ```
 
 During the current development loop, do not run chapter acceptance. Use targeted unit and compile checks only, then run the unified acceptance phase after the production slices are complete.

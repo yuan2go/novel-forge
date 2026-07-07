@@ -729,13 +729,37 @@ def create_feedback_mutation_proposal(
                 "requires_human_approval": True,
                 "affected_domains": _affected_domains(target_assets, proposed_changes),
             },
-            "human_gate": {"required": True, "status": "pending", "approved_by": "", "decided_at": ""},
+            "human_gate": {"required": True, "status": "pending", "approved_by": "", "decided_at": "", "approval_request_path": "", "approval_request_id": ""},
         },
         metadata={"project_id": str(env.get("project_id") or ""), **envelope_asset_metadata(env)},
         references=[str(path) for path in source_feedback_paths],
     )
     path = _write_asset(storage, proposal)
-    return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "envelope": env}
+    approval = _create_feedback_mutation_approval_request(
+        storage,
+        proposal_path=path,
+        source_feedback_paths=[str(item) for item in source_feedback_paths],
+        target_assets=target_assets,
+        project_id=str(env.get("project_id") or ""),
+        environment=str(env.get("environment") or environment or "local"),
+    )
+    asset = storage.read_json(resolve_path(storage.root, path))
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    human_gate = content.get("human_gate", {}) if isinstance(content.get("human_gate", {}), dict) else {}
+    human_gate.update(
+        {
+            "approval_request_path": approval["path"],
+            "approval_request_id": approval["asset"]["content"]["request_id"],
+            "permission_center_scope": "feedback",
+        }
+    )
+    risk = content.get("risk_assessment", {}) if isinstance(content.get("risk_assessment", {}), dict) else {}
+    risk.update({"approval_request_path": approval["path"], "approval_request_id": approval["asset"]["content"]["request_id"]})
+    content["human_gate"] = human_gate
+    content["risk_assessment"] = risk
+    asset["content"] = content
+    storage.write_json(resolve_path(storage.root, path), asset)
+    return {"path": path, "asset": asset, "envelope": env, "approval_request": approval}
 
 
 def resolve_feedback_mutation_proposal(
@@ -815,6 +839,46 @@ def resolve_feedback_mutation_proposal(
         )
         _attach_auto_application_result(storage, path, application_result)
     return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path)), "envelope": env, "application_result": application_result}
+
+
+def _create_feedback_mutation_approval_request(
+    storage: LocalStorage,
+    *,
+    proposal_path: str,
+    source_feedback_paths: list[str],
+    target_assets: list[dict[str, Any]],
+    project_id: str,
+    environment: str,
+) -> dict[str, Any]:
+    from novel_forge.modules.permission_center import create_approval_request
+
+    effective_project_id = project_id or "feedback-mutation"
+    target_refs = _dedupe([proposal_path, *[str(item.get("path", "")) for item in target_assets if isinstance(item, dict)]])
+    return create_approval_request(
+        storage,
+        {
+            "project_id": effective_project_id,
+            "scope": "feedback",
+            "action": "approve_feedback_mutation_proposal",
+            "risk_level": "high",
+            "environment": environment or "local",
+            "blocking": True,
+            "target_type": "feedback_plan_mutation_proposal",
+            "target_id": proposal_path,
+            "target_refs": target_refs,
+            "evidence_refs": _dedupe([proposal_path, *source_feedback_paths]),
+            "requested_by": "publishing-feedback-adapter",
+            "subject_type": "agent",
+            "subject_id": "feedback-agent",
+            "reason": "feedback mutation can alter outline, chapter plan, style, genre, or release path and must be operator-approved",
+            "required_before": ["feedback_mutation_resolution", "patch_generation", "downstream_invalidation", "regeneration_task"],
+            "rollback_plan": {
+                "automatic_story_asset_mutation": False,
+                "rollback_action": "do not resolve or apply feedback mutation until approval request is approved",
+                "proposal_path": proposal_path,
+            },
+        },
+    )
 
 
 def apply_feedback_mutation_application_chain(
