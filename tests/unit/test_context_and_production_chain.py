@@ -705,8 +705,13 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertEqual(len(calls), 10)
             self.assertIsNone(calls[0]["chapter_plan_path"])
             self.assertEqual(calls[1]["chapter_plan_path"], "data/chapter_plans/chapter-2.json")
+            self.assertTrue(all(call["task_status_mode"] == "compact" for call in calls))
             self.assertTrue(result["next_chapter_plan_path"])
             self.assertGreaterEqual(result["duration_seconds"], 0)
+            self.assertEqual(result["task_status_mode"], "compact")
+            self.assertEqual(result["runtime_artifact_policy"]["policy_version"], "chapter-production-runtime-artifact-policy-v1")
+            self.assertFalse(result["runtime_artifact_policy"]["task_status_recording"]["pending"])
+            self.assertTrue(result["runtime_artifact_policy"]["task_status_recording"]["completed"])
             self.assertIn("runs", result["asset_count_delta"])
             self.assertTrue(any(event["event"] == "chapter_started" for event in progress))
             self.assertEqual(len([event for event in progress if event["event"] == "chapter_completed"]), 10)
@@ -724,6 +729,8 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertEqual(acceptance.content["output_counts"]["export_package_path"], 10)
             self.assertIn("runtime_summary", acceptance.content)
             self.assertIn("asset_count_delta", acceptance.content["runtime_summary"])
+            self.assertEqual(acceptance.content["runtime_summary"]["task_status_mode"], "compact")
+            self.assertFalse(acceptance.content["runtime_summary"]["runtime_artifact_policy"]["task_status_recording"]["running"])
             self.assertGreaterEqual(acceptance.content["runtime_summary"]["total_asset_delta"], 0)
             for row in result["runs"]:
                 self.assertEqual(row["status"], "succeeded")
@@ -731,6 +738,57 @@ class ContextAndProductionChainTests(unittest.TestCase):
                 self.assertIn("duration_seconds", row)
                 self.assertTrue(row["outputs"]["export_markdown_path"])
                 self.assertTrue((storage.root / row["outputs"]["export_markdown_path"]).exists())
+
+    def test_chapter_production_compact_task_status_mode_preserves_completed_step_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = init_workspace(storage, "Compact Bus Project")
+            workspace_asset = storage.read_asset(workspace)
+            project_id = workspace_asset.content["project_id"]
+            workspace_ref = str(workspace.relative_to(storage.root))
+            outline = storage.write_asset(
+                "outlines",
+                Outline(
+                    title="Compact Bus Outline",
+                    content={"acts": [{"act": 1, "goal": "profile task status volume"}]},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+            outline_ref = str(outline.relative_to(storage.root))
+
+            full = start_chapter_production(
+                storage,
+                outline_path=outline_ref,
+                workspace_path=workspace_ref,
+                chapter=1,
+                run_to="outline_checkpoint",
+                task_status_mode="full",
+            )
+            compact = start_chapter_production(
+                storage,
+                outline_path=outline_ref,
+                workspace_path=workspace_ref,
+                chapter=2,
+                run_to="outline_checkpoint",
+                task_status_mode="compact",
+            )
+
+            full_statuses = [
+                storage.read_asset(path)
+                for path in full["steps"][0]["task_status_paths"]
+            ]
+            compact_statuses = [
+                storage.read_asset(path)
+                for path in compact["steps"][0]["task_status_paths"]
+            ]
+            self.assertEqual([item.content["status"] for item in full_statuses], ["pending", "running", "completed"])
+            self.assertEqual([item.content["status"] for item in compact_statuses], ["completed"])
+            self.assertEqual(compact["control"]["task_status_mode"], "compact")
+            self.assertTrue(full["control"]["runtime_artifact_policy"]["task_status_recording"]["running"])
+            self.assertFalse(compact["control"]["runtime_artifact_policy"]["task_status_recording"]["running"])
+            self.assertTrue(compact["control"]["runtime_artifact_policy"]["task_status_recording"]["failed"])
 
     def test_project_safe_reference_index_updates_incrementally(self):
         with tempfile.TemporaryDirectory() as tmp:

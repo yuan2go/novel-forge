@@ -20,7 +20,7 @@ The repository is a broad local-first Novel OS runtime foundation, not yet a com
 
 The codebase already has substantial v6/v7 infrastructure: schema-backed assets, local storage, MKAOS ingestion/extraction, Context Builder, Agent contracts/runs/scheduler, workflow nodes, runtime ledger, publish/release gates, genre/style/quality/canon content intelligence, long-chain proof, publishing feedback adapters, and a large Web Admin surface.
 
-The largest gap is orchestration depth and runtime controllability, not raw module count. Many assets and services exist. As of 2026-07-07, the `chapter_production_bus` has a single-chapter v1 contract foundation, a 10-chapter sequence acceptance contract, and a true 10-chapter slow acceptance run. A true 30-chapter v1 single-book slow run is still not proven inside an acceptable runtime envelope:
+The largest gap is orchestration depth and runtime controllability, not raw module count. Many assets and services exist. As of 2026-07-07, the `chapter_production_bus` has a single-chapter v1 contract foundation, a 10-chapter sequence acceptance contract, and a true 10-chapter slow acceptance run. As of 2026-07-08, development-only runtime governance adds compact batch task-status recording and lazy single-profile Agent Registry sync. A true 30-chapter v1 single-book run is deferred to the future unified acceptance phase and is not yet proven inside an acceptable runtime envelope:
 
 ```text
 topic -> world -> characters -> outline -> first 30 chapter plans
@@ -73,7 +73,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 
 ## Test Gaps
 
-- Need 30-chapter local deterministic slow run with per-chapter artifact coverage and runtime summary.
+- Need future unified 30-chapter local deterministic acceptance with per-chapter artifact coverage and runtime summary; do not run it during the current development loop.
 - Need runtime growth controls: true 10-chapter slow acceptance took 1460.716s and wrote/updated 7,615 local assets.
 - Need hard negative fixtures for source leakage into generation context at each v1 stage.
 - Need readable-prose/page-turning/mobile gates with positive and negative fixtures.
@@ -116,7 +116,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 | Engine | Worldbuilding Engine | Produce world rules and gates | `WorldBible`, platform/genre support, continuity assets exist | World rules/factions/resources not all typed | Weak settings cause later drift | P1 | Tie world bible to v1 outline/chapter context | `schemas/assets.py`, `modules/continuity_graph` | World rule context/gate tests |
 | Engine | Character Engine | Character profiles, states, arcs, voice | `CharacterCard`, `CharacterStateLedger`, arc and KG support | Voice/relationship lifecycle partial | Characters become decorative | P1 | Add minimal v1 character state and voice checks | `modules/longform_stability`, `modules/novel_kg` | Character drift fixtures |
 | Engine | Outline Engine | Book/volume arcs, foreshadow plan | `Outline`, `OutlineVersion`, `LongFormMacroPlan` exist | v1 outline-to-30-chapter proof missing | Outline disconnected from drafts | P0 | Create canonical outline-to-chapter-plan slice | `modules/production_chain`, `modules/long_planning` | Outline/chapter plan chain test |
-| Engine | Chapter Blueprint Engine | Scene beats, conflict, info release, hook, emotion curve | `ChapterPlan`, versioning, workflow assets, one-chapter production bus contract, 10-chapter sequence acceptance contract, and true 10-chapter slow acceptance exist | SceneBeat etc mostly content fields, not standalone lifecycle; true 30-chapter slow run pending | Thin plans create thin prose | P0 | Strengthen chapter plan schema conventions and gates while optimizing runtime growth | `schemas/assets.py`, `modules/chapter_production_bus`, `modules/production_chain` | Chapter plan quality fixtures plus 30-chapter slow sequence acceptance |
+| Engine | Chapter Blueprint Engine | Scene beats, conflict, info release, hook, emotion curve | `ChapterPlan`, versioning, workflow assets, one-chapter production bus contract, 10-chapter sequence acceptance contract, true 10-chapter slow baseline, compact task-status policy, and lazy registry sync exist | SceneBeat etc mostly content fields, not standalone lifecycle; trace/agent-ledger runtime growth and future unified 30-chapter acceptance pending | Thin plans create thin prose | P0 | Strengthen chapter plan schema conventions and gates while continuing runtime governance | `schemas/assets.py`, `modules/chapter_production_bus`, `modules/production_chain` | Development tests now; unified chapter acceptance later |
 | Engine | Readable Prose Engine | Readable, page-turning prose gates | Drafting, style, content quality loop, quality eval exist | Not yet a distinct hard engine in v1 | AI-like or summary-like chapters | P0 | Implement v1 readable-prose gate over DraftChapter | `modules/drafting`, `modules/content_quality_loop` | Bad/good prose fixtures |
 | Engine | Revision Engine | Issue-type strategy and re-review | Revision tasks/plans, rework loop, re-review links exist | Needs stronger strategy coverage and diff evidence | Revisions may be cosmetic | P0 | Tie ReviewIssue types to RevisionPlan strategy and re-review | `modules/revision/service.py` | Revision improves gate fixture |
 | Engine | Feedback Analysis Engine | Reader feedback to human-gated mutation | Feedback adapters/backflow/mutation application exist | Real embedding/sentiment/drop-off evidence partial | Feedback over-applied or ignored | P2 | Keep human approval; add evidence chain later | `modules/publishing_feedback_adapters`, `modules/feedback` | Approval/apply/invalidate tests |
@@ -134,11 +134,11 @@ Current implementation proves many slices and fixtures, including a true one-cha
 Do not add another broad V7 surface first. The next production slice should be:
 
 ```text
-V1 canonical true 30-chapter slow acceptance:
-run the existing chapter_production_bus path repeatedly so every chapter has
-ChapterPlan -> ContextBundle -> DraftChapter -> ReviewReport/ReviewIssue
+V1 runtime governance before unified acceptance:
+continue improving the existing chapter_production_bus path so every chapter can
+eventually keep ChapterPlan -> ContextBundle -> DraftChapter -> ReviewReport/ReviewIssue
 -> RevisionPlan/RevisionDraft -> Canon/Longform update -> Export package
-with runtime/asset-count reporting and controlled per-chapter runtime growth.
+while reducing avoidable status/registry/trace/agent-ledger asset growth.
 ```
 
-The slice should run locally without real external provider credentials, with explicit provider-backed opt-in paths and no source leakage.
+During the current development loop, do not run chapter acceptance. Use targeted unit and compile checks only, then run the unified acceptance phase after the production slices are complete.

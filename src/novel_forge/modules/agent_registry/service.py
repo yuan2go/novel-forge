@@ -20,41 +20,51 @@ def sync_runtime_profiles(storage: LocalStorage, *, default_state: str = "active
     entries = []
     versions = []
     for agent_id, profile in sorted(AGENT_RUNTIME_PROFILES.items()):
-        existing = get_agent_registry_entry(storage, agent_id)
-        state = str(existing.get("content", {}).get("lifecycle_state") or default_state) if existing else default_state
-        entry = upsert_agent_registry_entry(
-            storage,
-            {
-                "agent_id": agent_id,
-                "agent_type": agent_id,
-                "display_name": str(profile.get("agent") or agent_id),
-                "description": f"Runtime profile synced from AGENT_RUNTIME_PROFILES for {agent_id}.",
-                "lifecycle_state": state,
-                "capabilities": _capabilities_from_profile(profile),
-                "operation_coverage": _operation_coverage_for_agent(agent_id),
-                "prompt_bindings": [],
-                "model_bindings": [],
-                "evaluation_bindings": _evaluation_binding_refs(storage, agent_id),
-                "scheduler_enabled": state in SCHEDULABLE_STATES,
-                "source": "AGENT_RUNTIME_PROFILES",
-            },
-        )
-        entries.append(entry)
-        profile_version = str(profile.get("version") or "runtime-profile-v1")
-        existing_version = _find_agent_version(storage, agent_id, profile_version)
-        versions.append(
-            existing_version
-            if existing_version
-            else create_agent_version(
-                storage,
-                agent_id=agent_id,
-                version=profile_version,
-                status="synced",
-                runtime_profile=profile,
-            )
-        )
+        synced = _sync_runtime_profile(storage, agent_id, profile=profile, default_state=default_state)
+        entries.append(synced["entry"])
+        versions.append(synced["version"])
     snapshot = create_agent_registry_snapshot(storage)
     return {"entries": entries, "versions": versions, "snapshot": snapshot, "count": len(entries)}
+
+
+def _sync_runtime_profile(
+    storage: LocalStorage,
+    agent_id: str,
+    *,
+    profile: dict[str, Any] | None = None,
+    default_state: str = "active",
+) -> dict[str, Any]:
+    _validate_state(default_state)
+    profile = profile or AGENT_RUNTIME_PROFILES[agent_id]
+    existing = get_agent_registry_entry(storage, agent_id)
+    state = str(existing.get("content", {}).get("lifecycle_state") or default_state) if existing else default_state
+    entry = upsert_agent_registry_entry(
+        storage,
+        {
+            "agent_id": agent_id,
+            "agent_type": agent_id,
+            "display_name": str(profile.get("agent") or agent_id),
+            "description": f"Runtime profile synced from AGENT_RUNTIME_PROFILES for {agent_id}.",
+            "lifecycle_state": state,
+            "capabilities": _capabilities_from_profile(profile),
+            "operation_coverage": _operation_coverage_for_agent(agent_id),
+            "prompt_bindings": [],
+            "model_bindings": [],
+            "evaluation_bindings": _evaluation_binding_refs(storage, agent_id),
+            "scheduler_enabled": state in SCHEDULABLE_STATES,
+            "source": "AGENT_RUNTIME_PROFILES",
+        },
+    )
+    profile_version = str(profile.get("version") or "runtime-profile-v1")
+    existing_version = _find_agent_version(storage, agent_id, profile_version)
+    version = existing_version or create_agent_version(
+        storage,
+        agent_id=agent_id,
+        version=profile_version,
+        status="synced",
+        runtime_profile=profile,
+    )
+    return {"entry": entry, "version": version}
 
 
 def upsert_agent_registry_entry(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -228,7 +238,7 @@ def resolve_agent_registry_entry(
     auto_sync: bool = True,
 ) -> dict[str, Any]:
     if auto_sync and not get_agent_registry_entry(storage, agent_id) and agent_id in AGENT_RUNTIME_PROFILES:
-        sync_runtime_profiles(storage)
+        _sync_runtime_profile(storage, agent_id)
     entry = get_agent_registry_entry(storage, agent_id)
     if not entry:
         raise ValueError(f"agent registry entry not found: {agent_id}")

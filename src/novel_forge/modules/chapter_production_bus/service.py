@@ -59,6 +59,8 @@ STEP_LABELS = {
     "next_chapter_plan": "下一章细纲",
 }
 
+TASK_STATUS_MODES = {"full", "compact"}
+
 
 class ChapterProductionGateBlocked(ValueError):
     def __init__(self, message: str, *, report_path: str, updates: dict[str, Any] | None = None) -> None:
@@ -77,9 +79,12 @@ def start_chapter_production(
     run_to: str = "next_chapter_plan",
     execute: bool = True,
     execution_mode: str = "sync",
+    task_status_mode: str = "full",
 ) -> dict[str, Any]:
     storage.ensure_layout()
     _validate_step(run_to)
+    runtime_artifact_policy = _runtime_artifact_policy(task_status_mode=task_status_mode)
+    task_status_mode = runtime_artifact_policy["task_status_mode"]
     outline_file = resolve_path(storage.root, outline_path)
     outline = storage.read_asset(outline_file)
     if outline.type != "outline":
@@ -160,6 +165,8 @@ def start_chapter_production(
             "production_context_preflight": production_context.get("preflight", {}),
             "control": {
                 "execution_mode": execution_mode,
+                "task_status_mode": task_status_mode,
+                "runtime_artifact_policy": runtime_artifact_policy,
                 "celery_task_id": "",
                 "pause_requested": False,
                 "pause_reason": "",
@@ -198,9 +205,12 @@ def run_chapter_production_sequence(
     chapter_count: int = 10,
     chapter_plan_path: str | Path | None = None,
     max_chapters: int = 30,
+    task_status_mode: str = "compact",
     progress_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     storage.ensure_layout()
+    runtime_artifact_policy = _runtime_artifact_policy(task_status_mode=task_status_mode)
+    task_status_mode = runtime_artifact_policy["task_status_mode"]
     sequence_started_at = utc_now()
     sequence_started = time.monotonic()
     asset_counts_before = storage.counts()
@@ -234,6 +244,7 @@ def run_chapter_production_sequence(
                 workspace_path=workspace,
                 chapter=chapter,
                 run_to="next_chapter_plan",
+                task_status_mode=task_status_mode,
             )
         except Exception as exc:
             failure = {
@@ -287,6 +298,7 @@ def run_chapter_production_sequence(
         duration_seconds=sequence_duration,
         asset_counts_before=asset_counts_before,
         asset_counts_after=asset_counts_after,
+        runtime_artifact_policy=runtime_artifact_policy,
     )
     status = "succeeded" if not failures and len(runs) == total else "failed"
     _emit_sequence_progress(
@@ -312,6 +324,8 @@ def run_chapter_production_sequence(
         "started_at": sequence_started_at,
         "finished_at": sequence_finished_at,
         "duration_seconds": sequence_duration,
+        "task_status_mode": task_status_mode,
+        "runtime_artifact_policy": runtime_artifact_policy,
         "asset_counts_before": asset_counts_before,
         "asset_counts_after": asset_counts_after,
         "asset_count_delta": _asset_count_delta(asset_counts_before, asset_counts_after),
@@ -479,6 +493,7 @@ def chapter_production_run_detail(storage: LocalStorage, run_path: str | Path) -
 def _execute_bus_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], step: str) -> bool:
     content = _content(data)
     run_id = str(content.get("run_id", ""))
+    task_status_mode = _runtime_artifact_policy_from_control(_control(content))["task_status_mode"]
     input_paths = _step_inputs(content, step)
     step_result: dict[str, Any] = {}
     status_paths: list[Path] = []
@@ -489,7 +504,7 @@ def _execute_bus_step(storage: LocalStorage, run_file: Path, data: dict[str, Any
         return resolve_path(storage.root, step_result["main_path"])
 
     try:
-        _execute_task(storage, run_id, f"chapter-production:{step}", input_paths, action, status_paths)
+        _execute_task(storage, run_id, f"chapter-production:{step}", input_paths, action, status_paths, task_status_mode=task_status_mode)
     except Exception as exc:
         data = _read_run_data(storage, run_file)
         run_log = _build_run_log(storage, status_paths)
@@ -840,6 +855,7 @@ def _write_sequence_acceptance_report(
     duration_seconds: float = 0.0,
     asset_counts_before: dict[str, int] | None = None,
     asset_counts_after: dict[str, int] | None = None,
+    runtime_artifact_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     checks = _v1_sequence_checks(requested_chapter_count=requested_chapter_count, completed_chapters=completed_chapters, runs=runs, failures=failures)
     recommendation = "pass" if completed_chapters == requested_chapter_count and not failures and all(item["status"] == "passed" for item in checks) else "block"
@@ -847,6 +863,7 @@ def _write_sequence_acceptance_report(
     count_before = asset_counts_before or {}
     count_after = asset_counts_after or {}
     count_delta = _asset_count_delta(count_before, count_after)
+    normalized_runtime_policy = _runtime_artifact_policy_from_control(runtime_artifact_policy or {})
     report_id = make_id("long_chain_acceptance", f"v1-sequence-{project_id}-{requested_chapter_count}-{utc_now()}")
     asset = LongChainAcceptanceReport(
         id=report_id,
@@ -893,6 +910,8 @@ def _write_sequence_acceptance_report(
                 "asset_counts_after": count_after,
                 "asset_count_delta": count_delta,
                 "total_asset_delta": sum(count_delta.values()),
+                "runtime_artifact_policy": normalized_runtime_policy,
+                "task_status_mode": normalized_runtime_policy["task_status_mode"],
             },
             "runs": runs,
             "failures": failures,
@@ -1095,6 +1114,8 @@ def _control(content: dict[str, Any]) -> dict[str, Any]:
         content["control"] = control
     defaults = {
         "execution_mode": "sync",
+        "task_status_mode": "full",
+        "runtime_artifact_policy": _runtime_artifact_policy(task_status_mode="full"),
         "celery_task_id": "",
         "pause_requested": False,
         "pause_reason": "",
@@ -1108,6 +1129,8 @@ def _control(content: dict[str, Any]) -> dict[str, Any]:
     }
     for key, value in defaults.items():
         control.setdefault(key, value)
+    control["runtime_artifact_policy"] = _runtime_artifact_policy_from_control(control)
+    control["task_status_mode"] = control["runtime_artifact_policy"]["task_status_mode"]
     return control
 
 
@@ -1339,10 +1362,15 @@ def _execute_task(
     input_paths: list[str | Path],
     action: Any,
     status_paths: list[Path],
+    *,
+    task_status_mode: str = "full",
 ) -> Path:
-    status_paths.append(_write_task_status(storage, run_id, step, "pending", input_paths=input_paths))
+    task_status_mode = _task_status_mode(task_status_mode)
+    if task_status_mode == "full":
+        status_paths.append(_write_task_status(storage, run_id, step, "pending", input_paths=input_paths))
     started_at = utc_now()
-    status_paths.append(_write_task_status(storage, run_id, step, "running", input_paths=input_paths))
+    if task_status_mode == "full":
+        status_paths.append(_write_task_status(storage, run_id, step, "running", input_paths=input_paths))
     try:
         result = action()
     except Exception as exc:
@@ -1381,6 +1409,37 @@ def _execute_task(
     )
     status_paths.append(_write_task_status(storage, run_id, step, "completed", input_paths=input_paths, output_paths=output_paths))
     return result
+
+
+def _task_status_mode(value: Any) -> str:
+    normalized = str(value or "full").strip().lower()
+    if normalized == "summary":
+        normalized = "compact"
+    return normalized if normalized in TASK_STATUS_MODES else "full"
+
+
+def _runtime_artifact_policy(*, task_status_mode: Any = "full") -> dict[str, Any]:
+    mode = _task_status_mode(task_status_mode)
+    return {
+        "policy_version": "chapter-production-runtime-artifact-policy-v1",
+        "task_status_mode": mode,
+        "task_status_recording": {
+            "pending": mode == "full",
+            "running": mode == "full",
+            "completed": True,
+            "failed": True,
+            "paused": True,
+            "cancelled": True,
+        },
+        "node_run_mode": "full",
+        "trace_mode": "full",
+        "reason": "compact mode is only for batch chapter sequence runs; it preserves terminal task evidence while avoiding repeated pending/running status assets.",
+    }
+
+
+def _runtime_artifact_policy_from_control(control: dict[str, Any]) -> dict[str, Any]:
+    policy = control.get("runtime_artifact_policy", {}) if isinstance(control.get("runtime_artifact_policy", {}), dict) else {}
+    return _runtime_artifact_policy(task_status_mode=policy.get("task_status_mode") or control.get("task_status_mode", "full"))
 
 
 def _write_task_status(

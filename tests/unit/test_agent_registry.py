@@ -16,6 +16,22 @@ from novel_forge.storage.local import LocalStorage
 
 
 class AgentRegistryTests(unittest.TestCase):
+    def test_resolve_auto_sync_is_lazy_for_single_runtime_profile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            resolved = resolve_agent_registry_entry(storage, agent_id="draft", operation="draft", require_schedulable=True)
+            run_assets = [storage.read_json(path) for path in storage.list_json("runs")]
+            entries = [asset for asset in run_assets if asset.get("type") == "agent_registry_entry"]
+            versions = [asset for asset in run_assets if asset.get("type") == "agent_version"]
+            snapshots = [asset for asset in run_assets if asset.get("type") == "agent_registry_snapshot"]
+
+            self.assertEqual(resolved["agent_id"], "draft")
+            self.assertEqual([entry["content"]["agent_id"] for entry in entries], ["draft"])
+            self.assertEqual([version["content"]["agent_id"] for version in versions], ["draft"])
+            self.assertEqual(snapshots, [])
+
     def test_sync_runtime_profiles_creates_schedulable_active_entries(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

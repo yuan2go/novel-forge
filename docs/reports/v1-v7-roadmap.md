@@ -31,16 +31,17 @@ Current evidence:
 - `run_chapter_production_sequence()` adds a 10-chapter sequence contract and writes a strict `long_chain_acceptance_report` over required V1 artifact paths.
 - `production_context` project-safe reference indexing now updates incrementally so repeated chapter runs do not rescan unchanged project assets.
 - `scripts/run_v1_chapter_sequence_acceptance.py` ran the true 10-chapter local slow acceptance successfully: 10/10 chapters, 1460.716s, 7,615 asset writes/updates, report `docs/reports/v1-chapter-sequence-slow-acceptance.md`.
+- Development after that baseline added compact sequence task-status recording and lazy single-profile Agent Registry sync. This is runtime governance work only; no new chapter acceptance was run.
 
 阻塞项:
-- True 30-chapter local slow acceptance is not yet passing inside an acceptable runtime envelope.
+- True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
 - Readable prose/page-turning/mobile gates are not first-class hard blockers.
 - ApprovalRequest missing.
 - Source policy lifecycle and v1 context source rules need tightening.
 
 推荐切片:
-1. Reduce per-chapter runtime growth and asset-volume amplification in the true chapter bus, then extend to 30 chapters.
+1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
 2. Stage-specific ContextPackage/MKAOS contract profiles.
 3. Readable Prose Gate + Golden Opening Gate + Toxic Point Gate.
 4. ReviewIssue-to-RevisionPlan strategy mapping with re-review evidence.
