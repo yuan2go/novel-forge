@@ -38,6 +38,7 @@ Current evidence:
 - ReviewIssue repair now uses `review-issue-revision-strategy-v1`: issue types and readable-prose dimensions map to strategy ids, patch scope, required output evidence, and re-review focus. `RevisionTask`, `RevisionPlan`, Loop Kernel, and Agent Scheduler dispatch preserve this contract.
 - Long-form state update now includes a v1 reducer: `create_longform_artifacts_for_draft()` writes chapter state/fact/character/foreshadow/reward projections into existing CanonGraph `canon_state_machine_ledger`, `canon_state_machine_snapshot`, and `canon_state_machine_diff_report` assets. Chapter bus outputs expose the reducer paths.
 - Longform recap trigger policy now distinguishes 5-chapter light recap, 10-chapter formal recap, overdue formal recap, exception recap, and forced chapter checkpoints. Reports persist recap level, cadence boundary, next recap chapters, and forced checkpoint status.
+- Local export package hardening now writes a generated-draft-only markdown file plus a JSON manifest containing hash/size, provenance over review/revision/canon/reducer/recap evidence, source-isolation policy, operator checklist, rollback instructions, and manual handoff to operator review before publish gate.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
@@ -48,9 +49,9 @@ Current evidence:
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. Exportable chapter package hardening.
-3. Dashboard data for reducer/recap/export coverage.
-4. ApprovalRequest foundation for high-risk source/context/publish changes.
+2. ApprovalRequest foundation for high-risk source/context/publish/story changes.
+3. Dashboard data for reducer/recap/export/approval coverage.
+4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
 验收标准:
 - Create one project.
@@ -65,7 +66,8 @@ Current evidence:
 - Deterministic 10-chapter sequence contract regression plus explicit slow 10-chapter evidence and 30-chapter local acceptance run.
 - Positive/negative quality gate fixtures.
 - Source leakage regression tests.
-- Export package fixture.
+- Export package manifest/provenance fixture.
+- Approval approve/reject/expire fixtures.
 
 风险:
 - Over-building distant v6/v7 features while v1 remains fragmented.

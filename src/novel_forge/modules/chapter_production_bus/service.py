@@ -151,6 +151,7 @@ def start_chapter_production(
                 "longform_recap_context_bundle_path": "",
                 "export_package_path": "",
                 "export_markdown_path": "",
+                "export_manifest_path": "",
                 "next_chapter_plan_path": "",
                 "next_chapter_plan_version_path": "",
             },
@@ -715,7 +716,34 @@ def _create_export_package(storage: LocalStorage, data: dict[str, Any]) -> dict[
     export_file.write_text(f"# {draft.title or f'Chapter {chapter}'}\n\n{text}\n", encoding="utf-8")
     payload = export_file.read_bytes()
     export_ref = _display_path(storage.root, export_file)
+    manifest_file = export_dir / f"{_safe_filename(project_id or 'project')}-chapter-{chapter}-manifest.json"
+    manifest_ref = _display_path(storage.root, manifest_file)
     export_id = make_id("v1_export_package", f"{project_id}-{chapter}-{draft.id}")
+    provenance = _export_provenance(outputs, draft_id=draft.id, draft_path=_display_path(storage.root, draft_file), export_path=export_ref)
+    checklist = _export_operator_checklist(outputs, export_path=export_ref, export_size=len(payload), export_sha256=hashlib.sha256(payload).hexdigest())
+    manifest = {
+        "export_id": export_id,
+        "project_id": project_id or "local-system",
+        "chapter": chapter,
+        "title": draft.title or f"Chapter {chapter}",
+        "status": "ready_for_operator_review",
+        "files": [{"role": "chapter_markdown", "path": export_ref, "sha256": hashlib.sha256(payload).hexdigest(), "size_bytes": len(payload)}],
+        "provenance": provenance,
+        "operator_review_checklist": checklist,
+        "source_isolation": {
+            "raw_source_text_allowed": False,
+            "source_chunk_raw_text_allowed": False,
+            "runtime_assets_in_generation_rag_allowed": False,
+            "export_contains_generated_draft_only": True,
+        },
+        "manual_handoff": {
+            "allowed_actions": ["inspect_markdown", "compare_against_review_and_recap", "run_publish_gate_before_external_submission"],
+            "forbidden_actions": ["auto_publish", "copy_reference_source_text", "skip_operator_review"],
+            "next_gate": "operator_review_then_publish_gate",
+        },
+        "created_at": utc_now(),
+    }
+    storage.write_json(manifest_file, manifest)
     asset = PublishingPlan(
         id=export_id,
         title=f"V1 local export package chapter {chapter}",
@@ -732,6 +760,7 @@ def _create_export_package(storage: LocalStorage, data: dict[str, Any]) -> dict[
                     "draft_id": draft.id,
                     "draft_path": _display_path(storage.root, draft_file),
                     "export_path": export_ref,
+                    "manifest_path": manifest_ref,
                     "status": "ready_for_operator_review",
                 }
             ],
@@ -748,14 +777,24 @@ def _create_export_package(storage: LocalStorage, data: dict[str, Any]) -> dict[
                 "require_review_and_revision": True,
                 "rollback_required": True,
             },
+            "operator_review_checklist": checklist,
+            "provenance_evidence": provenance,
+            "manual_handoff": manifest["manual_handoff"],
             "status": "active",
             "export_package": {
                 "format": "markdown",
                 "path": export_ref,
+                "manifest_path": manifest_ref,
                 "sha256": hashlib.sha256(payload).hexdigest(),
                 "size_bytes": len(payload),
                 "source_draft_path": _display_path(storage.root, draft_file),
                 "longform_recap_report_path": outputs["longform_recap_report_path"],
+                "files": manifest["files"],
+                "rollback": {
+                    "remove_export_files": [export_ref, manifest_ref],
+                    "source_draft_unchanged": True,
+                    "regenerate_from_final_draft_path": _display_path(storage.root, draft_file),
+                },
             },
             "source_isolation": {
                 "raw_source_text_allowed": False,
@@ -766,14 +805,59 @@ def _create_export_package(storage: LocalStorage, data: dict[str, Any]) -> dict[
             "created_at": utc_now(),
         },
         metadata={"project_id": project_id, "workspace_path": workspace_path, "workflow": "v1-single-book-loop", "channel": "local_export"},
-        references=filter_project_safe_references(storage, project_id, [draft.id, _display_path(storage.root, draft_file), outputs["longform_recap_report_path"], export_ref]),
+        references=filter_project_safe_references(storage, project_id, [draft.id, _display_path(storage.root, draft_file), outputs["longform_recap_report_path"], export_ref, manifest_ref]),
     )
     errors = validate_common_fields(asset.to_dict())
     if errors:
         raise ValueError("; ".join(errors))
     package_path = storage.write_asset("publishing", asset)
     package_ref = _display_path(storage.root, package_path)
-    return {"export_package_path": package_ref, "export_markdown_path": export_ref, "output_paths": [package_ref, export_ref]}
+    return {"export_package_path": package_ref, "export_markdown_path": export_ref, "export_manifest_path": manifest_ref, "output_paths": [package_ref, export_ref, manifest_ref]}
+
+
+def _export_provenance(outputs: dict[str, Any], *, draft_id: str, draft_path: str, export_path: str) -> dict[str, Any]:
+    return {
+        "source_draft_id": draft_id,
+        "source_draft_path": draft_path,
+        "export_path": export_path,
+        "review_path": str(outputs.get("review_path") or ""),
+        "revision_plan_path": str(outputs.get("revision_plan_path") or ""),
+        "final_draft_version_path": str(outputs.get("final_draft_version_path") or ""),
+        "final_diff_report_path": str(outputs.get("final_diff_report_path") or ""),
+        "final_forward_patch_path": str(outputs.get("final_forward_patch_path") or ""),
+        "final_rollback_patch_path": str(outputs.get("final_rollback_patch_path") or ""),
+        "chapter_state_path": str(outputs.get("chapter_state_path") or ""),
+        "fact_ledger_path": str(outputs.get("fact_ledger_path") or ""),
+        "character_state_ledger_path": str(outputs.get("character_state_ledger_path") or ""),
+        "foreshadowing_graph_path": str(outputs.get("foreshadowing_graph_path") or ""),
+        "reward_ledger_path": str(outputs.get("reward_ledger_path") or ""),
+        "canon_state_machine_ledger_path": str(outputs.get("canon_state_machine_ledger_path") or ""),
+        "canon_state_machine_snapshot_path": str(outputs.get("canon_state_machine_snapshot_path") or ""),
+        "canon_state_machine_diff_report_path": str(outputs.get("canon_state_machine_diff_report_path") or ""),
+        "longform_recap_report_path": str(outputs.get("longform_recap_report_path") or ""),
+        "longform_recap_context_bundle_path": str(outputs.get("longform_recap_context_bundle_path") or ""),
+    }
+
+
+def _export_operator_checklist(outputs: dict[str, Any], *, export_path: str, export_size: int, export_sha256: str) -> list[dict[str, Any]]:
+    checks = [
+        ("markdown_written", bool(export_path and export_size > 0), {"path": export_path, "size_bytes": export_size, "sha256": export_sha256}),
+        ("review_completed", bool(outputs.get("review_path")), {"review_path": outputs.get("review_path", "")}),
+        ("revision_completed", bool(outputs.get("revision_plan_path") and outputs.get("final_draft_path")), {"revision_plan_path": outputs.get("revision_plan_path", ""), "final_draft_path": outputs.get("final_draft_path", "")}),
+        ("canon_longform_updated", bool(outputs.get("chapter_state_path") and outputs.get("canon_state_machine_snapshot_path")), {"chapter_state_path": outputs.get("chapter_state_path", ""), "canon_state_machine_snapshot_path": outputs.get("canon_state_machine_snapshot_path", "")}),
+        ("recap_checkpoint_present", bool(outputs.get("longform_recap_report_path")), {"longform_recap_report_path": outputs.get("longform_recap_report_path", "")}),
+        ("local_only_no_platform_side_effect", True, {"mode": "local_export_only"}),
+        ("operator_review_required", True, {"next_gate": "operator_review_then_publish_gate"}),
+    ]
+    return [
+        {
+            "check_id": check_id,
+            "status": "passed" if passed else "blocked",
+            "blocking": not passed,
+            "evidence": evidence,
+        }
+        for check_id, passed, evidence in checks
+    ]
 
 
 def _create_next_chapter_plan(storage: LocalStorage, data: dict[str, Any]) -> dict[str, Any]:
@@ -829,6 +913,7 @@ V1_SEQUENCE_REQUIRED_OUTPUTS = [
     "longform_recap_report_path",
     "export_package_path",
     "export_markdown_path",
+    "export_manifest_path",
     "next_chapter_plan_path",
 ]
 

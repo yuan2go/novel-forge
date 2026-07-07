@@ -20,7 +20,7 @@ The repository is a broad local-first Novel OS runtime foundation, not yet a com
 
 The codebase already has substantial v6/v7 infrastructure: schema-backed assets, local storage, MKAOS ingestion/extraction, Context Builder, Agent contracts/runs/scheduler, workflow nodes, runtime ledger, publish/release gates, genre/style/quality/canon content intelligence, long-chain proof, publishing feedback adapters, and a large Web Admin surface.
 
-The largest gap is orchestration depth and runtime controllability, not raw module count. Many assets and services exist. As of 2026-07-07, the `chapter_production_bus` has a single-chapter v1 contract foundation, a 10-chapter sequence acceptance contract, and a true 10-chapter slow acceptance run. As of 2026-07-08, development-only runtime governance adds compact batch task-status recording and lazy single-profile Agent Registry sync. A true 30-chapter v1 single-book run is deferred to the future unified acceptance phase and is not yet proven inside an acceptable runtime envelope:
+The largest gap is orchestration depth and runtime controllability, not raw module count. Many assets and services exist. As of 2026-07-07, the `chapter_production_bus` has a single-chapter v1 contract foundation, a 10-chapter sequence acceptance contract, and a true 10-chapter slow acceptance run. As of 2026-07-08, development slices add compact batch task-status recording, lazy single-profile Agent Registry sync, stage context profiles, blueprint evidence, readable prose gate, revision strategy contract, CanonGraph reducer evidence, recap cadence, and export package manifest/provenance/checklist handoff. A true 30-chapter v1 single-book run is deferred to the future unified acceptance phase and is not yet proven inside an acceptable runtime envelope:
 
 ```text
 topic -> world -> characters -> outline -> first 30 chapter plans
@@ -44,7 +44,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 
 ## Partially Implemented Modules
 
-- Single-book production loop: `chapter_production_bus` now provides a one-chapter canonical contract, a 10-chapter sequence acceptance contract, and true 10-chapter slow acceptance evidence; 30-chapter slow acceptance and stronger quality gates are still pending.
+- Single-book production loop: `chapter_production_bus` now provides a one-chapter canonical contract, a 10-chapter sequence acceptance contract, true 10-chapter slow acceptance evidence, and post-baseline development slices for stage context, blueprint, readable prose, revision strategy, reducer, recap cadence, and export manifest handoff; 30-chapter slow acceptance and calibrated provider/human quality gates are still pending.
 - Source / Material Governance OS: source evidence and MKAOS import are strong, but full source registry, sync jobs, license scanner, source snapshots, and material usage lifecycle are partial.
 - Story Bible / Long-form OS: many ledgers and reports exist, accepted chapter reducer evidence now writes CanonGraph state-machine ledger/snapshot/diff assets, and recap cadence distinguishes light/formal/exception/checkpoint reports; promise lifecycle, operator cadence configuration, and final multi-chapter proof remain incomplete.
 - Quality / Review / Eval OS: ReviewIssue, Eval Center, Quality Eval 2.0, provider judge, and gates exist; readable-prose/page-turning/mobile now has a local content-loop gate, but provider/human calibration and final full-loop proof remain pending.
@@ -95,7 +95,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 
 ## v1 Blockers
 
-1. Chapter Blueprint, Draft, Review, Revision, Canon Update, Longform Recap, and Export are proven for one true chapter, a 10-chapter sequence contract, and a true 10-chapter slow run, but not yet for a true 30-chapter slow run.
+1. Chapter Blueprint, Draft, Review, Revision, Canon Update, Longform Recap, and Export are proven for one true chapter, a 10-chapter sequence contract, and a true 10-chapter slow run; development slices after that baseline add stronger local evidence but are not yet proven in a true 30-chapter slow run.
 2. ReviewIssue-to-RevisionPlan strategy mapping now exists as `review-issue-revision-strategy-v1`; remaining risk is proving real chapter improvement across the final unified acceptance phase.
 3. ApprovalRequest and source governance lifecycle are insufficient for high-risk material and major story mutations.
 4. Several blueprint data models are represented as flexible content fields rather than typed lifecycle assets.
@@ -127,18 +127,17 @@ Current implementation proves many slices and fixtures, including a true one-cha
 | Enhancement | Pleasure Point Ledger | Manage爽点 cadence | `RewardLedger` foundation | Not tied to chapter economy | Flat chapters | P1 | Use RewardLedger in chapter quality loop | `modules/longform_stability` | Reward cadence fixtures |
 | Enhancement | Toxic Point & Drop-off Engine | Detect毒点 and drop-off | Feedback clusters/dropoff reports and quality issues exist | Needs v1 toxicity gate and real feedback analysis | Reader churn | P1 | Add deterministic toxic-point review rules | `modules/feedback`, `quality_eval` | Toxic point fixtures |
 | Tool | Public Domain Importer | Evidence-only source import | Classical-Modern importer with slow-run/checkpoint/report | Full provider extraction intentionally not complete | Token/source leakage if abused | P1 | Continue slow auditable batches only | `scripts/import_classical_modern_to_mkaos.py` | Slow-run/resume tests |
-| Tool | Exporter | Export final chapters/packages | Draft export and publishing package foundations exist | v1 export artifact not in canonical loop | Hard to inspect production output | P0 | Add v1 export package as final slice | `api/routers/drafts.py`, `modules/publishing` | Export package fixture |
+| Tool | Exporter | Export final chapters/packages | Draft export and publishing package foundations exist; v1 chapter bus writes local markdown plus export manifest/provenance/checklist/rollback/handoff evidence | Final unified multi-chapter proof and publish-gate handoff coverage are deferred | Hard to inspect production output if callers bypass manifest | P0 | Add ApprovalRequest before publish/story mutations, then prove export handoff in final unified acceptance | `modules/chapter_production_bus`, `modules/publishing` | Export manifest/provenance fixture now; final workflow proof later |
 
 ## Next Stage Recommendation
 
 Do not add another broad V7 surface first. The next production slice should be:
 
 ```text
-V1 runtime governance before unified acceptance:
-continue improving the existing chapter_production_bus path so every chapter can
-eventually keep ChapterPlan -> ContextBundle -> DraftChapter -> ReviewReport/ReviewIssue
--> RevisionPlan/RevisionDraft -> Canon/Longform update -> Export package
-while reducing avoidable status/registry/trace/agent-ledger asset growth.
+V1 ApprovalRequest foundation before unified acceptance:
+add a first-class human gate so high-risk source use, context override, publish handoff,
+and major story mutation can produce approve/reject/expire decisions with traceable
+evidence, while ordinary local development remains non-blocking.
 ```
 
 During the current development loop, do not run chapter acceptance. Use targeted unit and compile checks only, then run the unified acceptance phase after the production slices are complete.

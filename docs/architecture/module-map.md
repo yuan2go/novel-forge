@@ -85,7 +85,7 @@ This map lists current implementation areas and evidence paths. Status means cod
 | Module | Path | Responsibility | Status | Notes |
 |---|---|---|---|---|
 | Evaluation center | `modules/evaluation_center/service.py` | Eval cases/results, gate integration | Partially implemented | Needs broader production fixtures |
-| Publishing | `modules/publishing/` | Publish gate, release gate, release package, adapters | Partially implemented | Main implementation is being migrated here from audit |
+| Publishing / local export | `modules/publishing/`, `modules/chapter_production_bus/service.py` | Publish gate, release gate, release package, adapters, and v1 local export markdown/manifest/provenance/checklist handoff | Partially implemented | V1 local export is inspectable and operator-gated; platform auto-publish and final multi-chapter handoff proof remain deferred |
 | Audit / audit log | `modules/audit/`, `modules/audit_log/` | Review/originality/audit assets and logs | Partially implemented | Publishing logic should keep moving out of audit |
 | Platform strategy | `modules/platform_strategy/service.py` | Platform strategy pack and fit | Partially implemented | Real platform integration partial |
 | Permission center | `modules/permission_center/service.py` | Tool/provider permission surface | Partially implemented | Needs ongoing hard-stop verification |

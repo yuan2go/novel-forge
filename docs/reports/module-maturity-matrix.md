@@ -26,6 +26,7 @@ Implementation status note:
 - 2026-07-08: ReviewIssue-to-Revision Strategy now exists as `review-issue-revision-strategy-v1`. Direct revision service, Loop Kernel, and Agent Scheduler review-issue dispatch preserve strategy ids, patch scope, required evidence, and re-review focus. Revision Engine remains M3 until real chapter improvement metrics and final unified v1 acceptance are run.
 - 2026-07-08: V1 longform reducer now projects accepted chapter state/facts/characters/foreshadow/rewards into existing CanonGraph state-machine ledger/snapshot/diff assets. Story Bible / Long-form OS remains M3 until final unified multi-chapter proof is run.
 - 2026-07-08: Longform recap cadence now distinguishes 5-chapter light recap, 10-chapter formal recap, overdue formal recap, exception recap, and forced chapter checkpoints. Story Bible / Long-form OS remains M3 until final unified multi-chapter proof and operator configuration/UI are added.
+- 2026-07-08: V1 export package hardening now writes local markdown plus an export manifest with provenance, source isolation, operator checklist, rollback metadata, and manual handoff. Exporter remains M3 until final unified multi-chapter proof and publish-gate handoff coverage are run.
 
 ## Core OS Layer
 
@@ -91,14 +92,14 @@ Implementation status note:
 | Tool | Synopsis Generator | Synopsis options | Outline/topic assets can hold it | M1 | Not first-class | Low | P3 | Tool-level only |
 | Tool | Cover Prompt Generator | Cover prompt | ImagePrompt asset exists | M2 | Not tied to publishing package | Low | P3 | Add after export/publishing |
 | Tool | Chapter Title Optimizer | Chapter title quality | ChapterPlan/Draft fields can hold titles | M1 | No optimizer/gate | Low | P2 | Add after chapter loop |
-| Tool | Exporter | Export chapters/packages | Draft export/publishing packages exist; v1 bus writes local markdown export package records; 10-chapter slow acceptance counted 10 export packages and 10 markdown files | M3 | 30-chapter export coverage and release/publish distinction need slow acceptance | Hard handoff | P0 | Prove export evidence in true 30-chapter slow acceptance |
+| Tool | Exporter | Export chapters/packages | Draft export/publishing packages exist; v1 bus writes local markdown plus export manifest/provenance/checklist/rollback/handoff records; 10-chapter slow acceptance counted 10 export packages and 10 markdown files before manifest hardening | M3 | Final unified multi-chapter coverage and release/publish handoff evidence remain deferred | Hard handoff | P0 | Add ApprovalRequest, then prove export evidence in final unified acceptance |
 | Tool | Tag Manager | Tags/categories | Asset tags/content fields exist | M2 | No dedicated lifecycle | Inconsistent classification | P3 | Improve when MKAOS lifecycle matures |
 | Tool | Manual Input | Operator-provided assets | Product asset editor/routes exist | M3 | Approval boundaries uneven | Manual bypass | P1 | Add approval requirement for risky edits |
 
 ## Highest-Leverage Next Order
 
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
-2. Exportable chapter package hardening.
-3. Dashboard coverage for reducer, recap, and export outputs.
+2. ApprovalRequest foundation for high-risk source/context/publish/story changes.
+3. Dashboard coverage for reducer, recap, export, and approval outputs.
 4. Extend v1 export package evidence to 30 chapters during final unified acceptance.
-5. Source governance lifecycle and ApprovalRequest.
+5. Source governance lifecycle.

@@ -90,6 +90,7 @@ For large service splits, add characterization tests before refactoring. Keep te
 - Production provider tests require explicit fixtures/secrets or safe mock-success fixtures that prove evidence shape without calling external APIs.
 - Full long-novel generation is not a default regression test; current long-chain tests are smoke/pressure slices.
 - True V1 10-chapter slow acceptance passed on 2026-07-07 with 10/10 coverage and 1460.716s runtime. It is intentionally not part of default `make test`; run `make v1-slow-acceptance` when changing chapter bus, context/review/revision loops, or longform/export coverage.
+- V1 local export package hardening is covered by the focused `test_chapter_production_bus_runs_and_resumes_end_to_end` fixture, which checks markdown export, manifest path, provenance evidence, source-isolation handoff, and operator checklist. This is development verification, not a replacement for the deferred unified chapter acceptance phase.
 - Optional industrial services require Docker and ports; local unit tests should not depend on them.
 - Some UI pages are console/reporting slices and need more end-to-end operator workflow tests.
 

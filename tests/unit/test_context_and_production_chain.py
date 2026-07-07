@@ -615,6 +615,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertTrue(resumed["outputs"]["longform_recap_report_path"])
             self.assertTrue(resumed["outputs"]["export_package_path"])
             self.assertTrue(resumed["outputs"]["export_markdown_path"])
+            self.assertTrue(resumed["outputs"]["export_manifest_path"])
             self.assertTrue(resumed["outputs"]["next_chapter_plan_path"])
             self.assertEqual(storage.read_asset(resumed["outputs"]["chapter_state_path"]).type, "chapter_state")
             self.assertEqual(storage.read_asset(resumed["outputs"]["fact_ledger_path"]).type, "fact_ledger")
@@ -623,6 +624,13 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertEqual(export_package.type, "publishing_plan")
             self.assertEqual(export_package.content["chapter_queue"][0]["status"], "ready_for_operator_review")
             self.assertTrue((storage.root / resumed["outputs"]["export_markdown_path"]).exists())
+            self.assertTrue((storage.root / resumed["outputs"]["export_manifest_path"]).exists())
+            self.assertEqual(export_package.content["chapter_queue"][0]["manifest_path"], resumed["outputs"]["export_manifest_path"])
+            self.assertEqual(export_package.content["export_package"]["manifest_path"], resumed["outputs"]["export_manifest_path"])
+            self.assertTrue(export_package.content["operator_review_checklist"])
+            self.assertTrue(all(item["status"] == "passed" for item in export_package.content["operator_review_checklist"]))
+            self.assertTrue(export_package.content["provenance_evidence"]["canon_state_machine_snapshot_path"])
+            self.assertEqual(export_package.content["manual_handoff"]["next_gate"], "operator_review_then_publish_gate")
             self.assertTrue(export_package.content["source_isolation"]["export_contains_generated_draft_only"])
             self.assertEqual(storage.read_asset(resumed["outputs"]["next_chapter_plan_path"]).type, "chapter_plan")
             self.assertTrue(any(entry["status"] == "completed" for entry in resumed["timeline"]))
@@ -665,6 +673,9 @@ class ContextAndProductionChainTests(unittest.TestCase):
                 absolute_export = storage_arg.root / export_markdown_path
                 absolute_export.parent.mkdir(parents=True, exist_ok=True)
                 absolute_export.write_text(f"# Chapter {chapter}\n\nGenerated fixture text.\n", encoding="utf-8")
+                export_manifest_path = Path("data/exports") / f"chapter-{chapter}-manifest.json"
+                absolute_manifest = storage_arg.root / export_manifest_path
+                absolute_manifest.write_text('{"status":"ready_for_operator_review"}', encoding="utf-8")
                 outputs = {
                     "chapter_plan_path": str(kwargs.get("chapter_plan_path") or f"data/chapter_plans/chapter-{chapter}.json"),
                     "context_bundle_path": f"data/context/chapter-{chapter}-context.json",
@@ -681,6 +692,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     "longform_recap_report_path": f"data/longform/chapter-{chapter}-recap.json",
                     "export_package_path": f"data/publishing/chapter-{chapter}-export.json",
                     "export_markdown_path": str(export_markdown_path),
+                    "export_manifest_path": str(export_manifest_path),
                     "next_chapter_plan_path": f"data/chapter_plans/chapter-{chapter + 1}.json",
                 }
                 return {
