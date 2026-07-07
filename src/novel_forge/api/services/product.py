@@ -22,6 +22,7 @@ from novel_forge.modules.agent_runs import create_agent_failure_report, update_a
 from novel_forge.modules.creative_assets import create_creative_asset
 from novel_forge.modules.ingestion.service import discover_source_files
 from novel_forge.modules.source_intake import (
+    apply_source_diff_repair,
     create_license_check_result,
     create_github_source_note,
     create_source_policy,

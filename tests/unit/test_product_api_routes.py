@@ -245,6 +245,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/sources/refresh-report",
                 "/product/sources/connector-execution-plan",
                 "/product/sources/diff-repair-plan",
+                "/product/sources/diff-repair-apply",
                 "/product/sources/context-eligibility",
                 "/product/drafts",
                 "/product/reviews/run",
@@ -358,6 +359,7 @@ class ProductApiRouterTests(unittest.TestCase):
                     "content_hash": "old-route-hash",
                     "source_policy_path": source_policy.json()["path"],
                     "risk_report_path": source_risk.json()["path"],
+                    "project_id": "route-source-project",
                 },
             )
             self.assertEqual(old_snapshot.status_code, 200, old_snapshot.text)
@@ -368,6 +370,7 @@ class ProductApiRouterTests(unittest.TestCase):
                     "content_hash": "new-route-hash",
                     "source_policy_path": source_policy.json()["path"],
                     "risk_report_path": source_risk.json()["path"],
+                    "project_id": "route-source-project",
                 },
             )
             self.assertEqual(new_snapshot.status_code, 200, new_snapshot.text)
@@ -377,11 +380,16 @@ class ProductApiRouterTests(unittest.TestCase):
                     "source_ref": "route-owned-source",
                     "old_snapshot_path": old_snapshot.json()["path"],
                     "new_snapshot_path": new_snapshot.json()["path"],
+                    "project_id": "route-source-project",
                 },
             )
             self.assertEqual(diff_plan.status_code, 200, diff_plan.text)
             self.assertEqual(diff_plan.json()["asset"]["type"], "change_impact_report")
             self.assertFalse(diff_plan.json()["mutation_applied"])
+            diff_apply = client.post("/product/sources/diff-repair-apply", json={"repair_plan_path": diff_plan.json()["path"], "project_id": "route-source-project"})
+            self.assertEqual(diff_apply.status_code, 200, diff_apply.text)
+            self.assertEqual(diff_apply.json()["status"], "approval_required")
+            self.assertFalse(diff_apply.json()["mutation_applied"])
             self.assertEqual(client.get("/product/longform-stability/dashboard").status_code, 200)
             self.assertEqual(client.get("/product/platform-strategy/assets").status_code, 200)
             completion = client.get("/product/system/module-completion")

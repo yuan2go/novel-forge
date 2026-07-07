@@ -31,6 +31,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     SourceRefreshReportRequest = models['SourceRefreshReportRequest']
     SourceConnectorExecutionPlanRequest = models['SourceConnectorExecutionPlanRequest']
     SourceDiffRepairPlanRequest = models['SourceDiffRepairPlanRequest']
+    SourceDiffRepairApplyRequest = models['SourceDiffRepairApplyRequest']
     SourceContextEligibilityRequest = models['SourceContextEligibilityRequest']
     HandoffOutputRequest = models['HandoffOutputRequest']
     HandoffAcceptanceRequest = models['HandoffAcceptanceRequest']
@@ -122,6 +123,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def create_source_diff_repair_plan_endpoint(request: SourceDiffRepairPlanRequest) -> dict[str, Any]:
         try:
             return plan_source_diff_repair(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/diff-repair-apply")
+    def apply_source_diff_repair_endpoint(request: SourceDiffRepairApplyRequest) -> dict[str, Any]:
+        try:
+            return apply_source_diff_repair(LocalStorage(app_settings.root), _model_data(request))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

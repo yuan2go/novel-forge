@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.api.product import create_github_knowledge_handoff
 from novel_forge.modules.source_intake import (
+    apply_source_diff_repair,
     create_license_check_result,
     create_source_policy,
     create_source_refresh_report,
@@ -20,6 +21,7 @@ from novel_forge.modules.source_intake import (
     plan_source_connector_execution,
     plan_source_diff_repair,
 )
+from novel_forge.modules.permission_center import resolve_approval_request
 from novel_forge.schemas import KnowledgeCard, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -365,13 +367,19 @@ class SourceIntakeTests(unittest.TestCase):
                     source="local-corpus",
                     tags=["mkaos", "source-derived"],
                     content={
+                        "principles": ["Only abstract source mechanisms may be reused."],
                         "principle": "Only abstract source mechanisms may be reused.",
                         "source_snapshot_ref": old_snapshot["asset"]["id"],
                         "source_snapshot_path": old_snapshot["path"],
                         "source_policy_refs": [policy["asset"]["id"]],
                         "source_risk_report_refs": [risk["asset"]["id"]],
                     },
-                    metadata={"project_id": "source-p5", "asset_status": "active", "use_in_generation_rag": False},
+                    metadata={
+                        "project_id": "source-p5",
+                        "asset_status": "active",
+                        "use_in_generation_rag": False,
+                        "copyright_boundary": "abstract structure only; no raw source expression",
+                    },
                     references=[old_snapshot["path"], old_snapshot["asset"]["id"]],
                 )
             )
@@ -380,8 +388,17 @@ class SourceIntakeTests(unittest.TestCase):
                     title="Already refreshed abstraction",
                     source="independent-refresh",
                     tags=["mkaos", "source-derived"],
-                    content={"principle": "This card already points at the refreshed snapshot.", "source_snapshot_ref": new_snapshot["asset"]["id"]},
-                    metadata={"project_id": "source-p5", "asset_status": "active", "use_in_generation_rag": False},
+                    content={
+                        "principles": ["This card already points at the refreshed snapshot."],
+                        "principle": "This card already points at the refreshed snapshot.",
+                        "source_snapshot_ref": new_snapshot["asset"]["id"],
+                    },
+                    metadata={
+                        "project_id": "source-p5",
+                        "asset_status": "active",
+                        "use_in_generation_rag": False,
+                        "copyright_boundary": "abstract structure only; no raw source expression",
+                    },
                     references=[new_snapshot["asset"]["id"]],
                 )
             )
@@ -412,6 +429,85 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertIn(str(knowledge_path.relative_to(storage.root)), {item["path"] for item in plan["impacted_assets"]})
             self.assertNotIn(str(refreshed_knowledge_path.relative_to(storage.root)), {item["path"] for item in plan["impacted_assets"]})
             self.assertEqual(unchanged["metadata"]["asset_status"], "active")
+
+    def test_source_diff_repair_apply_requires_approval_and_writes_rollback_plan(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(storage, {"source_ref": "local-corpus", "risk_tier": "R1", "project_id": "source-p6"})
+            risk = create_source_risk_report(storage, {"source_ref": "local-corpus", "source_policy_path": policy["path"], "project_id": "source-p6"})
+            old_snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "old-hash",
+                    "source_path": "sources/local-corpus/manifest.json",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p6",
+                },
+            )
+            new_snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "new-hash",
+                    "source_path": "sources/local-corpus/manifest.json",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p6",
+                },
+            )
+            knowledge_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Source-derived abstraction",
+                    source="local-corpus",
+                    tags=["mkaos", "source-derived"],
+                    content={"principles": ["Abstract source mechanism."], "principle": "Abstract source mechanism.", "source_snapshot_ref": old_snapshot["asset"]["id"]},
+                    metadata={
+                        "project_id": "source-p6",
+                        "asset_status": "active",
+                        "use_in_generation_rag": True,
+                        "copyright_boundary": "abstract structure only; no raw source expression",
+                    },
+                    references=[old_snapshot["path"], old_snapshot["asset"]["id"]],
+                )
+            )
+            plan = plan_source_diff_repair(storage, {"old_snapshot_path": old_snapshot["path"], "new_snapshot_path": new_snapshot["path"], "project_id": "source-p6"})
+
+            blocked = apply_source_diff_repair(storage, {"repair_plan_path": plan["path"], "project_id": "source-p6"})
+            self.assertEqual(blocked["status"], "approval_required")
+            self.assertFalse(blocked["mutation_applied"])
+            self.assertEqual(storage.read_json(knowledge_path)["metadata"]["asset_status"], "active")
+
+            approval_path = blocked["approval_request"]["path"]
+            resolve_approval_request(storage, approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve source repair"})
+            ready = apply_source_diff_repair(storage, {"repair_plan_path": plan["path"], "approval_request_path": approval_path, "project_id": "source-p6"})
+            self.assertEqual(ready["status"], "ready_for_confirm")
+            self.assertEqual(storage.read_json(knowledge_path)["metadata"]["asset_status"], "active")
+
+            applied = apply_source_diff_repair(
+                storage,
+                {
+                    "repair_plan_path": plan["path"],
+                    "approval_request_path": approval_path,
+                    "confirm_apply": True,
+                    "actor": "unit-test",
+                    "project_id": "source-p6",
+                },
+            )
+            stale = storage.read_json(knowledge_path)
+            task_statuses = {storage.read_json(storage.root / path)["content"]["status"] for path in plan["asset"]["content"]["agent_task_paths"]}
+
+            self.assertEqual(applied["errors"], [])
+            self.assertEqual(applied["status"], "applied")
+            self.assertTrue(applied["mutation_applied"])
+            self.assertFalse(applied["dispatch_applied"])
+            self.assertEqual(applied["rollback_plan"]["asset"]["type"], "rollback_plan")
+            self.assertEqual(stale["metadata"]["asset_status"], "stale")
+            self.assertFalse(stale["metadata"]["use_in_generation_rag"])
+            self.assertIn("approved_pending_dispatch", task_statuses)
 
     def test_high_risk_source_stays_evidence_only_and_creates_blocking_production_approval(self):
         with tempfile.TemporaryDirectory() as tmp:

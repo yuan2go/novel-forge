@@ -224,7 +224,7 @@ Current evidence:
 - Approval Router and calling-module migration.
 - Security / Sandbox OS.
 - Prompt Injection Guard.
-- Source diff repair plans are available; next work is an approval-bound, reversible repair apply runner rather than automatic mutation.
+- Source diff repair plans and approval-bound stale marking are available; next work is a sandboxed connector runner and rollback execution rather than automatic source mutation.
 
 当前完成度: 30%.
 
