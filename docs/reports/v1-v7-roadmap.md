@@ -47,11 +47,11 @@ Current evidence:
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
-- Source policy lifecycle still needs tightening beyond the Context Builder stage profile contract.
+- Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job assets and context eligibility evaluation; caller migration into every Context Builder/MKAOS/material path still needs tightening.
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. Source governance lifecycle for SourcePolicy/SourceRiskReport/generation-context eligibility.
+2. ReaderPromise ledger/payoff lifecycle for longform promise tracking.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
@@ -183,7 +183,7 @@ Current evidence:
 阻塞项:
 - Reviewable candidates vs approved assets must remain strict.
 - Usage feedback and lifecycle states are not uniformly mature.
-- Full source governance lifecycle still missing.
+- Source governance lifecycle foundation exists; usage feedback, connector refresh, and Context Builder/MKAOS caller migration remain partial.
 
 推荐切片:
 - Approved/rejected asset lifecycle.
@@ -226,7 +226,7 @@ Current evidence:
 
 阻塞项:
 - ApprovalRequest foundation exists; approval routing and full caller migration remain incomplete.
-- Full source governance and security audit lifecycle incomplete.
+- Source governance lifecycle foundation exists; full connector sandbox and security audit lifecycle are incomplete.
 - External connector sandboxing must be proven before automated imports.
 
 推荐切片:

@@ -21,7 +21,8 @@ This map describes the product capability surface as verified from current code.
 
 | Group | Capability | Status | Evidence | Notes |
 |---|---|---|---|---|
-| Creative assets | Material system | Implemented | `modules/materials/`, `modules/ingestion/`, `web/admin/app/assets/page.tsx` | Rights and lineage still need consistent production enforcement |
+| Creative assets | Material system | Implemented | `modules/materials/`, `modules/ingestion/`, `web/admin/app/assets/page.tsx` | Rights, usage, and source-governance caller migration still need consistent production enforcement |
+| Creative assets | Source Governance | Implemented foundation | `modules/source_intake/service.py`, `/product/sources/*`, `tests/unit/test_source_intake.py` | SourcePolicy, SourceSyncJob, SourceSnapshot, LicenseCheckResult, SourceRiskReport, R0-R4 eligibility, evidence-only/quarantine, and ApprovalRequest hooks exist; connector sync/diff and full caller migration remain partial |
 | Creative assets | Genre/topic system | Implemented | `modules/topics/`, `modules/platform_strategy/`, `skills/topic-development/` | Market feedback integration is partial |
 | Creative assets | Genre OS content intelligence | Implemented foundation | `modules/genre_os/`, `web/admin/app/genre-console/page.tsx` | Draft-policy use and calibration depth are partial |
 | Creative assets | Worldbuilding | Implemented | `modules/worldbuilding/service.py`, `skills/worldbuilding/` | Advanced contradiction governance depends on Canon/KG |
@@ -46,7 +47,7 @@ This map describes the product capability surface as verified from current code.
 | Long-form stability | Longform recap | Partially implemented with explicit light/formal cadence | `modules/longform_recap/`, `web/admin/app/longform-recap/page.tsx`, `tests/unit/test_longform_recap_agent.py` | Agent operation exists for slices; operator-configurable cadence UI remains partial |
 | Long-form stability | Long-chain acceptance | Partially implemented | `tests/integration/test_novel_os_long_chain_*` | Full-novel production not proven |
 | Long-form stability | Long-chain Proof Center | Implemented deterministic foundation | `modules/long_chain_proof/`, `tests/integration/test_long_chain_50_chapter_content_intelligence.py` | State/evidence proof exists; provider-backed slow proof is opt-in |
-| Knowledge OS | MKAOS ingestion | Implemented slices | `modules/mkaos_ingestion/`, acceptance tests | Professional book import and quality checks exist |
+| Knowledge OS | MKAOS ingestion | Implemented slices | `modules/mkaos_ingestion/`, acceptance tests | Professional book import and quality checks exist; source governance eligibility should be consumed consistently before expanding corpora |
 | Knowledge OS | MKAOS selection/quality/lineage | Partially implemented | `modules/mkaos/`, `modules/mkaos_quality/`, `modules/mkaos_lineage/` | Full learning loop remains partial |
 | Knowledge OS | Knowledge graph learning | Partially implemented | `modules/novel_kg/`, MKAOS graph tests | Graph backend optional/depth partial |
 | Context | Context Builder | Partially implemented with stage profile contract | `modules/context_builder/`, `web/admin/app/context/page.tsx`, `tests/unit/test_context_builder_stage_profiles.py` | Manual and KG-backed context controls need depth; final full-loop profile assertions remain deferred |

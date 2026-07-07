@@ -7,8 +7,18 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.api.product import create_github_knowledge_handoff
-from novel_forge.modules.source_intake import list_github_knowledge_sources, list_source_policies
+from novel_forge.modules.source_intake import (
+    create_license_check_result,
+    create_source_policy,
+    create_source_risk_report,
+    create_source_snapshot,
+    create_source_sync_job,
+    evaluate_source_context_eligibility,
+    list_github_knowledge_sources,
+    list_source_policies,
+)
 from novel_forge.schemas import validate_common_fields
+from novel_forge.storage.local import LocalStorage
 
 
 class SourceIntakeTests(unittest.TestCase):
@@ -54,6 +64,131 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertTrue(content["source_acquisition_policy"]["license_review_required"])
             self.assertIn("raw_text_used=false", " ".join(content["acceptance_checks"]))
             self.assertNotIn("Hidden source sentence", serialized)
+
+    def test_source_governance_lifecycle_records_policy_license_risk_snapshot_and_sync_job(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "risk_tier": "R0",
+                    "review_status": "approved",
+                    "allow_raw_context": True,
+                    "project_id": "source-p1",
+                    "evidence_refs": ["operator-license-note"],
+                },
+            )
+            license_check = create_license_check_result(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "authorization": "owned",
+                    "license_name": "operator-owned",
+                    "evidence_refs": [policy["path"]],
+                    "project_id": "source-p1",
+                },
+            )
+            risk = create_source_risk_report(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "source_policy_path": policy["path"],
+                    "license_check_path": license_check["path"],
+                    "project_id": "source-p1",
+                },
+            )
+            snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "source_type": "manual_note",
+                    "content": "operator private note text",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p1",
+                },
+            )
+            sync_job = create_source_sync_job(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "status": "planned",
+                    "sync_mode": "metadata_only",
+                    "policy_ref": policy["path"],
+                    "project_id": "source-p1",
+                },
+            )
+
+            for result in [policy, license_check, risk, snapshot, sync_job]:
+                self.assertEqual(validate_common_fields(result["asset"]), [])
+
+            self.assertEqual(policy["asset"]["type"], "source_policy")
+            self.assertTrue(policy["asset"]["content"]["generation_context_allowed"])
+            self.assertTrue(policy["asset"]["content"]["raw_source_context_allowed"])
+            self.assertEqual(risk["asset"]["content"]["risk_tier"], "R0")
+            self.assertFalse(risk["asset"]["content"]["quarantine"])
+            self.assertFalse(snapshot["asset"]["content"]["raw_text_included"])
+            self.assertNotIn("operator private note text", json.dumps(snapshot["asset"], ensure_ascii=False))
+            self.assertEqual(sync_job["asset"]["content"]["sync_mode"], "metadata_only")
+
+    def test_high_risk_source_stays_evidence_only_and_creates_blocking_production_approval(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(
+                storage,
+                {
+                    "source_ref": "NiuTrans/Classical-Modern",
+                    "risk_tier": "R3",
+                    "project_id": "source-p2",
+                    "evidence_refs": ["docs/reports/classical-modern-mkaos-import-report.md"],
+                },
+            )
+            risk = create_source_risk_report(
+                storage,
+                {
+                    "source_ref": "NiuTrans/Classical-Modern",
+                    "source_policy_path": policy["path"],
+                    "project_id": "source-p2",
+                },
+            )
+            eligibility = evaluate_source_context_eligibility(
+                storage,
+                {
+                    "source_ref": "NiuTrans/Classical-Modern",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "environment": "production",
+                    "project_id": "source-p2",
+                    "create_approval_request": True,
+                    "evidence_refs": [risk["path"]],
+                },
+            )
+
+            self.assertFalse(eligibility["generation_context_allowed"])
+            self.assertTrue(eligibility["evidence_only"])
+            self.assertTrue(eligibility["structure_only"])
+            self.assertTrue(eligibility["blocking"])
+            self.assertTrue(eligibility["requires_approval_request"])
+            self.assertEqual(eligibility["approval_request"]["asset"]["type"], "approval_request")
+            self.assertEqual(eligibility["approval_request"]["asset"]["content"]["scope"], "source")
+            self.assertTrue(eligibility["approval_request"]["asset"]["content"]["blocking"])
+
+    def test_quarantined_source_is_not_generation_context_eligible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            eligibility = evaluate_source_context_eligibility(
+                storage,
+                {
+                    "source_ref": "pirated-upload",
+                    "risk_tier": "R4",
+                    "environment": "local",
+                },
+            )
+
+            self.assertFalse(eligibility["generation_context_allowed"])
+            self.assertTrue(eligibility["quarantine"])
+            self.assertEqual(eligibility["usable_context_form"], "none_quarantined")
 
 
 if __name__ == "__main__":

@@ -18,12 +18,12 @@ Status legend:
 
 | 数据模型 | 蓝图用途 | 当前是否存在 | 当前实现位置 | 缺失字段 | 生命周期状态 | 关联模块 | 优先级 |
 |---|---|---|---|---|---|---|---|
-| Source | 外部/内部来源登记 | partial | `SourceDocument`, importer metadata | source policy lifecycle, risk state | evidence asset exists | MKAOS ingestion, source governance | P0 |
-| SourcePolicy | 来源使用规则 | partial | context/source policy fields, docs | standalone policy id, allowed stages, review state | embedded | Context Builder, MKAOS | P0 |
-| SourceSyncJob | 来源同步任务 | no | Not found | job state, schedule, cursor, retry | missing | Source Governance OS | P2 |
-| SourceSnapshot | 来源快照 | no | Not found | snapshot hash, version, diff | missing | Source Governance OS | P2 |
-| LicenseCheckResult | 许可检查结果 | partial | source rights/risk fields | license type, evidence, reviewer, expiry | embedded | Source Governance OS | P0 |
-| SourceRiskReport | 来源风险报告 | partial | MKAOS risk/gate reports | risk taxonomy, R0-R4, gate decision | embedded | MKAOS, Context Builder | P0 |
+| Source | 外部/内部来源登记 | partial | `SourceDocument`, importer metadata, Source Governance assets | source snapshot diff, sync refresh state, usage feedback | evidence asset plus governance foundation | MKAOS ingestion, source governance | P0 |
+| SourcePolicy | 来源使用规则 | yes-foundation | `SourcePolicy`, `modules/source_intake/service.py` | connector-level expiry/renewal policy, per-stage budget | create/evaluate asset lifecycle | Context Builder, MKAOS | P0 |
+| SourceSyncJob | 来源同步任务 | yes-foundation | `SourceSyncJob`, `modules/source_intake/service.py` | schedule runner, cursor retry execution, connector adapter binding | planned/checkpoint asset lifecycle | Source Governance OS | P2 |
+| SourceSnapshot | 来源快照 | yes-foundation | `SourceSnapshot`, `modules/source_intake/service.py` | snapshot diff and retention policy | evidence-only snapshot asset | Source Governance OS | P2 |
+| LicenseCheckResult | 许可检查结果 | yes-foundation | `LicenseCheckResult`, `modules/source_intake/service.py` | expiry/renewal and legal reviewer workflow | create asset lifecycle | Source Governance OS | P0 |
+| SourceRiskReport | 来源风险报告 | yes-foundation | `SourceRiskReport`, `modules/source_intake/service.py` | Context Builder/MKAOS caller migration and recurring risk refresh | R0-R4 report asset lifecycle | MKAOS, Context Builder | P0 |
 | RawDocument | 原始文档 | partial | `SourceDocument` | raw/document distinction, storage boundary | basic asset | MKAOS ingestion | P1 |
 | CleanDocument | 清洗后文档 | yes | `CleanedText` | stronger provenance spans | basic asset | Analysis, MKAOS | P1 |
 | DocumentChunk | 切片 | yes | `SourceChunk`, `KnowledgeChunk`, `MemoryChunk` | chunk policy, leakage flags | usable | RAG, MKAOS | P1 |
@@ -112,8 +112,8 @@ Status legend:
 ## Immediate Data-Model Priorities For v1
 
 1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
-2. `SourcePolicy` / `SourceRiskReport`: needed before using large external corpora in production contexts.
-3. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
+2. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
+3. ReaderPromise lifecycle: needed next so promise/payoff state is not just embedded prose or foreshadowing notes.
 4. Readable prose/page-turning/mobile review models: needed after `chapter-blueprint-contract-v1` so draft quality is not limited by thin prose gates.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
 6. `ReaderPromise` reducer and payoff lifecycle: CanonFact/TimelineEvent/Foreshadow reducer foundation exists; promise lifecycle remains needed for 10-30 chapter coherence.

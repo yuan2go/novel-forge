@@ -230,6 +230,14 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/impact/report",
                 "/product/handoffs",
                 "/product/batch/deconstruct",
+                "/product/sources/policies",
+                "/product/sources/github",
+                "/product/sources/policy",
+                "/product/sources/license-check",
+                "/product/sources/risk-report",
+                "/product/sources/snapshot",
+                "/product/sources/sync-job",
+                "/product/sources/context-eligibility",
                 "/product/drafts",
                 "/product/reviews/run",
                 "/product/revisions/rework-loop",
@@ -313,6 +321,12 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(client.get("/product/runtime/policy/surface-coverage").status_code, 200)
             self.assertEqual(client.get("/product/runtime/provider-hard-stop-evidence").status_code, 200)
             self.assertEqual(client.get("/product/permission-center/snapshot").status_code, 200)
+            source_policy = client.post("/product/sources/policy", json={"source_ref": "route-owned-source", "risk_tier": "R1"})
+            self.assertEqual(source_policy.status_code, 200, source_policy.text)
+            self.assertEqual(source_policy.json()["asset"]["type"], "source_policy")
+            source_eligibility = client.post("/product/sources/context-eligibility", json={"source_ref": "route-owned-source", "risk_tier": "R1"})
+            self.assertEqual(source_eligibility.status_code, 200, source_eligibility.text)
+            self.assertTrue(source_eligibility.json()["generation_context_allowed"])
             self.assertEqual(client.get("/product/longform-stability/dashboard").status_code, 200)
             self.assertEqual(client.get("/product/platform-strategy/assets").status_code, 200)
             completion = client.get("/product/system/module-completion")

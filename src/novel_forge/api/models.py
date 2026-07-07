@@ -1472,6 +1472,89 @@ class GitHubKnowledgeHandoffRequest(BaseModel):
     workspace_path: str | None = None
 
 
+class SourcePolicyCreateRequest(BaseModel):
+    source_ref: str
+    source_url: str = ""
+    source_kind: str = ""
+    risk_tier: str = "R2"
+    allowed_pipeline: list[str] = Field(default_factory=list)
+    forbidden_pipeline: list[str] = Field(default_factory=list)
+    review_status: str = ""
+    project_id: str = ""
+    workspace_path: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+    allow_raw_context: bool = False
+
+
+class SourceLicenseCheckRequest(BaseModel):
+    source_ref: str
+    license_name: str = "unknown"
+    authorization: str = "unknown"
+    allowed_pipeline: list[str] = Field(default_factory=list)
+    forbidden_pipeline: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
+    checked_by: str = "operator"
+    notes: str = ""
+    project_id: str = ""
+    workspace_path: str = ""
+
+
+class SourceRiskReportRequest(BaseModel):
+    source_ref: str
+    risk_tier: str = ""
+    source_policy_path: str = ""
+    license_check_path: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+    include_parallel_pairs: bool = False
+    project_id: str = ""
+    workspace_path: str = ""
+
+
+class SourceSnapshotRequest(BaseModel):
+    source_ref: str
+    source_path: str = ""
+    source_type: str = ""
+    content_hash: str = ""
+    line_range: dict[str, Any] = Field(default_factory=dict)
+    span: dict[str, Any] = Field(default_factory=dict)
+    source_policy_path: str = ""
+    risk_report_path: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+    project_id: str = ""
+    workspace_path: str = ""
+
+
+class SourceSyncJobRequest(BaseModel):
+    source_ref: str
+    status: str = "planned"
+    sync_mode: str = "metadata_only"
+    policy_ref: str = ""
+    checkpoint: dict[str, Any] = Field(default_factory=dict)
+    limits: dict[str, Any] = Field(default_factory=dict)
+    evidence_refs: list[str] = Field(default_factory=list)
+    project_id: str = ""
+    workspace_path: str = ""
+
+
+class SourceContextEligibilityRequest(BaseModel):
+    source_ref: str
+    asset_path: str = ""
+    source_policy_path: str = ""
+    license_check_path: str = ""
+    risk_report_path: str = ""
+    risk_tier: str = ""
+    intended_stage: str = "generation_context"
+    request_raw_context: bool = False
+    allow_raw_context: bool = False
+    create_approval_request: bool = False
+    environment: str = "local"
+    project_id: str = ""
+    workspace_path: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+    target_refs: list[str] = Field(default_factory=list)
+
+
 class HandoffOutputRequest(BaseModel):
     handoff_path: str
     output_path: str
@@ -1714,6 +1797,12 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "HandoffDeconstructRequest": HandoffDeconstructRequest,
         "HandoffKnowledgeRequest": HandoffKnowledgeRequest,
         "GitHubKnowledgeHandoffRequest": GitHubKnowledgeHandoffRequest,
+        "SourcePolicyCreateRequest": SourcePolicyCreateRequest,
+        "SourceLicenseCheckRequest": SourceLicenseCheckRequest,
+        "SourceRiskReportRequest": SourceRiskReportRequest,
+        "SourceSnapshotRequest": SourceSnapshotRequest,
+        "SourceSyncJobRequest": SourceSyncJobRequest,
+        "SourceContextEligibilityRequest": SourceContextEligibilityRequest,
         "HandoffOutputRequest": HandoffOutputRequest,
         "HandoffAcceptanceRequest": HandoffAcceptanceRequest,
         "HandoffRetryRequest": HandoffRetryRequest,

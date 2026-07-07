@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import hashlib
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 
-from novel_forge.schemas import SourceDocument
+from novel_forge.core.ids import make_id, utc_now
+from novel_forge.modules.common import resolve_path
+from novel_forge.modules.os_envelope import is_production_environment
+from novel_forge.schemas import LicenseCheckResult, SourceDocument, SourcePolicy, SourceRiskReport, SourceSnapshot, SourceSyncJob, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 
@@ -459,6 +464,252 @@ def create_github_source_note(
     return storage.write_asset("raw", note), sources
 
 
+def create_source_policy(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    source_ref = _source_ref(payload)
+    registry = _registry_source(source_ref)
+    tier = _normalize_source_risk_tier(payload.get("risk_tier") or payload.get("risk_level") or registry.get("risk_tier") or registry.get("commercial_risk"))
+    permissions = _permissions_for_tier(tier, payload)
+    policy_id = str(payload.get("policy_id") or make_id("source_policy", f"{source_ref}:{tier}:{utc_now()}"))
+    content = {
+        "policy_id": policy_id,
+        "source_ref": source_ref,
+        "source_url": str(payload.get("source_url") or registry.get("url") or ""),
+        "source_kind": str(payload.get("source_kind") or registry.get("category") or registry.get("type") or "unknown"),
+        "risk_tier": tier,
+        "risk_level": permissions["risk_level"],
+        "allowed_pipeline": _strings(payload.get("allowed_pipeline")) or _strings(registry.get("allowed_pipeline")) or permissions["allowed_pipeline"],
+        "forbidden_pipeline": _strings(payload.get("forbidden_pipeline")) or _strings(registry.get("forbidden_pipeline")) or permissions["forbidden_pipeline"],
+        "generation_context_allowed": permissions["generation_context_allowed"],
+        "raw_source_context_allowed": permissions["raw_source_context_allowed"],
+        "evidence_only": permissions["evidence_only"],
+        "structure_only": permissions["structure_only"],
+        "quarantine": permissions["quarantine"],
+        "review_status": str(payload.get("review_status") or permissions["review_status"]),
+        "approval_required": permissions["approval_required"],
+        "usage_rule": permissions["usage_rule"],
+        "created_at": utc_now(),
+        "updated_at": utc_now(),
+    }
+    asset = SourcePolicy(
+        id=policy_id,
+        title=str(payload.get("title") or f"Source policy: {source_ref}"),
+        source=source_ref,
+        tags=_dedupe(["source-governance", "source-policy", tier, permissions["risk_level"], *(_strings(payload.get("tags")))]),
+        content=content,
+        metadata=_governance_metadata(payload, permissions),
+        references=_strings(payload.get("evidence_refs")) or _strings(payload.get("references")),
+    )
+    return _write_governance_asset(storage, asset)
+
+
+def create_source_sync_job(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    source_ref = _source_ref(payload)
+    job_id = str(payload.get("job_id") or make_id("source_sync_job", f"{source_ref}:{utc_now()}"))
+    content = {
+        "job_id": job_id,
+        "source_ref": source_ref,
+        "status": str(payload.get("status") or "planned"),
+        "sync_mode": str(payload.get("sync_mode") or "metadata_only"),
+        "policy_ref": str(payload.get("policy_ref") or payload.get("source_policy_path") or ""),
+        "checkpoint": payload.get("checkpoint", {}) if isinstance(payload.get("checkpoint", {}), dict) else {},
+        "limits": payload.get("limits", {}) if isinstance(payload.get("limits", {}), dict) else {},
+        "created_at": utc_now(),
+        "updated_at": utc_now(),
+    }
+    asset = SourceSyncJob(
+        id=job_id,
+        title=str(payload.get("title") or f"Source sync job: {source_ref}"),
+        source=source_ref,
+        tags=_dedupe(["source-governance", "source-sync", content["status"], content["sync_mode"]]),
+        content=content,
+        metadata=_governance_metadata(payload, _permissions_for_tier(_normalize_source_risk_tier(payload.get("risk_tier") or "R2"), payload)),
+        references=_strings(payload.get("evidence_refs")) or _strings(payload.get("references")),
+    )
+    return _write_governance_asset(storage, asset)
+
+
+def create_license_check_result(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    source_ref = _source_ref(payload)
+    authorization = str(payload.get("authorization") or payload.get("rights_authorization") or "unknown").strip().lower() or "unknown"
+    license_name = str(payload.get("license_name") or payload.get("license") or "unknown")
+    tier = _normalize_source_risk_tier(payload.get("risk_tier") or _tier_from_authorization(authorization, license_name))
+    permissions = _permissions_for_tier(tier, payload)
+    check_id = str(payload.get("check_id") or make_id("license_check_result", f"{source_ref}:{authorization}:{utc_now()}"))
+    content = {
+        "check_id": check_id,
+        "source_ref": source_ref,
+        "license_name": license_name,
+        "authorization": authorization,
+        "risk_tier": tier,
+        "risk_level": permissions["risk_level"],
+        "allowed_pipeline": _strings(payload.get("allowed_pipeline")) or permissions["allowed_pipeline"],
+        "forbidden_pipeline": _strings(payload.get("forbidden_pipeline")) or permissions["forbidden_pipeline"],
+        "generation_context_allowed": permissions["generation_context_allowed"],
+        "raw_source_context_allowed": permissions["raw_source_context_allowed"],
+        "evidence_refs": _strings(payload.get("evidence_refs")) or _strings(payload.get("references")),
+        "checked_by": str(payload.get("checked_by") or "operator"),
+        "checked_at": utc_now(),
+        "notes": str(payload.get("notes") or payload.get("copyright_note") or ""),
+    }
+    asset = LicenseCheckResult(
+        id=check_id,
+        title=str(payload.get("title") or f"License check: {source_ref}"),
+        source=source_ref,
+        tags=_dedupe(["source-governance", "license-check", tier, permissions["risk_level"], authorization]),
+        content=content,
+        metadata=_governance_metadata(payload, permissions),
+        references=content["evidence_refs"],
+    )
+    return _write_governance_asset(storage, asset)
+
+
+def create_source_risk_report(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    source_ref = _source_ref(payload)
+    policy = _resolve_governance_asset(storage, payload.get("source_policy_path") or payload.get("policy_ref"), "source_policy")
+    license_result = _resolve_governance_asset(storage, payload.get("license_check_path") or payload.get("license_ref"), "license_check_result")
+    tier = _normalize_source_risk_tier(
+        payload.get("risk_tier")
+        or payload.get("risk_level")
+        or _content_value(policy, "risk_tier")
+        or _content_value(license_result, "risk_tier")
+        or _registry_source(source_ref).get("commercial_risk")
+    )
+    permissions = _permissions_for_tier(tier, payload)
+    risk_flags = _source_risk_flags(source_ref, tier, payload, policy=policy, license_result=license_result)
+    report_id = str(payload.get("report_id") or make_id("source_risk_report", f"{source_ref}:{tier}:{utc_now()}"))
+    content = {
+        "report_id": report_id,
+        "source_ref": source_ref,
+        "source_policy_ref": _asset_ref(policy),
+        "license_check_ref": _asset_ref(license_result),
+        "risk_tier": tier,
+        "risk_level": permissions["risk_level"],
+        "risk_flags": risk_flags,
+        "generation_context_allowed": permissions["generation_context_allowed"],
+        "raw_source_context_allowed": permissions["raw_source_context_allowed"],
+        "evidence_only": permissions["evidence_only"],
+        "structure_only": permissions["structure_only"],
+        "quarantine": permissions["quarantine"],
+        "approval_required": permissions["approval_required"],
+        "recommendation": _risk_recommendation(tier, permissions),
+        "created_at": utc_now(),
+    }
+    asset = SourceRiskReport(
+        id=report_id,
+        title=str(payload.get("title") or f"Source risk report: {source_ref}"),
+        source=source_ref,
+        tags=_dedupe(["source-governance", "source-risk", tier, permissions["risk_level"], *risk_flags]),
+        content=content,
+        metadata=_governance_metadata(payload, permissions),
+        references=_dedupe([_asset_ref(policy), _asset_ref(license_result), *_strings(payload.get("evidence_refs")), *_strings(payload.get("references"))]),
+    )
+    return _write_governance_asset(storage, asset)
+
+
+def create_source_snapshot(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    source_ref = _source_ref(payload)
+    source_path = str(payload.get("source_path") or payload.get("asset_path") or source_ref)
+    source_asset = _resolve_governance_asset(storage, source_path, "")
+    source_type = str(payload.get("source_type") or (source_asset or {}).get("type") or "external_source")
+    content_text = _snapshot_text(storage, payload, source_asset=source_asset)
+    content_hash = str(payload.get("content_hash") or hashlib.sha256(content_text.encode("utf-8")).hexdigest())
+    policy = _resolve_governance_asset(storage, payload.get("source_policy_path") or payload.get("policy_ref"), "source_policy")
+    risk = _resolve_governance_asset(storage, payload.get("risk_report_path") or payload.get("risk_ref"), "source_risk_report")
+    snapshot_id = str(payload.get("snapshot_id") or make_id("source_snapshot", f"{source_ref}:{content_hash}"))
+    content = {
+        "snapshot_id": snapshot_id,
+        "source_ref": source_ref,
+        "source_type": source_type,
+        "content_hash": content_hash,
+        "source_path": source_path,
+        "line_range": payload.get("line_range", {}) if isinstance(payload.get("line_range", {}), dict) else {},
+        "span": payload.get("span", {}) if isinstance(payload.get("span", {}), dict) else {},
+        "captured_at": utc_now(),
+        "source_policy_ref": _asset_ref(policy),
+        "risk_report_ref": _asset_ref(risk),
+        "evidence_only": True,
+        "raw_text_included": False,
+    }
+    asset = SourceSnapshot(
+        id=snapshot_id,
+        title=str(payload.get("title") or f"Source snapshot: {source_ref}"),
+        source=source_ref,
+        tags=_dedupe(["source-governance", "source-snapshot", "evidence-only", source_type]),
+        content=content,
+        metadata={
+            **_governance_metadata(payload, _permissions_for_tier(_normalize_source_risk_tier(payload.get("risk_tier") or _content_value(risk, "risk_tier") or "R2"), payload)),
+            "content_hash": content_hash,
+            "raw_text_included": False,
+            "use_in_generation_rag": False,
+        },
+        references=_dedupe([source_path, _asset_ref(policy), _asset_ref(risk), *_strings(payload.get("evidence_refs")), *_strings(payload.get("references"))]),
+    )
+    return _write_governance_asset(storage, asset)
+
+
+def evaluate_source_context_eligibility(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    source_ref = _source_ref(payload)
+    source_asset = _resolve_governance_asset(storage, payload.get("asset_path") or payload.get("source_path"), "")
+    policy = _resolve_governance_asset(storage, payload.get("source_policy_path") or payload.get("policy_ref"), "source_policy") or _latest_related_asset(storage, "source_policy", source_ref)
+    license_result = _resolve_governance_asset(storage, payload.get("license_check_path") or payload.get("license_ref"), "license_check_result") or _latest_related_asset(storage, "license_check_result", source_ref)
+    risk_report = _resolve_governance_asset(storage, payload.get("risk_report_path") or payload.get("risk_ref"), "source_risk_report") or _latest_related_asset(storage, "source_risk_report", source_ref)
+    inferred = _tier_from_source_asset(source_asset) if source_asset else ""
+    tier = _normalize_source_risk_tier(
+        payload.get("risk_tier")
+        or _content_value(risk_report, "risk_tier")
+        or _content_value(policy, "risk_tier")
+        or _content_value(license_result, "risk_tier")
+        or inferred
+        or _registry_source(source_ref).get("commercial_risk")
+    )
+    permissions = _permissions_for_tier(tier, payload)
+    source_type = str((source_asset or {}).get("type") or payload.get("source_type") or "external_source")
+    raw_request = bool(payload.get("request_raw_context") or payload.get("raw_source_context_requested"))
+    raw_allowed = bool(permissions["raw_source_context_allowed"] and _raw_context_request_allowed(source_asset, payload))
+    production = is_production_environment(str(payload.get("environment") or ""))
+    blocking = bool(production and (not permissions["generation_context_allowed"] or raw_request and not raw_allowed))
+    approval_payload = _approval_request_payload(payload, source_ref=source_ref, tier=tier, permissions=permissions, source_asset=source_asset, blocking=blocking)
+    approval_request: dict[str, Any] | None = None
+    if bool(payload.get("create_approval_request")) and approval_payload:
+        from novel_forge.modules.permission_center import create_approval_request
+
+        approval_request = create_approval_request(storage, approval_payload)
+    return {
+        "source_ref": source_ref,
+        "source_type": source_type,
+        "risk_tier": tier,
+        "risk_level": permissions["risk_level"],
+        "generation_context_allowed": bool(permissions["generation_context_allowed"]),
+        "raw_source_context_allowed": raw_allowed,
+        "evidence_only": bool(permissions["evidence_only"]),
+        "structure_only": bool(permissions["structure_only"]),
+        "quarantine": bool(permissions["quarantine"]),
+        "approval_required": bool(permissions["approval_required"] or blocking),
+        "requires_approval_request": bool(approval_payload),
+        "blocking": blocking,
+        "environment": str(payload.get("environment") or "local"),
+        "intended_stage": str(payload.get("intended_stage") or payload.get("stage") or ""),
+        "usable_context_form": _usable_context_form(tier, source_type, raw_allowed=raw_allowed),
+        "reason": _eligibility_reason(tier, permissions, raw_request=raw_request, raw_allowed=raw_allowed),
+        "policy_ref": _asset_ref(policy),
+        "license_check_ref": _asset_ref(license_result),
+        "risk_report_ref": _asset_ref(risk_report),
+        "approval_request": approval_request,
+        "source_governance": {
+            "policy_present": bool(policy),
+            "license_check_present": bool(license_result),
+            "risk_report_present": bool(risk_report),
+            "registry_entry_present": bool(_registry_source(source_ref)),
+        },
+    }
+
+
 def _source_note_text(sources: list[dict[str, Any]], discipline: str, project_context: str) -> str:
     lines = [
         "GitHub knowledge source intake note.",
@@ -493,6 +744,394 @@ def _source_note_text(sources: list[dict[str, Any]], discipline: str, project_co
         ]
     )
     return "\n".join(lines)
+
+
+def _write_governance_asset(storage: LocalStorage, asset: Any) -> dict[str, Any]:
+    data = asset.to_dict()
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset_auto(asset)
+    return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
+
+
+def _source_ref(payload: dict[str, Any]) -> str:
+    for key in ["source_ref", "source_id", "source_url", "repo", "asset_path", "source_path"]:
+        value = str(payload.get(key) or "").strip()
+        if value:
+            return value
+    raise ValueError("source_ref, source_id, source_url, repo, asset_path, or source_path is required")
+
+
+def _registry_source(source_ref: str) -> dict[str, Any]:
+    normalized = _normalize_ref(source_ref)
+    for row in GITHUB_KNOWLEDGE_SOURCES:
+        if normalized in {_normalize_ref(row["id"]), _normalize_ref(row["repo"]), _normalize_ref(row["url"])}:
+            return deepcopy(row)
+    for row in SOURCE_POLICIES:
+        if normalized in {_normalize_ref(row["id"]), _normalize_ref(row["name"]), _normalize_ref(row["url"])}:
+            return deepcopy(row)
+    return {}
+
+
+def _normalize_source_risk_tier(value: Any) -> str:
+    normalized = str(value or "").strip().lower().replace("-", "_")
+    aliases = {
+        "r0": "R0",
+        "owned": "R0",
+        "self_owned": "R0",
+        "test_fixture": "R0",
+        "r1": "R1",
+        "public_domain": "R1",
+        "licensed": "R1",
+        "permission_granted": "R1",
+        "open": "R1",
+        "low": "R1",
+        "low_medium": "R1",
+        "r2": "R2",
+        "unknown": "R2",
+        "unclear": "R2",
+        "medium": "R2",
+        "r3": "R3",
+        "high": "R3",
+        "medium_high": "R3",
+        "reference_only": "R3",
+        "structure_only": "R3",
+        "r4": "R4",
+        "very_high": "R4",
+        "infringing": "R4",
+        "pirated": "R4",
+        "private": "R4",
+        "forbidden": "R4",
+        "critical": "R4",
+    }
+    return aliases.get(normalized, "R2")
+
+
+def _permissions_for_tier(tier: str, payload: dict[str, Any]) -> dict[str, Any]:
+    allow_raw = bool(payload.get("allow_raw_context") or payload.get("raw_source_context_allowed"))
+    base = {
+        "R0": {
+            "risk_level": "low",
+            "generation_context_allowed": True,
+            "raw_source_context_allowed": allow_raw,
+            "evidence_only": False,
+            "structure_only": False,
+            "quarantine": False,
+            "approval_required": bool(allow_raw),
+            "review_status": "approved" if payload.get("review_status") else "needs_review",
+            "allowed_pipeline": ["catalog", "evidence", "knowledge_card_extraction", "context_after_policy"],
+            "forbidden_pipeline": ["untracked_raw_redistribution"],
+            "usage_rule": "owned/test-fixture source may support generation only through explicit policy and traceable source refs",
+        },
+        "R1": {
+            "risk_level": "low",
+            "generation_context_allowed": True,
+            "raw_source_context_allowed": False,
+            "evidence_only": False,
+            "structure_only": False,
+            "quarantine": False,
+            "approval_required": False,
+            "review_status": "needs_review",
+            "allowed_pipeline": ["catalog", "evidence", "knowledge_card_extraction", "abstract_context"],
+            "forbidden_pipeline": ["raw_text_redistribution", "uncited_generation_context"],
+            "usage_rule": "licensed/public-domain source may feed abstracted assets and cited evidence, not raw prose context by default",
+        },
+        "R2": {
+            "risk_level": "medium",
+            "generation_context_allowed": False,
+            "raw_source_context_allowed": False,
+            "evidence_only": True,
+            "structure_only": False,
+            "quarantine": False,
+            "approval_required": True,
+            "review_status": "needs_license_review",
+            "allowed_pipeline": ["catalog", "evidence", "reviewable_candidate"],
+            "forbidden_pipeline": ["generation_context", "raw_text_redistribution"],
+            "usage_rule": "unclear source remains evidence-only until license review resolves the boundary",
+        },
+        "R3": {
+            "risk_level": "high",
+            "generation_context_allowed": False,
+            "raw_source_context_allowed": False,
+            "evidence_only": True,
+            "structure_only": True,
+            "quarantine": False,
+            "approval_required": True,
+            "review_status": "restricted",
+            "allowed_pipeline": ["catalog", "evidence", "structure_only_analysis"],
+            "forbidden_pipeline": ["generation_context", "raw_text_redistribution", "style_imitation"],
+            "usage_rule": "high-risk source may only produce abstract structure/mechanism evidence",
+        },
+        "R4": {
+            "risk_level": "critical",
+            "generation_context_allowed": False,
+            "raw_source_context_allowed": False,
+            "evidence_only": True,
+            "structure_only": False,
+            "quarantine": True,
+            "approval_required": True,
+            "review_status": "quarantined",
+            "allowed_pipeline": ["catalog", "quarantine_record"],
+            "forbidden_pipeline": ["generation_context", "knowledge_card_activation", "raw_storage", "redistribution"],
+            "usage_rule": "forbidden source must stay quarantined and cannot activate production assets",
+        },
+    }
+    return dict(base.get(tier, base["R2"]))
+
+
+def _governance_metadata(payload: dict[str, Any], permissions: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "project_id": str(payload.get("project_id") or ""),
+        "workspace_path": str(payload.get("workspace_path") or ""),
+        "risk_level": permissions["risk_level"],
+        "generation_context_allowed": bool(permissions["generation_context_allowed"]),
+        "raw_source_context_allowed": bool(permissions["raw_source_context_allowed"]),
+        "evidence_only": bool(permissions["evidence_only"]),
+        "quarantine": bool(permissions["quarantine"]),
+        "use_in_generation_rag": bool(permissions["generation_context_allowed"]) and not bool(permissions["evidence_only"]),
+        "copyright_boundary": "source governance asset; raw source text remains isolated unless an explicit owned-source policy allows it",
+    }
+
+
+def _tier_from_authorization(authorization: str, license_name: str) -> str:
+    if authorization in {"owned", "test_fixture"}:
+        return "R0"
+    if authorization in {"licensed", "public_domain", "permission_granted"}:
+        return "R1"
+    lowered = license_name.lower()
+    if any(marker in lowered for marker in ["non-commercial", "noncommercial", "cc by-nc", "by-nc", "nc-sa"]):
+        return "R3"
+    if authorization in {"forbidden", "pirated", "infringing", "private"}:
+        return "R4"
+    return "R2"
+
+
+def _tier_from_source_asset(source_asset: dict[str, Any] | None) -> str:
+    if not source_asset:
+        return ""
+    metadata = source_asset.get("metadata", {}) if isinstance(source_asset.get("metadata", {}), dict) else {}
+    rights = metadata.get("rights", {}) if isinstance(metadata.get("rights", {}), dict) else {}
+    if metadata.get("quarantine") or rights.get("authorization") in {"forbidden", "pirated", "infringing", "private"}:
+        return "R4"
+    if rights.get("authorization") in {"owned", "test_fixture"}:
+        return "R0"
+    if rights.get("authorization") in {"licensed", "public_domain", "permission_granted"}:
+        return "R1"
+    if metadata.get("copyright_risk") in {"high", "critical"} or metadata.get("risk_level") in {"high", "critical"}:
+        return "R3"
+    if rights.get("allow_downstream_generation") is False:
+        return "R2"
+    return ""
+
+
+def _source_risk_flags(
+    source_ref: str,
+    tier: str,
+    payload: dict[str, Any],
+    *,
+    policy: dict[str, Any] | None,
+    license_result: dict[str, Any] | None,
+) -> list[str]:
+    flags = [tier.lower()]
+    registry = _registry_source(source_ref)
+    if not policy:
+        flags.append("policy_missing")
+    if not license_result:
+        flags.append("license_check_missing")
+    if registry.get("license_check") in {"required", "non_commercial_only_or_required", "source_by_source_required"} and not license_result:
+        flags.append("registry_requires_license_check")
+    if tier in {"R2", "R3", "R4"}:
+        flags.append("generation_context_blocked")
+    if tier == "R4":
+        flags.append("quarantine_required")
+    if payload.get("include_parallel_pairs"):
+        flags.append("parallel_pair_source_leakage_risk")
+    return _dedupe(flags)
+
+
+def _risk_recommendation(tier: str, permissions: dict[str, Any]) -> str:
+    if tier in {"R0", "R1"}:
+        return "usable after evidence refs and source policy are attached; prefer abstract assets over raw source context"
+    if tier == "R2":
+        return "keep evidence-only; run license review before activating knowledge cards or generation context"
+    if tier == "R3":
+        return "allow structure-only analysis; do not activate raw text, style imitation, or prose context"
+    return "quarantine source; do not activate production assets without explicit operator/legal decision"
+
+
+def _usable_context_form(tier: str, source_type: str, *, raw_allowed: bool) -> str:
+    if tier == "R4":
+        return "none_quarantined"
+    if tier in {"R2", "R3"}:
+        return "evidence_only_structure_only" if tier == "R3" else "evidence_only"
+    if raw_allowed and source_type not in {"source_chunk"}:
+        return "raw_context_with_traceable_policy"
+    return "abstracted_assets_only"
+
+
+def _eligibility_reason(tier: str, permissions: dict[str, Any], *, raw_request: bool, raw_allowed: bool) -> str:
+    if raw_request and not raw_allowed:
+        return f"raw source context denied for {tier}; {permissions['usage_rule']}"
+    if permissions["generation_context_allowed"]:
+        return permissions["usage_rule"]
+    return f"generation context denied for {tier}; {permissions['usage_rule']}"
+
+
+def _raw_context_request_allowed(source_asset: dict[str, Any] | None, payload: dict[str, Any]) -> bool:
+    if not source_asset:
+        return False
+    metadata = source_asset.get("metadata", {}) if isinstance(source_asset.get("metadata", {}), dict) else {}
+    rights = metadata.get("rights", {}) if isinstance(metadata.get("rights", {}), dict) else {}
+    return bool(payload.get("allow_raw_context")) and rights.get("authorization") in {"owned", "test_fixture"} and source_asset.get("type") == "source_document"
+
+
+def _approval_request_payload(
+    payload: dict[str, Any],
+    *,
+    source_ref: str,
+    tier: str,
+    permissions: dict[str, Any],
+    source_asset: dict[str, Any] | None,
+    blocking: bool,
+) -> dict[str, Any] | None:
+    if not permissions["approval_required"] and not blocking:
+        return None
+    return {
+        "project_id": str(payload.get("project_id") or _metadata_value(source_asset, "project_id")),
+        "workspace_path": str(payload.get("workspace_path") or _metadata_value(source_asset, "workspace_path")),
+        "scope": "source",
+        "action": str(payload.get("approval_action") or "approve_source_context_eligibility"),
+        "environment": str(payload.get("environment") or "local"),
+        "risk_level": "critical" if tier == "R4" else ("high" if tier == "R3" else "medium"),
+        "blocking": blocking,
+        "target_type": str((source_asset or {}).get("type") or "source"),
+        "target_id": str((source_asset or {}).get("id") or source_ref),
+        "target_path": str(payload.get("asset_path") or payload.get("source_path") or ""),
+        "target_refs": _strings(payload.get("target_refs")),
+        "evidence_refs": _strings(payload.get("evidence_refs")) or _strings(payload.get("references")),
+        "reason": f"Source {source_ref} is {tier}; {permissions['usage_rule']}",
+        "source_policy": {"source_ref": source_ref, "risk_tier": tier, "generation_context_allowed": permissions["generation_context_allowed"]},
+    }
+
+
+def _snapshot_text(storage: LocalStorage, payload: dict[str, Any], *, source_asset: dict[str, Any] | None) -> str:
+    explicit = payload.get("content") or payload.get("text") or payload.get("content_preview")
+    if isinstance(explicit, str):
+        return explicit
+    if source_asset:
+        content = source_asset.get("content", {}) if isinstance(source_asset.get("content", {}), dict) else {}
+        text = str(content.get("text") or content.get("clean_text") or "")
+        if text:
+            return text
+    source_path = str(payload.get("source_path") or payload.get("asset_path") or "")
+    if source_path:
+        try:
+            path = resolve_path(storage.root, source_path)
+            if path.exists() and path.is_file():
+                return path.read_text(encoding="utf-8", errors="ignore")
+        except (OSError, TypeError, ValueError):
+            return source_path
+    return str(payload)
+
+
+def _resolve_governance_asset(storage: LocalStorage, ref: Any, expected_type: str) -> dict[str, Any] | None:
+    ref_text = str(ref or "").strip()
+    if not ref_text:
+        return None
+    try:
+        path = resolve_path(storage.root, ref_text)
+        data = storage.read_json(path)
+        if isinstance(data, dict) and (not expected_type or data.get("type") == expected_type):
+            return data
+    except (OSError, TypeError, ValueError):
+        pass
+    for category in ["raw", "runs"]:
+        for path in reversed(storage.list_json(category)):
+            try:
+                data = storage.read_json(path)
+            except (OSError, TypeError, ValueError):
+                continue
+            if not isinstance(data, dict):
+                continue
+            if expected_type and data.get("type") != expected_type:
+                continue
+            content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            if ref_text in {
+                str(data.get("id", "")),
+                str(content.get("policy_id", "")),
+                str(content.get("check_id", "")),
+                str(content.get("report_id", "")),
+                str(content.get("snapshot_id", "")),
+                _display_path(storage.root, path),
+            }:
+                return data
+    return None
+
+
+def _latest_related_asset(storage: LocalStorage, asset_type: str, source_ref: str) -> dict[str, Any] | None:
+    normalized = _normalize_ref(source_ref)
+    for category in ["runs", "raw"]:
+        for path in reversed(storage.list_json(category)):
+            try:
+                data = storage.read_json(path)
+            except (OSError, TypeError, ValueError):
+                continue
+            if not isinstance(data, dict) or data.get("type") != asset_type:
+                continue
+            content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            if normalized == _normalize_ref(str(content.get("source_ref") or data.get("source") or "")):
+                return data
+    return None
+
+
+def _content_value(asset: dict[str, Any] | None, key: str) -> Any:
+    if not asset:
+        return ""
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    return content.get(key) or asset.get(key) or ""
+
+
+def _asset_ref(asset: dict[str, Any] | None) -> str:
+    if not asset:
+        return ""
+    return str(asset.get("id") or "")
+
+
+def _metadata_value(asset: dict[str, Any] | None, key: str) -> str:
+    if not asset:
+        return ""
+    metadata = asset.get("metadata", {}) if isinstance(asset.get("metadata", {}), dict) else {}
+    return str(metadata.get(key) or "")
+
+
+def _strings(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, tuple):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for value in values:
+        text = str(value).strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        out.append(text)
+    return out
+
+
+def _display_path(root: Path, path: Path) -> str:
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
 
 
 def _normalize_ref(value: str) -> str:

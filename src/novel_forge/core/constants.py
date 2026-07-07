@@ -89,6 +89,11 @@ SKILL_REQUIRED_SECTIONS = [
 
 ASSET_DIR_BY_TYPE = {
     "source_document": "raw",
+    "source_policy": "raw",
+    "source_sync_job": "runs",
+    "source_snapshot": "raw",
+    "license_check_result": "runs",
+    "source_risk_report": "runs",
     "cleaned_text": "cleaned",
     "decomposition_report": "decompositions",
     "commercial_pattern": "decompositions",

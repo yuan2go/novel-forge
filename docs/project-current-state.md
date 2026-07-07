@@ -47,7 +47,8 @@ The current branch has implemented the first V7 content intelligence foundation 
 | Project management | Implemented | `api/routers/projects.py`, `modules/project_operations/service.py`, `web/admin/app/projects/page.tsx`, `tests/unit/test_project_operations.py` | Product UX depth and multi-user semantics remain partial | Yes | Medium |
 | Genre/topic library | Implemented | `modules/topics/service.py`, `modules/platform_strategy/service.py`, `schemas/assets.py`, `skills/topic-development/` | Market feedback loop is partial | Yes | Medium |
 | Genre OS content intelligence | Implemented foundation | `modules/genre_os/service.py`, `api/routers/genre_os.py`, `tests/unit/test_genre_os.py` | Deeper platform-calibrated strategy packs and generation-policy use | Yes | Medium |
-| Material library | Implemented | `modules/materials/service.py`, `modules/ingestion/service.py`, `web/admin/app/assets/page.tsx` | Rights/lineage enforcement varies by path | Yes | Medium |
+| Material library | Implemented | `modules/materials/service.py`, `modules/ingestion/service.py`, `web/admin/app/assets/page.tsx` | Usage lifecycle and source-governance caller migration vary by path | Yes | Medium |
+| Source Governance | Implemented foundation | `modules/source_intake/service.py`, `api/routers/handoffs.py`, `schemas/assets.py`, `tests/unit/test_source_intake.py` | Connector sync/diff, material usage feedback, and Context Builder/MKAOS caller migration remain partial | Yes | High |
 | Knowledge library | Implemented | `modules/knowledge/service.py`, `modules/mkaos/`, `schemas/assets.py` | Production selection quality still improving | Yes | Medium |
 | MKAOS | Partially implemented, broad coverage | `modules/mkaos*`, `tests/unit/test_mkaos_*.py`, `tests/integration/test_mkaos_*.py` | Full production learning loop and graph depth are still partial | Yes | High |
 | Web-fiction deconstruction | Implemented | `modules/decomposition/service.py`, `modules/analysis/service.py`, `skills/hot-novel-deconstruction/` | Provider-backed high-quality extraction is partial | Yes | Medium |
@@ -97,4 +98,4 @@ The current branch has implemented the first V7 content intelligence foundation 
 
 ## Next Priorities
 
-See [reports/v1-v7-roadmap.md](reports/v1-v7-roadmap.md) and [reports/next-production-slices.md](reports/next-production-slices.md). The most important next work is to close the v1 single-book production loop, then continue runtime hardening: provider evidence, release/publish gates, scheduler operation coverage, context/KG consistency, and productized UI verification.
+See [reports/v1-v7-roadmap.md](reports/v1-v7-roadmap.md) and [reports/next-production-slices.md](reports/next-production-slices.md). The most important next work is to close the v1 single-book production loop, then continue runtime hardening: reader promise/payoff lifecycle, approval caller migration, provider evidence, release/publish gates, scheduler operation coverage, context/KG consistency, and productized UI verification.

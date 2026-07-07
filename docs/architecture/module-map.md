@@ -35,7 +35,7 @@ This map lists current implementation areas and evidence paths. Status means cod
 
 | Module | Path | Responsibility | Status | Tests / Evidence |
 |---|---|---|---|---|
-| Source intake / ingestion | `modules/source_intake/`, `modules/ingestion/` | Import raw/source assets, file handling, source metadata | Implemented | `test_source_intake.py`, ingestion/MKAOS tests |
+| Source intake / ingestion | `modules/source_intake/`, `modules/ingestion/` | Import raw/source assets, file handling, source metadata, source policy/license/risk/snapshot/sync-job lifecycle, R0-R4 context eligibility | Implemented foundation | `test_source_intake.py`, ingestion/MKAOS tests, `/product/sources/*` routes |
 | Cleaning | `modules/cleaning/service.py` | Normalize raw text into cleaned assets | Implemented | `test_module_services.py` |
 | Decomposition | `modules/decomposition/service.py` | Abstract deconstruction assets | Implemented | pipeline/module tests |
 | Analysis | `modules/analysis/service.py` | Web/published/classic analysis report creation | Partially implemented | `test_analysis_services.py` |

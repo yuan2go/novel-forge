@@ -23,6 +23,12 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     HandoffDeconstructRequest = models['HandoffDeconstructRequest']
     HandoffKnowledgeRequest = models['HandoffKnowledgeRequest']
     GitHubKnowledgeHandoffRequest = models['GitHubKnowledgeHandoffRequest']
+    SourcePolicyCreateRequest = models['SourcePolicyCreateRequest']
+    SourceLicenseCheckRequest = models['SourceLicenseCheckRequest']
+    SourceRiskReportRequest = models['SourceRiskReportRequest']
+    SourceSnapshotRequest = models['SourceSnapshotRequest']
+    SourceSyncJobRequest = models['SourceSyncJobRequest']
+    SourceContextEligibilityRequest = models['SourceContextEligibilityRequest']
     HandoffOutputRequest = models['HandoffOutputRequest']
     HandoffAcceptanceRequest = models['HandoffAcceptanceRequest']
     HandoffRetryRequest = models['HandoffRetryRequest']
@@ -59,6 +65,48 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         max_risk: str | None = None,
     ) -> list[dict[str, Any]]:
         return list_github_knowledge_sources(category=category, allowed_pipeline=allowed_pipeline, max_risk=max_risk)
+
+    @router.post("/product/sources/policy")
+    def create_source_policy_endpoint(request: SourcePolicyCreateRequest) -> dict[str, Any]:
+        try:
+            return create_source_policy(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/license-check")
+    def create_source_license_check_endpoint(request: SourceLicenseCheckRequest) -> dict[str, Any]:
+        try:
+            return create_license_check_result(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/risk-report")
+    def create_source_risk_report_endpoint(request: SourceRiskReportRequest) -> dict[str, Any]:
+        try:
+            return create_source_risk_report(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/snapshot")
+    def create_source_snapshot_endpoint(request: SourceSnapshotRequest) -> dict[str, Any]:
+        try:
+            return create_source_snapshot(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/sync-job")
+    def create_source_sync_job_endpoint(request: SourceSyncJobRequest) -> dict[str, Any]:
+        try:
+            return create_source_sync_job(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/context-eligibility")
+    def source_context_eligibility_endpoint(request: SourceContextEligibilityRequest) -> dict[str, Any]:
+        try:
+            return evaluate_source_context_eligibility(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.post("/product/handoffs/deconstruct")
     def create_deconstruct_handoff(request: HandoffDeconstructRequest) -> dict[str, Any]:

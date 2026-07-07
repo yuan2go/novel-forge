@@ -45,7 +45,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 ## Partially Implemented Modules
 
 - Single-book production loop: `chapter_production_bus` now provides a one-chapter canonical contract, a 10-chapter sequence acceptance contract, true 10-chapter slow acceptance evidence, and post-baseline development slices for stage context, blueprint, readable prose, revision strategy, reducer, recap cadence, and export manifest handoff; 30-chapter slow acceptance and calibrated provider/human quality gates are still pending.
-- Source / Material Governance OS: source evidence and MKAOS import are strong, but full source registry, sync jobs, license scanner, source snapshots, and material usage lifecycle are partial.
+- Source / Material Governance OS: source evidence, MKAOS import, source isolation, and SourcePolicy/LicenseCheckResult/SourceRiskReport/SourceSnapshot/SourceSyncJob foundation now exist; full connector sync, source diffing, and material usage lifecycle are still partial.
 - Story Bible / Long-form OS: many ledgers and reports exist, accepted chapter reducer evidence now writes CanonGraph state-machine ledger/snapshot/diff assets, and recap cadence distinguishes light/formal/exception/checkpoint reports; promise lifecycle, operator cadence configuration, and final multi-chapter proof remain incomplete.
 - Quality / Review / Eval OS: ReviewIssue, Eval Center, Quality Eval 2.0, provider judge, and gates exist; readable-prose/page-turning/mobile now has a local content-loop gate, but provider/human calibration and final full-loop proof remain pending.
 - Portfolio OS: multi-book cockpit and cost snapshots exist, but book potential scoring, cross-book contamination, resource allocation, and kill/pause governance are early.
@@ -55,7 +55,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 ## Not Yet Implemented Or Not Verified As Complete
 
 - A verified true v1 slow run that produces 30 consecutive readable chapters with all required artifacts and quality/canon/revision records.
-- Full `SourcePolicy`, `SourceSyncJob`, `SourceSnapshot`, `LicenseCheckResult`, and `SourceRiskReport` lifecycle.
+- Full connector-level source sync/diffing plus material usage lifecycle on top of the new `SourcePolicy`, `SourceSyncJob`, `SourceSnapshot`, `LicenseCheckResult`, and `SourceRiskReport` foundation.
 - ApprovalRequest caller migration and approval routing for high-risk material/context/publishing/story changes.
 - Independent lifecycle models for many blueprint concepts currently represented as fields inside broad assets.
 - Full typed graph state/query/diff storage for all Canon topic state machines.
@@ -97,7 +97,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 
 1. Chapter Blueprint, Draft, Review, Revision, Canon Update, Longform Recap, and Export are proven for one true chapter, a 10-chapter sequence contract, and a true 10-chapter slow run; development slices after that baseline add stronger local evidence but are not yet proven in a true 30-chapter slow run.
 2. ReviewIssue-to-RevisionPlan strategy mapping now exists as `review-issue-revision-strategy-v1`; remaining risk is proving real chapter improvement across the final unified acceptance phase.
-3. ApprovalRequest foundation exists, but source governance lifecycle and full caller migration are insufficient for high-risk material and major story mutations.
+3. ApprovalRequest and Source Governance foundations exist, but full caller migration is still needed for high-risk material, context injection, publishing, and major story mutations.
 4. Several blueprint data models are represented as flexible content fields rather than typed lifecycle assets.
 
 ## Gap Matrix
@@ -105,7 +105,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 | 层级 | 模块 | 蓝图目标 | 当前实现 | 缺口 | 风险 | 优先级 | 推荐方案 | 涉及文件 | 测试策略 |
 |---|---|---|---|---|---|---|---|---|---|
 | Core OS | Agent OS | Autonomous task planning, execution, retries, approvals, trace, cost | Agent contracts/runs/tasks/scheduler/dispatch/rollback exist | Approval routing and full operation coverage still partial | Agent tasks can look complete while business loop remains unproven | P0 | Keep scheduler governance, add v1 chapter-loop operations and approval requests | `modules/agent_scheduler`, `modules/agent_runs`, `api/routers/agents.py` | Scheduler positive/negative v1 operation fixtures |
-| Core OS | Source / Material Governance OS | Source registry, policy, license, risk, material usage tracking | Source docs, chunks, MKAOS ingestion, source isolation, Classical-Modern slow import | First-class SourcePolicy/SyncJob/Snapshot/License/Risk lifecycle missing | Copyright/material contamination | P0 | Add source governance lifecycle before expanding external connectors | `modules/mkaos_ingestion`, `scripts/import_classical_modern_to_mkaos.py`, `schemas/assets.py` | Source policy and leakage regression tests |
+| Core OS | Source / Material Governance OS | Source registry, policy, license, risk, material usage tracking | Source docs/chunks, MKAOS ingestion, source isolation, Classical-Modern slow import, and schema-backed SourcePolicy/SyncJob/Snapshot/License/Risk lifecycle foundation exist | Full connector sync/diff, source usage feedback, and MKAOS/Context caller migration remain partial | Copyright/material contamination if callers bypass eligibility reports | P0 | Migrate Context Builder/MKAOS/material importers to consume source eligibility reports before expanding external connectors | `modules/source_intake`, `modules/mkaos_ingestion`, `modules/context_builder`, `scripts/import_classical_modern_to_mkaos.py`, `schemas/assets.py` | Source policy, high-risk approval, quarantine, and leakage regression tests |
 | Core OS | MKAOS | Evidence-only knowledge asset OS, stage-aware routing | Knowledge cards/packs/lineage/quality/model extraction/gates exist | Asset lifecycle and usage feedback not uniformly mature | RAG becomes ordinary context dump | P0 | Standardize MKAOS Query Contract for v1 stages | `modules/mkaos*`, `context_builder` | Query contract allow/deny fixtures |
 | Core OS | Context Builder OS | Safe task-specific ContextPackage | Context plans/bundles, MKAOS contract, RAG quality, source isolation, and `stage-context-profile-v1` enforcement exist | Final unified workflow验收 has not yet proved every v1 caller uses the correct profile; stage budgets can deepen | Token/source pollution if callers bypass the builder | P0 | Keep v1 stage context profiles mandatory, add final full-loop profile assertions later | `modules/context_builder/service.py`, `tests/unit/test_context_builder_stage_profiles.py` | Stage-by-stage context bundle tests now; final full-loop assertions later |
 | Core OS | Story Bible / Long-form OS | Canon, timeline, characters, foreshadowing, promises, long review | Canon/KG/longform ledgers, v1 CanonGraph reducer, and light/formal recap cadence exist | Promise lifecycle, operator cadence configuration, and final multi-chapter proof are still partial | Long-form drift if reducer/recap evidence is skipped | P0 | Harden export/dashboard evidence and prove reducer/recap outputs in final unified workflow | `modules/longform_stability`, `modules/canon_graph`, `modules/longform_recap`, `modules/chapter_production_bus` | Reducer, chapter bus, recap cadence, and scheduler fixtures now; final 10-30 chapter proof later |
@@ -134,9 +134,8 @@ Current implementation proves many slices and fixtures, including a true one-cha
 Do not add another broad V7 surface first. The next production slice should be:
 
 ```text
-P1 Source Governance lifecycle:
-add first-class source policy/risk/eligibility assets so external sources can remain
-evidence-only unless explicitly allowed for generation context.
+P1 Reader Promise lifecycle:
+add first-class promise/payoff state so chapter blueprints and longform review can detect overdue or broken reader promises.
 ```
 
 During the current development loop, do not run chapter acceptance. Use targeted unit and compile checks only, then run the unified acceptance phase after the production slices are complete.

@@ -18,6 +18,7 @@ Implementation status note:
 - 2026-07-08: `V1-S8 Exportable Chapter Package` was implemented as a development slice. The chapter production bus now writes a local markdown export plus a JSON export manifest with file hash/size, provenance over review/revision/canon/reducer/recap evidence, source-isolation boundaries, operator checklist, rollback instructions, and manual handoff to operator review before publish gate. Unit coverage exists in `tests/unit/test_context_and_production_chain.py`. No chapter acceptance was run.
 - 2026-07-08: `V1-S9 ApprovalRequest Foundation` was implemented as a development slice. `approval_request` is now a schema-backed asset with scope/action/subject/target/risk/environment/blocking/evidence/rollback/decision fields, Permission Center service/API lifecycle, snapshot aggregation, and approve/reject/expire fixtures. No chapter acceptance was run.
 - 2026-07-08: `V1-S10 v1 Acceptance Dashboard Data` was implemented as a development slice. Project cockpit snapshots now include `v1_artifact_coverage` from `chapter_production_run.outputs`, reducer/recap/export coverage status, ApprovalRequest summary, and production-control artifact coverage fields. Unit/API route coverage exists in `tests/unit/test_novel_os_cockpit.py` and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
+- 2026-07-08: `P1-S1 Source Governance Lifecycle` was implemented as a development slice. `source_policy`, `source_sync_job`, `source_snapshot`, `license_check_result`, and `source_risk_report` are now schema-backed assets with Source Intake service/API lifecycle, R0-R4 eligibility evaluation, evidence-only/quarantine handling, and optional ApprovalRequest creation for blocked production source use. Unit/API route coverage exists in `tests/unit/test_source_intake.py`, `tests/unit/test_schemas.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
@@ -31,7 +32,7 @@ Implementation status note:
 | V1-S8 Exportable Chapter Package | Produce reviewable/exportable local package after revised chapter acceptance | Makes v1 output inspectable and usable | Drafts, Publishing, Exporter | DraftChapter, DraftVersion, PublishingPlan, PublishingLog, ReleasePackage-lite | Implemented: chapter bus writes local markdown, manifest, provenance checklist, source-isolation policy, rollback metadata, and operator-review handoff | Added export manifest/provenance fixture; final unified v1 workflow验收 remains deferred | Engineering/export docs updated through this slice matrix | Local export only; does not imply platform auto-publish |
 | V1-S9 ApprovalRequest Foundation | Add human gate model for high-risk sources, context, publish, major plot mutation | Required for safe autonomy and source governance | Agent OS, Source Governance, Publishing, Feedback | ApprovalRequest, SourcePolicy, ReviewIssue | Implemented: schema-backed `approval_request` plus Permission Center create/list/resolve/expire/snapshot APIs | Added approve/reject/expire and route fixtures; final unified v1 workflow验收 remains deferred | Agent/security docs updated through this slice matrix | Calling modules still need staged migration from local approval fields to ApprovalRequest refs |
 | V1-S10 v1 Acceptance Dashboard Data | Expose real artifact coverage for one project | UI must show workflow truth, not static completion | Product API, Novel OS Cockpit, Metrics | ProjectMetricSnapshot, QualityMetric, TraceSpan, CostLedger | Implemented: cockpit snapshot aggregates V1 required-output coverage, reducer/recap/export status, and ApprovalRequest summary | Added cockpit artifact coverage and API route fixtures; final unified v1 workflow验收 remains deferred | UI/ops docs updated through this slice matrix | Dashboard reports artifact evidence only; it does not replace the deferred acceptance phase |
-| P1-S1 Source Governance Lifecycle | Add SourcePolicy, SourceRiskReport, license check result lifecycle | External corpora and MKAOS need stronger boundaries | Source Governance, MKAOS, Context Builder | SourcePolicy, LicenseCheckResult, SourceRiskReport, SourceEvidence | Source policy service/API | Source policy gate tests | Source governance docs | Too much ceremony can slow local use |
+| P1-S1 Source Governance Lifecycle | Add SourcePolicy, SourceRiskReport, license check result lifecycle | External corpora and MKAOS need stronger boundaries | Source Governance, MKAOS, Context Builder | SourcePolicy, LicenseCheckResult, SourceRiskReport, SourceSyncJob, SourceSnapshot, SourceEvidence | Implemented: Source Intake creates schema-backed policy/license/risk/snapshot/sync assets and evaluates R0-R4 context eligibility with evidence-only/quarantine/ApprovalRequest hooks | Added lifecycle, high-risk approval, quarantine, schema, and route fixtures; final unified v1 workflow验收 remains deferred | Source governance docs updated through this slice matrix | Context Builder and MKAOS still need deeper caller migration to consume eligibility reports everywhere |
 | P1-S2 Reader Promise Ledger | Track promise/payoff lifecycle | Needed for追读 and longform stability | Longform, Web Novel Enhancement, Review | ReaderPromise, ForeshadowItem, ReviewIssue | Promise ledger service | Broken promise fixtures | Longform docs | Requires good chapter annotations |
 | P1-S3 Pleasure Point / Chapter Economy Gate | Track爽点 cadence and scene value | Prevents flat or watery chapters | Reward Ledger, Quality, Chapter Blueprint | PleasurePoint, RewardLedger, ConflictItem | Quality loop extension | Cadence and water-chapter fixtures | Quality docs | Heuristic false positives |
 | P1-S4 Character Charm and Antagonist Pressure | Score protagonist agency and villain pressure | Core web novel quality lever | Character, Longform, Review | CharacterState, VillainOperationPlan, QualityMetric | Review/longform report extension | Charm/pressure fixtures | Character docs | Subjective metrics need calibration |
@@ -44,16 +45,16 @@ Implementation status note:
 
 ## Recommended Next Slice
 
-Continue from `P1-S1 Source Governance Lifecycle`.
+Continue from `P1-S2 Reader Promise Ledger`.
 
-The current highest-priority development slice is to harden external source governance before expanding material ingestion:
+The current highest-priority development slice is to make reader promises/payoffs first-class long-form evidence:
 
 ```text
-source registry/policy
--> license/risk result
--> generation-context eligibility
--> evidence-only quarantine when risky
--> Context Builder / MKAOS enforcement hooks
+chapter blueprint promise
+-> promise ledger state
+-> payoff / overdue / broken-promise review signal
+-> ReviewIssue / RevisionTask hook
+-> cockpit/longform evidence
 ```
 
 Do not run chapter acceptance during the development loop. Keep the 2026-07-07 slow report as the current baseline until the final unified acceptance phase.

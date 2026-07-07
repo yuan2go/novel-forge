@@ -12,6 +12,31 @@ class SourceDocument(BaseAsset):
 
 
 @dataclass
+class SourcePolicy(BaseAsset):
+    type: str = "source_policy"
+
+
+@dataclass
+class SourceSyncJob(BaseAsset):
+    type: str = "source_sync_job"
+
+
+@dataclass
+class SourceSnapshot(BaseAsset):
+    type: str = "source_snapshot"
+
+
+@dataclass
+class LicenseCheckResult(BaseAsset):
+    type: str = "license_check_result"
+
+
+@dataclass
+class SourceRiskReport(BaseAsset):
+    type: str = "source_risk_report"
+
+
+@dataclass
 class CleanedText(BaseAsset):
     type: str = "cleaned_text"
 
@@ -1347,6 +1372,11 @@ SCHEMA_CLASSES = {
     cls().type: cls
     for cls in [
         SourceDocument,
+        SourcePolicy,
+        SourceSyncJob,
+        SourceSnapshot,
+        LicenseCheckResult,
+        SourceRiskReport,
         CleanedText,
         DecompositionReport,
         CommercialPattern,

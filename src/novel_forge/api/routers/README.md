@@ -10,7 +10,7 @@ Phase 1 keeps existing service functions exported from `novel_forge.api.product`
 | `tasks.py` | Task latest state, timeline, SSE events, retry, cancel, control limits, dead-letter listing and recovery. |
 | `assets.py` | Asset detail, metadata editing, content editing, typed editing, versions/diff, graph, collections. |
 | `libraries.py` | Creative asset libraries: topic, material, knowledge, setting bible, style center, and quality standards. |
-| `handoffs.py` | Claude Code/Codex handoff list, source policies, GitHub sources, handoff creation, output validation/binding, acceptance, fail/retry. |
+| `handoffs.py` | Claude Code/Codex handoff list, source policy/license/risk/snapshot/sync governance, context eligibility, GitHub sources, handoff creation, output validation/binding, acceptance, fail/retry. |
 | `system.py` | Postgres strict checks, product health, local backups/restore, task event archive, Qdrant, MinIO, browser uploads. |
 | `batch.py` | Batch deconstruction, item listing, item retry/bulk retry, review gate, continue, handoff regenerate/void. |
 | `drafts.py` | Draft workbench, draft editor, draft generation, save, diff, export, publish record. |
