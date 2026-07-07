@@ -1378,7 +1378,7 @@ def _candidate_payloads(items: Any) -> list[dict[str, Any]]:
 
 
 def _enrich_candidate_source_eligibility(storage: LocalStorage, candidate: dict[str, Any]) -> dict[str, Any]:
-    if candidate.get("source_eligibility") or not str(candidate.get("path", "")).strip():
+    if not str(candidate.get("path", "")).strip():
         return candidate
     data = _read_asset_policy_candidate(storage, str(candidate.get("path", "")))
     if not data:
@@ -1387,22 +1387,50 @@ def _enrich_candidate_source_eligibility(storage: LocalStorage, candidate: dict[
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
     source_eligibility = content.get("source_eligibility") if isinstance(content.get("source_eligibility"), dict) else {}
     source_chunk_ids = content.get("source_chunk_ids") if isinstance(content.get("source_chunk_ids"), list) else []
+    current_policy = generation_context_policy(data)
+    existing_copyright = candidate.get("copyright", {}) if isinstance(candidate.get("copyright", {}), dict) else {}
+    existing_signals = [str(item) for item in existing_copyright.get("signals", []) if str(item).strip()] if isinstance(existing_copyright.get("signals", []), list) else []
+    current_signals = [str(item) for item in current_policy.get("signals", []) if str(item).strip()] if isinstance(current_policy.get("signals", []), list) else []
+    merged_signals = _dedupe([*existing_signals, *current_signals])
+    merged_eligible = bool(current_policy.get("eligible")) and existing_copyright.get("eligible") is not False
+    merged_risk_level = _stricter_context_risk(existing_copyright.get("risk_level"), current_policy.get("risk_level"))
+    merged_reason = "; ".join(_dedupe([str(existing_copyright.get("reason") or ""), str(current_policy.get("reason") or "")])) or "eligible for generation RAG"
     enriched = {
         **candidate,
-        "source_eligibility": source_eligibility,
+        "source_eligibility": candidate.get("source_eligibility") if isinstance(candidate.get("source_eligibility"), dict) and candidate.get("source_eligibility") else source_eligibility,
         "source_chunk_ids": [str(item) for item in source_chunk_ids if str(item).strip()],
+        "copyright": {
+            **existing_copyright,
+            "eligible": merged_eligible,
+            "risk_level": merged_risk_level,
+            "reason": merged_reason,
+            "signals": merged_signals,
+        },
     }
-    if source_eligibility:
+    if enriched.get("source_eligibility"):
         copyright = enriched.get("copyright", {}) if isinstance(enriched.get("copyright", {}), dict) else {}
         enriched["copyright"] = {
             **copyright,
-            "source_eligibility_status": source_eligibility.get("status", ""),
-            "source_policy_refs": source_eligibility.get("source_policy_refs", []),
-            "source_risk_report_refs": source_eligibility.get("source_risk_report_refs", []),
+            "source_eligibility_status": enriched["source_eligibility"].get("status", ""),
+            "source_policy_refs": enriched["source_eligibility"].get("source_policy_refs", []),
+            "source_risk_report_refs": enriched["source_eligibility"].get("source_risk_report_refs", []),
         }
     elif metadata.get("source_eligibility_status"):
         enriched["source_eligibility"] = {"status": metadata.get("source_eligibility_status")}
     return enriched
+
+
+def _stricter_context_risk(left: Any, right: Any) -> str:
+    order = {"unknown": 0, "low": 1, "medium": 2, "high": 3}
+    normalized = []
+    for value in [left, right]:
+        text = str(value or "unknown").strip().lower().replace("_", "-")
+        if text in {"non-commercial", "noncommercial", "restricted", "blocked"}:
+            text = "high"
+        if text not in order:
+            text = "unknown"
+        normalized.append(text)
+    return max(normalized, key=lambda item: order[item])
 
 
 def _kg_context_for_plan(

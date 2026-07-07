@@ -199,6 +199,66 @@ class ContextBuilderStageProfileTests(unittest.TestCase):
             self.assertIn(_rel(storage, blocked_path), rejected_by_path)
             self.assertIn("source_eligibility_rejected", rejected_by_path[_rel(storage, blocked_path)]["signals"])
 
+    def test_production_context_rejects_stale_source_governance_assets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace_ref, project_id = _workspace(storage, "Stale Source Context Project")
+            outline_path = _outline(storage, project_id, workspace_ref)
+            stale_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Stale source-derived knowledge",
+                    content={
+                        "principle": "Abstract mechanism only.",
+                        "source_eligibility": {
+                            "status": "passed",
+                            "generation_context_allowed": True,
+                            "evidence_only": False,
+                            "source_risk_report_refs": ["risk-ok"],
+                        },
+                    },
+                    metadata={
+                        "project_id": project_id,
+                        "workspace_path": workspace_ref,
+                        "asset_status": "stale",
+                        "source_diff_repair_status": "stale_pending_regeneration",
+                        "use_in_generation_rag": True,
+                    },
+                )
+            )
+            clean_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Clean source-derived knowledge",
+                    content={
+                        "principle": "Clean abstract mechanism.",
+                        "source_eligibility": {
+                            "status": "passed",
+                            "generation_context_allowed": True,
+                            "evidence_only": False,
+                            "source_risk_report_refs": ["risk-ok"],
+                        },
+                    },
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref, "asset_status": "active", "use_in_generation_rag": True},
+                )
+            )
+
+            plan = create_context_build_plan(storage, outline_path, query="outline source governance", context_profile="outline", environment="production")
+            _replace_candidates(storage, plan["path"], [stale_path, clean_path])
+            bundle = create_context_bundle(
+                storage,
+                plan["path"],
+                selected_asset_paths=[_rel(storage, stale_path), _rel(storage, clean_path)],
+                final_confirmed=True,
+            )
+            content = bundle["asset"]["content"]
+            selected_paths = {item["path"] for item in content["selected_assets"]}
+            rejected_by_path = {item["path"]: item for item in content["policy_rejections"]}
+
+            self.assertIn(_rel(storage, clean_path), selected_paths)
+            self.assertNotIn(_rel(storage, stale_path), selected_paths)
+            self.assertIn(_rel(storage, stale_path), rejected_by_path)
+            self.assertIn("stale_source_governance", rejected_by_path[_rel(storage, stale_path)]["signals"])
+
     def test_context_bundle_records_knowledge_and_material_usage_feedback(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

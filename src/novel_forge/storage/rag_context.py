@@ -569,6 +569,17 @@ def _copyright_assessment(data: dict[str, Any]) -> dict[str, Any]:
         signals.append("blocked_asset_type")
     if metadata.get("use_in_generation_rag") is False or content.get("use_in_generation_rag") is False:
         signals.append("explicit_generation_rag_denied")
+    asset_status = str(metadata.get("asset_status") or content.get("asset_status") or "").strip().lower()
+    if asset_status == "stale":
+        signals.append("stale_source_governance")
+    if asset_status in {"quarantined", "quarantine"}:
+        signals.append("quarantined_asset")
+    source_repair_status = str(metadata.get("source_diff_repair_status") or content.get("source_diff_repair_status") or "").strip().lower()
+    if source_repair_status.startswith("stale"):
+        signals.append("source_diff_repair_stale")
+    source_eligibility = content.get("source_eligibility") if isinstance(content.get("source_eligibility"), dict) else {}
+    if bool(metadata.get("quarantine") or content.get("quarantine") or source_eligibility.get("quarantine")):
+        signals.append("source_quarantine")
     risk_values = [
         metadata.get("copyright_risk"),
         metadata.get("risk_level"),
@@ -587,7 +598,24 @@ def _copyright_assessment(data: dict[str, Any]) -> dict[str, Any]:
     if any(marker in license_name for marker in ["non-commercial", "noncommercial", "cc by-nc", "by-nc", "nc-sa"]):
         risk_level = _max_risk([risk_level, "high"])
         signals.append("non_commercial_license")
-    eligible = not signals or not any(signal in {"blocked_asset_type", "explicit_generation_rag_denied", "high_copyright_risk", "non_commercial_license"} for signal in signals)
+    if any(signal in {"quarantined_asset", "source_quarantine"} for signal in signals):
+        risk_level = _max_risk([risk_level, "high"])
+    elif any(signal in {"stale_source_governance", "source_diff_repair_stale"} for signal in signals):
+        risk_level = _max_risk([risk_level, "medium"])
+    eligible = not signals or not any(
+        signal
+        in {
+            "blocked_asset_type",
+            "explicit_generation_rag_denied",
+            "high_copyright_risk",
+            "non_commercial_license",
+            "stale_source_governance",
+            "quarantined_asset",
+            "source_diff_repair_stale",
+            "source_quarantine",
+        }
+        for signal in signals
+    )
     return {
         "eligible": eligible,
         "risk_level": risk_level,

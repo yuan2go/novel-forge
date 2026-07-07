@@ -34,6 +34,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     SourceDiffRepairApplyRequest = models['SourceDiffRepairApplyRequest']
     SourceConnectorRunRequest = models['SourceConnectorRunRequest']
     SourceDiffRepairRollbackRequest = models['SourceDiffRepairRollbackRequest']
+    SourceStaleQuarantineSweepRequest = models['SourceStaleQuarantineSweepRequest']
     SourceContextEligibilityRequest = models['SourceContextEligibilityRequest']
     HandoffOutputRequest = models['HandoffOutputRequest']
     HandoffAcceptanceRequest = models['HandoffAcceptanceRequest']
@@ -146,6 +147,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def rollback_source_diff_repair_endpoint(request: SourceDiffRepairRollbackRequest) -> dict[str, Any]:
         try:
             return rollback_source_diff_repair(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/stale-sweep")
+    def sweep_source_stale_quarantine_endpoint(request: SourceStaleQuarantineSweepRequest) -> dict[str, Any]:
+        try:
+            return sweep_source_stale_quarantine(LocalStorage(app_settings.root), _model_data(request))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

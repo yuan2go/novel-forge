@@ -1710,6 +1710,16 @@ class SourceDiffRepairRollbackRequest(BaseModel):
     evidence_refs: list[str] = Field(default_factory=list)
 
 
+class SourceStaleQuarantineSweepRequest(BaseModel):
+    project_id: str = ""
+    workspace_path: str = ""
+    categories: list[str] = Field(default_factory=list)
+    max_assets: int = 1000
+    include_global: bool = False
+    environment: str = "local"
+    evidence_refs: list[str] = Field(default_factory=list)
+
+
 class SourceContextEligibilityRequest(BaseModel):
     source_ref: str
     asset_path: str = ""
@@ -1992,6 +2002,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "SourceDiffRepairApplyRequest": SourceDiffRepairApplyRequest,
         "SourceConnectorRunRequest": SourceConnectorRunRequest,
         "SourceDiffRepairRollbackRequest": SourceDiffRepairRollbackRequest,
+        "SourceStaleQuarantineSweepRequest": SourceStaleQuarantineSweepRequest,
         "SourceContextEligibilityRequest": SourceContextEligibilityRequest,
         "HandoffOutputRequest": HandoffOutputRequest,
         "HandoffAcceptanceRequest": HandoffAcceptanceRequest,

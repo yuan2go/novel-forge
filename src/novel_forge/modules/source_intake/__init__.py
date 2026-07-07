@@ -14,6 +14,7 @@ from novel_forge.modules.source_intake.service import (
 )
 from novel_forge.modules.source_intake.diff_repair import apply_source_diff_repair, plan_source_diff_repair, rollback_source_diff_repair
 from novel_forge.modules.source_intake.connector_runner import run_source_connector
+from novel_forge.modules.source_intake.stale_sweep import sweep_source_stale_quarantine
 
 __all__ = [
     "create_license_check_result",
@@ -32,4 +33,5 @@ __all__ = [
     "plan_source_diff_repair",
     "rollback_source_diff_repair",
     "run_source_connector",
+    "sweep_source_stale_quarantine",
 ]

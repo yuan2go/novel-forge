@@ -23,9 +23,10 @@ from novel_forge.modules.source_intake import (
     plan_source_diff_repair,
     rollback_source_diff_repair,
     run_source_connector,
+    sweep_source_stale_quarantine,
 )
 from novel_forge.modules.permission_center import resolve_approval_request
-from novel_forge.schemas import KnowledgeCard, validate_common_fields
+from novel_forge.schemas import KnowledgeCard, MaterialCard, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 
@@ -659,6 +660,88 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertEqual(blocked["status"], "blocked_path_outside_allowed_roots")
             self.assertFalse(blocked["execution_performed"])
             self.assertFalse(blocked["file_access_used"])
+
+    def test_source_stale_quarantine_sweep_writes_reviewable_context_denial_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(storage, {"source_ref": "local-corpus", "risk_tier": "R1", "project_id": "source-p9"})
+            risk = create_source_risk_report(storage, {"source_ref": "local-corpus", "source_policy_path": policy["path"], "project_id": "source-p9"})
+            snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "hash-v1",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p9",
+                },
+            )
+            stale_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Stale source-derived abstraction",
+                    source="local-corpus",
+                    tags=["source-derived"],
+                    content={"principle": "Only abstract mechanism remains.", "source_snapshot_ref": snapshot["asset"]["id"]},
+                    metadata={
+                        "project_id": "source-p9",
+                        "asset_status": "stale",
+                        "source_diff_repair_status": "stale_pending_regeneration",
+                        "use_in_generation_rag": False,
+                    },
+                    references=[snapshot["path"], snapshot["asset"]["id"]],
+                )
+            )
+            quarantined_path = storage.write_asset_auto(
+                MaterialCard(
+                    title="Quarantined source-derived material",
+                    source="local-corpus",
+                    tags=["source-derived", "quarantined"],
+                    content={
+                        "usable_patterns": ["abstract only"],
+                        "source_eligibility": {
+                            "status": "blocked_quarantined",
+                            "generation_context_allowed": False,
+                            "quarantine": True,
+                            "source_risk_report_refs": [risk["path"]],
+                        },
+                    },
+                    metadata={"project_id": "source-p9", "asset_status": "quarantined", "use_in_generation_rag": False},
+                    references=[risk["path"]],
+                )
+            )
+            clean_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Clean abstraction",
+                    source="local-corpus",
+                    tags=["source-derived"],
+                    content={"principle": "Clean abstract mechanism.", "source_snapshot_ref": snapshot["asset"]["id"]},
+                    metadata={"project_id": "source-p9", "asset_status": "active", "use_in_generation_rag": True},
+                    references=[snapshot["path"]],
+                )
+            )
+
+            result = sweep_source_stale_quarantine(
+                storage,
+                {"project_id": "source-p9", "categories": ["knowledge", "materials"], "max_assets": 50},
+            )
+            report_content = result["sweep_report"]["asset"]["content"]
+            impacted_paths = {item["path"] for item in report_content["impacted_assets"]}
+            impacted_by_path = {item["path"]: item for item in report_content["impacted_assets"]}
+
+            self.assertEqual(result["status"], "blocked")
+            self.assertFalse(result["mutation_applied"])
+            self.assertFalse(result["dispatch_applied"])
+            self.assertFalse(report_content["raw_source_text_included"])
+            self.assertIn(str(stale_path.relative_to(storage.root)), impacted_paths)
+            self.assertIn(str(quarantined_path.relative_to(storage.root)), impacted_paths)
+            self.assertNotIn(str(clean_path.relative_to(storage.root)), impacted_paths)
+            self.assertFalse(impacted_by_path[str(stale_path.relative_to(storage.root))]["context_selection"]["allowed"])
+            self.assertEqual(result["review_issue"]["asset"]["content"]["issue_type"], "source_leakage")
+            self.assertTrue(result["review_issue"]["asset"]["content"]["blocking"])
+            task_operations = {item["asset"]["content"]["operation"] for item in result["agent_tasks"]}
+            self.assertIn("review-source-stale-quarantine-sweep", task_operations)
+            self.assertIn("plan-source-context-exclusions", task_operations)
 
     def test_high_risk_source_stays_evidence_only_and_creates_blocking_production_approval(self):
         with tempfile.TemporaryDirectory() as tmp:
