@@ -222,6 +222,10 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/provider-fallback/preview",
                 "/product/provider-fallback/approve",
                 "/product/provider-fallback/resolve",
+                "/product/permission-center/snapshot",
+                "/product/permission-center/approval-requests",
+                "/product/permission-center/approval-requests/expire",
+                "/product/permission-center/approval-requests/{request_id}/resolve",
                 "/product/impact/reports",
                 "/product/impact/report",
                 "/product/handoffs",
@@ -308,6 +312,7 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(client.get("/product/editor-chief/snapshot").status_code, 200)
             self.assertEqual(client.get("/product/runtime/policy/surface-coverage").status_code, 200)
             self.assertEqual(client.get("/product/runtime/provider-hard-stop-evidence").status_code, 200)
+            self.assertEqual(client.get("/product/permission-center/snapshot").status_code, 200)
             self.assertEqual(client.get("/product/longform-stability/dashboard").status_code, 200)
             self.assertEqual(client.get("/product/platform-strategy/assets").status_code, 200)
             completion = client.get("/product/system/module-completion")
@@ -348,6 +353,27 @@ class ProductApiRouterTests(unittest.TestCase):
                 json={"project_id": project.json()["project_id"], "workspace_path": project.json()["path"]},
             )
             self.assertEqual(metric_snapshot.status_code, 200, metric_snapshot.text)
+            approval_request = client.post(
+                "/product/permission-center/approval-requests",
+                json={
+                    "project_id": project.json()["project_id"],
+                    "scope": "publish",
+                    "action": "submit_release_package",
+                    "environment": "local",
+                    "risk_level": "high",
+                    "blocking": True,
+                    "target_type": "release_package",
+                    "target_id": "release-route-fixture",
+                },
+            )
+            self.assertEqual(approval_request.status_code, 200, approval_request.text)
+            request_id = approval_request.json()["asset"]["content"]["request_id"]
+            resolved_request = client.post(
+                f"/product/permission-center/approval-requests/{request_id}/resolve",
+                json={"decision": "approved", "actor": "route-test", "reason": "route fixture"},
+            )
+            self.assertEqual(resolved_request.status_code, 200, resolved_request.text)
+            self.assertEqual(client.get("/product/permission-center/approval-requests", params={"project_id": project.json()["project_id"]}).status_code, 200)
             config = project.json()["project_config"]
             for key in [
                 "platform_profile_path",

@@ -6,11 +6,15 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.permission_center import (
+    create_approval_request,
     create_human_approval_gate,
     create_permission_policy,
     evaluate_permission,
+    expire_approval_requests,
+    list_approval_requests,
     list_permission_policies,
     permission_center_snapshot,
+    resolve_approval_request,
     resolve_human_approval_gate,
 )
 from novel_forge.storage.local import LocalStorage
@@ -48,6 +52,37 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     async def evaluate(request: Request) -> dict[str, Any]:
         try:
             return evaluate_permission(storage(), await request.json())
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/approval-requests")
+    def approval_requests(project_id: str | None = None, status: str | None = None, scope: str | None = None, limit: int = Query(default=300, ge=1, le=1000)) -> list[dict[str, Any]]:
+        try:
+            return list_approval_requests(storage(), project_id=project_id, status=status, scope=scope, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/approval-requests")
+    async def create_request(request: Request) -> dict[str, Any]:
+        try:
+            return create_approval_request(storage(), await request.json())
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/approval-requests/expire")
+    async def expire_requests(request: Request) -> dict[str, Any]:
+        try:
+            data = await request.json()
+            return expire_approval_requests(storage(), project_id=data.get("project_id"), now=data.get("now"), limit=int(data.get("limit") or 300))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/approval-requests/{request_id}/resolve")
+    async def resolve_request(request_id: str, request: Request) -> dict[str, Any]:
+        try:
+            return resolve_approval_request(storage(), request_id, await request.json())
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

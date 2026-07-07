@@ -56,7 +56,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 
 - A verified true v1 slow run that produces 30 consecutive readable chapters with all required artifacts and quality/canon/revision records.
 - Full `SourcePolicy`, `SourceSyncJob`, `SourceSnapshot`, `LicenseCheckResult`, and `SourceRiskReport` lifecycle.
-- First-class `ApprovalRequest` model and approval routing for high-risk material/context/publishing/story changes.
+- ApprovalRequest caller migration and approval routing for high-risk material/context/publishing/story changes.
 - Independent lifecycle models for many blueprint concepts currently represented as fields inside broad assets.
 - Full typed graph state/query/diff storage for all Canon topic state machines.
 - Full provider-backed premium judge and 50-chapter proof using real external credentials and operator-approved budget.
@@ -97,7 +97,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 
 1. Chapter Blueprint, Draft, Review, Revision, Canon Update, Longform Recap, and Export are proven for one true chapter, a 10-chapter sequence contract, and a true 10-chapter slow run; development slices after that baseline add stronger local evidence but are not yet proven in a true 30-chapter slow run.
 2. ReviewIssue-to-RevisionPlan strategy mapping now exists as `review-issue-revision-strategy-v1`; remaining risk is proving real chapter improvement across the final unified acceptance phase.
-3. ApprovalRequest and source governance lifecycle are insufficient for high-risk material and major story mutations.
+3. ApprovalRequest foundation exists, but source governance lifecycle and full caller migration are insufficient for high-risk material and major story mutations.
 4. Several blueprint data models are represented as flexible content fields rather than typed lifecycle assets.
 
 ## Gap Matrix
@@ -127,17 +127,16 @@ Current implementation proves many slices and fixtures, including a true one-cha
 | Enhancement | Pleasure Point Ledger | Manage爽点 cadence | `RewardLedger` foundation | Not tied to chapter economy | Flat chapters | P1 | Use RewardLedger in chapter quality loop | `modules/longform_stability` | Reward cadence fixtures |
 | Enhancement | Toxic Point & Drop-off Engine | Detect毒点 and drop-off | Feedback clusters/dropoff reports and quality issues exist | Needs v1 toxicity gate and real feedback analysis | Reader churn | P1 | Add deterministic toxic-point review rules | `modules/feedback`, `quality_eval` | Toxic point fixtures |
 | Tool | Public Domain Importer | Evidence-only source import | Classical-Modern importer with slow-run/checkpoint/report | Full provider extraction intentionally not complete | Token/source leakage if abused | P1 | Continue slow auditable batches only | `scripts/import_classical_modern_to_mkaos.py` | Slow-run/resume tests |
-| Tool | Exporter | Export final chapters/packages | Draft export and publishing package foundations exist; v1 chapter bus writes local markdown plus export manifest/provenance/checklist/rollback/handoff evidence | Final unified multi-chapter proof and publish-gate handoff coverage are deferred | Hard to inspect production output if callers bypass manifest | P0 | Add ApprovalRequest before publish/story mutations, then prove export handoff in final unified acceptance | `modules/chapter_production_bus`, `modules/publishing` | Export manifest/provenance fixture now; final workflow proof later |
+| Tool | Exporter | Export final chapters/packages | Draft export and publishing package foundations exist; v1 chapter bus writes local markdown plus export manifest/provenance/checklist/rollback/handoff evidence | Final unified multi-chapter proof and publish-gate handoff coverage are deferred | Hard to inspect production output if callers bypass manifest | P0 | Migrate publish/story mutation callers to ApprovalRequest refs, then prove export handoff in final unified acceptance | `modules/chapter_production_bus`, `modules/publishing`, `modules/permission_center` | Export manifest/provenance fixture now; approval request fixtures now; final workflow proof later |
 
 ## Next Stage Recommendation
 
 Do not add another broad V7 surface first. The next production slice should be:
 
 ```text
-V1 ApprovalRequest foundation before unified acceptance:
-add a first-class human gate so high-risk source use, context override, publish handoff,
-and major story mutation can produce approve/reject/expire decisions with traceable
-evidence, while ordinary local development remains non-blocking.
+V1 dashboard data before unified acceptance:
+expose project-level artifact coverage for reducer, recap, export, and approval evidence
+so operators can inspect workflow truth without running a new chapter acceptance pass.
 ```
 
 During the current development loop, do not run chapter acceptance. Use targeted unit and compile checks only, then run the unified acceptance phase after the production slices are complete.

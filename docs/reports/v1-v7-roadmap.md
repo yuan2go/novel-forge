@@ -39,18 +39,19 @@ Current evidence:
 - Long-form state update now includes a v1 reducer: `create_longform_artifacts_for_draft()` writes chapter state/fact/character/foreshadow/reward projections into existing CanonGraph `canon_state_machine_ledger`, `canon_state_machine_snapshot`, and `canon_state_machine_diff_report` assets. Chapter bus outputs expose the reducer paths.
 - Longform recap trigger policy now distinguishes 5-chapter light recap, 10-chapter formal recap, overdue formal recap, exception recap, and forced chapter checkpoints. Reports persist recap level, cadence boundary, next recap chapters, and forced checkpoint status.
 - Local export package hardening now writes a generated-draft-only markdown file plus a JSON manifest containing hash/size, provenance over review/revision/canon/reducer/recap evidence, source-isolation policy, operator checklist, rollback instructions, and manual handoff to operator review before publish gate.
+- ApprovalRequest foundation now exists as a schema-backed Permission Center asset/API with approve/reject/expire lifecycle, risk/environment/blocking policy, evidence refs, rollback plan, and snapshot aggregation.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
-- ApprovalRequest missing.
+- ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
 - Source policy lifecycle still needs tightening beyond the Context Builder stage profile contract.
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. ApprovalRequest foundation for high-risk source/context/publish/story changes.
-3. Dashboard data for reducer/recap/export/approval coverage.
+2. Dashboard data for reducer/recap/export/approval coverage.
+3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
 验收标准:
@@ -216,19 +217,19 @@ Current evidence:
 - Material Factory.
 - Agent Scheduler complete operations.
 - Cost Control.
-- Approval Router.
+- Approval Router and calling-module migration.
 - Security / Sandbox OS.
 - Prompt Injection Guard.
 
 当前完成度: 30%.
 
 阻塞项:
-- ApprovalRequest missing.
+- ApprovalRequest foundation exists; approval routing and full caller migration remain incomplete.
 - Full source governance and security audit lifecycle incomplete.
 - External connector sandboxing must be proven before automated imports.
 
 推荐切片:
-- ApprovalRequest and Approval Router.
+- ApprovalRequest caller migration and Approval Router.
 - Connector permission policy.
 - Prompt injection and malicious source filters.
 - Scheduler production governance coverage audit.

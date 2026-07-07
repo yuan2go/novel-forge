@@ -16,6 +16,7 @@ Implementation status note:
 - 2026-07-08: `V1-S6 Canon/Timeline/Foreshadow Reducer` was implemented as a development slice. `create_longform_artifacts_for_draft()` now calls `reduce_longform_state_for_draft()` to project chapter state, facts, character state, foreshadowing, and reward/cost signals into the existing CanonGraph `canon_state_machine_ledger`, `canon_state_machine_snapshot`, and `canon_state_machine_diff_report` assets. Chapter production bus outputs now include those reducer paths. Unit coverage exists in `tests/unit/test_longform_stability.py` and `tests/unit/test_context_and_production_chain.py`. No chapter acceptance was run.
 - 2026-07-08: `V1-S7 Longform Recap Cadence` was implemented as a development slice. `evaluate_recap_trigger()` now distinguishes 5-chapter light recap, 10-chapter formal recap, overdue formal recap, exception triggers, and forced per-chapter checkpoints. `run_longform_recap()` persists recap level, cadence boundary, next recap chapters, and forced checkpoint status in report content/metadata. Unit coverage exists in `tests/unit/test_longform_recap_agent.py` and scheduler recap coverage. No chapter acceptance was run.
 - 2026-07-08: `V1-S8 Exportable Chapter Package` was implemented as a development slice. The chapter production bus now writes a local markdown export plus a JSON export manifest with file hash/size, provenance over review/revision/canon/reducer/recap evidence, source-isolation boundaries, operator checklist, rollback instructions, and manual handoff to operator review before publish gate. Unit coverage exists in `tests/unit/test_context_and_production_chain.py`. No chapter acceptance was run.
+- 2026-07-08: `V1-S9 ApprovalRequest Foundation` was implemented as a development slice. `approval_request` is now a schema-backed asset with scope/action/subject/target/risk/environment/blocking/evidence/rollback/decision fields, Permission Center service/API lifecycle, snapshot aggregation, and approve/reject/expire fixtures. No chapter acceptance was run.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
@@ -27,7 +28,7 @@ Implementation status note:
 | V1-S6 Canon/Timeline/Foreshadow Reducer | Update continuity state after every accepted chapter | Long-form stability depends on persistent state | Canon Graph, Novel KG, Longform Stability, Chapter Production Bus | CanonFact, TimelineEvent, ForeshadowItem, FactLedger, CanonStateMachineLedger, CanonStateMachineSnapshot, CanonStateMachineDiffReport | Implemented: v1 longform reducer writes chapter state/fact/character/foreshadow/reward projections into existing CanonGraph state-machine ledger/snapshot/diff assets and exposes paths in chapter bus outputs | Added reducer asset fixture and chapter bus resume fixture; final unified v1 workflow验收 remains deferred | Story Bible docs updated through this slice matrix | Reducer is local heuristic and evidence-backed; richer typed graph semantics can deepen without creating a parallel canon system |
 | V1-S7 Longform Recap Cadence | Trigger light recap every 5 chapters and formal recap every 10 | v1 acceptance requires longform review, not just isolated chapters | Longform Recap, Agent Scheduler, Workflow Nodes | LongformRecapReport, ChapterStatePackage, QualityTrend | Implemented: recap trigger policy now supports light/formal cadence, overdue formal recap, exception reasons, next boundaries, and forced chapter checkpoints without pretending every checkpoint is a formal recap | Added light/formal/checkpoint trigger fixtures plus scheduler operation coverage; final unified v1 workflow验收 remains deferred | Longform docs updated through this slice matrix | Cadence is explicit and evidence-backed; future UI can expose operator-configurable intervals |
 | V1-S8 Exportable Chapter Package | Produce reviewable/exportable local package after revised chapter acceptance | Makes v1 output inspectable and usable | Drafts, Publishing, Exporter | DraftChapter, DraftVersion, PublishingPlan, PublishingLog, ReleasePackage-lite | Implemented: chapter bus writes local markdown, manifest, provenance checklist, source-isolation policy, rollback metadata, and operator-review handoff | Added export manifest/provenance fixture; final unified v1 workflow验收 remains deferred | Engineering/export docs updated through this slice matrix | Local export only; does not imply platform auto-publish |
-| V1-S9 ApprovalRequest Foundation | Add human gate model for high-risk sources, context, publish, major plot mutation | Required for safe autonomy and source governance | Agent OS, Source Governance, Publishing, Feedback | ApprovalRequest, SourcePolicy, ReviewIssue | Approval service/API minimal foundation | Approve/reject/expired fixtures | Agent/security docs | Needs clear non-blocking local mode |
+| V1-S9 ApprovalRequest Foundation | Add human gate model for high-risk sources, context, publish, major plot mutation | Required for safe autonomy and source governance | Agent OS, Source Governance, Publishing, Feedback | ApprovalRequest, SourcePolicy, ReviewIssue | Implemented: schema-backed `approval_request` plus Permission Center create/list/resolve/expire/snapshot APIs | Added approve/reject/expire and route fixtures; final unified v1 workflow验收 remains deferred | Agent/security docs updated through this slice matrix | Calling modules still need staged migration from local approval fields to ApprovalRequest refs |
 | V1-S10 v1 Acceptance Dashboard Data | Expose real artifact coverage for one project | UI must show workflow truth, not static completion | Product API, Novel OS Cockpit, Metrics | ProjectMetricSnapshot, QualityMetric, TraceSpan, CostLedger | Cockpit data aggregation | API route tests | UI docs | Avoid UI-only proof |
 | P1-S1 Source Governance Lifecycle | Add SourcePolicy, SourceRiskReport, license check result lifecycle | External corpora and MKAOS need stronger boundaries | Source Governance, MKAOS, Context Builder | SourcePolicy, LicenseCheckResult, SourceRiskReport, SourceEvidence | Source policy service/API | Source policy gate tests | Source governance docs | Too much ceremony can slow local use |
 | P1-S2 Reader Promise Ledger | Track promise/payoff lifecycle | Needed for追读 and longform stability | Longform, Web Novel Enhancement, Review | ReaderPromise, ForeshadowItem, ReviewIssue | Promise ledger service | Broken promise fixtures | Longform docs | Requires good chapter annotations |
@@ -42,16 +43,16 @@ Implementation status note:
 
 ## Recommended Next Slice
 
-Continue from `V1-S9 ApprovalRequest Foundation`.
+Continue from `V1-S10 v1 Acceptance Dashboard Data`.
 
-The current highest-priority development slice is to add a first-class human approval gate for high-risk autonomy points:
+The current highest-priority development slice is to expose real artifact coverage for one project without running chapter acceptance:
 
 ```text
-high-risk source/context/publish/story mutation
--> ApprovalRequest
--> approve/reject/expire
--> traceable gate decision
--> safe local non-blocking mode for ordinary development
+project id
+-> latest chapter production runs
+-> required V1 artifact coverage
+-> reducer/recap/export/approval status
+-> dashboard/API data for operator inspection
 ```
 
 Do not run chapter acceptance during the development loop. Keep the 2026-07-07 slow report as the current baseline until the final unified acceptance phase.

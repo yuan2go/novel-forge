@@ -629,6 +629,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "tool_definition": ["tool_id", "name", "tool_kind", "input_schema", "output_schema", "status"],
     "tool_invocation": ["invocation_id", "tool_id", "status", "input", "output", "created_at"],
     "tool_permission_policy": ["policy_id", "tool_id", "agent_types", "status"],
+    "approval_request": ["request_id", "status", "scope", "action", "subject", "target", "risk_level", "environment", "blocking", "evidence_refs", "decision", "created_at"],
     "mcp_server_registry": ["server_id", "name", "transport", "tools", "status"],
     "state_event": ["event_id", "stream", "subject_id", "event_type", "payload", "created_at"],
     "state_snapshot": ["snapshot_id", "stream", "subject_id", "state", "event_count", "created_at"],

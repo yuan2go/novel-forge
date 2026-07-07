@@ -254,6 +254,7 @@ from novel_forge.schemas.assets import (
     TopicSeed,
     TraceSpan,
     TrainingExercise,
+    ApprovalRequest,
     WebFictionBusinessAnalysisReport,
     WritingTemplate,
     CommentClusterReport,
@@ -539,6 +540,7 @@ __all__ = [
     "AgentCostSnapshot",
     "ChapterCostSnapshot",
     "CostQualityDashboard",
+    "ApprovalRequest",
     "asset_from_dict",
     "validate_common_fields",
 ]

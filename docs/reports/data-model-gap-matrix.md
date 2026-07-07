@@ -100,7 +100,7 @@ Status legend:
 | TaskPlan | 任务计划 | partial | `WorkflowDefinition`, `LoopRun`, task DAG | standalone plan model | partial | Workflow/Agent | P1 |
 | TaskDependency | 任务依赖 | partial | workflow DAG/dependencies | first-class dependency asset | embedded | Workflow/Agent | P1 |
 | TaskFailure | 任务失败 | yes | `AgentFailureReport`, `TaskDeadLetter` | recovery taxonomy can deepen | usable | Agent Scheduler | P0 |
-| ApprovalRequest | 人工审批 | no | Not found as first-class schema | request state, approver, scope, evidence | missing | Agent/Security/Publishing | P0 |
+| ApprovalRequest | 人工审批 | yes foundation | `ApprovalRequest`, `modules/permission_center/service.py`, `/product/permission-center/approval-requests` | caller migration and deeper approval router policies | usable foundation | Agent/Security/Publishing | P0 |
 | OSEnvelope | OS 执行信封 | partial | runtime policy/envelope dicts, trace/cost assets | standalone schema asset | embedded | Runtime Governance | P0 |
 | TraceLog | 追踪日志 | yes as `TraceSpan` | `TraceSpan` | cross-artifact query helpers | usable | Runtime Ledger | P0 |
 | CostLog | 成本日志 | yes as `CostLedger` | `CostLedger`, cost snapshots | provider billing calibration | usable | Runtime Ledger | P1 |
@@ -111,9 +111,9 @@ Status legend:
 
 ## Immediate Data-Model Priorities For v1
 
-1. `ApprovalRequest`: needed for high-risk source/context/publishing/story mutation gates.
-2. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
-3. `SourcePolicy` / `SourceRiskReport`: needed before using large external corpora in production contexts.
+1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
+2. `SourcePolicy` / `SourceRiskReport`: needed before using large external corpora in production contexts.
+3. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
 4. Readable prose/page-turning/mobile review models: needed after `chapter-blueprint-contract-v1` so draft quality is not limited by thin prose gates.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
 6. `ReaderPromise` reducer and payoff lifecycle: CanonFact/TimelineEvent/Foreshadow reducer foundation exists; promise lifecycle remains needed for 10-30 chapter coherence.

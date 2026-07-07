@@ -27,12 +27,13 @@ Implementation status note:
 - 2026-07-08: V1 longform reducer now projects accepted chapter state/facts/characters/foreshadow/rewards into existing CanonGraph state-machine ledger/snapshot/diff assets. Story Bible / Long-form OS remains M3 until final unified multi-chapter proof is run.
 - 2026-07-08: Longform recap cadence now distinguishes 5-chapter light recap, 10-chapter formal recap, overdue formal recap, exception recap, and forced chapter checkpoints. Story Bible / Long-form OS remains M3 until final unified multi-chapter proof and operator configuration/UI are added.
 - 2026-07-08: V1 export package hardening now writes local markdown plus an export manifest with provenance, source isolation, operator checklist, rollback metadata, and manual handoff. Exporter remains M3 until final unified multi-chapter proof and publish-gate handoff coverage are run.
+- 2026-07-08: ApprovalRequest foundation now exists as a schema-backed Permission Center asset/API with approve/reject/expire lifecycle and snapshot aggregation. Agent OS remains M3 until high-risk source/context/publish/story mutation callers migrate to ApprovalRequest refs.
 
 ## Core OS Layer
 
 | 层级 | 模块 | 蓝图目标 | 当前状态 | 成熟度 | 缺口 | 风险 | 优先级 | 建议实现顺序 |
 |---|---|---|---|---|---|---|---|---|
-| Core OS | Agent OS | Autonomous task lifecycle, execution, retries, approvals, trace, cost | Agent contracts/tasks/runs/scheduler/dispatch/leases/retry/dead-letter/rollback exist | M3 | ApprovalRequest and v1 operation coverage incomplete | Workflow appears autonomous but business loop can still be partial | P0 | Register and test v1 chapter-loop operations before expanding agents |
+| Core OS | Agent OS | Autonomous task lifecycle, execution, retries, approvals, trace, cost | Agent contracts/tasks/runs/scheduler/dispatch/leases/retry/dead-letter/rollback and ApprovalRequest foundation exist | M3 | ApprovalRequest caller migration and v1 operation coverage incomplete | Workflow appears autonomous but business loop can still be partial | P0 | Register and test v1 chapter-loop operations and migrate high-risk calls to ApprovalRequest refs before expanding agents |
 | Core OS | Source / Material Governance OS | Source policy, license, risk, material inbox, usage tracking | SourceDocument/SourceChunk/MKAOS ingestion/source isolation/Classical-Modern slow importer exist | M3 | SourcePolicy, LicenseCheckResult, SourceSyncJob, SourceSnapshot are not first-class lifecycle models | Copyright and leakage risk | P0 | Add source policy lifecycle and leakage tests |
 | Core OS | MKAOS | Evidence-only knowledge asset operating system | Knowledge cards/packs/quality/lineage/model extraction/production gates exist | M3 | Lifecycle, approval, usage feedback, and query contract need v1 standardization | Ordinary RAG drift | P0 | Standardize MKAOS query contract for topic/world/outline/chapter/review |
 | Core OS | Context Builder OS | Safe ContextPackage builder | Plans/bundles/RAG quality/source isolation/MKAOS contract and stage-specific profile enforcement exist | M3 | Final unified workflow验收 has not yet proved every v1 stage uses the correct profile | Context pollution and token bloat if callers bypass Context Builder | P0 | Keep profiles mandatory in chapter loop and add final workflow assertions later |
@@ -92,14 +93,14 @@ Implementation status note:
 | Tool | Synopsis Generator | Synopsis options | Outline/topic assets can hold it | M1 | Not first-class | Low | P3 | Tool-level only |
 | Tool | Cover Prompt Generator | Cover prompt | ImagePrompt asset exists | M2 | Not tied to publishing package | Low | P3 | Add after export/publishing |
 | Tool | Chapter Title Optimizer | Chapter title quality | ChapterPlan/Draft fields can hold titles | M1 | No optimizer/gate | Low | P2 | Add after chapter loop |
-| Tool | Exporter | Export chapters/packages | Draft export/publishing packages exist; v1 bus writes local markdown plus export manifest/provenance/checklist/rollback/handoff records; 10-chapter slow acceptance counted 10 export packages and 10 markdown files before manifest hardening | M3 | Final unified multi-chapter coverage and release/publish handoff evidence remain deferred | Hard handoff | P0 | Add ApprovalRequest, then prove export evidence in final unified acceptance |
+| Tool | Exporter | Export chapters/packages | Draft export/publishing packages exist; v1 bus writes local markdown plus export manifest/provenance/checklist/rollback/handoff records; 10-chapter slow acceptance counted 10 export packages and 10 markdown files before manifest hardening | M3 | Final unified multi-chapter coverage and release/publish handoff evidence remain deferred | Hard handoff | P0 | Migrate publish handoff to ApprovalRequest refs, then prove export evidence in final unified acceptance |
 | Tool | Tag Manager | Tags/categories | Asset tags/content fields exist | M2 | No dedicated lifecycle | Inconsistent classification | P3 | Improve when MKAOS lifecycle matures |
 | Tool | Manual Input | Operator-provided assets | Product asset editor/routes exist | M3 | Approval boundaries uneven | Manual bypass | P1 | Add approval requirement for risky edits |
 
 ## Highest-Leverage Next Order
 
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
-2. ApprovalRequest foundation for high-risk source/context/publish/story changes.
-3. Dashboard coverage for reducer, recap, export, and approval outputs.
+2. Dashboard coverage for reducer, recap, export, and approval outputs.
+3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Extend v1 export package evidence to 30 chapters during final unified acceptance.
 5. Source governance lifecycle.

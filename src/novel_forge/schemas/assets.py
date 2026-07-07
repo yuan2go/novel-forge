@@ -959,6 +959,11 @@ class ToolPermissionPolicy(BaseAsset):
 
 
 @dataclass
+class ApprovalRequest(BaseAsset):
+    type: str = "approval_request"
+
+
+@dataclass
 class MCPServerRegistry(BaseAsset):
     type: str = "mcp_server_registry"
 
@@ -1530,6 +1535,7 @@ SCHEMA_CLASSES = {
         ToolDefinition,
         ToolInvocation,
         ToolPermissionPolicy,
+        ApprovalRequest,
         MCPServerRegistry,
         StateEvent,
         StateSnapshot,

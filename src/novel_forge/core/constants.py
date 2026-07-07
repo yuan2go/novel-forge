@@ -350,6 +350,7 @@ ASSET_DIR_BY_TYPE = {
     "tool_definition": "runs",
     "tool_invocation": "runs",
     "tool_permission_policy": "runs",
+    "approval_request": "runs",
     "mcp_server_registry": "runs",
     "state_event": "runs",
     "state_snapshot": "runs",
