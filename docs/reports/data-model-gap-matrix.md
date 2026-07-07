@@ -72,12 +72,12 @@ Status legend:
 | ConflictLadder | 冲突阶梯 | partial | outline/chapter content | escalation model | embedded | Outline/Chapter | P1 |
 | ClimaxMap | 高潮图 | partial | outline content | payoff/climax model | embedded | Outline | P2 |
 | ForeshadowPlan | 伏笔计划 | partial | `ForeshadowingThread`, outline content | plan vs actual diff | partial | Outline/Long-form | P1 |
-| ChapterBlueprint | 章节细纲 | yes as `ChapterPlan` | `ChapterPlan`, `ChapterPlanVersion` | blueprint field validation | usable foundation | Chapter Blueprint | P0 |
-| SceneBeat | 场景节拍 | partial | chapter plan content | standalone beat schema | embedded | Chapter Blueprint | P0 |
-| ConflictBeat | 冲突节拍 | partial | chapter plan content | standalone beat schema | embedded | Chapter Blueprint | P0 |
-| InfoReleasePoint | 信息释放点 | partial | chapter plan content | standalone release model | embedded | Chapter Blueprint | P1 |
-| HookPlan | 钩子计划 | partial | chapter plan/platform gate content | hook type/payoff state | embedded | Chapter Blueprint | P0 |
-| EmotionCurve | 情绪曲线 | yes | `EmotionCurve` analysis asset, chapter fields | production curve binding | partial | Analysis/Chapter | P1 |
+| ChapterBlueprint | 章节细纲 | yes as `ChapterPlan` | `ChapterPlan`, `ChapterPlanVersion`, `chapter-blueprint-contract-v1` | standalone ChapterBlueprint asset not required for v1; final workflow assertions pending | usable with embedded contract | Chapter Blueprint | P0 |
+| SceneBeat | 场景节拍 | partial | `ChapterPlan.content.scene_beats`, `DraftChapter.content.chapter_plan_blueprint` | standalone beat schema/lifecycle | embedded contract | Chapter Blueprint | P0 |
+| ConflictBeat | 冲突节拍 | partial | `ChapterPlan.content.conflict_beats` | standalone beat schema/lifecycle | embedded contract | Chapter Blueprint | P0 |
+| InfoReleasePoint | 信息释放点 | partial | `ChapterPlan.content.info_release_points` | standalone release model | embedded contract | Chapter Blueprint | P1 |
+| HookPlan | 钩子计划 | partial | `ChapterPlan.content.hook_plan`, platform gates | hook type/payoff state lifecycle | embedded contract | Chapter Blueprint | P0 |
+| EmotionCurve | 情绪曲线 | yes | `EmotionCurve` analysis asset, `ChapterPlan.content.emotion_curve` | production curve lifecycle and trend binding | partial | Analysis/Chapter | P1 |
 | ChapterDraft | 章节正文 | yes | `DraftChapter`, `DraftVersion` | v1 loop coverage | usable | Drafting | P0 |
 | SceneDraft | 场景正文 | partial | DraftChapter content | scene-level draft model | embedded | Drafting | P2 |
 | DialoguePass | 对话专项稿 | no | Not found | pass type, diff, review | missing | Revision/Style | P2 |
@@ -114,7 +114,7 @@ Status legend:
 1. `ApprovalRequest`: needed for high-risk source/context/publishing/story mutation gates.
 2. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 3. `SourcePolicy` / `SourceRiskReport`: needed before using large external corpora in production contexts.
-4. `ChapterBlueprint` conventions inside `ChapterPlan`: needed so draft quality is not limited by thin plans.
+4. Readable prose/page-turning/mobile review models: needed after `chapter-blueprint-contract-v1` so draft quality is not limited by thin prose gates.
 5. `ReadabilityReport` / `PageTurningReport` / `AntiAIReport`: needed to convert readable prose goals into blocking gates.
 6. `CanonFact` / `TimelineEvent` / `ReaderPromise` reducers: needed to keep 10-30 chapters coherent.
 

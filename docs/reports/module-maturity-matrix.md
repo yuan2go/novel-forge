@@ -21,6 +21,7 @@ Implementation status note:
 - 2026-07-07: true 10-chapter slow acceptance passed and is documented in `docs/reports/v1-chapter-sequence-slow-acceptance.md`; maturity remains M3 until 30 chapters pass with controlled runtime growth.
 - 2026-07-08: development runtime governance added compact task-status policy for batch sequence runs and lazy single-profile Agent Registry sync. This reduces avoidable asset writes but does not change maturity because no new acceptance is being run during the development loop.
 - 2026-07-08: Context Builder now has `stage-context-profile-v1` contracts with per-stage allowed/forbidden asset type enforcement and source-isolation rejections. Maturity remains M3 until the final unified v1 workflow验收 proves the profiles inside the full production loop.
+- 2026-07-08: Chapter Blueprint now has an embedded `chapter-blueprint-contract-v1` in `ChapterPlan`, version preservation in `ChapterPlanVersion`, and draft evidence in `DraftChapter`. Maturity remains M3 until the final unified v1 workflow验收 proves it across multi-chapter production.
 
 ## Core OS Layer
 
@@ -45,7 +46,7 @@ Implementation status note:
 | Engine | Worldbuilding Engine | World rules, factions, resources, gates | WorldBible, PowerScaleRule, genre/canon support exist | M3 | Faction/resource/location lifecycle partial | World rules become loose notes | P1 | Tie world bible to v1 context and canon gate |
 | Engine | Character Engine | Character profiles, states, relationships, voice | CharacterCard, CharacterStateLedger, Novel KG support exist | M3 | VoiceProfile and RelationshipEdge are partial | Character drift | P1 | Add character state/voice drift checks |
 | Engine | Outline Engine | Long outline, volume arcs, foreshadow plan | Outline/OutlineVersion/LongFormMacroPlan exist | M3 | 30-chapter plan proof missing | Draft path not guided enough | P0 | Canonical outline-to-chapter-plan workflow |
-| Engine | Chapter Blueprint Engine | Scene beats, conflicts, hooks, emotion curve | ChapterPlan/ChapterPlanVersion, one-chapter true production bus, 10-chapter sequence acceptance contract, true 10-chapter slow baseline, and development runtime artifact policy exist | M3 | SceneBeat/ConflictBeat/HookPlan mostly embedded content; deeper trace/agent-ledger growth governance and deferred unified acceptance missing | Thin prose and weak hooks | P0 | Continue artifact/runtime governance, then defer acceptance to the unified final pass |
+| Engine | Chapter Blueprint Engine | Scene beats, conflicts, hooks, emotion curve | `ChapterPlan` now carries `chapter-blueprint-contract-v1`; `ChapterPlanVersion` preserves it; `DraftChapter` persists blueprint evidence; one-chapter/10-chapter baseline evidence exists | M3 | SceneBeat/ConflictBeat/HookPlan remain embedded fields rather than standalone lifecycle assets; deferred unified multi-chapter acceptance pending | Thin prose and weak hooks if callers bypass generated blueprint contracts | P0 | Next add readable-prose gates over drafts/revisions |
 | Engine | Readable Prose Engine | Immersive page-turning prose | Drafting, content quality loop, style/quality eval exist | M2 | Not a distinct v1 hard gate | AI-like chapter output | P0 | Add readable-prose gate to draft/revision |
 | Engine | Revision Engine | Issue-driven revision with re-review | RevisionTask/Plan, rework loop, re-review, publish links exist | M3 | Strategy coverage and measurable improvement need hard tests | Cosmetic revisions | P0 | Map issue types to strategies and re-review evidence |
 | Engine | Ending / Closure Engine | Ending plan, payoff, closure gates | No clear implementation beyond outline/release concepts | M1 | Ending-specific models and tests absent | Longform payoff risk | P3 | Defer until longform arcs mature |
@@ -93,8 +94,7 @@ Implementation status note:
 ## Highest-Leverage Next Order
 
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
-2. Chapter Blueprint Deepening.
-3. Readable Prose / Golden Opening / Toxic Point gates as blocking ReviewIssue sources.
-4. Canon/timeline/foreshadow update reducer and 5/10 chapter recap cadence.
-5. Extend v1 export package evidence to 30 chapters during final unified acceptance.
-6. Source governance lifecycle and ApprovalRequest.
+2. Readable Prose / Golden Opening / Toxic Point gates as blocking ReviewIssue sources.
+3. Canon/timeline/foreshadow update reducer and 5/10 chapter recap cadence.
+4. Extend v1 export package evidence to 30 chapters during final unified acceptance.
+5. Source governance lifecycle and ApprovalRequest.

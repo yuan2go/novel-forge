@@ -59,6 +59,7 @@ Current verified result for the V7 foundation and risk closure pass: all command
 | Agent runtime | `test_agent_scheduler.py`, `test_agent_registry_scheduler_integration.py`, `test_agent_runtime_profiles.py`, `test_agent_center_v2.py` | First-slice coverage |
 | Provider/runtime policy | `test_provider_runtime_guard.py`, `test_provider_hard_stop_proof.py`, `test_runtime_policy.py`, `test_runtime_ledger.py` | Active hardening coverage |
 | Context/RAG | `test_context_builder_stage_profiles.py`, `test_context_builder_mkaos_flow.py`, `test_context_and_production_chain.py`, `test_pgvector_source_isolation.py`, `test_storage.py` | Partial but meaningful; stage profile/source isolation contracts have focused unit coverage, and RAG no longer implicitly rebuilds local vector index during context generation |
+| Chapter blueprint | `test_chapter_blueprint_contract.py`, `test_context_and_production_chain.py`, `test_module_services.py` | Embedded `chapter-blueprint-contract-v1` is covered across plan, version, and draft handoff |
 | MKAOS | Many `test_mkaos_*.py`, MKAOS integration and acceptance tests | Broad coverage, still evolving |
 | Canon/KG/continuity | `test_canon_graph*.py`, `test_novel_kg*.py`, long-chain integration tests | Partial long-form coverage |
 | Review/revision/publishing | `test_review_issue.py`, `test_publishing_center.py`, `test_publish_feedback_loop.py`, publishing fixtures | Stronger than earlier, still needs more production-ready fixtures |

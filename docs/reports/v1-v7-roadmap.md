@@ -33,6 +33,7 @@ Current evidence:
 - `scripts/run_v1_chapter_sequence_acceptance.py` ran the true 10-chapter local slow acceptance successfully: 10/10 chapters, 1460.716s, 7,615 asset writes/updates, report `docs/reports/v1-chapter-sequence-slow-acceptance.md`.
 - Development after that baseline added compact sequence task-status recording and lazy single-profile Agent Registry sync. This is runtime governance work only; no new chapter acceptance was run.
 - Context Builder now emits and enforces `stage-context-profile-v1` contracts for topic/world/character/outline/chapter-plan/prose/review/revision/recap/publish/feedback contexts. Bundles include source policy, source isolation, allowed/forbidden asset types, and manual-selection policy rejections. Unit coverage is in `tests/unit/test_context_builder_stage_profiles.py`.
+- Chapter planning now emits `chapter-blueprint-contract-v1` inside `ChapterPlan`, preserves it in `ChapterPlanVersion`, and hands it into `DraftChapter` as `chapter_plan_blueprint` evidence. Unit coverage is in `tests/unit/test_chapter_blueprint_contract.py`.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
@@ -43,11 +44,10 @@ Current evidence:
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. Chapter Blueprint Deepening.
-3. Readable Prose Gate + Golden Opening Gate + Toxic Point Gate.
-4. ReviewIssue-to-RevisionPlan strategy mapping with re-review evidence.
-5. Canon/timeline/foreshadow reducer and recap cadence.
-6. Export package.
+2. Readable Prose Gate + Golden Opening Gate + Toxic Point Gate.
+3. ReviewIssue-to-RevisionPlan strategy mapping with re-review evidence.
+4. Canon/timeline/foreshadow reducer and recap cadence.
+5. Export package.
 
 验收标准:
 - Create one project.

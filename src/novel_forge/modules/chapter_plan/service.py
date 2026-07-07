@@ -30,6 +30,7 @@ from novel_forge.schemas import ChapterPlan
 from novel_forge.storage.local import LocalStorage
 
 PROMPT_VERSION = "chapter-plan-v2-project-context"
+CHAPTER_BLUEPRINT_CONTRACT_VERSION = "chapter-blueprint-contract-v1"
 
 
 def generate_chapter_plan(
@@ -125,7 +126,41 @@ def generate_chapter_plan(
                         "hook": "string",
                         "word_budget": {"target": 2500, "min": 1800, "max": 3200},
                         "conflict": "string",
+                        "scene_beats": [
+                            {
+                                "scene_goal": "string",
+                                "protagonist_action": "string",
+                                "conflict_pressure": "string",
+                                "turn": "string",
+                                "payoff": "string",
+                                "exit_hook": "string",
+                            }
+                        ],
+                        "conflict_beats": [
+                            {
+                                "pressure": "string",
+                                "choice": "string",
+                                "cost": "string",
+                                "reversal": "string",
+                            }
+                        ],
                         "information_points": ["string"],
+                        "info_release_points": [
+                            {
+                                "point": "string",
+                                "timing": "opening|middle|late|ending",
+                                "purpose": "string",
+                                "withheld": "string",
+                            }
+                        ],
+                        "hook_plan": {
+                            "opening_hook": "string",
+                            "closing_hook": "string",
+                            "long_hook_link": "string",
+                            "next_chapter_question": "string",
+                        },
+                        "emotion_curve": [{"position": "opening|build|turn|ending", "target_emotion": "string", "pressure_level": 1}],
+                        "payoff_target": {"local_payoff": "string", "promise_payoff": "string", "withheld_question": "string"},
                         "quality_targets": ["string"],
                         "reader_promise": "string",
                         "volume_goal": "string",
@@ -166,7 +201,15 @@ def generate_chapter_plan(
                 "hook": packet["hook"],
                 "word_budget": packet["word_budget"],
                 "conflict": packet.get("conflict", ""),
+                "scene_beats": packet.get("scene_beats", []),
+                "conflict_beats": packet.get("conflict_beats", []),
                 "information_points": packet.get("information_points", []),
+                "info_release_points": packet.get("info_release_points", []),
+                "hook_plan": packet.get("hook_plan", {}),
+                "emotion_curve": packet.get("emotion_curve", []),
+                "payoff_target": packet.get("payoff_target", {}),
+                "chapter_blueprint_contract": packet.get("chapter_blueprint_contract", {}),
+                "blueprint_quality_gate": packet.get("blueprint_quality_gate", {}),
                 "quality_targets": packet.get("quality_targets", []),
                 "reader_promise": packet.get("reader_promise", ""),
                 "volume_goal": packet.get("volume_goal", ""),
@@ -200,6 +243,8 @@ def generate_chapter_plan(
                 "prompt_version": PROMPT_VERSION,
                 "source_asset_path": outline_ref,
                 "chapter": target_chapter,
+                "chapter_blueprint_contract_version": CHAPTER_BLUEPRINT_CONTRACT_VERSION,
+                "chapter_blueprint_gate_status": packet.get("blueprint_quality_gate", {}).get("status", ""),
                 "context_bundle_id": mkaos_pack.get("context_bundle", {}).get("asset", {}).get("id", ""),
                 "context_bundle_path": mkaos_pack.get("context_bundle_path", ""),
                 **knowledge_context_contract_metadata(knowledge_contract),
@@ -294,7 +339,7 @@ def _normalize_chapter_plan_packet(packet: dict[str, Any], planning_context: dic
             *[f"platform strategy: {item}" for item in platform_constraints[:8]],
         ]
     )
-    return {
+    normalized = {
         "title": str(packet.get("title") or f"Chapter {target_chapter} plan").strip(),
         "objective": objective,
         "beats": beats,
@@ -314,6 +359,8 @@ def _normalize_chapter_plan_packet(packet: dict[str, Any], planning_context: dic
         "risk_controls": risk_controls,
         "tags": _strings(packet.get("tags")),
     }
+    normalized.update(_chapter_blueprint_payload(packet, normalized, planning_context, target_chapter=target_chapter))
+    return normalized
 
 
 def _fallback_chapter_plan_packet(
@@ -352,7 +399,7 @@ def _fallback_chapter_plan_packet(
         "pay off one small setup while planting one higher-order question",
         "close on a hook that changes the next chapter's immediate objective",
     ]
-    return {
+    normalized = {
         "title": f"Chapter {target_chapter} plan",
         "objective": objective,
         "beats": beats,
@@ -391,6 +438,273 @@ def _fallback_chapter_plan_packet(
         ],
         "tags": ["deterministic-fallback"],
     }
+    normalized.update(_chapter_blueprint_payload({}, normalized, planning_context, target_chapter=target_chapter))
+    return normalized
+
+
+def _chapter_blueprint_payload(
+    packet: dict[str, Any],
+    normalized: dict[str, Any],
+    planning_context: dict[str, Any],
+    *,
+    target_chapter: int,
+) -> dict[str, Any]:
+    objective = str(normalized.get("objective", "")).strip()
+    beats = _strings(normalized.get("beats"))
+    conflict = str(normalized.get("conflict", "") or "the protagonist must act under visible pressure").strip()
+    hook = str(normalized.get("hook", "") or "the next action becomes unavoidable").strip()
+    information_points = _strings(normalized.get("information_points"))
+    reader_promise = str(normalized.get("reader_promise", "") or "deliver a clear chapter promise").strip()
+    pleasure_beats = _strings(normalized.get("pleasure_beats"))
+    long_hook_progress = _strings(normalized.get("long_hook_progress"))
+    scene_beats = _normalize_scene_beats(packet.get("scene_beats"), beats, objective=objective, conflict=conflict, hook=hook, information_points=information_points)
+    conflict_beats = _normalize_conflict_beats(packet.get("conflict_beats"), scene_beats, conflict=conflict)
+    info_release_points = _normalize_info_release_points(packet.get("info_release_points"), information_points)
+    hook_plan = _normalize_hook_plan(
+        packet.get("hook_plan"),
+        objective=objective,
+        hook=hook,
+        reader_promise=reader_promise,
+        long_hook_progress=long_hook_progress,
+        carry_context=planning_context,
+    )
+    emotion_curve = _normalize_emotion_curve(packet.get("emotion_curve"), scene_beats, conflict=conflict)
+    payoff_target = _normalize_payoff_target(packet.get("payoff_target"), reader_promise=reader_promise, pleasure_beats=pleasure_beats, hook_plan=hook_plan)
+    quality_gate = _blueprint_quality_gate(
+        scene_beats=scene_beats,
+        conflict_beats=conflict_beats,
+        info_release_points=info_release_points,
+        hook_plan=hook_plan,
+        emotion_curve=emotion_curve,
+        payoff_target=payoff_target,
+    )
+    contract = {
+        "contract_version": CHAPTER_BLUEPRINT_CONTRACT_VERSION,
+        "chapter": target_chapter,
+        "required_fields": [
+            "scene_beats",
+            "conflict_beats",
+            "info_release_points",
+            "hook_plan",
+            "emotion_curve",
+            "payoff_target",
+        ],
+        "present_fields": [field for field in ["scene_beats", "conflict_beats", "info_release_points", "hook_plan", "emotion_curve", "payoff_target"] if quality_gate["field_status"].get(field) == "present"],
+        "status": quality_gate["status"],
+        "risk_controls": normalized.get("risk_controls", []),
+        "drafting_contract": "drafting must treat this as scene execution guidance, not as final prose",
+    }
+    return {
+        "scene_beats": scene_beats,
+        "conflict_beats": conflict_beats,
+        "info_release_points": info_release_points,
+        "hook_plan": hook_plan,
+        "emotion_curve": emotion_curve,
+        "payoff_target": payoff_target,
+        "chapter_blueprint_contract": contract,
+        "blueprint_quality_gate": quality_gate,
+    }
+
+
+def _normalize_scene_beats(value: Any, beats: list[str], *, objective: str, conflict: str, hook: str, information_points: list[str]) -> list[dict[str, Any]]:
+    rows = _dict_rows(value)
+    if not rows:
+        seed_beats = beats or [objective, conflict, hook]
+        rows = []
+        for index, beat in enumerate(seed_beats[:5], start=1):
+            info = information_points[min(index - 1, len(information_points) - 1)] if information_points else ""
+            rows.append(
+                {
+                    "scene_goal": str(beat),
+                    "protagonist_action": _derive_action(str(beat), objective),
+                    "conflict_pressure": conflict if index == 1 else f"{conflict}; complication {index}",
+                    "turn": _derive_turn(str(beat), index),
+                    "payoff": info or f"beat {index} changes the immediate objective",
+                    "exit_hook": hook if index == len(seed_beats[:5]) else f"new cost after beat {index}",
+                }
+            )
+    normalized: list[dict[str, Any]] = []
+    for index, row in enumerate(rows[:6], start=1):
+        scene_goal = str(row.get("scene_goal") or row.get("goal") or row.get("beat") or (beats[index - 1] if index - 1 < len(beats) else objective)).strip()
+        normalized.append(
+            {
+                "beat_id": str(row.get("beat_id") or f"scene-{index}"),
+                "order": index,
+                "scene_goal": scene_goal,
+                "protagonist_action": str(row.get("protagonist_action") or row.get("action") or _derive_action(scene_goal, objective)).strip(),
+                "conflict_pressure": str(row.get("conflict_pressure") or row.get("pressure") or conflict).strip(),
+                "turn": str(row.get("turn") or _derive_turn(scene_goal, index)).strip(),
+                "payoff": str(row.get("payoff") or row.get("result") or "the scene changes what the protagonist can do next").strip(),
+                "exit_hook": str(row.get("exit_hook") or row.get("hook") or hook).strip(),
+                "required_context": _strings(row.get("required_context"))[:6],
+            }
+        )
+    return normalized
+
+
+def _normalize_conflict_beats(value: Any, scene_beats: list[dict[str, Any]], *, conflict: str) -> list[dict[str, Any]]:
+    rows = _dict_rows(value)
+    if not rows:
+        rows = [
+            {
+                "pressure": scene.get("conflict_pressure", conflict),
+                "choice": scene.get("protagonist_action", ""),
+                "cost": scene.get("turn", ""),
+                "reversal": scene.get("exit_hook", ""),
+            }
+            for scene in scene_beats[:4]
+        ]
+    normalized: list[dict[str, Any]] = []
+    for index, row in enumerate(rows[:6], start=1):
+        normalized.append(
+            {
+                "beat_id": str(row.get("beat_id") or f"conflict-{index}"),
+                "pressure": str(row.get("pressure") or conflict).strip(),
+                "choice": str(row.get("choice") or row.get("decision") or "protagonist must choose an irreversible action").strip(),
+                "cost": str(row.get("cost") or "the safe option becomes more expensive").strip(),
+                "reversal": str(row.get("reversal") or row.get("turn") or "new information changes the route").strip(),
+            }
+        )
+    return normalized
+
+
+def _normalize_info_release_points(value: Any, information_points: list[str]) -> list[dict[str, Any]]:
+    rows = _dict_rows(value)
+    if not rows:
+        timings = ["opening", "middle", "late", "ending"]
+        rows = [{"point": item, "timing": timings[index % len(timings)], "purpose": "change a decision", "withheld": "full implication"} for index, item in enumerate(information_points[:5])]
+    normalized: list[dict[str, Any]] = []
+    for index, row in enumerate(rows[:6], start=1):
+        normalized.append(
+            {
+                "point_id": str(row.get("point_id") or f"info-{index}"),
+                "point": str(row.get("point") or row.get("information") or row.get("fact") or "").strip(),
+                "timing": str(row.get("timing") or "middle").strip(),
+                "purpose": str(row.get("purpose") or "change a character decision or reader expectation").strip(),
+                "withheld": str(row.get("withheld") or row.get("withhold") or "the larger implication remains open").strip(),
+            }
+        )
+    return [row for row in normalized if row["point"]]
+
+
+def _normalize_hook_plan(value: Any, *, objective: str, hook: str, reader_promise: str, long_hook_progress: list[str], carry_context: dict[str, Any]) -> dict[str, Any]:
+    row = value if isinstance(value, dict) else {}
+    previous = carry_context.get("previous", {}) if isinstance(carry_context.get("previous", {}), dict) else {}
+    return {
+        "opening_hook": str(row.get("opening_hook") or previous.get("hook") or f"open with pressure tied to: {objective}").strip(),
+        "midpoint_turn": str(row.get("midpoint_turn") or row.get("middle_hook") or "new evidence changes the cost of the objective").strip(),
+        "closing_hook": str(row.get("closing_hook") or row.get("ending_hook") or hook).strip(),
+        "long_hook_link": str(row.get("long_hook_link") or (long_hook_progress[0] if long_hook_progress else reader_promise)).strip(),
+        "promise_advanced": str(row.get("promise_advanced") or reader_promise).strip(),
+        "next_chapter_question": str(row.get("next_chapter_question") or f"what must change after: {hook}").strip(),
+    }
+
+
+def _normalize_emotion_curve(value: Any, scene_beats: list[dict[str, Any]], *, conflict: str) -> list[dict[str, Any]]:
+    rows = _dict_rows(value)
+    if not rows:
+        defaults = [
+            ("opening", "curiosity under pressure", 2),
+            ("build", "concern and forward pull", 3),
+            ("turn", "shock or narrowed options", 4),
+            ("ending", "urgent anticipation", 5),
+        ]
+        rows = [{"position": position, "target_emotion": emotion, "pressure_level": level} for position, emotion, level in defaults]
+    normalized: list[dict[str, Any]] = []
+    for index, row in enumerate(rows[:6], start=1):
+        normalized.append(
+            {
+                "position": str(row.get("position") or f"beat-{index}").strip(),
+                "target_emotion": str(row.get("target_emotion") or row.get("emotion") or "focused tension").strip(),
+                "pressure_level": _bounded_int(row.get("pressure_level") or row.get("intensity") or min(index + 1, 5), minimum=1, maximum=5),
+                "cause": str(row.get("cause") or (scene_beats[index - 1].get("conflict_pressure", conflict) if index - 1 < len(scene_beats) else conflict)).strip(),
+                "release": str(row.get("release") or "partial payoff before renewed pressure").strip(),
+            }
+        )
+    return normalized
+
+
+def _normalize_payoff_target(value: Any, *, reader_promise: str, pleasure_beats: list[str], hook_plan: dict[str, Any]) -> dict[str, Any]:
+    row = value if isinstance(value, dict) else {}
+    return {
+        "local_payoff": str(row.get("local_payoff") or row.get("payoff") or (pleasure_beats[-1] if pleasure_beats else "pay off one visible setup")).strip(),
+        "promise_payoff": str(row.get("promise_payoff") or reader_promise).strip(),
+        "withheld_question": str(row.get("withheld_question") or hook_plan.get("next_chapter_question") or "larger cause remains unresolved").strip(),
+        "evidence_required": _strings(row.get("evidence_required")) or ["reader can identify what changed by the end of the chapter"],
+    }
+
+
+def _blueprint_quality_gate(
+    *,
+    scene_beats: list[dict[str, Any]],
+    conflict_beats: list[dict[str, Any]],
+    info_release_points: list[dict[str, Any]],
+    hook_plan: dict[str, Any],
+    emotion_curve: list[dict[str, Any]],
+    payoff_target: dict[str, Any],
+) -> dict[str, Any]:
+    field_status = {
+        "scene_beats": "present" if len(scene_beats) >= 3 else "weak" if scene_beats else "missing",
+        "conflict_beats": "present" if conflict_beats else "missing",
+        "info_release_points": "present" if info_release_points else "weak",
+        "hook_plan": "present" if hook_plan.get("opening_hook") and hook_plan.get("closing_hook") else "missing",
+        "emotion_curve": "present" if len(emotion_curve) >= 3 else "weak" if emotion_curve else "missing",
+        "payoff_target": "present" if payoff_target.get("local_payoff") and payoff_target.get("withheld_question") else "missing",
+    }
+    blocking = [field for field, status in field_status.items() if status == "missing"]
+    weak = [field for field, status in field_status.items() if status == "weak"]
+    score = max(0, 100 - len(blocking) * 30 - len(weak) * 10)
+    return {
+        "gate_id": "chapter-blueprint-quality-v1",
+        "status": "failed" if blocking else "warning" if weak else "passed",
+        "score": score,
+        "field_status": field_status,
+        "blocking_issues": [f"missing {field}" for field in blocking],
+        "warnings": [f"weak {field}" for field in weak],
+        "recommendations": _dedupe([
+            "ensure every scene beat changes character options",
+            "make opening and closing hooks visible",
+            "tie information release to decisions rather than exposition",
+        ] if blocking or weak else ["chapter blueprint is ready for drafting"]),
+    }
+
+
+def _dict_rows(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, list):
+        rows: list[dict[str, Any]] = []
+        for item in value:
+            if isinstance(item, dict):
+                rows.append(dict(item))
+            elif str(item).strip():
+                rows.append({"beat": str(item).strip(), "point": str(item).strip()})
+        return rows
+    if isinstance(value, dict):
+        return [dict(value)]
+    if isinstance(value, str) and value.strip():
+        return [{"beat": value.strip(), "point": value.strip()}]
+    return []
+
+
+def _derive_action(beat: str, objective: str) -> str:
+    text = beat.strip() or objective.strip()
+    if not text:
+        return "take a visible action that changes the scene"
+    return f"act on: {text[:120]}"
+
+
+def _derive_turn(beat: str, index: int) -> str:
+    text = beat.strip()
+    if not text:
+        return f"beat {index} reveals a new cost"
+    return f"because of {text[:90]}, the next option becomes narrower"
+
+
+def _bounded_int(value: Any, *, minimum: int, maximum: int) -> int:
+    try:
+        number = int(value)
+    except Exception:
+        number = minimum
+    return min(max(number, minimum), maximum)
 
 
 def _parse_json_payload(text: str) -> dict[str, Any]:

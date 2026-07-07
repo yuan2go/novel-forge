@@ -10,12 +10,13 @@ Implementation status note:
 - 2026-07-07: true 10-chapter slow acceptance passed via `scripts/run_v1_chapter_sequence_acceptance.py`; evidence report is `docs/reports/v1-chapter-sequence-slow-acceptance.md`. Runtime was 1460.716s with 10/10 chapters covered and 7,615 local asset writes/updates. The next V1-S1 task is performance and artifact-volume governance before extending to 30 chapters.
 - 2026-07-08: development-only runtime governance was added without running a new chapter acceptance: sequence runs now carry a `chapter-production-runtime-artifact-policy-v1` and default to compact task status recording, while normal single-run execution keeps full task status recording. Agent registry auto-sync now resolves one runtime profile lazily instead of writing the entire registry during a production run. The 2026-07-07 slow report remains the pre-governance baseline until the unified future acceptance pass.
 - 2026-07-08: `V1-S2 Stage Context Profiles` was implemented as a development slice in `src/novel_forge/modules/context_builder/service.py`. Context plans/bundles now expose a `stage-context-profile-v1` contract, source policy, source isolation, allowed/forbidden asset types, and policy rejections for manual selections that violate the active stage. Unit coverage exists in `tests/unit/test_context_builder_stage_profiles.py`. No chapter acceptance was run.
+- 2026-07-08: `V1-S3 Chapter Blueprint Deepening` was implemented as a development slice. `ChapterPlan` now carries a `chapter-blueprint-contract-v1` with scene beats, conflict beats, info release points, hook plan, emotion curve, payoff target, and a blueprint quality gate. `ChapterPlanVersion` preserves those fields and `DraftChapter` persists `chapter_plan_blueprint` evidence. Unit coverage exists in `tests/unit/test_chapter_blueprint_contract.py`. No chapter acceptance was run.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
 | V1-S1 Canonical Single-Book Loop Contract | Define one canonical local workflow for topic/world/character/outline/chapter-plan/draft/review/revision/canon/recap/export | Current services exist but the mainline is fragmented | Production Chain, Workflow Nodes, Agent Scheduler, Context Builder, Drafting, Review, Revision, Longform | ProjectWorkspaceState, Outline, ChapterPlan, ContextBundle, DraftChapter, ReviewReport, ReviewIssue, RevisionPlan, CanonDatabase, LongformRecapReport | Implemented true single-chapter foundation, 10-chapter sequence acceptance contract, true 10-chapter slow baseline, compact sequence task status policy, and lazy agent registry sync; still needs deeper trace/agent-ledger growth governance before unified future acceptance | One deterministic true end-to-end test for one chapter, a 10-chapter sequence-contract test, unit coverage for compact task status/lazy registry sync, and baseline slow acceptance report `docs/reports/v1-chapter-sequence-slow-acceptance.md` exist | Update architecture and roadmap docs | Artifact volume baseline remains high: 7,615 asset writes/updates for 10 chapters; current development change reduces avoidable task-status/registry initialization writes but trace and agent-ledger volume still need governance |
 | V1-S2 Stage Context Profiles | Make Context Builder produce stage-specific packages for topic/world/outline/chapter/review/revision | Prevents source leakage and inconsistent context | Context Builder, MKAOS, Production Context | ContextBuildPlan, ContextBundle, KnowledgePack, SourceEvidence | Implemented: `stage-context-profile-v1` contract, per-profile allowed/forbidden types, source policy/isolation, and manual-selection policy rejections | Added positive/negative source isolation/profile tests; final unified v1 workflow验收 remains deferred | Context Builder docs updated through this slice matrix | Over-tight policy can block useful local workflows; current implementation keeps draft/revision/review profiles permissive for project-owned lineage assets |
-| V1-S3 Chapter Blueprint Deepening | Ensure ChapterPlan contains scene goal, conflict, hook, emotion, info release, payoff target | Thin plans create outline-like prose | Chapter Blueprint, Outline, Quality | ChapterPlan, SceneBeat fields, ConflictBeat fields, HookPlan fields | ChapterPlan validation/service helpers | Good/bad chapter plan fixtures | Creation pipeline docs | Avoid massive schema rewrite |
+| V1-S3 Chapter Blueprint Deepening | Ensure ChapterPlan contains scene goal, conflict, hook, emotion, info release, payoff target | Thin plans create outline-like prose | Chapter Blueprint, Outline, Quality, Drafting | ChapterPlan, ChapterPlanVersion, DraftChapter, embedded SceneBeat/ConflictBeat/HookPlan/EmotionCurve fields | Implemented: `chapter-blueprint-contract-v1`, blueprint quality gate, version preservation, and draft blueprint evidence | Added fallback, structured model, version, and draft handoff fixtures; final unified v1 workflow验收 remains deferred | Creation pipeline docs updated through this slice matrix | Embedded fields avoid a schema migration now; standalone beat lifecycle remains a later model-hardening option |
 | V1-S4 Readable Prose Gate | Turn readable-prose goals into blocking ReviewIssue sources | v1 requires chapters that are readable, not just generated | Drafting, Content Quality Loop, Review, Quality Eval | DraftChapter, ReviewIssue, QualityScoreReport, ReadabilityReport-equivalent | Gate function after draft/revision | Good/bad prose fixtures; first 300 chars no-event fixture | Quality docs | Heuristic may be noisy; keep explainable |
 | V1-S5 ReviewIssue to Revision Strategy | Map issue types to revision strategies and require re-review evidence | Revision must improve quality, not only create a new asset | Review, Revision, Editor, Loop Kernel | ReviewIssue, RevisionTask, RevisionPlan, DraftDiffReport | Revision service strategy map | Failing issue -> revision -> re-review passes fixture | Review/Revision docs | Strategy overfit if too rigid |
 | V1-S6 Canon/Timeline/Foreshadow Reducer | Update continuity state after every accepted chapter | Long-form stability depends on persistent state | Canon Graph, Novel KG, Longform Stability | CanonFact, TimelineEvent, ForeshadowItem, FactLedger, CanonStateMachineSnapshot | Reducer/update service | 10-chapter continuity update test | Story Bible docs | Need avoid parallel canon systems |
@@ -36,17 +37,17 @@ Implementation status note:
 
 ## Recommended Next Slice
 
-Continue from `V1-S3 Chapter Blueprint Deepening`.
+Continue from `V1-S4 Readable Prose Gate`.
 
-The current highest-priority development slice is to make `ChapterPlan` carry stronger scene-level execution contracts before prose generation:
+The current highest-priority development slice is to turn prose readability goals into blocking, explainable ReviewIssue sources:
 
 ```text
-scene goals
-conflict beats
-hook plan
-emotion curve
-info release points
-payoff target
+opening pressure
+scene progression
+conflict strength
+specificity and anti-AI flavor
+ending hook
+mobile paragraph rhythm
 ```
 
 Do not run chapter acceptance during the development loop. Keep the 2026-07-07 slow report as the current baseline until the final unified acceptance phase.

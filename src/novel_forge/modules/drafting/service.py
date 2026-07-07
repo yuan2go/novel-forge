@@ -88,6 +88,7 @@ def draft(
             top_k=8,
             token_budget=8000,
             backend="auto",
+            context_profile="prose",
             workspace_path=workspace_path,
         )
         context_bundle = create_context_bundle(storage, context_plan["path"])
@@ -196,6 +197,9 @@ def draft(
                 "chapter": chapter_number,
                 "text": draft_text,
                 "output_sanitizer": sanitizer_result,
+                "chapter_plan_blueprint": _chapter_plan_blueprint(plan.content),
+                "chapter_blueprint_contract": plan.content.get("chapter_blueprint_contract", {}),
+                "chapter_blueprint_gate": plan.content.get("blueprint_quality_gate", {}),
                 "model_output": generated,
                 "retrieved_context": retrieved_context,
                 "stability_preflight": stability_preflight["content"],
@@ -244,6 +248,8 @@ def draft(
                 "rag_quality_report_path": rag_quality_gate.get("report_path", ""),
                 "rag_quality_recommendation": rag_quality_gate.get("recommendation", ""),
                 "rag_quality_gate_status": rag_quality_gate.get("gate_status", ""),
+                "chapter_blueprint_contract_version": plan.content.get("chapter_blueprint_contract", {}).get("contract_version", ""),
+                "chapter_blueprint_gate_status": plan.content.get("blueprint_quality_gate", {}).get("status", ""),
                 "context_build_plan_id": context_plan_asset.get("id", ""),
                 "context_build_plan_path": context_plan_ref,
                 "context_bundle_id": context_bundle_asset.get("id", ""),
@@ -367,6 +373,19 @@ def draft(
             output_assets.append(quality_loop["path"])
         agent_run.succeed(output_assets=output_assets, token_used=len(draft_text))
         return path
+
+
+def _chapter_plan_blueprint(plan_content: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "scene_beats": plan_content.get("scene_beats", []) if isinstance(plan_content.get("scene_beats", []), list) else [],
+        "conflict_beats": plan_content.get("conflict_beats", []) if isinstance(plan_content.get("conflict_beats", []), list) else [],
+        "info_release_points": plan_content.get("info_release_points", []) if isinstance(plan_content.get("info_release_points", []), list) else [],
+        "hook_plan": plan_content.get("hook_plan", {}) if isinstance(plan_content.get("hook_plan", {}), dict) else {},
+        "emotion_curve": plan_content.get("emotion_curve", []) if isinstance(plan_content.get("emotion_curve", []), list) else [],
+        "payoff_target": plan_content.get("payoff_target", {}) if isinstance(plan_content.get("payoff_target", {}), dict) else {},
+        "contract": plan_content.get("chapter_blueprint_contract", {}) if isinstance(plan_content.get("chapter_blueprint_contract", {}), dict) else {},
+        "quality_gate": plan_content.get("blueprint_quality_gate", {}) if isinstance(plan_content.get("blueprint_quality_gate", {}), dict) else {},
+    }
 
 
 def _should_run_draft_quality_loop(*, post_quality_loop: bool, production: bool, project_id: str, content_intelligence: dict[str, Any]) -> bool:

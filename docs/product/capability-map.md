@@ -33,8 +33,8 @@ This map describes the product capability surface as verified from current code.
 | Deconstruction | Published fiction craft analysis | Partially implemented | `skills/published-fiction-craft-analysis/`, `modules/analysis/` | Code paths exist but workflow depth varies |
 | Deconstruction | Classic literary depth analysis | Partially implemented | `skills/classic-literary-depth-analysis/`, `modules/analysis/` | Needs stronger source lineage and review workflows |
 | Generation | Topic -> world -> character -> outline | Implemented | `modules/topics/`, `worldbuilding/`, `characters/`, `outline/` | Works as schema-backed local chain |
-| Generation | Chapter plan | Implemented | `modules/chapter_plan/`, `skills/chapter-outline/` | Continuity/KG hooks need ongoing depth |
-| Generation | Draft prose | Implemented/partial | `modules/drafting/`, CLI `draft` | Production provider evidence must remain guarded |
+| Generation | Chapter plan | Implemented with embedded blueprint contract | `modules/chapter_plan/`, `tests/unit/test_chapter_blueprint_contract.py`, `skills/chapter-outline/` | Standalone SceneBeat lifecycle can deepen later |
+| Generation | Draft prose | Implemented/partial | `modules/drafting/`, CLI `draft`, blueprint handoff tests | Production provider evidence must remain guarded; readable-prose gates are next |
 | Generation | Image/architecture prompts | Partially implemented | `modules/image_prompts/`, creative asset schemas | Product workflow depth is partial |
 | Review | Review report | Implemented | `modules/review/`, `web/admin/app/review/page.tsx` | Semantic quality is still improving |
 | Review | ReviewIssue gate | Implemented/partial | `modules/review_issue/`, `skills/review-issue-gate/` | Full release gate coverage continues to harden |
