@@ -87,7 +87,7 @@ Status legend:
 | ReadabilityReport | 可读性报告 | partial as `quality_score_report` | `readable-prose-gate-v1` writes `QualityScoreReport`, ReviewIssue, RevisionTask | standalone readability asset and calibration set | usable embedded report | Quality/Readable Prose | P0 |
 | AntiAIReport | AI 味报告 | partial | review/quality fields | standalone anti-AI metrics | embedded | Quality/Revision | P0 |
 | PageTurningReport | 追读报告 | partial | `Opening3Report`, platform retention risk | standalone page-turning gate | embedded/report | Quality/Web Novel | P0 |
-| MobileReadingReport | 移动阅读报告 | no | Not found | paragraph rhythm, mobile scan metrics | missing | Quality/Web Novel | P1 |
+| MobileReadingReport | 移动阅读报告 | yes-foundation | `MobileReadingReport`, `modules/mobile_reading/service.py`, quality loop, chapter bus | provider/human calibration and guided repair UI | create/report gate lifecycle with ReviewIssue/RevisionTask hook | Quality/Web Novel | P1 |
 | ReviewReport | 审稿报告 | yes | `ReviewReport` | v1 hard-block coverage | usable | Review | P0 |
 | ReviewIssue | 审稿问题 | yes | `ReviewIssue`, `review-issue-revision-strategy-v1` candidate contract | issue taxonomy can keep expanding with new gates | usable | Review/Revision/Gates | P0 |
 | RevisionPlan | 修订计划 | yes | `RevisionPlan` now carries `revision_strategy_plan`, `required_output_evidence`, and `re_review_focus` | real improvement metrics and provider/human calibration | usable | Revision | P0 |
@@ -115,10 +115,10 @@ Status legend:
 
 1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 2. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
-3. MobileReadingReport or equivalent lifecycle: needed next so mobile scanability is not only a field inside readable prose checks.
-4. Readable prose/page-turning/mobile review models: needed after `chapter-blueprint-contract-v1` so draft quality is not limited by thin prose gates.
+3. Provider proof evidence models and caller discipline: needed next so fixture/local proof cannot be confused with real provider-backed proof.
+4. Readable prose/page-turning/mobile review models: foundations exist for readable prose and mobile reading; PageTurningReport and AntiAIReport can deepen provider/human calibration later.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
-6. `ReaderPromise`, `ChapterEconomyReport`, `ProtagonistCharmReport`, and `AntagonistPressureReport` calibration and cockpit depth: foundations exist, but detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.
+6. `ReaderPromise`, `ChapterEconomyReport`, `ProtagonistCharmReport`, `AntagonistPressureReport`, and `MobileReadingReport` calibration and cockpit depth: foundations exist, but detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.
 
 ## Notes
 

@@ -11,6 +11,7 @@ from novel_forge.modules.character_pressure import create_character_pressure_rep
 from novel_forge.modules.canon_graph import append_canon_state_machine_ledger, build_canon_state_machine_snapshot, diff_canon_state_machine
 from novel_forge.modules.chapter_economy import create_chapter_economy_report
 from novel_forge.modules.common import resolve_path
+from novel_forge.modules.mobile_reading import create_mobile_reading_report
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_governance import record_fallback_decision
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
@@ -91,6 +92,7 @@ LONGFORM_ASSET_TYPES = {
     "villain_operation_plan",
     "protagonist_charm_report",
     "antagonist_pressure_report",
+    "mobile_reading_report",
     "reader_fatigue_report",
     "style_control_plan",
     "platform_adapter_report",
@@ -928,6 +930,7 @@ def create_longform_artifacts_for_draft(
     )
     results["protagonist_charm_report_path"] = pressure["protagonist_charm_report_path"]
     results["antagonist_pressure_report_path"] = pressure["antagonist_pressure_report_path"]
+    results["mobile_reading_report_path"] = create_mobile_reading_report(storage, draft_path, workspace_path=workspace_path)["path"]
     reward = create_reward_ledger(storage, draft_path, workspace_path=workspace_path)
     results["reward_ledger_path"] = reward["path"]
     results["chapter_economy_report_path"] = create_chapter_economy_report(

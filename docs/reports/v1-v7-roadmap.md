@@ -48,11 +48,11 @@ Current evidence:
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
 - Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job assets and context eligibility evaluation; caller migration into every Context Builder/MKAOS/material path still needs tightening.
-- ReaderPromise, PleasurePoint/ChapterEconomy, and Character Pressure lifecycles now have schema-backed local foundations and draft-to-longform integration; payoff, scene-value, agency, and pressure detection remain deterministic and need calibration plus final multi-chapter proof.
+- ReaderPromise, PleasurePoint/ChapterEconomy, Character Pressure, and Mobile Reading lifecycles now have schema-backed local foundations and draft-to-longform or chapter-bus integration; payoff, scene-value, agency, pressure, and mobile rhythm detection remain deterministic and need calibration plus final multi-chapter proof.
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. Mobile Reading Gate so scanability/page rhythm is first-class.
+2. Provider Proof Harness so real provider proof is not conflated with local fixture proof.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
@@ -95,14 +95,15 @@ Current evidence:
 
 阻塞项:
 - Phase 1 loop must be stable first.
-- ReaderPromise, PleasurePoint/ChapterEconomy, and Character Pressure have first-class local lifecycle foundations, but mobile reading and trope fatigue remain shallow.
+- ReaderPromise, PleasurePoint/ChapterEconomy, Character Pressure, and Mobile Reading have first-class local lifecycle foundations, but trope fatigue remains shallow and all deterministic gates need calibration.
 - Longform reports exist, but reducers/query/diff are uneven.
 
 推荐切片:
-- Mobile Reading Report.
+- Provider Proof Harness.
 - Reader Promise provider/human payoff calibration.
 - Pleasure Point / Chapter Economy provider-human calibration.
 - Character Pressure provider/human calibration.
+- Mobile Reading provider/human calibration.
 - Volume review every 30 chapters.
 - Longform trend dashboard backed by artifacts.
 

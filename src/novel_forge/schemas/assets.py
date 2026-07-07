@@ -347,6 +347,11 @@ class AntagonistPressureReport(BaseAsset):
 
 
 @dataclass
+class MobileReadingReport(BaseAsset):
+    type: str = "mobile_reading_report"
+
+
+@dataclass
 class MotifBudgetReport(BaseAsset):
     type: str = "motif_budget_report"
 
@@ -1469,6 +1474,7 @@ SCHEMA_CLASSES = {
         ChapterEconomyReport,
         ProtagonistCharmReport,
         AntagonistPressureReport,
+        MobileReadingReport,
         MotifBudgetReport,
         CharacterStateLedger,
         VillainOperationPlan,

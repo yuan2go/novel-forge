@@ -300,6 +300,13 @@ class CharacterPressureRequest(BaseModel):
     persist_issues: bool = True
 
 
+class MobileReadingRequest(BaseModel):
+    draft_path: str
+    platform_id: str = "local"
+    workspace_path: str | None = None
+    persist_issues: bool = True
+
+
 class ProviderQualityJudgeRequest(BaseModel):
     suite_type: str = "opening_3"
     target_paths: list[str]
@@ -1688,6 +1695,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "QualityGateRunRequest": QualityGateRunRequest,
         "ChapterEconomyRequest": ChapterEconomyRequest,
         "CharacterPressureRequest": CharacterPressureRequest,
+        "MobileReadingRequest": MobileReadingRequest,
         "ProviderQualityJudgeRequest": ProviderQualityJudgeRequest,
         "CanonGraphPluginRequest": CanonGraphPluginRequest,
         "LongChainProofRunRequest": LongChainProofRunRequest,

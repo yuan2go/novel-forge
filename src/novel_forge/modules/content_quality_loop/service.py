@@ -10,6 +10,7 @@ from novel_forge.modules.chapter_economy import create_chapter_economy_report
 from novel_forge.modules.canon_graph import run_canon_graph_plugin
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.genre_os import run_genre_risk_gate
+from novel_forge.modules.mobile_reading import create_mobile_reading_report
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment
 from novel_forge.modules.production_context import project_scope_from_asset
 from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
@@ -155,6 +156,20 @@ def run_content_quality_loop(
     review_issue_paths.extend(readable_step["review_issue_paths"])
     if readable.get("revision_task_path"):
         revision_task_paths.append(str(readable["revision_task_path"]))
+
+    mobile = create_mobile_reading_report(
+        storage,
+        _display_path(storage.root, target_file),
+        platform_id=platform_id,
+        workspace_path=workspace_path,
+        persist_issues=persist_issues,
+    )
+    mobile_step = _record_step("mobile_reading_gate", mobile)
+    steps.append(mobile_step)
+    evidence_paths.extend(mobile_step["paths"])
+    review_issue_paths.extend(mobile_step["review_issue_paths"])
+    if mobile.get("revision_task_path"):
+        revision_task_paths.append(str(mobile["revision_task_path"]))
 
     economy = create_chapter_economy_report(
         storage,
@@ -572,6 +587,7 @@ def _paths_from_result(result: dict[str, Any]) -> list[str]:
         "revision_task_path",
         "protagonist_charm_report_path",
         "antagonist_pressure_report_path",
+        "mobile_reading_report_path",
     ]
     values = [str(result.get(key) or "") for key in keys]
     for key in ["model_judge_result_paths", "review_issues"]:

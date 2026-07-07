@@ -31,6 +31,7 @@ ISSUE_TYPES = {
     "chapter_economy_gap",
     "protagonist_charm_drop",
     "antagonist_pressure_drop",
+    "mobile_reading_friction",
 }
 SEVERITIES = {"info", "low", "medium", "high", "critical"}
 ACTIVE_STATUSES = {"open", "acknowledged", "in_revision"}
@@ -49,6 +50,7 @@ HIGH_BLOCKING_TYPES = {
     "chapter_economy_gap",
     "protagonist_charm_drop",
     "antagonist_pressure_drop",
+    "mobile_reading_friction",
 }
 REVISION_EVIDENCE_CHAIN = [
     "revision_task_path",
@@ -143,7 +145,7 @@ REVISION_STRATEGY_RULES = [
     {
         "strategy_id": "mobile_paragraph_reflow",
         "strategy_name": "Reflow for mobile reading",
-        "issue_types": {"quality_gate"},
+        "issue_types": {"quality_gate", "mobile_reading_friction"},
         "keywords": {"mobile_rhythm", "mobile", "paragraph", "段落"},
         "patch_scope": "paragraph_layout",
         "instructions": [

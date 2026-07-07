@@ -29,8 +29,14 @@ class ContentQualityLoopTests(unittest.TestCase):
                 title="Ready mystery draft",
                 content={
                     "chapter": 1,
-                    "text": ("异常现场留下第一条误导线索，侦探检查指纹证据，嫌疑人的关系和动机同时推进。"
-                             "主角必须在危险逼近前证伪假设，新的真相钩子指向下一章。 " * 32),
+                    "text": "\n".join(
+                        [
+                            "异常现场留下第一条误导线索，侦探检查指纹证据。",
+                            "嫌疑人的关系和动机同时推进，新的证词逼近旧假设。",
+                            "主角必须在危险逼近前证伪假设，新的真相钩子指向下一章。",
+                        ]
+                        * 18
+                    ),
                     "copyright_boundary": "original fixture",
                 },
                 metadata={"project_id": "p1"},
@@ -56,6 +62,7 @@ class ContentQualityLoopTests(unittest.TestCase):
                     "style_drift_gate",
                     "canon_graph_plugin_gate",
                     "readable_prose_gate",
+                    "mobile_reading_gate",
                     "chapter_economy_gate",
                     "character_pressure_gate",
                     "quality_rubric_pack",

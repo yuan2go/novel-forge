@@ -170,6 +170,7 @@ ASSET_DIR_BY_TYPE = {
     "chapter_economy_report": "reviews",
     "protagonist_charm_report": "reviews",
     "antagonist_pressure_report": "reviews",
+    "mobile_reading_report": "reviews",
     "motif_budget_report": "continuity",
     "character_state_ledger": "continuity",
     "villain_operation_plan": "continuity",

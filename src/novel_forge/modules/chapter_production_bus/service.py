@@ -143,6 +143,7 @@ def start_chapter_production(
                 "character_state_ledger_path": "",
                 "protagonist_charm_report_path": "",
                 "antagonist_pressure_report_path": "",
+                "mobile_reading_report_path": "",
                 "foreshadowing_graph_path": "",
                 "reader_promise_ledger_path": "",
                 "reward_ledger_path": "",
@@ -692,6 +693,7 @@ def _create_canon_longform_update(storage: LocalStorage, data: dict[str, Any]) -
         "character_state_ledger_path": artifact_paths.get("character_state_ledger_path", ""),
         "protagonist_charm_report_path": artifact_paths.get("protagonist_charm_report_path", ""),
         "antagonist_pressure_report_path": artifact_paths.get("antagonist_pressure_report_path", ""),
+        "mobile_reading_report_path": artifact_paths.get("mobile_reading_report_path", ""),
         "foreshadowing_graph_path": artifact_paths.get("foreshadowing_graph_path", ""),
         "reader_promise_ledger_path": artifact_paths.get("reader_promise_ledger_path", ""),
         "reward_ledger_path": artifact_paths.get("reward_ledger_path", ""),
@@ -839,6 +841,7 @@ def _export_provenance(outputs: dict[str, Any], *, draft_id: str, draft_path: st
         "character_state_ledger_path": str(outputs.get("character_state_ledger_path") or ""),
         "protagonist_charm_report_path": str(outputs.get("protagonist_charm_report_path") or ""),
         "antagonist_pressure_report_path": str(outputs.get("antagonist_pressure_report_path") or ""),
+        "mobile_reading_report_path": str(outputs.get("mobile_reading_report_path") or ""),
         "foreshadowing_graph_path": str(outputs.get("foreshadowing_graph_path") or ""),
         "reader_promise_ledger_path": str(outputs.get("reader_promise_ledger_path") or ""),
         "reward_ledger_path": str(outputs.get("reward_ledger_path") or ""),
@@ -864,6 +867,7 @@ def _export_operator_checklist(outputs: dict[str, Any], *, export_path: str, exp
                 and outputs.get("chapter_economy_report_path")
                 and outputs.get("protagonist_charm_report_path")
                 and outputs.get("antagonist_pressure_report_path")
+                and outputs.get("mobile_reading_report_path")
                 and outputs.get("canon_state_machine_snapshot_path")
             ),
             {
@@ -872,6 +876,7 @@ def _export_operator_checklist(outputs: dict[str, Any], *, export_path: str, exp
                 "chapter_economy_report_path": outputs.get("chapter_economy_report_path", ""),
                 "protagonist_charm_report_path": outputs.get("protagonist_charm_report_path", ""),
                 "antagonist_pressure_report_path": outputs.get("antagonist_pressure_report_path", ""),
+                "mobile_reading_report_path": outputs.get("mobile_reading_report_path", ""),
                 "canon_state_machine_snapshot_path": outputs.get("canon_state_machine_snapshot_path", ""),
             },
         ),
@@ -936,6 +941,7 @@ V1_SEQUENCE_REQUIRED_OUTPUTS = [
     "character_state_ledger_path",
     "protagonist_charm_report_path",
     "antagonist_pressure_report_path",
+    "mobile_reading_report_path",
     "foreshadowing_graph_path",
     "reader_promise_ledger_path",
     "reward_ledger_path",
