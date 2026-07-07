@@ -9,6 +9,7 @@ from novel_forge.modules.portfolio_os import (
     build_multi_book_scheduler_plan,
     build_resource_allocation_plan,
     create_portfolio_project,
+    run_book_lifecycle_gate,
 )
 from novel_forge.storage.local import LocalStorage
 
@@ -23,6 +24,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     PortfolioAllocationRequest = models["PortfolioAllocationRequest"]
     PortfolioSimilarityRequest = models["PortfolioSimilarityRequest"]
     PortfolioSchedulerPlanRequest = models["PortfolioSchedulerPlanRequest"]
+    PortfolioLifecycleGateRequest = models["PortfolioLifecycleGateRequest"]
 
     @router.post("/product/portfolio/project")
     def portfolio_project_endpoint(request: PortfolioProjectRequest) -> dict:
@@ -94,6 +96,21 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 provider_budget=request.provider_budget,
                 max_parallel_books=request.max_parallel_books,
                 daily_chapter_goal=request.daily_chapter_goal,
+                environment=request.environment,
+                requested_by=request.requested_by,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/portfolio/lifecycle-gate")
+    def portfolio_lifecycle_gate_endpoint(request: PortfolioLifecycleGateRequest) -> dict:
+        try:
+            return run_book_lifecycle_gate(
+                LocalStorage(app_settings.root),
+                portfolio_ref=request.portfolio_ref,
+                project_ids=request.project_ids or None,
                 environment=request.environment,
                 requested_by=request.requested_by,
             )

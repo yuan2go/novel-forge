@@ -505,6 +505,13 @@ class PortfolioSchedulerPlanRequest(BaseModel):
     requested_by: str = "portfolio-os"
 
 
+class PortfolioLifecycleGateRequest(BaseModel):
+    portfolio_ref: str = ""
+    project_ids: list[str] = Field(default_factory=list)
+    environment: str = "local"
+    requested_by: str = "portfolio-os"
+
+
 class CreativeAssetCreateRequest(BaseModel):
     asset_type: str
     title: str
@@ -1778,6 +1785,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "PortfolioAllocationRequest": PortfolioAllocationRequest,
         "PortfolioSimilarityRequest": PortfolioSimilarityRequest,
         "PortfolioSchedulerPlanRequest": PortfolioSchedulerPlanRequest,
+        "PortfolioLifecycleGateRequest": PortfolioLifecycleGateRequest,
         "CreativeAssetCreateRequest": CreativeAssetCreateRequest,
         "StyleDecomposeRequest": StyleDecomposeRequest,
         "StyleReviewRequest": StyleReviewRequest,

@@ -4,6 +4,7 @@ from .service import (
     build_multi_book_scheduler_plan,
     build_resource_allocation_plan,
     create_portfolio_project,
+    run_book_lifecycle_gate,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "build_multi_book_scheduler_plan",
     "build_resource_allocation_plan",
     "create_portfolio_project",
+    "run_book_lifecycle_gate",
 ]

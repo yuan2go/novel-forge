@@ -268,17 +268,18 @@ Current evidence:
 - Series / Universe Manager.
 - Cost/quality dashboard.
 
-当前完成度: 40%.
+当前完成度: 45%.
 
 阻塞项:
 - PortfolioProject, BookPotentialScore, and ResourceAllocationPlan now exist as schema-backed non-dispatching planning assets.
 - CrossBookSimilarityReport now exists as local fingerprint guard evidence.
 - Approval-gated multi-book scheduler plan evidence now exists without dispatch.
-- Pause/kill lifecycle gate remains missing.
+- BookLifecycleGateReport now exists for continue/pause/kill recommendations with blocking ApprovalRequest refs.
+- Post-approval multi-book dispatch/status mutation remains future.
 - Phase 1 single-book loop not yet proven.
 
 推荐切片:
-- Book pause/kill lifecycle gate.
+- ApprovalRequest caller migration for remaining high-risk paths.
 - Book-level scheduler using existing Agent scheduler.
 - Cost/quality dashboard by project.
 
@@ -321,7 +322,7 @@ Current evidence:
 - Real platform accounts/APIs may require credentials and manual policy decisions.
 
 推荐切片:
-- Book pause/kill lifecycle gate before enabling deeper multi-book scheduling.
+- ApprovalRequest caller migration before enabling deeper multi-book scheduling.
 - ApprovalRequest caller migration for high-risk platform publish/story mutation decisions.
 - Full regression suite for release/publish gates.
 

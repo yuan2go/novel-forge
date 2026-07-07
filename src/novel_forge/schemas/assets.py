@@ -744,6 +744,11 @@ class CrossBookSimilarityReport(BaseAsset):
 
 
 @dataclass
+class BookLifecycleGateReport(BaseAsset):
+    type: str = "book_lifecycle_gate_report"
+
+
+@dataclass
 class ChangeImpactReport(BaseAsset):
     type: str = "change_impact_report"
 
@@ -1572,6 +1577,7 @@ SCHEMA_CLASSES = {
         BookPotentialScore,
         ResourceAllocationPlan,
         CrossBookSimilarityReport,
+        BookLifecycleGateReport,
         ChangeImpactReport,
         AgentContract,
         AgentTask,

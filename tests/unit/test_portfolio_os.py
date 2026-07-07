@@ -11,6 +11,7 @@ from novel_forge.modules.portfolio_os import (
     build_multi_book_scheduler_plan,
     build_resource_allocation_plan,
     create_portfolio_project,
+    run_book_lifecycle_gate,
 )
 from novel_forge.schemas import ChapterPlan, DraftChapter, GenreProfile, Outline, QualityScoreReport, ReviewIssue, StyleProfile
 from novel_forge.storage.local import LocalStorage
@@ -102,6 +103,38 @@ class PortfolioOSTests(unittest.TestCase):
             self.assertEqual(plan["scheduler_plan"]["task_count"], 0)
             self.assertFalse(plan["scheduler_plan"]["guard_decision"]["shared_context_allowed"])
             self.assertEqual(plan["approval_request"]["asset"]["type"], "approval_request")
+
+    def test_book_lifecycle_gate_recommends_continue_pause_and_kill_with_approval(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            self._write_book_identity(storage, "book-good", "都市刑侦", "冷峻第一人称", "强目标 证据链 反转 真相")
+            storage.write_asset_auto(ChapterPlan(title="Good plan", metadata={"project_id": "book-good"}))
+            storage.write_asset_auto(DraftChapter(title="Good draft", metadata={"project_id": "book-good"}))
+            storage.write_asset_auto(QualityScoreReport(title="Good quality", content={"score": 0.9}, metadata={"project_id": "book-good"}))
+            self._write_book_identity(storage, "book-pause", "历史权谋", "冷峻第三人称", "朝堂 政争 盟约 背叛")
+            storage.write_asset_auto(
+                ReviewIssue(
+                    title="Pause blocker",
+                    content={"issue_id": "pause-1", "issue_type": "quality", "blocking": True, "severity": "high"},
+                    metadata={"project_id": "book-pause"},
+                )
+            )
+            self._write_book_identity(storage, "book-kill", "玄幻", "平铺直叙", "修炼 宗门 战力 突破")
+            storage.write_asset_auto(QualityScoreReport(title="Kill quality", content={"score": 0.1}, metadata={"project_id": "book-kill"}))
+            portfolio = create_portfolio_project(storage, title="Lifecycle Portfolio", project_ids=["book-good", "book-pause", "book-kill"])
+
+            report = run_book_lifecycle_gate(storage, portfolio_ref=portfolio["path"], environment="production")
+
+            self.assertEqual(report["asset"]["type"], "book_lifecycle_gate_report")
+            decisions = {row["project_id"]: row for row in report["asset"]["content"]["decisions"]}
+            self.assertEqual(decisions["book-good"]["recommended_action"], "continue")
+            self.assertEqual(decisions["book-pause"]["recommended_action"], "pause")
+            self.assertEqual(decisions["book-kill"]["recommended_action"], "kill_or_reincubate")
+            self.assertFalse(report["asset"]["content"]["automation_boundary"]["automatic_pause_allowed"])
+            self.assertFalse(report["asset"]["content"]["automation_boundary"]["automatic_kill_allowed"])
+            approvals = report["asset"]["content"]["approval_requests"]
+            self.assertEqual(len(approvals), 2)
+            self.assertTrue(all(row["blocking"] for row in approvals))
 
     def _write_book_identity(self, storage: LocalStorage, project_id: str, genre: str, style: str, premise: str) -> None:
         metadata = {"project_id": project_id}

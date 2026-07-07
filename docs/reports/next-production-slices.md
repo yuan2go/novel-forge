@@ -29,6 +29,7 @@ Implementation status note:
 - 2026-07-08: `P3-S1 Portfolio Project Model` was implemented as a development slice. `portfolio_project`, `book_potential_score`, and `resource_allocation_plan` are now schema-backed assets under the workspace boundary. `/product/portfolio/*` APIs create portfolio projects, score books, and build non-dispatching allocation plans with per-book memory/context isolation, cost-quality rollup, and operator approval boundary. Unit/API route coverage exists in `tests/unit/test_portfolio_os.py`, `tests/unit/test_schemas.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 - 2026-07-08: `P3-S2 Cross-Book Similarity Guard` was implemented as a development slice. `cross_book_similarity_report` is now a schema-backed Portfolio OS asset. `/product/portfolio/cross-book-similarity` produces pairwise premise/style/mechanism overlap evidence, contamination risk levels, and a fail-closed shared-context guard without storing raw drafts in the report. Unit/API route coverage exists in `tests/unit/test_portfolio_os.py`, `tests/unit/test_schemas.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 - 2026-07-08: `P3-S3 Multi-Book Scheduler Plan Boundary` was implemented as a development slice. `/product/portfolio/scheduler-plan` now combines ResourceAllocationPlan, CrossBookSimilarityReport, blocking ApprovalRequest, and planned AgentTask assets. It never writes dispatch queue entries, blocks task planning when similarity guard fails, and marks runnable book tasks as `needs_approval`. Unit/API route coverage exists in `tests/unit/test_portfolio_os.py` and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
+- 2026-07-08: `P3-S4 Book Pause / Kill Gate` was implemented as a development slice. `book_lifecycle_gate_report` is now schema-backed. `/product/portfolio/lifecycle-gate` writes continue/pause/kill_or_reincubate recommendations from BookPotentialScore, ReviewIssue, quality, and cost evidence, creates blocking ApprovalRequest records for pause/kill recommendations, and does not mutate project status. Unit/API route coverage exists in `tests/unit/test_portfolio_os.py`, `tests/unit/test_schemas.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
@@ -53,21 +54,20 @@ Implementation status note:
 | P3-S1 Portfolio Project Model | Introduce multi-book project portfolio boundary | Needed before multi-book scheduling | Portfolio, Project, Cost Dashboard | PortfolioProject, BookPotentialScore, ResourceAllocationPlan | Implemented: schema-backed portfolio project, book potential score, allocation plan, `/product/portfolio/*` API, per-book isolation contract, cost/quality rollup | Two-book isolation/scoring/allocation fixture plus schema/route coverage | Portfolio docs updated through this slice matrix | Plans do not auto-dispatch and do not replace v1 single-book loop |
 | P3-S2 Cross-Book Similarity Guard | Detect repeated style/premise/mechanism | Prevents multi-book sameness | Portfolio, Style, Genre, MKAOS | CrossBookSimilarityReport, StyleProfile, GenreProfile | Implemented: `/product/portfolio/cross-book-similarity` writes pairwise similarity, risk, and shared-context guard decision | Similar/different book fixtures plus schema/route coverage | Portfolio docs updated through this slice matrix | Current fingerprint uses local token/Jaccard signals; embeddings can replace scoring later |
 | P3-S3 Multi-Book Scheduler Plan Boundary | Turn portfolio allocation into approval-gated scheduler plan evidence | Needed before any automatic multi-book dispatch | Portfolio, Agent Scheduler, Permission Center, Cost Ledger | ResourceAllocationPlan, CrossBookSimilarityReport, ApprovalRequest, AgentTask | Implemented: `/product/portfolio/scheduler-plan` writes blocking approval request and planned AgentTasks without dispatch queue entries | Approval-required and high-similarity-blocked fixtures plus route coverage | Portfolio/Agent docs updated through this slice matrix | Does not run multiple books automatically; execution remains future and approval-gated |
-| P3-S4 Book Pause / Kill Gate | Convert portfolio scores and risks into start/continue/pause/kill recommendations | Prevents wasting budget on low-quality or risky books | Portfolio, Quality, Review, Cost Ledger | BookPotentialScore, ResourceAllocationPlan, ReviewIssue, ApprovalRequest | Lifecycle gate service | Continue/pause/kill fixtures | Portfolio docs | Must require human approval for pause/kill actions |
+| P3-S4 Book Pause / Kill Gate | Convert portfolio scores and risks into start/continue/pause/kill recommendations | Prevents wasting budget on low-quality or risky books | Portfolio, Quality, Review, Cost Ledger | BookPotentialScore, BookLifecycleGateReport, ReviewIssue, ApprovalRequest | Implemented: `/product/portfolio/lifecycle-gate` writes recommendations and blocking approvals without status mutation | Continue/pause/kill fixtures plus schema/route coverage | Portfolio docs updated through this slice matrix | Does not pause/kill automatically; operator decision remains required |
+| P4-S1 ApprovalRequest Caller Migration | Replace remaining local approval notes with Permission Center approval refs | Required before higher autonomy | Permission Center, Source Governance, Context Builder, Publishing, Feedback, Portfolio | ApprovalRequest, SourceRiskReport, ContextBundle, PublishGateReport, FeedbackMutationProposal | Caller migration and approval refs | High-risk source/context/publish/story mutation fixtures | Agent/security docs | Must avoid silently granting production bypasses |
 
 ## Recommended Next Slice
 
-Continue from `P3-S4 Book Pause / Kill Gate`.
+Continue from `P4-S1 ApprovalRequest Caller Migration`.
 
-The current highest-priority development slice is to add book lifecycle decision gates on top of portfolio scoring and scheduler planning:
+The current highest-priority development slice is to migrate remaining high-risk callers to Permission Center approval refs:
 
 ```text
-portfolio project
--> book potential score
--> blocking issue / quality / cost evidence
--> continue / pause / kill recommendation
--> high-risk ApprovalRequest
--> no automatic pause/kill without operator decision
+source/context/publish/story mutation caller
+-> ApprovalRequest
+-> approval_request_path/ref recorded on the originating artifact
+-> production/high-risk paths fail closed without approved evidence
 ```
 
 Do not run chapter acceptance during the development loop. Keep the 2026-07-07 slow report as the current baseline until the final unified acceptance phase.

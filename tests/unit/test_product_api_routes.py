@@ -267,6 +267,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/portfolio/allocation-plan",
                 "/product/portfolio/cross-book-similarity",
                 "/product/portfolio/scheduler-plan",
+                "/product/portfolio/lifecycle-gate",
                 "/product/os/cockpit/project",
                 "/product/os/cockpit/multi-book",
                 "/product/os/cockpit/multi-book/schedule",

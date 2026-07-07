@@ -294,6 +294,7 @@ ASSET_DIR_BY_TYPE = {
     "book_potential_score": "workspaces",
     "resource_allocation_plan": "workspaces",
     "cross_book_similarity_report": "workspaces",
+    "book_lifecycle_gate_report": "workspaces",
     "claude_code_handoff": "runs",
     "workflow_run": "runs",
     "workflow_definition": "runs",

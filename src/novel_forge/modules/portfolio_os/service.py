@@ -9,7 +9,7 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.review_issue import list_review_issues
-from novel_forge.schemas import AgentTask, BookPotentialScore, CrossBookSimilarityReport, PortfolioProject, ResourceAllocationPlan
+from novel_forge.schemas import AgentTask, BookLifecycleGateReport, BookPotentialScore, CrossBookSimilarityReport, PortfolioProject, ResourceAllocationPlan
 from novel_forge.storage.local import LocalStorage
 
 
@@ -308,6 +308,58 @@ def build_multi_book_scheduler_plan(
     }
 
 
+def run_book_lifecycle_gate(
+    storage: LocalStorage,
+    *,
+    portfolio_ref: str | Path = "",
+    project_ids: list[str] | None = None,
+    environment: str = "local",
+    requested_by: str = "portfolio-os",
+) -> dict[str, Any]:
+    portfolio = _portfolio_from_ref(storage, portfolio_ref)
+    portfolio_id = str(portfolio.get("content", {}).get("portfolio_id") or portfolio.get("id") or "")
+    score_result = build_book_potential_scores(storage, portfolio_ref=portfolio.get("path", "") or portfolio_ref, project_ids=project_ids)
+    decisions = [_book_lifecycle_decision(score) for score in score_result["scores"]]
+    report = BookLifecycleGateReport(
+        title=f"Book lifecycle gate {portfolio.get('title') or portfolio_id}",
+        source=str(portfolio.get("id") or portfolio_ref or ""),
+        tags=["portfolio-os", "book-lifecycle-gate", _lifecycle_gate_status(decisions)],
+        content={
+            "report_id": make_id("book_lifecycle_gate_report", f"{portfolio_id}:{utc_now()}"),
+            "portfolio_id": portfolio_id,
+            "status": _lifecycle_gate_status(decisions),
+            "decisions": decisions,
+            "summary": _lifecycle_summary(decisions),
+            "automation_boundary": {
+                "automatic_pause_allowed": False,
+                "automatic_kill_allowed": False,
+                "requires_operator_approval_for_pause": True,
+                "requires_operator_approval_for_kill": True,
+                "does_not_mutate_project_status": True,
+            },
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": portfolio_id, "portfolio_id": portfolio_id, "portfolio_os": True, "use_in_generation_rag": False},
+        references=_dedupe([str(portfolio.get("path") or ""), *score_result["score_paths"]]),
+    )
+    report_path = _write_asset(storage, report)
+    report_asset = storage.read_json(storage.root / report_path)
+    approval_requests = _create_lifecycle_approval_requests(
+        storage,
+        portfolio_id=portfolio_id,
+        report_path=report_path,
+        decisions=decisions,
+        environment=environment,
+        requested_by=requested_by,
+    )
+    content = _content(report_asset)
+    content["approval_requests"] = approval_requests
+    content["summary"]["approval_request_count"] = len(approval_requests)
+    report_asset["content"] = content
+    storage.write_json(storage.root / report_path, report_asset)
+    return {"path": report_path, "asset": report_asset, "approval_requests": approval_requests, "scores": score_result}
+
+
 def _book_evidence(storage: LocalStorage, project_id: str) -> dict[str, Any]:
     rows = _project_assets(storage, project_id)
     type_counts = _type_counts(rows)
@@ -398,6 +450,128 @@ def _create_scheduler_approval_request(
             },
         },
     )
+
+
+def _book_lifecycle_decision(score: dict[str, Any]) -> dict[str, Any]:
+    content = _content(score)
+    evidence = content.get("evidence", {}) if isinstance(content.get("evidence", {}), dict) else {}
+    score_total = float(content.get("score_total") or 0.0)
+    quality = float(evidence.get("latest_quality_score") or 0.0)
+    blocking = int(evidence.get("blocking_review_issue_count") or 0)
+    draft_count = int(evidence.get("draft_count") or 0)
+    cost_ratio = float(evidence.get("cost_quality_ratio") or 0.0)
+    project_id = str(content.get("project_id") or "")
+    if blocking > 0:
+        action = "pause"
+        risk = "high"
+        reason = "blocking review issues must clear before more resource allocation"
+    elif quality and quality < 0.2:
+        action = "kill_or_reincubate"
+        risk = "critical"
+        reason = "quality signal is below the viable continuation threshold"
+    elif score_total < 0.45 or (quality and quality < 0.5) or cost_ratio >= 8.0:
+        action = "pause"
+        risk = "high"
+        reason = "low potential, weak quality, or poor cost-quality ratio needs operator review"
+    elif score_total >= 0.65 and draft_count > 0:
+        action = "continue"
+        risk = "low"
+        reason = "book has sufficient quality/readiness signal and no blocking issues"
+    else:
+        action = "incubate"
+        risk = "medium"
+        reason = "book needs more planning evidence before scheduling"
+    return {
+        "project_id": project_id,
+        "score_path": str(score.get("path") or ""),
+        "score_total": score_total,
+        "quality_score": quality,
+        "blocking_review_issue_count": blocking,
+        "draft_count": draft_count,
+        "cost_quality_ratio": cost_ratio,
+        "recommended_action": action,
+        "risk_level": risk,
+        "reason": reason,
+        "requires_approval": action in {"pause", "kill_or_reincubate"},
+        "automatic_action_allowed": False,
+        "evidence_paths": evidence.get("evidence_paths", []) if isinstance(evidence.get("evidence_paths", []), list) else [],
+    }
+
+
+def _create_lifecycle_approval_requests(
+    storage: LocalStorage,
+    *,
+    portfolio_id: str,
+    report_path: str,
+    decisions: list[dict[str, Any]],
+    environment: str,
+    requested_by: str,
+) -> list[dict[str, Any]]:
+    from novel_forge.modules.permission_center import create_approval_request
+
+    approvals: list[dict[str, Any]] = []
+    for decision in decisions:
+        if not bool(decision.get("requires_approval")):
+            continue
+        action = str(decision.get("recommended_action") or "")
+        approval = create_approval_request(
+            storage,
+            {
+                "project_id": portfolio_id,
+                "scope": "budget",
+                "action": "approve_book_lifecycle_pause" if action == "pause" else "approve_book_lifecycle_kill_or_reincubate",
+                "risk_level": str(decision.get("risk_level") or "high"),
+                "environment": environment or "local",
+                "blocking": True,
+                "target_type": "portfolio_book_lifecycle",
+                "target_id": str(decision.get("project_id") or ""),
+                "target_refs": [report_path],
+                "evidence_refs": _dedupe([report_path, str(decision.get("score_path") or ""), *[str(path) for path in decision.get("evidence_paths", [])]]),
+                "requested_by": requested_by,
+                "subject_type": "agent",
+                "subject_id": "portfolio-os",
+                "reason": str(decision.get("reason") or ""),
+                "required_before": ["book_pause", "book_kill", "resource_reallocation", "agent_dispatch_queue"],
+                "rollback_plan": {
+                    "automatic_action_allowed": False,
+                    "rollback_action": "ignore recommendation until operator resolves approval request",
+                    "book_project_id": str(decision.get("project_id") or ""),
+                },
+            },
+        )
+        approvals.append(
+            {
+                "project_id": decision.get("project_id", ""),
+                "recommended_action": action,
+                "approval_request_path": approval["path"],
+                "approval_request_id": _content(approval["asset"]).get("request_id", ""),
+                "blocking": bool(approval.get("blocking")),
+            }
+        )
+    return approvals
+
+
+def _lifecycle_gate_status(decisions: list[dict[str, Any]]) -> str:
+    if any(row.get("recommended_action") == "kill_or_reincubate" for row in decisions):
+        return "critical_review"
+    if any(row.get("recommended_action") == "pause" for row in decisions):
+        return "needs_review"
+    return "ready"
+
+
+def _lifecycle_summary(decisions: list[dict[str, Any]]) -> dict[str, Any]:
+    counts: dict[str, int] = {}
+    for row in decisions:
+        action = str(row.get("recommended_action") or "")
+        counts[action] = counts.get(action, 0) + 1
+    return {
+        "book_count": len(decisions),
+        "continue_count": counts.get("continue", 0),
+        "incubate_count": counts.get("incubate", 0),
+        "pause_count": counts.get("pause", 0),
+        "kill_or_reincubate_count": counts.get("kill_or_reincubate", 0),
+        "approval_request_count": 0,
+    }
 
 
 def _write_scheduler_plan_task(
