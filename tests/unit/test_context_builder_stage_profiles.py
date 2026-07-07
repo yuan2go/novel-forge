@@ -199,6 +199,61 @@ class ContextBuilderStageProfileTests(unittest.TestCase):
             self.assertIn(_rel(storage, blocked_path), rejected_by_path)
             self.assertIn("source_eligibility_rejected", rejected_by_path[_rel(storage, blocked_path)]["signals"])
 
+    def test_context_bundle_records_knowledge_and_material_usage_feedback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace_ref, project_id = _workspace(storage, "Usage Feedback Context Project")
+            outline_path = _outline(storage, project_id, workspace_ref)
+            knowledge_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Approved abstract principle",
+                    content={"principles": ["pressure must force a visible irreversible choice"]},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref, "use_in_generation_rag": True},
+                )
+            )
+            material_path = storage.write_asset_auto(
+                MaterialCard(
+                    title="Approved governed material",
+                    content={
+                        "usable_patterns": ["authority pressure creates a public cost"],
+                        "do_not_copy": ["names", "sentences"],
+                        "source_eligibility": {
+                            "status": "passed",
+                            "generation_context_allowed": True,
+                            "evidence_only": False,
+                            "source_policy_refs": ["policy-ok"],
+                            "source_risk_report_refs": ["risk-ok"],
+                        },
+                    },
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref, "use_in_generation_rag": True},
+                )
+            )
+
+            plan = create_context_build_plan(storage, outline_path, query="outline pressure", context_profile="outline", environment="production")
+            _replace_candidates(storage, plan["path"], [knowledge_path, material_path])
+            bundle = create_context_bundle(
+                storage,
+                plan["path"],
+                selected_asset_paths=[_rel(storage, knowledge_path), _rel(storage, material_path)],
+                final_confirmed=True,
+            )
+            events = bundle["asset"]["content"]["usage_feedback_events"]
+            event_types = {item["type"] for item in events}
+            event_paths = [item["path"] for item in events]
+
+            self.assertEqual(bundle["asset"]["content"]["usage_feedback_event_count"], 2)
+            self.assertIn("knowledge_usage_event", event_types)
+            self.assertIn("material_usage_event", event_types)
+            for event_path in event_paths:
+                self.assertTrue(event_path)
+                event = storage.read_json(storage.root / event_path)
+                self.assertEqual(event["metadata"]["project_id"], project_id)
+                self.assertEqual(event["content"]["target_artifact_id"], bundle["asset"]["content"]["target_asset_id"])
+                self.assertEqual(event["content"]["used_as"], "context_bundle_selected_asset")
+            material_event = storage.read_json(storage.root / next(item["path"] for item in events if item["type"] == "material_usage_event"))
+            self.assertEqual(material_event["content"]["source_eligibility"]["status"], "passed")
+
 
 def _workspace(storage: LocalStorage, title: str) -> tuple[str, str]:
     workspace_path = init_workspace(storage, title)

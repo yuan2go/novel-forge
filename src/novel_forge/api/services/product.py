@@ -25,6 +25,7 @@ from novel_forge.modules.source_intake import (
     create_license_check_result,
     create_github_source_note,
     create_source_policy,
+    create_source_refresh_report,
     create_source_risk_report,
     create_source_snapshot,
     create_source_sync_job,

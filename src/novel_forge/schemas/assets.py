@@ -37,6 +37,11 @@ class SourceRiskReport(BaseAsset):
 
 
 @dataclass
+class SourceRefreshReport(BaseAsset):
+    type: str = "source_refresh_report"
+
+
+@dataclass
 class CleanedText(BaseAsset):
     type: str = "cleaned_text"
 
@@ -159,6 +164,11 @@ class KnowledgeLearningSnapshot(BaseAsset):
 @dataclass
 class MaterialCard(BaseAsset):
     type: str = "material_card"
+
+
+@dataclass
+class MaterialUsageEvent(BaseAsset):
+    type: str = "material_usage_event"
 
 
 @dataclass
@@ -1437,6 +1447,7 @@ SCHEMA_CLASSES = {
         SourceSnapshot,
         LicenseCheckResult,
         SourceRiskReport,
+        SourceRefreshReport,
         CleanedText,
         DecompositionReport,
         CommercialPattern,
@@ -1462,6 +1473,7 @@ SCHEMA_CLASSES = {
         KnowledgeGraphSnapshot,
         KnowledgeLearningSnapshot,
         MaterialCard,
+        MaterialUsageEvent,
         AssetCollection,
         PlatformProfile,
         PlatformRhythmRule,

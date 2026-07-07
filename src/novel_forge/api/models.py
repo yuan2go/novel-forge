@@ -1637,6 +1637,21 @@ class SourceSyncJobRequest(BaseModel):
     workspace_path: str = ""
 
 
+class SourceRefreshReportRequest(BaseModel):
+    source_ref: str
+    source_policy_path: str = ""
+    license_check_path: str = ""
+    risk_report_path: str = ""
+    snapshot_path: str = ""
+    sync_job_path: str = ""
+    expected_content_hash: str = ""
+    max_snapshot_age_days: int = 0
+    connector_execution_requested: bool = False
+    evidence_refs: list[str] = Field(default_factory=list)
+    project_id: str = ""
+    workspace_path: str = ""
+
+
 class SourceContextEligibilityRequest(BaseModel):
     source_ref: str
     asset_path: str = ""
@@ -1913,6 +1928,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "SourceRiskReportRequest": SourceRiskReportRequest,
         "SourceSnapshotRequest": SourceSnapshotRequest,
         "SourceSyncJobRequest": SourceSyncJobRequest,
+        "SourceRefreshReportRequest": SourceRefreshReportRequest,
         "SourceContextEligibilityRequest": SourceContextEligibilityRequest,
         "HandoffOutputRequest": HandoffOutputRequest,
         "HandoffAcceptanceRequest": HandoffAcceptanceRequest,

@@ -62,6 +62,17 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "recommendation",
         "created_at",
     ],
+    "source_refresh_report": [
+        "refresh_report_id",
+        "source_ref",
+        "refresh_mode",
+        "decision",
+        "stale_flags",
+        "connector_execution_allowed",
+        "approval_required",
+        "governance_refs",
+        "created_at",
+    ],
     "cleaned_text": ["text"],
     "decomposition_report": [
         "summary",
@@ -147,6 +158,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "knowledge_graph_snapshot": ["graph_id", "project_id", "nodes", "edges", "summary", "source_isolation"],
     "knowledge_learning_snapshot": ["learning_id", "project_id", "learning_items", "recommendations", "applied_updates", "source_metrics"],
     "material_card": ["usable_patterns", "do_not_copy"],
+    "material_usage_event": ["event_id", "material_id", "project_id", "flow", "target_artifact_id", "used_as", "created_at"],
     "asset_collection": ["purpose", "asset_paths"],
     "platform_profile": [
         "platform_id",

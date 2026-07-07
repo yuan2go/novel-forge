@@ -7,7 +7,8 @@ from typing import Any
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.common import resolve_path, run_metadata
-from novel_forge.modules.mkaos import build_knowledge_pack
+from novel_forge.modules.materials import record_material_usage_event
+from novel_forge.modules.mkaos import build_knowledge_pack, record_usage_event
 from novel_forge.modules.mkaos.pack_policy import (
     mkaos_pack_warning_fallback,
     resolve_mkaos_pack_policy,
@@ -479,6 +480,25 @@ def create_context_bundle(
     report = _create_rag_quality_report(storage, plan, plan_file, path, asset.to_dict(), budget_score)
     _attach_quality_report_to_bundle(storage, path, report)
     bundle_data = storage.read_json(path)
+    usage_feedback = _record_context_usage_feedback(
+        storage,
+        bundle_path=_display_path(storage.root, path),
+        bundle_data=bundle_data,
+        plan=plan,
+        selected=selected,
+        plan_content=content,
+        project_id=project_id,
+        workspace_path=workspace_path,
+    )
+    if usage_feedback["event_count"]:
+        bundle_content = bundle_data.get("content", {}) if isinstance(bundle_data.get("content", {}), dict) else {}
+        bundle_content["usage_feedback_events"] = usage_feedback["events"]
+        bundle_content["usage_feedback_event_count"] = usage_feedback["event_count"]
+        bundle_data["content"] = bundle_content
+        bundle_metadata = bundle_data.get("metadata", {}) if isinstance(bundle_data.get("metadata", {}), dict) else {}
+        bundle_metadata["usage_feedback_event_count"] = usage_feedback["event_count"]
+        bundle_data["metadata"] = bundle_metadata
+        storage.write_json(path, bundle_data)
     approval_requests = _create_context_approval_requests(
         storage,
         bundle_path=_display_path(storage.root, path),
@@ -1230,6 +1250,105 @@ def _record_context_span(
         )
     except Exception:
         return
+
+
+def _record_context_usage_feedback(
+    storage: LocalStorage,
+    *,
+    bundle_path: str,
+    bundle_data: dict[str, Any],
+    plan: BaseAsset,
+    selected: list[dict[str, Any]],
+    plan_content: dict[str, Any],
+    project_id: str,
+    workspace_path: str,
+) -> dict[str, Any]:
+    bundle_content = bundle_data.get("content", {}) if isinstance(bundle_data.get("content", {}), dict) else {}
+    context_profile = str(plan_content.get("context_profile") or bundle_content.get("context_profile") or "")
+    profile_policy = plan_content.get("context_profile_policy", {}) if isinstance(plan_content.get("context_profile_policy", {}), dict) else {}
+    context_stage = str(profile_policy.get("stage") or context_profile or "")
+    mkaos_flow = _mkaos_flow_for_context(context_stage or context_profile)
+    target_artifact_id = str(bundle_content.get("target_asset_id") or plan_content.get("target_asset_id") or bundle_content.get("target_path") or "")
+    chapter_id = _context_chapter_id(plan_content, bundle_content)
+    events: list[dict[str, Any]] = []
+    for item in selected:
+        asset_type = str(item.get("type") or "")
+        asset_id = str(item.get("asset_id") or "")
+        if not asset_id:
+            continue
+        source_eligibility = item.get("source_eligibility") if isinstance(item.get("source_eligibility"), dict) else {}
+        prompt_context = {
+            "context_bundle_id": str(bundle_data.get("id") or ""),
+            "context_bundle_path": bundle_path,
+            "context_profile": context_profile,
+            "context_stage": context_stage,
+            "source_eligibility": source_eligibility,
+        }
+        if asset_type == "knowledge_card":
+            result = record_usage_event(
+                storage,
+                {
+                    "knowledge_id": asset_id,
+                    "knowledge_pack_id": str(plan.id),
+                    "project_id": project_id or "local-system",
+                    "workspace_path": workspace_path,
+                    "flow": mkaos_flow,
+                    "target_artifact_id": target_artifact_id,
+                    "chapter_id": chapter_id,
+                    "agent_name": "context-builder",
+                    "used_as": "context_bundle_selected_asset",
+                    "prompt_context": prompt_context,
+                    "effect_score": 0.0,
+                    "references": [bundle_path, str(item.get("path") or "")],
+                },
+            )
+            events.extend(_usage_event_refs(result, event_type="knowledge_usage_event"))
+        elif asset_type == "material_card":
+            result = record_material_usage_event(
+                storage,
+                {
+                    "material_id": asset_id,
+                    "project_id": project_id or "local-system",
+                    "workspace_path": workspace_path,
+                    "flow": mkaos_flow,
+                    "target_artifact_id": target_artifact_id,
+                    "context_bundle_id": str(bundle_data.get("id") or ""),
+                    "context_bundle_path": bundle_path,
+                    "chapter_id": chapter_id,
+                    "agent_name": "context-builder",
+                    "used_as": "context_bundle_selected_asset",
+                    "source_eligibility": source_eligibility,
+                    "effect_score": 0.0,
+                    "references": [str(item.get("path") or "")],
+                },
+            )
+            events.extend(_usage_event_refs(result, event_type="material_usage_event"))
+    return {"events": events, "event_count": len(events)}
+
+
+def _usage_event_refs(result: dict[str, Any], *, event_type: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    events = result.get("events", []) if isinstance(result.get("events", []), list) else []
+    for event in events:
+        asset = event.get("asset", {}) if isinstance(event.get("asset", {}), dict) else {}
+        rows.append(
+            {
+                "type": event_type,
+                "path": str(event.get("path") or ""),
+                "asset_id": str(asset.get("id") or ""),
+                "source": str(asset.get("source") or ""),
+            }
+        )
+    return rows
+
+
+def _context_chapter_id(plan_content: dict[str, Any], bundle_content: dict[str, Any]) -> str:
+    for row in [plan_content, bundle_content]:
+        value = row.get("chapter_id") if isinstance(row, dict) else ""
+        if value:
+            return str(value)
+    target_id = str(bundle_content.get("target_asset_id") or plan_content.get("target_asset_id") or "")
+    return target_id if target_id.startswith("chapter") else ""
 
 
 def _candidate_payload(item: dict[str, Any]) -> dict[str, Any]:

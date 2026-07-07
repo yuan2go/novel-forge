@@ -28,6 +28,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     SourceRiskReportRequest = models['SourceRiskReportRequest']
     SourceSnapshotRequest = models['SourceSnapshotRequest']
     SourceSyncJobRequest = models['SourceSyncJobRequest']
+    SourceRefreshReportRequest = models['SourceRefreshReportRequest']
     SourceContextEligibilityRequest = models['SourceContextEligibilityRequest']
     HandoffOutputRequest = models['HandoffOutputRequest']
     HandoffAcceptanceRequest = models['HandoffAcceptanceRequest']
@@ -98,6 +99,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def create_source_sync_job_endpoint(request: SourceSyncJobRequest) -> dict[str, Any]:
         try:
             return create_source_sync_job(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/refresh-report")
+    def create_source_refresh_report_endpoint(request: SourceRefreshReportRequest) -> dict[str, Any]:
+        try:
+            return create_source_refresh_report(LocalStorage(app_settings.root), _model_data(request))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

@@ -242,6 +242,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/sources/risk-report",
                 "/product/sources/snapshot",
                 "/product/sources/sync-job",
+                "/product/sources/refresh-report",
                 "/product/sources/context-eligibility",
                 "/product/drafts",
                 "/product/reviews/run",
@@ -338,6 +339,10 @@ class ProductApiRouterTests(unittest.TestCase):
             source_eligibility = client.post("/product/sources/context-eligibility", json={"source_ref": "route-owned-source", "risk_tier": "R1"})
             self.assertEqual(source_eligibility.status_code, 200, source_eligibility.text)
             self.assertTrue(source_eligibility.json()["generation_context_allowed"])
+            source_refresh = client.post("/product/sources/refresh-report", json={"source_ref": "route-owned-source"})
+            self.assertEqual(source_refresh.status_code, 200, source_refresh.text)
+            self.assertEqual(source_refresh.json()["asset"]["type"], "source_refresh_report")
+            self.assertFalse(source_refresh.json()["asset"]["content"]["connector_execution_allowed"])
             self.assertEqual(client.get("/product/longform-stability/dashboard").status_code, 200)
             self.assertEqual(client.get("/product/platform-strategy/assets").status_code, 200)
             completion = client.get("/product/system/module-completion")

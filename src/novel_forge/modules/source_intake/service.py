@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import hashlib
 from copy import deepcopy
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import is_production_environment
-from novel_forge.schemas import LicenseCheckResult, SourceDocument, SourcePolicy, SourceRiskReport, SourceSnapshot, SourceSyncJob, validate_common_fields
+from novel_forge.schemas import LicenseCheckResult, SourceDocument, SourcePolicy, SourceRefreshReport, SourceRiskReport, SourceSnapshot, SourceSyncJob, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 
@@ -652,6 +653,65 @@ def create_source_snapshot(storage: LocalStorage, payload: dict[str, Any]) -> di
     return _write_governance_asset(storage, asset)
 
 
+def create_source_refresh_report(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    source_ref = _source_ref(payload)
+    policy = _resolve_governance_asset(storage, payload.get("source_policy_path") or payload.get("policy_ref"), "source_policy") or _latest_related_asset(storage, "source_policy", source_ref)
+    license_result = _resolve_governance_asset(storage, payload.get("license_check_path") or payload.get("license_ref"), "license_check_result") or _latest_related_asset(storage, "license_check_result", source_ref)
+    risk_report = _resolve_governance_asset(storage, payload.get("risk_report_path") or payload.get("risk_ref"), "source_risk_report") or _latest_related_asset(storage, "source_risk_report", source_ref)
+    snapshot = _resolve_governance_asset(storage, payload.get("snapshot_path") or payload.get("snapshot_ref"), "source_snapshot") or _latest_related_asset(storage, "source_snapshot", source_ref)
+    sync_job = _resolve_governance_asset(storage, payload.get("sync_job_path") or payload.get("sync_job_ref"), "source_sync_job") or _latest_related_asset(storage, "source_sync_job", source_ref)
+    stale_flags = _source_refresh_stale_flags(payload, policy=policy, license_result=license_result, risk_report=risk_report, snapshot=snapshot, sync_job=sync_job)
+    decision = _source_refresh_decision(stale_flags, risk_report=risk_report)
+    approval_required = decision in {"missing_governance", "blocked_quarantined", "needs_policy_review"} or bool(payload.get("connector_execution_requested"))
+    report_id = str(payload.get("refresh_report_id") or make_id("source_refresh_report", f"{_short_ref_key(source_ref)}:{decision}:{utc_now()}"))
+    governance_refs = {
+        "source_policy_ref": _asset_ref(policy),
+        "license_check_ref": _asset_ref(license_result),
+        "source_risk_report_ref": _asset_ref(risk_report),
+        "source_snapshot_ref": _asset_ref(snapshot),
+        "source_sync_job_ref": _asset_ref(sync_job),
+    }
+    content = {
+        "refresh_report_id": report_id,
+        "source_ref": source_ref,
+        "refresh_mode": "audit_only",
+        "decision": decision,
+        "stale_flags": stale_flags,
+        "connector_execution_allowed": False,
+        "approval_required": approval_required,
+        "governance_refs": governance_refs,
+        "source_isolation": {
+            "raw_text_included": False,
+            "connector_executed": False,
+            "network_access_used": False,
+            "report_is_evidence_only": True,
+        },
+        "snapshot": _refresh_asset_digest(snapshot, ["snapshot_id", "source_type", "content_hash", "captured_at", "source_path"]),
+        "sync_job": _refresh_asset_digest(sync_job, ["job_id", "status", "sync_mode", "checkpoint", "updated_at"]),
+        "risk": _refresh_asset_digest(risk_report, ["report_id", "risk_tier", "risk_level", "generation_context_allowed", "evidence_only", "quarantine"]),
+        "next_actions": _source_refresh_next_actions(decision, stale_flags),
+        "created_at": utc_now(),
+    }
+    asset = SourceRefreshReport(
+        id=report_id,
+        title=str(payload.get("title") or f"Source refresh report: {source_ref}"),
+        source=source_ref,
+        tags=_dedupe(["source-governance", "source-refresh", decision, "audit-only", *[str(flag.get("code", "")) for flag in stale_flags if isinstance(flag, dict)]]),
+        content=content,
+        metadata={
+            **_governance_metadata(payload, _permissions_for_tier(_normalize_source_risk_tier(_content_value(risk_report, "risk_tier") or _content_value(policy, "risk_tier") or "R2"), payload)),
+            "refresh_mode": "audit_only",
+            "decision": decision,
+            "connector_execution_allowed": False,
+            "network_access_used": False,
+            "use_in_generation_rag": False,
+        },
+        references=_dedupe([value for value in governance_refs.values() if value] + _strings(payload.get("evidence_refs")) + _strings(payload.get("references"))),
+    )
+    return _write_governance_asset(storage, asset)
+
+
 def evaluate_source_context_eligibility(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
     storage.ensure_layout()
     source_ref = _source_ref(payload)
@@ -1013,6 +1073,108 @@ def _approval_request_payload(
         "reason": f"Source {source_ref} is {tier}; {permissions['usage_rule']}",
         "source_policy": {"source_ref": source_ref, "risk_tier": tier, "generation_context_allowed": permissions["generation_context_allowed"]},
     }
+
+
+def _source_refresh_stale_flags(
+    payload: dict[str, Any],
+    *,
+    policy: dict[str, Any] | None,
+    license_result: dict[str, Any] | None,
+    risk_report: dict[str, Any] | None,
+    snapshot: dict[str, Any] | None,
+    sync_job: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    flags: list[dict[str, Any]] = []
+    if not policy:
+        flags.append({"code": "source_policy_missing", "severity": "high", "message": "SourcePolicy evidence is missing"})
+    if not license_result:
+        flags.append({"code": "license_check_missing", "severity": "medium", "message": "LicenseCheckResult evidence is missing"})
+    if not risk_report:
+        flags.append({"code": "source_risk_report_missing", "severity": "high", "message": "SourceRiskReport evidence is missing"})
+    if not snapshot:
+        flags.append({"code": "source_snapshot_missing", "severity": "medium", "message": "SourceSnapshot evidence is missing"})
+    if not sync_job:
+        flags.append({"code": "source_sync_job_missing", "severity": "low", "message": "SourceSyncJob evidence is missing"})
+    if _content_value(risk_report, "quarantine"):
+        flags.append({"code": "source_quarantined", "severity": "critical", "message": "Latest SourceRiskReport marks the source as quarantined"})
+    sync_status = str(_content_value(sync_job, "status") or "").strip().lower()
+    if sync_status and sync_status not in {"succeeded", "completed", "current", "noop", "skipped_existing"}:
+        flags.append({"code": "sync_not_current", "severity": "medium", "message": f"Latest SourceSyncJob status is {sync_status}"})
+    expected_hash = str(payload.get("expected_content_hash") or payload.get("content_hash") or "").strip()
+    snapshot_hash = str(_content_value(snapshot, "content_hash") or "").strip()
+    if expected_hash and snapshot_hash and expected_hash != snapshot_hash:
+        flags.append({"code": "content_hash_drift", "severity": "high", "message": "Expected content hash differs from latest SourceSnapshot hash"})
+    max_age_days = _int(payload.get("max_snapshot_age_days"), 0)
+    captured_at = str(_content_value(snapshot, "captured_at") or "").strip()
+    age_days = _age_days(captured_at)
+    if max_age_days > 0 and age_days is not None and age_days > max_age_days:
+        flags.append({"code": "source_snapshot_stale", "severity": "medium", "message": f"Latest SourceSnapshot is {age_days} days old", "age_days": age_days, "max_age_days": max_age_days})
+    return flags
+
+
+def _source_refresh_decision(stale_flags: list[dict[str, Any]], *, risk_report: dict[str, Any] | None) -> str:
+    codes = {str(flag.get("code") or "") for flag in stale_flags if isinstance(flag, dict)}
+    if "source_quarantined" in codes or _content_value(risk_report, "quarantine"):
+        return "blocked_quarantined"
+    if {"source_policy_missing", "source_risk_report_missing"} & codes:
+        return "missing_governance"
+    if "content_hash_drift" in codes or "source_snapshot_stale" in codes:
+        return "needs_snapshot_refresh"
+    if "license_check_missing" in codes or "source_snapshot_missing" in codes:
+        return "needs_policy_review"
+    if "sync_not_current" in codes or "source_sync_job_missing" in codes:
+        return "needs_sync_review"
+    return "current"
+
+
+def _source_refresh_next_actions(decision: str, stale_flags: list[dict[str, Any]]) -> list[str]:
+    actions = {
+        "current": ["keep current governance evidence; do not execute connector"],
+        "missing_governance": ["create or refresh SourcePolicy and SourceRiskReport before source-derived assets are used"],
+        "blocked_quarantined": ["keep source quarantined; require explicit operator/legal approval before any future connector or context use"],
+        "needs_snapshot_refresh": ["create a new SourceSnapshot through an approval-gated connector or manual evidence import", "rerun SourceRiskReport after snapshot refresh"],
+        "needs_policy_review": ["complete license and policy review before promoting source-derived assets"],
+        "needs_sync_review": ["review latest SourceSyncJob checkpoint before connector execution; keep execution approval-gated"],
+    }
+    selected = list(actions.get(decision, ["review source governance evidence"]))
+    if any(str(flag.get("code") or "") == "content_hash_drift" for flag in stale_flags if isinstance(flag, dict)):
+        selected.append("invalidate downstream source-derived material until the refreshed snapshot is reviewed")
+    return selected
+
+
+def _refresh_asset_digest(asset: dict[str, Any] | None, fields: list[str]) -> dict[str, Any]:
+    if not asset:
+        return {"present": False}
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    return {
+        "present": True,
+        "asset_id": str(asset.get("id") or ""),
+        "type": str(asset.get("type") or ""),
+        **{field: content.get(field) for field in fields if field in content},
+    }
+
+
+def _short_ref_key(value: str) -> str:
+    return hashlib.sha256(str(value).encode("utf-8")).hexdigest()[:12]
+
+
+def _age_days(timestamp: str) -> int | None:
+    if not timestamp:
+        return None
+    try:
+        parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return max(0, int((datetime.now(timezone.utc) - parsed).total_seconds() // 86400))
+
+
+def _int(value: Any, default: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def _snapshot_text(storage: LocalStorage, payload: dict[str, Any], *, source_asset: dict[str, Any] | None) -> str:

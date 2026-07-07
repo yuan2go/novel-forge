@@ -10,6 +10,7 @@ from novel_forge.api.product import create_github_knowledge_handoff
 from novel_forge.modules.source_intake import (
     create_license_check_result,
     create_source_policy,
+    create_source_refresh_report,
     create_source_risk_report,
     create_source_snapshot,
     create_source_sync_job,
@@ -131,6 +132,129 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertFalse(snapshot["asset"]["content"]["raw_text_included"])
             self.assertNotIn("operator private note text", json.dumps(snapshot["asset"], ensure_ascii=False))
             self.assertEqual(sync_job["asset"]["content"]["sync_mode"], "metadata_only")
+
+    def test_source_refresh_report_audits_existing_governance_without_connector_execution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "risk_tier": "R0",
+                    "review_status": "approved",
+                    "project_id": "source-p1",
+                },
+            )
+            license_check = create_license_check_result(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "authorization": "owned",
+                    "license_name": "operator-owned",
+                    "evidence_refs": [policy["path"]],
+                    "project_id": "source-p1",
+                },
+            )
+            risk = create_source_risk_report(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "source_policy_path": policy["path"],
+                    "license_check_path": license_check["path"],
+                    "project_id": "source-p1",
+                },
+            )
+            snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "source_type": "manual_note",
+                    "content": "operator note text",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p1",
+                },
+            )
+            sync_job = create_source_sync_job(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "status": "completed",
+                    "sync_mode": "metadata_only",
+                    "policy_ref": policy["path"],
+                    "project_id": "source-p1",
+                },
+            )
+
+            report = create_source_refresh_report(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "source_policy_path": policy["path"],
+                    "license_check_path": license_check["path"],
+                    "risk_report_path": risk["path"],
+                    "snapshot_path": snapshot["path"],
+                    "sync_job_path": sync_job["path"],
+                    "project_id": "source-p1",
+                },
+            )
+            content = report["asset"]["content"]
+
+            self.assertEqual(validate_common_fields(report["asset"]), [])
+            self.assertEqual(report["asset"]["type"], "source_refresh_report")
+            self.assertEqual(content["decision"], "current")
+            self.assertEqual(content["refresh_mode"], "audit_only")
+            self.assertFalse(content["connector_execution_allowed"])
+            self.assertFalse(content["source_isolation"]["network_access_used"])
+            self.assertEqual(content["stale_flags"], [])
+            self.assertEqual(content["governance_refs"]["source_policy_ref"], policy["asset"]["id"])
+            self.assertEqual(content["governance_refs"]["source_snapshot_ref"], snapshot["asset"]["id"])
+
+    def test_source_refresh_report_flags_license_gap_and_hash_drift(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(storage, {"source_ref": "operator-notebook", "risk_tier": "R1", "project_id": "source-p1"})
+            risk = create_source_risk_report(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "source_policy_path": policy["path"],
+                    "project_id": "source-p1",
+                },
+            )
+            snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "source_type": "manual_note",
+                    "content": "first version",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p1",
+                },
+            )
+
+            report = create_source_refresh_report(
+                storage,
+                {
+                    "source_ref": "operator-notebook",
+                    "snapshot_path": snapshot["path"],
+                    "expected_content_hash": "different-hash",
+                    "connector_execution_requested": True,
+                    "project_id": "source-p1",
+                },
+            )
+            content = report["asset"]["content"]
+            codes = {item["code"] for item in content["stale_flags"]}
+
+            self.assertEqual(validate_common_fields(report["asset"]), [])
+            self.assertEqual(content["decision"], "needs_snapshot_refresh")
+            self.assertTrue(content["approval_required"])
+            self.assertFalse(content["connector_execution_allowed"])
+            self.assertIn("license_check_missing", codes)
+            self.assertIn("content_hash_drift", codes)
+            self.assertIn("source_sync_job_missing", codes)
+            self.assertIn("invalidate downstream source-derived material", " ".join(content["next_actions"]))
 
     def test_high_risk_source_stays_evidence_only_and_creates_blocking_production_approval(self):
         with tempfile.TemporaryDirectory() as tmp:
