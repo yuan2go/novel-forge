@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import re
+import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.chapter_plan.service import generate_chapter_plan as generate_chapter_plan_service
@@ -197,8 +198,12 @@ def run_chapter_production_sequence(
     chapter_count: int = 10,
     chapter_plan_path: str | Path | None = None,
     max_chapters: int = 30,
+    progress_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     storage.ensure_layout()
+    sequence_started_at = utc_now()
+    sequence_started = time.monotonic()
+    asset_counts_before = storage.counts()
     total = _bounded_chapter_count(chapter_count, max_chapters=max_chapters)
     first_chapter = _positive_chapter(start_chapter)
     outline_file = resolve_path(storage.root, outline_path)
@@ -215,6 +220,12 @@ def run_chapter_production_sequence(
     failures: list[dict[str, Any]] = []
     for offset in range(total):
         chapter = first_chapter + offset
+        chapter_started_at = utc_now()
+        chapter_started = time.monotonic()
+        _emit_sequence_progress(
+            progress_callback,
+            {"event": "chapter_started", "chapter": chapter, "index": offset + 1, "total": total, "started_at": chapter_started_at},
+        )
         try:
             run = start_chapter_production(
                 storage,
@@ -225,11 +236,21 @@ def run_chapter_production_sequence(
                 run_to="next_chapter_plan",
             )
         except Exception as exc:
-            failure = {"chapter": chapter, "status": "failed", "error": f"{type(exc).__name__}: {exc}", "run_path": ""}
+            failure = {
+                "chapter": chapter,
+                "status": "failed",
+                "error": f"{type(exc).__name__}: {exc}",
+                "run_path": "",
+                "started_at": chapter_started_at,
+                "finished_at": utc_now(),
+                "duration_seconds": _elapsed_seconds(chapter_started),
+            }
             failures.append(failure)
             runs.append(failure)
+            _emit_sequence_progress(progress_callback, {"event": "chapter_failed", **failure, "index": offset + 1, "total": total})
             break
         coverage = _v1_run_coverage(run)
+        chapter_finished_at = utc_now()
         row = {
             "chapter": chapter,
             "status": str(run.get("status", "")),
@@ -237,31 +258,63 @@ def run_chapter_production_sequence(
             "current_step": str(run.get("current_step", "")),
             "coverage": coverage,
             "outputs": _v1_sequence_outputs(run),
+            "started_at": chapter_started_at,
+            "finished_at": chapter_finished_at,
+            "duration_seconds": _elapsed_seconds(chapter_started),
         }
         runs.append(row)
         if row["status"] != "succeeded" or coverage["status"] != "passed":
             failures.append(row)
+            _emit_sequence_progress(progress_callback, {"event": "chapter_failed", **row, "index": offset + 1, "total": total})
             break
+        _emit_sequence_progress(progress_callback, {"event": "chapter_completed", **row, "index": offset + 1, "total": total})
         current_plan = str(run.get("outputs", {}).get("next_chapter_plan_path", "") or "")
+    asset_counts_after = storage.counts()
+    sequence_finished_at = utc_now()
+    completed_chapters = sum(1 for item in runs if item.get("status") == "succeeded" and item.get("coverage", {}).get("status") == "passed")
+    sequence_duration = _elapsed_seconds(sequence_started)
     acceptance = _write_sequence_acceptance_report(
         storage,
         project_id=project_id,
         workspace_path=workspace,
         outline_path=_display_path(storage.root, outline_file),
         requested_chapter_count=total,
-        completed_chapters=sum(1 for item in runs if item.get("status") == "succeeded" and item.get("coverage", {}).get("status") == "passed"),
+        completed_chapters=completed_chapters,
         runs=runs,
         failures=failures,
+        started_at=sequence_started_at,
+        finished_at=sequence_finished_at,
+        duration_seconds=sequence_duration,
+        asset_counts_before=asset_counts_before,
+        asset_counts_after=asset_counts_after,
+    )
+    status = "succeeded" if not failures and len(runs) == total else "failed"
+    _emit_sequence_progress(
+        progress_callback,
+        {
+            "event": "sequence_finished",
+            "status": status,
+            "requested_chapter_count": total,
+            "completed_chapters": completed_chapters,
+            "duration_seconds": sequence_duration,
+            "acceptance_report_path": acceptance["path"],
+        },
     )
     return {
-        "status": "succeeded" if not failures and len(runs) == total else "failed",
+        "status": status,
         "project_id": project_id,
         "workspace_path": workspace,
         "start_chapter": first_chapter,
         "chapter_count": total,
-        "completed_chapters": sum(1 for item in runs if item.get("status") == "succeeded" and item.get("coverage", {}).get("status") == "passed"),
+        "completed_chapters": completed_chapters,
         "runs": runs,
         "failures": failures,
+        "started_at": sequence_started_at,
+        "finished_at": sequence_finished_at,
+        "duration_seconds": sequence_duration,
+        "asset_counts_before": asset_counts_before,
+        "asset_counts_after": asset_counts_after,
+        "asset_count_delta": _asset_count_delta(asset_counts_before, asset_counts_after),
         "next_chapter_plan_path": current_plan,
         "acceptance_report_path": acceptance["path"],
         "acceptance_report": acceptance,
@@ -782,10 +835,18 @@ def _write_sequence_acceptance_report(
     completed_chapters: int,
     runs: list[dict[str, Any]],
     failures: list[dict[str, Any]],
+    started_at: str = "",
+    finished_at: str = "",
+    duration_seconds: float = 0.0,
+    asset_counts_before: dict[str, int] | None = None,
+    asset_counts_after: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     checks = _v1_sequence_checks(requested_chapter_count=requested_chapter_count, completed_chapters=completed_chapters, runs=runs, failures=failures)
     recommendation = "pass" if completed_chapters == requested_chapter_count and not failures and all(item["status"] == "passed" for item in checks) else "block"
     output_counts = _v1_output_counts(runs)
+    count_before = asset_counts_before or {}
+    count_after = asset_counts_after or {}
+    count_delta = _asset_count_delta(count_before, count_after)
     report_id = make_id("long_chain_acceptance", f"v1-sequence-{project_id}-{requested_chapter_count}-{utc_now()}")
     asset = LongChainAcceptanceReport(
         id=report_id,
@@ -823,6 +884,16 @@ def _write_sequence_acceptance_report(
             "outline_path": outline_path,
             "workspace_path": workspace_path,
             "output_counts": output_counts,
+            "runtime_summary": {
+                "started_at": started_at,
+                "finished_at": finished_at,
+                "duration_seconds": round(float(duration_seconds or 0.0), 3),
+                "average_chapter_seconds": round(float(duration_seconds or 0.0) / completed_chapters, 3) if completed_chapters else 0.0,
+                "asset_counts_before": count_before,
+                "asset_counts_after": count_after,
+                "asset_count_delta": count_delta,
+                "total_asset_delta": sum(count_delta.values()),
+            },
             "runs": runs,
             "failures": failures,
             "recommendation": recommendation,
@@ -840,6 +911,21 @@ def _write_sequence_acceptance_report(
         raise ValueError("; ".join(errors))
     path = storage.write_asset("runs", asset)
     return {"path": _display_path(storage.root, path), "id": asset.id, "asset": asset.to_dict(), "validation": {"ok": True, "errors": []}}
+
+
+def _emit_sequence_progress(callback: Callable[[dict[str, Any]], None] | None, event: dict[str, Any]) -> None:
+    if not callback:
+        return
+    callback(event)
+
+
+def _elapsed_seconds(started: float) -> float:
+    return round(max(time.monotonic() - started, 0.0), 3)
+
+
+def _asset_count_delta(before: dict[str, int], after: dict[str, int]) -> dict[str, int]:
+    keys = sorted({*before.keys(), *after.keys()})
+    return {key: int(after.get(key, 0)) - int(before.get(key, 0)) for key in keys}
 
 
 def _v1_sequence_checks(*, requested_chapter_count: int, completed_chapters: int, runs: list[dict[str, Any]], failures: list[dict[str, Any]]) -> list[dict[str, Any]]:

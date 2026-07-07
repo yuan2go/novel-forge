@@ -308,6 +308,40 @@ class StorageTests(unittest.TestCase):
             self.assertEqual(context["requested_backend"], "auto")
             self.assertIn(context["retrieval_backend"], {"local", "scan"})
 
+    def test_rag_context_builder_does_not_implicitly_rebuild_vector_index(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            char_path = storage.write_asset(
+                "characters",
+                CharacterCard(
+                    title="Scan fallback lead",
+                    content={
+                        "role": "protagonist",
+                        "external_goal": "follow the clock clue",
+                        "internal_need": "accept the cost",
+                    },
+                    metadata={"project_id": "scan-project"},
+                ),
+            )
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Scan fallback plan",
+                    content={"chapter": 1, "objective": "use current project assets", "beats": ["clock"], "hook": "bell"},
+                    metadata={"project_id": "scan-project"},
+                    references=[storage.read_asset(char_path).id],
+                ),
+            )
+            index_path = storage.root / "data" / "indexes" / "vector-index.json"
+            self.assertFalse(index_path.exists())
+
+            context = build_rag_context(storage, storage.read_asset(plan_path), input_path=plan_path, query="clock lead", top_k=1, backend="auto")
+
+            self.assertFalse(index_path.exists())
+            self.assertEqual(context["retrieval_backend"], "scan")
+            self.assertEqual(context["items"][0]["title"], "Scan fallback lead")
+
     def test_rag_context_builder_uses_qdrant_when_auto_backend_is_available(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

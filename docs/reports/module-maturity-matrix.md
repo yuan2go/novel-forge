@@ -18,6 +18,7 @@ Important interpretation: a module can have many files and still be M2/M3 if it 
 Implementation status note:
 - 2026-07-07: the chapter production bus has a single-chapter v1 contract foundation through final draft, canon/longform update, local export package, and next chapter plan. Maturity does not rise above M3 until a 10-30 chapter acceptance run proves repeatability.
 - 2026-07-07: the bus also has a 10-chapter sequence acceptance contract that writes a `long_chain_acceptance_report`; the true 10-chapter local run remains a slow acceptance item because full artifact writes exceed the ordinary unit-test window.
+- 2026-07-07: true 10-chapter slow acceptance passed and is documented in `docs/reports/v1-chapter-sequence-slow-acceptance.md`; maturity remains M3 until 30 chapters pass with controlled runtime growth.
 
 ## Core OS Layer
 
@@ -42,7 +43,7 @@ Implementation status note:
 | Engine | Worldbuilding Engine | World rules, factions, resources, gates | WorldBible, PowerScaleRule, genre/canon support exist | M3 | Faction/resource/location lifecycle partial | World rules become loose notes | P1 | Tie world bible to v1 context and canon gate |
 | Engine | Character Engine | Character profiles, states, relationships, voice | CharacterCard, CharacterStateLedger, Novel KG support exist | M3 | VoiceProfile and RelationshipEdge are partial | Character drift | P1 | Add character state/voice drift checks |
 | Engine | Outline Engine | Long outline, volume arcs, foreshadow plan | Outline/OutlineVersion/LongFormMacroPlan exist | M3 | 30-chapter plan proof missing | Draft path not guided enough | P0 | Canonical outline-to-chapter-plan workflow |
-| Engine | Chapter Blueprint Engine | Scene beats, conflicts, hooks, emotion curve | ChapterPlan/ChapterPlanVersion, one-chapter true production bus, and 10-chapter sequence acceptance contract exist | M3 | SceneBeat/ConflictBeat/HookPlan mostly embedded content; true 10-30 chapter slow acceptance missing | Thin prose and weak hooks | P0 | Optimize true 10-chapter bus acceptance and strengthen ChapterPlan conventions |
+| Engine | Chapter Blueprint Engine | Scene beats, conflicts, hooks, emotion curve | ChapterPlan/ChapterPlanVersion, one-chapter true production bus, 10-chapter sequence acceptance contract, and true 10-chapter slow acceptance exist | M3 | SceneBeat/ConflictBeat/HookPlan mostly embedded content; 30-chapter slow acceptance and runtime growth control missing | Thin prose and weak hooks | P0 | Reduce bus artifact/runtime growth, then run 30-chapter acceptance |
 | Engine | Readable Prose Engine | Immersive page-turning prose | Drafting, content quality loop, style/quality eval exist | M2 | Not a distinct v1 hard gate | AI-like chapter output | P0 | Add readable-prose gate to draft/revision |
 | Engine | Revision Engine | Issue-driven revision with re-review | RevisionTask/Plan, rework loop, re-review, publish links exist | M3 | Strategy coverage and measurable improvement need hard tests | Cosmetic revisions | P0 | Map issue types to strategies and re-review evidence |
 | Engine | Ending / Closure Engine | Ending plan, payoff, closure gates | No clear implementation beyond outline/release concepts | M1 | Ending-specific models and tests absent | Longform payoff risk | P3 | Defer until longform arcs mature |
@@ -83,13 +84,13 @@ Implementation status note:
 | Tool | Synopsis Generator | Synopsis options | Outline/topic assets can hold it | M1 | Not first-class | Low | P3 | Tool-level only |
 | Tool | Cover Prompt Generator | Cover prompt | ImagePrompt asset exists | M2 | Not tied to publishing package | Low | P3 | Add after export/publishing |
 | Tool | Chapter Title Optimizer | Chapter title quality | ChapterPlan/Draft fields can hold titles | M1 | No optimizer/gate | Low | P2 | Add after chapter loop |
-| Tool | Exporter | Export chapters/packages | Draft export/publishing packages exist; v1 bus writes local markdown export package records and sequence acceptance counts export paths | M3 | True 10-30 chapter export coverage and release/publish distinction need slow acceptance | Hard handoff | P0 | Prove export evidence in true 10-30 chapter slow acceptance |
+| Tool | Exporter | Export chapters/packages | Draft export/publishing packages exist; v1 bus writes local markdown export package records; 10-chapter slow acceptance counted 10 export packages and 10 markdown files | M3 | 30-chapter export coverage and release/publish distinction need slow acceptance | Hard handoff | P0 | Prove export evidence in true 30-chapter slow acceptance |
 | Tool | Tag Manager | Tags/categories | Asset tags/content fields exist | M2 | No dedicated lifecycle | Inconsistent classification | P3 | Improve when MKAOS lifecycle matures |
 | Tool | Manual Input | Operator-provided assets | Product asset editor/routes exist | M3 | Approval boundaries uneven | Manual bypass | P1 | Add approval requirement for risky edits |
 
 ## Highest-Leverage Next Order
 
-1. Make the true 10-chapter canonical v1 production run practical as a slow acceptance, then extend to 30 chapters.
+1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
 2. Stage-specific ContextPackage and MKAOS query contracts.
 3. Readable Prose / Golden Opening / Toxic Point gates as blocking ReviewIssue sources.
 4. Canon/timeline/foreshadow update reducer and 5/10 chapter recap cadence.

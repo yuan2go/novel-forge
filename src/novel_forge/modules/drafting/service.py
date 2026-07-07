@@ -51,6 +51,7 @@ def draft(
     plan_path = _resolve_chapter_plan_path(storage, input_path)
     plan = storage.read_asset(plan_path)
     plan_ref = _display_path(storage.root, plan_path)
+    chapter_number = _chapter_number(plan.content.get("chapter", 1))
     production_context = build_production_context(storage, plan, input_path=plan_path, workspace_path=workspace_path)
     project_id = str(production_context["project"].get("project_id", ""))
     workspace = str(production_context["project"].get("workspace_path", "")) or str(workspace_path or "")
@@ -188,11 +189,11 @@ def draft(
             raise ValueError(f"draft generation blocked by output sanitizer: {sanitizer_result['issues']}")
         draft_text = sanitizer_result["text"]
         asset = DraftChapter(
-            title="Chapter 1 draft v0",
+            title=f"Chapter {chapter_number} draft v0",
             source=plan.id,
             tags=["draft", "v0", model.name],
             content={
-                "chapter": 1,
+                "chapter": chapter_number,
                 "text": draft_text,
                 "output_sanitizer": sanitizer_result,
                 "model_output": generated,
@@ -415,6 +416,14 @@ def _resolve_chapter_plan_path(storage: LocalStorage, input_path: str | Path | N
         if asset.type == "chapter_plan":
             return path
     raise FileNotFoundError("no chapter_plan assets found in data/chapter_plans")
+
+
+def _chapter_number(value: Any) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        number = 1
+    return max(number, 1)
 
 
 def _load_or_create_stability_preflight(

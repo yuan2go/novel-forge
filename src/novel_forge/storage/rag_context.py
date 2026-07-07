@@ -244,7 +244,7 @@ class RagContextBuilder:
                 if candidate == "local":
                     try:
                         results = _merge_ranked_results(
-                            vector_search_assets(self.storage, query=query, limit=limit),
+                            vector_search_assets(self.storage, query=query, limit=limit, auto_rebuild=False),
                             _memory_ranked_results(self.storage, query=query, project_id=project_id, levels=levels, limit=limit),
                         )
                         attempts.append({"backend": "local", "ok": True, "result_count": len(results)})
@@ -289,7 +289,10 @@ class RagContextBuilder:
                 if backend == "qdrant":
                     raise RuntimeError(str(attempts[-1]["error"]))
         try:
-            results = _merge_ranked_results(vector_search_assets(self.storage, query=query, limit=limit), _memory_ranked_results(self.storage, query=query, project_id=project_id, levels=levels, limit=limit))
+            results = _merge_ranked_results(
+                vector_search_assets(self.storage, query=query, limit=limit, auto_rebuild=False),
+                _memory_ranked_results(self.storage, query=query, project_id=project_id, levels=levels, limit=limit),
+            )
             attempts.append({"backend": "local", "ok": True, "result_count": len(results)})
             return results, "local", attempts
         except Exception as exc:

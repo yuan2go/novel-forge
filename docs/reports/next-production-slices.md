@@ -7,10 +7,11 @@ Ordering principle: prioritize v1 single-book production closure before broader 
 Implementation status note:
 - 2026-07-07: `V1-S1 Canonical Single-Book Loop Contract` has a single-chapter foundation in `src/novel_forge/modules/chapter_production_bus/service.py`. The bus now runs through chapter plan, context bundle, draft, review, revision, final draft, canon/longform update, local export package, and next chapter plan. This does not yet prove the 10-30 chapter v1 acceptance run.
 - 2026-07-07: `run_chapter_production_sequence()` now provides the 10-chapter sequence contract and writes a `long_chain_acceptance_report` requiring every chapter to expose plan/context/draft/review/revision/final/canon/recap/export/next-plan paths. Ordinary regression tests cover the sequence contract with a fake chapter runner plus the existing true single-chapter bus test. A full true 10-chapter local run is now an explicit slow acceptance because repeated JSON artifact writes exceed the unit-test window.
+- 2026-07-07: true 10-chapter slow acceptance passed via `scripts/run_v1_chapter_sequence_acceptance.py`; evidence report is `docs/reports/v1-chapter-sequence-slow-acceptance.md`. Runtime was 1460.716s with 10/10 chapters covered and 7,615 local asset writes/updates. The next V1-S1 task is performance and artifact-volume governance before extending to 30 chapters.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
-| V1-S1 Canonical Single-Book Loop Contract | Define one canonical local workflow for topic/world/character/outline/chapter-plan/draft/review/revision/canon/recap/export | Current services exist but the mainline is fragmented | Production Chain, Workflow Nodes, Agent Scheduler, Context Builder, Drafting, Review, Revision, Longform | ProjectWorkspaceState, Outline, ChapterPlan, ContextBundle, DraftChapter, ReviewReport, ReviewIssue, RevisionPlan, CanonDatabase, LongformRecapReport | Implemented true single-chapter foundation plus 10-chapter sequence acceptance contract in `chapter_production_bus`; still needs true 10-30 chapter slow acceptance | One deterministic true end-to-end test for one chapter plus a 10-chapter sequence-contract test exist in `tests/unit/test_context_and_production_chain.py` | Update architecture and roadmap docs | Could duplicate existing paths if not carefully routed; continue extending this bus instead |
+| V1-S1 Canonical Single-Book Loop Contract | Define one canonical local workflow for topic/world/character/outline/chapter-plan/draft/review/revision/canon/recap/export | Current services exist but the mainline is fragmented | Production Chain, Workflow Nodes, Agent Scheduler, Context Builder, Drafting, Review, Revision, Longform | ProjectWorkspaceState, Outline, ChapterPlan, ContextBundle, DraftChapter, ReviewReport, ReviewIssue, RevisionPlan, CanonDatabase, LongformRecapReport | Implemented true single-chapter foundation, 10-chapter sequence acceptance contract, and true 10-chapter slow acceptance; still needs performance governance and 30-chapter acceptance | One deterministic true end-to-end test for one chapter, a 10-chapter sequence-contract test, and slow acceptance report `docs/reports/v1-chapter-sequence-slow-acceptance.md` exist | Update architecture and roadmap docs | Artifact volume is high: 7,615 asset writes/updates for 10 chapters; optimize before 30 chapters |
 | V1-S2 Stage Context Profiles | Make Context Builder produce stage-specific packages for topic/world/outline/chapter/review/revision | Prevents source leakage and inconsistent context | Context Builder, MKAOS, Production Context | ContextBuildPlan, ContextBundle, KnowledgePack, SourceEvidence | Context profile helper and policy checks | Positive/negative source isolation tests | Context Builder docs | Over-tight policy can block useful local workflows |
 | V1-S3 Chapter Blueprint Deepening | Ensure ChapterPlan contains scene goal, conflict, hook, emotion, info release, payoff target | Thin plans create outline-like prose | Chapter Blueprint, Outline, Quality | ChapterPlan, SceneBeat fields, ConflictBeat fields, HookPlan fields | ChapterPlan validation/service helpers | Good/bad chapter plan fixtures | Creation pipeline docs | Avoid massive schema rewrite |
 | V1-S4 Readable Prose Gate | Turn readable-prose goals into blocking ReviewIssue sources | v1 requires chapters that are readable, not just generated | Drafting, Content Quality Loop, Review, Quality Eval | DraftChapter, ReviewIssue, QualityScoreReport, ReadabilityReport-equivalent | Gate function after draft/revision | Good/bad prose fixtures; first 300 chars no-event fixture | Quality docs | Heuristic may be noisy; keep explainable |
@@ -35,12 +36,12 @@ Implementation status note:
 
 Continue from `V1-S1 Canonical Single-Book Loop Contract`.
 
-The single-chapter true foundation and 10-chapter sequence contract now exist. Next acceptance should keep the same path and make the true 10-chapter local run practical as a slow acceptance, not a default unit test:
+The single-chapter true foundation, 10-chapter sequence contract, and true 10-chapter slow acceptance now exist. Next acceptance should keep the same path and make the 30-chapter run practical by reducing artifact growth and repeated scans:
 
 ```text
-10 local chapters
+30 local chapters
 each with chapter plan, context bundle, draft, review, revision/final draft,
 canon/longform update, export package, and traceable output paths
 ```
 
-After the true slow 10-chapter run passes within an acceptable runtime envelope, extend the same path to 30 chapters.
+Before the 30-chapter run, reduce per-chapter runtime growth in runs/context/review-heavy paths and keep progress/partial-report protection enabled.

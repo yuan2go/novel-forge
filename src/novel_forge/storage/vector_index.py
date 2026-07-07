@@ -112,6 +112,7 @@ def vector_search_assets(
     tags: list[str] | None = None,
     limit: int = 50,
     force_rebuild: bool = False,
+    auto_rebuild: bool = True,
     adapter: HashEmbeddingAdapter | None = None,
 ) -> list[dict[str, Any]]:
     if not query.strip():
@@ -121,7 +122,7 @@ def vector_search_assets(
     adapter = adapter or HashEmbeddingAdapter()
     categories = _resolve_categories(category)
     required_tags = {tag.lower() for tag in tags or [] if tag}
-    index = load_vector_index(storage, force_rebuild=force_rebuild)
+    index = load_vector_index(storage, force_rebuild=force_rebuild, auto_rebuild=auto_rebuild)
     records = index.get("assets", [])
     if not isinstance(records, list):
         raise ValueError("vector index assets must be a list")

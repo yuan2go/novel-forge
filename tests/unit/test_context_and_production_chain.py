@@ -23,6 +23,7 @@ from novel_forge.modules.chapter_production_bus import (
 )
 from novel_forge.modules.change_impact import mark_downstream_assets_stale
 from novel_forge.modules.editor import apply_editor_patch
+from novel_forge.modules.longform_stability import create_chapter_state_package
 from novel_forge.modules.long_planning import create_long_form_macro_plan
 from novel_forge.modules.operations import create_local_ops_drill_report, create_long_chain_acceptance_report
 from novel_forge.modules.publishing import create_publishing_log, create_publishing_plan
@@ -392,12 +393,20 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     metadata={"copyright_boundary": "project-owned world bible"},
                 ),
             )
+            prior_draft = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Chapter 6 prior draft",
+                    content={"chapter": 6, "text": "林乔在钟城确认旧钟线索仍未解决。", "copyright_boundary": "unit test prior draft"},
+                ),
+            )
+            create_chapter_state_package(storage, prior_draft)
             chapter_plan = storage.write_asset(
                 "chapter_plans",
                 ChapterPlan(
                     title="Chapter plan",
                     content={
-                        "chapter": 1,
+                        "chapter": 7,
                         "objective": "open the mystery",
                         "beats": ["rain", "clue"],
                         "hook": "bell clue",
@@ -409,6 +418,8 @@ class ContextAndProductionChainTests(unittest.TestCase):
             draft = storage.read_asset(draft_path)
 
             self.assertEqual(draft.type, "draft_chapter")
+            self.assertEqual(draft.title, "Chapter 7 draft v0")
+            self.assertEqual(draft.content["chapter"], 7)
             self.assertIn("context_build_plan_path", draft.metadata)
             self.assertIn("context_bundle_path", draft.metadata)
             self.assertIn("draft_version_path", draft.metadata)
@@ -645,6 +656,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
                 ),
             )
             calls = []
+            progress = []
 
             def fake_start_chapter_production(storage_arg, **kwargs):
                 chapter = int(kwargs["chapter"])
@@ -684,6 +696,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     outline_path=str(outline.relative_to(storage.root)),
                     workspace_path=workspace_ref,
                     chapter_count=10,
+                    progress_callback=progress.append,
                 )
 
             self.assertEqual(result["status"], "succeeded")
@@ -693,6 +706,11 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertIsNone(calls[0]["chapter_plan_path"])
             self.assertEqual(calls[1]["chapter_plan_path"], "data/chapter_plans/chapter-2.json")
             self.assertTrue(result["next_chapter_plan_path"])
+            self.assertGreaterEqual(result["duration_seconds"], 0)
+            self.assertIn("runs", result["asset_count_delta"])
+            self.assertTrue(any(event["event"] == "chapter_started" for event in progress))
+            self.assertEqual(len([event for event in progress if event["event"] == "chapter_completed"]), 10)
+            self.assertEqual(progress[-1]["event"], "sequence_finished")
             acceptance = storage.read_asset(result["acceptance_report_path"])
             self.assertEqual(acceptance.type, "long_chain_acceptance_report")
             self.assertEqual(acceptance.content["acceptance_mode"], "v1_single_book_sequence")
@@ -704,9 +722,13 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertEqual(acceptance.content["output_counts"]["final_draft_path"], 10)
             self.assertEqual(acceptance.content["output_counts"]["longform_recap_report_path"], 10)
             self.assertEqual(acceptance.content["output_counts"]["export_package_path"], 10)
+            self.assertIn("runtime_summary", acceptance.content)
+            self.assertIn("asset_count_delta", acceptance.content["runtime_summary"])
+            self.assertGreaterEqual(acceptance.content["runtime_summary"]["total_asset_delta"], 0)
             for row in result["runs"]:
                 self.assertEqual(row["status"], "succeeded")
                 self.assertEqual(row["coverage"]["status"], "passed")
+                self.assertIn("duration_seconds", row)
                 self.assertTrue(row["outputs"]["export_markdown_path"])
                 self.assertTrue((storage.root / row["outputs"]["export_markdown_path"]).exists())
 

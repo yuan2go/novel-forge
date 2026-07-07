@@ -1,7 +1,7 @@
 # Regression Tests
 
-Updated: 2026-07-05
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, starting commit `3f68522`
+Updated: 2026-07-07
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
 
 Novel Forge keeps a dependency-light test core and optional industrial/browser checks. Run the smallest relevant verification for each change, then broaden when runtime, API, Agent, or publishing behavior changes.
 
@@ -11,6 +11,7 @@ Novel Forge keeps a dependency-light test core and optional industrial/browser c
 make test
 make lint
 make validate
+make v1-slow-acceptance
 npm --prefix web/admin test
 npm --prefix web/admin run lint
 PYTHONPATH=src python3 -m novel_forge.cli --help
@@ -45,6 +46,7 @@ Current verified result for the V7 foundation and risk closure pass: all command
 | `make check-skills` | Fail if runtime Skills drift from source | Required for Skill changes |
 | `make local-up` | Docker local stack and smoke | Requires Docker and free ports |
 | `make local-smoke` | Smoke running local stack | Requires services |
+| `make v1-slow-acceptance` | Run explicit true 10-chapter V1 slow acceptance | Writes `docs/reports/v1-chapter-sequence-slow-acceptance.md`; not part of default `make test` |
 | `make web-dev` | Next.js dev console | Requires Node deps |
 
 ## Test Coverage Map
@@ -56,7 +58,7 @@ Current verified result for the V7 foundation and risk closure pass: all command
 | Product API | `tests/unit/test_product_api.py`, `test_product_api_routes.py` | Good route/service coverage |
 | Agent runtime | `test_agent_scheduler.py`, `test_agent_registry_scheduler_integration.py`, `test_agent_runtime_profiles.py`, `test_agent_center_v2.py` | First-slice coverage |
 | Provider/runtime policy | `test_provider_runtime_guard.py`, `test_provider_hard_stop_proof.py`, `test_runtime_policy.py`, `test_runtime_ledger.py` | Active hardening coverage |
-| Context/RAG | `test_context_builder_mkaos_flow.py`, `test_context_and_production_chain.py`, `test_pgvector_source_isolation.py` | Partial but meaningful |
+| Context/RAG | `test_context_builder_mkaos_flow.py`, `test_context_and_production_chain.py`, `test_pgvector_source_isolation.py`, `test_storage.py` | Partial but meaningful; RAG no longer implicitly rebuilds local vector index during context generation |
 | MKAOS | Many `test_mkaos_*.py`, MKAOS integration and acceptance tests | Broad coverage, still evolving |
 | Canon/KG/continuity | `test_canon_graph*.py`, `test_novel_kg*.py`, long-chain integration tests | Partial long-form coverage |
 | Review/revision/publishing | `test_review_issue.py`, `test_publishing_center.py`, `test_publish_feedback_loop.py`, publishing fixtures | Stronger than earlier, still needs more production-ready fixtures |
@@ -85,6 +87,7 @@ For large service splits, add characterization tests before refactoring. Keep te
 - Browser route smoke is optional and may be skipped when Playwright browsers are not installed.
 - Production provider tests require explicit fixtures/secrets or safe mock-success fixtures that prove evidence shape without calling external APIs.
 - Full long-novel generation is not a default regression test; current long-chain tests are smoke/pressure slices.
+- True V1 10-chapter slow acceptance passed on 2026-07-07 with 10/10 coverage and 1460.716s runtime. It is intentionally not part of default `make test`; run `make v1-slow-acceptance` when changing chapter bus, context/review/revision loops, or longform/export coverage.
 - Optional industrial services require Docker and ports; local unit tests should not depend on them.
 - Some UI pages are console/reporting slices and need more end-to-end operator workflow tests.
 
