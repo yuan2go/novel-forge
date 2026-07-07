@@ -262,7 +262,46 @@ def _active_prompt(prompts: list[dict[str, Any]], source_type: str) -> dict[str,
 def _provider_candidates(output: Any) -> list[dict[str, Any]]:
     if isinstance(output, dict) and isinstance(output.get("candidates"), list):
         return [item for item in output["candidates"] if isinstance(item, dict)]
+    if isinstance(output, dict) and isinstance(output.get("patterns"), list):
+        summary = str(output.get("summary") or "").strip()
+        candidates: list[dict[str, Any]] = []
+        for index, pattern in enumerate(output.get("patterns") or []):
+            text = str(pattern).strip()
+            if not text:
+                continue
+            candidates.append(
+                {
+                    "concept_name": f"provider abstract mechanism {index + 1}",
+                    "core_explanation": _bounded_provider_text(text),
+                    "creative_principle": _bounded_provider_text(text),
+                    "narrative_function": "turn the provider-identified abstract pattern into narrative pressure, choice, and consequence",
+                    "conflict_function": "use the pattern to create visible value conflict instead of source-expression reuse",
+                    "character_function": "bind the pattern to motivation, obligation, bias, or choice cost",
+                    "worldbuilding_function": "express the pattern as a reusable rule, institution, relation, or constraint",
+                    "prose_function": "render through action, scene objects, dialogue pressure, and outcome",
+                    "review_function": "verify that the mechanism changes scene behavior and does not quote source wording",
+                    "positive_usage": [_bounded_provider_text(text)],
+                    "negative_usage": ["do not copy source wording", "do not preserve source-specific character, scene, or plot sequence"],
+                    "anti_patterns": ["原文复用", "百科化", "概念堆叠"],
+                    "asset_categories": _classical_modern_asset_categories(),
+                    "metadata": {
+                        "provider_summary_hash": hashlib.sha256(summary.encode("utf-8")).hexdigest() if summary else "",
+                        "provider_pattern_index": index,
+                        "provider_output_shape": "analyze.summary_patterns",
+                    },
+                }
+            )
+        return candidates
     return []
+
+
+def _bounded_provider_text(value: str, *, limit: int = 320) -> str:
+    compact = " ".join(str(value or "").split())
+    return compact[:limit]
+
+
+def _classical_modern_asset_categories() -> list[str]:
+    return ["素材", "拆解", "题材", "世界观", "人物", "大纲", "细纲", "正文", "审稿", "训练题", "可复用模板"]
 
 
 def _normalize_candidate(candidate: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
@@ -289,6 +328,7 @@ def _normalize_candidate(candidate: dict[str, Any], payload: dict[str, Any]) -> 
         "applicable_genres": candidate.get("applicable_genres") if isinstance(candidate.get("applicable_genres"), list) else [],
         "applicable_platforms": candidate.get("applicable_platforms") if isinstance(candidate.get("applicable_platforms"), list) else [],
         "originality_boundary": str(candidate.get("originality_boundary") or "abstract mechanism only; no source wording, characters, scenes, or source-specific sequence"),
+        "asset_categories": candidate.get("asset_categories") if isinstance(candidate.get("asset_categories"), list) else payload.get("asset_categories") if isinstance(payload.get("asset_categories"), list) else [],
         "evidence_refs": _strings(candidate.get("evidence_refs") or payload.get("evidence_refs") or payload.get("source_refs")),
         "confidence": float(candidate.get("confidence", 0.7) or 0.7),
         "risk_level": str(candidate.get("risk_level") or "low"),
@@ -316,6 +356,12 @@ def _write_provider_evidence(storage: LocalStorage, project_id: str, provider: d
         "provider_approval_evidence": provider.get("provider_approval_evidence", {}) if isinstance(provider.get("provider_approval_evidence", {}), dict) else {},
         "provider_runtime_gate": provider.get("provider_runtime_gate", {}) if isinstance(provider.get("provider_runtime_gate", {}), dict) else {},
         "warnings": provider.get("warnings", []) if isinstance(provider.get("warnings"), list) else [],
+        "input_evidence": {
+            "source_excerpt_hash": str(payload.get("source_excerpt_hash") or (payload.get("runtime_policy", {}) if isinstance(payload.get("runtime_policy"), dict) else {}).get("source_excerpt_hash") or ""),
+            "source_excerpt_chars": int(payload.get("source_excerpt_chars") or (payload.get("runtime_policy", {}) if isinstance(payload.get("runtime_policy"), dict) else {}).get("source_excerpt_chars") or 0),
+            "source_path": str(payload.get("source_path") or (payload.get("runtime_policy", {}) if isinstance(payload.get("runtime_policy"), dict) else {}).get("source_path") or ""),
+            "raw_excerpt_persisted": False,
+        },
         "created_at": utc_now(),
     }
     asset = _asset("mkaos_extraction_provider_evidence", make_id("mkaos_extraction_provider_evidence", content["provider_output_hash"] or utc_now()), "MKAOS extraction provider evidence", "mkaos-model-extraction", content, _metadata(project_id, payload), references=_strings(payload.get("evidence_refs")))

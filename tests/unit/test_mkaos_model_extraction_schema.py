@@ -6,6 +6,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.mkaos_model_extraction import FORBIDDEN_FIELDS, REQUIRED_CANDIDATE_FIELDS
 from novel_forge.modules.mkaos_model_extraction.candidate_validator import validate_candidate_payload
+from novel_forge.modules.mkaos_model_extraction.provider_runner import _safe_provider_input
+from novel_forge.modules.mkaos_model_extraction.service import _provider_candidates
 
 
 class MkaosModelExtractionSchemaTests(unittest.TestCase):
@@ -49,6 +51,31 @@ class MkaosModelExtractionSchemaTests(unittest.TestCase):
 
         self.assertFalse(result["valid"])
         self.assertTrue(any(error["field"] == "applicable_flows" for error in result["errors"]))
+
+    def test_provider_analyze_patterns_become_reviewable_candidates(self):
+        output = {
+            "summary": "文本呈现秩序压力和选择代价。",
+            "word_count": 12,
+            "patterns": ["把礼法压力转成角色必须付出资源代价的选择机制。"],
+        }
+
+        candidates = _provider_candidates(output)
+
+        self.assertEqual(len(candidates), 1)
+        self.assertIn("选择机制", candidates[0]["creative_principle"])
+        self.assertEqual(candidates[0]["metadata"]["provider_output_shape"], "analyze.summary_patterns")
+
+    def test_provider_evidence_text_uses_bounded_excerpt_not_title_when_allowed(self):
+        payload = {
+            "allow_evidence_text": True,
+            "input_summary": "章节标题",
+            "text": "原文章节片段" * 1000,
+        }
+
+        text = _safe_provider_input(payload)
+
+        self.assertTrue(text.startswith("原文章节片段"))
+        self.assertLessEqual(len(text), 4000)
 
 
 if __name__ == "__main__":

@@ -9,8 +9,11 @@ from .file_type_detector import detect_corpus_type, detect_file_type
 
 def build_repository_manifest(root: str | Path, *, repository_id: str = "") -> dict[str, Any]:
     root_path = Path(root)
+    detected_structure = detect_corpus_type(root_path)
     files: list[dict[str, Any]] = []
     for path in sorted(item for item in root_path.rglob("*") if item.is_file()):
+        if _should_skip_path(root_path, path, detected_structure):
+            continue
         relative = str(path.relative_to(root_path))
         file_type = detect_file_type(path)
         files.append(
@@ -28,13 +31,24 @@ def build_repository_manifest(root: str | Path, *, repository_id: str = "") -> d
         "repository_id": repository_id,
         "root_path": str(root_path),
         "files": files,
-        "detected_structure": detect_corpus_type(root_path),
+        "detected_structure": detected_structure,
         "stats": {
             "file_count": len(files),
             "book_count": len({item["book_name"] for item in files if item["book_name"]}),
             "parallel_file_count": len([item for item in files if item["file_type"] == "parallel_text"]),
         },
     }
+
+
+def _should_skip_path(root: Path, path: Path, detected_structure: dict[str, Any]) -> bool:
+    parts = path.relative_to(root).parts
+    if not parts:
+        return True
+    if any(part in {".git", ".hg", ".svn", "__pycache__", ".pytest_cache"} for part in parts):
+        return True
+    if detected_structure.get("corpus_type") == "classical_modern_parallel_corpus":
+        return parts[0] not in {"古文原文", "双语数据"}
+    return False
 
 
 def infer_book_name(root: Path, path: Path) -> str:

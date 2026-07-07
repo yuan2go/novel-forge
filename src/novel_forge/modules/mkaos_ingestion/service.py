@@ -119,9 +119,23 @@ def import_repository(storage: LocalStorage, repository_ref: str, payload: dict[
     failures: list[dict[str, Any]] = []
     duplicate_count = 0
     seen_file_hashes: set[str] = set()
+    seen_book_names: set[str] = set()
+    processed_file_count = 0
+    skipped_file_count = 0
     files = manifest.get("content", {}).get("files", []) if isinstance(manifest.get("content", {}).get("files", []), list) else []
     for file_row in files:
+        if not _file_allowed_by_import_payload(file_row, payload, seen_book_names):
+            skipped_file_count += 1
+            continue
+        max_files = _positive_int(payload.get("max_files"))
+        if max_files is not None and processed_file_count >= max_files:
+            skipped_file_count += 1
+            continue
         try:
+            processed_file_count += 1
+            book_name = str(file_row.get("book_name") or "")
+            if book_name:
+                seen_book_names.add(book_name)
             sha256 = str(file_row.get("sha256") or "")
             if sha256 and sha256 in seen_file_hashes:
                 duplicate_count += 1
@@ -159,6 +173,15 @@ def import_repository(storage: LocalStorage, repository_ref: str, payload: dict[
         duplicate_count=duplicate_count,
         failures=failures,
     )
+    report_payload["import_window"] = {
+        "max_books": _positive_int(payload.get("max_books")),
+        "max_files": _positive_int(payload.get("max_files")),
+        "include_parallel_pairs": _include_parallel_pairs(payload),
+        "selected_book_names": sorted(_selected_book_names(payload)),
+        "processed_file_count": processed_file_count,
+        "skipped_file_count": skipped_file_count,
+        "resume_recommended": skipped_file_count > 0,
+    }
     report_asset = _asset("import_quality_report", make_id("import_quality_report", str(repo.get("id") or "")), title=f"{repo.get('title')} import quality", source=str(repo.get("id") or ""), tags=["mkaos", "ingestion", "quality"], content={**report_payload, "project_id": project_id}, metadata=_metadata(project_id, payload, repo.get("content", {}).get("rights", {})), references=[str(repo.get("id") or ""), str(manifest.get("id") or "")])
     report_path = _write(storage, report_asset)
     _complete_job(storage, job["path"], status="succeeded" if not failures else "completed_with_failures", outputs={"report_path": _display_path(storage, report_path), "failure_count": len(failures)})
@@ -368,6 +391,45 @@ def _load_or_scan_manifest(storage: LocalStorage, repository_ref: str, payload: 
     return {"repository": repo, "manifest": manifest, "path": manifest_path}
 
 
+def _file_allowed_by_import_payload(file_row: dict[str, Any], payload: dict[str, Any], seen_book_names: set[str]) -> bool:
+    selected = _selected_book_names(payload)
+    book_name = str(file_row.get("book_name") or "")
+    if selected and book_name not in selected:
+        return False
+    max_books = _positive_int(payload.get("max_books"))
+    if max_books is not None and book_name and book_name not in seen_book_names and len(seen_book_names) >= max_books:
+        return False
+    if str(file_row.get("file_type") or "") == "parallel_text" and not _include_parallel_pairs(payload):
+        return False
+    return True
+
+
+def _include_parallel_pairs(payload: dict[str, Any]) -> bool:
+    value = payload.get("include_parallel_pairs")
+    if value is None:
+        return True
+    return bool(value)
+
+
+def _selected_book_names(payload: dict[str, Any]) -> set[str]:
+    names = payload.get("book_names") or payload.get("selected_book_names") or []
+    if isinstance(names, str):
+        return {item.strip() for item in names.split(",") if item.strip()}
+    if isinstance(names, list):
+        return {str(item).strip() for item in names if str(item).strip()}
+    return set()
+
+
+def _positive_int(value: Any) -> int | None:
+    if value in {None, "", 0, "0"}:
+        return None
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number > 0 else None
+
+
 def _ensure_book(storage: LocalStorage, project_id: str, repo: dict[str, Any], file_row: dict[str, Any], cache: dict[str, dict[str, Any]], payload: dict[str, Any]) -> dict[str, Any]:
     book_name = str(file_row.get("book_name") or "Untitled Book")
     if book_name in cache:
@@ -402,9 +464,13 @@ def _write_chapter(storage: LocalStorage, project_id: str, book: dict[str, Any],
         "chapter_id": "",
         "project_id": project_id,
         "book_id": str(book.get("id") or book.get("content", {}).get("book_id") or ""),
+        "book_title": str(book.get("title") or book.get("content", {}).get("book_name") or ""),
         "title": title,
         "chapter_path": file_row.get("chapter_path") or [],
         "source_file": str(file_row.get("path") or ""),
+        "source_path": str(file_row.get("path") or ""),
+        "content_hash": str(file_row.get("sha256") or source_asset.get("content", {}).get("content_hash") or ""),
+        "line_range": {"start": 1, "end": len(str(read.get("text") or "").splitlines()) or 1},
         "text_length": len(str(read.get("text") or "")),
         "source_document_id": str(source_asset.get("id") or ""),
         "source_chunk_ids": [str(chunk.get("id") or "") for chunk in chunks],

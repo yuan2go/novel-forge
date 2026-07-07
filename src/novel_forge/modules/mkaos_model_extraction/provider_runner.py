@@ -66,7 +66,7 @@ def run_provider(payload: dict[str, Any], prompt: dict[str, Any]) -> dict[str, A
 
 def _safe_provider_input(payload: dict[str, Any]) -> str:
     if bool(payload.get("allow_evidence_text")):
-        return str(payload.get("input_summary") or payload.get("text") or payload.get("summary") or "")[:4000]
+        return str(payload.get("text") or payload.get("source_excerpt") or payload.get("input_summary") or payload.get("summary") or "")[:4000]
     return str(payload.get("input_summary") or payload.get("summary") or payload.get("abstract_preview") or payload.get("title") or "")[:1600]
 
 
