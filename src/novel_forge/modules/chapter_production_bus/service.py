@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import re
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +12,8 @@ from novel_forge.modules.context_builder import create_context_build_plan, creat
 from novel_forge.modules.continuity_graph import create_chapter_stability_preflight_report
 from novel_forge.modules.drafting import service as drafting_service
 from novel_forge.modules.editor import execute_revision_plan
+from novel_forge.modules.longform_recap import run_longform_recap
+from novel_forge.modules.longform_stability import create_longform_artifacts_for_draft
 from novel_forge.modules.production_chain.service import (
     create_chapter_plan_version,
     create_outline_version,
@@ -23,7 +27,7 @@ from novel_forge.modules.review import service as review_service
 from novel_forge.modules.revision import service as revision_service
 from novel_forge.modules.workflow_nodes import record_node_run
 from novel_forge.modules.workspace.service import update_workspace
-from novel_forge.schemas import ChapterProductionRun, TaskStatus, validate_common_fields
+from novel_forge.schemas import ChapterProductionRun, PublishingPlan, TaskStatus, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 CHAPTER_PRODUCTION_STEPS = [
@@ -35,6 +39,8 @@ CHAPTER_PRODUCTION_STEPS = [
     "review",
     "revision_plan",
     "final_draft",
+    "canon_longform_update",
+    "export_package",
     "next_chapter_plan",
 ]
 
@@ -47,6 +53,8 @@ STEP_LABELS = {
     "review": "审稿门禁",
     "revision_plan": "修订计划",
     "final_draft": "最终稿",
+    "canon_longform_update": "Canon / 长篇状态更新",
+    "export_package": "本地导出包",
     "next_chapter_plan": "下一章细纲",
 }
 
@@ -124,6 +132,16 @@ def start_chapter_production(
                 "final_generation_run_path": "",
                 "final_forward_patch_path": "",
                 "final_rollback_patch_path": "",
+                "chapter_state_path": "",
+                "fact_ledger_path": "",
+                "character_state_ledger_path": "",
+                "foreshadowing_graph_path": "",
+                "reward_ledger_path": "",
+                "review_score_system_report_path": "",
+                "longform_recap_report_path": "",
+                "longform_recap_context_bundle_path": "",
+                "export_package_path": "",
+                "export_markdown_path": "",
                 "next_chapter_plan_path": "",
                 "next_chapter_plan_version_path": "",
             },
@@ -134,6 +152,8 @@ def start_chapter_production(
                 "requires_stability_preflight_before_context": True,
                 "requires_review_before_revision": True,
                 "requires_revision_before_final": True,
+                "requires_canon_longform_update_after_final": True,
+                "requires_export_package_after_canon_update": True,
                 "copyright_boundary": "references are used as abstract project context; protected expression is not copied into generation",
             },
             "production_context_preflight": production_context.get("preflight", {}),
@@ -441,6 +461,12 @@ def _perform_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], s
     if step == "final_draft":
         result = _create_final_draft(storage, data)
         return _step_result(result["final_draft_path"], result["output_paths"], result)
+    if step == "canon_longform_update":
+        result = _create_canon_longform_update(storage, data)
+        return _step_result(result["longform_recap_report_path"], result["output_paths"], result)
+    if step == "export_package":
+        result = _create_export_package(storage, data)
+        return _step_result(result["export_package_path"], result["output_paths"], result)
     if step == "next_chapter_plan":
         result = _create_next_chapter_plan(storage, data)
         return _step_result(result["next_chapter_plan_path"], [result["next_chapter_plan_path"], result["next_chapter_plan_version_path"]], result)
@@ -485,10 +511,122 @@ def _create_final_draft(storage: LocalStorage, data: dict[str, Any]) -> dict[str
     }
 
 
+def _create_canon_longform_update(storage: LocalStorage, data: dict[str, Any]) -> dict[str, Any]:
+    content = _content(data)
+    outputs = _outputs(content)
+    _require(outputs, "final_draft_path", "canon_longform_update")
+    workspace_path = str(data.get("metadata", {}).get("workspace_path", ""))
+    project_id = str(data.get("metadata", {}).get("project_id", ""))
+    chapter = _positive_chapter(content.get("chapter", 1))
+    artifact_paths = create_longform_artifacts_for_draft(storage, outputs["final_draft_path"], workspace_path=workspace_path)
+    recap = run_longform_recap(
+        storage,
+        {
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "chapter_count": chapter,
+            "chapter_window": max(chapter, 1),
+            "force": True,
+            "bypass_reason": "v1 canonical single-book chapter loop requires a recap/state checkpoint",
+        },
+    )
+    updates = {
+        "chapter_state_path": artifact_paths.get("chapter_state_path", ""),
+        "fact_ledger_path": artifact_paths.get("fact_ledger_path", ""),
+        "character_state_ledger_path": artifact_paths.get("character_state_ledger_path", ""),
+        "foreshadowing_graph_path": artifact_paths.get("foreshadowing_graph_path", ""),
+        "reward_ledger_path": artifact_paths.get("reward_ledger_path", ""),
+        "review_score_system_report_path": artifact_paths.get("review_score_system_report_path", ""),
+        "longform_recap_report_path": recap.get("path", ""),
+        "longform_recap_context_bundle_path": recap.get("context_bundle_path", ""),
+    }
+    output_paths = [path for path in [*artifact_paths.values(), updates["longform_recap_report_path"], updates["longform_recap_context_bundle_path"]] if path]
+    return {**updates, "output_paths": output_paths}
+
+
+def _create_export_package(storage: LocalStorage, data: dict[str, Any]) -> dict[str, Any]:
+    content = _content(data)
+    outputs = _outputs(content)
+    _require(outputs, "final_draft_path", "export_package")
+    _require(outputs, "longform_recap_report_path", "export_package")
+    draft_file = resolve_path(storage.root, outputs["final_draft_path"])
+    draft = storage.read_asset(draft_file)
+    project_id = str(data.get("metadata", {}).get("project_id", ""))
+    workspace_path = str(data.get("metadata", {}).get("workspace_path", ""))
+    chapter = _positive_chapter(content.get("chapter", 1))
+    text = str(draft.content.get("text") or draft.content.get("body") or "")
+    export_dir = storage.root / "data" / "exports" / "v1"
+    export_dir.mkdir(parents=True, exist_ok=True)
+    export_file = export_dir / f"{_safe_filename(project_id or 'project')}-chapter-{chapter}.md"
+    export_file.write_text(f"# {draft.title or f'Chapter {chapter}'}\n\n{text}\n", encoding="utf-8")
+    payload = export_file.read_bytes()
+    export_ref = _display_path(storage.root, export_file)
+    export_id = make_id("v1_export_package", f"{project_id}-{chapter}-{draft.id}")
+    asset = PublishingPlan(
+        id=export_id,
+        title=f"V1 local export package chapter {chapter}",
+        source=draft.id,
+        tags=["v1", "single-book-loop", "export", "local"],
+        content={
+            "plan_id": export_id,
+            "project_id": project_id or "local-system",
+            "calendar": [],
+            "chapter_queue": [
+                {
+                    "chapter": chapter,
+                    "title": draft.title,
+                    "draft_id": draft.id,
+                    "draft_path": _display_path(storage.root, draft_file),
+                    "export_path": export_ref,
+                    "status": "ready_for_operator_review",
+                }
+            ],
+            "platform_targets": [{"channel": "local_export", "cadence": "manual", "status": "not_submitted"}],
+            "platform_rules": {
+                "mode": "local_export_only",
+                "publish_side_effects_allowed": False,
+                "manual_review_required": True,
+            },
+            "gate_policy": {
+                "v1_contract_export_only": True,
+                "require_publish_gate_ready": False,
+                "require_canon_longform_update": True,
+                "require_review_and_revision": True,
+                "rollback_required": True,
+            },
+            "status": "active",
+            "export_package": {
+                "format": "markdown",
+                "path": export_ref,
+                "sha256": hashlib.sha256(payload).hexdigest(),
+                "size_bytes": len(payload),
+                "source_draft_path": _display_path(storage.root, draft_file),
+                "longform_recap_report_path": outputs["longform_recap_report_path"],
+            },
+            "source_isolation": {
+                "raw_source_text_allowed": False,
+                "source_chunk_raw_text_allowed": False,
+                "runtime_assets_in_generation_rag_allowed": False,
+                "export_contains_generated_draft_only": True,
+            },
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "workflow": "v1-single-book-loop", "channel": "local_export"},
+        references=filter_project_safe_references(storage, project_id, [draft.id, _display_path(storage.root, draft_file), outputs["longform_recap_report_path"], export_ref]),
+    )
+    errors = validate_common_fields(asset.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    package_path = storage.write_asset("publishing", asset)
+    package_ref = _display_path(storage.root, package_path)
+    return {"export_package_path": package_ref, "export_markdown_path": export_ref, "output_paths": [package_ref, export_ref]}
+
+
 def _create_next_chapter_plan(storage: LocalStorage, data: dict[str, Any]) -> dict[str, Any]:
     content = _content(data)
     outputs = _outputs(content)
     _require(outputs, "final_draft_path", "next_chapter_plan")
+    _require(outputs, "export_package_path", "next_chapter_plan")
     _require(outputs, "outline_path", "next_chapter_plan")
     final = storage.read_asset(resolve_path(storage.root, outputs["final_draft_path"]))
     current_plan = storage.read_asset(resolve_path(storage.root, outputs["chapter_plan_path"]))
@@ -747,7 +885,9 @@ def _step_inputs(content: dict[str, Any], step: str) -> list[str]:
         "review": ["draft_v0_path"],
         "revision_plan": ["review_path"],
         "final_draft": ["draft_v0_path", "review_path", "revision_plan_path"],
-        "next_chapter_plan": ["final_draft_path", "outline_path"],
+        "canon_longform_update": ["final_draft_path"],
+        "export_package": ["final_draft_path", "longform_recap_report_path"],
+        "next_chapter_plan": ["final_draft_path", "outline_path", "export_package_path"],
     }
     return [outputs[key] for key in mapping.get(step, []) if outputs.get(key)]
 
@@ -782,6 +922,9 @@ def _run_row(storage: LocalStorage, path: Path, data: dict[str, Any]) -> dict[st
         "final_draft_path": _outputs(content).get("final_draft_path", ""),
         "final_forward_patch_path": _outputs(content).get("final_forward_patch_path", ""),
         "final_rollback_patch_path": _outputs(content).get("final_rollback_patch_path", ""),
+        "longform_recap_report_path": _outputs(content).get("longform_recap_report_path", ""),
+        "export_package_path": _outputs(content).get("export_package_path", ""),
+        "export_markdown_path": _outputs(content).get("export_markdown_path", ""),
         "next_chapter_plan_path": _outputs(content).get("next_chapter_plan_path", ""),
         "updated_at": data.get("updated_at", ""),
         "summary": content.get("recovery_instruction") or f"{content.get('current_step', '')} / {content.get('status', '')}",
@@ -843,6 +986,11 @@ def _last_sentence(text: str) -> str:
             if parts:
                 return parts[-1] + sep
     return normalized[-80:]
+
+
+def _safe_filename(value: str) -> str:
+    normalized = re.sub(r"[^A-Za-z0-9._-]+", "-", str(value or "").strip()).strip("-._")
+    return normalized[:80] or "chapter"
 
 
 def _ensure_project_metadata(storage: LocalStorage, path: str | Path, project_id: str, workspace_path: str) -> None:

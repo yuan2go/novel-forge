@@ -4,9 +4,12 @@ Date: 2026-07-07
 
 Ordering principle: prioritize v1 single-book production closure before broader platform, multi-book, or fully autonomous features.
 
+Implementation status note:
+- 2026-07-07: `V1-S1 Canonical Single-Book Loop Contract` has a single-chapter foundation in `src/novel_forge/modules/chapter_production_bus/service.py`. The bus now runs through chapter plan, context bundle, draft, review, revision, final draft, canon/longform update, local export package, and next chapter plan. This does not yet prove the 10-30 chapter v1 acceptance run.
+
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
-| V1-S1 Canonical Single-Book Loop Contract | Define one canonical local workflow for topic/world/character/outline/chapter-plan/draft/review/revision/canon/recap/export | Current services exist but the mainline is fragmented | Production Chain, Workflow Nodes, Agent Scheduler, Context Builder, Drafting, Review, Revision, Longform | ProjectWorkspaceState, Outline, ChapterPlan, ContextBundle, DraftChapter, ReviewReport, ReviewIssue, RevisionPlan, CanonDatabase, LongformRecapReport | Add/standardize service contract; register workflow operation if missing | One deterministic end-to-end acceptance test for one chapter | Update architecture and roadmap docs | Could duplicate existing paths if not carefully routed |
+| V1-S1 Canonical Single-Book Loop Contract | Define one canonical local workflow for topic/world/character/outline/chapter-plan/draft/review/revision/canon/recap/export | Current services exist but the mainline is fragmented | Production Chain, Workflow Nodes, Agent Scheduler, Context Builder, Drafting, Review, Revision, Longform | ProjectWorkspaceState, Outline, ChapterPlan, ContextBundle, DraftChapter, ReviewReport, ReviewIssue, RevisionPlan, CanonDatabase, LongformRecapReport | Implemented single-chapter foundation in `chapter_production_bus`; still needs 10-30 chapter acceptance | One deterministic end-to-end acceptance test for one chapter exists in `tests/unit/test_context_and_production_chain.py` | Update architecture and roadmap docs | Could duplicate existing paths if not carefully routed; continue extending this bus instead |
 | V1-S2 Stage Context Profiles | Make Context Builder produce stage-specific packages for topic/world/outline/chapter/review/revision | Prevents source leakage and inconsistent context | Context Builder, MKAOS, Production Context | ContextBuildPlan, ContextBundle, KnowledgePack, SourceEvidence | Context profile helper and policy checks | Positive/negative source isolation tests | Context Builder docs | Over-tight policy can block useful local workflows |
 | V1-S3 Chapter Blueprint Deepening | Ensure ChapterPlan contains scene goal, conflict, hook, emotion, info release, payoff target | Thin plans create outline-like prose | Chapter Blueprint, Outline, Quality | ChapterPlan, SceneBeat fields, ConflictBeat fields, HookPlan fields | ChapterPlan validation/service helpers | Good/bad chapter plan fixtures | Creation pipeline docs | Avoid massive schema rewrite |
 | V1-S4 Readable Prose Gate | Turn readable-prose goals into blocking ReviewIssue sources | v1 requires chapters that are readable, not just generated | Drafting, Content Quality Loop, Review, Quality Eval | DraftChapter, ReviewIssue, QualityScoreReport, ReadabilityReport-equivalent | Gate function after draft/revision | Good/bad prose fixtures; first 300 chars no-event fixture | Quality docs | Heuristic may be noisy; keep explainable |
@@ -29,20 +32,14 @@ Ordering principle: prioritize v1 single-book production closure before broader 
 
 ## Recommended Next Slice
 
-Start with `V1-S1 Canonical Single-Book Loop Contract`.
+Continue from `V1-S1 Canonical Single-Book Loop Contract`.
 
-Acceptance for that slice should be deliberately small but real:
+The single-chapter foundation now exists. Next acceptance should extend the same path, not a new path:
 
 ```text
-one local project
-one chapter plan
-one context bundle
-one draft
-one review report
-one revision plan or accepted no-op with evidence
-one canon/longform state update
-one exportable package
-all linked by traceable paths
+10 local chapters
+each with chapter plan, context bundle, draft, review, revision/final draft,
+canon/longform update, export package, and traceable output paths
 ```
 
-After that passes, extend the same path to 10 chapters and then 30 chapters.
+After 10 chapters pass, extend the same path to 30 chapters.

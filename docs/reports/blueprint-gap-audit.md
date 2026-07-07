@@ -20,14 +20,14 @@ The repository is a broad local-first Novel OS runtime foundation, not yet a com
 
 The codebase already has substantial v6/v7 infrastructure: schema-backed assets, local storage, MKAOS ingestion/extraction, Context Builder, Agent contracts/runs/scheduler, workflow nodes, runtime ledger, publish/release gates, genre/style/quality/canon content intelligence, long-chain proof, publishing feedback adapters, and a large Web Admin surface.
 
-The largest gap is orchestration depth, not raw module count. Many assets and services exist, but the v1 single-book production loop is still not the unquestioned mainline:
+The largest gap is orchestration depth, not raw module count. Many assets and services exist. As of 2026-07-07, the `chapter_production_bus` has a single-chapter v1 contract foundation, but the 10-30 chapter v1 single-book production loop is still not proven:
 
 ```text
 topic -> world -> characters -> outline -> first 30 chapter plans
 -> draft -> review -> revision -> canon update -> longform recap -> export
 ```
 
-Current implementation proves many slices and fixtures, but does not yet prove a production-grade, repeatable 10-30 chapter single-book run where every chapter has a chapter plan, draft, review, revision, quality record, canon update, and recap cadence without bypass.
+Current implementation proves many slices and fixtures, including a one-chapter bus path, but does not yet prove a production-grade, repeatable 10-30 chapter single-book run where every chapter has a chapter plan, draft, review, revision, quality record, canon update, recap/export evidence, and no bypass.
 
 ## Implemented Modules
 
@@ -44,7 +44,7 @@ Current implementation proves many slices and fixtures, but does not yet prove a
 
 ## Partially Implemented Modules
 
-- Single-book production loop: individual services exist, but the v1 canonical path is still fragmented across product routes, production chain versioning, chapter production bus, workflow nodes, drafting/review/revision services, and quality loops.
+- Single-book production loop: `chapter_production_bus` now provides a one-chapter canonical contract; 10-30 chapter artifact coverage and stronger quality gates are still pending.
 - Source / Material Governance OS: source evidence and MKAOS import are strong, but full source registry, sync jobs, license scanner, source snapshots, and material usage lifecycle are partial.
 - Story Bible / Long-form OS: many ledgers and reports exist, but typed lifecycle/query/diff semantics are uneven; some blueprint concepts are stored as report content rather than first-class models.
 - Quality / Review / Eval OS: ReviewIssue, Eval Center, Quality Eval 2.0, provider judge, and gates exist, but readable-prose/page-turning/mobile gates are not yet a hard chapter-by-chapter blocker in the v1 loop.
@@ -95,11 +95,10 @@ Current implementation proves many slices and fixtures, but does not yet prove a
 
 ## v1 Blockers
 
-1. Canonical v1 orchestration service/workflow is not yet the single obvious production path.
-2. Chapter Blueprint, Draft, Review, Revision, Canon Update, Longform Recap, and Export are not yet proven together for 10-30 consecutive chapters.
-3. Readable Prose / Page-Turning / Mobile Reading gates are not yet first-class hard blockers in the v1 chapter loop.
-4. ApprovalRequest and source governance lifecycle are insufficient for high-risk material and major story mutations.
-5. Several blueprint data models are represented as flexible content fields rather than typed lifecycle assets.
+1. Chapter Blueprint, Draft, Review, Revision, Canon Update, Longform Recap, and Export are not yet proven together for 10-30 consecutive chapters.
+2. Readable Prose / Page-Turning / Mobile Reading gates are not yet first-class hard blockers in the v1 chapter loop.
+3. ApprovalRequest and source governance lifecycle are insufficient for high-risk material and major story mutations.
+4. Several blueprint data models are represented as flexible content fields rather than typed lifecycle assets.
 
 ## Gap Matrix
 
@@ -117,7 +116,7 @@ Current implementation proves many slices and fixtures, but does not yet prove a
 | Engine | Worldbuilding Engine | Produce world rules and gates | `WorldBible`, platform/genre support, continuity assets exist | World rules/factions/resources not all typed | Weak settings cause later drift | P1 | Tie world bible to v1 outline/chapter context | `schemas/assets.py`, `modules/continuity_graph` | World rule context/gate tests |
 | Engine | Character Engine | Character profiles, states, arcs, voice | `CharacterCard`, `CharacterStateLedger`, arc and KG support | Voice/relationship lifecycle partial | Characters become decorative | P1 | Add minimal v1 character state and voice checks | `modules/longform_stability`, `modules/novel_kg` | Character drift fixtures |
 | Engine | Outline Engine | Book/volume arcs, foreshadow plan | `Outline`, `OutlineVersion`, `LongFormMacroPlan` exist | v1 outline-to-30-chapter proof missing | Outline disconnected from drafts | P0 | Create canonical outline-to-chapter-plan slice | `modules/production_chain`, `modules/long_planning` | Outline/chapter plan chain test |
-| Engine | Chapter Blueprint Engine | Scene beats, conflict, info release, hook, emotion curve | `ChapterPlan`, versioning, workflow assets exist | SceneBeat etc mostly content fields, not standalone lifecycle | Thin plans create thin prose | P0 | Strengthen chapter plan schema conventions and gates | `schemas/assets.py`, `modules/production_chain` | Chapter plan quality fixtures |
+| Engine | Chapter Blueprint Engine | Scene beats, conflict, info release, hook, emotion curve | `ChapterPlan`, versioning, workflow assets, and one-chapter production bus contract exist | SceneBeat etc mostly content fields, not standalone lifecycle; 10-30 chapter run pending | Thin plans create thin prose | P0 | Strengthen chapter plan schema conventions and gates | `schemas/assets.py`, `modules/chapter_production_bus`, `modules/production_chain` | Chapter plan quality fixtures |
 | Engine | Readable Prose Engine | Readable, page-turning prose gates | Drafting, style, content quality loop, quality eval exist | Not yet a distinct hard engine in v1 | AI-like or summary-like chapters | P0 | Implement v1 readable-prose gate over DraftChapter | `modules/drafting`, `modules/content_quality_loop` | Bad/good prose fixtures |
 | Engine | Revision Engine | Issue-type strategy and re-review | Revision tasks/plans, rework loop, re-review links exist | Needs stronger strategy coverage and diff evidence | Revisions may be cosmetic | P0 | Tie ReviewIssue types to RevisionPlan strategy and re-review | `modules/revision/service.py` | Revision improves gate fixture |
 | Engine | Feedback Analysis Engine | Reader feedback to human-gated mutation | Feedback adapters/backflow/mutation application exist | Real embedding/sentiment/drop-off evidence partial | Feedback over-applied or ignored | P2 | Keep human approval; add evidence chain later | `modules/publishing_feedback_adapters`, `modules/feedback` | Approval/apply/invalidate tests |
@@ -135,10 +134,11 @@ Current implementation proves many slices and fixtures, but does not yet prove a
 Do not add another broad V7 surface first. The next production slice should be:
 
 ```text
-V1 canonical single-book chapter loop:
+V1 canonical 10-chapter extension:
+run the existing chapter_production_bus path repeatedly so every chapter has
 ChapterPlan -> ContextBundle -> DraftChapter -> ReviewReport/ReviewIssue
--> RevisionPlan/RevisionDraft -> Re-review -> Canon/Timeline/Foreshadow update
--> Longform recap cadence -> Exportable chapter package.
+-> RevisionPlan/RevisionDraft -> Canon/Longform update -> Export package
+and then prove the same path for 30 chapters.
 ```
 
 The slice should run locally without real external provider credentials, with explicit provider-backed opt-in paths and no source leakage.

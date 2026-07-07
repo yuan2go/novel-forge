@@ -21,22 +21,22 @@ This roadmap translates the project blueprints into engineering phases. It does 
 - 5/10 chapter longform recap cadence.
 - Export package for operator review.
 
-当前完成度: 45%.
+当前完成度: 50%.
 
 Current evidence:
 - Core schemas and many services exist in `src/novel_forge/schemas/assets.py` and `src/novel_forge/modules/`.
 - Draft/review/revision services exist.
 - Context Builder, MKAOS, Agent runtime, longform stability, and quality foundations exist.
-- Production chain currently emphasizes versioning and run records; the canonical v1 chapter loop is not yet the single obvious path.
+- `chapter_production_bus` now provides a single-chapter canonical contract through chapter plan, context bundle, draft, review, revision, final draft, canon/longform update, local export package, and next chapter plan.
 
 阻塞项:
-- No single acceptance slice proving 10-30 chapter loop artifact coverage.
+- No acceptance slice proving 10-30 chapter loop artifact coverage.
 - Readable prose/page-turning/mobile gates are not first-class hard blockers.
 - ApprovalRequest missing.
 - Source policy lifecycle and v1 context source rules need tightening.
 
 推荐切片:
-1. Canonical v1 chapter loop service/workflow.
+1. Extend canonical v1 chapter loop from one chapter to 10 chapters, then 30 chapters.
 2. Stage-specific ContextPackage/MKAOS contract profiles.
 3. Readable Prose Gate + Golden Opening Gate + Toxic Point Gate.
 4. ReviewIssue-to-RevisionPlan strategy mapping with re-review evidence.

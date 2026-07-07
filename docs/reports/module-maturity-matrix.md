@@ -15,6 +15,9 @@ Maturity scale:
 
 Important interpretation: a module can have many files and still be M2/M3 if it is not proven inside the v1 single-book production loop.
 
+Implementation status note:
+- 2026-07-07: the chapter production bus has a single-chapter v1 contract foundation through final draft, canon/longform update, local export package, and next chapter plan. Maturity does not rise above M3 until a 10-30 chapter acceptance run proves repeatability.
+
 ## Core OS Layer
 
 | 层级 | 模块 | 蓝图目标 | 当前状态 | 成熟度 | 缺口 | 风险 | 优先级 | 建议实现顺序 |
@@ -38,7 +41,7 @@ Important interpretation: a module can have many files and still be M2/M3 if it 
 | Engine | Worldbuilding Engine | World rules, factions, resources, gates | WorldBible, PowerScaleRule, genre/canon support exist | M3 | Faction/resource/location lifecycle partial | World rules become loose notes | P1 | Tie world bible to v1 context and canon gate |
 | Engine | Character Engine | Character profiles, states, relationships, voice | CharacterCard, CharacterStateLedger, Novel KG support exist | M3 | VoiceProfile and RelationshipEdge are partial | Character drift | P1 | Add character state/voice drift checks |
 | Engine | Outline Engine | Long outline, volume arcs, foreshadow plan | Outline/OutlineVersion/LongFormMacroPlan exist | M3 | 30-chapter plan proof missing | Draft path not guided enough | P0 | Canonical outline-to-chapter-plan workflow |
-| Engine | Chapter Blueprint Engine | Scene beats, conflicts, hooks, emotion curve | ChapterPlan/ChapterPlanVersion and workflow support exist | M2 | SceneBeat/ConflictBeat/HookPlan mostly embedded content | Thin prose and weak hooks | P0 | Strengthen ChapterPlan conventions and validation |
+| Engine | Chapter Blueprint Engine | Scene beats, conflicts, hooks, emotion curve | ChapterPlan/ChapterPlanVersion plus one-chapter production bus contract exist | M3 | SceneBeat/ConflictBeat/HookPlan mostly embedded content; 10-30 chapter proof missing | Thin prose and weak hooks | P0 | Extend bus to 10 chapters and strengthen ChapterPlan conventions |
 | Engine | Readable Prose Engine | Immersive page-turning prose | Drafting, content quality loop, style/quality eval exist | M2 | Not a distinct v1 hard gate | AI-like chapter output | P0 | Add readable-prose gate to draft/revision |
 | Engine | Revision Engine | Issue-driven revision with re-review | RevisionTask/Plan, rework loop, re-review, publish links exist | M3 | Strategy coverage and measurable improvement need hard tests | Cosmetic revisions | P0 | Map issue types to strategies and re-review evidence |
 | Engine | Ending / Closure Engine | Ending plan, payoff, closure gates | No clear implementation beyond outline/release concepts | M1 | Ending-specific models and tests absent | Longform payoff risk | P3 | Defer until longform arcs mature |
@@ -79,15 +82,15 @@ Important interpretation: a module can have many files and still be M2/M3 if it 
 | Tool | Synopsis Generator | Synopsis options | Outline/topic assets can hold it | M1 | Not first-class | Low | P3 | Tool-level only |
 | Tool | Cover Prompt Generator | Cover prompt | ImagePrompt asset exists | M2 | Not tied to publishing package | Low | P3 | Add after export/publishing |
 | Tool | Chapter Title Optimizer | Chapter title quality | ChapterPlan/Draft fields can hold titles | M1 | No optimizer/gate | Low | P2 | Add after chapter loop |
-| Tool | Exporter | Export chapters/packages | Draft export/publishing packages exist | M2 | v1 export package not canonical | Hard handoff | P0 | Add to v1 loop after revision |
+| Tool | Exporter | Export chapters/packages | Draft export/publishing packages exist; v1 bus writes a local markdown export package record | M3 | 10-30 chapter export coverage and release/publish distinction need more tests | Hard handoff | P0 | Extend v1 loop export evidence to 10-30 chapters |
 | Tool | Tag Manager | Tags/categories | Asset tags/content fields exist | M2 | No dedicated lifecycle | Inconsistent classification | P3 | Improve when MKAOS lifecycle matures |
 | Tool | Manual Input | Operator-provided assets | Product asset editor/routes exist | M3 | Approval boundaries uneven | Manual bypass | P1 | Add approval requirement for risky edits |
 
 ## Highest-Leverage Next Order
 
-1. Canonical v1 single-book production loop.
+1. Extend the canonical v1 single-book production loop from one chapter to 10 chapters.
 2. Stage-specific ContextPackage and MKAOS query contracts.
 3. Readable Prose / Golden Opening / Toxic Point gates as blocking ReviewIssue sources.
 4. Canon/timeline/foreshadow update reducer and 5/10 chapter recap cadence.
-5. v1 export package.
+5. Extend v1 export package evidence to 30 chapters.
 6. Source governance lifecycle and ApprovalRequest.
