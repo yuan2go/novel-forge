@@ -469,6 +469,24 @@ def create_context_bundle(
     report = _create_rag_quality_report(storage, plan, plan_file, path, asset.to_dict(), budget_score)
     _attach_quality_report_to_bundle(storage, path, report)
     bundle_data = storage.read_json(path)
+    approval_requests = _create_context_approval_requests(
+        storage,
+        bundle_path=_display_path(storage.root, path),
+        plan_path=_display_path(storage.root, plan_file),
+        project_id=project_id,
+        workspace_path=workspace_path,
+        policy_rejections=policy_rejections,
+    )
+    if approval_requests:
+        content = bundle_data.get("content", {}) if isinstance(bundle_data.get("content", {}), dict) else {}
+        content["approval_requests"] = approval_requests
+        content["approval_request_count"] = len(approval_requests)
+        content["context_policy_requires_operator_review"] = True
+        bundle_data["content"] = content
+        metadata = bundle_data.get("metadata", {}) if isinstance(bundle_data.get("metadata", {}), dict) else {}
+        metadata["approval_request_count"] = len(approval_requests)
+        bundle_data["metadata"] = metadata
+        storage.write_json(path, bundle_data)
     _record_context_span(
         storage,
         trace_id=str(content.get("target_asset_id") or plan.id),
@@ -1680,6 +1698,65 @@ def _selection_policy_rejections(
         seen.add(path)
 
     return rejections[:80]
+
+
+def _create_context_approval_requests(
+    storage: LocalStorage,
+    *,
+    bundle_path: str,
+    plan_path: str,
+    project_id: str,
+    workspace_path: str,
+    policy_rejections: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    requested_rejections = [
+        item
+        for item in policy_rejections
+        if isinstance(item, dict) and item.get("requested_by")
+    ]
+    if not requested_rejections:
+        return []
+    from novel_forge.modules.permission_center import create_approval_request
+
+    evidence_refs = _dedupe([bundle_path, plan_path, *[str(item.get("path", "")) for item in requested_rejections]])
+    approval = create_approval_request(
+        storage,
+        {
+            "project_id": project_id or "context-builder",
+            "workspace_path": workspace_path,
+            "scope": "context",
+            "action": "approve_rejected_context_selection",
+            "risk_level": "high",
+            "environment": "production",
+            "blocking": True,
+            "target_type": "context_bundle",
+            "target_id": bundle_path,
+            "target_refs": [bundle_path],
+            "evidence_refs": evidence_refs,
+            "requested_by": "context-builder",
+            "subject_type": "agent",
+            "subject_id": "context-agent",
+            "reason": "manual context selection attempted to include source/profile/copyright-rejected assets",
+            "required_before": ["context_bundle_use_in_generation", "agent_model_call"],
+            "rollback_plan": {
+                "automatic_context_override_allowed": False,
+                "rollback_action": "use generated bundle without rejected assets unless approval is resolved",
+                "bundle_path": bundle_path,
+            },
+        },
+    )
+    return [
+        {
+            "scope": "context",
+            "action": "approve_rejected_context_selection",
+            "approval_request_path": approval["path"],
+            "approval_request_id": approval["asset"]["content"]["request_id"],
+            "blocking": bool(approval.get("blocking")),
+            "rejected_path_count": len(requested_rejections),
+            "rejected_paths": [str(item.get("path", "")) for item in requested_rejections],
+            "signals": _dedupe([str(signal) for item in requested_rejections for signal in (item.get("signals", []) if isinstance(item.get("signals", []), list) else [])]),
+        }
+    ]
 
 
 def _plan_exclusion_index(plan_content: dict[str, Any]) -> dict[str, dict[str, Any]]:

@@ -87,6 +87,10 @@ class ContextBuilderStageProfileTests(unittest.TestCase):
             self.assertIn("stage_profile_rejected", rejected_by_path[_rel(storage, draft_path)]["signals"])
             self.assertIn(_rel(storage, source_path), rejected_by_path)
             self.assertIn("blocked_asset_type", rejected_by_path[_rel(storage, source_path)]["signals"])
+            self.assertEqual(content["approval_requests"][0]["scope"], "context")
+            self.assertTrue(content["approval_requests"][0]["approval_request_path"])
+            self.assertTrue(content["approval_requests"][0]["blocking"])
+            self.assertIn(_rel(storage, source_path), content["approval_requests"][0]["rejected_paths"])
             self.assertNotIn("RAW_SOURCE_SENTINEL", content["actual_context"])
 
     def test_revision_profile_allows_review_and_draft_lineage_but_still_rejects_sources(self):
@@ -137,6 +141,7 @@ class ContextBuilderStageProfileTests(unittest.TestCase):
             self.assertIn("review_report", selected_types)
             self.assertIn(_rel(storage, source_path), rejected_by_path)
             self.assertIn("blocked_asset_type", rejected_by_path[_rel(storage, source_path)]["signals"])
+            self.assertTrue(content["approval_requests"][0]["approval_request_path"])
             self.assertNotIn("REVISION_RAW_SOURCE_SENTINEL", content["actual_context"])
 
 

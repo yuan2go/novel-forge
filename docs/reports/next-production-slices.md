@@ -32,6 +32,7 @@ Implementation status note:
 - 2026-07-08: `P3-S4 Book Pause / Kill Gate` was implemented as a development slice. `book_lifecycle_gate_report` is now schema-backed. `/product/portfolio/lifecycle-gate` writes continue/pause/kill_or_reincubate recommendations from BookPotentialScore, ReviewIssue, quality, and cost evidence, creates blocking ApprovalRequest records for pause/kill recommendations, and does not mutate project status. Unit/API route coverage exists in `tests/unit/test_portfolio_os.py`, `tests/unit/test_schemas.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 - 2026-07-08: `P4-S1 Feedback Mutation ApprovalRequest Caller Migration` was implemented as a development slice. `create_feedback_mutation_proposal()` now creates a Permission Center `approval_request`, records `approval_request_path`/`approval_request_id` on `human_gate` and `risk_assessment`, and keeps resolve/apply semantics human-gated without silent mutation. Unit/API route coverage exists in `tests/unit/test_publishing_feedback_adapters.py` and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 - 2026-07-08: `P4-S2 Publish Adapter ApprovalRequest Caller Migration` was implemented as a development slice. `prepare_platform_release()` now creates a Permission Center `approval_request` for external/manual platform adapters, records approval evidence in `publishing_log.content.approval_request`, and keeps real external webhook execution in `approval_required` until operator approval is handled by a future execution slice. Unit/API route coverage exists in `tests/unit/test_publishing_center.py` and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
+- 2026-07-08: `P4-S3 Context ApprovalRequest Caller Migration` was implemented as a development slice. `create_context_bundle()` now creates context-scope Permission Center `approval_request` records when manual selected/priority context assets are rejected by source, copyright, or stage-profile policy, then records approval refs on the ContextBundle. Unit coverage exists in `tests/unit/test_context_builder_stage_profiles.py`. No chapter acceptance was run.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
@@ -59,18 +60,19 @@ Implementation status note:
 | P3-S4 Book Pause / Kill Gate | Convert portfolio scores and risks into start/continue/pause/kill recommendations | Prevents wasting budget on low-quality or risky books | Portfolio, Quality, Review, Cost Ledger | BookPotentialScore, BookLifecycleGateReport, ReviewIssue, ApprovalRequest | Implemented: `/product/portfolio/lifecycle-gate` writes recommendations and blocking approvals without status mutation | Continue/pause/kill fixtures plus schema/route coverage | Portfolio docs updated through this slice matrix | Does not pause/kill automatically; operator decision remains required |
 | P4-S1 Feedback Mutation ApprovalRequest Caller Migration | Replace feedback mutation local human gate with Permission Center approval refs | Required before safe feedback-driven story mutation | Permission Center, Feedback, Publishing Feedback Adapters | ApprovalRequest, FeedbackMutationProposal | Implemented: proposal creation writes approval refs and keeps apply chain human-gated | Feedback mutation approval ref fixture | Feedback/security docs updated through this slice matrix | Does not auto-approve or silently mutate story assets |
 | P4-S2 Publish Adapter ApprovalRequest Caller Migration | Replace platform publish local approval notes with Permission Center approval refs | Required before higher autonomy | Permission Center, Publishing | ApprovalRequest, PublishingLog, ReleasePackage | Implemented: external/manual adapters write publish approval refs and real webhook execution stays approval-required | Publishing adapter approval fixture | Publishing/security docs updated through this slice matrix | Does not externally publish without future approval execution path |
-| P4-S3 Context ApprovalRequest Caller Migration | Replace remaining high-risk context local approval notes with Permission Center approval refs | Required before source/context autonomy | Permission Center, Context Builder, Source Governance | ApprovalRequest, ContextBundle, SourceRiskReport | Caller migration and approval refs | High-risk context fixture | Context/security docs | Must fail closed in production without approved evidence |
+| P4-S3 Context ApprovalRequest Caller Migration | Replace remaining high-risk context local approval notes with Permission Center approval refs | Required before source/context autonomy | Permission Center, Context Builder, Source Governance | ApprovalRequest, ContextBundle, SourceRiskReport | Implemented: manual rejected context selections write context-scope approval refs | High-risk context fixture | Context/security docs updated through this slice matrix | Rejected assets remain excluded from context unless a future approved override path is built |
+| P4-S4 Source Eligibility Caller Migration | Make MKAOS/material/context callers consume SourceRiskReport eligibility consistently | Required before automated source intake | Source Governance, MKAOS, Context Builder, Material | SourceRiskReport, SourcePolicy, KnowledgeAsset, ContextBundle | Caller migration and eligibility refs | High-risk source fixtures | Source/MKAOS docs | Must preserve evidence-only boundaries |
 
 ## Recommended Next Slice
 
-Continue from `P4-S3 Context ApprovalRequest Caller Migration`.
+Continue from `P4-S4 Source Eligibility Caller Migration`.
 
-The current highest-priority development slice is to migrate high-risk context callers to Permission Center approval refs:
+The current highest-priority development slice is to make source eligibility evidence a first-class caller contract:
 
 ```text
-source/context/publish/story mutation caller
--> ApprovalRequest
--> approval_request_path/ref recorded on the originating artifact
+SourceRiskReport / SourcePolicy
+-> MKAOS / material / context caller eligibility refs
+-> evidence-only by default for high-risk sources
 -> production/high-risk paths fail closed without approved evidence
 ```
 

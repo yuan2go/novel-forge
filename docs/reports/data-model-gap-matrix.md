@@ -103,7 +103,7 @@ Status legend:
 | TaskPlan | 任务计划 | partial | `WorkflowDefinition`, `LoopRun`, task DAG | standalone plan model | partial | Workflow/Agent | P1 |
 | TaskDependency | 任务依赖 | partial | workflow DAG/dependencies | first-class dependency asset | embedded | Workflow/Agent | P1 |
 | TaskFailure | 任务失败 | yes | `AgentFailureReport`, `TaskDeadLetter` | recovery taxonomy can deepen | usable | Agent Scheduler | P0 |
-| ApprovalRequest | 人工审批 | yes foundation | `ApprovalRequest`, `modules/permission_center/service.py`, `/product/permission-center/approval-requests` | context caller migration and deeper approval router policies; feedback mutation, platform publish adapter, and Portfolio callers have refs | usable foundation | Agent/Security/Publishing | P0 |
+| ApprovalRequest | 人工审批 | yes foundation | `ApprovalRequest`, `modules/permission_center/service.py`, `/product/permission-center/approval-requests` | source eligibility caller migration and deeper approval router policies; feedback mutation, platform publish adapter, Context Builder, and Portfolio callers have refs | usable foundation | Agent/Security/Publishing | P0 |
 | OSEnvelope | OS 执行信封 | partial | runtime policy/envelope dicts, trace/cost assets | standalone schema asset | embedded | Runtime Governance | P0 |
 | TraceLog | 追踪日志 | yes as `TraceSpan` | `TraceSpan` | cross-artifact query helpers | usable | Runtime Ledger | P0 |
 | CostLog | 成本日志 | yes as `CostLedger` | `CostLedger`, cost snapshots | provider billing calibration | usable | Runtime Ledger | P1 |
@@ -116,7 +116,7 @@ Status legend:
 
 1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 2. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
-3. Context ApprovalRequest caller migration: needed next so remaining high-risk context callers consistently record approval refs and fail closed in production.
+3. Source eligibility caller migration: needed next so MKAOS/material/context callers consistently consume SourceRiskReport/SourcePolicy evidence and fail closed in production.
 4. Readable prose/page-turning/mobile review models: foundations exist for readable prose and mobile reading; PageTurningReport and AntiAIReport can deepen provider/human calibration later.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
 6. `ReaderPromise`, `ChapterEconomyReport`, `ProtagonistCharmReport`, `AntagonistPressureReport`, and `MobileReadingReport` calibration and cockpit depth: foundations exist, but detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.
