@@ -32,7 +32,19 @@ RAW_OR_REPORT_TYPES = {
     "classic_literary_analysis_report",
 }
 
+BASE_FORBIDDEN_CONTEXT_TYPES = RAW_OR_REPORT_TYPES | {
+    "source_chunk",
+    "parallel_pair",
+    "operation_raw_output_segment",
+}
+
 FLOW_CONTEXT_PROFILES = {
+    "topic": "topic",
+    "topic_development": "topic",
+    "world": "worldbuilding",
+    "worldbuilding": "worldbuilding",
+    "character": "character",
+    "character_design": "character",
     "analysis": "review",
     "decompose": "review",
     "convert": "review",
@@ -194,6 +206,9 @@ def create_context_build_plan(
                 "exclude_raw_sources": True,
                 "exclude_analysis_reports_from_generation_rag": True,
                 "exclude_high_copyright_risk": True,
+                "stage_profile_enforced": True,
+                "allowed_asset_types": profile_policy.get("allowed_asset_types", []),
+                "forbidden_asset_types": profile_policy.get("forbidden_asset_types", []),
                 "required_asset_types": [
                     "character_card",
                     "world_bible",
@@ -365,8 +380,10 @@ def create_context_bundle(
         selected_paths=manual_selection["selected_asset_paths"],
         disabled_paths=manual_selection["disabled_asset_paths"],
         priority_paths=manual_selection["priority_asset_paths"],
+        profile_policy=content.get("context_profile_policy", {}) if isinstance(content.get("context_profile_policy", {}), dict) else {},
     )
-    policy_rejections = _selection_policy_rejections(storage, content, candidates, manual_selection)
+    profile_policy = content.get("context_profile_policy", {}) if isinstance(content.get("context_profile_policy", {}), dict) else {}
+    policy_rejections = _selection_policy_rejections(storage, content, candidates, manual_selection, profile_policy=profile_policy)
     selected_ids = _dedupe([str(item.get("asset_id", "")) for item in selected if item.get("asset_id")])
     kg_context = content.get("kg_context", {}) if isinstance(content.get("kg_context", {}), dict) else {"items": [], "source_asset_ids": [], "recommendation": "kg_context_missing_from_plan"}
     kg_source_ids = [str(item) for item in kg_context.get("source_asset_ids", []) if str(item).strip()] if isinstance(kg_context.get("source_asset_ids", []), list) else []
@@ -395,6 +412,11 @@ def create_context_bundle(
             "memory_policy": content.get("memory_policy", {}),
             "kg_context_enabled": bool(content.get("kg_context_enabled", True)),
             "quality_memory_enabled": bool(content.get("quality_memory_enabled", True)),
+            "context_profile": content.get("context_profile", ""),
+            "context_profile_policy": profile_policy,
+            "stage_context_contract": _stage_context_contract(profile_policy),
+            "source_policy": _stage_source_policy(profile_policy),
+            "source_isolation": _stage_source_isolation(profile_policy),
             "selected_assets": selected,
             "manual_selection": manual_selection,
             "stale_context_warnings": _stale_context_warnings(selected),
@@ -422,6 +444,8 @@ def create_context_bundle(
             "memory_levels": content.get("memory_levels", []),
             "kg_context_enabled": bool(content.get("kg_context_enabled", True)),
             "quality_memory_enabled": bool(content.get("quality_memory_enabled", True)),
+            "context_profile": content.get("context_profile", ""),
+            "stage_context_contract_version": _stage_context_contract(profile_policy)["contract_version"],
             "retrieval_ranker": content.get("ranker", ""),
             "retrieval_query": content.get("query", ""),
             "retrieval_top_k": content.get("top_k", 0),
@@ -890,59 +914,236 @@ def _default_query(asset: BaseAsset) -> str:
 
 def _context_profile_policy(profile: str) -> dict[str, Any]:
     key = (profile or "chapter_generation").strip().lower().replace("-", "_")
+    key = {
+        "topic_development": "topic",
+        "world": "worldbuilding",
+        "character_design": "character",
+        "chapter_plan": "chapter_outline",
+        "draft": "prose",
+        "editor_patch": "revision",
+        "publish_gate": "publish",
+        "feedback_backflow": "feedback",
+    }.get(key, key)
+    common_project_assets = [
+        "knowledge_card",
+        "material_card",
+        "commercial_pattern",
+        "narrative_pattern",
+        "character_mechanism",
+        "conflict_pattern",
+        "emotion_curve",
+        "hook_pattern",
+        "rule_card",
+        "template_card",
+        "writing_template",
+        "craft_template",
+        "genre_profile",
+        "genre_strategy_pack",
+        "platform_profile",
+        "platform_genre_fit",
+        "quality_standard_profile",
+        "quality_rubric_pack",
+        "review_rule_pack",
+        "style_profile",
+        "feedback_insight",
+    ]
+    continuity_assets = [
+        "world_bible",
+        "continuity_bible",
+        "power_scale_rule",
+        "character_card",
+        "foreshadowing_thread",
+        "chapter_state",
+        "fact_ledger",
+        "character_state_ledger",
+        "foreshadowing_graph",
+        "reward_ledger",
+        "longform_recap_report",
+        "canon_graph_snapshot",
+        "canon_state_machine_ledger",
+    ]
+    chapter_assets = [
+        "outline",
+        "outline_version",
+        "chapter_plan",
+        "chapter_plan_version",
+        "draft_chapter",
+        "draft_version",
+        "review_report",
+        "review_issue",
+        "revision_plan",
+        "revision_task",
+    ]
     policies = {
+        "topic": {
+            "stage": "topic",
+            "required_buckets": ["material_cards", "knowledge_cards", "writing_templates"],
+            "default_top_k": 8,
+            "default_token_budget": 3600,
+            "allowed_asset_types": _dedupe([*common_project_assets, "creative_strategy_profile", "genre_market_profile", "subgenre_mechanic", "genre_template_binding"]),
+            "forbidden_asset_types": _dedupe([*BASE_FORBIDDEN_CONTEXT_TYPES, "draft_chapter", "draft_version", "review_report", "revision_plan"]),
+            "risk_gate": "topic context may use abstract market/material signals but not draft prose or raw source material",
+        },
+        "worldbuilding": {
+            "stage": "worldbuilding",
+            "required_buckets": ["worldbuilding", "material_cards", "knowledge_cards"],
+            "default_top_k": 8,
+            "default_token_budget": 4200,
+            "allowed_asset_types": _dedupe([*common_project_assets, *continuity_assets, "subgenre_mechanic", "genre_template_binding"]),
+            "forbidden_asset_types": _dedupe([*BASE_FORBIDDEN_CONTEXT_TYPES, "draft_chapter", "draft_version", "review_report", "revision_plan"]),
+            "risk_gate": "worldbuilding context must be project-safe, abstract, and rule-oriented",
+        },
+        "character": {
+            "stage": "character",
+            "required_buckets": ["characters", "worldbuilding", "knowledge_cards", "material_cards"],
+            "default_top_k": 8,
+            "default_token_budget": 4000,
+            "allowed_asset_types": _dedupe([*common_project_assets, *continuity_assets, "style_generation_policy", "style_review_rule"]),
+            "forbidden_asset_types": _dedupe([*BASE_FORBIDDEN_CONTEXT_TYPES, "draft_chapter", "draft_version", "review_report"]),
+            "risk_gate": "character context must preserve project continuity and avoid importing prose examples as character voice",
+        },
         "chapter_generation": {
+            "stage": "draft",
             "required_buckets": ["characters", "worldbuilding", "previous_summaries", "knowledge", "foreshadowing", "materials"],
             "default_top_k": 10,
+            "default_token_budget": 6000,
+            "allowed_asset_types": _dedupe([*common_project_assets, *continuity_assets, *chapter_assets, "style_generation_policy", "style_review_rule", "style_drift_report"]),
+            "forbidden_asset_types": _dedupe(BASE_FORBIDDEN_CONTEXT_TYPES),
             "risk_gate": "block high copyright risk and raw analysis reports",
         },
         "review": {
+            "stage": "review",
             "required_buckets": ["quality", "style", "previous_summaries", "drafts"],
             "default_top_k": 8,
+            "default_token_budget": 4500,
+            "allowed_asset_types": _dedupe([*common_project_assets, *continuity_assets, *chapter_assets, "style_review_rule", "style_drift_report", "quality_regression_report", "opening_3_report", "golden_10_report"]),
+            "forbidden_asset_types": _dedupe(BASE_FORBIDDEN_CONTEXT_TYPES),
             "risk_gate": "include rubric assets and final draft lineage",
         },
         "revision": {
+            "stage": "revision",
             "required_buckets": ["reviews", "style", "quality", "previous_summaries"],
             "default_top_k": 8,
+            "default_token_budget": 4500,
+            "allowed_asset_types": _dedupe([*common_project_assets, *continuity_assets, *chapter_assets, "style_review_rule", "style_drift_report", "quality_regression_report"]),
+            "forbidden_asset_types": _dedupe(BASE_FORBIDDEN_CONTEXT_TYPES),
             "risk_gate": "require review/revision lineage before applying edits",
         },
         "analysis_conversion": {
+            "stage": "analysis_conversion",
             "required_buckets": ["knowledge", "materials", "templates"],
             "default_top_k": 6,
+            "default_token_budget": 3600,
+            "allowed_asset_types": _dedupe([*common_project_assets, "decomposition_report", "common_novel_analysis_report", "web_fiction_business_analysis_report", "published_fiction_analysis_report", "classic_literary_analysis_report"]),
+            "forbidden_asset_types": ["source_document", "cleaned_text", "source_chunk", "parallel_pair"],
             "risk_gate": "analysis reports must stay abstract-only until human approved",
         },
         "outline": {
+            "stage": "outline",
             "required_buckets": ["characters", "worldbuilding", "knowledge_cards", "material_cards", "writing_templates"],
             "default_top_k": 8,
+            "default_token_budget": 5000,
+            "allowed_asset_types": _dedupe([*common_project_assets, *continuity_assets, "outline", "outline_version", "long_form_macro_plan", "subgenre_mechanic", "genre_template_binding"]),
+            "forbidden_asset_types": _dedupe([*BASE_FORBIDDEN_CONTEXT_TYPES, "draft_chapter", "draft_version", "review_report", "revision_plan"]),
             "risk_gate": "outline context must use project canon, abstract knowledge, and original assets only",
         },
         "chapter_outline": {
+            "stage": "chapter_plan",
             "required_buckets": ["characters", "worldbuilding", "previous_summaries", "knowledge_cards", "foreshadowing"],
             "default_top_k": 8,
+            "default_token_budget": 5200,
+            "allowed_asset_types": _dedupe([*common_project_assets, *continuity_assets, "outline", "outline_version", "long_form_macro_plan", "chapter_plan", "chapter_plan_version"]),
+            "forbidden_asset_types": _dedupe([*BASE_FORBIDDEN_CONTEXT_TYPES, "draft_chapter", "draft_version", "review_report", "revision_plan"]),
             "risk_gate": "chapter outline context must preserve continuity and exclude raw sources",
         },
         "prose": {
+            "stage": "draft",
             "required_buckets": ["characters", "worldbuilding", "previous_summaries", "knowledge_cards", "foreshadowing", "writing_templates"],
             "default_top_k": 8,
+            "default_token_budget": 6000,
+            "allowed_asset_types": _dedupe([*common_project_assets, *continuity_assets, *chapter_assets, "style_generation_policy", "style_review_rule", "style_drift_report"]),
+            "forbidden_asset_types": _dedupe(BASE_FORBIDDEN_CONTEXT_TYPES),
             "risk_gate": "prose context must not include source_chunk.raw_text or runtime assets",
         },
         "recap": {
+            "stage": "recap",
             "required_buckets": ["previous_summaries", "characters", "worldbuilding", "foreshadowing", "knowledge_cards", "quality"],
             "default_top_k": 10,
+            "default_token_budget": 5200,
+            "allowed_asset_types": _dedupe([*common_project_assets, *continuity_assets, *chapter_assets, "chapter_quality_trend", "canon_conflict_trend", "style_drift_trend"]),
+            "forbidden_asset_types": _dedupe(BASE_FORBIDDEN_CONTEXT_TYPES),
             "risk_gate": "recap context must summarize project-owned state without raw sources",
         },
         "publish": {
+            "stage": "publish",
             "required_buckets": ["quality", "previous_summaries", "drafts", "knowledge_cards"],
             "default_top_k": 8,
+            "default_token_budget": 4500,
+            "allowed_asset_types": _dedupe([*common_project_assets, *continuity_assets, *chapter_assets, "publish_gate_report", "release_package", "platform_strategy_pack", "platform_upload_package"]),
+            "forbidden_asset_types": _dedupe(BASE_FORBIDDEN_CONTEXT_TYPES),
             "risk_gate": "publish context must include gate evidence and exclude raw sources",
         },
         "feedback": {
+            "stage": "feedback",
             "required_buckets": ["quality", "previous_summaries", "knowledge_cards"],
             "default_top_k": 8,
+            "default_token_budget": 4200,
+            "allowed_asset_types": _dedupe([*common_project_assets, *continuity_assets, *chapter_assets, "feedback_insight", "comment_cluster_report", "chapter_dropoff_report", "feedback_plan_mutation_proposal"]),
+            "forbidden_asset_types": _dedupe(BASE_FORBIDDEN_CONTEXT_TYPES),
             "risk_gate": "feedback context must map reader signals to assets and issues",
         },
     }
-    return {"profile": key, **policies.get(key, policies["chapter_generation"])}
+    policy = {"profile": key, **policies.get(key, policies["chapter_generation"])}
+    policy.setdefault("stage", key)
+    policy["source_policy"] = _stage_source_policy(policy)
+    policy["source_isolation"] = _stage_source_isolation(policy)
+    policy["contract_version"] = "stage-context-profile-v1"
+    return policy
+
+
+def _stage_source_policy(profile_policy: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "contract_version": "stage-source-policy-v1",
+        "profile": str(profile_policy.get("profile", "")),
+        "stage": str(profile_policy.get("stage", "")),
+        "generation_context_allowed": True,
+        "raw_source_text_allowed": False,
+        "parallel_pairs_allowed": False,
+        "analysis_reports_allowed": str(profile_policy.get("stage", "")) == "analysis_conversion",
+        "max_source_risk": "R1",
+        "required_lineage": ["asset_id", "path", "type", "title"],
+        "policy": "only schema-backed, project-safe, abstract or owned assets can enter context bundles",
+    }
+
+
+def _stage_source_isolation(profile_policy: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "contract_version": "stage-source-isolation-v1",
+        "profile": str(profile_policy.get("profile", "")),
+        "stage": str(profile_policy.get("stage", "")),
+        "raw_source_text_allowed": False,
+        "source_chunk_raw_text_allowed": False,
+        "parallel_pair_text_allowed": False,
+        "external_reference_text_allowed": False,
+        "allowed_source_forms": ["schema_asset_summary", "approved_knowledge_card", "approved_material_card", "project_canon"],
+        "forbidden_asset_types": profile_policy.get("forbidden_asset_types", []) if isinstance(profile_policy.get("forbidden_asset_types", []), list) else [],
+        "enforcement": "context_builder_candidate_filter",
+    }
+
+
+def _stage_context_contract(profile_policy: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "contract_version": str(profile_policy.get("contract_version") or "stage-context-profile-v1"),
+        "profile": str(profile_policy.get("profile", "")),
+        "stage": str(profile_policy.get("stage", "")),
+        "required_buckets": profile_policy.get("required_buckets", []) if isinstance(profile_policy.get("required_buckets", []), list) else [],
+        "allowed_asset_types": profile_policy.get("allowed_asset_types", []) if isinstance(profile_policy.get("allowed_asset_types", []), list) else [],
+        "forbidden_asset_types": profile_policy.get("forbidden_asset_types", []) if isinstance(profile_policy.get("forbidden_asset_types", []), list) else [],
+        "source_policy": _stage_source_policy(profile_policy),
+        "source_isolation": _stage_source_isolation(profile_policy),
+        "risk_gate": str(profile_policy.get("risk_gate", "")),
+        "manual_selection_rule": "manual selection may prioritize eligible assets but cannot override source isolation, copyright, or stage profile gates",
+    }
 
 
 def _memory_levels(levels: list[str] | None) -> list[str]:
@@ -1282,16 +1483,19 @@ def _select_candidates(
     selected_paths: list[str] | None = None,
     disabled_paths: list[str] | None = None,
     priority_paths: list[str] | None = None,
+    profile_policy: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     disabled = set(disabled_paths or [])
     explicit_selected = set(selected_paths or [])
     priority = list(priority_paths or [])
+    profile = profile_policy if isinstance(profile_policy, dict) else {}
     selected = [
         candidate
         for candidate in candidates
         if str(candidate.get("path", "")) not in disabled
         and (candidate.get("selected_by_default", True) or str(candidate.get("path", "")) in explicit_selected)
         and str(candidate.get("type", "")) not in RAW_OR_REPORT_TYPES
+        and _candidate_allowed_by_profile(candidate, profile)
         and _candidate_allowed_by_copyright(candidate)
     ]
     if priority:
@@ -1330,12 +1534,40 @@ def _candidate_allowed_by_copyright(candidate: dict[str, Any]) -> bool:
     return str(copyright.get("risk_level", "unknown")) != "high"
 
 
+def _candidate_allowed_by_profile(candidate: dict[str, Any], profile_policy: dict[str, Any]) -> bool:
+    return _profile_rejection_reason(candidate, profile_policy) == ""
+
+
+def _profile_rejection_reason(candidate: dict[str, Any], profile_policy: dict[str, Any]) -> str:
+    asset_type = str(candidate.get("type", ""))
+    if not asset_type:
+        return "asset type missing from context candidate"
+    forbidden = {
+        str(item)
+        for item in profile_policy.get("forbidden_asset_types", [])
+        if str(item).strip()
+    } if isinstance(profile_policy.get("forbidden_asset_types", []), list) else set()
+    if asset_type in forbidden:
+        return f"asset type {asset_type} is forbidden for {profile_policy.get('profile', 'unknown')} context profile"
+    allowed = {
+        str(item)
+        for item in profile_policy.get("allowed_asset_types", [])
+        if str(item).strip()
+    } if isinstance(profile_policy.get("allowed_asset_types", []), list) else set()
+    if allowed and asset_type not in allowed:
+        return f"asset type {asset_type} is not allowed for {profile_policy.get('profile', 'unknown')} context profile"
+    return ""
+
+
 def _selection_policy_rejections(
     storage: LocalStorage,
     plan_content: dict[str, Any],
     candidates: list[dict[str, Any]],
     manual_selection: dict[str, Any],
+    *,
+    profile_policy: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
+    profile = profile_policy if isinstance(profile_policy, dict) else {}
     candidate_by_path = {str(item.get("path", "")): item for item in candidates if isinstance(item, dict) and str(item.get("path", "")).strip()}
     exclusion_by_path = _plan_exclusion_index(plan_content)
     requested_by_path: dict[str, list[str]] = {}
@@ -1353,7 +1585,24 @@ def _selection_policy_rejections(
         if path in disabled:
             continue
         if str(candidate.get("type", "")) in RAW_OR_REPORT_TYPES:
-            rejections.append(_candidate_rejection(candidate, reason="raw source or analysis report cannot enter generation context", requested_by=requested_by_path.get(path, [])))
+            rejections.append(
+                _candidate_rejection(
+                    candidate,
+                    reason="raw source or analysis report cannot enter generation context",
+                    requested_by=requested_by_path.get(path, []),
+                    signals=["blocked_asset_type"],
+                )
+            )
+            seen.add(path)
+        elif not _candidate_allowed_by_profile(candidate, profile):
+            rejections.append(
+                _candidate_rejection(
+                    candidate,
+                    reason=_profile_rejection_reason(candidate, profile),
+                    requested_by=requested_by_path.get(path, []),
+                    signals=["stage_profile_rejected", "blocked_asset_type"],
+                )
+            )
             seen.add(path)
         elif not _candidate_allowed_by_copyright(candidate):
             copyright = candidate.get("copyright", {}) if isinstance(candidate.get("copyright", {}), dict) else {}
@@ -1381,6 +1630,13 @@ def _selection_policy_rejections(
         data = _read_asset_policy_candidate(storage, path)
         if data:
             policy = generation_context_policy(data)
+            candidate = {
+                "path": path,
+                "asset_id": str(data.get("id", "")),
+                "type": str(data.get("type", "")),
+                "title": str(data.get("title") or data.get("name") or ""),
+                "copyright": {"signals": policy.get("signals", []) if isinstance(policy.get("signals", []), list) else []},
+            }
             if not policy["eligible"]:
                 rejections.append(
                     {
@@ -1390,6 +1646,21 @@ def _selection_policy_rejections(
                         "title": str(data.get("title") or data.get("name") or ""),
                         "reason": policy["reason"],
                         "signals": policy["signals"],
+                        "requested_by": requested_by,
+                    }
+                )
+                seen.add(path)
+                continue
+            profile_reason = _profile_rejection_reason(candidate, profile)
+            if profile_reason:
+                rejections.append(
+                    {
+                        "path": path,
+                        "asset_id": str(data.get("id", "")),
+                        "type": str(data.get("type", "")),
+                        "title": str(data.get("title") or data.get("name") or ""),
+                        "reason": profile_reason,
+                        "signals": ["stage_profile_rejected", "blocked_asset_type"],
                         "requested_by": requested_by,
                     }
                 )
@@ -1419,15 +1690,16 @@ def _plan_exclusion_index(plan_content: dict[str, Any]) -> dict[str, dict[str, A
     return {str(item.get("path", "")): item for item in rows if isinstance(item, dict) and str(item.get("path", "")).strip()}
 
 
-def _candidate_rejection(candidate: dict[str, Any], *, reason: str, requested_by: list[str]) -> dict[str, Any]:
+def _candidate_rejection(candidate: dict[str, Any], *, reason: str, requested_by: list[str], signals: list[str] | None = None) -> dict[str, Any]:
     copyright = candidate.get("copyright", {}) if isinstance(candidate.get("copyright", {}), dict) else {}
+    base_signals = copyright.get("signals", []) if isinstance(copyright.get("signals", []), list) else []
     return {
         "path": str(candidate.get("path", "")),
         "asset_id": str(candidate.get("asset_id", "")),
         "type": str(candidate.get("type", "")),
         "title": str(candidate.get("title", "")),
         "reason": reason,
-        "signals": copyright.get("signals", []) if isinstance(copyright.get("signals", []), list) else [],
+        "signals": _dedupe([*[str(item) for item in base_signals], *[str(item) for item in signals or []]]),
         "requested_by": requested_by,
     }
 

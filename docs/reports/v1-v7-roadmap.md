@@ -32,17 +32,18 @@ Current evidence:
 - `production_context` project-safe reference indexing now updates incrementally so repeated chapter runs do not rescan unchanged project assets.
 - `scripts/run_v1_chapter_sequence_acceptance.py` ran the true 10-chapter local slow acceptance successfully: 10/10 chapters, 1460.716s, 7,615 asset writes/updates, report `docs/reports/v1-chapter-sequence-slow-acceptance.md`.
 - Development after that baseline added compact sequence task-status recording and lazy single-profile Agent Registry sync. This is runtime governance work only; no new chapter acceptance was run.
+- Context Builder now emits and enforces `stage-context-profile-v1` contracts for topic/world/character/outline/chapter-plan/prose/review/revision/recap/publish/feedback contexts. Bundles include source policy, source isolation, allowed/forbidden asset types, and manual-selection policy rejections. Unit coverage is in `tests/unit/test_context_builder_stage_profiles.py`.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
 - Readable prose/page-turning/mobile gates are not first-class hard blockers.
 - ApprovalRequest missing.
-- Source policy lifecycle and v1 context source rules need tightening.
+- Source policy lifecycle still needs tightening beyond the Context Builder stage profile contract.
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. Stage-specific ContextPackage/MKAOS contract profiles.
+2. Chapter Blueprint Deepening.
 3. Readable Prose Gate + Golden Opening Gate + Toxic Point Gate.
 4. ReviewIssue-to-RevisionPlan strategy mapping with re-review evidence.
 5. Canon/timeline/foreshadow reducer and recap cadence.

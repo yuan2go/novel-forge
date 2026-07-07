@@ -20,6 +20,7 @@ Implementation status note:
 - 2026-07-07: the bus also has a 10-chapter sequence acceptance contract that writes a `long_chain_acceptance_report`; the true 10-chapter local run remains a slow acceptance item because full artifact writes exceed the ordinary unit-test window.
 - 2026-07-07: true 10-chapter slow acceptance passed and is documented in `docs/reports/v1-chapter-sequence-slow-acceptance.md`; maturity remains M3 until 30 chapters pass with controlled runtime growth.
 - 2026-07-08: development runtime governance added compact task-status policy for batch sequence runs and lazy single-profile Agent Registry sync. This reduces avoidable asset writes but does not change maturity because no new acceptance is being run during the development loop.
+- 2026-07-08: Context Builder now has `stage-context-profile-v1` contracts with per-stage allowed/forbidden asset type enforcement and source-isolation rejections. Maturity remains M3 until the final unified v1 workflow验收 proves the profiles inside the full production loop.
 
 ## Core OS Layer
 
@@ -28,7 +29,7 @@ Implementation status note:
 | Core OS | Agent OS | Autonomous task lifecycle, execution, retries, approvals, trace, cost | Agent contracts/tasks/runs/scheduler/dispatch/leases/retry/dead-letter/rollback exist | M3 | ApprovalRequest and v1 operation coverage incomplete | Workflow appears autonomous but business loop can still be partial | P0 | Register and test v1 chapter-loop operations before expanding agents |
 | Core OS | Source / Material Governance OS | Source policy, license, risk, material inbox, usage tracking | SourceDocument/SourceChunk/MKAOS ingestion/source isolation/Classical-Modern slow importer exist | M3 | SourcePolicy, LicenseCheckResult, SourceSyncJob, SourceSnapshot are not first-class lifecycle models | Copyright and leakage risk | P0 | Add source policy lifecycle and leakage tests |
 | Core OS | MKAOS | Evidence-only knowledge asset operating system | Knowledge cards/packs/quality/lineage/model extraction/production gates exist | M3 | Lifecycle, approval, usage feedback, and query contract need v1 standardization | Ordinary RAG drift | P0 | Standardize MKAOS query contract for topic/world/outline/chapter/review |
-| Core OS | Context Builder OS | Safe ContextPackage builder | Plans/bundles/RAG quality/source isolation/MKAOS contract exist | M3 | Stage-specific v1 profiles and hard fail-closed assertions incomplete | Context pollution and token bloat | P0 | Make v1 context profiles mandatory in chapter loop |
+| Core OS | Context Builder OS | Safe ContextPackage builder | Plans/bundles/RAG quality/source isolation/MKAOS contract and stage-specific profile enforcement exist | M3 | Final unified workflow验收 has not yet proved every v1 stage uses the correct profile | Context pollution and token bloat if callers bypass Context Builder | P0 | Keep profiles mandatory in chapter loop and add final workflow assertions later |
 | Core OS | Story Bible / Long-form OS | Canon, timeline, characters, foreshadowing, promises, long review | Canon graph, Novel KG, longform stability ledgers, recap reports exist | M3 | Several state models are reports or content fields rather than reducers | Long-form continuity drift | P0 | Build minimal v1 canon reducer and recap cadence |
 | Core OS | Quality / Review / Eval OS | Blocking quality gates and review workflow | ReviewIssue, ReviewReport, Eval Center, Quality Eval 2.0, provider judge foundations exist | M3 | Readable prose/page-turning/mobile gates not hard v1 blockers | Low-quality chapters advance | P0 | Enforce post-draft and post-revision loop in v1 |
 | Core OS | Ops / Trace / Cost OS | OS Envelope, trace, cost, model logs, audit | TraceSpan, ModelCallLog, CostLedger, BudgetPolicy, audit log and dashboards exist | M3 | Blueprint `OSEnvelope` not a standalone asset; v1 trace coverage assertions needed | Bypass is hard to audit | P0 | Assert envelope/trace/cost on v1 acceptance |
@@ -92,8 +93,8 @@ Implementation status note:
 ## Highest-Leverage Next Order
 
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
-2. Stage-specific ContextPackage and MKAOS query contracts.
+2. Chapter Blueprint Deepening.
 3. Readable Prose / Golden Opening / Toxic Point gates as blocking ReviewIssue sources.
 4. Canon/timeline/foreshadow update reducer and 5/10 chapter recap cadence.
-5. Extend v1 export package evidence to 30 chapters.
+5. Extend v1 export package evidence to 30 chapters during final unified acceptance.
 6. Source governance lifecycle and ApprovalRequest.

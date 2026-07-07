@@ -49,7 +49,7 @@ This map describes the product capability surface as verified from current code.
 | Knowledge OS | MKAOS ingestion | Implemented slices | `modules/mkaos_ingestion/`, acceptance tests | Professional book import and quality checks exist |
 | Knowledge OS | MKAOS selection/quality/lineage | Partially implemented | `modules/mkaos/`, `modules/mkaos_quality/`, `modules/mkaos_lineage/` | Full learning loop remains partial |
 | Knowledge OS | Knowledge graph learning | Partially implemented | `modules/novel_kg/`, MKAOS graph tests | Graph backend optional/depth partial |
-| Context | Context Builder | Partially implemented | `modules/context_builder/`, `web/admin/app/context/page.tsx` | Manual and KG-backed context controls need depth |
+| Context | Context Builder | Partially implemented with stage profile contract | `modules/context_builder/`, `web/admin/app/context/page.tsx`, `tests/unit/test_context_builder_stage_profiles.py` | Manual and KG-backed context controls need depth; final full-loop profile assertions remain deferred |
 | Context | RAG/local search/vector search | Partially implemented | storage indexes, `modules/pgvector_store/`, Qdrant commands | Production retrieval quality needs more evaluation |
 | Automation | Workflow runtime | Partially implemented | `modules/workflow_nodes/`, workflow tests | More node coverage and product UI depth needed |
 | Automation | Agent registry/scheduler | Partially implemented | `modules/agent_registry/`, `modules/agent_scheduler/`, agent tests | Not a complete autonomous Agent Center |

@@ -41,7 +41,7 @@ Status legend:
 | ReviewRule | 审稿规则 | partial | `RuleCard`, `ReviewRulePack`, `StyleReviewRule` | rule execution lifecycle | usable pack | Review/Eval | P0 |
 | EvalCase | 评测用例 | yes | `EvaluationCase` | generation linkage and golden-set status | usable | Eval Center | P1 |
 | SourceEvidence | 来源证据 | partial | source refs/evidence fields across assets | standalone evidence span model | embedded | All source-derived assets | P0 |
-| ContextPackage | Agent 上下文包 | yes as `ContextBundle` | `ContextBundle`, `ContextBuildPlan` | blueprint name differs; stage profiles need hardening | usable | Context Builder | P0 |
+| ContextPackage | Agent 上下文包 | yes as `ContextBundle` | `ContextBundle`, `ContextBuildPlan`, `stage-context-profile-v1` bundle contract | blueprint name differs; final full-loop profile assertions still pending | usable with stage contract | Context Builder | P0 |
 | NovelProject | 小说项目 | partial | `ProjectWorkspaceState`, project API records | full project lifecycle, genre/platform/readers | usable foundation | Projects, Product API | P0 |
 | GenreProfile | 题材画像 | yes | `GenreProfile`, `GenreMarketProfile` | lifecycle/versioning | usable | Genre OS | P1 |
 | PlatformProfile | 平台画像 | yes | `PlatformProfile` | platform-specific rules can deepen | usable | Platform Strategy | P1 |

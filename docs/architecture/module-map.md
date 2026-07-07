@@ -55,7 +55,7 @@ This map lists current implementation areas and evidence paths. Status means cod
 | Module | Path | Responsibility | Status | Notes |
 |---|---|---|---|---|
 | OS Envelope | `modules/os_envelope/service.py` | Runtime context/evidence boundary | Partially implemented | Needs universal path coverage |
-| Context Builder | `modules/context_builder/service.py` | Context plan, bundle, source isolation | Partially implemented | Continue KG/context invalidation depth |
+| Context Builder | `modules/context_builder/service.py` | Context plan, bundle, stage profile contract, source isolation | Partially implemented | Stage-specific profile enforcement exists; continue KG/context invalidation depth and final workflow assertions |
 | Workflow nodes | `modules/workflow_nodes/` | Node execution/query/control/publishing ops | Partially split | Use seam files for new side-effect boundaries |
 | Agent registry | `modules/agent_registry/service.py` | Runtime profile/operation registry assets | First slice | Add operation coverage as Agents mature |
 | Agent scheduler | `modules/agent_scheduler/` | Queue lifecycle, operation registry, runners, lease/retry/recovery/rollback/dead-letter | First production slices | Keep service facade thin; add tests before each split |
