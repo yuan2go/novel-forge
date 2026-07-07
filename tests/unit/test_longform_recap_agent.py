@@ -39,8 +39,11 @@ class LongformRecapAgentTests(unittest.TestCase):
             writeback = result["writeback"]
 
             self.assertTrue(trigger["should_trigger"])
-            self.assertIn("ten_chapter_interval", trigger["reasons"])
+            self.assertIn("ten_chapter_formal_recap", trigger["reasons"])
+            self.assertEqual(trigger["recap_level"], "formal")
+            self.assertEqual(trigger["cadence_boundary_chapter"], 10)
             self.assertEqual(report["type"], "longform_recap_report")
+            self.assertEqual(report["content"]["trigger"]["recap_level"], "formal")
             self.assertEqual(report["content"]["chapter_range"]["end"], 12)
             self.assertEqual(writeback["status"], "applied")
             self.assertTrue(writeback["canon_patch_path"])
@@ -90,6 +93,42 @@ class LongformRecapAgentTests(unittest.TestCase):
 
             self.assertIn(recap["path"], selected_paths)
             _assert_no_raw_text_payload(self, bundle["asset"]["content"])
+
+    def test_recap_trigger_policy_distinguishes_light_formal_and_forced_checkpoint(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            _write_recap_drafts(storage, count=5)
+
+            light = evaluate_recap_trigger(storage, project_id="recap-p", chapter_count=5)
+            self.assertTrue(light["should_trigger"])
+            self.assertEqual(light["recap_level"], "light")
+            self.assertIn("five_chapter_light_recap", light["reasons"])
+            self.assertEqual(light["cadence_boundary_chapter"], 5)
+
+            forced = run_longform_recap(storage, {"project_id": "recap-p", "chapter_count": 6, "force": True})
+            self.assertEqual(forced["asset"]["content"]["trigger"]["recap_level"], "light")
+
+            _write_recap_drafts(storage, start=6, count=5)
+            formal = evaluate_recap_trigger(storage, project_id="recap-p", chapter_count=10)
+            self.assertTrue(formal["should_trigger"])
+            self.assertEqual(formal["recap_level"], "formal")
+            self.assertIn("ten_chapter_formal_recap", formal["reasons"])
+
+    def test_forced_recap_before_cadence_records_checkpoint_not_formal_recap(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            _write_recap_drafts(storage, count=3)
+
+            trigger = evaluate_recap_trigger(storage, project_id="recap-p", chapter_count=3)
+            result = run_longform_recap(storage, {"project_id": "recap-p", "chapter_count": 3, "force": True})
+            report_trigger = result["asset"]["content"]["trigger"]
+
+            self.assertFalse(trigger["should_trigger"])
+            self.assertEqual(report_trigger["recap_level"], "chapter_checkpoint")
+            self.assertFalse(report_trigger["cadence_due"])
+            self.assertTrue(report_trigger["forced_checkpoint"])
 
 
 def _longform_fixture(storage: LocalStorage) -> Path:
@@ -141,6 +180,25 @@ def _longform_fixture(storage: LocalStorage) -> Path:
         )
         create_longform_artifacts_for_draft(storage, draft_path)
         latest_path = draft_path
+    assert latest_path is not None
+    return latest_path
+
+
+def _write_recap_drafts(storage: LocalStorage, *, count: int, start: int = 1) -> Path:
+    latest_path = None
+    for chapter in range(start, start + count):
+        latest_path = storage.write_asset(
+            "drafts",
+            DraftChapter(
+                title=f"Chapter {chapter}",
+                content={
+                    "chapter": chapter,
+                    "text": f"第{chapter}章。阿照继续追查旧城隐税，纸页线索{chapter}仍指向夜档司。",
+                    "copyright_boundary": "project-owned recap cadence fixture",
+                },
+                metadata={"project_id": "recap-p"},
+            ),
+        )
     assert latest_path is not None
     return latest_path
 

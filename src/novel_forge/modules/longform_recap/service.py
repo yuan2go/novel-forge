@@ -22,7 +22,15 @@ from novel_forge.schemas import (
 )
 from novel_forge.storage.local import LocalStorage
 
-RECAP_TRIGGER_TYPES = {"ten_chapter_interval", "volume_end", "blocking_issue_threshold", "major_setting_change", "manual"}
+RECAP_TRIGGER_TYPES = {
+    "five_chapter_light_recap",
+    "ten_chapter_formal_recap",
+    "volume_end",
+    "blocking_issue_threshold",
+    "major_setting_change",
+    "manual",
+    "chapter_checkpoint",
+}
 
 
 def evaluate_recap_trigger(
@@ -37,6 +45,7 @@ def evaluate_recap_trigger(
 ) -> dict[str, Any]:
     chapters = _draft_chapters(storage, project_id=project_id, workspace_path=workspace_path)
     resolved_count = int(chapter_count if chapter_count is not None else len(chapters))
+    latest_chapter = max(_latest_chapter_number(chapters), resolved_count)
     issues = list_review_issues(storage, project_id=project_id, blocking=True, limit=500)
     active_blocking = [
         issue
@@ -44,22 +53,55 @@ def evaluate_recap_trigger(
         if str(issue.get("content", {}).get("status") or "open") in {"open", "acknowledged", "in_revision"}
     ]
     reasons: list[str] = []
-    if resolved_count >= 10 and _latest_chapter_number(chapters) >= 10:
-        reasons.append("ten_chapter_interval")
+    recap_level = "none"
+    cadence_boundary = 0
+    latest_formal_boundary = _latest_recap_boundary(storage, project_id=project_id, workspace_path=workspace_path, recap_level="formal")
+    latest_light_boundary = max(
+        _latest_recap_boundary(storage, project_id=project_id, workspace_path=workspace_path, recap_level="light"),
+        latest_formal_boundary,
+    )
+    formal_boundary = (latest_chapter // 10) * 10 if latest_chapter >= 10 else 0
+    light_boundary = (latest_chapter // 5) * 5 if latest_chapter >= 5 else 0
+    if formal_boundary and latest_formal_boundary < formal_boundary:
+        reasons.append("ten_chapter_formal_recap")
+        recap_level = "formal"
+        cadence_boundary = formal_boundary
+    elif light_boundary and latest_light_boundary < light_boundary:
+        reasons.append("five_chapter_light_recap")
+        recap_level = "light"
+        cadence_boundary = light_boundary
     if volume_end:
         reasons.append("volume_end")
+        recap_level = "formal" if recap_level == "none" else recap_level
+        cadence_boundary = cadence_boundary or latest_chapter
     if len(active_blocking) >= int(blocking_issue_threshold or 3):
         reasons.append("blocking_issue_threshold")
+        recap_level = "exception" if recap_level == "none" else recap_level
+        cadence_boundary = cadence_boundary or latest_chapter
     if major_setting_change:
         reasons.append("major_setting_change")
+        recap_level = "exception" if recap_level == "none" else recap_level
+        cadence_boundary = cadence_boundary or latest_chapter
     return {
         "should_trigger": bool(reasons),
         "reasons": reasons,
+        "recap_level": recap_level,
+        "cadence_due": recap_level in {"light", "formal"},
+        "cadence_boundary_chapter": cadence_boundary,
         "chapter_count": resolved_count,
-        "latest_chapter": _latest_chapter_number(chapters),
+        "latest_chapter": latest_chapter,
         "active_blocking_issue_count": len(active_blocking),
+        "latest_completed_recap": {
+            "light_boundary_chapter": latest_light_boundary,
+            "formal_boundary_chapter": latest_formal_boundary,
+        },
+        "next_recap_chapters": {
+            "light": _next_boundary(max(latest_chapter, latest_light_boundary), 5),
+            "formal": _next_boundary(max(latest_chapter, latest_formal_boundary), 10),
+        },
         "policy": {
-            "every_10_chapters": True,
+            "light_every_5_chapters": True,
+            "formal_every_10_chapters": True,
             "volume_end": bool(volume_end),
             "blocking_issue_threshold": int(blocking_issue_threshold or 3),
             "major_setting_change": bool(major_setting_change),
@@ -83,11 +125,12 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
     force = bool(payload.get("force", False))
     if not trigger["should_trigger"] and not force:
         return {"status": "skipped", "trigger": trigger, "reason": "recap trigger not reached"}
+    report_trigger = _effective_report_trigger(trigger, force=force)
 
     chapters = _draft_chapters(storage, project_id=project_id, workspace_path=workspace_path)
     if not chapters:
         raise FileNotFoundError("no draft_chapter or draft_version assets found for longform recap")
-    selected = _select_recent_chapters(chapters, limit=int(payload.get("chapter_window", 12) or 12))
+    selected = _select_recent_chapters(chapters, limit=int(payload.get("chapter_window") or report_trigger.get("recommended_chapter_window") or 12))
     latest = selected[-1]
     latest_path = latest["path"]
     context = build_flow_context_bundle(
@@ -130,7 +173,7 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
         recap_report_id=recap_report_id,
         project_id=project_id,
         workspace_path=workspace_path,
-        trigger=trigger if trigger["should_trigger"] else {"should_trigger": True, "reasons": ["manual"], **trigger},
+        trigger=report_trigger,
         chapters=selected,
         state=state,
         active_issues=active_issues,
@@ -150,6 +193,8 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
             "workflow": "longform-recap-agent",
             "latest_chapter": selected[-1]["chapter"],
             "chapter_count": len(chapters),
+            "recap_level": content["trigger"].get("recap_level", ""),
+            "cadence_boundary_chapter": content["trigger"].get("cadence_boundary_chapter", 0),
             "context_bundle_path": context["path"],
             **knowledge_context_contract_metadata(knowledge_contract),
             "loop_run_path": loop["loop_run_path"],
@@ -178,7 +223,8 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
         "status": "succeeded",
         "path": _display_path(storage.root, report_path),
         "asset": updated,
-        "trigger": trigger,
+        "trigger": report_trigger,
+        "raw_trigger": trigger,
         "context_bundle_path": context["path"],
         "knowledge_context_contract": knowledge_contract,
         "loop": loop,
@@ -202,6 +248,59 @@ def list_longform_recap_reports(storage: LocalStorage, *, project_id: str | None
             continue
         rows.append({**data, "path": _display_path(storage.root, path)})
     return rows
+
+
+def _effective_report_trigger(trigger: dict[str, Any], *, force: bool) -> dict[str, Any]:
+    if trigger.get("should_trigger"):
+        level = str(trigger.get("recap_level") or "formal")
+        window = 10 if level == "formal" else 5 if level == "light" else 12
+        return {**trigger, "recommended_chapter_window": window, "forced_checkpoint": False}
+    if force:
+        latest = int(trigger.get("latest_chapter", trigger.get("chapter_count", 0)) or 0)
+        return {
+            **trigger,
+            "should_trigger": True,
+            "reasons": ["chapter_checkpoint"],
+            "recap_level": "chapter_checkpoint",
+            "cadence_due": False,
+            "cadence_boundary_chapter": latest,
+            "recommended_chapter_window": 1,
+            "forced_checkpoint": True,
+        }
+    return trigger
+
+
+def _latest_recap_boundary(storage: LocalStorage, *, project_id: str, workspace_path: str, recap_level: str) -> int:
+    best = 0
+    for row in list_longform_recap_reports(storage, project_id=project_id or None, limit=500):
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        if workspace_path and str(metadata.get("workspace_path") or "") not in {"", workspace_path}:
+            continue
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        trigger = content.get("trigger", {}) if isinstance(content.get("trigger", {}), dict) else {}
+        level = str(trigger.get("recap_level") or metadata.get("recap_level") or "")
+        boundary = _positive_int(trigger.get("cadence_boundary_chapter") or metadata.get("cadence_boundary_chapter") or 0)
+        chapter_range = content.get("chapter_range", {}) if isinstance(content.get("chapter_range", {}), dict) else {}
+        if not boundary:
+            boundary = _positive_int(chapter_range.get("end") or 0)
+        if recap_level == "light" and level in {"light", "formal"}:
+            best = max(best, boundary)
+        elif recap_level == "formal" and level == "formal":
+            best = max(best, boundary)
+    return best
+
+
+def _next_boundary(chapter: int, interval: int) -> int:
+    value = max(0, int(chapter or 0))
+    step = max(1, int(interval or 1))
+    return ((value // step) + 1) * step
+
+
+def _positive_int(value: Any) -> int:
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
 
 
 def _recap_content(
@@ -231,6 +330,11 @@ def _recap_content(
         "trigger": {
             "should_trigger": bool(trigger.get("should_trigger", True)),
             "reasons": trigger.get("reasons", ["manual"]),
+            "recap_level": trigger.get("recap_level", "manual"),
+            "cadence_due": bool(trigger.get("cadence_due", False)),
+            "cadence_boundary_chapter": int(trigger.get("cadence_boundary_chapter", 0) or 0),
+            "forced_checkpoint": bool(trigger.get("forced_checkpoint", False)),
+            "next_recap_chapters": trigger.get("next_recap_chapters", {}),
             "chapter_count": trigger.get("chapter_count", len(chapters)),
             "latest_chapter": trigger.get("latest_chapter", chapter_numbers[-1] if chapter_numbers else 0),
         },

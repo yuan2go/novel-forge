@@ -14,6 +14,7 @@ Implementation status note:
 - 2026-07-08: `V1-S4 Readable Prose Gate` was implemented inside `src/novel_forge/modules/content_quality_loop/service.py`. The loop now writes a `quality_score_report` for `readable-prose-gate-v1`, checks opening pressure, scene progression, conflict strength, specificity, ending hook, and mobile rhythm, and creates blocking `ReviewIssue` plus `RevisionTask` repair assets for failed prose. Unit coverage exists in `tests/unit/test_content_quality_loop.py`. No chapter acceptance was run.
 - 2026-07-08: `V1-S5 ReviewIssue to Revision Strategy` was implemented as a development slice. `ReviewIssue` candidates now resolve to `review-issue-revision-strategy-v1` strategies with patch scope, instructions, required evidence, and re-review focus. `RevisionTask`, `RevisionPlan`, Agent Scheduler review-issue dispatch, and Loop Kernel rework metadata preserve the strategy contract. Unit coverage exists in `tests/unit/test_review_issue.py`, `tests/unit/test_module_services.py`, `tests/unit/test_loop_kernel.py`, and `tests/unit/test_agent_scheduler.py`. No chapter acceptance was run.
 - 2026-07-08: `V1-S6 Canon/Timeline/Foreshadow Reducer` was implemented as a development slice. `create_longform_artifacts_for_draft()` now calls `reduce_longform_state_for_draft()` to project chapter state, facts, character state, foreshadowing, and reward/cost signals into the existing CanonGraph `canon_state_machine_ledger`, `canon_state_machine_snapshot`, and `canon_state_machine_diff_report` assets. Chapter production bus outputs now include those reducer paths. Unit coverage exists in `tests/unit/test_longform_stability.py` and `tests/unit/test_context_and_production_chain.py`. No chapter acceptance was run.
+- 2026-07-08: `V1-S7 Longform Recap Cadence` was implemented as a development slice. `evaluate_recap_trigger()` now distinguishes 5-chapter light recap, 10-chapter formal recap, overdue formal recap, exception triggers, and forced per-chapter checkpoints. `run_longform_recap()` persists recap level, cadence boundary, next recap chapters, and forced checkpoint status in report content/metadata. Unit coverage exists in `tests/unit/test_longform_recap_agent.py` and scheduler recap coverage. No chapter acceptance was run.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
@@ -23,7 +24,7 @@ Implementation status note:
 | V1-S4 Readable Prose Gate | Turn readable-prose goals into blocking ReviewIssue sources | v1 requires chapters that are readable, not just generated | Drafting, Content Quality Loop, Review, Quality Eval | DraftChapter, ReviewIssue, RevisionTask, QualityScoreReport | Implemented: `readable-prose-gate-v1` step in content quality loop with ReviewIssue and RevisionTask generation | Added positive loop fixture and negative thin-prose blocking fixture; final unified v1 workflow验收 remains deferred | Quality docs updated through this slice matrix | Heuristic is explainable but still local; provider/human calibration can deepen later |
 | V1-S5 ReviewIssue to Revision Strategy | Map issue types to revision strategies and require re-review evidence | Revision must improve quality, not only create a new asset | Review, Revision, Editor, Loop Kernel, Agent Scheduler | ReviewIssue, RevisionTask, RevisionPlan, DraftDiffReport | Implemented: `review-issue-revision-strategy-v1` maps quality/canon/character/style/genre/source issues to patch scopes, strategy instructions, required evidence, and re-review focus across direct service, Loop Kernel, and Agent Scheduler dispatch paths | Added candidate, task/plan, provider-loop, local-loop, and Agent Scheduler dispatch strategy fixtures; final unified v1 workflow验收 remains deferred | Review/Revision docs updated through this slice matrix | Strategy taxonomy is deterministic and auditable, but calibration against real chapter improvements remains later work |
 | V1-S6 Canon/Timeline/Foreshadow Reducer | Update continuity state after every accepted chapter | Long-form stability depends on persistent state | Canon Graph, Novel KG, Longform Stability, Chapter Production Bus | CanonFact, TimelineEvent, ForeshadowItem, FactLedger, CanonStateMachineLedger, CanonStateMachineSnapshot, CanonStateMachineDiffReport | Implemented: v1 longform reducer writes chapter state/fact/character/foreshadow/reward projections into existing CanonGraph state-machine ledger/snapshot/diff assets and exposes paths in chapter bus outputs | Added reducer asset fixture and chapter bus resume fixture; final unified v1 workflow验收 remains deferred | Story Bible docs updated through this slice matrix | Reducer is local heuristic and evidence-backed; richer typed graph semantics can deepen without creating a parallel canon system |
-| V1-S7 Longform Recap Cadence | Trigger light recap every 5 chapters and formal recap every 10 | v1 acceptance requires longform review, not just isolated chapters | Longform Recap, Agent Scheduler, Workflow Nodes | LongformRecapReport, ChapterStatePackage, QualityTrend | Scheduler/workflow cadence operation | 10-chapter recap cadence fixture | Longform docs | Cadence must be configurable later |
+| V1-S7 Longform Recap Cadence | Trigger light recap every 5 chapters and formal recap every 10 | v1 acceptance requires longform review, not just isolated chapters | Longform Recap, Agent Scheduler, Workflow Nodes | LongformRecapReport, ChapterStatePackage, QualityTrend | Implemented: recap trigger policy now supports light/formal cadence, overdue formal recap, exception reasons, next boundaries, and forced chapter checkpoints without pretending every checkpoint is a formal recap | Added light/formal/checkpoint trigger fixtures plus scheduler operation coverage; final unified v1 workflow验收 remains deferred | Longform docs updated through this slice matrix | Cadence is explicit and evidence-backed; future UI can expose operator-configurable intervals |
 | V1-S8 Exportable Chapter Package | Produce reviewable/exportable local package after revised chapter acceptance | Makes v1 output inspectable and usable | Drafts, Publishing, Exporter | DraftChapter, DraftVersion, PublishingPlan, PublishingLog, ReleasePackage-lite | Product API export service | Export package fixture | Engineering/export docs | Do not imply platform auto-publish |
 | V1-S9 ApprovalRequest Foundation | Add human gate model for high-risk sources, context, publish, major plot mutation | Required for safe autonomy and source governance | Agent OS, Source Governance, Publishing, Feedback | ApprovalRequest, SourcePolicy, ReviewIssue | Approval service/API minimal foundation | Approve/reject/expired fixtures | Agent/security docs | Needs clear non-blocking local mode |
 | V1-S10 v1 Acceptance Dashboard Data | Expose real artifact coverage for one project | UI must show workflow truth, not static completion | Product API, Novel OS Cockpit, Metrics | ProjectMetricSnapshot, QualityMetric, TraceSpan, CostLedger | Cockpit data aggregation | API route tests | UI docs | Avoid UI-only proof |
@@ -40,16 +41,16 @@ Implementation status note:
 
 ## Recommended Next Slice
 
-Continue from `V1-S7 Longform Recap Cadence`.
+Continue from `V1-S8 Exportable Chapter Package`.
 
-The current highest-priority development slice is to make recap cadence explicit and configurable on top of reducer evidence:
+The current highest-priority development slice is to harden local export as a real reviewable package:
 
 ```text
-chapter state reducer evidence -> recap trigger policy
-chapter 5 -> light recap checkpoint
-chapter 10 -> formal recap checkpoint
-recap report -> next chapter context signal
-cadence evidence -> scheduler/workflow visibility
+accepted/revised chapter -> canon/reducer/recap evidence
+export package -> generated draft only
+export package -> provenance checklist
+export package -> local markdown and metadata
+export package -> operator review handoff
 ```
 
 Do not run chapter acceptance during the development loop. Keep the 2026-07-07 slow report as the current baseline until the final unified acceptance phase.

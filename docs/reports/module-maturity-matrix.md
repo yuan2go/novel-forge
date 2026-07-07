@@ -24,7 +24,8 @@ Implementation status note:
 - 2026-07-08: Chapter Blueprint now has an embedded `chapter-blueprint-contract-v1` in `ChapterPlan`, version preservation in `ChapterPlanVersion`, and draft evidence in `DraftChapter`. Maturity remains M3 until the final unified v1 workflow验收 proves it across multi-chapter production.
 - 2026-07-08: Readable Prose Gate now runs inside `content_quality_loop` and creates `quality_score_report`, `ReviewIssue`, and `RevisionTask` evidence. Maturity remains M3 until provider/human calibration and final full-loop proof are added.
 - 2026-07-08: ReviewIssue-to-Revision Strategy now exists as `review-issue-revision-strategy-v1`. Direct revision service, Loop Kernel, and Agent Scheduler review-issue dispatch preserve strategy ids, patch scope, required evidence, and re-review focus. Revision Engine remains M3 until real chapter improvement metrics and final unified v1 acceptance are run.
-- 2026-07-08: V1 longform reducer now projects accepted chapter state/facts/characters/foreshadow/rewards into existing CanonGraph state-machine ledger/snapshot/diff assets. Story Bible / Long-form OS remains M3 until explicit recap cadence and final unified multi-chapter proof are run.
+- 2026-07-08: V1 longform reducer now projects accepted chapter state/facts/characters/foreshadow/rewards into existing CanonGraph state-machine ledger/snapshot/diff assets. Story Bible / Long-form OS remains M3 until final unified multi-chapter proof is run.
+- 2026-07-08: Longform recap cadence now distinguishes 5-chapter light recap, 10-chapter formal recap, overdue formal recap, exception recap, and forced chapter checkpoints. Story Bible / Long-form OS remains M3 until final unified multi-chapter proof and operator configuration/UI are added.
 
 ## Core OS Layer
 
@@ -34,7 +35,7 @@ Implementation status note:
 | Core OS | Source / Material Governance OS | Source policy, license, risk, material inbox, usage tracking | SourceDocument/SourceChunk/MKAOS ingestion/source isolation/Classical-Modern slow importer exist | M3 | SourcePolicy, LicenseCheckResult, SourceSyncJob, SourceSnapshot are not first-class lifecycle models | Copyright and leakage risk | P0 | Add source policy lifecycle and leakage tests |
 | Core OS | MKAOS | Evidence-only knowledge asset operating system | Knowledge cards/packs/quality/lineage/model extraction/production gates exist | M3 | Lifecycle, approval, usage feedback, and query contract need v1 standardization | Ordinary RAG drift | P0 | Standardize MKAOS query contract for topic/world/outline/chapter/review |
 | Core OS | Context Builder OS | Safe ContextPackage builder | Plans/bundles/RAG quality/source isolation/MKAOS contract and stage-specific profile enforcement exist | M3 | Final unified workflow验收 has not yet proved every v1 stage uses the correct profile | Context pollution and token bloat if callers bypass Context Builder | P0 | Keep profiles mandatory in chapter loop and add final workflow assertions later |
-| Core OS | Story Bible / Long-form OS | Canon, timeline, characters, foreshadowing, promises, long review | Canon graph, Novel KG, longform ledgers, recap reports, and v1 CanonGraph state-machine reducer exist | M3 | Recap cadence, promise lifecycle, and final multi-chapter proof remain deferred | Long-form continuity drift if reducer evidence is skipped | P0 | Add explicit 5/10 chapter recap cadence and final unified proof later |
+| Core OS | Story Bible / Long-form OS | Canon, timeline, characters, foreshadowing, promises, long review | Canon graph, Novel KG, longform ledgers, v1 reducer, and explicit light/formal recap cadence exist | M3 | Promise lifecycle, operator cadence configuration, UI depth, and final multi-chapter proof remain deferred | Long-form continuity drift if reducer/recap evidence is skipped | P0 | Harden export package, then expose reducer/recap status in dashboard data |
 | Core OS | Quality / Review / Eval OS | Blocking quality gates and review workflow | ReviewIssue, ReviewReport, Eval Center, Quality Eval 2.0, provider judge foundations, and readable prose gate exist | M3 | Provider/human calibration and final full-loop enforcement still pending | Low-quality chapters can advance if callers bypass content quality loop | P0 | Next map ReviewIssue types to revision strategies and re-review evidence |
 | Core OS | Ops / Trace / Cost OS | OS Envelope, trace, cost, model logs, audit | TraceSpan, ModelCallLog, CostLedger, BudgetPolicy, audit log and dashboards exist | M3 | Blueprint `OSEnvelope` not a standalone asset; v1 trace coverage assertions needed | Bypass is hard to audit | P0 | Assert envelope/trace/cost on v1 acceptance |
 | Core OS | Portfolio OS | Multi-book scoring, allocation, similarity, pause/kill gates | Multi-book cockpit and cost/quality dashboards foundation exist | M2 | PortfolioProject, BookPotentialScore, ResourceAllocationPlan, CrossBookSimilarityReport missing | Premature parallel production | P3 | Defer until single-book loop is stable |
@@ -97,7 +98,7 @@ Implementation status note:
 ## Highest-Leverage Next Order
 
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
-2. Longform recap cadence on top of reducer evidence.
-3. Export/dashboard coverage for reducer and recap outputs.
+2. Exportable chapter package hardening.
+3. Dashboard coverage for reducer, recap, and export outputs.
 4. Extend v1 export package evidence to 30 chapters during final unified acceptance.
 5. Source governance lifecycle and ApprovalRequest.

@@ -37,6 +37,7 @@ Current evidence:
 - Content quality loop now includes `readable-prose-gate-v1` as a local explainable gate that writes `quality_score_report`, blocking `ReviewIssue`, and `RevisionTask` assets for thin or unreadable prose. Unit coverage is in `tests/unit/test_content_quality_loop.py`.
 - ReviewIssue repair now uses `review-issue-revision-strategy-v1`: issue types and readable-prose dimensions map to strategy ids, patch scope, required output evidence, and re-review focus. `RevisionTask`, `RevisionPlan`, Loop Kernel, and Agent Scheduler dispatch preserve this contract.
 - Long-form state update now includes a v1 reducer: `create_longform_artifacts_for_draft()` writes chapter state/fact/character/foreshadow/reward projections into existing CanonGraph `canon_state_machine_ledger`, `canon_state_machine_snapshot`, and `canon_state_machine_diff_report` assets. Chapter bus outputs expose the reducer paths.
+- Longform recap trigger policy now distinguishes 5-chapter light recap, 10-chapter formal recap, overdue formal recap, exception recap, and forced chapter checkpoints. Reports persist recap level, cadence boundary, next recap chapters, and forced checkpoint status.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
@@ -47,8 +48,8 @@ Current evidence:
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. Longform recap cadence on top of reducer evidence.
-3. Export package and dashboard data for reducer/recap coverage.
+2. Exportable chapter package hardening.
+3. Dashboard data for reducer/recap/export coverage.
 4. ApprovalRequest foundation for high-risk source/context/publish changes.
 
 验收标准:
