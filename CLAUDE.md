@@ -2,7 +2,16 @@
 
 This is the long-lived operating manual for Claude Code, Codex, and other coding agents working in this repository.
 
-Novel Forge v6 is a local-first AI novel production platform and early Novel Operating System runtime. The repository, package, CLI, and public product name remain `novel-forge` / Novel Forge. "Novel Operating System" is the architecture target, not an approved repository or package rename.
+Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production. The repository, package, and CLI remain `novel-forge` / Novel Forge v6 until a dedicated rename migration is approved.
+
+The current stage priority is v1 single-book production closure:
+
+```text
+topic -> world -> characters -> outline -> chapter plan
+-> draft -> review -> revision -> canon update -> longform recap -> export
+```
+
+Do not skip v1 in favor of broader multi-book, SaaS, or platform automation work unless the task explicitly requires it.
 
 ## Source Of Truth
 
@@ -24,7 +33,7 @@ Do not write planned capabilities as completed. Use these status labels when doc
 
 ## Project Mission
 
-Novel Forge is not a one-off prompt generator. It is a platform for controlled, traceable, long-form fiction production.
+Autonomous Novel OS is not a one-off prompt generator. It is a platform for controlled, traceable, long-form fiction production.
 
 The platform cares about:
 
@@ -60,7 +69,7 @@ Never mix raw source text with generated drafts. Reference works may be used onl
 
 ## Current Engineering State
 
-The current verified baseline is Novel Forge v6. Important evidence paths:
+The current verified code baseline is Novel Forge v6; the product target is Autonomous Novel OS. Important evidence paths:
 
 - version/runtime: `pyproject.toml`, `src/novel_forge/__init__.py`, `src/novel_forge/api/app.py`;
 - schema-backed assets: `src/novel_forge/schemas/assets.py`;
@@ -70,6 +79,16 @@ The current verified baseline is Novel Forge v6. Important evidence paths:
 - Web console: `web/admin/app/`;
 - tests: `tests/unit/`, `tests/integration/`, `tests/acceptance/`;
 - runtime skill source: root `skills/`; generated runtime copies: `.claude/skills/`.
+
+Current blueprint control reports:
+
+- `docs/reports/blueprint-gap-audit.md`;
+- `docs/reports/module-maturity-matrix.md`;
+- `docs/reports/data-model-gap-matrix.md`;
+- `docs/reports/v1-v7-roadmap.md`;
+- `docs/reports/next-production-slices.md`.
+
+Use these reports to choose the next production-grade slice. They do not replace code evidence.
 
 Implemented or substantially implemented:
 

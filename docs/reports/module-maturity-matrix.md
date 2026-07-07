@@ -1,0 +1,93 @@
+# Autonomous Novel OS Module Maturity Matrix
+
+Date: 2026-07-07
+
+Baseline: branch `feat/v7-content-intelligence-and-longform-proof`, commit `75bb3e3`.
+
+Maturity scale:
+
+- M0: module does not exist.
+- M1: documentation exists, code does not.
+- M2: basic code exists, but workflow is not closed.
+- M3: usable foundation, but missing full tests, observability, hard gates, or docs.
+- M4: production-grade closed loop for current scope.
+- M5: mature automation with continuous optimization.
+
+Important interpretation: a module can have many files and still be M2/M3 if it is not proven inside the v1 single-book production loop.
+
+## Core OS Layer
+
+| 层级 | 模块 | 蓝图目标 | 当前状态 | 成熟度 | 缺口 | 风险 | 优先级 | 建议实现顺序 |
+|---|---|---|---|---|---|---|---|---|
+| Core OS | Agent OS | Autonomous task lifecycle, execution, retries, approvals, trace, cost | Agent contracts/tasks/runs/scheduler/dispatch/leases/retry/dead-letter/rollback exist | M3 | ApprovalRequest and v1 operation coverage incomplete | Workflow appears autonomous but business loop can still be partial | P0 | Register and test v1 chapter-loop operations before expanding agents |
+| Core OS | Source / Material Governance OS | Source policy, license, risk, material inbox, usage tracking | SourceDocument/SourceChunk/MKAOS ingestion/source isolation/Classical-Modern slow importer exist | M3 | SourcePolicy, LicenseCheckResult, SourceSyncJob, SourceSnapshot are not first-class lifecycle models | Copyright and leakage risk | P0 | Add source policy lifecycle and leakage tests |
+| Core OS | MKAOS | Evidence-only knowledge asset operating system | Knowledge cards/packs/quality/lineage/model extraction/production gates exist | M3 | Lifecycle, approval, usage feedback, and query contract need v1 standardization | Ordinary RAG drift | P0 | Standardize MKAOS query contract for topic/world/outline/chapter/review |
+| Core OS | Context Builder OS | Safe ContextPackage builder | Plans/bundles/RAG quality/source isolation/MKAOS contract exist | M3 | Stage-specific v1 profiles and hard fail-closed assertions incomplete | Context pollution and token bloat | P0 | Make v1 context profiles mandatory in chapter loop |
+| Core OS | Story Bible / Long-form OS | Canon, timeline, characters, foreshadowing, promises, long review | Canon graph, Novel KG, longform stability ledgers, recap reports exist | M3 | Several state models are reports or content fields rather than reducers | Long-form continuity drift | P0 | Build minimal v1 canon reducer and recap cadence |
+| Core OS | Quality / Review / Eval OS | Blocking quality gates and review workflow | ReviewIssue, ReviewReport, Eval Center, Quality Eval 2.0, provider judge foundations exist | M3 | Readable prose/page-turning/mobile gates not hard v1 blockers | Low-quality chapters advance | P0 | Enforce post-draft and post-revision loop in v1 |
+| Core OS | Ops / Trace / Cost OS | OS Envelope, trace, cost, model logs, audit | TraceSpan, ModelCallLog, CostLedger, BudgetPolicy, audit log and dashboards exist | M3 | Blueprint `OSEnvelope` not a standalone asset; v1 trace coverage assertions needed | Bypass is hard to audit | P0 | Assert envelope/trace/cost on v1 acceptance |
+| Core OS | Portfolio OS | Multi-book scoring, allocation, similarity, pause/kill gates | Multi-book cockpit and cost/quality dashboards foundation exist | M2 | PortfolioProject, BookPotentialScore, ResourceAllocationPlan, CrossBookSimilarityReport missing | Premature parallel production | P3 | Defer until single-book loop is stable |
+| Core OS | Security / Sandbox OS | Untrusted-source sandbox, prompt injection guard, security logs | Permission center, tool gateway, provider policy, source isolation, audit logs exist | M2 | Full external-source sandbox and SecurityAuditLog lifecycle incomplete | Malicious source pollution | P1 | Add security audit around connectors/importers |
+
+## Engine Layer
+
+| 层级 | 模块 | 蓝图目标 | 当前状态 | 成熟度 | 缺口 | 风险 | 优先级 | 建议实现顺序 |
+|---|---|---|---|---|---|---|---|---|
+| Engine | Creative Engine | Generate and score differentiated concepts | Topic seed/fit, genre strategy, creative strategy profile foundations exist | M2 | Novelty scoring and anti-template gates partial | Formulaic projects | P2 | After v1 loop, add concept scoring fixtures |
+| Engine | Meaning / Philosophy Engine | Convert themes into choices, costs, arcs | Theme mostly represented through outline/quality fields and docs | M1 | No first-class anti-preaching gate | Didactic prose | P3 | Add theme asset and anti-preaching review rule later |
+| Engine | Worldbuilding Engine | World rules, factions, resources, gates | WorldBible, PowerScaleRule, genre/canon support exist | M3 | Faction/resource/location lifecycle partial | World rules become loose notes | P1 | Tie world bible to v1 context and canon gate |
+| Engine | Character Engine | Character profiles, states, relationships, voice | CharacterCard, CharacterStateLedger, Novel KG support exist | M3 | VoiceProfile and RelationshipEdge are partial | Character drift | P1 | Add character state/voice drift checks |
+| Engine | Outline Engine | Long outline, volume arcs, foreshadow plan | Outline/OutlineVersion/LongFormMacroPlan exist | M3 | 30-chapter plan proof missing | Draft path not guided enough | P0 | Canonical outline-to-chapter-plan workflow |
+| Engine | Chapter Blueprint Engine | Scene beats, conflicts, hooks, emotion curve | ChapterPlan/ChapterPlanVersion and workflow support exist | M2 | SceneBeat/ConflictBeat/HookPlan mostly embedded content | Thin prose and weak hooks | P0 | Strengthen ChapterPlan conventions and validation |
+| Engine | Readable Prose Engine | Immersive page-turning prose | Drafting, content quality loop, style/quality eval exist | M2 | Not a distinct v1 hard gate | AI-like chapter output | P0 | Add readable-prose gate to draft/revision |
+| Engine | Revision Engine | Issue-driven revision with re-review | RevisionTask/Plan, rework loop, re-review, publish links exist | M3 | Strategy coverage and measurable improvement need hard tests | Cosmetic revisions | P0 | Map issue types to strategies and re-review evidence |
+| Engine | Ending / Closure Engine | Ending plan, payoff, closure gates | No clear implementation beyond outline/release concepts | M1 | Ending-specific models and tests absent | Longform payoff risk | P3 | Defer until longform arcs mature |
+| Engine | Feedback Analysis Engine | Reader feedback to human-gated mutations | Feedback adapters, clusters, mutation proposals/application reports exist | M3 | Embedding/sentiment/drop-off attribution partial | Feedback can be shallow | P2 | Add stronger evidence chain after v1 loop |
+| Engine | Publishing Adapter Engine | Platform packages, receipts, status, rules | Manual upload, receipt parsing, platform gate, publish logs exist | M3 | Real platform SDK/callback/rate limit absent | False platform automation | P2 | Keep manual platform-specific adapters first |
+| Engine | Reader Simulation Engine | Simulated reader reports | ReaderSimulationReport foundation exists | M2 | Not integrated into v1 quality loop | Weak market signal | P3 | Add as optional eval suite later |
+| Engine | Style Identity Engine | Style sample, fingerprint, policy, drift | Style OS assets/services/API/tests exist | M3 | Provider calibration and authorized-sample governance can deepen | Style drift or imitation risk | P1 | Enforce style policy in v1 draft/revision |
+| Engine | Originality Risk Engine | Prevent copying and source contamination | OriginalityReport, source isolation, MKAOS risk gates exist | M2 | Not uniformly hard-blocking all generation paths | Copyright risk | P1 | Add originality gate to v1 context/draft |
+| Engine | Serialization Engine | Serial cadence, schedule, publish rhythm | Publishing plans/logs and platform strategy exist | M2 | Daily production and release cadence not first-class | Weak serial operations | P2 | Add after v1 export and review are stable |
+
+## Web Novel Enhancement Layer
+
+| 层级 | 模块 | 蓝图目标 | 当前状态 | 成熟度 | 缺口 | 风险 | 优先级 | 建议实现顺序 |
+|---|---|---|---|---|---|---|---|---|
+| Enhancement | Golden Opening Lab | Strong first three chapters and hooks | Opening3Report and platform opening gates exist | M2 | Not enforced in v1 first chapters | Weak opening | P0 | Add opening gate to chapters 1-3 |
+| Enhancement | Reader Promise Ledger | Track promises and payoff | Foreshadow/reward adjacent assets exist | M1 | No first-class ReaderPromise lifecycle | Broken reader trust | P1 | Add after basic canon update workflow |
+| Enhancement | Pleasure Point Ledger | Manage爽点 cadence | RewardLedger exists | M2 | Not tied to chapter economy/quality gate | Flat chapters | P1 | Integrate RewardLedger into review loop |
+| Enhancement | Toxic Point & Drop-off Engine | Detect毒点 and drop-off | Feedback/dropoff/quality foundations exist | M2 | Deterministic toxic-point review rule set incomplete | Reader churn | P1 | Add toxic-point fixtures to Review OS |
+| Enhancement | Protagonist Charm Engine | Track agency, competence, desire, appeal | Character assets and review rules can host it | M1 | No first-class charm score/report | Weak protagonist | P1 | Add character charm report after v1 loop |
+| Enhancement | Antagonist Pressure Engine | Track villain pressure and threat | VillainOperationPlan exists | M2 | Not integrated into chapter quality trend | Low tension | P1 | Tie villain plan to chapter blueprint/review |
+| Enhancement | Chapter Economy Engine | Manage scene value, progress, payoff | Chapter plans and quality loop exist | M1 | No explicit chapter economy report | Water chapters | P1 | Add to readable-prose gate |
+| Enhancement | Retention & Payoff Engine | Track hooks, payoff, retention | Platform retention risk and reward ledger exist | M2 | Not a chapter cadence gate | Poor追读 | P1 | Add first 10 chapter retention fixtures |
+| Enhancement | Mobile Reading Experience Engine | Mobile paragraph rhythm and scannability | Blueprint only plus review fields | M1 | No dedicated report/gate | Hard-to-read mobile prose | P1 | Add mobile readability heuristic |
+| Enhancement | Volume Arc Engine | Volume-level escalation/payoff | LongFormMacroPlan and ArcPlan exist | M2 | Volume review not central to v1 | Volume sag | P2 | Integrate when 30-chapter run exists |
+| Enhancement | Trope Fatigue Detector | Detect repetitive tropes | Genre/style/quality fields can support it | M1 | No explicit detector | Formula fatigue | P3 | Add after enough chapter corpus exists |
+| Enhancement | Book Lifecycle Strategy | Start/grow/pause/kill decisions | Project and multi-book cockpit foundations exist | M2 | Potential scoring and kill gate missing | Bad resource allocation | P3 | Defer to Portfolio OS phase |
+
+## Module / Tool Layer
+
+| 层级 | 模块 | 蓝图目标 | 当前状态 | 成熟度 | 缺口 | 风险 | 优先级 | 建议实现顺序 |
+|---|---|---|---|---|---|---|---|---|
+| Tool | Git Connector | Controlled source import from Git | Classical-Modern local clone/import workflow exists | M2 | General Git connector policy not first-class | Unsafe repository ingestion | P2 | Add source governance before more connectors |
+| Tool | News / RSS Connector | External news/source acquisition | Not found as production module | M0 | Full connector absent | Not v1 critical | P4 | Defer |
+| Tool | Public Domain Importer | Public/open source import | Classical-Modern importer and evidence-only report exist | M3 | Provider extraction is deliberately slow, not full | Token/leakage risk | P2 | Continue checkpointed batches |
+| Tool | Open Data Connector | Data import | Some analytics/clickhouse/ingestion foundations exist | M1 | Domain connector not complete | Low v1 relevance | P4 | Defer |
+| Tool | PDF / EPUB Parser | Document parsing | Optional ingestion dependencies and source assets exist | M1 | Parser workflow not verified | Source mishandling | P3 | Add only after source governance |
+| Tool | Title Generator | Title options | Product routes may create topic/title content; no dedicated module | M1 | Not first-class | Low | P3 | Tool-level only |
+| Tool | Synopsis Generator | Synopsis options | Outline/topic assets can hold it | M1 | Not first-class | Low | P3 | Tool-level only |
+| Tool | Cover Prompt Generator | Cover prompt | ImagePrompt asset exists | M2 | Not tied to publishing package | Low | P3 | Add after export/publishing |
+| Tool | Chapter Title Optimizer | Chapter title quality | ChapterPlan/Draft fields can hold titles | M1 | No optimizer/gate | Low | P2 | Add after chapter loop |
+| Tool | Exporter | Export chapters/packages | Draft export/publishing packages exist | M2 | v1 export package not canonical | Hard handoff | P0 | Add to v1 loop after revision |
+| Tool | Tag Manager | Tags/categories | Asset tags/content fields exist | M2 | No dedicated lifecycle | Inconsistent classification | P3 | Improve when MKAOS lifecycle matures |
+| Tool | Manual Input | Operator-provided assets | Product asset editor/routes exist | M3 | Approval boundaries uneven | Manual bypass | P1 | Add approval requirement for risky edits |
+
+## Highest-Leverage Next Order
+
+1. Canonical v1 single-book production loop.
+2. Stage-specific ContextPackage and MKAOS query contracts.
+3. Readable Prose / Golden Opening / Toxic Point gates as blocking ReviewIssue sources.
+4. Canon/timeline/foreshadow update reducer and 5/10 chapter recap cadence.
+5. v1 export package.
+6. Source governance lifecycle and ApprovalRequest.

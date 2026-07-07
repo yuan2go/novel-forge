@@ -1,11 +1,25 @@
-# Novel Forge Documentation
+# Autonomous Novel OS Documentation
 
-Updated: 2026-07-05
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, starting commit `3f68522`
+Updated: 2026-07-07
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `75bb3e3`
 
-This directory is the current documentation entrypoint for Novel Forge v6 / early Novel Operating System runtime.
+This directory is the current documentation entrypoint for Autonomous Novel OS on the `novel-forge` codebase. The repository/package/CLI remain Novel Forge v6 until an explicit rename migration is approved.
+
+Current engineering priority: v1 single-book production closure.
 
 Use code and tests as the source of truth. Older design files and phase reports remain useful as history, but they are not authoritative unless a current document links them as active evidence.
+
+## Autonomous Novel OS Blueprint Control
+
+The active product target is defined by the blueprint files and the current control reports:
+
+- [blueprint/autonomous-novel-os-full-blueprint.md](blueprint/autonomous-novel-os-full-blueprint.md) - full functional blueprint.
+- [blueprint/novel-os-project-blueprint.md](blueprint/novel-os-project-blueprint.md) - project blueprint and phase plan.
+- [reports/blueprint-gap-audit.md](reports/blueprint-gap-audit.md) - current gap audit against the blueprint.
+- [reports/module-maturity-matrix.md](reports/module-maturity-matrix.md) - M0-M5 module maturity matrix.
+- [reports/data-model-gap-matrix.md](reports/data-model-gap-matrix.md) - data model gap matrix.
+- [reports/v1-v7-roadmap.md](reports/v1-v7-roadmap.md) - engineering roadmap aligned to v1-v7 phases.
+- [reports/next-production-slices.md](reports/next-production-slices.md) - ordered implementation slices, starting with v1.
 
 ## V7 Content Intelligence Update
 
@@ -44,6 +58,11 @@ Risk closure addendum: [reports/v7-content-intelligence-risk-closure-report.md](
 | Engineering | [engineering/extension-guide.md](engineering/extension-guide.md) | Extension checklist for schema/service/API/UI/tests/docs |
 | Testing | [quality/regression-tests.md](quality/regression-tests.md) | Regression suite and command map |
 | Roadmap | [roadmap/current-roadmap.md](roadmap/current-roadmap.md) | Current implementation priorities |
+| Blueprint gap | [reports/blueprint-gap-audit.md](reports/blueprint-gap-audit.md) | Autonomous Novel OS gap audit and v1 blockers |
+| Module maturity | [reports/module-maturity-matrix.md](reports/module-maturity-matrix.md) | M0-M5 module maturity matrix |
+| Data model gap | [reports/data-model-gap-matrix.md](reports/data-model-gap-matrix.md) | Blueprint data model coverage |
+| v1-v7 roadmap | [reports/v1-v7-roadmap.md](reports/v1-v7-roadmap.md) | Phase roadmap from single-book closure to platform feedback |
+| Next slices | [reports/next-production-slices.md](reports/next-production-slices.md) | Ordered production-grade implementation slices |
 | V7 report | [reports/v7-content-intelligence-foundation-report.md](reports/v7-content-intelligence-foundation-report.md) | Verified V7 content intelligence foundation changes |
 | V7 risk closure | [reports/v7-content-intelligence-risk-closure-report.md](reports/v7-content-intelligence-risk-closure-report.md) | Provider judge, provider long-chain proof, platform API adapter, and UI artifact workflow closure |
 | Audit | [reports/docs-audit-current-state.md](reports/docs-audit-current-state.md) | Documentation drift audit |

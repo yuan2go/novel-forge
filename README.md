@@ -1,12 +1,21 @@
-# Novel Forge v6
+# Autonomous Novel OS
 
-Novel Forge v6 is a local-first AI novel production platform and early Novel Operating System runtime.
+Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
+
+The code repository, Python package, and CLI remain `novel-forge` / Novel Forge v6 until a dedicated rename migration is approved.
 
 It is not an AI chapter generator. It is designed to turn source materials, abstracted reference analysis, multidisciplinary knowledge, reusable creative assets, context bundles, review reports, revision tasks, reader feedback, publishing gates, workflow runs, agent runs, trace spans, and cost ledgers into a controlled long-form fiction production workflow.
 
-Internal architecture vision: Novel Operating System.
+Current architecture target: Autonomous Novel OS.
 
-Repository/package/CLI name remains `novel-forge` in v6. Novel Operating System is the architecture target, not an approved repository/package rename, unless a separate migration task approves repository, package, command, path, and documentation changes.
+The current engineering priority is v1 single-book production closure:
+
+```text
+topic -> world -> characters -> outline -> chapter plan
+-> draft -> review -> revision -> canon update -> longform recap -> export
+```
+
+Do not treat broad V6/V7 runtime surfaces as proof that this v1 loop is complete. See `docs/reports/blueprint-gap-audit.md`, `docs/reports/module-maturity-matrix.md`, `docs/reports/data-model-gap-matrix.md`, `docs/reports/v1-v7-roadmap.md`, and `docs/reports/next-production-slices.md`.
 
 Core executable pipeline:
 

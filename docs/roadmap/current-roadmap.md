@@ -1,9 +1,11 @@
 # Current Roadmap
 
-Updated: 2026-07-05
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, starting commit `3f68522`
+Updated: 2026-07-07
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `75bb3e3`
 
 This roadmap reflects current code evidence, not historical v5 plans. See `docs/08-roadmap/v5-*` only for history.
+
+Product target note: the repository/package/CLI remain `novel-forge`, but the active product target is Autonomous Novel OS. For the blueprint-aligned v1-v7 execution plan, use `docs/reports/v1-v7-roadmap.md` and `docs/reports/next-production-slices.md`. This file remains the V7/runtime delta roadmap and should not be read as proof that v1 single-book production closure is complete.
 
 ## 2026-07-05 V7 Content Intelligence Delta
 

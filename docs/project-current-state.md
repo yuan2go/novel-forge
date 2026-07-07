@@ -1,14 +1,20 @@
 # Project Current State
 
-Updated: 2026-07-05
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, starting commit `3f68522`
+Updated: 2026-07-07
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `75bb3e3`
 
-Novel Forge v6 is a local-first AI novel production platform and early Novel Operating System runtime. The repository/package/CLI name remains `novel-forge`; Novel Operating System is the architecture target.
+Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
+
+The current code/runtime baseline is Novel Forge v6. The repository/package/CLI name remains `novel-forge`; do not rename code paths without a dedicated migration.
+
+Current priority: v1 single-book production closure before broader multi-book, SaaS, or platform automation.
 
 This document describes the current state as observed from code, tests, configuration, routes, and skills. It does not treat historical docs as truth unless code evidence exists.
 
 ## Evidence Base
 
+- Product blueprints: `docs/blueprint/autonomous-novel-os-full-blueprint.md`, `docs/blueprint/novel-os-project-blueprint.md`
+- Current blueprint control reports: `docs/reports/blueprint-gap-audit.md`, `docs/reports/module-maturity-matrix.md`, `docs/reports/data-model-gap-matrix.md`, `docs/reports/v1-v7-roadmap.md`, `docs/reports/next-production-slices.md`
 - CLI: `src/novel_forge/cli.py`
 - API: `src/novel_forge/api/app.py`, `src/novel_forge/api/routers/`
 - Product services: `src/novel_forge/api/services/`
@@ -86,7 +92,8 @@ The current branch has implemented the first V7 content intelligence foundation 
 3. Agent runtime and provider policy have strong slices, but universal production hard-stop coverage must continue to be verified.
 4. Local JSON plus optional Postgres/Qdrant/MinIO/Celery creates two operational modes that need clear environment policy.
 5. MKAOS, Context Builder, Canon/KG, ReviewIssue, Eval, and publishing must stay unified; new features should not create parallel paths.
+6. The current implementation has broad V6/V7 runtime foundations, but the v1 single-book production loop is not yet proven as a 10-30 chapter closed workflow.
 
 ## Next Priorities
 
-See [roadmap/current-roadmap.md](roadmap/current-roadmap.md). The most important next work is to keep closing production runtime gaps: provider evidence, release/publish gates, scheduler operation coverage, context/KG consistency, and productized UI verification.
+See [reports/v1-v7-roadmap.md](reports/v1-v7-roadmap.md) and [reports/next-production-slices.md](reports/next-production-slices.md). The most important next work is to close the v1 single-book production loop, then continue runtime hardening: provider evidence, release/publish gates, scheduler operation coverage, context/KG consistency, and productized UI verification.
