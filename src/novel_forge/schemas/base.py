@@ -1492,6 +1492,7 @@ def _validate_review_issue_content(content: dict[str, Any]) -> list[str]:
         "protagonist_charm_drop",
         "antagonist_pressure_drop",
         "mobile_reading_friction",
+        "source_snapshot_drift",
     }:
         errors.append("review_issue issue_type is not allowed")
     if content.get("severity") not in {"info", "low", "medium", "high", "critical"}:

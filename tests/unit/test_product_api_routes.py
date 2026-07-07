@@ -244,6 +244,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/sources/sync-job",
                 "/product/sources/refresh-report",
                 "/product/sources/connector-execution-plan",
+                "/product/sources/diff-repair-plan",
                 "/product/sources/context-eligibility",
                 "/product/drafts",
                 "/product/reviews/run",
@@ -337,6 +338,8 @@ class ProductApiRouterTests(unittest.TestCase):
             source_policy = client.post("/product/sources/policy", json={"source_ref": "route-owned-source", "risk_tier": "R1"})
             self.assertEqual(source_policy.status_code, 200, source_policy.text)
             self.assertEqual(source_policy.json()["asset"]["type"], "source_policy")
+            source_risk = client.post("/product/sources/risk-report", json={"source_ref": "route-owned-source", "source_policy_path": source_policy.json()["path"]})
+            self.assertEqual(source_risk.status_code, 200, source_risk.text)
             source_eligibility = client.post("/product/sources/context-eligibility", json={"source_ref": "route-owned-source", "risk_tier": "R1"})
             self.assertEqual(source_eligibility.status_code, 200, source_eligibility.text)
             self.assertTrue(source_eligibility.json()["generation_context_allowed"])
@@ -348,6 +351,37 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(connector_plan.status_code, 200, connector_plan.text)
             self.assertEqual(connector_plan.json()["sync_job"]["asset"]["type"], "source_sync_job")
             self.assertFalse(connector_plan.json()["execution_receipt"]["execution_performed"])
+            old_snapshot = client.post(
+                "/product/sources/snapshot",
+                json={
+                    "source_ref": "route-owned-source",
+                    "content_hash": "old-route-hash",
+                    "source_policy_path": source_policy.json()["path"],
+                    "risk_report_path": source_risk.json()["path"],
+                },
+            )
+            self.assertEqual(old_snapshot.status_code, 200, old_snapshot.text)
+            new_snapshot = client.post(
+                "/product/sources/snapshot",
+                json={
+                    "source_ref": "route-owned-source",
+                    "content_hash": "new-route-hash",
+                    "source_policy_path": source_policy.json()["path"],
+                    "risk_report_path": source_risk.json()["path"],
+                },
+            )
+            self.assertEqual(new_snapshot.status_code, 200, new_snapshot.text)
+            diff_plan = client.post(
+                "/product/sources/diff-repair-plan",
+                json={
+                    "source_ref": "route-owned-source",
+                    "old_snapshot_path": old_snapshot.json()["path"],
+                    "new_snapshot_path": new_snapshot.json()["path"],
+                },
+            )
+            self.assertEqual(diff_plan.status_code, 200, diff_plan.text)
+            self.assertEqual(diff_plan.json()["asset"]["type"], "change_impact_report")
+            self.assertFalse(diff_plan.json()["mutation_applied"])
             self.assertEqual(client.get("/product/longform-stability/dashboard").status_code, 200)
             self.assertEqual(client.get("/product/platform-strategy/assets").status_code, 200)
             completion = client.get("/product/system/module-completion")

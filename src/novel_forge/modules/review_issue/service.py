@@ -32,6 +32,7 @@ ISSUE_TYPES = {
     "protagonist_charm_drop",
     "antagonist_pressure_drop",
     "mobile_reading_friction",
+    "source_snapshot_drift",
 }
 SEVERITIES = {"info", "low", "medium", "high", "critical"}
 ACTIVE_STATUSES = {"open", "acknowledged", "in_revision"}

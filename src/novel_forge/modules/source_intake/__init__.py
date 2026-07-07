@@ -12,6 +12,7 @@ from novel_forge.modules.source_intake.service import (
     list_source_policies,
     plan_source_connector_execution,
 )
+from novel_forge.modules.source_intake.diff_repair import plan_source_diff_repair
 
 __all__ = [
     "create_license_check_result",
@@ -26,4 +27,5 @@ __all__ = [
     "list_github_knowledge_sources",
     "list_source_policies",
     "plan_source_connector_execution",
+    "plan_source_diff_repair",
 ]

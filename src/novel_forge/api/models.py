@@ -1665,6 +1665,16 @@ class SourceConnectorExecutionPlanRequest(BaseModel):
     workspace_path: str = ""
 
 
+class SourceDiffRepairPlanRequest(BaseModel):
+    source_ref: str = ""
+    old_snapshot_path: str
+    new_snapshot_path: str
+    source_refresh_report_path: str = ""
+    project_id: str = ""
+    workspace_path: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+
+
 class SourceContextEligibilityRequest(BaseModel):
     source_ref: str
     asset_path: str = ""
@@ -1943,6 +1953,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "SourceSyncJobRequest": SourceSyncJobRequest,
         "SourceRefreshReportRequest": SourceRefreshReportRequest,
         "SourceConnectorExecutionPlanRequest": SourceConnectorExecutionPlanRequest,
+        "SourceDiffRepairPlanRequest": SourceDiffRepairPlanRequest,
         "SourceContextEligibilityRequest": SourceContextEligibilityRequest,
         "HandoffOutputRequest": HandoffOutputRequest,
         "HandoffAcceptanceRequest": HandoffAcceptanceRequest,

@@ -18,8 +18,9 @@ from novel_forge.modules.source_intake import (
     list_github_knowledge_sources,
     list_source_policies,
     plan_source_connector_execution,
+    plan_source_diff_repair,
 )
-from novel_forge.schemas import validate_common_fields
+from novel_forge.schemas import KnowledgeCard, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 
@@ -328,6 +329,89 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertEqual(plan["execution_receipt"]["status"], "blocked_connector_not_allowed")
             self.assertFalse(plan["execution_receipt"]["connector_execution"]["allowlisted"])
             self.assertFalse(plan["approval_request"])
+
+    def test_source_diff_repair_plan_creates_reviewable_impact_without_mutation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(storage, {"source_ref": "local-corpus", "risk_tier": "R1", "project_id": "source-p5"})
+            risk = create_source_risk_report(storage, {"source_ref": "local-corpus", "source_policy_path": policy["path"], "project_id": "source-p5"})
+            old_snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "old-hash",
+                    "source_path": "sources/local-corpus/manifest.json",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p5",
+                },
+            )
+            new_snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "new-hash",
+                    "source_path": "sources/local-corpus/manifest.json",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p5",
+                },
+            )
+            knowledge_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Source-derived abstraction",
+                    source="local-corpus",
+                    tags=["mkaos", "source-derived"],
+                    content={
+                        "principle": "Only abstract source mechanisms may be reused.",
+                        "source_snapshot_ref": old_snapshot["asset"]["id"],
+                        "source_snapshot_path": old_snapshot["path"],
+                        "source_policy_refs": [policy["asset"]["id"]],
+                        "source_risk_report_refs": [risk["asset"]["id"]],
+                    },
+                    metadata={"project_id": "source-p5", "asset_status": "active", "use_in_generation_rag": False},
+                    references=[old_snapshot["path"], old_snapshot["asset"]["id"]],
+                )
+            )
+            refreshed_knowledge_path = storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Already refreshed abstraction",
+                    source="independent-refresh",
+                    tags=["mkaos", "source-derived"],
+                    content={"principle": "This card already points at the refreshed snapshot.", "source_snapshot_ref": new_snapshot["asset"]["id"]},
+                    metadata={"project_id": "source-p5", "asset_status": "active", "use_in_generation_rag": False},
+                    references=[new_snapshot["asset"]["id"]],
+                )
+            )
+
+            plan = plan_source_diff_repair(
+                storage,
+                {
+                    "old_snapshot_path": old_snapshot["path"],
+                    "new_snapshot_path": new_snapshot["path"],
+                    "project_id": "source-p5",
+                },
+            )
+            content = plan["asset"]["content"]
+            issue_content = plan["review_issue"]["asset"]["content"]
+            task_statuses = {task["asset"]["content"]["status"] for task in plan["agent_tasks"]}
+            unchanged = storage.read_json(knowledge_path)
+
+            self.assertEqual(validate_common_fields(plan["asset"]), [])
+            self.assertEqual(plan["asset"]["type"], "change_impact_report")
+            self.assertEqual(plan["source_diff"]["status"], "changed")
+            self.assertIn("content_hash", plan["source_diff"]["changed_fields"])
+            self.assertEqual(content["repair_contract"]["silent_mutation_allowed"], False)
+            self.assertFalse(plan["mutation_applied"])
+            self.assertFalse(plan["dispatch_applied"])
+            self.assertEqual(issue_content["issue_type"], "source_snapshot_drift")
+            self.assertTrue(issue_content["blocking"])
+            self.assertIn("needs_review", task_statuses)
+            self.assertIn(str(knowledge_path.relative_to(storage.root)), {item["path"] for item in plan["impacted_assets"]})
+            self.assertNotIn(str(refreshed_knowledge_path.relative_to(storage.root)), {item["path"] for item in plan["impacted_assets"]})
+            self.assertEqual(unchanged["metadata"]["asset_status"], "active")
 
     def test_high_risk_source_stays_evidence_only_and_creates_blocking_production_approval(self):
         with tempfile.TemporaryDirectory() as tmp:
