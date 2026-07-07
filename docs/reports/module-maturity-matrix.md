@@ -70,7 +70,7 @@ Implementation status note:
 | 层级 | 模块 | 蓝图目标 | 当前状态 | 成熟度 | 缺口 | 风险 | 优先级 | 建议实现顺序 |
 |---|---|---|---|---|---|---|---|---|
 | Enhancement | Golden Opening Lab | Strong first three chapters and hooks | Opening3Report and platform opening gates exist | M2 | Not enforced in v1 first chapters | Weak opening | P0 | Add opening gate to chapters 1-3 |
-| Enhancement | Reader Promise Ledger | Track promises and payoff | Foreshadow/reward adjacent assets exist | M1 | No first-class ReaderPromise lifecycle | Broken reader trust | P1 | Add after basic canon update workflow |
+| Enhancement | Reader Promise Ledger | Track promises and payoff | `ReaderPromise`/`ReaderPromiseLedger` assets, service/API, longform reducer, ReviewIssue/RevisionTask hook exist | M2 | Payoff detection is deterministic; provider/human calibration and cockpit repair workflow depth remain | Broken reader trust if future callers bypass ledger | P1 | Calibrate after Pleasure Point / Chapter Economy gate |
 | Enhancement | Pleasure Point Ledger | Manage爽点 cadence | RewardLedger exists | M2 | Not tied to chapter economy/quality gate | Flat chapters | P1 | Integrate RewardLedger into review loop |
 | Enhancement | Toxic Point & Drop-off Engine | Detect毒点 and drop-off | Feedback/dropoff/quality foundations exist | M2 | Deterministic toxic-point review rule set incomplete | Reader churn | P1 | Add toxic-point fixtures to Review OS |
 | Enhancement | Protagonist Charm Engine | Track agency, competence, desire, appeal | Character assets and review rules can host it | M1 | No first-class charm score/report | Weak protagonist | P1 | Add character charm report after v1 loop |

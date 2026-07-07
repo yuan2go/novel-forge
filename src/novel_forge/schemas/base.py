@@ -628,6 +628,29 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "fact_ledger": ["ledger_id", "chapter_no", "facts", "created_at"],
     "arc_plan": ["arc_id", "title", "chapter_range", "arc_question", "protagonist_goal", "villain_goal", "required_payoffs", "forbidden_expansion"],
     "foreshadowing_graph": ["graph_id", "clues", "edges", "created_at"],
+    "reader_promise": [
+        "promise_id",
+        "project_id",
+        "chapter_opened",
+        "promise_text",
+        "promise_type",
+        "status",
+        "payoff_due_chapter",
+        "evidence_refs",
+        "created_at",
+    ],
+    "reader_promise_ledger": [
+        "ledger_id",
+        "project_id",
+        "chapter_no",
+        "promises",
+        "open_count",
+        "overdue_count",
+        "broken_count",
+        "paid_off_count",
+        "recommendation",
+        "created_at",
+    ],
     "motif_budget_report": ["report_id", "chapter_no", "motif_usage", "budget", "recommendation", "created_at"],
     "character_state_ledger": ["ledger_id", "chapter_no", "characters", "created_at"],
     "villain_operation_plan": ["operation_id", "arc_id", "visible_agent", "hidden_goal", "signatures", "operations", "created_at"],
@@ -1403,6 +1426,7 @@ def _validate_review_issue_content(content: dict[str, Any]) -> list[str]:
         "quality_gate",
         "canon_plugin_conflict",
         "feedback_mutation_risk",
+        "reader_promise_drop",
     }:
         errors.append("review_issue issue_type is not allowed")
     if content.get("severity") not in {"info", "low", "medium", "high", "critical"}:

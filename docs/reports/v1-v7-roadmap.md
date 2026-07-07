@@ -48,10 +48,11 @@ Current evidence:
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
 - Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job assets and context eligibility evaluation; caller migration into every Context Builder/MKAOS/material path still needs tightening.
+- ReaderPromise lifecycle now has schema-backed promise/ledger assets and draft-to-longform integration; payoff detection remains deterministic and needs calibration plus final multi-chapter proof.
 
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
-2. ReaderPromise ledger/payoff lifecycle for longform promise tracking.
+2. PleasurePoint / chapter economy lifecycle so爽点 cadence and watery-chapter risks are first-class.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
@@ -94,12 +95,12 @@ Current evidence:
 
 阻塞项:
 - Phase 1 loop must be stable first.
-- ReaderPromise and PleasurePoint are not first-class lifecycle models.
+- ReaderPromise has a first-class local lifecycle foundation; PleasurePoint is still not a first-class lifecycle model.
 - Longform reports exist, but reducers/query/diff are uneven.
 
 推荐切片:
-- Reader Promise Ledger.
 - Pleasure Point/Reward Ledger integration.
+- Reader Promise provider/human payoff calibration.
 - Protagonist Charm and Antagonist Pressure reports.
 - Volume review every 30 chapters.
 - Longform trend dashboard backed by artifacts.

@@ -1,6 +1,6 @@
 # Regression Tests
 
-Updated: 2026-07-07
+Updated: 2026-07-08
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
 
 Novel Forge keeps a dependency-light test core and optional industrial/browser checks. Run the smallest relevant verification for each change, then broaden when runtime, API, Agent, or publishing behavior changes.
@@ -63,6 +63,7 @@ Current verified result for the V7 foundation and risk closure pass: all command
 | Chapter blueprint | `test_chapter_blueprint_contract.py`, `test_context_and_production_chain.py`, `test_module_services.py` | Embedded `chapter-blueprint-contract-v1` is covered across plan, version, and draft handoff |
 | MKAOS | Many `test_mkaos_*.py`, MKAOS integration and acceptance tests | Broad coverage, still evolving |
 | Canon/KG/continuity | `test_canon_graph*.py`, `test_novel_kg*.py`, `test_longform_stability.py`, `test_context_and_production_chain.py`, long-chain integration tests | CanonGraph plugin reducer coverage plus v1 accepted-chapter reducer coverage; full long-form proof remains deferred |
+| Reader Promise Ledger | `test_reader_promise_ledger.py`, `test_longform_stability.py`, `test_context_and_production_chain.py`, `test_product_api_routes.py` | Promise creation, normal ledger, broken-promise ReviewIssue/RevisionTask hook, longform reducer evidence, chapter bus output path, and route registration are covered; payoff calibration remains future work |
 | Longform recap | `test_longform_recap_agent.py`, `test_agent_registry_scheduler_integration.py` | 5-chapter light recap, 10-chapter formal recap, overdue formal recap, forced checkpoints, next-chapter context, and scheduler operation coverage |
 | Review/revision/publishing | `test_review_issue.py`, `test_content_quality_loop.py`, `test_agent_scheduler.py`, `test_publishing_center.py`, `test_publish_feedback_loop.py`, publishing fixtures | Readable prose gate now creates ReviewIssue/RevisionTask evidence; ReviewIssue-to-Revision strategy fixtures cover candidate, task/plan, provider-loop, local-loop, and Agent Scheduler dispatch paths |
 | Eval/quality | `test_evaluation_center_general.py`, `test_longform_quality_gate_e2e.py`, MKAOS quality tests | Partial production eval coverage |

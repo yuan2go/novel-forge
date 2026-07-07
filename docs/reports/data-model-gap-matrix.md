@@ -60,7 +60,7 @@ Status legend:
 | CanonFact | 正史事实 | partial | `FactLedger`, `CanonDatabase`, v1 `canon_state_machine_ledger` projection | confidence/span can deepen | reducer-backed foundation | Canon/Long-form | P0 |
 | TimelineEvent | 时间线事件 | partial | `FactLedger`, chapter state, `TimelineEventReducer` projection in CanonGraph state-machine assets | first-class timeline event asset | reducer-backed embedded | Long-form OS | P0 |
 | ForeshadowItem | 伏笔项 | yes | `ForeshadowingThread`, `ForeshadowingGraph`, `ForeshadowingReducer` projection | payoff SLA/status transitions can deepen | reducer-backed foundation | Long-form OS | P0 |
-| ReaderPromise | 读者承诺 | partial | blueprint docs, reward/foreshadow fields | standalone promise ledger | missing/embedded | Web Novel Enhancement | P1 |
+| ReaderPromise | 读者承诺 | yes-foundation | `ReaderPromise`, `ReaderPromiseLedger`, `modules/reader_promise/service.py`, longform reducer `ReaderPromiseReducer` | provider/human payoff calibration, richer promise taxonomy, cockpit repair workflow depth | create/evaluate ledger lifecycle with ReviewIssue/RevisionTask hook | Web Novel Enhancement, Long-form OS, Review | P1 |
 | PleasurePoint | 爽点 | partial | `RewardLedger` | explicit pleasure point taxonomy | partial | Web Novel Enhancement | P1 |
 | ConflictItem | 冲突项 | partial | `ConflictPattern`, chapter plan content | active conflict lifecycle | embedded/basic | Outline/Chapter | P1 |
 | EventLog | 事件日志 | partial | `AuditLog`, `TraceSpan`, `StateEvent` | business event taxonomy | usable nearby | Ops/State Bus | P1 |
@@ -113,10 +113,10 @@ Status legend:
 
 1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 2. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
-3. ReaderPromise lifecycle: needed next so promise/payoff state is not just embedded prose or foreshadowing notes.
+3. PleasurePoint lifecycle: needed next so爽点/scene value state is not only reward ledger text.
 4. Readable prose/page-turning/mobile review models: needed after `chapter-blueprint-contract-v1` so draft quality is not limited by thin prose gates.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
-6. `ReaderPromise` reducer and payoff lifecycle: CanonFact/TimelineEvent/Foreshadow reducer foundation exists; promise lifecycle remains needed for 10-30 chapter coherence.
+6. `ReaderPromise` calibration and cockpit depth: foundation exists, but payoff detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.
 
 ## Notes
 

@@ -27,6 +27,7 @@ ISSUE_TYPES = {
     "quality_gate",
     "canon_plugin_conflict",
     "feedback_mutation_risk",
+    "reader_promise_drop",
 }
 SEVERITIES = {"info", "low", "medium", "high", "critical"}
 ACTIVE_STATUSES = {"open", "acknowledged", "in_revision"}
@@ -41,6 +42,7 @@ HIGH_BLOCKING_TYPES = {
     "style_drift",
     "quality_gate",
     "canon_plugin_conflict",
+    "reader_promise_drop",
 }
 REVISION_EVIDENCE_CHAIN = [
     "revision_task_path",
@@ -187,6 +189,20 @@ REVISION_STRATEGY_RULES = [
         ],
         "re_review_focus": ["foreshadow chain", "payoff timing", "information release"],
         "risk_controls": ["info_release_check", "ledger_update_required", "re_review_required"],
+    },
+    {
+        "strategy_id": "restore_reader_promise_payoff",
+        "strategy_name": "Restore reader promise payoff",
+        "issue_types": {"reader_promise_drop"},
+        "keywords": {"reader promise", "promise", "payoff", "承诺", "回收", "悬念", "断裂"},
+        "patch_scope": "promise_payoff_or_reminder_beat",
+        "instructions": [
+            "Restore the promised question, debt, clue, threat, or emotional contract as an observable story beat.",
+            "Either pay it off, reschedule it with explicit new pressure, or add a reminder that changes reader expectation.",
+            "Update the reader promise ledger and send the revised draft through re-review before continuing production.",
+        ],
+        "re_review_focus": ["promise visible", "payoff or reschedule credible", "no new continuity contradiction"],
+        "risk_controls": ["ledger_update_required", "bounded_story_patch", "re_review_required"],
     },
     {
         "strategy_id": "style_policy_rewrite",

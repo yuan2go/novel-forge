@@ -55,7 +55,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 271)
+        self.assertEqual(len(SCHEMA_CLASSES), 273)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("source_policy", SCHEMA_CLASSES)
         self.assertIn("source_sync_job", SCHEMA_CLASSES)
@@ -148,6 +148,8 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("fact_ledger", SCHEMA_CLASSES)
         self.assertIn("arc_plan", SCHEMA_CLASSES)
         self.assertIn("foreshadowing_graph", SCHEMA_CLASSES)
+        self.assertIn("reader_promise", SCHEMA_CLASSES)
+        self.assertIn("reader_promise_ledger", SCHEMA_CLASSES)
         self.assertIn("motif_budget_report", SCHEMA_CLASSES)
         self.assertIn("character_state_ledger", SCHEMA_CLASSES)
         self.assertIn("villain_operation_plan", SCHEMA_CLASSES)

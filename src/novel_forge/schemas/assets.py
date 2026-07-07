@@ -317,6 +317,16 @@ class ForeshadowingGraph(BaseAsset):
 
 
 @dataclass
+class ReaderPromise(BaseAsset):
+    type: str = "reader_promise"
+
+
+@dataclass
+class ReaderPromiseLedger(BaseAsset):
+    type: str = "reader_promise_ledger"
+
+
+@dataclass
 class MotifBudgetReport(BaseAsset):
     type: str = "motif_budget_report"
 
@@ -1433,6 +1443,8 @@ SCHEMA_CLASSES = {
         FactLedger,
         ArcPlan,
         ForeshadowingGraph,
+        ReaderPromise,
+        ReaderPromiseLedger,
         MotifBudgetReport,
         CharacterStateLedger,
         VillainOperationPlan,

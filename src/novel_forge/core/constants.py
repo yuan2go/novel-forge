@@ -164,6 +164,8 @@ ASSET_DIR_BY_TYPE = {
     "fact_ledger": "continuity",
     "arc_plan": "continuity",
     "foreshadowing_graph": "continuity",
+    "reader_promise": "continuity",
+    "reader_promise_ledger": "continuity",
     "motif_budget_report": "continuity",
     "character_state_ledger": "continuity",
     "villain_operation_plan": "continuity",

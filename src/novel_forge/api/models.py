@@ -104,6 +104,13 @@ class LongformCalibrationRequest(BaseModel):
     persist: bool = True
 
 
+class ReaderPromiseLedgerRequest(BaseModel):
+    draft_path: str
+    chapter_plan_path: str | None = None
+    workspace_path: str | None = None
+    persist_issues: bool = True
+
+
 class ReviewRunRequest(BaseModel):
     draft_path: str | None = None
     workspace_path: str | None = None
@@ -1638,6 +1645,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "LongformAcceptanceRequest": LongformAcceptanceRequest,
         "LongformControlAssetRequest": LongformControlAssetRequest,
         "LongformCalibrationRequest": LongformCalibrationRequest,
+        "ReaderPromiseLedgerRequest": ReaderPromiseLedgerRequest,
         "ReviewRunRequest": ReviewRunRequest,
         "RevisionPlanRequest": RevisionPlanRequest,
         "TaskRetryRequest": TaskRetryRequest,

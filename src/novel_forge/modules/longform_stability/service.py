@@ -12,6 +12,7 @@ from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_governance import record_fallback_decision
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.reader_promise import build_reader_promise_ledger_for_draft
 from novel_forge.modules.runtime_ledger import record_gate_result
 from novel_forge.schemas import (
     ArcPlan,
@@ -79,6 +80,8 @@ LONGFORM_ASSET_TYPES = {
     "fact_ledger",
     "arc_plan",
     "foreshadowing_graph",
+    "reader_promise",
+    "reader_promise_ledger",
     "motif_budget_report",
     "character_state_ledger",
     "villain_operation_plan",
@@ -901,6 +904,7 @@ def create_longform_artifacts_for_draft(
         "motif_budget_report_path": create_motif_budget_report(storage, draft_path, workspace_path=workspace_path)["path"],
         "character_state_ledger_path": create_character_state_ledger(storage, draft_path, workspace_path=workspace_path)["path"],
         "foreshadowing_graph_path": create_foreshadowing_graph(storage, draft_path, workspace_path=workspace_path)["path"],
+        "reader_promise_ledger_path": build_reader_promise_ledger_for_draft(storage, draft_path, workspace_path=workspace_path)["path"],
         "villain_operation_plan_path": create_villain_operation_plan(storage, draft_path, workspace_path=workspace_path)["path"],
         "reader_fatigue_report_path": create_reader_fatigue_report(storage, draft_path, workspace_path=workspace_path)["path"],
         "style_control_plan_path": create_style_control_plan(storage, draft_path, workspace_path=workspace_path)["path"],
@@ -943,7 +947,7 @@ def reduce_longform_state_for_draft(
     workspace = str(project.get("workspace_path") or workspace_path or draft_metadata.get("workspace_path") or draft_content.get("workspace_path") or "")
     chapter_no = _chapter_no(draft.to_dict())
     paths = artifact_paths if isinstance(artifact_paths, dict) else {}
-    required = ["chapter_state_path", "fact_ledger_path", "character_state_ledger_path", "foreshadowing_graph_path", "reward_ledger_path"]
+    required = ["chapter_state_path", "fact_ledger_path", "character_state_ledger_path", "foreshadowing_graph_path", "reader_promise_ledger_path", "reward_ledger_path"]
     missing = [key for key in required if not str(paths.get(key, "")).strip()]
     if missing:
         raise ValueError(f"longform reducer missing required artifact paths: {', '.join(missing)}")
@@ -998,15 +1002,19 @@ def _longform_state_machine_projection(
     fact_ledger = _asset_content_at(storage, artifact_paths.get("fact_ledger_path", ""))
     character_ledger = _asset_content_at(storage, artifact_paths.get("character_state_ledger_path", ""))
     foreshadowing_graph = _asset_content_at(storage, artifact_paths.get("foreshadowing_graph_path", ""))
+    reader_promise_ledger = _asset_content_at(storage, artifact_paths.get("reader_promise_ledger_path", ""))
     reward_ledger = _asset_content_at(storage, artifact_paths.get("reward_ledger_path", ""))
     facts = fact_ledger.get("facts", []) if isinstance(fact_ledger.get("facts", []), list) else []
     clues = foreshadowing_graph.get("clues", []) if isinstance(foreshadowing_graph.get("clues", []), list) else []
     characters = character_ledger.get("characters", []) if isinstance(character_ledger.get("characters", []), list) else []
     rewards = reward_ledger.get("rewards", []) if isinstance(reward_ledger.get("rewards", []), list) else []
     costs = reward_ledger.get("costs", []) if isinstance(reward_ledger.get("costs", []), list) else []
+    promises = reader_promise_ledger.get("promises", []) if isinstance(reader_promise_ledger.get("promises", []), list) else []
     blocking_signals = []
     if foreshadowing_graph.get("issues"):
         blocking_signals.extend(str(item.get("message") or item) for item in foreshadowing_graph.get("issues", []) if isinstance(item, dict))
+    if reader_promise_ledger.get("broken_count", 0):
+        blocking_signals.append(f"{reader_promise_ledger.get('broken_count', 0)} broken reader promise(s)")
     machines = [
         {
             "machine": "ChapterStateReducer",
@@ -1056,12 +1064,23 @@ def _longform_state_machine_projection(
         },
         {
             "machine": "ReaderPromiseReducer",
-            "state": f"{len(rewards)}_rewards_{len(costs)}_costs",
-            "observed_signals": _dedupe([*[str(item) for item in rewards if str(item).strip()], *[str(item) for item in costs if str(item).strip()]])[:20],
+            "state": (
+                f"{reader_promise_ledger.get('open_count', 0)}_open_"
+                f"{reader_promise_ledger.get('overdue_count', 0)}_overdue_"
+                f"{reader_promise_ledger.get('broken_count', 0)}_broken_"
+                f"{reader_promise_ledger.get('paid_off_count', 0)}_paid"
+            ),
+            "observed_signals": _dedupe(
+                [
+                    *[str(item.get("promise_text") or item.get("promise_id") or "") for item in promises[:20] if isinstance(item, dict)],
+                    *[str(item) for item in rewards if str(item).strip()],
+                    *[str(item) for item in costs if str(item).strip()],
+                ]
+            )[:20],
             "transition": {
                 "from": "previous_reader_promise_state",
                 "to": f"chapter_{chapter_no}_promise_state_committed",
-                "evidence": [artifact_paths.get("reward_ledger_path", "")],
+                "evidence": [artifact_paths.get("reader_promise_ledger_path", ""), artifact_paths.get("reward_ledger_path", "")],
             },
         },
     ]
@@ -1081,6 +1100,7 @@ def _longform_state_machine_projection(
                 "fact_ledger",
                 "character_state_ledger",
                 "foreshadowing_graph",
+                "reader_promise_ledger",
                 "reward_ledger",
             ],
             "rollback_rebuild": "rebuild canon_state_machine_snapshot from canon_state_machine_ledger and diff against previous snapshot",

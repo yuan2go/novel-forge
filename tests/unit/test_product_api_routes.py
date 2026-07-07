@@ -119,6 +119,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/longform-stability/acceptance",
                 "/product/longform-stability/control-asset",
                 "/product/longform-stability/calibrate",
+                "/product/longform-stability/reader-promise-ledger",
                 "/product/long-chain-proof/run",
                 "/product/editor/artifacts",
                 "/product/editor/patch",

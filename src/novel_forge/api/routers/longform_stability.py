@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.longform_stability import (
     calibrate_longform_extraction,
+    build_reader_promise_ledger_for_draft,
     longform_os_acceptance_report,
     longform_stability_dashboard,
     model_assisted_longform_extraction,
@@ -24,6 +25,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     LongformAcceptanceRequest = models["LongformAcceptanceRequest"]
     LongformControlAssetRequest = models["LongformControlAssetRequest"]
     LongformCalibrationRequest = models["LongformCalibrationRequest"]
+    ReaderPromiseLedgerRequest = models["ReaderPromiseLedgerRequest"]
 
     @router.get("/product/longform-stability/dashboard")
     def longform_dashboard(project_id: str | None = None, workspace_path: str | None = None, limit: int = 240) -> dict[str, Any]:
@@ -87,6 +89,21 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 expected=request.expected,
                 use_model=request.use_model,
                 persist=request.persist,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/longform-stability/reader-promise-ledger")
+    def reader_promise_ledger(request: ReaderPromiseLedgerRequest) -> dict[str, Any]:
+        try:
+            return build_reader_promise_ledger_for_draft(
+                LocalStorage(app_settings.root),
+                request.draft_path,
+                workspace_path=request.workspace_path,
+                chapter_plan_path=request.chapter_plan_path,
+                persist_issues=request.persist_issues,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

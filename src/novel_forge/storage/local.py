@@ -63,6 +63,8 @@ NOVEL_KG_SOURCE_TYPES = {
     "fact_ledger",
     "arc_plan",
     "foreshadowing_graph",
+    "reader_promise",
+    "reader_promise_ledger",
     "motif_budget_report",
     "character_state_ledger",
     "villain_operation_plan",
