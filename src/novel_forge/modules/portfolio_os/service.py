@@ -9,7 +9,7 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.review_issue import list_review_issues
-from novel_forge.schemas import BookPotentialScore, CrossBookSimilarityReport, PortfolioProject, ResourceAllocationPlan
+from novel_forge.schemas import AgentTask, BookPotentialScore, CrossBookSimilarityReport, PortfolioProject, ResourceAllocationPlan
 from novel_forge.storage.local import LocalStorage
 
 
@@ -220,6 +220,94 @@ def build_resource_allocation_plan(
     return {"path": path, "asset": storage.read_json(storage.root / path), "score_paths": score_result["score_paths"]}
 
 
+def build_multi_book_scheduler_plan(
+    storage: LocalStorage,
+    *,
+    portfolio_ref: str | Path = "",
+    allocation_ref: str | Path = "",
+    similarity_ref: str | Path = "",
+    project_ids: list[str] | None = None,
+    provider_budget: float = 0.0,
+    max_parallel_books: int = 2,
+    daily_chapter_goal: int = 1,
+    environment: str = "local",
+    requested_by: str = "portfolio-os",
+) -> dict[str, Any]:
+    portfolio = _portfolio_from_ref(storage, portfolio_ref)
+    portfolio_id = str(portfolio.get("content", {}).get("portfolio_id") or portfolio.get("id") or "")
+    allocation_result = _allocation_from_ref(storage, allocation_ref)
+    if not allocation_result:
+        allocation_result = build_resource_allocation_plan(
+            storage,
+            portfolio_ref=portfolio.get("path", "") or portfolio_ref,
+            project_ids=project_ids,
+            provider_budget=provider_budget,
+            max_parallel_books=max_parallel_books,
+            daily_chapter_goal=daily_chapter_goal,
+        )
+    similarity_result = _similarity_from_ref(storage, similarity_ref)
+    if not similarity_result:
+        similarity_result = build_cross_book_similarity_report(storage, portfolio_ref=portfolio.get("path", "") or portfolio_ref, project_ids=project_ids)
+    allocation = allocation_result["asset"]
+    similarity = similarity_result["asset"]
+    similarity_decision = _content(similarity).get("guard_decision", {}) if isinstance(_content(similarity).get("guard_decision", {}), dict) else {}
+    similarity_blocked = str(similarity_decision.get("status") or "") == "blocked"
+    approval = _create_scheduler_approval_request(
+        storage,
+        portfolio_id=portfolio_id,
+        allocation_path=str(allocation_result["path"]),
+        similarity_path=str(similarity_result["path"]),
+        environment=environment,
+        requested_by=requested_by,
+        similarity_blocked=similarity_blocked,
+    )
+    task_results: list[dict[str, Any]] = []
+    if not similarity_blocked:
+        for allocation_row in _content(allocation).get("allocations", []) if isinstance(_content(allocation).get("allocations", []), list) else []:
+            if bool(allocation_row.get("blocked")) or int(allocation_row.get("lane") or 0) <= 0:
+                continue
+            task_results.append(
+                _write_scheduler_plan_task(
+                    storage,
+                    portfolio_id=portfolio_id,
+                    allocation_path=str(allocation_result["path"]),
+                    similarity_path=str(similarity_result["path"]),
+                    approval_path=str(approval["path"]),
+                    allocation_row=allocation_row,
+                    requested_by=requested_by,
+                )
+            )
+    status = "blocked_by_similarity" if similarity_blocked else "needs_approval"
+    scheduler_plan = {
+        "status": status,
+        "portfolio_id": portfolio_id,
+        "allocation_path": str(allocation_result["path"]),
+        "similarity_report_path": str(similarity_result["path"]),
+        "approval_request_path": str(approval["path"]),
+        "approval_request_id": _content(approval["asset"]).get("request_id", ""),
+        "task_paths": [str(row.get("path") or "") for row in task_results],
+        "task_count": len(task_results),
+        "automatic_dispatch": False,
+        "dispatch_queue_paths": [],
+        "guard_decision": {
+            "cross_book_similarity_status": similarity_decision.get("status", ""),
+            "shared_context_allowed": bool(similarity_decision.get("shared_context_allowed", False)),
+            "requires_operator_approval": True,
+            "requires_v1_acceptance_before_parallel_execution": True,
+        },
+        "created_at": utc_now(),
+    }
+    return {
+        "status": status,
+        "portfolio": portfolio,
+        "allocation": allocation_result,
+        "similarity_report": similarity_result,
+        "approval_request": approval,
+        "task_plans": task_results,
+        "scheduler_plan": scheduler_plan,
+    }
+
+
 def _book_evidence(storage: LocalStorage, project_id: str) -> dict[str, Any]:
     rows = _project_assets(storage, project_id)
     type_counts = _type_counts(rows)
@@ -271,6 +359,121 @@ def _project_fingerprint(storage: LocalStorage, project_id: str) -> dict[str, An
         "evidence_paths": _dedupe(evidence_paths)[:20],
         "fingerprint_source_count": len(evidence_paths),
     }
+
+
+def _create_scheduler_approval_request(
+    storage: LocalStorage,
+    *,
+    portfolio_id: str,
+    allocation_path: str,
+    similarity_path: str,
+    environment: str,
+    requested_by: str,
+    similarity_blocked: bool,
+) -> dict[str, Any]:
+    from novel_forge.modules.permission_center import create_approval_request
+
+    return create_approval_request(
+        storage,
+        {
+            "project_id": portfolio_id,
+            "scope": "budget",
+            "action": "approve_multi_book_scheduler_plan",
+            "risk_level": "high",
+            "environment": environment or "local",
+            "blocking": True,
+            "target_type": "portfolio_scheduler_plan",
+            "target_id": portfolio_id,
+            "target_refs": [allocation_path, similarity_path],
+            "evidence_refs": [allocation_path, similarity_path],
+            "requested_by": requested_by,
+            "subject_type": "agent",
+            "subject_id": "portfolio-os",
+            "reason": "multi-book scheduler planning requires operator approval before dispatch",
+            "required_before": ["agent_dispatch_queue", "parallel_chapter_generation", "shared_context_expansion"],
+            "rollback_plan": {
+                "automatic_dispatch": False,
+                "rollback_action": "delete planned agent_task assets before queue dispatch",
+                "similarity_blocked": similarity_blocked,
+            },
+        },
+    )
+
+
+def _write_scheduler_plan_task(
+    storage: LocalStorage,
+    *,
+    portfolio_id: str,
+    allocation_path: str,
+    similarity_path: str,
+    approval_path: str,
+    allocation_row: dict[str, Any],
+    requested_by: str,
+) -> dict[str, Any]:
+    project_id = str(allocation_row.get("project_id") or "")
+    operation = _portfolio_scheduler_operation(str(allocation_row.get("recommended_action") or ""))
+    task = AgentTask(
+        title=f"Portfolio planned task {project_id}:{operation}",
+        source=portfolio_id,
+        tags=["portfolio-os", "multi-book-scheduler-plan", "agent-task", operation, "needs-approval"],
+        content={
+            "task_id": make_id("agent_task", f"portfolio-scheduler-{portfolio_id}-{project_id}-{operation}-{utc_now()}"),
+            "agent_type": "portfolio",
+            "operation": operation,
+            "status": "needs_approval",
+            "input_assets": [{"path": allocation_path, "asset_ref": allocation_path}, {"path": similarity_path, "asset_ref": similarity_path}, {"path": approval_path, "asset_ref": approval_path}],
+            "output_targets": [
+                {
+                    "project_id": project_id,
+                    "recommended_action": allocation_row.get("recommended_action", ""),
+                    "lane": allocation_row.get("lane", 0),
+                    "daily_chapter_goal": allocation_row.get("daily_chapter_goal", 0),
+                    "provider_budget_cap": allocation_row.get("provider_budget_cap", 0.0),
+                    "requires_project_scoped_context": True,
+                    "requires_cross_book_similarity_guard": True,
+                    "requires_approval_request": True,
+                }
+            ],
+            "linked_loop_run_path": "",
+            "linked_context_bundle_path": "",
+            "linked_review_issue_path": "",
+            "linked_revision_task_path": "",
+            "agent_run_path": "",
+            "dispatch_queue_path": "",
+            "evidence": {
+                "portfolio_id": portfolio_id,
+                "book_project_id": project_id,
+                "allocation_path": allocation_path,
+                "similarity_report_path": similarity_path,
+                "approval_request_path": approval_path,
+                "automatic_dispatch": False,
+                "dispatch_after_approval_only": True,
+                "requested_by": requested_by,
+            },
+            "created_at": utc_now(),
+            "updated_at": utc_now(),
+        },
+        metadata={
+            "project_id": portfolio_id,
+            "book_project_id": project_id,
+            "portfolio_id": portfolio_id,
+            "agent_type": "portfolio",
+            "operation": operation,
+            "asset_status": "needs_approval",
+            "use_in_generation_rag": False,
+        },
+        references=_dedupe([allocation_path, similarity_path, approval_path]),
+    )
+    path = _write_asset(storage, task)
+    return {"path": path, "asset": storage.read_json(storage.root / path)}
+
+
+def _portfolio_scheduler_operation(recommended_action: str) -> str:
+    if recommended_action == "generate_next_chapter":
+        return "draft"
+    if recommended_action == "resolve_blocking_review_issues":
+        return "run-review-revision-publish-loop"
+    return "generate-chapter-plan"
 
 
 def _compare_project_fingerprints(left: dict[str, Any], right: dict[str, Any], thresholds: dict[str, float]) -> dict[str, Any]:
@@ -496,6 +699,40 @@ def _portfolio_from_ref(storage: LocalStorage, portfolio_ref: str | Path) -> dic
                 return {**data, "path": _display_path(storage.root, path)}
         raise FileNotFoundError(f"portfolio project not found: {portfolio_ref}")
     return {"id": "", "title": "adhoc portfolio", "content": {"project_ids": []}, "path": ""}
+
+
+def _allocation_from_ref(storage: LocalStorage, allocation_ref: str | Path) -> dict[str, Any]:
+    return _asset_from_ref(storage, allocation_ref, "resource_allocation_plan")
+
+
+def _similarity_from_ref(storage: LocalStorage, similarity_ref: str | Path) -> dict[str, Any]:
+    return _asset_from_ref(storage, similarity_ref, "cross_book_similarity_report")
+
+
+def _asset_from_ref(storage: LocalStorage, ref: str | Path, asset_type: str) -> dict[str, Any]:
+    if not ref:
+        return {}
+    path = resolve_path(storage.root, ref)
+    if path.exists():
+        data = storage.read_json(path)
+        if data.get("type") != asset_type:
+            raise ValueError(f"expected {asset_type}: {ref}")
+        return {"path": _display_path(storage.root, path), "asset": data}
+    needle = str(ref)
+    for category in DATA_DIRS:
+        for path in reversed(storage.list_json(category)):
+            data = _read_json_safe(storage, path)
+            if data.get("type") != asset_type:
+                continue
+            content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            if needle in {str(data.get("id") or ""), str(content.get("plan_id") or ""), str(content.get("report_id") or "")}:
+                return {"path": _display_path(storage.root, path), "asset": data}
+    raise FileNotFoundError(f"{asset_type} not found: {ref}")
+
+
+def _content(asset: dict[str, Any]) -> dict[str, Any]:
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    return content
 
 
 def _latest_quality_score(rows: list[dict[str, Any]]) -> tuple[float, str]:

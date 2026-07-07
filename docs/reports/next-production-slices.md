@@ -28,6 +28,7 @@ Implementation status note:
 - 2026-07-08: `P2-S2 Feedback Mutation Apply Workflow` was implemented as a development slice. Approved feedback mutation applications now produce patch artifacts, invalidation evidence, regeneration RevisionTasks, planned AgentTasks for regeneration/quality gate/publish gate rerun, workflow dispatch plans, re-review plans, publish-gate rerun plans, and mutation-control contracts that explicitly forbid silent outline/chapter/release mutation. Agent Scheduler now registers resolve/apply mutation operations. Unit/API route coverage exists in `tests/unit/test_publishing_feedback_adapters.py`, `tests/unit/test_agent_scheduler.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 - 2026-07-08: `P3-S1 Portfolio Project Model` was implemented as a development slice. `portfolio_project`, `book_potential_score`, and `resource_allocation_plan` are now schema-backed assets under the workspace boundary. `/product/portfolio/*` APIs create portfolio projects, score books, and build non-dispatching allocation plans with per-book memory/context isolation, cost-quality rollup, and operator approval boundary. Unit/API route coverage exists in `tests/unit/test_portfolio_os.py`, `tests/unit/test_schemas.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 - 2026-07-08: `P3-S2 Cross-Book Similarity Guard` was implemented as a development slice. `cross_book_similarity_report` is now a schema-backed Portfolio OS asset. `/product/portfolio/cross-book-similarity` produces pairwise premise/style/mechanism overlap evidence, contamination risk levels, and a fail-closed shared-context guard without storing raw drafts in the report. Unit/API route coverage exists in `tests/unit/test_portfolio_os.py`, `tests/unit/test_schemas.py`, and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
+- 2026-07-08: `P3-S3 Multi-Book Scheduler Plan Boundary` was implemented as a development slice. `/product/portfolio/scheduler-plan` now combines ResourceAllocationPlan, CrossBookSimilarityReport, blocking ApprovalRequest, and planned AgentTask assets. It never writes dispatch queue entries, blocks task planning when similarity guard fails, and marks runnable book tasks as `needs_approval`. Unit/API route coverage exists in `tests/unit/test_portfolio_os.py` and `tests/unit/test_product_api_routes.py`. No chapter acceptance was run.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
@@ -51,21 +52,22 @@ Implementation status note:
 | P2-S2 Feedback Mutation Apply Workflow | Approval -> patch -> invalidation -> regeneration task | Closes feedback loop safely | Feedback, Workflow, Change Impact, Agent Scheduler | FeedbackPlanMutationProposal, FeedbackMutationPatch, ChangeImpactReport, RevisionTask, AgentTask | Implemented: approved proposal creates patch artifacts, invalidation evidence, regeneration tasks, planned AgentTasks, workflow dispatch plan, re-review gate plan, and publish gate rerun plan | Approval/apply/non-approved-blocking/operation-contract fixtures | Feedback docs updated through this slice matrix | Does not silently mutate story; follow-up tasks are planned, not auto-dispatched |
 | P3-S1 Portfolio Project Model | Introduce multi-book project portfolio boundary | Needed before multi-book scheduling | Portfolio, Project, Cost Dashboard | PortfolioProject, BookPotentialScore, ResourceAllocationPlan | Implemented: schema-backed portfolio project, book potential score, allocation plan, `/product/portfolio/*` API, per-book isolation contract, cost/quality rollup | Two-book isolation/scoring/allocation fixture plus schema/route coverage | Portfolio docs updated through this slice matrix | Plans do not auto-dispatch and do not replace v1 single-book loop |
 | P3-S2 Cross-Book Similarity Guard | Detect repeated style/premise/mechanism | Prevents multi-book sameness | Portfolio, Style, Genre, MKAOS | CrossBookSimilarityReport, StyleProfile, GenreProfile | Implemented: `/product/portfolio/cross-book-similarity` writes pairwise similarity, risk, and shared-context guard decision | Similar/different book fixtures plus schema/route coverage | Portfolio docs updated through this slice matrix | Current fingerprint uses local token/Jaccard signals; embeddings can replace scoring later |
-| P3-S3 Multi-Book Scheduler Plan Boundary | Turn portfolio allocation into approval-gated scheduler plan evidence | Needed before any automatic multi-book dispatch | Portfolio, Agent Scheduler, Permission Center, Cost Ledger | ResourceAllocationPlan, CrossBookSimilarityReport, ApprovalRequest, AgentTask | Scheduler plan service, no automatic dispatch | Blocked/no-approval/high-similarity fixtures | Portfolio/Agent docs | Must not run multiple books automatically before approval and v1 acceptance |
+| P3-S3 Multi-Book Scheduler Plan Boundary | Turn portfolio allocation into approval-gated scheduler plan evidence | Needed before any automatic multi-book dispatch | Portfolio, Agent Scheduler, Permission Center, Cost Ledger | ResourceAllocationPlan, CrossBookSimilarityReport, ApprovalRequest, AgentTask | Implemented: `/product/portfolio/scheduler-plan` writes blocking approval request and planned AgentTasks without dispatch queue entries | Approval-required and high-similarity-blocked fixtures plus route coverage | Portfolio/Agent docs updated through this slice matrix | Does not run multiple books automatically; execution remains future and approval-gated |
+| P3-S4 Book Pause / Kill Gate | Convert portfolio scores and risks into start/continue/pause/kill recommendations | Prevents wasting budget on low-quality or risky books | Portfolio, Quality, Review, Cost Ledger | BookPotentialScore, ResourceAllocationPlan, ReviewIssue, ApprovalRequest | Lifecycle gate service | Continue/pause/kill fixtures | Portfolio docs | Must require human approval for pause/kill actions |
 
 ## Recommended Next Slice
 
-Continue from `P3-S3 Multi-Book Scheduler Plan Boundary`.
+Continue from `P3-S4 Book Pause / Kill Gate`.
 
-The current highest-priority development slice is to turn portfolio allocation into an approval-gated scheduler plan boundary:
+The current highest-priority development slice is to add book lifecycle decision gates on top of portfolio scoring and scheduler planning:
 
 ```text
 portfolio project
--> allocation plan
--> cross-book similarity report
--> approval request
--> scheduler plan evidence
--> no automatic dispatch until guard and approval pass
+-> book potential score
+-> blocking issue / quality / cost evidence
+-> continue / pause / kill recommendation
+-> high-risk ApprovalRequest
+-> no automatic pause/kill without operator decision
 ```
 
 Do not run chapter acceptance during the development loop. Keep the 2026-07-07 slow report as the current baseline until the final unified acceptance phase.

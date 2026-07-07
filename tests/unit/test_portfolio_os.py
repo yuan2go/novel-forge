@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.modules.portfolio_os import (
     build_book_potential_scores,
     build_cross_book_similarity_report,
+    build_multi_book_scheduler_plan,
     build_resource_allocation_plan,
     create_portfolio_project,
 )
@@ -66,6 +67,41 @@ class PortfolioOSTests(unittest.TestCase):
             self.assertNotEqual(pair_by_books[frozenset(["book-a", "book-c"])]["risk_level"], "high")
             self.assertFalse(content["guard_decision"]["shared_context_allowed"])
             self.assertTrue(content["generation_context_boundary"]["stores_fingerprint_only"])
+
+    def test_multi_book_scheduler_plan_requires_approval_and_never_dispatches(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            self._write_book_identity(storage, "book-a", "都市刑侦", "冷峻第一人称", "旧案重启 证据链 嫌疑人 反转 真相")
+            self._write_book_identity(storage, "book-c", "科幻远征", "明快第三人称", "星舰 生态危机 外星规则 技术代价")
+            portfolio = create_portfolio_project(storage, title="Scheduler Portfolio", project_ids=["book-a", "book-c"])
+
+            plan = build_multi_book_scheduler_plan(storage, portfolio_ref=portfolio["path"], provider_budget=12.0, environment="production")
+
+            self.assertEqual(plan["status"], "needs_approval")
+            self.assertEqual(plan["approval_request"]["asset"]["type"], "approval_request")
+            self.assertTrue(plan["approval_request"]["asset"]["content"]["blocking"])
+            self.assertGreaterEqual(plan["scheduler_plan"]["task_count"], 1)
+            self.assertFalse(plan["scheduler_plan"]["automatic_dispatch"])
+            self.assertEqual(plan["scheduler_plan"]["dispatch_queue_paths"], [])
+            task = plan["task_plans"][0]["asset"]["content"]
+            self.assertEqual(task["status"], "needs_approval")
+            self.assertEqual(task["operation"], "generate-chapter-plan")
+            self.assertEqual(task["dispatch_queue_path"], "")
+
+    def test_multi_book_scheduler_plan_blocks_high_similarity_before_task_plans(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            self._write_book_identity(storage, "book-a", "都市刑侦", "冷峻第一人称", "旧案重启 证据链 嫌疑人 反转 真相")
+            self._write_book_identity(storage, "book-b", "都市刑侦", "冷峻第一人称", "旧案重启 证据链 嫌疑人 反转 真相")
+            portfolio = create_portfolio_project(storage, title="Blocked Portfolio", project_ids=["book-a", "book-b"])
+            similarity = build_cross_book_similarity_report(storage, portfolio_ref=portfolio["path"], high_threshold=0.45)
+
+            plan = build_multi_book_scheduler_plan(storage, portfolio_ref=portfolio["path"], similarity_ref=similarity["path"])
+
+            self.assertEqual(plan["status"], "blocked_by_similarity")
+            self.assertEqual(plan["scheduler_plan"]["task_count"], 0)
+            self.assertFalse(plan["scheduler_plan"]["guard_decision"]["shared_context_allowed"])
+            self.assertEqual(plan["approval_request"]["asset"]["type"], "approval_request")
 
     def _write_book_identity(self, storage: LocalStorage, project_id: str, genre: str, style: str, premise: str) -> None:
         metadata = {"project_id": project_id}
