@@ -8,6 +8,7 @@ from typing import Any
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.canon_graph import append_canon_state_machine_ledger, build_canon_state_machine_snapshot, diff_canon_state_machine
+from novel_forge.modules.chapter_economy import create_chapter_economy_report
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_governance import record_fallback_decision
@@ -82,6 +83,8 @@ LONGFORM_ASSET_TYPES = {
     "foreshadowing_graph",
     "reader_promise",
     "reader_promise_ledger",
+    "pleasure_point",
+    "chapter_economy_report",
     "motif_budget_report",
     "character_state_ledger",
     "villain_operation_plan",
@@ -909,9 +912,16 @@ def create_longform_artifacts_for_draft(
         "reader_fatigue_report_path": create_reader_fatigue_report(storage, draft_path, workspace_path=workspace_path)["path"],
         "style_control_plan_path": create_style_control_plan(storage, draft_path, workspace_path=workspace_path)["path"],
         "platform_adapter_report_path": create_platform_adapter_report(storage, draft_path, workspace_path=workspace_path)["path"],
-        "reward_ledger_path": create_reward_ledger(storage, draft_path, workspace_path=workspace_path)["path"],
         "review_score_system_report_path": create_review_score_system_report(storage, draft_path, workspace_path=workspace_path)["path"],
     }
+    reward = create_reward_ledger(storage, draft_path, workspace_path=workspace_path)
+    results["reward_ledger_path"] = reward["path"]
+    results["chapter_economy_report_path"] = create_chapter_economy_report(
+        storage,
+        draft_path,
+        reward_ledger_path=reward["path"],
+        workspace_path=workspace_path,
+    )["path"]
     reducer = reduce_longform_state_for_draft(storage, draft_path, artifact_paths=results, workspace_path=workspace_path)
     results.update(
         {
@@ -947,7 +957,7 @@ def reduce_longform_state_for_draft(
     workspace = str(project.get("workspace_path") or workspace_path or draft_metadata.get("workspace_path") or draft_content.get("workspace_path") or "")
     chapter_no = _chapter_no(draft.to_dict())
     paths = artifact_paths if isinstance(artifact_paths, dict) else {}
-    required = ["chapter_state_path", "fact_ledger_path", "character_state_ledger_path", "foreshadowing_graph_path", "reader_promise_ledger_path", "reward_ledger_path"]
+    required = ["chapter_state_path", "fact_ledger_path", "character_state_ledger_path", "foreshadowing_graph_path", "reader_promise_ledger_path", "reward_ledger_path", "chapter_economy_report_path"]
     missing = [key for key in required if not str(paths.get(key, "")).strip()]
     if missing:
         raise ValueError(f"longform reducer missing required artifact paths: {', '.join(missing)}")
@@ -1004,6 +1014,7 @@ def _longform_state_machine_projection(
     foreshadowing_graph = _asset_content_at(storage, artifact_paths.get("foreshadowing_graph_path", ""))
     reader_promise_ledger = _asset_content_at(storage, artifact_paths.get("reader_promise_ledger_path", ""))
     reward_ledger = _asset_content_at(storage, artifact_paths.get("reward_ledger_path", ""))
+    chapter_economy = _asset_content_at(storage, artifact_paths.get("chapter_economy_report_path", ""))
     facts = fact_ledger.get("facts", []) if isinstance(fact_ledger.get("facts", []), list) else []
     clues = foreshadowing_graph.get("clues", []) if isinstance(foreshadowing_graph.get("clues", []), list) else []
     characters = character_ledger.get("characters", []) if isinstance(character_ledger.get("characters", []), list) else []
@@ -1015,6 +1026,8 @@ def _longform_state_machine_projection(
         blocking_signals.extend(str(item.get("message") or item) for item in foreshadowing_graph.get("issues", []) if isinstance(item, dict))
     if reader_promise_ledger.get("broken_count", 0):
         blocking_signals.append(f"{reader_promise_ledger.get('broken_count', 0)} broken reader promise(s)")
+    if chapter_economy.get("blocking"):
+        blocking_signals.append(f"chapter economy blocked: {chapter_economy.get('scene_value_score', 0)}")
     machines = [
         {
             "machine": "ChapterStateReducer",
@@ -1083,6 +1096,22 @@ def _longform_state_machine_projection(
                 "evidence": [artifact_paths.get("reader_promise_ledger_path", ""), artifact_paths.get("reward_ledger_path", "")],
             },
         },
+        {
+            "machine": "ChapterEconomyReducer",
+            "state": f"{chapter_economy.get('scene_value_score', 0)}_score_{chapter_economy.get('recommendation', 'unknown')}",
+            "observed_signals": _dedupe(
+                [
+                    *[str(item.get("kind") or "") + ":" + str(item.get("signal") or "") for item in chapter_economy.get("pleasure_points", [])[:20] if isinstance(item, dict)],
+                    *[str(item) for item in rewards if str(item).strip()],
+                    *[str(item) for item in costs if str(item).strip()],
+                ]
+            )[:20],
+            "transition": {
+                "from": "previous_chapter_economy_state",
+                "to": f"chapter_{chapter_no}_economy_state_committed",
+                "evidence": [artifact_paths.get("chapter_economy_report_path", ""), artifact_paths.get("reward_ledger_path", "")],
+            },
+        },
     ]
     return {
         "domain": "longform",
@@ -1102,6 +1131,7 @@ def _longform_state_machine_projection(
                 "foreshadowing_graph",
                 "reader_promise_ledger",
                 "reward_ledger",
+                "chapter_economy_report",
             ],
             "rollback_rebuild": "rebuild canon_state_machine_snapshot from canon_state_machine_ledger and diff against previous snapshot",
         },

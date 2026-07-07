@@ -65,6 +65,8 @@ NOVEL_KG_SOURCE_TYPES = {
     "foreshadowing_graph",
     "reader_promise",
     "reader_promise_ledger",
+    "pleasure_point",
+    "chapter_economy_report",
     "motif_budget_report",
     "character_state_ledger",
     "villain_operation_plan",

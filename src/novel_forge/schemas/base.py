@@ -651,6 +651,20 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "recommendation",
         "created_at",
     ],
+    "pleasure_point": ["point_id", "project_id", "chapter_no", "kind", "signal", "evidence", "score", "created_at"],
+    "chapter_economy_report": [
+        "report_id",
+        "project_id",
+        "chapter_no",
+        "pleasure_points",
+        "reward_count",
+        "cost_count",
+        "scene_value_score",
+        "repetition_risk",
+        "water_risk",
+        "recommendation",
+        "created_at",
+    ],
     "motif_budget_report": ["report_id", "chapter_no", "motif_usage", "budget", "recommendation", "created_at"],
     "character_state_ledger": ["ledger_id", "chapter_no", "characters", "created_at"],
     "villain_operation_plan": ["operation_id", "arc_id", "visible_agent", "hidden_goal", "signatures", "operations", "created_at"],
@@ -1427,6 +1441,7 @@ def _validate_review_issue_content(content: dict[str, Any]) -> list[str]:
         "canon_plugin_conflict",
         "feedback_mutation_risk",
         "reader_promise_drop",
+        "chapter_economy_gap",
     }:
         errors.append("review_issue issue_type is not allowed")
     if content.get("severity") not in {"info", "low", "medium", "high", "critical"}:

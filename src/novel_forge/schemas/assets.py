@@ -327,6 +327,16 @@ class ReaderPromiseLedger(BaseAsset):
 
 
 @dataclass
+class PleasurePoint(BaseAsset):
+    type: str = "pleasure_point"
+
+
+@dataclass
+class ChapterEconomyReport(BaseAsset):
+    type: str = "chapter_economy_report"
+
+
+@dataclass
 class MotifBudgetReport(BaseAsset):
     type: str = "motif_budget_report"
 
@@ -1445,6 +1455,8 @@ SCHEMA_CLASSES = {
         ForeshadowingGraph,
         ReaderPromise,
         ReaderPromiseLedger,
+        PleasurePoint,
+        ChapterEconomyReport,
         MotifBudgetReport,
         CharacterStateLedger,
         VillainOperationPlan,

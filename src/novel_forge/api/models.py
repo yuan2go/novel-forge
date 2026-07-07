@@ -284,6 +284,14 @@ class QualityGateRunRequest(BaseModel):
     envelope: dict[str, Any] = Field(default_factory=dict)
 
 
+class ChapterEconomyRequest(BaseModel):
+    draft_path: str
+    reward_ledger_path: str = ""
+    chapter_plan_path: str = ""
+    workspace_path: str | None = None
+    persist_issues: bool = True
+
+
 class ProviderQualityJudgeRequest(BaseModel):
     suite_type: str = "opening_3"
     target_paths: list[str]
@@ -1670,6 +1678,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "QualityRubricPackRequest": QualityRubricPackRequest,
         "QualitySuiteRunRequest": QualitySuiteRunRequest,
         "QualityGateRunRequest": QualityGateRunRequest,
+        "ChapterEconomyRequest": ChapterEconomyRequest,
         "ProviderQualityJudgeRequest": ProviderQualityJudgeRequest,
         "CanonGraphPluginRequest": CanonGraphPluginRequest,
         "LongChainProofRunRequest": LongChainProofRunRequest,

@@ -166,6 +166,8 @@ ASSET_DIR_BY_TYPE = {
     "foreshadowing_graph": "continuity",
     "reader_promise": "continuity",
     "reader_promise_ledger": "continuity",
+    "pleasure_point": "continuity",
+    "chapter_economy_report": "reviews",
     "motif_budget_report": "continuity",
     "character_state_ledger": "continuity",
     "villain_operation_plan": "continuity",

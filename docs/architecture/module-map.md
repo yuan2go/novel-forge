@@ -79,6 +79,7 @@ This map lists current implementation areas and evidence paths. Status means cod
 | Novel KG | `modules/novel_kg/` | Typed ontology/KG workbench | Partially implemented | Graph backend depth remains partial |
 | Continuity graph | `modules/continuity_graph/service.py` | Continuity reports and graph slices | Partially implemented | Long-form consistency remains high-risk |
 | Reader Promise | `modules/reader_promise/service.py` | Project-owned promise/payoff lifecycle, per-draft ledger, broken-promise ReviewIssue/RevisionTask hook | Implemented foundation | Payoff detection is deterministic and needs calibration plus UI repair depth |
+| Chapter Economy | `modules/chapter_economy/service.py` | Pleasure point extraction, scene-value scoring, watery/repeated-payoff risk, ReviewIssue/RevisionTask hook | Implemented foundation | Heuristic detection needs provider/human calibration and guided repair UI |
 | Longform recap/stability | `modules/longform_recap/`, `modules/longform_stability/` | Long-chain state, v1 reducer into CanonGraph state-machine ledger/snapshot/diff, explicit light/formal recap cadence, stability gates | Partially implemented | Operator-configurable cadence UI and full novel-scale autonomous proof not complete |
 
 ## Quality, Publishing, And Operations

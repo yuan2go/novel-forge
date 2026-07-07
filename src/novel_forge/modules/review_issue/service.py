@@ -28,6 +28,7 @@ ISSUE_TYPES = {
     "canon_plugin_conflict",
     "feedback_mutation_risk",
     "reader_promise_drop",
+    "chapter_economy_gap",
 }
 SEVERITIES = {"info", "low", "medium", "high", "critical"}
 ACTIVE_STATUSES = {"open", "acknowledged", "in_revision"}
@@ -43,6 +44,7 @@ HIGH_BLOCKING_TYPES = {
     "quality_gate",
     "canon_plugin_conflict",
     "reader_promise_drop",
+    "chapter_economy_gap",
 }
 REVISION_EVIDENCE_CHAIN = [
     "revision_task_path",
@@ -203,6 +205,20 @@ REVISION_STRATEGY_RULES = [
         ],
         "re_review_focus": ["promise visible", "payoff or reschedule credible", "no new continuity contradiction"],
         "risk_controls": ["ledger_update_required", "bounded_story_patch", "re_review_required"],
+    },
+    {
+        "strategy_id": "raise_chapter_economy",
+        "strategy_name": "Raise chapter economy",
+        "issue_types": {"chapter_economy_gap"},
+        "keywords": {"chapter economy", "pleasure", "reward", "water", "watery", "爽点", "水文", "场景价值"},
+        "patch_scope": "low_value_scene_or_payoff_chain",
+        "instructions": [
+            "Add or strengthen a visible reward, cost, reversal, or agency beat already supported by the chapter blueprint.",
+            "Remove filler explanation that does not change plot, risk, relationship, information, or emotional state.",
+            "Avoid repeating the same payoff marker from recent chapters unless the repetition escalates stakes or cost.",
+        ],
+        "re_review_focus": ["scene value", "pleasure/cost cadence", "water risk reduced", "no canon regression"],
+        "risk_controls": ["chapter_economy_gate_required", "bounded_scene_patch", "re_review_required"],
     },
     {
         "strategy_id": "style_policy_rewrite",

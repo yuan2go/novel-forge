@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from novel_forge.api.provider_adapters import adapter_from_provider_payload, ensure_model_route_from_payload
 from novel_forge.api.routers.context import ProductRouterContext
+from novel_forge.modules.chapter_economy import create_chapter_economy_report
 from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
 from novel_forge.storage.local import LocalStorage
 
@@ -16,6 +17,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     QualityRubricPackRequest = models["QualityRubricPackRequest"]
     QualitySuiteRunRequest = models["QualitySuiteRunRequest"]
     QualityGateRunRequest = models["QualityGateRunRequest"]
+    ChapterEconomyRequest = models["ChapterEconomyRequest"]
     ProviderQualityJudgeRequest = models["ProviderQualityJudgeRequest"]
 
     @router.post("/product/quality/rubric-pack")
@@ -60,6 +62,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 quality_report_path=request.quality_report_path,
                 environment=request.environment,
                 envelope=request.envelope or None,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/quality/chapter-economy")
+    def chapter_economy_endpoint(request: ChapterEconomyRequest) -> dict:
+        try:
+            return create_chapter_economy_report(
+                LocalStorage(app_settings.root),
+                request.draft_path,
+                reward_ledger_path=request.reward_ledger_path or None,
+                chapter_plan_path=request.chapter_plan_path or None,
+                workspace_path=request.workspace_path,
+                persist_issues=request.persist_issues,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
