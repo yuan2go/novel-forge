@@ -156,6 +156,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/quality/suite",
                 "/product/quality/gate",
                 "/product/quality/chapter-economy",
+                "/product/quality/character-pressure",
                 "/product/quality/provider-judge",
                 "/product/style/health",
                 "/product/style/sample",

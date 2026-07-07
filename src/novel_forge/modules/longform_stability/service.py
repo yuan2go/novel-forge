@@ -7,6 +7,7 @@ from typing import Any
 
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.modules.character_pressure import create_character_pressure_reports
 from novel_forge.modules.canon_graph import append_canon_state_machine_ledger, build_canon_state_machine_snapshot, diff_canon_state_machine
 from novel_forge.modules.chapter_economy import create_chapter_economy_report
 from novel_forge.modules.common import resolve_path
@@ -88,6 +89,8 @@ LONGFORM_ASSET_TYPES = {
     "motif_budget_report",
     "character_state_ledger",
     "villain_operation_plan",
+    "protagonist_charm_report",
+    "antagonist_pressure_report",
     "reader_fatigue_report",
     "style_control_plan",
     "platform_adapter_report",
@@ -905,15 +908,26 @@ def create_longform_artifacts_for_draft(
         "chapter_pattern_report_path": create_chapter_pattern_report(storage, draft_path, workspace_path=workspace_path)["path"],
         "fact_ledger_path": create_fact_ledger(storage, draft_path, workspace_path=workspace_path)["path"],
         "motif_budget_report_path": create_motif_budget_report(storage, draft_path, workspace_path=workspace_path)["path"],
-        "character_state_ledger_path": create_character_state_ledger(storage, draft_path, workspace_path=workspace_path)["path"],
         "foreshadowing_graph_path": create_foreshadowing_graph(storage, draft_path, workspace_path=workspace_path)["path"],
         "reader_promise_ledger_path": build_reader_promise_ledger_for_draft(storage, draft_path, workspace_path=workspace_path)["path"],
-        "villain_operation_plan_path": create_villain_operation_plan(storage, draft_path, workspace_path=workspace_path)["path"],
         "reader_fatigue_report_path": create_reader_fatigue_report(storage, draft_path, workspace_path=workspace_path)["path"],
         "style_control_plan_path": create_style_control_plan(storage, draft_path, workspace_path=workspace_path)["path"],
         "platform_adapter_report_path": create_platform_adapter_report(storage, draft_path, workspace_path=workspace_path)["path"],
         "review_score_system_report_path": create_review_score_system_report(storage, draft_path, workspace_path=workspace_path)["path"],
     }
+    character = create_character_state_ledger(storage, draft_path, workspace_path=workspace_path)
+    villain = create_villain_operation_plan(storage, draft_path, workspace_path=workspace_path)
+    results["character_state_ledger_path"] = character["path"]
+    results["villain_operation_plan_path"] = villain["path"]
+    pressure = create_character_pressure_reports(
+        storage,
+        draft_path,
+        character_state_ledger_path=character["path"],
+        villain_operation_plan_path=villain["path"],
+        workspace_path=workspace_path,
+    )
+    results["protagonist_charm_report_path"] = pressure["protagonist_charm_report_path"]
+    results["antagonist_pressure_report_path"] = pressure["antagonist_pressure_report_path"]
     reward = create_reward_ledger(storage, draft_path, workspace_path=workspace_path)
     results["reward_ledger_path"] = reward["path"]
     results["chapter_economy_report_path"] = create_chapter_economy_report(
@@ -957,7 +971,17 @@ def reduce_longform_state_for_draft(
     workspace = str(project.get("workspace_path") or workspace_path or draft_metadata.get("workspace_path") or draft_content.get("workspace_path") or "")
     chapter_no = _chapter_no(draft.to_dict())
     paths = artifact_paths if isinstance(artifact_paths, dict) else {}
-    required = ["chapter_state_path", "fact_ledger_path", "character_state_ledger_path", "foreshadowing_graph_path", "reader_promise_ledger_path", "reward_ledger_path", "chapter_economy_report_path"]
+    required = [
+        "chapter_state_path",
+        "fact_ledger_path",
+        "character_state_ledger_path",
+        "foreshadowing_graph_path",
+        "reader_promise_ledger_path",
+        "reward_ledger_path",
+        "chapter_economy_report_path",
+        "protagonist_charm_report_path",
+        "antagonist_pressure_report_path",
+    ]
     missing = [key for key in required if not str(paths.get(key, "")).strip()]
     if missing:
         raise ValueError(f"longform reducer missing required artifact paths: {', '.join(missing)}")
@@ -1015,6 +1039,8 @@ def _longform_state_machine_projection(
     reader_promise_ledger = _asset_content_at(storage, artifact_paths.get("reader_promise_ledger_path", ""))
     reward_ledger = _asset_content_at(storage, artifact_paths.get("reward_ledger_path", ""))
     chapter_economy = _asset_content_at(storage, artifact_paths.get("chapter_economy_report_path", ""))
+    protagonist_charm = _asset_content_at(storage, artifact_paths.get("protagonist_charm_report_path", ""))
+    antagonist_pressure = _asset_content_at(storage, artifact_paths.get("antagonist_pressure_report_path", ""))
     facts = fact_ledger.get("facts", []) if isinstance(fact_ledger.get("facts", []), list) else []
     clues = foreshadowing_graph.get("clues", []) if isinstance(foreshadowing_graph.get("clues", []), list) else []
     characters = character_ledger.get("characters", []) if isinstance(character_ledger.get("characters", []), list) else []
@@ -1028,6 +1054,10 @@ def _longform_state_machine_projection(
         blocking_signals.append(f"{reader_promise_ledger.get('broken_count', 0)} broken reader promise(s)")
     if chapter_economy.get("blocking"):
         blocking_signals.append(f"chapter economy blocked: {chapter_economy.get('scene_value_score', 0)}")
+    if protagonist_charm.get("blocking"):
+        blocking_signals.append(f"protagonist charm blocked: {protagonist_charm.get('agency_score', 0)}")
+    if antagonist_pressure.get("blocking"):
+        blocking_signals.append(f"antagonist pressure blocked: {antagonist_pressure.get('pressure_score', 0)}")
     machines = [
         {
             "machine": "ChapterStateReducer",
@@ -1073,6 +1103,27 @@ def _longform_state_machine_projection(
                 "from": "previous_character_state",
                 "to": f"chapter_{chapter_no}_character_state_committed",
                 "evidence": [artifact_paths.get("character_state_ledger_path", "")],
+            },
+        },
+        {
+            "machine": "CharacterPressureReducer",
+            "state": (
+                f"agency_{protagonist_charm.get('agency_score', 0)}_"
+                f"charm_{protagonist_charm.get('charm_score', 0)}_"
+                f"pressure_{antagonist_pressure.get('pressure_score', 0)}"
+            ),
+            "observed_signals": _dedupe(
+                [
+                    *[str(item) for item in protagonist_charm.get("agency_signals", []) if str(item).strip()],
+                    *[str(item) for item in protagonist_charm.get("charm_signals", []) if str(item).strip()],
+                    *[str(item) for item in antagonist_pressure.get("pressure_signals", []) if str(item).strip()],
+                    str(antagonist_pressure.get("visible_agent", "")),
+                ]
+            )[:20],
+            "transition": {
+                "from": "previous_character_pressure_state",
+                "to": f"chapter_{chapter_no}_character_pressure_committed",
+                "evidence": [artifact_paths.get("protagonist_charm_report_path", ""), artifact_paths.get("antagonist_pressure_report_path", "")],
             },
         },
         {
@@ -1128,6 +1179,8 @@ def _longform_state_machine_projection(
                 "chapter_state",
                 "fact_ledger",
                 "character_state_ledger",
+                "protagonist_charm_report",
+                "antagonist_pressure_report",
                 "foreshadowing_graph",
                 "reader_promise_ledger",
                 "reward_ledger",

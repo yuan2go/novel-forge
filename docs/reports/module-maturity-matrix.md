@@ -30,6 +30,7 @@ Implementation status note:
 - 2026-07-08: ApprovalRequest foundation now exists as a schema-backed Permission Center asset/API with approve/reject/expire lifecycle and snapshot aggregation. Agent OS remains M3 until high-risk source/context/publish/story mutation callers migrate to ApprovalRequest refs.
 - 2026-07-08: Project Cockpit now exposes V1 artifact coverage from chapter production runs, reducer/recap/export coverage, and ApprovalRequest summaries. UI/ops maturity remains M3 because this is evidence display, not final acceptance proof.
 - 2026-07-08: Source Governance now has schema-backed SourcePolicy, SourceSyncJob, SourceSnapshot, LicenseCheckResult, and SourceRiskReport lifecycle plus R0-R4 context eligibility and ApprovalRequest hooks. It remains M3 until Context Builder/MKAOS/material importers consume eligibility reports everywhere.
+- 2026-07-08: Character pressure now has schema-backed ProtagonistCharmReport and AntagonistPressureReport assets, a quality-loop step, chapter-bus output paths, longform reducer projection, and ReviewIssue/RevisionTask repair hooks. Maturity remains M2 until provider/human calibration and guided repair UX are added.
 
 ## Core OS Layer
 
@@ -73,8 +74,8 @@ Implementation status note:
 | Enhancement | Reader Promise Ledger | Track promises and payoff | `ReaderPromise`/`ReaderPromiseLedger` assets, service/API, longform reducer, ReviewIssue/RevisionTask hook exist | M2 | Payoff detection is deterministic; provider/human calibration and cockpit repair workflow depth remain | Broken reader trust if future callers bypass ledger | P1 | Calibrate after character/pressure gates |
 | Enhancement | Pleasure Point Ledger | Manage爽点 cadence | `PleasurePoint` and `ChapterEconomyReport` foundation exists with RewardLedger and quality loop integration | M2 | Taxonomy/provider calibration and cockpit repair workflow depth remain | Flat chapters if future callers bypass gate | P1 | Calibrate after character/pressure gates |
 | Enhancement | Toxic Point & Drop-off Engine | Detect毒点 and drop-off | Feedback/dropoff/quality foundations exist | M2 | Deterministic toxic-point review rule set incomplete | Reader churn | P1 | Add toxic-point fixtures to Review OS |
-| Enhancement | Protagonist Charm Engine | Track agency, competence, desire, appeal | Character assets and review rules can host it | M1 | No first-class charm score/report | Weak protagonist | P1 | Add character charm report after v1 loop |
-| Enhancement | Antagonist Pressure Engine | Track villain pressure and threat | VillainOperationPlan exists | M2 | Not integrated into chapter quality trend | Low tension | P1 | Tie villain plan to chapter blueprint/review |
+| Enhancement | Protagonist Charm Engine | Track agency, competence, desire, appeal | `ProtagonistCharmReport` foundation exists with quality-loop, longform reducer, chapter-bus, ReviewIssue, and RevisionTask hooks | M2 | Heuristic scoring needs provider/human calibration and guided repair UI | Weak protagonist if future callers bypass the gate | P1 | Calibrate after mobile reading gate |
+| Enhancement | Antagonist Pressure Engine | Track villain pressure and threat | `AntagonistPressureReport` foundation exists with VillainOperationPlan evidence, quality-loop, longform reducer, chapter-bus, ReviewIssue, and RevisionTask hooks | M2 | Heuristic scoring needs provider/human calibration and guided repair UI | Low tension if future callers bypass the gate | P1 | Calibrate after mobile reading gate |
 | Enhancement | Chapter Economy Engine | Manage scene value, progress, payoff | Chapter economy report, content quality loop step, longform reducer, API route, and ReviewIssue/RevisionTask hook exist | M2 | Heuristic calibration and guided repair UI remain | Water chapters if future callers bypass gate | P1 | Calibrate with provider/human examples |
 | Enhancement | Retention & Payoff Engine | Track hooks, payoff, retention | Platform retention risk and reward ledger exist | M2 | Not a chapter cadence gate | Poor追读 | P1 | Add first 10 chapter retention fixtures |
 | Enhancement | Mobile Reading Experience Engine | Mobile paragraph rhythm and scannability | Blueprint only plus review fields | M1 | No dedicated report/gate | Hard-to-read mobile prose | P1 | Add mobile readability heuristic |
@@ -102,7 +103,7 @@ Implementation status note:
 ## Highest-Leverage Next Order
 
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
-2. Source governance lifecycle and generation-context eligibility.
+2. Mobile Reading Experience Gate so scanability is not only embedded in readable prose checks.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Extend v1 export package evidence to 30 chapters during final unified acceptance.
-5. Source governance lifecycle.
+5. Provider/human calibration for reader promise, chapter economy, and character pressure gates.

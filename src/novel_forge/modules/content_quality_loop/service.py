@@ -5,6 +5,7 @@ from typing import Any
 
 from novel_forge.core.constants import ASSET_DIR_BY_TYPE
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.modules.character_pressure import create_character_pressure_reports
 from novel_forge.modules.chapter_economy import create_chapter_economy_report
 from novel_forge.modules.canon_graph import run_canon_graph_plugin
 from novel_forge.modules.common import resolve_path
@@ -167,6 +168,19 @@ def run_content_quality_loop(
     review_issue_paths.extend(economy_step["review_issue_paths"])
     if economy.get("revision_task_path"):
         revision_task_paths.append(str(economy["revision_task_path"]))
+
+    character_pressure = create_character_pressure_reports(
+        storage,
+        _display_path(storage.root, target_file),
+        workspace_path=workspace_path,
+        persist_issues=persist_issues,
+    )
+    character_pressure_step = _record_step("character_pressure_gate", character_pressure)
+    steps.append(character_pressure_step)
+    evidence_paths.extend(character_pressure_step["paths"])
+    review_issue_paths.extend(character_pressure_step["review_issue_paths"])
+    if character_pressure.get("revision_task_path"):
+        revision_task_paths.append(str(character_pressure["revision_task_path"]))
 
     resolved_rubric_path = str(rubric_path or "")
     if not resolved_rubric_path:
@@ -550,7 +564,15 @@ def _status_from_result(result: dict[str, Any], content: dict[str, Any]) -> str:
 
 
 def _paths_from_result(result: dict[str, Any]) -> list[str]:
-    keys = ["path", "run_path", "acceptance_report_path", "style_rewrite_task_path", "revision_task_path"]
+    keys = [
+        "path",
+        "run_path",
+        "acceptance_report_path",
+        "style_rewrite_task_path",
+        "revision_task_path",
+        "protagonist_charm_report_path",
+        "antagonist_pressure_report_path",
+    ]
     values = [str(result.get(key) or "") for key in keys]
     for key in ["model_judge_result_paths", "review_issues"]:
         if isinstance(result.get(key), list):

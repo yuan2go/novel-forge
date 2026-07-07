@@ -141,6 +141,8 @@ def start_chapter_production(
                 "chapter_state_path": "",
                 "fact_ledger_path": "",
                 "character_state_ledger_path": "",
+                "protagonist_charm_report_path": "",
+                "antagonist_pressure_report_path": "",
                 "foreshadowing_graph_path": "",
                 "reader_promise_ledger_path": "",
                 "reward_ledger_path": "",
@@ -688,6 +690,8 @@ def _create_canon_longform_update(storage: LocalStorage, data: dict[str, Any]) -
         "chapter_state_path": artifact_paths.get("chapter_state_path", ""),
         "fact_ledger_path": artifact_paths.get("fact_ledger_path", ""),
         "character_state_ledger_path": artifact_paths.get("character_state_ledger_path", ""),
+        "protagonist_charm_report_path": artifact_paths.get("protagonist_charm_report_path", ""),
+        "antagonist_pressure_report_path": artifact_paths.get("antagonist_pressure_report_path", ""),
         "foreshadowing_graph_path": artifact_paths.get("foreshadowing_graph_path", ""),
         "reader_promise_ledger_path": artifact_paths.get("reader_promise_ledger_path", ""),
         "reward_ledger_path": artifact_paths.get("reward_ledger_path", ""),
@@ -833,6 +837,8 @@ def _export_provenance(outputs: dict[str, Any], *, draft_id: str, draft_path: st
         "chapter_state_path": str(outputs.get("chapter_state_path") or ""),
         "fact_ledger_path": str(outputs.get("fact_ledger_path") or ""),
         "character_state_ledger_path": str(outputs.get("character_state_ledger_path") or ""),
+        "protagonist_charm_report_path": str(outputs.get("protagonist_charm_report_path") or ""),
+        "antagonist_pressure_report_path": str(outputs.get("antagonist_pressure_report_path") or ""),
         "foreshadowing_graph_path": str(outputs.get("foreshadowing_graph_path") or ""),
         "reader_promise_ledger_path": str(outputs.get("reader_promise_ledger_path") or ""),
         "reward_ledger_path": str(outputs.get("reward_ledger_path") or ""),
@@ -852,11 +858,20 @@ def _export_operator_checklist(outputs: dict[str, Any], *, export_path: str, exp
         ("revision_completed", bool(outputs.get("revision_plan_path") and outputs.get("final_draft_path")), {"revision_plan_path": outputs.get("revision_plan_path", ""), "final_draft_path": outputs.get("final_draft_path", "")}),
         (
             "canon_longform_updated",
-            bool(outputs.get("chapter_state_path") and outputs.get("reader_promise_ledger_path") and outputs.get("chapter_economy_report_path") and outputs.get("canon_state_machine_snapshot_path")),
+            bool(
+                outputs.get("chapter_state_path")
+                and outputs.get("reader_promise_ledger_path")
+                and outputs.get("chapter_economy_report_path")
+                and outputs.get("protagonist_charm_report_path")
+                and outputs.get("antagonist_pressure_report_path")
+                and outputs.get("canon_state_machine_snapshot_path")
+            ),
             {
                 "chapter_state_path": outputs.get("chapter_state_path", ""),
                 "reader_promise_ledger_path": outputs.get("reader_promise_ledger_path", ""),
                 "chapter_economy_report_path": outputs.get("chapter_economy_report_path", ""),
+                "protagonist_charm_report_path": outputs.get("protagonist_charm_report_path", ""),
+                "antagonist_pressure_report_path": outputs.get("antagonist_pressure_report_path", ""),
                 "canon_state_machine_snapshot_path": outputs.get("canon_state_machine_snapshot_path", ""),
             },
         ),
@@ -919,6 +934,8 @@ V1_SEQUENCE_REQUIRED_OUTPUTS = [
     "chapter_state_path",
     "fact_ledger_path",
     "character_state_ledger_path",
+    "protagonist_charm_report_path",
+    "antagonist_pressure_report_path",
     "foreshadowing_graph_path",
     "reader_promise_ledger_path",
     "reward_ledger_path",

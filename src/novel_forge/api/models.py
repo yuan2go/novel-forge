@@ -292,6 +292,14 @@ class ChapterEconomyRequest(BaseModel):
     persist_issues: bool = True
 
 
+class CharacterPressureRequest(BaseModel):
+    draft_path: str
+    character_state_ledger_path: str = ""
+    villain_operation_plan_path: str = ""
+    workspace_path: str | None = None
+    persist_issues: bool = True
+
+
 class ProviderQualityJudgeRequest(BaseModel):
     suite_type: str = "opening_3"
     target_paths: list[str]
@@ -1679,6 +1687,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "QualitySuiteRunRequest": QualitySuiteRunRequest,
         "QualityGateRunRequest": QualityGateRunRequest,
         "ChapterEconomyRequest": ChapterEconomyRequest,
+        "CharacterPressureRequest": CharacterPressureRequest,
         "ProviderQualityJudgeRequest": ProviderQualityJudgeRequest,
         "CanonGraphPluginRequest": CanonGraphPluginRequest,
         "LongChainProofRunRequest": LongChainProofRunRequest,

@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from novel_forge.api.provider_adapters import adapter_from_provider_payload, ensure_model_route_from_payload
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.chapter_economy import create_chapter_economy_report
+from novel_forge.modules.character_pressure import create_character_pressure_reports
 from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
 from novel_forge.storage.local import LocalStorage
 
@@ -18,6 +19,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     QualitySuiteRunRequest = models["QualitySuiteRunRequest"]
     QualityGateRunRequest = models["QualityGateRunRequest"]
     ChapterEconomyRequest = models["ChapterEconomyRequest"]
+    CharacterPressureRequest = models["CharacterPressureRequest"]
     ProviderQualityJudgeRequest = models["ProviderQualityJudgeRequest"]
 
     @router.post("/product/quality/rubric-pack")
@@ -76,6 +78,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 request.draft_path,
                 reward_ledger_path=request.reward_ledger_path or None,
                 chapter_plan_path=request.chapter_plan_path or None,
+                workspace_path=request.workspace_path,
+                persist_issues=request.persist_issues,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/quality/character-pressure")
+    def character_pressure_endpoint(request: CharacterPressureRequest) -> dict:
+        try:
+            return create_character_pressure_reports(
+                LocalStorage(app_settings.root),
+                request.draft_path,
+                character_state_ledger_path=request.character_state_ledger_path or None,
+                villain_operation_plan_path=request.villain_operation_plan_path or None,
                 workspace_path=request.workspace_path,
                 persist_issues=request.persist_issues,
             )

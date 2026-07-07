@@ -57,6 +57,7 @@ class ContentQualityLoopTests(unittest.TestCase):
                     "canon_graph_plugin_gate",
                     "readable_prose_gate",
                     "chapter_economy_gate",
+                    "character_pressure_gate",
                     "quality_rubric_pack",
                     "quality_suite",
                     "provider_quality_judge",

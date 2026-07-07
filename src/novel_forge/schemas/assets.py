@@ -337,6 +337,16 @@ class ChapterEconomyReport(BaseAsset):
 
 
 @dataclass
+class ProtagonistCharmReport(BaseAsset):
+    type: str = "protagonist_charm_report"
+
+
+@dataclass
+class AntagonistPressureReport(BaseAsset):
+    type: str = "antagonist_pressure_report"
+
+
+@dataclass
 class MotifBudgetReport(BaseAsset):
     type: str = "motif_budget_report"
 
@@ -1457,6 +1467,8 @@ SCHEMA_CLASSES = {
         ReaderPromiseLedger,
         PleasurePoint,
         ChapterEconomyReport,
+        ProtagonistCharmReport,
+        AntagonistPressureReport,
         MotifBudgetReport,
         CharacterStateLedger,
         VillainOperationPlan,

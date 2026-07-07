@@ -55,6 +55,8 @@ Status legend:
 | CharacterProfile | 人物档案 | yes as `CharacterCard` | `CharacterCard` | state/voice separation | usable | Character Engine | P0 |
 | CharacterState | 人物状态 | yes | `CharacterStateLedger`, `ChapterStatePackage` | query/update reducer | usable foundation | Long-form OS | P0 |
 | CharacterArc | 人物弧光 | partial | `ArcPlan`, CharacterCard fields | standalone arc state | partial | Outline/Long-form | P1 |
+| ProtagonistCharmReport | 主角魅力/能动性报告 | yes-foundation | `ProtagonistCharmReport`, `modules/character_pressure/service.py`, quality loop, longform reducer | provider/human calibration and guided repair UI | create/report gate lifecycle with ReviewIssue/RevisionTask hook | Character Engine, Web Novel Enhancement, Review | P1 |
+| AntagonistPressureReport | 反派/外部压迫报告 | yes-foundation | `AntagonistPressureReport`, `modules/character_pressure/service.py`, VillainOperationPlan evidence, quality loop, longform reducer | provider/human calibration and guided repair UI | create/report gate lifecycle with ReviewIssue/RevisionTask hook | Character Engine, Web Novel Enhancement, Review | P1 |
 | RelationshipEdge | 关系边 | partial | Novel KG edges/content | typed relationship state machine | partial | Novel KG, Canon | P1 |
 | VoiceProfile | 口吻档案 | partial | `StyleProfile`, character fields | per-character voice model | embedded | Style/Character | P1 |
 | CanonFact | 正史事实 | partial | `FactLedger`, `CanonDatabase`, v1 `canon_state_machine_ledger` projection | confidence/span can deepen | reducer-backed foundation | Canon/Long-form | P0 |
@@ -113,10 +115,10 @@ Status legend:
 
 1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 2. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
-3. Character charm and antagonist pressure lifecycle: needed next so agency/pressure quality is not only embedded in prose/review notes.
+3. MobileReadingReport or equivalent lifecycle: needed next so mobile scanability is not only a field inside readable prose checks.
 4. Readable prose/page-turning/mobile review models: needed after `chapter-blueprint-contract-v1` so draft quality is not limited by thin prose gates.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
-6. `ReaderPromise` calibration and cockpit depth: foundation exists, but payoff detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.
+6. `ReaderPromise`, `ChapterEconomyReport`, `ProtagonistCharmReport`, and `AntagonistPressureReport` calibration and cockpit depth: foundations exist, but detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.
 
 ## Notes
 

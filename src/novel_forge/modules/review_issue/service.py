@@ -29,6 +29,8 @@ ISSUE_TYPES = {
     "feedback_mutation_risk",
     "reader_promise_drop",
     "chapter_economy_gap",
+    "protagonist_charm_drop",
+    "antagonist_pressure_drop",
 }
 SEVERITIES = {"info", "low", "medium", "high", "critical"}
 ACTIVE_STATUSES = {"open", "acknowledged", "in_revision"}
@@ -45,6 +47,8 @@ HIGH_BLOCKING_TYPES = {
     "canon_plugin_conflict",
     "reader_promise_drop",
     "chapter_economy_gap",
+    "protagonist_charm_drop",
+    "antagonist_pressure_drop",
 }
 REVISION_EVIDENCE_CHAIN = [
     "revision_task_path",
@@ -219,6 +223,20 @@ REVISION_STRATEGY_RULES = [
         ],
         "re_review_focus": ["scene value", "pleasure/cost cadence", "water risk reduced", "no canon regression"],
         "risk_controls": ["chapter_economy_gate_required", "bounded_scene_patch", "re_review_required"],
+    },
+    {
+        "strategy_id": "restore_character_charm_pressure",
+        "strategy_name": "Restore character charm and antagonist pressure",
+        "issue_types": {"protagonist_charm_drop", "antagonist_pressure_drop"},
+        "keywords": {"agency", "charm", "antagonist", "villain", "pressure", "主角", "反派", "压力", "主动性"},
+        "patch_scope": "character_action_or_opposition_beat",
+        "instructions": [
+            "Give the protagonist a visible choice, competent action, or costly value expression instead of passive observation.",
+            "Make the antagonist or proxy pressure change the scene state through a move, threat, constraint, or cost.",
+            "Keep the repair aligned with current character state, villain operation evidence, and canon constraints.",
+        ],
+        "re_review_focus": ["protagonist agency", "character charm", "antagonist pressure", "no canon regression"],
+        "risk_controls": ["character_state_check", "villain_operation_check", "bounded_scene_patch", "re_review_required"],
     },
     {
         "strategy_id": "style_policy_rewrite",
