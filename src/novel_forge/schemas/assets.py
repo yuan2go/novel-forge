@@ -724,6 +724,21 @@ class ProjectWorkspaceState(BaseAsset):
 
 
 @dataclass
+class PortfolioProject(BaseAsset):
+    type: str = "portfolio_project"
+
+
+@dataclass
+class BookPotentialScore(BaseAsset):
+    type: str = "book_potential_score"
+
+
+@dataclass
+class ResourceAllocationPlan(BaseAsset):
+    type: str = "resource_allocation_plan"
+
+
+@dataclass
 class ChangeImpactReport(BaseAsset):
     type: str = "change_impact_report"
 
@@ -1548,6 +1563,9 @@ SCHEMA_CLASSES = {
         TaskDeadLetter,
         BatchTaskItem,
         ProjectWorkspaceState,
+        PortfolioProject,
+        BookPotentialScore,
+        ResourceAllocationPlan,
         ChangeImpactReport,
         AgentContract,
         AgentTask,

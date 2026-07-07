@@ -465,6 +465,27 @@ class FeedbackMutationApplyRequest(BaseModel):
     envelope: dict[str, Any] = Field(default_factory=dict)
 
 
+class PortfolioProjectRequest(BaseModel):
+    title: str
+    project_ids: list[str]
+    portfolio_id: str = ""
+    strategy: dict[str, Any] = Field(default_factory=dict)
+
+
+class PortfolioScoreRequest(BaseModel):
+    portfolio_ref: str = ""
+    project_ids: list[str] = Field(default_factory=list)
+    weights: dict[str, float] = Field(default_factory=dict)
+
+
+class PortfolioAllocationRequest(BaseModel):
+    portfolio_ref: str = ""
+    project_ids: list[str] = Field(default_factory=list)
+    provider_budget: float = 0.0
+    max_parallel_books: int = 2
+    daily_chapter_goal: int = 1
+
+
 class CreativeAssetCreateRequest(BaseModel):
     asset_type: str
     title: str
@@ -1733,6 +1754,9 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "FeedbackMutationProposalRequest": FeedbackMutationProposalRequest,
         "FeedbackMutationResolveRequest": FeedbackMutationResolveRequest,
         "FeedbackMutationApplyRequest": FeedbackMutationApplyRequest,
+        "PortfolioProjectRequest": PortfolioProjectRequest,
+        "PortfolioScoreRequest": PortfolioScoreRequest,
+        "PortfolioAllocationRequest": PortfolioAllocationRequest,
         "CreativeAssetCreateRequest": CreativeAssetCreateRequest,
         "StyleDecomposeRequest": StyleDecomposeRequest,
         "StyleReviewRequest": StyleReviewRequest,

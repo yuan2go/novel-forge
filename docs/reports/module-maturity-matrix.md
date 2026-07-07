@@ -45,7 +45,7 @@ Implementation status note:
 | Core OS | Story Bible / Long-form OS | Canon, timeline, characters, foreshadowing, promises, long review | Canon graph, Novel KG, longform ledgers, v1 reducer, and explicit light/formal recap cadence exist | M3 | Promise lifecycle, operator cadence configuration, UI depth, and final multi-chapter proof remain deferred | Long-form continuity drift if reducer/recap evidence is skipped | P0 | Harden export package, then expose reducer/recap status in dashboard data |
 | Core OS | Quality / Review / Eval OS | Blocking quality gates and review workflow | ReviewIssue, ReviewReport, Eval Center, Quality Eval 2.0, provider judge foundations, and readable prose gate exist | M3 | Provider/human calibration and final full-loop enforcement still pending | Low-quality chapters can advance if callers bypass content quality loop | P0 | Next map ReviewIssue types to revision strategies and re-review evidence |
 | Core OS | Ops / Trace / Cost OS | OS Envelope, trace, cost, model logs, audit | TraceSpan, ModelCallLog, CostLedger, BudgetPolicy, audit log and dashboards exist | M3 | Blueprint `OSEnvelope` not a standalone asset; v1 trace coverage assertions needed | Bypass is hard to audit | P0 | Assert envelope/trace/cost on v1 acceptance |
-| Core OS | Portfolio OS | Multi-book scoring, allocation, similarity, pause/kill gates | Multi-book cockpit and cost/quality dashboards foundation exist | M2 | PortfolioProject, BookPotentialScore, ResourceAllocationPlan, CrossBookSimilarityReport missing | Premature parallel production | P3 | Defer until single-book loop is stable |
+| Core OS | Portfolio OS | Multi-book scoring, allocation, similarity, pause/kill gates | PortfolioProject, BookPotentialScore, ResourceAllocationPlan, multi-book cockpit, and cost/quality dashboards foundation exist | M3 | CrossBookSimilarityReport and pause/kill gates missing | Premature parallel production | P3 | Add cross-book similarity guard next |
 | Core OS | Security / Sandbox OS | Untrusted-source sandbox, prompt injection guard, security logs | Permission center, tool gateway, provider policy, source isolation, audit logs exist | M2 | Full external-source sandbox and SecurityAuditLog lifecycle incomplete | Malicious source pollution | P1 | Add security audit around connectors/importers |
 
 ## Engine Layer
@@ -105,7 +105,7 @@ Implementation status note:
 ## Highest-Leverage Next Order
 
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
-2. Portfolio project model so multi-book scheduling has an explicit boundary without contaminating v1 book state.
+2. Cross-book similarity guard so portfolio scheduling cannot share context or assets without contamination evidence.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.
 4. Extend v1 export package evidence to 30 chapters during final unified acceptance.
 5. Provider/human calibration for reader promise, chapter economy, character pressure, and mobile reading gates.

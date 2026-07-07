@@ -268,17 +268,17 @@ Current evidence:
 - Series / Universe Manager.
 - Cost/quality dashboard.
 
-当前完成度: 20%.
+当前完成度: 28%.
 
 阻塞项:
-- PortfolioProject, BookPotentialScore, ResourceAllocationPlan, CrossBookSimilarityReport missing.
+- PortfolioProject, BookPotentialScore, and ResourceAllocationPlan now exist as schema-backed non-dispatching planning assets.
+- CrossBookSimilarityReport and cross-book contamination guard are still missing.
 - Phase 1 single-book loop not yet proven.
 
 推荐切片:
-- Per-book memory isolation.
+- Cross-book similarity report and contamination gate.
 - Book-level scheduler using existing Agent scheduler.
 - Cost/quality dashboard by project.
-- Cross-book similarity report.
 
 验收标准:
 - Two local projects run without context/memory contamination.
@@ -319,7 +319,7 @@ Current evidence:
 - Real platform accounts/APIs may require credentials and manual policy decisions.
 
 推荐切片:
-- Portfolio project model and book-level resource boundary.
+- Cross-book similarity guard before enabling deeper multi-book scheduling.
 - ApprovalRequest caller migration for high-risk platform publish/story mutation decisions.
 - Full regression suite for release/publish gates.
 

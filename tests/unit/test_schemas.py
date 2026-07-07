@@ -32,6 +32,9 @@ from novel_forge.schemas import (
     OutlineVersion,
     ProjectMetricSnapshot,
     ProductionGovernanceReport,
+    PortfolioProject,
+    BookPotentialScore,
+    ResourceAllocationPlan,
     PublishGateReport,
     RagQualityReport,
     ProjectWorkspaceState,
@@ -55,7 +58,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 278)
+        self.assertEqual(len(SCHEMA_CLASSES), 281)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("source_policy", SCHEMA_CLASSES)
         self.assertIn("source_sync_job", SCHEMA_CLASSES)
@@ -64,6 +67,9 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("source_risk_report", SCHEMA_CLASSES)
         self.assertIn("source_chunk", SCHEMA_CLASSES)
         self.assertIn("asset_collection", SCHEMA_CLASSES)
+        self.assertIn("portfolio_project", SCHEMA_CLASSES)
+        self.assertIn("book_potential_score", SCHEMA_CLASSES)
+        self.assertIn("resource_allocation_plan", SCHEMA_CLASSES)
         self.assertIn("knowledge_usage_binding", SCHEMA_CLASSES)
         self.assertIn("rule_card", SCHEMA_CLASSES)
         self.assertIn("template_card", SCHEMA_CLASSES)

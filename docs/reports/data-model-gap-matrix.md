@@ -93,9 +93,9 @@ Status legend:
 | RevisionPlan | 修订计划 | yes | `RevisionPlan` now carries `revision_strategy_plan`, `required_output_evidence`, and `re_review_focus` | real improvement metrics and provider/human calibration | usable | Revision | P0 |
 | RevisionDraft | 修订稿 | partial | `DraftVersion`, `EditorPatch` | standalone revised draft asset | partial | Revision/Editor | P0 |
 | RevisionDiff | 修订差异 | yes | `DraftDiffReport`, `EditorPatch` | issue-to-diff verification against strategy ids | usable | Revision/Editor | P1 |
-| PortfolioProject | 项目组合项 | no | Not found | portfolio metadata/lifecycle | missing | Portfolio OS | P3 |
-| BookPotentialScore | 单书潜力评分 | no | Not found | scoring dimensions/evidence | missing | Portfolio OS | P3 |
-| ResourceAllocationPlan | 资源分配计划 | no | Not found | capacity/budget/priority | missing | Portfolio OS | P3 |
+| PortfolioProject | 项目组合项 | yes-foundation | `PortfolioProject`, `modules/portfolio_os/service.py` | pause/kill lifecycle depth | active/planning asset | Portfolio OS | P3 |
+| BookPotentialScore | 单书潜力评分 | yes-foundation | `BookPotentialScore`, `modules/portfolio_os/service.py` | richer market/reader calibration | generated score asset | Portfolio OS | P3 |
+| ResourceAllocationPlan | 资源分配计划 | yes-foundation | `ResourceAllocationPlan`, `modules/portfolio_os/service.py` | automatic dispatch approval route | non-dispatching plan asset | Portfolio OS | P3 |
 | CrossBookSimilarityReport | 跨书相似报告 | no | Not found | similarity vectors/evidence | missing | Portfolio OS | P3 |
 | AgentTask | Agent 任务 | yes | `AgentTask` | business v1 task coverage | usable | Agent OS | P0 |
 | AgentRun | Agent 运行 | yes | `AgentRun` | provider hard-stop coverage per op | usable | Agent OS | P0 |
@@ -115,7 +115,7 @@ Status legend:
 
 1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 2. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
-3. Portfolio project models: needed next so multi-book scheduling, cost/quality rollups, and cross-book isolation do not reuse single-book project state implicitly.
+3. CrossBookSimilarityReport: needed next so portfolio scheduling can detect premise/style/mechanism overlap before allowing shared context or assets.
 4. Readable prose/page-turning/mobile review models: foundations exist for readable prose and mobile reading; PageTurningReport and AntiAIReport can deepen provider/human calibration later.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
 6. `ReaderPromise`, `ChapterEconomyReport`, `ProtagonistCharmReport`, `AntagonistPressureReport`, and `MobileReadingReport` calibration and cockpit depth: foundations exist, but detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.
