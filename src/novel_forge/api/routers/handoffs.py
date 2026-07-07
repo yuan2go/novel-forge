@@ -29,6 +29,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     SourceSnapshotRequest = models['SourceSnapshotRequest']
     SourceSyncJobRequest = models['SourceSyncJobRequest']
     SourceRefreshReportRequest = models['SourceRefreshReportRequest']
+    SourceConnectorExecutionPlanRequest = models['SourceConnectorExecutionPlanRequest']
     SourceContextEligibilityRequest = models['SourceContextEligibilityRequest']
     HandoffOutputRequest = models['HandoffOutputRequest']
     HandoffAcceptanceRequest = models['HandoffAcceptanceRequest']
@@ -106,6 +107,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def create_source_refresh_report_endpoint(request: SourceRefreshReportRequest) -> dict[str, Any]:
         try:
             return create_source_refresh_report(LocalStorage(app_settings.root), _model_data(request))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/sources/connector-execution-plan")
+    def create_source_connector_execution_plan_endpoint(request: SourceConnectorExecutionPlanRequest) -> dict[str, Any]:
+        try:
+            return plan_source_connector_execution(LocalStorage(app_settings.root), _model_data(request))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

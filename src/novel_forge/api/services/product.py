@@ -32,6 +32,7 @@ from novel_forge.modules.source_intake import (
     evaluate_source_context_eligibility,
     list_github_knowledge_sources,
     list_source_policies,
+    plan_source_connector_execution,
 )
 from novel_forge.agents import enforce_agent_action
 from novel_forge.api.health import assemble_project_health_report

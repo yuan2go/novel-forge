@@ -17,6 +17,7 @@ from novel_forge.modules.source_intake import (
     evaluate_source_context_eligibility,
     list_github_knowledge_sources,
     list_source_policies,
+    plan_source_connector_execution,
 )
 from novel_forge.schemas import validate_common_fields
 from novel_forge.storage.local import LocalStorage
@@ -255,6 +256,78 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertIn("content_hash_drift", codes)
             self.assertIn("source_sync_job_missing", codes)
             self.assertIn("invalidate downstream source-derived material", " ".join(content["next_actions"]))
+
+    def test_source_connector_execution_plan_is_approval_gated_and_no_network_by_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(storage, {"source_ref": "local-corpus", "risk_tier": "R1", "project_id": "source-p3"})
+            risk = create_source_risk_report(storage, {"source_ref": "local-corpus", "source_policy_path": policy["path"], "project_id": "source-p3"})
+            snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content": "manifest metadata",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-p3",
+                },
+            )
+            refresh = create_source_refresh_report(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "risk_report_path": risk["path"],
+                    "snapshot_path": snapshot["path"],
+                    "project_id": "source-p3",
+                },
+            )
+
+            plan = plan_source_connector_execution(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "connector_id": "local_manifest_connector",
+                    "source_refresh_report_path": refresh["path"],
+                    "environment": "production",
+                    "execute": True,
+                    "project_id": "source-p3",
+                },
+            )
+            receipt = plan["execution_receipt"]
+            sync_content = plan["sync_job"]["asset"]["content"]
+
+            self.assertEqual(plan["status"], "approval_required")
+            self.assertFalse(plan["allowed"])
+            self.assertEqual(plan["approval_request"]["asset"]["type"], "approval_request")
+            self.assertEqual(plan["approval_request"]["asset"]["content"]["action"], "approve_source_connector_execution")
+            self.assertEqual(sync_content["status"], "approval_required")
+            self.assertEqual(sync_content["sync_mode"], "connector_execution_plan")
+            self.assertFalse(receipt["execution_performed"])
+            self.assertFalse(receipt["network_access_used"])
+            self.assertFalse(receipt["file_access_used"])
+            self.assertEqual(receipt["connector_execution"]["execution_boundary"], "plan_only_no_connector_invocation")
+
+    def test_source_connector_execution_plan_blocks_unknown_connector(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            plan = plan_source_connector_execution(
+                storage,
+                {
+                    "source_ref": "external-source",
+                    "connector_id": "unreviewed-network-crawler",
+                    "environment": "production",
+                    "execute": True,
+                    "project_id": "source-p4",
+                },
+            )
+
+            self.assertEqual(plan["status"], "blocked")
+            self.assertFalse(plan["allowed"])
+            self.assertEqual(plan["sync_job"]["asset"]["content"]["status"], "blocked")
+            self.assertEqual(plan["execution_receipt"]["status"], "blocked_connector_not_allowed")
+            self.assertFalse(plan["execution_receipt"]["connector_execution"]["allowlisted"])
+            self.assertFalse(plan["approval_request"])
 
     def test_high_risk_source_stays_evidence_only_and_creates_blocking_production_approval(self):
         with tempfile.TemporaryDirectory() as tmp:

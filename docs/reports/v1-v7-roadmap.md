@@ -47,7 +47,7 @@ Current evidence:
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
-- Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job/refresh-report assets and context eligibility evaluation; MKAOS knowledge/material seams plus analysis conversion and Context Builder selected/rejected summaries consume eligibility evidence, while Context Bundle writes knowledge/material usage feedback and lineage governance emits reviewable invalidation recommendations.
+- Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job/refresh-report assets and context eligibility evaluation; MKAOS knowledge/material seams plus analysis conversion and Context Builder selected/rejected summaries consume eligibility evidence, while Context Bundle writes knowledge/material usage feedback, lineage governance emits reviewable invalidation recommendations, and connector execution plans are ApprovalRequest-gated with no side effects.
 - ReaderPromise, PleasurePoint/ChapterEconomy, Character Pressure, and Mobile Reading lifecycles now have schema-backed local foundations and draft-to-longform or chapter-bus integration; payoff, scene-value, agency, pressure, and mobile rhythm detection remain deterministic and need calibration plus final multi-chapter proof.
 
 推荐切片:
@@ -186,7 +186,7 @@ Current evidence:
 阻塞项:
 - Reviewable candidates vs approved assets must remain strict.
 - Usage feedback and lifecycle states are not uniformly mature.
-- Source governance lifecycle foundation exists; caller migration covers MKAOS/material/analysis/context seams, audit-only refresh reports exist, Context Bundle usage feedback exists, and usage/source-refresh governance is reviewable, while connector execution and guarded source diff repair remain partial.
+- Source governance lifecycle foundation exists; caller migration covers MKAOS/material/analysis/context seams, audit-only refresh reports exist, Context Bundle usage feedback exists, usage/source-refresh governance is reviewable, and connector execution plans are ApprovalRequest-gated; guarded source diff repair remains partial.
 
 推荐切片:
 - Approved/rejected asset lifecycle.
@@ -279,7 +279,7 @@ Current evidence:
 - Phase 1 single-book loop not yet proven.
 
 推荐切片:
-- Approval-gated source connector execution and source diff repair.
+- Source diff repair and downstream invalidation/regeneration planning.
 - Book-level scheduler using existing Agent scheduler.
 - Cost/quality dashboard by project.
 

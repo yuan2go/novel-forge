@@ -18,9 +18,9 @@ Status legend:
 
 | 数据模型 | 蓝图用途 | 当前是否存在 | 当前实现位置 | 缺失字段 | 生命周期状态 | 关联模块 | 优先级 |
 |---|---|---|---|---|---|---|---|
-| Source | 外部/内部来源登记 | partial | `SourceDocument`, importer metadata, Source Governance assets | connector execution diff repair | evidence asset plus governance/refresh/usage-invalidation foundation | MKAOS ingestion, source governance | P0 |
+| Source | 外部/内部来源登记 | partial | `SourceDocument`, importer metadata, Source Governance assets | source diff repair and guarded downstream apply | evidence asset plus governance/refresh/usage-invalidation/connector-plan foundation | MKAOS ingestion, source governance | P0 |
 | SourcePolicy | 来源使用规则 | yes-foundation | `SourcePolicy`, `modules/source_intake/service.py`; consumed by `modules/mkaos/service.py`, `modules/materials/service.py`, `modules/analysis/service.py`, and `modules/context_builder/service.py` | connector-level expiry/renewal policy and per-stage budget | create/evaluate asset lifecycle plus MKAOS/material/analysis/context caller contract | Context Builder, MKAOS, Materials, Analysis | P0 |
-| SourceSyncJob | 来源同步任务 | yes-foundation | `SourceSyncJob`, `SourceRefreshReport`, `modules/source_intake/service.py` | schedule runner, cursor retry execution, connector adapter binding | planned/checkpoint asset lifecycle plus audit-only refresh status | Source Governance OS | P2 |
+| SourceSyncJob | 来源同步任务 | yes-foundation | `SourceSyncJob`, `SourceRefreshReport`, `modules/source_intake/service.py` | source diff repair runner, cursor retry execution, connector adapter binding | planned/checkpoint asset lifecycle plus audit-only refresh and connector execution plan status | Source Governance OS | P2 |
 | SourceRefreshReport | 来源刷新审计 | yes-foundation | `SourceRefreshReport`, `modules/source_intake/service.py`, `modules/mkaos_lineage/service.py` | connector execution approval path and source diff repair | audit-only stale/hash/sync report plus weight-governance signal | Source Governance OS | P1 |
 | SourceSnapshot | 来源快照 | yes-foundation | `SourceSnapshot`, `modules/source_intake/service.py` | snapshot diff and retention policy | evidence-only snapshot asset | Source Governance OS | P2 |
 | LicenseCheckResult | 许可检查结果 | yes-foundation | `LicenseCheckResult`, `modules/source_intake/service.py` | expiry/renewal and legal reviewer workflow | create asset lifecycle | Source Governance OS | P0 |
@@ -117,7 +117,7 @@ Status legend:
 
 1. `OSEnvelope` or a documented runtime envelope schema contract: needed to prove every v1 step is governed.
 2. ApprovalRequest caller migration: publish/context/source/story mutation callers should record `approval_request` refs instead of local approval notes only.
-3. Source connector execution: SourceRefreshReport, MaterialUsageEvent, and reviewable weight/invalidation governance now exist; needed next is approval-gated connector execution and source diff repair without unsafe network/file access.
+3. Source diff repair: SourceRefreshReport, MaterialUsageEvent, reviewable weight/invalidation governance, and ApprovalRequest-gated connector execution plans now exist; needed next is old/new SourceSnapshot diff and downstream regeneration planning without unsafe auto-mutation.
 4. Readable prose/page-turning/mobile review models: foundations exist for readable prose and mobile reading; PageTurningReport and AntiAIReport can deepen provider/human calibration later.
 5. `PageTurningReport` / `AntiAIReport` calibration: readable prose now has an embedded gate; dedicated reports can deepen provider/human calibration later.
 6. `ReaderPromise`, `ChapterEconomyReport`, `ProtagonistCharmReport`, `AntagonistPressureReport`, and `MobileReadingReport` calibration and cockpit depth: foundations exist, but detection remains local/deterministic and still needs provider/human calibration plus final 10-30 chapter proof.

@@ -243,6 +243,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/sources/snapshot",
                 "/product/sources/sync-job",
                 "/product/sources/refresh-report",
+                "/product/sources/connector-execution-plan",
                 "/product/sources/context-eligibility",
                 "/product/drafts",
                 "/product/reviews/run",
@@ -343,6 +344,10 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(source_refresh.status_code, 200, source_refresh.text)
             self.assertEqual(source_refresh.json()["asset"]["type"], "source_refresh_report")
             self.assertFalse(source_refresh.json()["asset"]["content"]["connector_execution_allowed"])
+            connector_plan = client.post("/product/sources/connector-execution-plan", json={"source_ref": "route-owned-source", "connector_id": "manual_metadata_connector"})
+            self.assertEqual(connector_plan.status_code, 200, connector_plan.text)
+            self.assertEqual(connector_plan.json()["sync_job"]["asset"]["type"], "source_sync_job")
+            self.assertFalse(connector_plan.json()["execution_receipt"]["execution_performed"])
             self.assertEqual(client.get("/product/longform-stability/dashboard").status_code, 200)
             self.assertEqual(client.get("/product/platform-strategy/assets").status_code, 200)
             completion = client.get("/product/system/module-completion")

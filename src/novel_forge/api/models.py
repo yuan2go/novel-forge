@@ -1652,6 +1652,19 @@ class SourceRefreshReportRequest(BaseModel):
     workspace_path: str = ""
 
 
+class SourceConnectorExecutionPlanRequest(BaseModel):
+    source_ref: str
+    connector_id: str = "manual_metadata_connector"
+    source_refresh_report_path: str = ""
+    approval_request_path: str = ""
+    source_path: str = ""
+    execute: bool = False
+    environment: str = "local"
+    evidence_refs: list[str] = Field(default_factory=list)
+    project_id: str = ""
+    workspace_path: str = ""
+
+
 class SourceContextEligibilityRequest(BaseModel):
     source_ref: str
     asset_path: str = ""
@@ -1929,6 +1942,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "SourceSnapshotRequest": SourceSnapshotRequest,
         "SourceSyncJobRequest": SourceSyncJobRequest,
         "SourceRefreshReportRequest": SourceRefreshReportRequest,
+        "SourceConnectorExecutionPlanRequest": SourceConnectorExecutionPlanRequest,
         "SourceContextEligibilityRequest": SourceContextEligibilityRequest,
         "HandoffOutputRequest": HandoffOutputRequest,
         "HandoffAcceptanceRequest": HandoffAcceptanceRequest,

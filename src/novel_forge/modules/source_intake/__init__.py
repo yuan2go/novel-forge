@@ -10,6 +10,7 @@ from novel_forge.modules.source_intake.service import (
     get_github_knowledge_source,
     list_github_knowledge_sources,
     list_source_policies,
+    plan_source_connector_execution,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "get_github_knowledge_source",
     "list_github_knowledge_sources",
     "list_source_policies",
+    "plan_source_connector_execution",
 ]

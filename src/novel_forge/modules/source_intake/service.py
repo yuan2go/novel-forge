@@ -384,6 +384,12 @@ GITHUB_KNOWLEDGE_SOURCES: list[dict[str, Any]] = [
     },
 ]
 
+SOURCE_CONNECTOR_ALLOWLIST = {
+    "manual_metadata_connector": {"connector_kind": "manual", "network_access": False, "file_access": False, "risk_level": "low"},
+    "local_manifest_connector": {"connector_kind": "local_file", "network_access": False, "file_access": True, "risk_level": "medium"},
+    "classical_modern_local_manifest": {"connector_kind": "local_file", "network_access": False, "file_access": True, "risk_level": "medium"},
+}
+
 
 def list_source_policies(category: str | None = None) -> list[dict[str, Any]]:
     rows = deepcopy(SOURCE_POLICIES)
@@ -516,6 +522,10 @@ def create_source_sync_job(storage: LocalStorage, payload: dict[str, Any]) -> di
         "policy_ref": str(payload.get("policy_ref") or payload.get("source_policy_path") or ""),
         "checkpoint": payload.get("checkpoint", {}) if isinstance(payload.get("checkpoint", {}), dict) else {},
         "limits": payload.get("limits", {}) if isinstance(payload.get("limits", {}), dict) else {},
+        "connector_execution": payload.get("connector_execution", {}) if isinstance(payload.get("connector_execution", {}), dict) else {},
+        "approval_request_ref": str(payload.get("approval_request_ref") or ""),
+        "refresh_report_ref": str(payload.get("refresh_report_ref") or ""),
+        "execution_receipt": payload.get("execution_receipt", {}) if isinstance(payload.get("execution_receipt", {}), dict) else {},
         "created_at": utc_now(),
         "updated_at": utc_now(),
     }
@@ -529,6 +539,98 @@ def create_source_sync_job(storage: LocalStorage, payload: dict[str, Any]) -> di
         references=_strings(payload.get("evidence_refs")) or _strings(payload.get("references")),
     )
     return _write_governance_asset(storage, asset)
+
+
+def plan_source_connector_execution(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    source_ref = _source_ref(payload)
+    connector_id = str(payload.get("connector_id") or "manual_metadata_connector").strip()
+    connector_policy = SOURCE_CONNECTOR_ALLOWLIST.get(connector_id)
+    environment = str(payload.get("environment") or "local")
+    execute_requested = bool(payload.get("execute") or payload.get("execute_requested"))
+    policy = _resolve_governance_asset(storage, payload.get("source_policy_path") or payload.get("policy_ref"), "source_policy") or _latest_related_asset(storage, "source_policy", source_ref)
+    refresh = _resolve_governance_asset(storage, payload.get("source_refresh_report_path") or payload.get("refresh_report_ref"), "source_refresh_report") or _latest_related_asset(storage, "source_refresh_report", source_ref)
+    approval_status = _approval_status(storage, payload.get("approval_request_path") or payload.get("approval_request_ref"))
+    if not connector_policy:
+        receipt = _connector_execution_receipt(
+            connector_id=connector_id,
+            source_ref=source_ref,
+            status="blocked_connector_not_allowed",
+            reason="connector is not in SOURCE_CONNECTOR_ALLOWLIST",
+            approval_status=approval_status,
+            execute_requested=execute_requested,
+        )
+        sync_job = create_source_sync_job(
+            storage,
+            {
+                **payload,
+                "source_ref": source_ref,
+                "status": "blocked",
+                "sync_mode": "connector_execution_plan",
+                "policy_ref": _asset_ref(policy) or "missing_source_policy",
+                "connector_execution": receipt["connector_execution"],
+                "execution_receipt": receipt,
+                "refresh_report_ref": _asset_ref(refresh),
+            },
+        )
+        return {"status": "blocked", "allowed": False, "sync_job": sync_job, "approval_request": {}, "execution_receipt": receipt}
+    approval_required = bool(execute_requested or is_production_environment(environment) or connector_policy["network_access"] or connector_policy["file_access"])
+    approval_request: dict[str, Any] = {}
+    if approval_required and approval_status != "approved":
+        from novel_forge.modules.permission_center import create_approval_request
+
+        approval_request = create_approval_request(
+            storage,
+            {
+                "project_id": str(payload.get("project_id") or ""),
+                "workspace_path": str(payload.get("workspace_path") or ""),
+                "scope": "source",
+                "action": "approve_source_connector_execution",
+                "environment": environment,
+                "risk_level": str(connector_policy.get("risk_level") or "medium"),
+                "blocking": True,
+                "target_type": "source_connector",
+                "target_id": source_ref,
+                "target_path": str(payload.get("source_path") or ""),
+                "target_refs": [source_ref, connector_id],
+                "evidence_refs": _dedupe([_asset_ref(refresh), *_strings(payload.get("evidence_refs")), *_strings(payload.get("references"))]),
+                "reason": f"Approval required before connector {connector_id} can access source {source_ref}",
+                "source_policy": {
+                    "source_ref": source_ref,
+                    "connector_id": connector_id,
+                    "network_access": bool(connector_policy["network_access"]),
+                    "file_access": bool(connector_policy["file_access"]),
+                },
+            },
+        )
+        approval_status = "pending"
+    allowed = bool(connector_policy and (not execute_requested or approval_status == "approved") and not connector_policy["network_access"])
+    status = "approved_execution_ready" if execute_requested and approval_status == "approved" else "approval_required" if approval_required and approval_status != "approved" else "dry_run_ready"
+    receipt = _connector_execution_receipt(
+        connector_id=connector_id,
+        source_ref=source_ref,
+        status=status,
+        reason="execution is planned only; connector runner must use this receipt and approval evidence",
+        approval_status=approval_status,
+        execute_requested=execute_requested,
+        connector_policy=connector_policy,
+    )
+    approval_ref = str(approval_request.get("path") or payload.get("approval_request_path") or payload.get("approval_request_ref") or "")
+    sync_job = create_source_sync_job(
+        storage,
+        {
+            **payload,
+            "source_ref": source_ref,
+            "status": status,
+            "sync_mode": "connector_execution_plan",
+            "policy_ref": _asset_ref(policy) or "missing_source_policy",
+            "connector_execution": receipt["connector_execution"],
+            "approval_request_ref": approval_ref,
+            "refresh_report_ref": _asset_ref(refresh),
+            "execution_receipt": receipt,
+        },
+    )
+    return {"status": status, "allowed": allowed, "sync_job": sync_job, "approval_request": approval_request, "execution_receipt": receipt}
 
 
 def create_license_check_result(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -1140,6 +1242,55 @@ def _source_refresh_next_actions(decision: str, stale_flags: list[dict[str, Any]
     if any(str(flag.get("code") or "") == "content_hash_drift" for flag in stale_flags if isinstance(flag, dict)):
         selected.append("invalidate downstream source-derived material until the refreshed snapshot is reviewed")
     return selected
+
+
+def _connector_execution_receipt(
+    *,
+    connector_id: str,
+    source_ref: str,
+    status: str,
+    reason: str,
+    approval_status: str,
+    execute_requested: bool,
+    connector_policy: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    policy = connector_policy or {}
+    return {
+        "receipt_id": make_id("source_connector_execution_receipt", f"{_short_ref_key(source_ref)}:{connector_id}:{status}:{utc_now()}"),
+        "status": status,
+        "source_ref": source_ref,
+        "connector_id": connector_id,
+        "approval_status": approval_status or "missing",
+        "execute_requested": execute_requested,
+        "execution_performed": False,
+        "network_access_used": False,
+        "file_access_used": False,
+        "connector_execution": {
+            "connector_id": connector_id,
+            "connector_kind": str(policy.get("connector_kind") or "unknown"),
+            "allowlisted": bool(connector_policy),
+            "network_access_allowed": bool(policy.get("network_access")),
+            "file_access_allowed": bool(policy.get("file_access")),
+            "execution_boundary": "plan_only_no_connector_invocation",
+        },
+        "reason": reason,
+        "rollback_plan": ["no external side effects were performed", "discard SourceSyncJob plan if approval is rejected"],
+        "created_at": utc_now(),
+    }
+
+
+def _approval_status(storage: LocalStorage, ref: Any) -> str:
+    text = str(ref or "").strip()
+    if not text:
+        return ""
+    try:
+        data = storage.read_json(resolve_path(storage.root, text))
+    except (OSError, TypeError, ValueError):
+        return ""
+    if not isinstance(data, dict) or data.get("type") != "approval_request":
+        return ""
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    return str(content.get("status") or "")
 
 
 def _refresh_asset_digest(asset: dict[str, Any] | None, fields: list[str]) -> dict[str, Any]:
