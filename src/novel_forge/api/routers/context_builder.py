@@ -11,6 +11,7 @@ from novel_forge.modules.context_builder import (
     create_context_build_plan,
     create_context_bundle,
     list_context_assets,
+    run_context_governance_coverage_gate,
 )
 from novel_forge.storage.local import LocalStorage
 
@@ -46,6 +47,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 project_id=project_id,
                 limit=limit,
                 persist=persist,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/context/governance-runtime-gate")
+    def context_governance_runtime_gate(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return run_context_governance_coverage_gate(
+                LocalStorage(app_settings.root),
+                project_id=payload.get("project_id"),
+                environment=str(payload.get("environment") or ""),
+                mode=str(payload.get("mode") or ""),
+                limit=int(payload.get("limit", 500) or 500),
+                persist_report=bool(payload.get("persist_report", True)),
             )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

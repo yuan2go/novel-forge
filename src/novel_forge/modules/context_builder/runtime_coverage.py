@@ -7,6 +7,7 @@ from novel_forge.core.asset_scan import read_json_for_scan
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import is_production_environment
+from novel_forge.modules.runtime_ledger import record_gate_result
 from novel_forge.schemas import ProjectMetricSnapshot, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -89,6 +90,54 @@ def build_context_governance_runtime_coverage_report(
         report["path"] = _display_path(storage.root, path)
         report["asset"] = data
     return report
+
+
+def run_context_governance_coverage_gate(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    environment: str = "",
+    mode: str = "",
+    limit: int = 500,
+    persist_report: bool = True,
+) -> dict[str, Any]:
+    report = build_context_governance_runtime_coverage_report(storage, project_id=project_id, limit=limit, persist=persist_report)
+    production = _strict_mode(environment=environment, mode=mode)
+    blockers = report.get("blocking_rows", []) if isinstance(report.get("blocking_rows", []), list) else []
+    status = "failed" if blockers and production else "warning" if blockers else "passed"
+    message = (
+        f"context governance runtime coverage has {len(blockers)} blocking row(s)"
+        if blockers
+        else "context governance runtime coverage passed"
+    )
+    target_paths = _dedupe([str(report.get("path") or ""), *[str(row.get("path") or "") for row in blockers]])
+    gate = record_gate_result(
+        storage,
+        gate_kind="context_governance_runtime_coverage",
+        status=status,
+        target_paths=target_paths,
+        result={
+            "coverage_report_id": report["coverage_report_id"],
+            "coverage_report_path": str(report.get("path") or ""),
+            "summary": report["summary"],
+            "blocking_rows": blockers,
+            "environment": environment,
+            "mode": mode,
+            "production": production,
+            "contract": "context-governance-runtime-coverage-gate-v1",
+        },
+        project_id=str(project_id or ""),
+        message=message,
+        blocking=production,
+    )
+    return {
+        "status": status,
+        "production": production,
+        "blocking": production and bool(blockers),
+        "coverage_report": report,
+        "gate_result": gate,
+        "message": message,
+    }
 
 
 def _scan_runtime_rows(storage: LocalStorage, *, project_id: str, limit: int) -> list[dict[str, Any]]:
@@ -233,6 +282,11 @@ def _strict_runtime_artifact(data: dict[str, Any]) -> bool:
         if mode in {"strict", "enforced"} or is_production_environment(mode):
             return True
     return False
+
+
+def _strict_mode(*, environment: str = "", mode: str = "") -> bool:
+    resolved = str(environment or mode or "").strip().lower()
+    return is_production_environment(resolved) or resolved in {"strict", "enforced", "operating_system"}
 
 
 def _coverage_reason(status: str, evidence: dict[str, Any], *, strict: bool) -> str:

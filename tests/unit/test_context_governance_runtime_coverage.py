@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.context_builder import build_context_governance_runtime_coverage_report
+from novel_forge.modules.context_builder import build_context_governance_runtime_coverage_report, run_context_governance_coverage_gate
 from novel_forge.schemas import (
     AgentRun,
     ChapterProductionRun,
@@ -223,6 +223,83 @@ class ContextGovernanceRuntimeCoverageTests(unittest.TestCase):
             self.assertIn("missing_binding", statuses)
             self.assertIn("local_legacy", statuses)
             self.assertFalse(report["source_isolation"]["raw_source_text_included"])
+
+    def test_coverage_gate_fails_production_and_warns_local_for_blockers(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            refs = self._binding_refs(storage)
+            storage.write_asset(
+                "contexts",
+                ContextBundle(
+                    title="Missing binding context",
+                    content={
+                        "build_plan_id": "plan-missing",
+                        "target_asset_id": "chapter-2",
+                        "selected_assets": [],
+                        "compressed_context": {},
+                        "token_budget": {"max_tokens": 1000},
+                        "token_estimate": 10,
+                        "actual_context": "selector report without binding",
+                        "source_asset_ids": [],
+                        "knowledge_context_contract": {"selector_governance": {"report_path": refs["report_path"]}},
+                    },
+                    metadata={"project_id": "coverage-p", "selector_governance_report_path": refs["report_path"]},
+                ),
+            )
+
+            production = run_context_governance_coverage_gate(storage, project_id="coverage-p", environment="production")
+            local = run_context_governance_coverage_gate(storage, project_id="coverage-p", environment="local")
+
+            self.assertEqual(production["status"], "failed")
+            self.assertTrue(production["blocking"])
+            self.assertEqual(storage.read_asset(production["gate_result"]["path"]).content["status"], "failed")
+            self.assertEqual(local["status"], "warning")
+            self.assertFalse(local["blocking"])
+            self.assertEqual(storage.read_asset(local["gate_result"]["path"]).content["status"], "warning")
+
+    def test_coverage_gate_passes_when_production_rows_are_governed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            refs = self._binding_refs(storage)
+            binding = {
+                "application_report_path": refs["application_path"],
+                "selector_governance_report_path": refs["report_path"],
+            }
+            storage.write_asset(
+                "contexts",
+                ContextBundle(
+                    title="Governed context",
+                    content={
+                        "build_plan_id": "plan-governed",
+                        "target_asset_id": "chapter-1",
+                        "selected_assets": [],
+                        "compressed_context": {},
+                        "token_budget": {"max_tokens": 1000},
+                        "token_estimate": 10,
+                        "actual_context": "governed context",
+                        "source_asset_ids": [],
+                        "knowledge_context_contract": {
+                            "selector_governance": {"report_path": refs["report_path"]},
+                            "selector_governance_binding_application": binding,
+                        },
+                        "selector_governance_binding_application": binding,
+                    },
+                    metadata={
+                        "project_id": "coverage-p",
+                        "selector_governance_report_path": refs["report_path"],
+                        "selector_governance_binding_application_path": refs["application_path"],
+                    },
+                    references=[refs["report_path"], refs["application_path"]],
+                ),
+            )
+
+            gate = run_context_governance_coverage_gate(storage, project_id="coverage-p", environment="production")
+
+            self.assertEqual(gate["status"], "passed")
+            self.assertFalse(gate["blocking"])
+            self.assertEqual(storage.read_asset(gate["gate_result"]["path"]).content["status"], "passed")
 
 
 if __name__ == "__main__":
