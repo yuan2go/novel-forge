@@ -14,10 +14,13 @@ from novel_forge.modules.agent_scheduler import (
     list_agent_dispatch_queue,
     list_agent_operation_contracts,
     recover_agent_dispatch,
+    repair_dead_letter_dispatch,
     run_agent_scheduler_tick,
     scheduler_status,
 )
 from novel_forge.modules.agent_scheduler import service as agent_scheduler_service
+from novel_forge.modules.agent_scheduler.dead_letter_runner import fail_queue_item
+from novel_forge.modules.agent_scheduler.queue_lifecycle import claim_queue_item
 from novel_forge.modules.continuity_graph import create_continuity_graph_snapshot
 from novel_forge.modules.loop_kernel import run_loop
 from novel_forge.modules.review_issue import create_review_issue
@@ -296,6 +299,74 @@ class AgentSchedulerTests(unittest.TestCase):
             checks = {item["key"]: item["status"] for item in snapshot["readiness_checks"]}
             self.assertEqual(checks["governance_dead_letters"], "warning")
             self.assertTrue(any("governance_dead_letters" in item for item in snapshot["recommendations"]))
+
+    def test_governance_dead_letter_repair_requires_review_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            result = _create_drifted_release_dead_letter(storage)
+
+            with self.assertRaisesRegex(ValueError, "governance dead-letter repair requires"):
+                repair_dead_letter_dispatch(
+                    storage,
+                    {
+                        "queue_path": result["queue"]["path"],
+                        "project_id": result["fixture"]["project_id"],
+                        "reason": "operator retry without reviewing failed gates",
+                    },
+                )
+
+            queue = list_agent_dispatch_queue(storage, project_id=result["fixture"]["project_id"])[0]
+            self.assertEqual(queue["status"], "dead_letter")
+
+    def test_governance_dead_letter_repair_accepts_explicit_review_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            result = _create_drifted_release_dead_letter(storage)
+            snapshot = agent_center_snapshot(storage, project_id=result["fixture"]["project_id"])
+            governance = snapshot["governance_dead_letters"][0]
+
+            repaired = repair_dead_letter_dispatch(
+                storage,
+                {
+                    "queue_path": result["queue"]["path"],
+                    "project_id": result["fixture"]["project_id"],
+                    "reason": "operator reviewed governance drift evidence",
+                    "confirm_governance_review": True,
+                    "reviewed_failed_gate_paths": governance["failed_gate_paths"],
+                    "reviewed_failed_checkpoint_paths": governance["failed_checkpoint_paths"],
+                    "governance_review_note": "unit test reviewed failed drift gate and checkpoint before retry",
+                },
+            )
+
+            self.assertEqual(repaired["repair"]["status"], "queued")
+            self.assertTrue(repaired["repair"]["governance_review"]["required"])
+            self.assertTrue(repaired["repair"]["governance_review"]["confirmed"])
+            queue = list_agent_dispatch_queue(storage, project_id=result["fixture"]["project_id"])[0]
+            self.assertEqual(queue["status"], "queued")
+            self.assertEqual(list_agent_runs(storage)[0]["status"], "prepared")
+
+    def test_non_governance_dead_letter_repair_remains_compatible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            run = start_agent_run(
+                storage,
+                agent_key="continuity",
+                operation="create-continuity-graph-snapshot",
+                status="prepared",
+                token_budget=500,
+            )
+            queue = dispatch_agent_run(storage, agent_run_path=run["path"], max_attempts=1)
+            claim_queue_item(storage, queue["path"], owner="unit-test", ttl_seconds=30)
+            failed = fail_queue_item(storage, queue["path"], reason="plain unit failure", retry_delay_seconds=0)
+            self.assertEqual(failed["status"], "dead_letter")
+
+            repaired = repair_dead_letter_dispatch(storage, {"queue_path": failed["path"], "reason": "non-governance retry"})
+
+            self.assertFalse(repaired["repair"]["governance_review"]["required"])
+            self.assertEqual(list_agent_dispatch_queue(storage)[0]["status"], "queued")
 
     def test_agent_center_links_tasks_loops_context_and_review_issues(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -690,9 +690,17 @@ def repair_dead_letter_dispatch(storage: LocalStorage, payload: dict[str, Any]) 
         raise ValueError("queue_path is required for dead letter repair")
     before_path = _resolve_queue(storage, queue_ref)
     before = _read_json_safe(storage, before_path)
+    before_content = before.get("content", {}) if isinstance(before.get("content", {}), dict) else {}
+    before_metadata = before.get("metadata", {}) if isinstance(before.get("metadata", {}), dict) else {}
     before_status = str((before.get("content", {}) if isinstance(before.get("content", {}), dict) else {}).get("status", ""))
     if before_status != "dead_letter" and not payload.get("force", False):
         raise ValueError("dead letter repair requires queue status dead_letter unless force=true")
+    governance_review = _validate_governance_dead_letter_repair(
+        storage,
+        queue_path=_display_path(storage.root, before_path),
+        project_id=str(payload.get("project_id") or before_metadata.get("project_id") or ""),
+        payload=payload,
+    )
     rehearsal = rehearse_agent_rollback(storage, {"queue_path": _display_path(storage.root, before_path), "project_id": payload.get("project_id") or ""})
     recovered = recover_agent_dispatch(storage, queue_path=_display_path(storage.root, before_path), reason=reason)
     report = {
@@ -700,8 +708,10 @@ def repair_dead_letter_dispatch(storage: LocalStorage, payload: dict[str, Any]) 
         "status": "queued",
         "before_status": before_status,
         "queue_path": _display_path(storage.root, before_path),
+        "agent_run_path": str(before_content.get("agent_run_path", "")),
         "recovered_queue": recovered,
         "rollback_rehearsal_path": rehearsal.get("path", ""),
+        "governance_review": governance_review,
         "reason": reason,
         "created_at": utc_now(),
     }
@@ -713,7 +723,14 @@ def repair_dead_letter_dispatch(storage: LocalStorage, payload: dict[str, Any]) 
         report,
         project_id=str(payload.get("project_id") or recovered.get("project_id") or ""),
         workspace_path=str(payload.get("workspace_path") or ""),
-        references=[_display_path(storage.root, before_path), rehearsal.get("path", "")],
+        references=_dedupe(
+            [
+                _display_path(storage.root, before_path),
+                rehearsal.get("path", ""),
+                *[str(item) for item in governance_review.get("reviewed_failed_gate_paths", [])],
+                *[str(item) for item in governance_review.get("reviewed_failed_checkpoint_paths", [])],
+            ]
+        ),
     )
     return {**written, "repair": report}
 
@@ -4151,6 +4168,57 @@ def _is_governance_dead_letter(last_error: str, related_gates: list[dict[str, An
         return True
     normalized = last_error.lower()
     return any(marker in normalized for marker in GOVERNANCE_DEAD_LETTER_MARKERS)
+
+
+def _validate_governance_dead_letter_repair(
+    storage: LocalStorage,
+    *,
+    queue_path: str,
+    project_id: str,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    snapshot = agent_center_snapshot(storage, project_id=project_id or None)
+    rows = snapshot.get("governance_dead_letters", []) if isinstance(snapshot.get("governance_dead_letters", []), list) else []
+    target = next((row for row in rows if str(row.get("queue_path", "")) == queue_path), {})
+    if not target:
+        return {"required": False, "confirmed": False, "reason": "no governance dead-letter evidence for queue"}
+    review = payload.get("governance_review", {}) if isinstance(payload.get("governance_review", {}), dict) else {}
+    confirmed = bool(payload.get("confirm_governance_review") or review.get("confirmed") or review.get("confirm_governance_review"))
+    reviewed_gate_paths = _dedupe(
+        [
+            *_string_list(payload.get("reviewed_failed_gate_paths", [])),
+            *_string_list(payload.get("failed_gate_paths", [])),
+            *_string_list(review.get("reviewed_failed_gate_paths", [])),
+            *_string_list(review.get("failed_gate_paths", [])),
+        ]
+    )
+    reviewed_checkpoint_paths = _dedupe(
+        [
+            *_string_list(payload.get("reviewed_failed_checkpoint_paths", [])),
+            *_string_list(payload.get("failed_checkpoint_paths", [])),
+            *_string_list(review.get("reviewed_failed_checkpoint_paths", [])),
+            *_string_list(review.get("failed_checkpoint_paths", [])),
+        ]
+    )
+    expected_gate_paths = _string_list(target.get("failed_gate_paths", []))
+    expected_checkpoint_paths = _string_list(target.get("failed_checkpoint_paths", []))
+    missing_gate_paths = [path for path in expected_gate_paths if path not in reviewed_gate_paths]
+    missing_checkpoint_paths = [path for path in expected_checkpoint_paths if path not in reviewed_checkpoint_paths]
+    if not confirmed or missing_gate_paths or missing_checkpoint_paths:
+        raise ValueError(
+            "governance dead-letter repair requires confirm_governance_review=true "
+            "and reviewed failed gate/checkpoint paths covering Agent Center governance_dead_letters evidence"
+        )
+    return {
+        "required": True,
+        "confirmed": True,
+        "queue_path": queue_path,
+        "reviewed_failed_gate_paths": reviewed_gate_paths,
+        "reviewed_failed_checkpoint_paths": reviewed_checkpoint_paths,
+        "expected_failed_gate_paths": expected_gate_paths,
+        "expected_failed_checkpoint_paths": expected_checkpoint_paths,
+        "review_note": str(payload.get("governance_review_note") or review.get("review_note") or review.get("note") or ""),
+    }
 
 
 def _dag_nodes(value: Any) -> list[dict[str, Any]]:
