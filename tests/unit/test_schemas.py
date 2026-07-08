@@ -62,7 +62,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 285)
+        self.assertEqual(len(SCHEMA_CLASSES), 288)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("source_policy", SCHEMA_CLASSES)
         self.assertIn("source_sync_job", SCHEMA_CLASSES)
@@ -84,6 +84,9 @@ class SchemaTests(unittest.TestCase):
         self.assertIn("knowledge_pack_item", SCHEMA_CLASSES)
         self.assertIn("knowledge_usage_event", SCHEMA_CLASSES)
         self.assertIn("knowledge_quality_score", SCHEMA_CLASSES)
+        self.assertIn("mkaos_selector_governance_report", SCHEMA_CLASSES)
+        self.assertIn("mkaos_selector_governance_diff_report", SCHEMA_CLASSES)
+        self.assertIn("mkaos_selector_governance_binding_proposal", SCHEMA_CLASSES)
         self.assertIn("knowledge_graph_snapshot", SCHEMA_CLASSES)
         self.assertIn("knowledge_learning_snapshot", SCHEMA_CLASSES)
         self.assertIn("material_usage_event", SCHEMA_CLASSES)

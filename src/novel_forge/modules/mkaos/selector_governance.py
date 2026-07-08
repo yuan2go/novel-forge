@@ -6,7 +6,7 @@ from typing import Any
 from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
-from novel_forge.schemas import BaseAsset, validate_common_fields
+from novel_forge.schemas import BaseAsset, MKAOSSelectorGovernanceBindingProposal, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 DO_NOT_SELECT_STATES = {"quarantined", "deprecated", "do_not_select", "rejected", "superseded_by_lifecycle_rollback"}
@@ -189,6 +189,150 @@ def diff_mkaos_selector_governance(storage: LocalStorage, payload: dict[str, Any
     return {"status": "diffed", "path": _display_path(storage.root, path), "asset": storage.read_json(path), **content["summary"]}
 
 
+def propose_context_governance_binding(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    """Create a reviewable proposal for binding selector governance into a context build.
+
+    This does not mutate Context Builder behavior. Adoption remains explicit through
+    selector_governance_report_path after operator approval.
+    """
+    storage.ensure_layout()
+    project_id = str(payload.get("project_id") or "")
+    workspace_path = str(payload.get("workspace_path") or "")
+    environment = str(payload.get("environment") or "local")
+    report_ref = str(payload.get("selector_governance_report_path") or payload.get("selector_governance_report_ref") or "").strip()
+    if not report_ref:
+        latest = _latest_selector_governance_report(storage, project_id=project_id)
+        report_ref = str(latest.get("path") or "")
+    if not report_ref:
+        raise ValueError("selector_governance_report_path is required when no latest report exists")
+    report_path, report = _resolve_selector_report(storage, report_ref)
+    report_project_id = _asset_project_id(report)
+    if project_id and report_project_id and report_project_id != project_id:
+        raise ValueError("selector_governance_report_path project_id does not match payload project_id")
+    effective_project_id = project_id or report_project_id
+    report_display_path = _display_path(storage.root, report_path)
+    previous_ref = str(payload.get("knowledge_pack_path") or payload.get("knowledge_pack_ref") or payload.get("selector_decision_path") or "").strip()
+    previous_path = ""
+    if previous_ref:
+        resolved_previous_path, _previous = _resolve_pack_or_selector_decision(storage, previous_ref)
+        previous_path = _display_path(storage.root, resolved_previous_path)
+
+    base_ref = str(payload.get("base_report_path") or payload.get("old_report_path") or "").strip()
+    diff_report: dict[str, Any] = {}
+    needs_report_diff = bool(base_ref and not _same_report_ref(report, report_display_path, base_ref))
+    if needs_report_diff or previous_path:
+        diff_payload: dict[str, Any] = {"project_id": effective_project_id, "base_report_path": base_ref or report_display_path}
+        if needs_report_diff:
+            diff_payload["compare_report_path"] = report_display_path
+        if previous_path:
+            diff_payload["knowledge_pack_path"] = previous_path
+        diff_report = diff_mkaos_selector_governance(storage, diff_payload)
+
+    report_content = report.get("content", {}) if isinstance(report.get("content", {}), dict) else {}
+    diff_content = diff_report.get("asset", {}).get("content", {}) if isinstance(diff_report.get("asset", {}).get("content", {}), dict) else {}
+    binding_id = make_id("mkaos_selector_governance_binding_proposal", f"{effective_project_id or 'all'}-{utc_now()}")
+    report_patch = report_content.get("selector_policy_patch", {}) if isinstance(report_content.get("selector_policy_patch", {}), dict) else {}
+    content = {
+        "binding_proposal_id": binding_id,
+        "project_id": effective_project_id,
+        "status": "needs_approval",
+        "binding_scope": str(payload.get("binding_scope") or "context_builder"),
+        "target_stage": str(payload.get("target_stage") or payload.get("stage") or ""),
+        "selector_governance_report_id": str(report.get("id") or report_content.get("selector_governance_report_id") or ""),
+        "selector_governance_report_path": report_display_path,
+        "previous_context_evidence_path": previous_path,
+        "base_report_path": str(base_ref or ""),
+        "diff_report_path": str(diff_report.get("path") or ""),
+        "approval_request_path": "",
+        "agent_task_path": "",
+        "recommended_context_builder_payload_patch": {
+            "selector_governance_report_path": report_display_path,
+            "use_latest_selector_governance": False,
+            "selector_governance_binding_proposal_id": binding_id,
+        },
+        "selector_policy_patch_summary": {
+            "weight_override_count": len(report_patch.get("weight_overrides", {}) if isinstance(report_patch.get("weight_overrides", {}), dict) else {}),
+            "excluded_knowledge_count": len(_strings(report_patch.get("excluded_knowledge_ids"))),
+            "evidence_count": len(report_patch.get("evidence_by_knowledge_id", {}) if isinstance(report_patch.get("evidence_by_knowledge_id", {}), dict) else {}),
+        },
+        "risk_summary": {
+            "diff_summary": diff_content.get("summary", {}) if isinstance(diff_content.get("summary", {}), dict) else {},
+            "requires_operator_approval": True,
+            "selected_now_excluded_count": _int(diff_content.get("summary", {}).get("selected_now_excluded_count") if isinstance(diff_content.get("summary", {}), dict) else 0, 0),
+            "production_auto_adoption_allowed": False,
+        },
+        "binding_contract": {
+            "contract_version": "context-governance-binding-proposal-v1",
+            "mutation_applied": False,
+            "adoption_applied": False,
+            "context_build_executed": False,
+            "approval_required_before_adoption": True,
+            "explicit_selector_governance_report_path_required": True,
+            "raw_source_text_included": False,
+            "prose_mutation_included": False,
+        },
+        "forbidden_automatic_actions": [
+            "do_not_auto_pass_selector_governance_report_path",
+            "do_not_mutate_context_bundle",
+            "do_not_mutate_knowledge_card_content_weight",
+            "do_not_dispatch_agent_task_without_operator_approval",
+        ],
+        "generated_at": utc_now(),
+    }
+    proposal = MKAOSSelectorGovernanceBindingProposal(
+        id=binding_id,
+        title="MKAOS selector governance context binding proposal",
+        source=str(report.get("id") or ""),
+        tags=["mkaos", "selector-governance", "context-binding", "needs-approval"],
+        content=content,
+        metadata={
+            "project_id": effective_project_id,
+            "workspace_path": workspace_path,
+            "asset_status": "needs_approval",
+            "use_in_generation_rag": False,
+            "mutation_applied": False,
+            "adoption_applied": False,
+        },
+        references=_dedupe([report_display_path, previous_path, str(diff_report.get("path") or "")]),
+    )
+    data = proposal.to_dict()
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    proposal_path = storage.write_asset("runs", proposal)
+    proposal_display_path = _display_path(storage.root, proposal_path)
+    approval = _create_binding_approval_request(
+        storage,
+        payload,
+        project_id=effective_project_id,
+        workspace_path=workspace_path,
+        environment=environment,
+        proposal_id=binding_id,
+        proposal_path=proposal_display_path,
+        evidence_refs=_dedupe([report_display_path, previous_path, str(diff_report.get("path") or "")]),
+    )
+    agent_task = _create_binding_agent_task(
+        storage,
+        project_id=effective_project_id,
+        workspace_path=workspace_path,
+        proposal_path=proposal_display_path,
+        report_path=report_display_path,
+        previous_path=previous_path,
+        diff_path=str(diff_report.get("path") or ""),
+        approval_path=str(approval.get("path") or ""),
+        recommended_patch=content["recommended_context_builder_payload_patch"],
+    )
+    updated = _update_binding_proposal_links(storage, proposal_display_path, approval, agent_task)
+    return {
+        "status": "proposed",
+        "path": updated["path"],
+        "asset": updated["asset"],
+        "approval_request": approval,
+        "agent_task": agent_task,
+        "diff_report": diff_report,
+    }
+
+
 def _resolve_selector_report(storage: LocalStorage, ref: str) -> tuple[Path, dict[str, Any]]:
     path, data = _resolve_asset_by_ref(storage, ref)
     if not isinstance(data, dict) or data.get("type") != "mkaos_selector_governance_report":
@@ -330,6 +474,8 @@ def _resolve_asset_by_ref(storage: LocalStorage, ref: str) -> tuple[Path, dict[s
                 str(data.get("id") or ""),
                 str(content.get("selector_governance_report_id") or ""),
                 str(content.get("selector_governance_diff_report_id") or ""),
+                str(content.get("binding_proposal_id") or ""),
+                str(content.get("selector_governance_binding_proposal_id") or ""),
                 str(content.get("selector_decision_id") or ""),
                 str(content.get("knowledge_pack_id") or ""),
                 _display_path(storage.root, path),
@@ -360,6 +506,137 @@ def _strings(value: Any) -> list[str]:
     if isinstance(value, str) and value.strip():
         return [value.strip()]
     return []
+
+
+def _same_report_ref(report: dict[str, Any], report_path: str, ref: str) -> bool:
+    content = report.get("content", {}) if isinstance(report.get("content", {}), dict) else {}
+    text = str(ref or "").strip()
+    return text in {str(report.get("id") or ""), str(content.get("selector_governance_report_id") or ""), report_path}
+
+
+def _create_binding_approval_request(
+    storage: LocalStorage,
+    payload: dict[str, Any],
+    *,
+    project_id: str,
+    workspace_path: str,
+    environment: str,
+    proposal_id: str,
+    proposal_path: str,
+    evidence_refs: list[str],
+) -> dict[str, Any]:
+    from novel_forge.modules.permission_center import create_approval_request
+
+    risk_level = str(payload.get("risk_level") or ("high" if environment in {"production", "operating_system"} else "medium"))
+    return create_approval_request(
+        storage,
+        {
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "scope": "context",
+            "action": "approve_selector_governance_binding",
+            "target_type": "mkaos_selector_governance_binding_proposal",
+            "target_id": proposal_id,
+            "target_path": proposal_path,
+            "risk_level": risk_level,
+            "environment": environment,
+            "blocking": True,
+            "reason": str(payload.get("reason") or "Approve selector governance report binding before production context build adoption."),
+            "requested_by": str(payload.get("requested_by") or "mkaos-selector-governance"),
+            "required_before": ["context_builder.selector_governance_report_path", "production_context_build"],
+            "evidence_refs": evidence_refs,
+            "target_refs": [proposal_path],
+            "rollback_plan": {
+                "rollback_supported": True,
+                "rollback_action": "remove selector_governance_report_path from future context builder payloads",
+                "mutation_applied_by_request": False,
+            },
+        },
+    )
+
+
+def _create_binding_agent_task(
+    storage: LocalStorage,
+    *,
+    project_id: str,
+    workspace_path: str,
+    proposal_path: str,
+    report_path: str,
+    previous_path: str,
+    diff_path: str,
+    approval_path: str,
+    recommended_patch: dict[str, Any],
+) -> dict[str, Any]:
+    from novel_forge.modules.agent_scheduler import create_agent_task
+
+    evidence = {
+        "context_governance_binding_proposal_path": proposal_path,
+        "selector_governance_report_path": report_path,
+        "previous_context_evidence_path": previous_path,
+        "selector_governance_diff_report_path": diff_path,
+        "approval_request_path": approval_path,
+        "recommended_context_builder_payload_patch": recommended_patch,
+        "dispatch_allowed": False,
+        "adoption_applied": False,
+        "mutation_applied": False,
+        "requires_operator_review": True,
+        "raw_source_text_included": False,
+    }
+    return create_agent_task(
+        storage,
+        agent_type="Context Agent",
+        operation="review-context-governance-binding",
+        input_assets=[ref for ref in [proposal_path, report_path, previous_path, diff_path, approval_path] if ref],
+        output_targets=[
+            {"asset_type": "context_build_plan", "purpose": "operator-approved selector governance report binding"},
+            {"asset_type": "context_bundle", "purpose": "future explicit selector_governance_report_path adoption"},
+        ],
+        status="needs_review",
+        project_id=project_id,
+        workspace_path=workspace_path,
+        evidence=evidence,
+    )
+
+
+def _update_binding_proposal_links(storage: LocalStorage, proposal_path: str, approval: dict[str, Any], agent_task: dict[str, Any]) -> dict[str, Any]:
+    path = storage.root / proposal_path if not Path(proposal_path).is_absolute() else Path(proposal_path)
+    data = storage.read_json(path)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    approval_path = str(approval.get("path") or "")
+    task_path = str(agent_task.get("path") or "")
+    content["approval_request_path"] = approval_path
+    content["approval_request_id"] = str(approval.get("asset", {}).get("content", {}).get("request_id") or approval.get("asset", {}).get("id") or "")
+    content["agent_task_path"] = task_path
+    content["agent_task_id"] = str(agent_task.get("asset", {}).get("content", {}).get("task_id") or agent_task.get("asset", {}).get("id") or "")
+    content["updated_at"] = utc_now()
+    data["content"] = content
+    references = data.get("references", []) if isinstance(data.get("references", []), list) else []
+    data["references"] = _dedupe([*[str(ref) for ref in references], approval_path, task_path])
+    data["updated_at"] = utc_now()
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    storage.write_json(path, data)
+    return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
+
+
+def _dedupe(values: list[Any]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = str(value or "").strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        result.append(text)
+    return result
+
+
+def _int(value: Any, default: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def _float(value: Any, default: float) -> float:

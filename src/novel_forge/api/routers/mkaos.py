@@ -206,6 +206,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/mkaos/selector-governance/binding-proposal")
+    @router.post("/api/mkaos/selector-governance/binding-proposal")
+    def propose_selector_governance_binding(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.propose_context_governance_binding(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/convert/assets")
     @router.post("/api/mkaos/convert/assets")
     def convert_assets(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:

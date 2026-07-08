@@ -62,6 +62,9 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "recommendation",
         "created_at",
     ],
+    "mkaos_selector_governance_report": ["selector_governance_report_id", "selector_policy_patch", "refresh_contract", "generated_at"],
+    "mkaos_selector_governance_diff_report": ["selector_governance_diff_report_id", "base_report_path", "diff_contract", "generated_at"],
+    "mkaos_selector_governance_binding_proposal": ["binding_proposal_id", "selector_governance_report_path", "recommended_context_builder_payload_patch", "binding_contract", "generated_at"],
     "source_refresh_report": [
         "refresh_report_id",
         "source_ref",

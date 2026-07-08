@@ -6,7 +6,14 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.context_builder import build_flow_context_bundle
-from novel_forge.modules.mkaos import build_knowledge_pack, create_knowledge_card, create_usage_binding, diff_mkaos_selector_governance, refresh_mkaos_selector_governance
+from novel_forge.modules.mkaos import (
+    build_knowledge_pack,
+    create_knowledge_card,
+    create_usage_binding,
+    diff_mkaos_selector_governance,
+    propose_context_governance_binding,
+    refresh_mkaos_selector_governance,
+)
 from novel_forge.schemas import ChapterPlan
 from novel_forge.storage.local import LocalStorage
 
@@ -208,6 +215,93 @@ class MkaosSelectorGovernanceTests(unittest.TestCase):
             self.assertEqual(diff["exclusion_added_count"], 1)
             self.assertEqual(diff["selected_now_excluded_count"], 1)
             self.assertFalse(content["diff_contract"]["mutation_applied"])
+            self.assertEqual(storage.read_json(card_path)["content"]["weight"], 1.0)
+
+    def test_context_governance_binding_proposal_creates_diff_approval_and_agent_task_without_adoption(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            card = create_knowledge_card(
+                storage,
+                {
+                    "concept_name": "Binding governed mechanism",
+                    "core_explanation": "A selector governance binding proposal should be reviewable before context adoption.",
+                    "project_id": "selector-binding-p",
+                    "weight": 1.0,
+                },
+            )
+            create_usage_binding(storage, card["asset"]["id"], {"project_id": "selector-binding-p", "flow": "prose", "usage_type": "optional", "input_role": "optional", "priority": 10})
+            card_path = storage.root / card["path"]
+            card_data = storage.read_json(card_path)
+            card_data["metadata"].update(
+                {
+                    "mkaos_governance_application_status": "applied_metadata_only",
+                    "mkaos_governance_weight_delta": 1.0,
+                    "mkaos_governance_action": "boost",
+                }
+            )
+            storage.write_json(card_path, card_data)
+            report_a = refresh_mkaos_selector_governance(storage, {"project_id": "selector-binding-p"})
+            pack = build_knowledge_pack(
+                storage,
+                {
+                    "project_id": "selector-binding-p",
+                    "flow": "prose",
+                    "task_id": "selector-binding-pack",
+                    "task_goal": "governance binding baseline",
+                    "selector_governance_report_path": report_a["path"],
+                },
+            )
+
+            card_data = storage.read_json(card_path)
+            card_data["metadata"].update(
+                {
+                    "mkaos_governance_weight_delta": 2.0,
+                    "mkaos_governance_action": "quarantine",
+                    "use_in_generation_rag": False,
+                }
+            )
+            storage.write_json(card_path, card_data)
+            report_b = refresh_mkaos_selector_governance(storage, {"project_id": "selector-binding-p"})
+
+            proposal = propose_context_governance_binding(
+                storage,
+                {
+                    "project_id": "selector-binding-p",
+                    "knowledge_pack_path": pack["path"],
+                    "base_report_path": report_a["path"],
+                    "environment": "production",
+                    "reason": "review latest selector governance before context binding",
+                },
+            )
+            content = proposal["asset"]["content"]
+            self.assertEqual(proposal["status"], "proposed")
+            self.assertEqual(proposal["asset"]["type"], "mkaos_selector_governance_binding_proposal")
+            self.assertEqual(content["selector_governance_report_path"], report_b["path"])
+            self.assertEqual(content["recommended_context_builder_payload_patch"]["selector_governance_report_path"], report_b["path"])
+            self.assertTrue(content["diff_report_path"])
+            self.assertTrue(content["approval_request_path"])
+            self.assertTrue(content["agent_task_path"])
+            self.assertFalse(content["binding_contract"]["adoption_applied"])
+            self.assertFalse(content["binding_contract"]["context_build_executed"])
+
+            approval_content = proposal["approval_request"]["asset"]["content"]
+            self.assertEqual(approval_content["scope"], "context")
+            self.assertEqual(approval_content["action"], "approve_selector_governance_binding")
+            self.assertEqual(approval_content["status"], "pending")
+            self.assertEqual(approval_content["target"]["target_path"], proposal["path"])
+            self.assertTrue(approval_content["blocking"])
+
+            task_content = proposal["agent_task"]["asset"]["content"]
+            self.assertEqual(task_content["agent_type"], "Context Agent")
+            self.assertEqual(task_content["operation"], "review-context-governance-binding")
+            self.assertEqual(task_content["status"], "needs_review")
+            self.assertFalse(task_content["evidence"]["dispatch_allowed"])
+            self.assertFalse(task_content["evidence"]["adoption_applied"])
+            self.assertEqual(task_content["evidence"]["recommended_context_builder_payload_patch"]["selector_governance_report_path"], report_b["path"])
+
+            self.assertEqual(proposal["diff_report"]["asset"]["type"], "mkaos_selector_governance_diff_report")
+            self.assertEqual(proposal["diff_report"]["selected_now_excluded_count"], 1)
             self.assertEqual(storage.read_json(card_path)["content"]["weight"], 1.0)
 
 

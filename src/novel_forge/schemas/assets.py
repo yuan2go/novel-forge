@@ -152,6 +152,21 @@ class KnowledgeQualityScore(BaseAsset):
 
 
 @dataclass
+class MKAOSSelectorGovernanceReport(BaseAsset):
+    type: str = "mkaos_selector_governance_report"
+
+
+@dataclass
+class MKAOSSelectorGovernanceDiffReport(BaseAsset):
+    type: str = "mkaos_selector_governance_diff_report"
+
+
+@dataclass
+class MKAOSSelectorGovernanceBindingProposal(BaseAsset):
+    type: str = "mkaos_selector_governance_binding_proposal"
+
+
+@dataclass
 class KnowledgeGraphSnapshot(BaseAsset):
     type: str = "knowledge_graph_snapshot"
 
@@ -1470,6 +1485,9 @@ SCHEMA_CLASSES = {
         KnowledgePackItem,
         KnowledgeUsageEvent,
         KnowledgeQualityScore,
+        MKAOSSelectorGovernanceReport,
+        MKAOSSelectorGovernanceDiffReport,
+        MKAOSSelectorGovernanceBindingProposal,
         KnowledgeGraphSnapshot,
         KnowledgeLearningSnapshot,
         MaterialCard,
