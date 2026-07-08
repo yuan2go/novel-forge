@@ -41,6 +41,7 @@ class RuntimeGrowthRegressionScriptTests(unittest.TestCase):
         self.assertIn("test_project_cockpit_route_surfaces_approval_request_caller_readiness", command_text)
         self.assertIn("test_chapter_runtime_growth_profile_route_builds_profile_and_cockpit_surfaces_it", command_text)
         self.assertIn("test_chapter_runtime_growth_threshold_gate_route_fails_closed_and_cockpit_surfaces_it", command_text)
+        self.assertIn("test_project_cockpit_route_surfaces_unified_acceptance_preflight_manifest", command_text)
         self.assertIn("tests.unit.test_v1_chapter_sequence_acceptance_script.V1ChapterSequenceAcceptanceScriptTests", command_text)
         self.assertIn("test_approval_request_caller_readiness_reports_missing_dimensions_without_mutation", command_text)
         self.assertIn("test_approval_request_caller_readiness_passes_when_required_callers_are_covered", command_text)

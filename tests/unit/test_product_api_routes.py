@@ -1403,6 +1403,55 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["production_control_console"]["gate_status_board"]["runtime_growth_threshold"], "failed")
             self.assertEqual(content["cockpit"]["chapter_runtime_growth_threshold_gate"]["status"], "failed")
 
+    def test_project_cockpit_route_surfaces_unified_acceptance_preflight_manifest(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.schemas import BaseAsset
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+            storage = LocalStorage(root)
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="route-v1-preflight-report",
+                    type="long_chain_acceptance_report",
+                    title="Route V1 acceptance preflight",
+                    content={
+                        "status": "failed",
+                        "unified_acceptance_preflight_manifest": {
+                            "contract": "v1-unified-acceptance-preflight-manifest-v1",
+                            "status": "review_required",
+                            "enforced_failure_count": 0,
+                            "missing_or_deferred_final_evidence_count": 3,
+                            "required_evidence": [
+                                {"key": "runtime_growth_threshold", "status": "passed"},
+                                {"key": "source_governance_runtime", "status": "deferred"},
+                            ],
+                            "operator_action": "complete deferred final preflight evidence before unified acceptance",
+                        },
+                    },
+                    metadata={"project_id": "route-book-preflight"},
+                )
+            )
+
+            response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-preflight"})
+
+            self.assertEqual(response.status_code, 200, response.text)
+            content = response.json()["asset"]["content"]
+            self.assertEqual(content["runtime_governance"]["unified_acceptance_preflight"]["status"], "review_required")
+            self.assertEqual(content["quality"]["unified_acceptance_preflight_status"], "review_required")
+            self.assertEqual(content["quality"]["unified_acceptance_preflight_missing_count"], 3)
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
+            self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
+
     def test_project_cockpit_route_keeps_missing_workflow_governance_unready(self):
         try:
             from fastapi.testclient import TestClient

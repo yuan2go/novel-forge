@@ -39,6 +39,7 @@ RUNTIME_GROWTH_TESTS = [
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_surfaces_approval_request_caller_readiness",
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_chapter_runtime_growth_profile_route_builds_profile_and_cockpit_surfaces_it",
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_chapter_runtime_growth_threshold_gate_route_fails_closed_and_cockpit_surfaces_it",
+    "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_surfaces_unified_acceptance_preflight_manifest",
     "tests.unit.test_v1_chapter_sequence_acceptance_script.V1ChapterSequenceAcceptanceScriptTests",
     "tests.unit.test_permission_center.PermissionCenterTests.test_approval_request_caller_readiness_reports_missing_dimensions_without_mutation",
     "tests.unit.test_permission_center.PermissionCenterTests.test_approval_request_caller_readiness_passes_when_required_callers_are_covered",

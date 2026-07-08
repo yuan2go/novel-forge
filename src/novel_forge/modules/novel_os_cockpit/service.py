@@ -30,6 +30,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     source_governance_runtime_evidence = _source_governance_runtime_execution_evidence(storage, rows, project_id=project_id)
     chapter_runtime_growth = _chapter_runtime_growth_profile(rows)
     chapter_runtime_growth_threshold_gate = _latest_gate_result(rows, "chapter_runtime_growth_threshold")
+    unified_acceptance_preflight = _latest_unified_acceptance_preflight_manifest(rows)
     production_console = _production_control_console(
         rows,
         blocking_issues,
@@ -44,6 +45,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         source_governance_runtime_evidence,
         chapter_runtime_growth,
         chapter_runtime_growth_threshold_gate,
+        unified_acceptance_preflight,
     )
     content = {
         "project_id": project_id,
@@ -78,6 +80,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_threshold_gate_status": chapter_runtime_growth_threshold_gate["status"],
             "chapter_runtime_growth_high_run_count": chapter_runtime_growth["summary"]["high_growth_run_count"],
             "chapter_runtime_growth_max_ref_count": chapter_runtime_growth["summary"]["max_linked_asset_ref_count"],
+            "unified_acceptance_preflight_status": unified_acceptance_preflight["status"],
+            "unified_acceptance_preflight_missing_count": unified_acceptance_preflight["missing_or_deferred_final_evidence_count"],
         },
         "task_health": {
             "agent_queue_status": queue_status,
@@ -106,6 +110,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_governance_runtime_evidence": source_governance_runtime_evidence,
             "chapter_runtime_growth": chapter_runtime_growth,
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
+            "unified_acceptance_preflight": unified_acceptance_preflight,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -124,6 +129,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_governance_runtime_evidence": source_governance_runtime_evidence,
             "chapter_runtime_growth": chapter_runtime_growth,
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
+            "unified_acceptance_preflight": unified_acceptance_preflight,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -662,6 +668,43 @@ def _chapter_runtime_growth_profile(rows: list[dict[str, Any]]) -> dict[str, Any
     }
 
 
+def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    matches = [row for row in rows if row.get("type") == "long_chain_acceptance_report"]
+    if not matches:
+        return {
+            "contract": "v1-unified-acceptance-preflight-manifest-v1",
+            "status": "missing",
+            "path": "",
+            "enforced_failure_count": 0,
+            "missing_or_deferred_final_evidence_count": 0,
+            "required_evidence": [],
+            "operator_action": "run deferred v1 acceptance preflight helper before final unified acceptance",
+        }
+    row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    manifest = content.get("unified_acceptance_preflight_manifest", {}) if isinstance(content.get("unified_acceptance_preflight_manifest", {}), dict) else {}
+    if not manifest:
+        return {
+            "contract": "v1-unified-acceptance-preflight-manifest-v1",
+            "status": "missing",
+            "path": str(row.get("path") or ""),
+            "enforced_failure_count": 0,
+            "missing_or_deferred_final_evidence_count": 0,
+            "required_evidence": [],
+            "operator_action": "latest acceptance report has no unified preflight manifest",
+        }
+    evidence = manifest.get("required_evidence", []) if isinstance(manifest.get("required_evidence", []), list) else []
+    return {
+        "contract": str(manifest.get("contract") or "v1-unified-acceptance-preflight-manifest-v1"),
+        "status": str(manifest.get("status") or "unknown"),
+        "path": str(row.get("path") or ""),
+        "enforced_failure_count": int(manifest.get("enforced_failure_count") or 0),
+        "missing_or_deferred_final_evidence_count": int(manifest.get("missing_or_deferred_final_evidence_count") or 0),
+        "required_evidence": evidence,
+        "operator_action": str(manifest.get("operator_action") or ""),
+    }
+
+
 def _approval_request_caller_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
     snapshot_kind = "approval_request_caller_readiness"
     matches = []
@@ -893,6 +936,7 @@ def _production_control_console(
     source_governance_runtime_evidence: dict[str, Any],
     chapter_runtime_growth: dict[str, Any],
     chapter_runtime_growth_threshold_gate: dict[str, Any],
+    unified_acceptance_preflight: dict[str, Any],
 ) -> dict[str, Any]:
     chapter_queue = _latest_assets(rows, "chapter_plan", limit=20)
     draft_rows = _latest_assets(rows, "draft_chapter", limit=20)
@@ -912,6 +956,7 @@ def _production_control_console(
         "source_governance_runtime_evidence": source_governance_runtime_evidence["status"],
         "runtime_growth": chapter_runtime_growth["status"],
         "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
+        "unified_acceptance_preflight": unified_acceptance_preflight["status"],
         "release": release_status,
         "publish": _latest_status(rows, asset_type="publish_gate_report"),
     }
@@ -937,6 +982,7 @@ def _production_control_console(
             "source_governance_runtime_evidence": source_governance_runtime_evidence["status"],
             "runtime_growth": chapter_runtime_growth["status"],
             "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
+            "unified_acceptance_preflight": unified_acceptance_preflight["status"],
             "release": release_status,
         },
         "feedback_approval_queue": feedback_proposals,
@@ -960,6 +1006,7 @@ def _production_control_console(
         "source_governance_runtime_evidence": source_governance_runtime_evidence,
         "chapter_runtime_growth": chapter_runtime_growth,
         "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
+        "unified_acceptance_preflight": unified_acceptance_preflight,
     }
 
 

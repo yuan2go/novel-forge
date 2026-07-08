@@ -303,6 +303,29 @@ class NovelOsCockpitTests(unittest.TestCase):
                     metadata={"project_id": "book-a", "snapshot_kind": "chapter_runtime_growth_profile"},
                 )
             )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="v1-acceptance-preflight-report",
+                    type="long_chain_acceptance_report",
+                    title="V1 acceptance with preflight manifest",
+                    content={
+                        "status": "failed",
+                        "recommendation": "repair_runtime_growth_before_acceptance",
+                        "unified_acceptance_preflight_manifest": {
+                            "contract": "v1-unified-acceptance-preflight-manifest-v1",
+                            "status": "review_required",
+                            "enforced_failure_count": 0,
+                            "missing_or_deferred_final_evidence_count": 2,
+                            "required_evidence": [
+                                {"key": "runtime_growth_threshold", "status": "passed"},
+                                {"key": "source_governance_runtime", "status": "deferred"},
+                            ],
+                            "operator_action": "complete deferred final preflight evidence before unified acceptance",
+                        },
+                    },
+                    metadata={"project_id": "book-a"},
+                )
+            )
             run_context_governance_coverage_gate(storage, project_id="book-a", environment="production")
             build_production_governance_evidence_drift_report(storage, project_id="book-a", persist=True)
             run_production_governance_drift_gate(storage, project_id="book-a", environment="production")
@@ -351,18 +374,23 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_high_run_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_max_ref_count"], 132)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_status"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_missing_count"], 2)
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["approval_request_callers"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_guarded_apply"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_governance_runtime"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_governance_runtime_evidence"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["workflow_governance"]["status"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["approval_request_caller_readiness"]["status"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_guarded_apply_readiness"]["status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_governance_runtime_gate"]["status"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_governance_runtime_evidence"]["latest"]["gate_result_path"], "data/runs/source-governance-runtime-gate-book-a.json")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["chapter_runtime_growth"]["summary"]["max_linked_asset_ref_count"], 132)
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["status"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
             self.assertEqual(pending_approval["asset"]["content"]["scope"], "publish")
 
     def test_project_cockpit_surfaces_workflow_governance_readiness(self):
