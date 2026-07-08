@@ -302,6 +302,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/os/cockpit/chapter-runtime-growth-approved-policy-apply",
                 "/product/os/cockpit/chapter-runtime-growth-policy-rollback",
                 "/product/os/cockpit/chapter-runtime-growth-threshold-gate",
+                "/product/os/cockpit/chapter-runtime-growth-write-budget-gate",
                 "/product/os/cockpit/unified-preflight-gate",
                 "/product/os/cockpit/multi-book",
                 "/product/os/cockpit/multi-book/schedule",
@@ -1492,6 +1493,100 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["quality"]["chapter_runtime_growth_threshold_gate_status"], "failed")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["runtime_growth_threshold"], "failed")
             self.assertEqual(content["cockpit"]["chapter_runtime_growth_threshold_gate"]["status"], "failed")
+
+    def test_chapter_runtime_growth_write_budget_gate_route_fails_closed_and_cockpit_surfaces_it(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.schemas import BaseAsset
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+            storage = LocalStorage(root)
+            draft_path = storage.write_asset_auto(
+                BaseAsset(
+                    id="route-budget-draft",
+                    type="draft_chapter",
+                    title="Route Budget Draft",
+                    content={"status": "available"},
+                    metadata={"project_id": "route-book-budget"},
+                )
+            )
+            task_path = storage.write_asset_auto(
+                BaseAsset(
+                    id="route-budget-task",
+                    type="task_status",
+                    title="Route Budget Task",
+                    content={"status": "completed"},
+                    metadata={"project_id": "route-book-budget"},
+                )
+            )
+            policy = {
+                "policy_version": "chapter-production-runtime-artifact-policy-v1",
+                "task_status_mode": "compact",
+                "task_status_recording": {"pending": False, "running": False, "completed": True, "failed": True},
+                "node_run_recording": {"succeeded": False, "failed": True},
+                "trace_recording": {"node_run_succeeded_span": False, "node_run_failed_span": True, "external_runtime_spans": True},
+            }
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="route-budget-run",
+                    type="chapter_production_run",
+                    title="Route budget chapter run",
+                    content={
+                        "run_id": "route-budget-run",
+                        "status": "succeeded",
+                        "chapter": 5,
+                        "current_step": "completed",
+                        "outputs": {"draft_v0_path": str(draft_path.relative_to(root))},
+                        "steps": {"draft": {"task_status_paths": [str(task_path.relative_to(root))], "output_paths": [str(draft_path.relative_to(root))]}},
+                        "control": {"task_status_mode": "compact", "runtime_artifact_policy": policy},
+                    },
+                    metadata={"project_id": "route-book-budget"},
+                )
+            )
+
+            gate_response = client.post(
+                "/product/os/cockpit/chapter-runtime-growth-write-budget-gate",
+                json={
+                    "project_id": "route-book-budget",
+                    "environment": "production",
+                    "budgets": {
+                        "max_linked_asset_refs_per_run": 0,
+                        "max_task_status_refs_per_run": 0,
+                        "max_step_output_refs_per_run": 0,
+                    },
+                    "os_envelope": {
+                        "environment": "production",
+                        "project_id": "route-book-budget",
+                        "operation": "chapter-runtime-growth-write-budget-gate",
+                        "trace_id": "trace-route-runtime-budget",
+                    },
+                },
+            )
+            cockpit_response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-budget"})
+
+            self.assertEqual(gate_response.status_code, 200, gate_response.text)
+            gate = gate_response.json()
+            self.assertEqual(gate["status"], "failed")
+            self.assertTrue(gate["blocking"])
+            self.assertEqual(gate["gate_result"]["asset"]["content"]["gate_kind"], "chapter_runtime_growth_write_budget")
+            self.assertIn("chapter_runtime_write_budget_linked_refs", {row["code"] for row in gate["blocking_rows"]})
+            self.assertFalse(gate["gate_result"]["asset"]["content"]["result"]["summary"]["chapter_production_executed"])
+
+            self.assertEqual(cockpit_response.status_code, 200, cockpit_response.text)
+            content = cockpit_response.json()["asset"]["content"]
+            self.assertEqual(content["runtime_governance"]["chapter_runtime_growth_write_budget_gate"]["status"], "failed")
+            self.assertEqual(content["quality"]["chapter_runtime_growth_write_budget_gate_status"], "failed")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["runtime_growth_write_budget"], "failed")
+            self.assertEqual(content["cockpit"]["chapter_runtime_growth_write_budget_gate"]["status"], "failed")
 
     def test_project_cockpit_route_surfaces_unified_acceptance_preflight_manifest(self):
         try:

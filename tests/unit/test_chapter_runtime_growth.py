@@ -14,6 +14,7 @@ from novel_forge.modules.chapter_runtime_growth import (
     request_chapter_runtime_growth_write_policy_approval,
     rollback_chapter_runtime_growth_applied_policy,
     run_chapter_runtime_growth_threshold_gate,
+    run_chapter_runtime_growth_write_budget_gate,
 )
 from novel_forge.modules.permission_center import list_approval_requests
 from novel_forge.modules.permission_center import resolve_approval_request
@@ -411,6 +412,93 @@ class ChapterRuntimeGrowthTests(unittest.TestCase):
             self.assertTrue(result["blocking"])
             self.assertEqual(result["summary"]["latest_applied_policy_path"], applied_path)
             self.assertIn("chapter_runtime_applied_policy_not_consumed", {row["code"] for row in result["blocking_rows"]})
+
+    def test_write_budget_gate_passes_within_budget(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft = self._write_asset(storage, "budget-clean-draft", "draft_chapter", project_id="book-a")
+            task = self._write_asset(storage, "budget-clean-task", "task_status", project_id="book-a")
+            self._write_asset(storage, "budget-clean-node-run", "node_run", project_id="book-a", content={"run_id": "budget-clean-run"})
+            self._write_asset(storage, "budget-clean-trace-span", "trace_span", project_id="book-a", content={"trace_id": "budget-clean-run"})
+            self._write_chapter_run(
+                storage,
+                run_id="budget-clean-run",
+                chapter=5,
+                task_status_mode="compact",
+                outputs={"draft_v0_path": draft},
+                steps={"draft": {"task_status_paths": [task], "output_paths": [draft]}},
+            )
+
+            result = run_chapter_runtime_growth_write_budget_gate(storage, project_id="book-a", environment="production")
+
+            self.assertEqual(result["status"], "passed")
+            self.assertFalse(result["blocking"])
+            self.assertEqual(result["summary"]["blocking_count"], 0)
+            self.assertEqual(result["gate_result"]["asset"]["content"]["gate_kind"], "chapter_runtime_growth_write_budget")
+            self.assertFalse(result["gate_result"]["asset"]["content"]["result"]["summary"]["chapter_production_executed"])
+
+    def test_write_budget_gate_fails_closed_for_over_budget_runtime_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft_1 = self._write_asset(storage, "budget-hot-draft-1", "draft_chapter", project_id="book-a")
+            draft_2 = self._write_asset(storage, "budget-hot-draft-2", "draft_chapter", project_id="book-a")
+            task_1 = self._write_asset(storage, "budget-hot-task-1", "task_status", project_id="book-a")
+            task_2 = self._write_asset(storage, "budget-hot-task-2", "task_status", project_id="book-a")
+            self._write_asset(storage, "budget-hot-node-run-1", "node_run", project_id="book-a", content={"run_id": "budget-hot-run"})
+            self._write_asset(storage, "budget-hot-node-run-2", "node_run", project_id="book-a", content={"run_id": "budget-hot-run"})
+            self._write_asset(storage, "budget-hot-trace-1", "trace_span", project_id="book-a", content={"trace_id": "budget-hot-run"})
+            self._write_asset(storage, "budget-hot-trace-2", "trace_span", project_id="book-a", content={"trace_id": "budget-hot-run"})
+            self._write_chapter_run(
+                storage,
+                run_id="budget-hot-run",
+                chapter=6,
+                task_status_mode="compact",
+                outputs={"draft_v0_path": draft_1, "final_draft_path": draft_2},
+                steps={
+                    "draft": {"task_status_paths": [task_1], "output_paths": [draft_1]},
+                    "final": {"task_status_paths": [task_2], "output_paths": [draft_2]},
+                },
+            )
+
+            local_result = run_chapter_runtime_growth_write_budget_gate(
+                storage,
+                project_id="book-a",
+                environment="local",
+                budgets={
+                    "max_linked_asset_refs_per_run": 1,
+                    "max_task_status_refs_per_run": 1,
+                    "max_step_output_refs_per_run": 1,
+                    "max_node_runs_per_run": 1,
+                    "max_trace_spans_per_run": 1,
+                    "max_repeated_asset_type_total": 1,
+                },
+            )
+            production_result = run_chapter_runtime_growth_write_budget_gate(
+                storage,
+                project_id="book-a",
+                environment="production",
+                budgets={
+                    "max_linked_asset_refs_per_run": 1,
+                    "max_task_status_refs_per_run": 1,
+                    "max_step_output_refs_per_run": 1,
+                    "max_node_runs_per_run": 1,
+                    "max_trace_spans_per_run": 1,
+                    "max_repeated_asset_type_total": 1,
+                },
+            )
+
+            self.assertEqual(local_result["status"], "warning")
+            self.assertFalse(local_result["blocking"])
+            self.assertEqual(production_result["status"], "failed")
+            self.assertTrue(production_result["blocking"])
+            codes = {row["code"] for row in production_result["blocking_rows"]}
+            self.assertIn("chapter_runtime_write_budget_linked_refs", codes)
+            self.assertIn("chapter_runtime_write_budget_task_status_refs", codes)
+            self.assertIn("chapter_runtime_write_budget_node_runs", codes)
+            self.assertIn("chapter_runtime_write_budget_trace_spans", codes)
+            self.assertIn("chapter_runtime_write_budget_repeated_asset_family", codes)
 
     def _write_asset(self, storage: LocalStorage, asset_id: str, asset_type: str, *, project_id: str, content: dict | None = None) -> str:
         path = storage.write_asset_auto(

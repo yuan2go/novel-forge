@@ -28,7 +28,17 @@ POLICY_ROLLBACK_CONTRACT = "chapter-runtime-growth-policy-rollback-v1"
 POLICY_ROLLBACK_SNAPSHOT_KIND = "chapter_runtime_growth_policy_rollback"
 THRESHOLD_GATE_KIND = "chapter_runtime_growth_threshold"
 THRESHOLD_GATE_CONTRACT = "chapter-runtime-growth-threshold-gate-v1"
+WRITE_BUDGET_GATE_KIND = "chapter_runtime_growth_write_budget"
+WRITE_BUDGET_GATE_CONTRACT = "chapter-runtime-growth-write-budget-gate-v1"
 HIGH_REF_THRESHOLD = 120
+DEFAULT_WRITE_BUDGETS = {
+    "max_linked_asset_refs_per_run": 120,
+    "max_task_status_refs_per_run": 60,
+    "max_step_output_refs_per_run": 60,
+    "max_node_runs_per_run": 20,
+    "max_trace_spans_per_run": 20,
+    "max_repeated_asset_type_total": 50,
+}
 
 
 def build_chapter_runtime_growth_profile(storage: LocalStorage, *, project_id: str = "", persist: bool = True) -> dict[str, Any]:
@@ -797,6 +807,86 @@ def run_chapter_runtime_growth_threshold_gate(
     }
 
 
+def run_chapter_runtime_growth_write_budget_gate(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    environment: str = "",
+    budgets: dict[str, Any] | None = None,
+    persist_profile: bool = True,
+) -> dict[str, Any]:
+    """Write a read-only gate over chapter runtime write-amplification budgets."""
+
+    storage.ensure_layout()
+    profile = build_chapter_runtime_growth_profile(storage, project_id=project_id, persist=persist_profile)
+    profile_content = profile.get("asset", {}).get("content", {}) if isinstance(profile.get("asset", {}), dict) else {}
+    profile_status = str(profile.get("status") or profile_content.get("status") or "missing")
+    runtime_rows = profile.get("runtime_rows", []) if isinstance(profile.get("runtime_rows", []), list) else []
+    profile_summary = profile.get("summary", {}) if isinstance(profile.get("summary", {}), dict) else {}
+    normalized_budgets = _normalize_write_budgets(budgets, chapter_run_count=len(runtime_rows))
+    blockers = _write_budget_blocking_rows(
+        profile_status=profile_status,
+        runtime_rows=runtime_rows,
+        profile_summary=profile_summary,
+        budgets=normalized_budgets,
+    )
+    production = is_production_environment(environment)
+    status = "failed" if production and blockers else "warning" if blockers else "passed"
+    message = (
+        f"chapter runtime write budget gate has {len(blockers)} blocking row(s)"
+        if blockers
+        else "chapter runtime write budget gate passed"
+    )
+    profile_path = str(profile.get("path") or "")
+    evidence_paths = _dedupe([profile_path, *[str(row.get("path") or "") for row in runtime_rows], *[str(row.get("path") or "") for row in blockers]])
+    summary = {
+        "profile_status": profile_status,
+        "chapter_run_count": len(runtime_rows),
+        "blocking_count": len(blockers),
+        "budgets": normalized_budgets,
+        "max_linked_asset_ref_count": int(profile_summary.get("max_linked_asset_ref_count") or 0),
+        "max_task_status_ref_count": max((int(row.get("task_status_ref_count") or 0) for row in runtime_rows), default=0),
+        "max_step_output_ref_count": max((int(row.get("step_output_ref_count") or 0) for row in runtime_rows), default=0),
+        "max_node_run_count": max((int(row.get("node_run_count") or 0) for row in runtime_rows), default=0),
+        "max_trace_span_count": max((int(row.get("trace_span_count") or 0) for row in runtime_rows), default=0),
+        "repeated_asset_type_counts": profile_summary.get("repeated_asset_type_counts", {}),
+        "production": production,
+        "mutation_applied": False,
+        "chapter_production_executed": False,
+        "provider_proof_executed": False,
+    }
+    gate = record_gate_result(
+        storage,
+        gate_kind=WRITE_BUDGET_GATE_KIND,
+        status=status,
+        target_paths=evidence_paths,
+        result={
+            "contract": WRITE_BUDGET_GATE_CONTRACT,
+            "project_id": project_id,
+            "environment": environment,
+            "summary": summary,
+            "blocking_rows": blockers,
+            "profile_path": profile_path,
+            "operator_action": _write_budget_operator_action(blockers),
+            "mutation_policy": "read-only: no chapter production, acceptance, provider proof, compaction, or artifact deletion",
+        },
+        project_id=project_id,
+        message=message,
+        blocking=production and bool(blockers),
+    )
+    return {
+        "status": status,
+        "production": production,
+        "blocking": production and bool(blockers),
+        "message": message,
+        "summary": summary,
+        "blocking_rows": blockers,
+        "profile": profile,
+        "gate_result": gate,
+        "gate_result_path": str(gate.get("path") or ""),
+    }
+
+
 def _chapter_run_rows(storage: LocalStorage, *, project_id: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for path in storage.list_json("runs"):
@@ -1482,6 +1572,142 @@ def _threshold_operator_action(blockers: list[dict[str, Any]]) -> str:
     if "chapter_runtime_full_mode" in codes or "chapter_runtime_policy_missing" in codes:
         return "switch sequence runs to compact runtime artifact policy before final acceptance"
     return "review chapter runtime growth threshold blockers"
+
+
+def _normalize_write_budgets(budgets: dict[str, Any] | None, *, chapter_run_count: int) -> dict[str, int]:
+    raw = budgets if isinstance(budgets, dict) else {}
+    normalized: dict[str, int] = {}
+    for key, default in DEFAULT_WRITE_BUDGETS.items():
+        value = raw.get(key, default)
+        try:
+            normalized[key] = max(1, int(value))
+        except (TypeError, ValueError):
+            normalized[key] = default
+    if "max_repeated_asset_type_total" not in raw:
+        normalized["max_repeated_asset_type_total"] = max(DEFAULT_WRITE_BUDGETS["max_repeated_asset_type_total"], max(1, chapter_run_count) * 8)
+    return normalized
+
+
+def _write_budget_blocking_rows(
+    *,
+    profile_status: str,
+    runtime_rows: list[dict[str, Any]],
+    profile_summary: dict[str, Any],
+    budgets: dict[str, int],
+) -> list[dict[str, Any]]:
+    blockers: list[dict[str, Any]] = []
+    if profile_status == "missing" or not runtime_rows:
+        return [
+            {
+                "code": "chapter_runtime_write_budget_profile_missing",
+                "severity": "high",
+                "message": "chapter runtime write budget gate has no chapter run evidence",
+                "path": "",
+            }
+        ]
+    for row in runtime_rows:
+        run_id = str(row.get("run_id") or "")
+        path = str(row.get("path") or "")
+        _append_write_budget_blocker(
+            blockers,
+            code="chapter_runtime_write_budget_linked_refs",
+            metric="linked_asset_ref_count",
+            value=int(row.get("linked_asset_ref_count") or 0),
+            threshold=budgets["max_linked_asset_refs_per_run"],
+            run_id=run_id,
+            path=path,
+        )
+        _append_write_budget_blocker(
+            blockers,
+            code="chapter_runtime_write_budget_task_status_refs",
+            metric="task_status_ref_count",
+            value=int(row.get("task_status_ref_count") or 0),
+            threshold=budgets["max_task_status_refs_per_run"],
+            run_id=run_id,
+            path=path,
+        )
+        _append_write_budget_blocker(
+            blockers,
+            code="chapter_runtime_write_budget_step_output_refs",
+            metric="step_output_ref_count",
+            value=int(row.get("step_output_ref_count") or 0),
+            threshold=budgets["max_step_output_refs_per_run"],
+            run_id=run_id,
+            path=path,
+        )
+        _append_write_budget_blocker(
+            blockers,
+            code="chapter_runtime_write_budget_node_runs",
+            metric="node_run_count",
+            value=int(row.get("node_run_count") or 0),
+            threshold=budgets["max_node_runs_per_run"],
+            run_id=run_id,
+            path=path,
+        )
+        _append_write_budget_blocker(
+            blockers,
+            code="chapter_runtime_write_budget_trace_spans",
+            metric="trace_span_count",
+            value=int(row.get("trace_span_count") or 0),
+            threshold=budgets["max_trace_spans_per_run"],
+            run_id=run_id,
+            path=path,
+        )
+    repeated_counts = profile_summary.get("repeated_asset_type_counts", {}) if isinstance(profile_summary.get("repeated_asset_type_counts", {}), dict) else {}
+    for asset_type, count in sorted(repeated_counts.items()):
+        value = int(count or 0)
+        threshold = budgets["max_repeated_asset_type_total"]
+        if value > threshold:
+            blockers.append(
+                {
+                    "code": "chapter_runtime_write_budget_repeated_asset_family",
+                    "severity": "medium",
+                    "asset_type": str(asset_type),
+                    "metric": "repeated_asset_type_count",
+                    "value": value,
+                    "threshold": threshold,
+                    "path": "",
+                    "message": f"repeated runtime asset family {asset_type} exceeds write budget",
+                }
+            )
+    return blockers
+
+
+def _append_write_budget_blocker(
+    blockers: list[dict[str, Any]],
+    *,
+    code: str,
+    metric: str,
+    value: int,
+    threshold: int,
+    run_id: str,
+    path: str,
+) -> None:
+    if value <= threshold:
+        return
+    blockers.append(
+        {
+            "code": code,
+            "severity": "high",
+            "run_id": run_id,
+            "path": path,
+            "metric": metric,
+            "value": value,
+            "threshold": threshold,
+            "message": f"chapter runtime metric {metric}={value} exceeds write budget {threshold}",
+        }
+    )
+
+
+def _write_budget_operator_action(blockers: list[dict[str, Any]]) -> str:
+    if not blockers:
+        return "chapter runtime writes are within budget"
+    codes = {str(row.get("code") or "") for row in blockers}
+    if "chapter_runtime_write_budget_profile_missing" in codes:
+        return "create a chapter runtime growth profile before enforcing write budgets"
+    if "chapter_runtime_write_budget_repeated_asset_family" in codes:
+        return "inspect repeated runtime asset families before final acceptance"
+    return "tighten runtime write policy or reduce chapter run artifact fanout before final acceptance"
 
 
 def _runtime_asset_counts(storage: LocalStorage, *, run_id: str) -> dict[str, int]:

@@ -7,6 +7,7 @@ from .service import (
     request_chapter_runtime_growth_write_policy_approval,
     rollback_chapter_runtime_growth_applied_policy,
     run_chapter_runtime_growth_threshold_gate,
+    run_chapter_runtime_growth_write_budget_gate,
 )
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "request_chapter_runtime_growth_write_policy_approval",
     "rollback_chapter_runtime_growth_applied_policy",
     "run_chapter_runtime_growth_threshold_gate",
+    "run_chapter_runtime_growth_write_budget_gate",
 ]

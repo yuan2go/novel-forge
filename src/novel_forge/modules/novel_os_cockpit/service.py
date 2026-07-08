@@ -36,6 +36,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     chapter_runtime_growth_applied_policy = _chapter_runtime_growth_applied_policy(rows)
     chapter_runtime_growth_policy_rollback = _chapter_runtime_growth_policy_rollback(rows)
     chapter_runtime_growth_threshold_gate = _latest_gate_result(rows, "chapter_runtime_growth_threshold")
+    chapter_runtime_growth_write_budget_gate = _latest_gate_result(rows, "chapter_runtime_growth_write_budget")
     unified_acceptance_preflight = _latest_unified_acceptance_preflight_manifest(rows)
     unified_acceptance_preflight_gate = _latest_gate_result(rows, "v1_unified_preflight")
     quality_calibration_readiness = _quality_calibration_readiness(rows)
@@ -60,6 +61,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         chapter_runtime_growth_applied_policy,
         chapter_runtime_growth_policy_rollback,
         chapter_runtime_growth_threshold_gate,
+        chapter_runtime_growth_write_budget_gate,
         unified_acceptance_preflight,
         unified_acceptance_preflight_gate,
         quality_calibration_readiness,
@@ -102,6 +104,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_applied_policy_status": chapter_runtime_growth_applied_policy["status"],
             "chapter_runtime_growth_policy_rollback_status": chapter_runtime_growth_policy_rollback["status"],
             "chapter_runtime_growth_threshold_gate_status": chapter_runtime_growth_threshold_gate["status"],
+            "chapter_runtime_growth_write_budget_gate_status": chapter_runtime_growth_write_budget_gate["status"],
             "chapter_runtime_growth_high_run_count": chapter_runtime_growth["summary"]["high_growth_run_count"],
             "chapter_runtime_growth_hotspot_family_count": chapter_runtime_growth_hotspot_ledger["summary"]["hotspot_family_count"],
             "chapter_runtime_growth_write_policy_candidate_count": chapter_runtime_growth_write_policy_candidate_plan["summary"]["candidate_action_count"],
@@ -150,6 +153,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_applied_policy": chapter_runtime_growth_applied_policy,
             "chapter_runtime_growth_policy_rollback": chapter_runtime_growth_policy_rollback,
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
+            "chapter_runtime_growth_write_budget_gate": chapter_runtime_growth_write_budget_gate,
             "unified_acceptance_preflight": unified_acceptance_preflight,
             "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate,
             "quality_calibration_readiness": quality_calibration_readiness,
@@ -178,6 +182,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_applied_policy": chapter_runtime_growth_applied_policy,
             "chapter_runtime_growth_policy_rollback": chapter_runtime_growth_policy_rollback,
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
+            "chapter_runtime_growth_write_budget_gate": chapter_runtime_growth_write_budget_gate,
             "unified_acceptance_preflight": unified_acceptance_preflight,
             "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate,
             "quality_calibration_readiness": quality_calibration_readiness,
@@ -1421,6 +1426,7 @@ def _production_control_console(
     chapter_runtime_growth_applied_policy: dict[str, Any],
     chapter_runtime_growth_policy_rollback: dict[str, Any],
     chapter_runtime_growth_threshold_gate: dict[str, Any],
+    chapter_runtime_growth_write_budget_gate: dict[str, Any],
     unified_acceptance_preflight: dict[str, Any],
     unified_acceptance_preflight_gate: dict[str, Any],
     quality_calibration_readiness: dict[str, Any],
@@ -1450,6 +1456,7 @@ def _production_control_console(
         "runtime_growth_applied_policy": chapter_runtime_growth_applied_policy["status"],
         "runtime_growth_policy_rollback": chapter_runtime_growth_policy_rollback["status"],
         "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
+        "runtime_growth_write_budget": chapter_runtime_growth_write_budget_gate["status"],
         "unified_acceptance_preflight": unified_acceptance_preflight["status"],
         "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate["status"],
         "quality_calibration": quality_calibration_readiness["status"],
@@ -1493,6 +1500,7 @@ def _production_control_console(
             "runtime_growth_applied_policy": chapter_runtime_growth_applied_policy["status"],
             "runtime_growth_policy_rollback": chapter_runtime_growth_policy_rollback["status"],
             "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
+            "runtime_growth_write_budget": chapter_runtime_growth_write_budget_gate["status"],
             "unified_acceptance_preflight": unified_acceptance_preflight["status"],
             "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate["status"],
             "quality_calibration": quality_calibration_readiness["status"],
@@ -1526,6 +1534,7 @@ def _production_control_console(
         "chapter_runtime_growth_applied_policy": chapter_runtime_growth_applied_policy,
         "chapter_runtime_growth_policy_rollback": chapter_runtime_growth_policy_rollback,
         "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
+        "chapter_runtime_growth_write_budget_gate": chapter_runtime_growth_write_budget_gate,
         "unified_acceptance_preflight": unified_acceptance_preflight,
         "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate,
         "quality_calibration_readiness": quality_calibration_readiness,
