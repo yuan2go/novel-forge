@@ -347,25 +347,58 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(queue["status"], "queued")
             self.assertEqual(list_agent_runs(storage)[0]["status"], "prepared")
 
+    def test_direct_recover_rejects_governance_dead_letter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            result = _create_drifted_release_dead_letter(storage)
+
+            with self.assertRaisesRegex(ValueError, "governance dead-letter recovery requires"):
+                recover_agent_dispatch(storage, queue_path=result["queue"]["path"], reason="direct recover bypass")
+
+            queue = list_agent_dispatch_queue(storage, project_id=result["fixture"]["project_id"])[0]
+            self.assertEqual(queue["status"], "dead_letter")
+
+    def test_agent_recover_api_rejects_governance_dead_letter(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            storage = LocalStorage(root)
+            storage.ensure_layout()
+            result = _create_drifted_release_dead_letter(storage)
+            client = TestClient(create_app(IndustrialSettings(root=root)))
+
+            response = client.post("/product/agents/recover", json={"queue_path": result["queue"]["path"], "reason": "api direct recover bypass"})
+
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("governance dead-letter recovery requires", response.json()["detail"])
+
     def test_non_governance_dead_letter_repair_remains_compatible(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
             storage.ensure_layout()
-            run = start_agent_run(
-                storage,
-                agent_key="continuity",
-                operation="create-continuity-graph-snapshot",
-                status="prepared",
-                token_budget=500,
-            )
-            queue = dispatch_agent_run(storage, agent_run_path=run["path"], max_attempts=1)
-            claim_queue_item(storage, queue["path"], owner="unit-test", ttl_seconds=30)
-            failed = fail_queue_item(storage, queue["path"], reason="plain unit failure", retry_delay_seconds=0)
-            self.assertEqual(failed["status"], "dead_letter")
+            plain = _create_plain_dead_letter(storage)
 
-            repaired = repair_dead_letter_dispatch(storage, {"queue_path": failed["path"], "reason": "non-governance retry"})
+            repaired = repair_dead_letter_dispatch(storage, {"queue_path": plain["queue"]["path"], "reason": "non-governance retry"})
 
             self.assertFalse(repaired["repair"]["governance_review"]["required"])
+            self.assertEqual(list_agent_dispatch_queue(storage)[0]["status"], "queued")
+
+    def test_direct_recover_non_governance_dead_letter_remains_compatible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plain = _create_plain_dead_letter(storage)
+
+            recovered = recover_agent_dispatch(storage, queue_path=plain["queue"]["path"], reason="plain direct recovery")
+
+            self.assertEqual(recovered["status"], "queued")
             self.assertEqual(list_agent_dispatch_queue(storage)[0]["status"], "queued")
 
     def test_agent_center_links_tasks_loops_context_and_review_issues(self):
@@ -887,6 +920,20 @@ def _create_drifted_release_dead_letter(storage: LocalStorage) -> dict[str, obje
     tick = run_agent_scheduler_tick(storage, project_id=fixture["project_id"])
     queue = list_agent_dispatch_queue(storage, project_id=fixture["project_id"])[0]
     return {"fixture": fixture, "run": run, "tick": tick, "queue": queue}
+
+
+def _create_plain_dead_letter(storage: LocalStorage) -> dict[str, object]:
+    run = start_agent_run(
+        storage,
+        agent_key="continuity",
+        operation="create-continuity-graph-snapshot",
+        status="prepared",
+        token_budget=500,
+    )
+    queue = dispatch_agent_run(storage, agent_run_path=run["path"], max_attempts=1)
+    claim_queue_item(storage, queue["path"], owner="unit-test", ttl_seconds=30)
+    failed = fail_queue_item(storage, queue["path"], reason="plain unit failure", retry_delay_seconds=0)
+    return {"run": run, "queue": failed}
 
 
 def _scheduler_production_envelope(project_id: str) -> dict[str, object]:
