@@ -1455,6 +1455,10 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
             self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
             self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["unready_final_evidence"][0]["key"], "source_governance_runtime")
+            repair_plan = content["cockpit"]["unified_acceptance_preflight"]["operator_repair_plan"]
+            self.assertEqual(repair_plan["status"], "review_required")
+            self.assertEqual(repair_plan["actions"][0]["repair_group"], "source_governance")
+            self.assertFalse(repair_plan["chapter_acceptance_executed"])
 
     def test_quality_calibration_readiness_route_persists_and_cockpit_surfaces_it(self):
         try:

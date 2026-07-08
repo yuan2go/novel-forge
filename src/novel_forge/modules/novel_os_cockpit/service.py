@@ -693,6 +693,7 @@ def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) ->
             "unready_final_evidence_count": 0,
             "missing_or_deferred_final_evidence_count": 0,
             "unready_final_evidence": [],
+            "operator_repair_plan": _preflight_operator_repair_plan([]),
             "required_evidence": [],
             "operator_action": "run deferred v1 acceptance preflight helper before final unified acceptance",
         }
@@ -708,6 +709,7 @@ def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) ->
             "unready_final_evidence_count": 0,
             "missing_or_deferred_final_evidence_count": 0,
             "unready_final_evidence": [],
+            "operator_repair_plan": _preflight_operator_repair_plan([]),
             "required_evidence": [],
             "operator_action": "latest acceptance report has no unified preflight manifest",
         }
@@ -715,6 +717,9 @@ def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) ->
     unready_rows = manifest.get("unready_final_evidence", []) if isinstance(manifest.get("unready_final_evidence", []), list) else []
     if not unready_rows:
         unready_rows = _unready_preflight_rows(evidence)
+    repair_plan = manifest.get("operator_repair_plan", {}) if isinstance(manifest.get("operator_repair_plan", {}), dict) else {}
+    if not repair_plan:
+        repair_plan = _preflight_operator_repair_plan(unready_rows)
     return {
         "contract": str(manifest.get("contract") or "v1-unified-acceptance-preflight-manifest-v1"),
         "status": str(manifest.get("status") or "unknown"),
@@ -726,6 +731,7 @@ def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) ->
         "missing_or_deferred_final_evidence_count": int(manifest.get("missing_or_deferred_final_evidence_count") or 0),
         "required_evidence": evidence,
         "unready_final_evidence": unready_rows,
+        "operator_repair_plan": repair_plan,
         "operator_action": str(manifest.get("operator_action") or ""),
     }
 
@@ -754,6 +760,47 @@ def _unready_preflight_rows(evidence: list[Any]) -> list[dict[str, Any]]:
             compact["linked_evidence_paths"] = linked
         rows.append(compact)
     return rows
+
+
+def _preflight_operator_repair_plan(unready_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    actions = []
+    for index, row in enumerate(unready_rows, start=1):
+        actions.append(
+            {
+                "action_index": index,
+                "dimension": str(row.get("key") or ""),
+                "status": str(row.get("status") or ""),
+                "repair_group": _preflight_repair_group(str(row.get("key") or "")),
+                "recommended_action": str(row.get("operator_action") or "complete this final preflight evidence"),
+                "evidence_path": str(row.get("evidence_path") or ""),
+                "linked_evidence_paths": row.get("linked_evidence_paths", []) if isinstance(row.get("linked_evidence_paths", []), list) else [],
+                "blocking": bool(row.get("blocking", False)),
+                "message": str(row.get("message") or ""),
+            }
+        )
+    return {
+        "contract": "v1-unified-preflight-operator-repair-plan-v1",
+        "status": "review_required" if actions else "not_required",
+        "action_count": len(actions),
+        "actions": actions,
+        "read_only": True,
+        "repair_executed": False,
+        "provider_call_executed": False,
+        "chapter_acceptance_executed": False,
+        "mutation_policy": "read-only: this plan does not run repair, approvals, workflow, provider judge, or chapter acceptance",
+    }
+
+
+def _preflight_repair_group(key: str) -> str:
+    if key.startswith("source_"):
+        return "source_governance"
+    if key.startswith("workflow_"):
+        return "workflow_governance"
+    if key.startswith("approval_"):
+        return "approval_request_governance"
+    if key.startswith("quality_"):
+        return "quality_calibration"
+    return "runtime_governance"
 
 
 def _quality_calibration_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:

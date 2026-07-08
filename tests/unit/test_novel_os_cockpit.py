@@ -493,6 +493,10 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["unready_final_evidence"][0]["key"], "source_governance_runtime")
+            repair_plan = snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["operator_repair_plan"]
+            self.assertEqual(repair_plan["status"], "review_required")
+            self.assertEqual(repair_plan["actions"][0]["repair_group"], "source_governance")
+            self.assertFalse(repair_plan["repair_executed"])
             self.assertEqual(pending_approval["asset"]["content"]["scope"], "publish")
 
     def test_project_cockpit_surfaces_workflow_governance_readiness(self):

@@ -298,6 +298,7 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolve
     enforced_failures = [row for row in rows if row["enforced_now"] and row["status"] != "passed"]
     unready_final = [row for row in rows if row["required_for_final_unified_acceptance"] and not row["enforced_now"] and row["status"] != "passed"]
     unready_final_rows = [_compact_unready_preflight_row(row) for row in unready_final]
+    operator_repair_plan = _build_preflight_operator_repair_plan(unready_final_rows)
     return {
         "contract": "v1-unified-acceptance-preflight-manifest-v1",
         "status": "failed" if enforced_failures else "review_required" if unready_final else "passed",
@@ -306,6 +307,7 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolve
         "missing_or_deferred_final_evidence_count": len(unready_final),
         "legacy_count_compatibility": "missing_or_deferred_final_evidence_count is retained as an alias for unready_final_evidence_count",
         "unready_final_evidence": unready_final_rows,
+        "operator_repair_plan": operator_repair_plan,
         "required_evidence": rows,
         "chapter_acceptance_executed_by_manifest": False,
         "operator_action": "complete unready final preflight evidence before unified acceptance" if unready_final else "preflight evidence complete",
@@ -343,6 +345,47 @@ def _compact_unready_preflight_row(row: dict[str, Any]) -> dict[str, Any]:
     if linked:
         compact["linked_evidence_paths"] = linked
     return compact
+
+
+def _build_preflight_operator_repair_plan(unready_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    actions = []
+    for index, row in enumerate(unready_rows, start=1):
+        actions.append(
+            {
+                "action_index": index,
+                "dimension": str(row.get("key") or ""),
+                "status": str(row.get("status") or ""),
+                "repair_group": _preflight_repair_group(str(row.get("key") or "")),
+                "recommended_action": str(row.get("operator_action") or "complete this final preflight evidence"),
+                "evidence_path": str(row.get("evidence_path") or ""),
+                "linked_evidence_paths": row.get("linked_evidence_paths", []) if isinstance(row.get("linked_evidence_paths", []), list) else [],
+                "blocking": bool(row.get("blocking", False)),
+                "message": str(row.get("message") or ""),
+            }
+        )
+    return {
+        "contract": "v1-unified-preflight-operator-repair-plan-v1",
+        "status": "review_required" if actions else "not_required",
+        "action_count": len(actions),
+        "actions": actions,
+        "read_only": True,
+        "repair_executed": False,
+        "provider_call_executed": False,
+        "chapter_acceptance_executed": False,
+        "mutation_policy": "read-only: this plan does not run repair, approvals, workflow, provider judge, or chapter acceptance",
+    }
+
+
+def _preflight_repair_group(key: str) -> str:
+    if key.startswith("source_"):
+        return "source_governance"
+    if key.startswith("workflow_"):
+        return "workflow_governance"
+    if key.startswith("approval_"):
+        return "approval_request_governance"
+    if key.startswith("quality_"):
+        return "quality_calibration"
+    return "runtime_governance"
 
 
 def _resolve_unified_acceptance_preflight_evidence(storage: LocalStorage, *, project_id: str) -> dict[str, dict[str, Any]]:
