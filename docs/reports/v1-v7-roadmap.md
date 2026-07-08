@@ -73,7 +73,7 @@ Current evidence:
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
-- 10-chapter runtime growth is high in the last true slow report: chapter 1 took 22.571s, chapter 10 took 306.933s. Development now has a profiler, Product API/Cockpit route visibility, a read-only threshold gate, and deferred acceptance preflight demotion; unified preflight evidence manifest remains pending.
+- 10-chapter runtime growth is high in the last true slow report: chapter 1 took 22.571s, chapter 10 took 306.933s. Development now has a profiler, Product API/Cockpit route visibility, a read-only threshold gate, deferred acceptance preflight demotion, and a unified preflight manifest; storage-backed source/workflow/approval evidence resolution remains pending.
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
 - ApprovalRequest caller readiness, source guarded apply readiness, and source governance runtime gate evidence are visible through read-only reports, Product API routes, Project Cockpit summaries, Agent Center, Workflow Runtime Console, and focused no-acceptance regression bundles; publish/release/context/scheduler/workflow callers now consume, propagate, or expose source gate evidence, including sparse project-scoped runtime evidence.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
@@ -83,7 +83,7 @@ Current evidence:
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
 2. Portfolio project boundary for future multi-book scheduling and cost/quality rollups.
-3. Define a unified final-acceptance preflight evidence manifest without running chapter acceptance during development.
+3. Resolve existing source/workflow/approval evidence into the unified final-acceptance preflight manifest without running chapter acceptance during development.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
 验收标准:

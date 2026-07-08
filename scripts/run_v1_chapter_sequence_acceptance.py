@@ -137,6 +137,7 @@ def _render_report(args: argparse.Namespace, *, root: Path, result: dict[str, An
     content = acceptance.get("content", {}) if isinstance(acceptance, dict) else {}
     runtime = content.get("runtime_summary", {}) if isinstance(content, dict) else {}
     runtime_growth_preflight = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
+    unified_preflight_manifest = result.get("unified_acceptance_preflight_manifest", {}) if isinstance(result.get("unified_acceptance_preflight_manifest", {}), dict) else {}
     lines = [
         "# V1 Chapter Sequence Slow Acceptance",
         "",
@@ -159,6 +160,12 @@ def _render_report(args: argparse.Namespace, *, root: Path, result: dict[str, An
         "",
         "```json",
         json.dumps(runtime_growth_preflight, ensure_ascii=False, indent=2),
+        "```",
+        "",
+        "## Unified Acceptance Preflight Manifest",
+        "",
+        "```json",
+        json.dumps(unified_preflight_manifest, ensure_ascii=False, indent=2),
         "```",
         "",
         "## Chapter Coverage",
@@ -230,6 +237,7 @@ def _with_runtime_growth_acceptance_preflight(result: dict[str, Any], gate: dict
         "blocking_rows": gate.get("blocking_rows", []) if isinstance(gate.get("blocking_rows", []), list) else [],
     }
     updated["runtime_growth_preflight"] = preflight
+    updated["unified_acceptance_preflight_manifest"] = _build_unified_acceptance_preflight_manifest(updated)
     if updated.get("status") == "succeeded" and preflight["status"] != "passed":
         updated["status"] = "failed"
         failures = list(updated.get("failures", []) if isinstance(updated.get("failures", []), list) else [])
@@ -249,12 +257,66 @@ def _with_runtime_growth_acceptance_preflight(result: dict[str, Any], gate: dict
         if isinstance(content, dict):
             content["recommendation"] = "repair_runtime_growth_before_acceptance"
             content["runtime_growth_preflight"] = preflight
+            content["unified_acceptance_preflight_manifest"] = updated["unified_acceptance_preflight_manifest"]
     return updated
+
+
+def _build_unified_acceptance_preflight_manifest(result: dict[str, Any]) -> dict[str, Any]:
+    runtime_growth = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
+    rows = [
+        {
+            "key": "runtime_growth_threshold",
+            "status": str(runtime_growth.get("status") or "missing"),
+            "required_for_final_unified_acceptance": True,
+            "enforced_now": True,
+            "evidence_path": str(runtime_growth.get("gate_result_path") or ""),
+            "operator_action": "repair runtime growth blockers before accepting the run" if runtime_growth.get("status") != "passed" else "runtime growth threshold passed",
+        },
+        {
+            "key": "source_governance_runtime",
+            "status": "deferred",
+            "required_for_final_unified_acceptance": True,
+            "enforced_now": False,
+            "evidence_path": "",
+            "operator_action": "final unified acceptance must require a passed source_governance_runtime gate",
+        },
+        {
+            "key": "workflow_governance_drift",
+            "status": "deferred",
+            "required_for_final_unified_acceptance": True,
+            "enforced_now": False,
+            "evidence_path": "",
+            "operator_action": "final unified acceptance must require clean workflow governance drift evidence",
+        },
+        {
+            "key": "approval_request_caller_readiness",
+            "status": "deferred",
+            "required_for_final_unified_acceptance": True,
+            "enforced_now": False,
+            "evidence_path": "",
+            "operator_action": "final unified acceptance must require approval caller readiness evidence",
+        },
+    ]
+    enforced_failures = [row for row in rows if row["enforced_now"] and row["status"] != "passed"]
+    missing_final = [row for row in rows if row["required_for_final_unified_acceptance"] and row["status"] in {"missing", "deferred"}]
+    return {
+        "contract": "v1-unified-acceptance-preflight-manifest-v1",
+        "status": "failed" if enforced_failures else "review_required" if missing_final else "passed",
+        "enforced_failure_count": len(enforced_failures),
+        "missing_or_deferred_final_evidence_count": len(missing_final),
+        "required_evidence": rows,
+        "chapter_acceptance_executed_by_manifest": False,
+        "operator_action": "complete deferred final preflight evidence before unified acceptance" if missing_final else "preflight evidence complete",
+    }
 
 
 def _persist_runtime_growth_acceptance_preflight(storage: LocalStorage, result: dict[str, Any]) -> None:
     path = str(result.get("acceptance_report_path") or "")
     preflight = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
+    manifest = result.get("unified_acceptance_preflight_manifest", {}) if isinstance(result.get("unified_acceptance_preflight_manifest", {}), dict) else {}
+    if preflight and not manifest:
+        manifest = _build_unified_acceptance_preflight_manifest(result)
+        result["unified_acceptance_preflight_manifest"] = manifest
     if not path or not preflight:
         return
     try:
@@ -265,6 +327,8 @@ def _persist_runtime_growth_acceptance_preflight(storage: LocalStorage, result: 
         return
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
     content["runtime_growth_preflight"] = preflight
+    if manifest:
+        content["unified_acceptance_preflight_manifest"] = manifest
     if preflight.get("status") != "passed":
         content["recommendation"] = "repair_runtime_growth_before_acceptance"
         tags = [str(item) for item in data.get("tags", []) if str(item)] if isinstance(data.get("tags", []), list) else []

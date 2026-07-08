@@ -43,8 +43,39 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["runtime_growth_preflight"]["status"], "failed")
+        self.assertEqual(result["unified_acceptance_preflight_manifest"]["status"], "failed")
+        self.assertEqual(result["unified_acceptance_preflight_manifest"]["enforced_failure_count"], 1)
         self.assertEqual(result["failures"][0]["failure_type"], "runtime_growth_threshold_gate")
         self.assertEqual(result["acceptance_report"]["asset"]["content"]["recommendation"], "repair_runtime_growth_before_acceptance")
+
+    def test_unified_preflight_manifest_marks_deferred_final_evidence_without_demoting_runtime_pass(self):
+        module = _load_acceptance_script()
+
+        result = module._with_runtime_growth_acceptance_preflight(
+            {
+                "status": "succeeded",
+                "completed_chapters": 10,
+                "chapter_count": 10,
+                "failures": [],
+                "acceptance_report": {"asset": {"content": {"recommendation": "pass"}}},
+            },
+            {
+                "status": "passed",
+                "blocking": False,
+                "gate_result_path": "data/runs/runtime-growth-gate.json",
+                "message": "passed",
+                "summary": {"blocking_count": 0},
+                "blocking_rows": [],
+            },
+        )
+
+        manifest = result["unified_acceptance_preflight_manifest"]
+        self.assertEqual(result["status"], "succeeded")
+        self.assertEqual(manifest["status"], "review_required")
+        self.assertEqual(manifest["enforced_failure_count"], 0)
+        self.assertEqual(manifest["missing_or_deferred_final_evidence_count"], 3)
+        self.assertIn("source_governance_runtime", {row["key"] for row in manifest["required_evidence"]})
+        self.assertFalse(manifest["chapter_acceptance_executed_by_manifest"])
 
     def test_runtime_growth_preflight_persists_report_demotion(self):
         module = _load_acceptance_script()
@@ -83,6 +114,7 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
             persisted = storage.read_json(report_path)
             self.assertEqual(persisted["content"]["recommendation"], "repair_runtime_growth_before_acceptance")
             self.assertEqual(persisted["content"]["runtime_growth_preflight"]["status"], "failed")
+            self.assertEqual(persisted["content"]["unified_acceptance_preflight_manifest"]["status"], "failed")
             self.assertEqual(persisted["metadata"]["risk_level"], "high")
             self.assertIn("runtime-growth-blocked", persisted["tags"])
             self.assertNotIn("pass", persisted["tags"])
