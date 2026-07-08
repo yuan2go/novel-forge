@@ -133,10 +133,16 @@ class AgentSchedulerTests(unittest.TestCase):
             queue_asset = storage.read_json(storage.root / list_agent_dispatch_queue(storage)[0]["path"])
             evidence = queue_asset["content"]["result"]["evidence"]["source_governance_runtime_gate"]
             checkpoint = queue_asset["content"]["result"]["checkpoint"]["source_governance_runtime_gate"]
+            center = agent_center_snapshot(storage)
+            source_rows = center["source_governance_runtime_evidence"]
+            drawer_rows = [row for row in center["evidence_drawer"] if row["type"] == "source_governance_runtime_evidence"]
             self.assertEqual(tick["acked_count"], 1)
             self.assertEqual(evidence["status"], "passed")
             self.assertEqual(evidence["gate_result_path"], "data/runs/source-governance-runtime-gate.json")
             self.assertEqual(checkpoint["gate_result_path"], "data/runs/source-governance-runtime-gate.json")
+            self.assertGreaterEqual(center["summary"]["source_governance_runtime_evidence_count"], 1)
+            self.assertEqual(source_rows[0]["gate_result_path"], "data/runs/source-governance-runtime-gate.json")
+            self.assertTrue(drawer_rows)
 
     def test_agent_center_snapshot_exposes_evidence_cockpit_fields(self):
         with tempfile.TemporaryDirectory() as tmp:

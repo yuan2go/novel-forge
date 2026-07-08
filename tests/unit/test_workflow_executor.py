@@ -291,6 +291,11 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(evidence["selector_governance_binding_status"], "applied")
             self.assertEqual(evidence["source_governance_runtime_gate_path"], refs["source_gate_path"])
             self.assertEqual(evidence["source_governance_runtime_gate_status"], "passed")
+            console = build_workflow_runtime_console(storage, workflow_run_path_or_id=result["workflow_run"]["path"])
+            source_console = console["source_governance_runtime_evidence"]
+            self.assertEqual(source_console["status"], "passed")
+            self.assertEqual(source_console["count"], 1)
+            self.assertEqual(source_console["latest"]["gate_result_path"], refs["source_gate_path"])
 
     def test_runtime_policy_blocks_context_without_source_governance_runtime_gate(self):
         with tempfile.TemporaryDirectory() as tmp:

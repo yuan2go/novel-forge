@@ -16,6 +16,42 @@ from novel_forge.storage.local import LocalStorage
 
 
 class NovelOsCockpitTests(unittest.TestCase):
+    def test_project_cockpit_treats_source_gate_evidence_without_status_as_warning(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="agent-run-source-gate-no-status",
+                    type="agent_run",
+                    title="Agent run with incomplete source gate evidence",
+                    content={
+                        "run_id": "agent-run-source-gate-no-status",
+                        "agent_type": "context",
+                        "operation": "build-context-bundle",
+                        "status": "succeeded",
+                        "input_assets": [],
+                        "output_assets": [],
+                        "contract_id": "context-contract",
+                        "permissions": {},
+                        "evidence": {
+                            "source_governance_runtime_gate": {
+                                "gate_result_path": "data/runs/source-governance-runtime-gate-no-status.json",
+                                "summary": {"blocking_count": 0},
+                            }
+                        },
+                    },
+                    metadata={"project_id": "book-a"},
+                )
+            )
+
+            snapshot = build_project_cockpit_snapshot(storage, project_id="book-a")
+
+            evidence = snapshot["asset"]["content"]["cockpit"]["source_governance_runtime_evidence"]
+            self.assertEqual(evidence["status"], "warning")
+            self.assertEqual(evidence["latest"]["status"], "missing")
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["source_governance_runtime_evidence_status"], "warning")
+
     def test_project_cockpit_snapshot_is_schema_backed(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -125,6 +161,35 @@ class NovelOsCockpitTests(unittest.TestCase):
                     metadata={"project_id": "book-a"},
                 )
             )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="agent-run-source-gate-book-a",
+                    type="agent_run",
+                    title="Agent run with source gate evidence",
+                    content={
+                        "run_id": "agent-run-source-gate-book-a",
+                        "agent_type": "context",
+                        "operation": "build-context-bundle",
+                        "status": "succeeded",
+                        "input_assets": [],
+                        "output_assets": [],
+                        "contract_id": "context-contract",
+                        "permissions": {},
+                        "started_at": "2026-07-08T00:00:02Z",
+                        "finished_at": "2026-07-08T00:00:03Z",
+                        "evidence": {
+                            "source_governance_runtime_gate": {
+                                "status": "failed",
+                                "blocking": True,
+                                "gate_result_path": "data/runs/source-governance-runtime-gate-book-a.json",
+                                "readiness_report_path": "data/runs/source-readiness.json",
+                                "summary": {"blocking_count": 1},
+                            }
+                        },
+                    },
+                    metadata={"project_id": "book-a"},
+                )
+            )
             run_context_governance_coverage_gate(storage, project_id="book-a", environment="production")
             build_production_governance_evidence_drift_report(storage, project_id="book-a", persist=True)
             run_production_governance_drift_gate(storage, project_id="book-a", environment="production")
@@ -168,14 +233,18 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["quality"]["source_guarded_apply_status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["source_stale_pending_regeneration_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["source_governance_runtime_gate_status"], "failed")
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["source_governance_runtime_evidence_status"], "failed")
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["source_governance_runtime_evidence_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["approval_request_callers"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_guarded_apply"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_governance_runtime"], "failed")
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_governance_runtime_evidence"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["workflow_governance"]["status"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["approval_request_caller_readiness"]["status"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_guarded_apply_readiness"]["status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_governance_runtime_gate"]["status"], "failed")
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_governance_runtime_evidence"]["latest"]["gate_result_path"], "data/runs/source-governance-runtime-gate-book-a.json")
             self.assertEqual(pending_approval["asset"]["content"]["scope"], "publish")
 
     def test_project_cockpit_surfaces_workflow_governance_readiness(self):

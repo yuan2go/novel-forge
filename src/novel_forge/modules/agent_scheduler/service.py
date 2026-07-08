@@ -914,6 +914,7 @@ def agent_center_snapshot(
     revision_task_rows = [_revision_task_row(row) for row in revision_tasks]
     checkpoint_rows = [_agent_checkpoint_row(row) for row in checkpoints]
     gate_rows = [_agent_gate_row(row) for row in gates]
+    source_governance_runtime_evidence = _agent_source_governance_runtime_evidence_rows(runs, checkpoints)
     governance_dead_letters = _agent_center_governance_dead_letters(blocked_queue, runs, checkpoints, gates)
     budget_summary = _budget_coverage(budgets)
     rollback_rows = [_agent_asset_compact(row) for row in rollbacks]
@@ -973,6 +974,8 @@ def agent_center_snapshot(
             "governance_repair_missing_review_count": governance_repair_missing_review_count,
             "agent_event_summary_count": len(agent_event_summary_rows),
             "agent_event_skipped_count": sum(int(row.get("skipped_event_count", 0) or 0) for row in agent_event_summary_rows),
+            "source_governance_runtime_evidence_count": len(source_governance_runtime_evidence),
+            "source_governance_runtime_failed_count": sum(1 for row in source_governance_runtime_evidence if row.get("status") == "failed"),
             "queue_by_status": by_status,
         },
         "readiness_checks": readiness_checks,
@@ -998,7 +1001,24 @@ def agent_center_snapshot(
         "hard_stop_dashboard": hard_stop_dashboard,
         "sla_duration": _agent_sla_duration_rows(run_rows),
         "agent_event_summaries": agent_event_summary_rows[:120],
-        "evidence_drawer": _agent_evidence_drawer(events, checkpoints, gates, budgets, failures, rollbacks, tasks, loops, contexts, review_issues, revision_tasks, handoffs, dead_letter_repairs, agent_event_summary_rows)[:220],
+        "source_governance_runtime_evidence": source_governance_runtime_evidence[:120],
+        "evidence_drawer": _agent_evidence_drawer(
+            events,
+            checkpoints,
+            gates,
+            budgets,
+            failures,
+            rollbacks,
+            tasks,
+            loops,
+            contexts,
+            review_issues,
+            revision_tasks,
+            handoffs,
+            dead_letter_repairs,
+            agent_event_summary_rows,
+            source_governance_runtime_evidence,
+        )[:220],
         "operation_coverage": contracts,
         "blocked_queue": blocked_queue[:80],
         "runs": run_rows[:80],
@@ -4151,13 +4171,82 @@ def _agent_evidence_drawer(
     rows: list[dict[str, Any]] = []
     for source in [events, checkpoints, gates, budgets, failures, rollbacks, *extra_sources]:
         for row in source:
-            if row.get("type") == "agent_event_summary" and "summary" in row:
+            if row.get("type") in {"agent_event_summary", "source_governance_runtime_evidence"} and "summary" in row:
                 compact = dict(row)
             else:
                 compact = _agent_asset_compact(row)
                 compact["summary"] = compact.get("title") or compact.get("operation") or compact.get("id")
             rows.append(compact)
     return rows
+
+
+def _agent_source_governance_runtime_evidence_rows(runs: list[dict[str, Any]], checkpoints: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for run in runs:
+        content = run.get("content", {}) if isinstance(run.get("content", {}), dict) else {}
+        evidence = content.get("evidence", {}) if isinstance(content.get("evidence", {}), dict) else {}
+        row = _source_governance_runtime_evidence_row(
+            evidence.get("source_governance_runtime_gate"),
+            source_type="agent_run",
+            owner_path=str(run.get("_path") or run.get("path") or ""),
+            owner_id=str(content.get("run_id") or run.get("id") or ""),
+            operation=str(content.get("operation") or ""),
+            agent_run_path=str(run.get("_path") or run.get("path") or ""),
+            recorded_at=str(run.get("updated_at") or run.get("created_at") or ""),
+        )
+        if row:
+            rows.append(row)
+    for checkpoint in checkpoints:
+        content = checkpoint.get("content", {}) if isinstance(checkpoint.get("content", {}), dict) else {}
+        state = content.get("state", {}) if isinstance(content.get("state", {}), dict) else {}
+        gate = state.get("source_governance_runtime_gate")
+        if not isinstance(gate, dict):
+            service_result = state.get("service_result", {}) if isinstance(state.get("service_result", {}), dict) else {}
+            gate = service_result.get("source_governance_runtime_gate")
+        row = _source_governance_runtime_evidence_row(
+            gate,
+            source_type="agent_checkpoint",
+            owner_path=str(checkpoint.get("_path") or checkpoint.get("path") or ""),
+            owner_id=str(content.get("checkpoint_id") or checkpoint.get("id") or ""),
+            operation=str(state.get("operation") or ""),
+            agent_run_path=str(content.get("agent_run_path") or ""),
+            recorded_at=str(checkpoint.get("updated_at") or checkpoint.get("created_at") or ""),
+        )
+        if row:
+            rows.append(row)
+    return sorted(rows, key=lambda item: item.get("recorded_at", ""), reverse=True)
+
+
+def _source_governance_runtime_evidence_row(
+    gate: Any,
+    *,
+    source_type: str,
+    owner_path: str,
+    owner_id: str,
+    operation: str,
+    agent_run_path: str,
+    recorded_at: str,
+) -> dict[str, Any]:
+    normalized = _normalize_source_governance_evidence(gate)
+    if not normalized:
+        return {}
+    status = str(normalized.get("status") or "missing")
+    gate_path = str(normalized.get("gate_result_path") or "")
+    return {
+        "type": "source_governance_runtime_evidence",
+        "source_type": source_type,
+        "path": owner_path,
+        "id": f"{source_type}:{owner_id}:{gate_path}",
+        "owner_id": owner_id,
+        "operation": operation,
+        "status": status,
+        "blocking": bool(normalized.get("blocking")) or status == "failed",
+        "gate_result_path": gate_path,
+        "readiness_report_path": str(normalized.get("readiness_report_path") or ""),
+        "agent_run_path": agent_run_path,
+        "recorded_at": recorded_at,
+        "summary": normalized.get("summary", {}) if isinstance(normalized.get("summary", {}), dict) else {},
+    }
 
 
 def _agent_center_check(key: str, passed: bool, message: str, recommendation: str) -> dict[str, Any]:

@@ -26,6 +26,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     approval_request_caller_readiness = _approval_request_caller_readiness(rows)
     source_guarded_apply_readiness = _source_guarded_apply_readiness(rows)
     source_governance_runtime_gate = _latest_gate_result(rows, "source_governance_runtime")
+    source_governance_runtime_evidence = _source_governance_runtime_execution_evidence(rows)
     production_console = _production_control_console(
         rows,
         blocking_issues,
@@ -37,6 +38,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         approval_request_caller_readiness,
         source_guarded_apply_readiness,
         source_governance_runtime_gate,
+        source_governance_runtime_evidence,
     )
     content = {
         "project_id": project_id,
@@ -65,6 +67,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_guarded_apply_status": source_guarded_apply_readiness["status"],
             "source_stale_pending_regeneration_count": source_guarded_apply_readiness["summary"]["stale_pending_regeneration_count"],
             "source_governance_runtime_gate_status": source_governance_runtime_gate["status"],
+            "source_governance_runtime_evidence_status": source_governance_runtime_evidence["status"],
+            "source_governance_runtime_evidence_count": source_governance_runtime_evidence["count"],
         },
         "task_health": {
             "agent_queue_status": queue_status,
@@ -90,6 +94,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "approval_request_caller_readiness": approval_request_caller_readiness,
             "source_guarded_apply_readiness": source_guarded_apply_readiness,
             "source_governance_runtime_gate": source_governance_runtime_gate,
+            "source_governance_runtime_evidence": source_governance_runtime_evidence,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -105,6 +110,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "approval_request_caller_readiness": approval_request_caller_readiness,
             "source_guarded_apply_readiness": source_guarded_apply_readiness,
             "source_governance_runtime_gate": source_governance_runtime_gate,
+            "source_governance_runtime_evidence": source_governance_runtime_evidence,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -485,6 +491,111 @@ def _workflow_governance_operator_action(status: str) -> str:
     return "continue governed workflow execution"
 
 
+def _source_governance_runtime_execution_evidence(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    evidence_rows: list[dict[str, Any]] = []
+    for row in rows:
+        asset_type = row.get("type")
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if asset_type == "agent_run":
+            evidence = content.get("evidence", {}) if isinstance(content.get("evidence", {}), dict) else {}
+            compact = _source_governance_runtime_execution_row(
+                evidence.get("source_governance_runtime_gate"),
+                source_type="agent_run",
+                owner_path=str(row.get("path") or ""),
+                owner_id=str(content.get("run_id") or row.get("id") or ""),
+                operation=str(content.get("operation") or ""),
+                recorded_at=str(row.get("updated_at") or row.get("created_at") or ""),
+            )
+            if compact:
+                evidence_rows.append(compact)
+        elif asset_type == "agent_checkpoint":
+            state = content.get("state", {}) if isinstance(content.get("state", {}), dict) else {}
+            gate = state.get("source_governance_runtime_gate")
+            if not isinstance(gate, dict):
+                service_result = state.get("service_result", {}) if isinstance(state.get("service_result", {}), dict) else {}
+                gate = service_result.get("source_governance_runtime_gate")
+            compact = _source_governance_runtime_execution_row(
+                gate,
+                source_type="agent_checkpoint",
+                owner_path=str(row.get("path") or ""),
+                owner_id=str(content.get("checkpoint_id") or row.get("id") or ""),
+                operation=str(state.get("operation") or ""),
+                recorded_at=str(row.get("updated_at") or row.get("created_at") or ""),
+            )
+            if compact:
+                evidence_rows.append(compact)
+        elif asset_type == "node_run":
+            processor = content.get("processor", {}) if isinstance(content.get("processor", {}), dict) else {}
+            runtime_evidence = processor.get("runtime_policy_evidence", {}) if isinstance(processor.get("runtime_policy_evidence", {}), dict) else {}
+            gate_path = str(runtime_evidence.get("source_governance_runtime_gate_path") or runtime_evidence.get("source_governance_gate_result_path") or "")
+            if not gate_path:
+                continue
+            status = str(runtime_evidence.get("source_governance_runtime_gate_status") or "missing")
+            evidence_rows.append(
+                {
+                    "source_type": "node_run",
+                    "owner_path": str(row.get("path") or ""),
+                    "owner_id": str(content.get("node_id") or row.get("id") or ""),
+                    "operation": str(content.get("operation") or ""),
+                    "status": status,
+                    "blocking": status == "failed",
+                    "gate_result_path": gate_path,
+                    "readiness_report_path": str(runtime_evidence.get("source_governance_readiness_report_path") or ""),
+                    "recorded_at": str(row.get("updated_at") or row.get("created_at") or ""),
+                }
+            )
+    evidence_rows = sorted(evidence_rows, key=lambda item: item["recorded_at"], reverse=True)
+    failed_count = sum(1 for row in evidence_rows if row["status"] == "failed")
+    warning_count = sum(1 for row in evidence_rows if row["status"] not in {"passed", "failed"})
+    status = "failed" if failed_count else "warning" if warning_count else "passed" if evidence_rows else "missing"
+    return {
+        "contract": "source-governance-runtime-execution-evidence-v1",
+        "status": status,
+        "count": len(evidence_rows),
+        "failed_count": failed_count,
+        "warning_count": warning_count,
+        "latest": evidence_rows[0] if evidence_rows else {},
+        "rows": evidence_rows[:40],
+        "evidence_paths": _dedupe([str(row.get("gate_result_path") or "") for row in evidence_rows]),
+        "operator_action": "inspect source gate runtime evidence before production execution"
+        if status in {"failed", "warning"}
+        else "source gate runtime evidence is visible"
+        if evidence_rows
+        else "run a governed source-gated context or workflow entrypoint",
+    }
+
+
+def _source_governance_runtime_execution_row(
+    gate: Any,
+    *,
+    source_type: str,
+    owner_path: str,
+    owner_id: str,
+    operation: str,
+    recorded_at: str,
+) -> dict[str, Any]:
+    if not isinstance(gate, dict) or not gate:
+        return {}
+    gate_result = gate.get("gate_result", {}) if isinstance(gate.get("gate_result", {}), dict) else {}
+    readiness_report = gate.get("readiness_report", {}) if isinstance(gate.get("readiness_report", {}), dict) else {}
+    gate_path = str(gate.get("gate_result_path") or gate_result.get("path") or "")
+    if not gate_path:
+        return {}
+    status = str(gate.get("status") or "missing")
+    return {
+        "source_type": source_type,
+        "owner_path": owner_path,
+        "owner_id": owner_id,
+        "operation": operation,
+        "status": status,
+        "blocking": bool(gate.get("blocking")) or status == "failed",
+        "gate_result_path": gate_path,
+        "readiness_report_path": str(gate.get("readiness_report_path") or readiness_report.get("path") or ""),
+        "summary": gate.get("summary", {}) if isinstance(gate.get("summary", {}), dict) else {},
+        "recorded_at": recorded_at,
+    }
+
+
 def _approval_request_caller_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
     snapshot_kind = "approval_request_caller_readiness"
     matches = []
@@ -713,6 +824,7 @@ def _production_control_console(
     approval_request_caller_readiness: dict[str, Any],
     source_guarded_apply_readiness: dict[str, Any],
     source_governance_runtime_gate: dict[str, Any],
+    source_governance_runtime_evidence: dict[str, Any],
 ) -> dict[str, Any]:
     chapter_queue = _latest_assets(rows, "chapter_plan", limit=20)
     draft_rows = _latest_assets(rows, "draft_chapter", limit=20)
@@ -729,6 +841,7 @@ def _production_control_console(
         "approval_request_callers": approval_request_caller_readiness["status"],
         "source_guarded_apply": source_guarded_apply_readiness["status"],
         "source_governance_runtime": source_governance_runtime_gate["status"],
+        "source_governance_runtime_evidence": source_governance_runtime_evidence["status"],
         "release": release_status,
         "publish": _latest_status(rows, asset_type="publish_gate_report"),
     }
@@ -751,6 +864,7 @@ def _production_control_console(
             "approval_request_callers": approval_request_caller_readiness["status"],
             "source_guarded_apply": source_guarded_apply_readiness["status"],
             "source_governance_runtime": source_governance_runtime_gate["status"],
+            "source_governance_runtime_evidence": source_governance_runtime_evidence["status"],
             "release": release_status,
         },
         "feedback_approval_queue": feedback_proposals,
@@ -771,6 +885,7 @@ def _production_control_console(
         "approval_request_caller_readiness": approval_request_caller_readiness,
         "source_guarded_apply_readiness": source_guarded_apply_readiness,
         "source_governance_runtime_gate": source_governance_runtime_gate,
+        "source_governance_runtime_evidence": source_governance_runtime_evidence,
     }
 
 

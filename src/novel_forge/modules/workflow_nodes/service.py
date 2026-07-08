@@ -674,6 +674,7 @@ def build_workflow_runtime_console(
         start_node_id=start_node_id,
     )
     governance_summary = _workflow_run_governance_console_summary(storage, workflow_run_path_or_id)
+    source_governance_runtime = _workflow_source_governance_runtime_evidence(storage, workflow_run_path_or_id)
     return {
         "dag": dag,
         "dependencies": dependencies,
@@ -681,8 +682,90 @@ def build_workflow_runtime_console(
         "workflow_template_contract": dag.get("workflow_template_contract", {"enabled": False}),
         "workflow_governance_preflight": governance_summary.get("workflow_governance_preflight", {}),
         "governance_dead_letters": governance_summary.get("governance_dead_letters", []),
+        "source_governance_runtime_evidence": source_governance_runtime,
         "processor_contracts": list_processor_contracts(),
         "state_machine": workflow_state_machine(),
+    }
+
+
+def _workflow_source_governance_runtime_evidence(storage: LocalStorage, workflow_run_path_or_id: str | Path | None) -> dict[str, Any]:
+    if not workflow_run_path_or_id:
+        return {
+            "contract": "workflow-source-governance-runtime-evidence-v1",
+            "status": "missing",
+            "count": 0,
+            "failed_count": 0,
+            "warning_count": 0,
+            "latest": {},
+            "rows": [],
+            "evidence_paths": [],
+        }
+    try:
+        _, workflow_run = _resolve_workflow_run(storage, workflow_run_path_or_id)
+    except (FileNotFoundError, ValueError):
+        return {
+            "contract": "workflow-source-governance-runtime-evidence-v1",
+            "status": "missing",
+            "count": 0,
+            "failed_count": 0,
+            "warning_count": 0,
+            "latest": {},
+            "rows": [],
+            "evidence_paths": [],
+        }
+    run_content = workflow_run.get("content", {}) if isinstance(workflow_run.get("content", {}), dict) else {}
+    run_id = str(run_content.get("run_id") or workflow_run.get("id") or "")
+    if not run_id:
+        return {
+            "contract": "workflow-source-governance-runtime-evidence-v1",
+            "status": "missing",
+            "count": 0,
+            "failed_count": 0,
+            "warning_count": 0,
+            "latest": {},
+            "rows": [],
+            "evidence_paths": [],
+        }
+    rows: list[dict[str, Any]] = []
+    for path in storage.list_json("runs"):
+        data = read_json_for_scan(storage, path, context="workflow source governance runtime console scan")
+        if data.get("type") != "node_run":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if run_id and str(content.get("run_id") or "") != run_id:
+            continue
+        processor = content.get("processor", {}) if isinstance(content.get("processor", {}), dict) else {}
+        evidence = processor.get("runtime_policy_evidence", {}) if isinstance(processor.get("runtime_policy_evidence", {}), dict) else {}
+        gate_path = str(evidence.get("source_governance_runtime_gate_path") or evidence.get("source_governance_gate_result_path") or "")
+        if not gate_path:
+            continue
+        status = str(evidence.get("source_governance_runtime_gate_status") or "missing")
+        rows.append(
+            {
+                "node_run_path": _display_path(storage.root, path),
+                "node_id": str(content.get("node_id") or ""),
+                "operation": str(content.get("operation") or ""),
+                "status": status,
+                "blocking": status == "failed",
+                "gate_result_path": gate_path,
+                "readiness_report_path": str(evidence.get("source_governance_readiness_report_path") or ""),
+                "runtime_policy_gate_result_path": str(evidence.get("post_gate_result_path") or evidence.get("pre_gate_result_path") or ""),
+                "recorded_at": str(data.get("updated_at") or data.get("created_at") or ""),
+            }
+        )
+    rows = sorted(rows, key=lambda item: item["recorded_at"], reverse=True)
+    failed_count = sum(1 for row in rows if row["status"] == "failed")
+    warning_count = sum(1 for row in rows if row["status"] not in {"passed", "failed"})
+    status = "failed" if failed_count else "warning" if warning_count else "passed" if rows else "missing"
+    return {
+        "contract": "workflow-source-governance-runtime-evidence-v1",
+        "status": status,
+        "count": len(rows),
+        "failed_count": failed_count,
+        "warning_count": warning_count,
+        "latest": rows[0] if rows else {},
+        "rows": rows[:40],
+        "evidence_paths": _dedupe([*[row["gate_result_path"] for row in rows], *[row["runtime_policy_gate_result_path"] for row in rows]]),
     }
 
 
