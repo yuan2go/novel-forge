@@ -167,6 +167,111 @@ class ContextBuilderStageProfileTests(unittest.TestCase):
             self.assertTrue(content["approval_requests"][0]["approval_request_path"])
             self.assertNotIn("REVISION_RAW_SOURCE_SENTINEL", content["actual_context"])
 
+    def test_v1_stage_profiles_reject_raw_and_high_risk_source_derived_assets(self):
+        profiles = [
+            ("topic", "topic"),
+            ("worldbuilding", "worldbuilding"),
+            ("character", "character"),
+            ("outline", "outline"),
+            ("chapter_plan", "chapter_plan"),
+            ("draft", "draft"),
+            ("review", "review"),
+            ("revision", "revision"),
+        ]
+        for context_profile, expected_stage in profiles:
+            with self.subTest(context_profile=context_profile), tempfile.TemporaryDirectory() as tmp:
+                storage = LocalStorage(tmp)
+                storage.ensure_layout()
+                workspace_ref, project_id = _workspace(storage, f"Leakage Guard {context_profile}")
+                outline_path = _outline(storage, project_id, workspace_ref)
+                safe_path = storage.write_asset_auto(
+                    KnowledgeCard(
+                        title=f"Safe abstract context {context_profile}",
+                        content={
+                            "principle": f"{context_profile} can use abstract, project-safe knowledge only",
+                            "source_eligibility": {
+                                "status": "passed",
+                                "generation_context_allowed": True,
+                                "evidence_only": False,
+                                "source_policy_refs": ["policy-owned"],
+                                "source_risk_report_refs": ["risk-owned"],
+                            },
+                        },
+                        metadata={"project_id": project_id, "workspace_path": workspace_ref, "use_in_generation_rag": True},
+                    )
+                )
+                raw_source_path = storage.write_asset_auto(
+                    SourceDocument(
+                        title=f"Raw source {context_profile}",
+                        content={"raw_text": f"RAW_SOURCE_LEAK_SENTINEL_{context_profile.upper()}"},
+                        metadata={"project_id": project_id, "workspace_path": workspace_ref, "rights_status": "unknown", "risk_level": "R3"},
+                    )
+                )
+                blocked_material_path = storage.write_asset_auto(
+                    MaterialCard(
+                        title=f"Blocked derived material {context_profile}",
+                        content={
+                            "usable_patterns": [f"DERIVED_SOURCE_LEAK_SENTINEL_{context_profile.upper()}"],
+                            "source_chunk_ids": [f"chunk-{context_profile}"],
+                            "source_eligibility": {
+                                "status": "blocked",
+                                "generation_context_allowed": False,
+                                "evidence_only": True,
+                                "quarantine": True,
+                                "risk_level": "R4",
+                                "source_policy_refs": ["policy-blocked"],
+                                "source_risk_report_refs": ["risk-blocked"],
+                            },
+                        },
+                        metadata={"project_id": project_id, "workspace_path": workspace_ref, "use_in_generation_rag": True},
+                    )
+                )
+
+                plan = create_context_build_plan(
+                    storage,
+                    outline_path,
+                    query=f"{context_profile} source isolation",
+                    context_profile=context_profile,
+                    environment="production",
+                )
+                _replace_candidates(storage, plan["path"], [safe_path, raw_source_path, blocked_material_path])
+
+                bundle = create_context_bundle(
+                    storage,
+                    plan["path"],
+                    selected_asset_paths=[
+                        _rel(storage, safe_path),
+                        _rel(storage, raw_source_path),
+                        _rel(storage, blocked_material_path),
+                    ],
+                    priority_asset_paths=[_rel(storage, raw_source_path), _rel(storage, blocked_material_path)],
+                    final_confirmed=True,
+                )
+                content = bundle["asset"]["content"]
+                selected_paths = {item["path"] for item in content["selected_assets"]}
+                rejected_by_path = {item["path"]: item for item in content["policy_rejections"]}
+                actual_context = content["actual_context"]
+                compressed = content["compressed_context"]
+
+                self.assertEqual(content["stage_context_contract"]["stage"], expected_stage)
+                self.assertFalse(content["source_isolation"]["raw_source_text_allowed"])
+                self.assertIn(_rel(storage, safe_path), selected_paths)
+                self.assertNotIn(_rel(storage, raw_source_path), selected_paths)
+                self.assertNotIn(_rel(storage, blocked_material_path), selected_paths)
+                self.assertIn(_rel(storage, raw_source_path), rejected_by_path)
+                self.assertIn("blocked_asset_type", rejected_by_path[_rel(storage, raw_source_path)]["signals"])
+                self.assertIn(_rel(storage, blocked_material_path), rejected_by_path)
+                self.assertIn("source_quarantine", rejected_by_path[_rel(storage, blocked_material_path)]["signals"])
+                self.assertEqual(rejected_by_path[_rel(storage, blocked_material_path)]["source_eligibility"]["risk_level"], "R4")
+                self.assertTrue(content["approval_requests"])
+                self.assertTrue(content["approval_requests"][0]["blocking"])
+                self.assertIn(_rel(storage, raw_source_path), content["approval_requests"][0]["rejected_paths"])
+                self.assertIn(_rel(storage, blocked_material_path), content["approval_requests"][0]["rejected_paths"])
+                self.assertNotIn("RAW_SOURCE_LEAK_SENTINEL", actual_context)
+                self.assertNotIn("DERIVED_SOURCE_LEAK_SENTINEL", actual_context)
+                self.assertNotIn(_rel(storage, raw_source_path), {item.get("path") for rows in compressed.values() if isinstance(rows, list) for item in rows if isinstance(item, dict)})
+                self.assertNotIn(_rel(storage, blocked_material_path), {item.get("path") for rows in compressed.values() if isinstance(rows, list) for item in rows if isinstance(item, dict)})
+
     def test_production_context_rejects_source_eligibility_failed_materials(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

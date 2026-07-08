@@ -38,6 +38,7 @@ class SourceGovernanceRegressionScriptTests(unittest.TestCase):
         self.assertIn("test_publishing_calendar_rules_logs_and_version_registry", command_text)
         self.assertIn("test_release_gate_evidence_requires_source_governance_gate_in_production", command_text)
         self.assertIn("test_flow_context_bundle_records_source_governance_runtime_gate", command_text)
+        self.assertIn("test_v1_stage_profiles_reject_raw_and_high_risk_source_derived_assets", command_text)
         self.assertIn("test_runtime_policy_records_selector_governance_binding_evidence", command_text)
         self.assertIn("test_runtime_policy_blocks_context_without_source_governance_runtime_gate", command_text)
         self.assertIn("test_build_context_scheduler_result_exposes_source_governance_gate_evidence", command_text)
