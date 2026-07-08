@@ -69,10 +69,11 @@ Current evidence:
 - Agent Scheduler now propagates source governance runtime gate evidence from context-builder service results/output reuse into checkpoint and execution evidence, and Workflow runtime policy now requires ContextBundle source gate evidence in strict/production modes while recording source gate paths/status on NodeRun runtime policy evidence.
 - Agent Center, Workflow Runtime Console, and Project Cockpit now expose source governance runtime gate evidence, counts, latest paths, failed status, and drawer/gate-board rows from AgentRun, AgentCheckpoint, and NodeRun evidence without executing source repair, connector, provider proof, or chapter acceptance.
 - Project-scoped Agent Center and Project Cockpit source runtime evidence now infer scope from linked input/output/reference/gate evidence paths when run metadata is sparse, and negative fixtures prevent cross-project leakage.
+- Chapter runtime growth profiler now writes `chapter_runtime_growth_profile` ProjectMetricSnapshot assets from existing/synthetic chapter run artifacts, estimates compact-mode write savings, flags full-mode/high-fanout runs, and surfaces latest status in Project Cockpit without running chapter acceptance.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
-- 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
+- 10-chapter runtime growth is high in the last true slow report: chapter 1 took 22.571s, chapter 10 took 306.933s. Development now has a profiler for run artifacts, but route-level visibility and threshold governance remain pending.
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
 - ApprovalRequest caller readiness, source guarded apply readiness, and source governance runtime gate evidence are visible through read-only reports, Product API routes, Project Cockpit summaries, Agent Center, Workflow Runtime Console, and focused no-acceptance regression bundles; publish/release/context/scheduler/workflow callers now consume, propagate, or expose source gate evidence, including sparse project-scoped runtime evidence.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
@@ -82,7 +83,7 @@ Current evidence:
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
 2. Portfolio project boundary for future multi-book scheduling and cost/quality rollups.
-3. Add a chapter runtime growth profiler/readiness report from existing run artifacts or synthetic fixtures without running chapter acceptance.
+3. Prove chapter runtime growth profile through Product API/Cockpit route fixtures without running chapter acceptance.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
 验收标准:

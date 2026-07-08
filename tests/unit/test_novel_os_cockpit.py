@@ -268,6 +268,41 @@ class NovelOsCockpitTests(unittest.TestCase):
                     metadata={"project_id": "book-a"},
                 )
             )
+            storage.write_asset_auto(
+                ProjectMetricSnapshot(
+                    title="Chapter runtime growth profile",
+                    content={
+                        "snapshot_kind": "chapter_runtime_growth_profile",
+                        "contract": "chapter-runtime-growth-profile-v1",
+                        "status": "review_required",
+                        "project_id": "book-a",
+                        "snapshot_at": "2026-07-08T00:00:03Z",
+                        "summary": {
+                            "chapter_run_count": 2,
+                            "max_linked_asset_ref_count": 132,
+                            "average_linked_asset_ref_count": 72.5,
+                            "estimated_compacted_write_savings": 12,
+                            "referenced_asset_type_counts": {"draft_chapter": 4},
+                            "repeated_asset_type_counts": {"draft_chapter": 4},
+                        },
+                        "throughput": {"chapter_run_count": 2, "chapter_count": 2, "compact_run_count": 1, "full_run_count": 1},
+                        "quality": {
+                            "runtime_growth_status": "review_required",
+                            "high_growth_run_count": 1,
+                            "missing_runtime_policy_count": 0,
+                            "max_linked_asset_ref_count": 132,
+                            "average_linked_asset_ref_count": 72.5,
+                        },
+                        "task_health": {"blocking_drift_count": 0, "review_required_count": 1, "estimated_compacted_write_savings": 12},
+                        "agent_health": {"chapter_runtime_profiler": "review_required", "chapter_run_count": 2, "node_run_count": 1, "trace_span_count": 1},
+                        "storage_health": {"referenced_asset_type_counts": {"draft_chapter": 4}, "repeated_asset_type_counts": {"draft_chapter": 4}},
+                        "runtime_rows": [{"run_id": "run-1", "risk_level": "high", "linked_asset_ref_count": 132}],
+                        "evidence_paths": ["data/runs/run-1.json"],
+                        "operator_action": "review high-fanout run",
+                    },
+                    metadata={"project_id": "book-a", "snapshot_kind": "chapter_runtime_growth_profile"},
+                )
+            )
             run_context_governance_coverage_gate(storage, project_id="book-a", environment="production")
             build_production_governance_evidence_drift_report(storage, project_id="book-a", persist=True)
             run_production_governance_drift_gate(storage, project_id="book-a", environment="production")
@@ -313,16 +348,21 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["quality"]["source_governance_runtime_gate_status"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["source_governance_runtime_evidence_status"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["source_governance_runtime_evidence_count"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_status"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_high_run_count"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_max_ref_count"], 132)
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["approval_request_callers"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_guarded_apply"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_governance_runtime"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_governance_runtime_evidence"], "failed")
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["workflow_governance"]["status"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["approval_request_caller_readiness"]["status"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_guarded_apply_readiness"]["status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_governance_runtime_gate"]["status"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_governance_runtime_evidence"]["latest"]["gate_result_path"], "data/runs/source-governance-runtime-gate-book-a.json")
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["chapter_runtime_growth"]["summary"]["max_linked_asset_ref_count"], 132)
             self.assertEqual(pending_approval["asset"]["content"]["scope"], "publish")
 
     def test_project_cockpit_surfaces_workflow_governance_readiness(self):

@@ -26,6 +26,7 @@ class RuntimeGrowthRegressionScriptTests(unittest.TestCase):
         command_text = "\n".join(" ".join(command) for command in commands)
 
         self.assertIn("test_chapter_production_compact_task_status_mode_preserves_completed_step_evidence", command_text)
+        self.assertIn("tests.unit.test_chapter_runtime_growth.ChapterRuntimeGrowthTests", command_text)
         self.assertIn("test_agent_center_api_surfaces_agent_event_summary", command_text)
         self.assertIn("test_v1_chapter_production_workflow_template_creates_governed_definition", command_text)
         self.assertIn("test_workflow_governance_drift_gate_blocks_drifted_workflow_in_production", command_text)
@@ -42,8 +43,10 @@ class RuntimeGrowthRegressionScriptTests(unittest.TestCase):
         self.assertIn("test_approval_request_caller_readiness_passes_when_required_callers_are_covered", command_text)
         self.assertIn("test_approval_request_caller_readiness_flags_pending_blocking_review", command_text)
         self.assertIn("test_permission_center_route_surfaces_approval_request_caller_readiness", command_text)
+        self.assertIn("src/novel_forge/modules/chapter_runtime_growth", command_text)
         self.assertIn("src/novel_forge/modules/novel_os_cockpit", command_text)
         self.assertIn("src/novel_forge/modules/permission_center", command_text)
+        self.assertIn("tests/unit/test_chapter_runtime_growth.py", command_text)
         self.assertIn("tests/unit/test_permission_center.py", command_text)
         self.assertIn("tests/unit/test_product_api_routes.py", command_text)
         self.assertIn("web/admin/tests/feature-architecture.test.mjs", command_text)

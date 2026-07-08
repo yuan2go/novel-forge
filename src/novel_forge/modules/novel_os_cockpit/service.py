@@ -28,6 +28,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     source_guarded_apply_readiness = _source_guarded_apply_readiness(rows)
     source_governance_runtime_gate = _latest_gate_result(rows, "source_governance_runtime")
     source_governance_runtime_evidence = _source_governance_runtime_execution_evidence(storage, rows, project_id=project_id)
+    chapter_runtime_growth = _chapter_runtime_growth_profile(rows)
     production_console = _production_control_console(
         rows,
         blocking_issues,
@@ -40,6 +41,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         source_guarded_apply_readiness,
         source_governance_runtime_gate,
         source_governance_runtime_evidence,
+        chapter_runtime_growth,
     )
     content = {
         "project_id": project_id,
@@ -70,6 +72,9 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_governance_runtime_gate_status": source_governance_runtime_gate["status"],
             "source_governance_runtime_evidence_status": source_governance_runtime_evidence["status"],
             "source_governance_runtime_evidence_count": source_governance_runtime_evidence["count"],
+            "chapter_runtime_growth_status": chapter_runtime_growth["status"],
+            "chapter_runtime_growth_high_run_count": chapter_runtime_growth["summary"]["high_growth_run_count"],
+            "chapter_runtime_growth_max_ref_count": chapter_runtime_growth["summary"]["max_linked_asset_ref_count"],
         },
         "task_health": {
             "agent_queue_status": queue_status,
@@ -96,6 +101,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_guarded_apply_readiness": source_guarded_apply_readiness,
             "source_governance_runtime_gate": source_governance_runtime_gate,
             "source_governance_runtime_evidence": source_governance_runtime_evidence,
+            "chapter_runtime_growth": chapter_runtime_growth,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -112,6 +118,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_guarded_apply_readiness": source_guarded_apply_readiness,
             "source_governance_runtime_gate": source_governance_runtime_gate,
             "source_governance_runtime_evidence": source_governance_runtime_evidence,
+            "chapter_runtime_growth": chapter_runtime_growth,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -599,6 +606,57 @@ def _source_governance_runtime_execution_row(
     }
 
 
+def _chapter_runtime_growth_profile(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    snapshot_kind = "chapter_runtime_growth_profile"
+    matches = []
+    for row in rows:
+        if row.get("type") != "project_metric_snapshot":
+            continue
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") == snapshot_kind:
+            matches.append(row)
+    if not matches:
+        return {
+            "snapshot_kind": snapshot_kind,
+            "contract": "chapter-runtime-growth-profile-v1",
+            "status": "missing",
+            "path": "",
+            "summary": {
+                "chapter_run_count": 0,
+                "high_growth_run_count": 0,
+                "max_linked_asset_ref_count": 0,
+                "average_linked_asset_ref_count": 0.0,
+                "estimated_compacted_write_savings": 0,
+            },
+            "runtime_rows": [],
+            "evidence_paths": [],
+            "recommendations": ["Run chapter runtime growth profiler before final unified acceptance"],
+            "operator_action": "run chapter runtime growth profiler before final unified acceptance",
+        }
+    row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    summary = content.get("summary", {}) if isinstance(content.get("summary", {}), dict) else {}
+    quality = content.get("quality", {}) if isinstance(content.get("quality", {}), dict) else {}
+    return {
+        "snapshot_kind": snapshot_kind,
+        "contract": str(content.get("contract") or "chapter-runtime-growth-profile-v1"),
+        "status": str(content.get("status") or "unknown"),
+        "path": str(row.get("path") or ""),
+        "summary": {
+            "chapter_run_count": int(summary.get("chapter_run_count") or 0),
+            "high_growth_run_count": int(quality.get("high_growth_run_count") or 0),
+            "max_linked_asset_ref_count": int(summary.get("max_linked_asset_ref_count") or 0),
+            "average_linked_asset_ref_count": float(summary.get("average_linked_asset_ref_count") or 0.0),
+            "estimated_compacted_write_savings": int(summary.get("estimated_compacted_write_savings") or 0),
+        },
+        "runtime_rows": content.get("runtime_rows", []) if isinstance(content.get("runtime_rows", []), list) else [],
+        "evidence_paths": content.get("evidence_paths", []) if isinstance(content.get("evidence_paths", []), list) else [],
+        "recommendations": content.get("recommendations", []) if isinstance(content.get("recommendations", []), list) else [],
+        "operator_action": str(content.get("operator_action") or ""),
+    }
+
+
 def _approval_request_caller_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
     snapshot_kind = "approval_request_caller_readiness"
     matches = []
@@ -828,6 +886,7 @@ def _production_control_console(
     source_guarded_apply_readiness: dict[str, Any],
     source_governance_runtime_gate: dict[str, Any],
     source_governance_runtime_evidence: dict[str, Any],
+    chapter_runtime_growth: dict[str, Any],
 ) -> dict[str, Any]:
     chapter_queue = _latest_assets(rows, "chapter_plan", limit=20)
     draft_rows = _latest_assets(rows, "draft_chapter", limit=20)
@@ -845,6 +904,7 @@ def _production_control_console(
         "source_guarded_apply": source_guarded_apply_readiness["status"],
         "source_governance_runtime": source_governance_runtime_gate["status"],
         "source_governance_runtime_evidence": source_governance_runtime_evidence["status"],
+        "runtime_growth": chapter_runtime_growth["status"],
         "release": release_status,
         "publish": _latest_status(rows, asset_type="publish_gate_report"),
     }
@@ -868,6 +928,7 @@ def _production_control_console(
             "source_guarded_apply": source_guarded_apply_readiness["status"],
             "source_governance_runtime": source_governance_runtime_gate["status"],
             "source_governance_runtime_evidence": source_governance_runtime_evidence["status"],
+            "runtime_growth": chapter_runtime_growth["status"],
             "release": release_status,
         },
         "feedback_approval_queue": feedback_proposals,
@@ -889,6 +950,7 @@ def _production_control_console(
         "source_guarded_apply_readiness": source_guarded_apply_readiness,
         "source_governance_runtime_gate": source_governance_runtime_gate,
         "source_governance_runtime_evidence": source_governance_runtime_evidence,
+        "chapter_runtime_growth": chapter_runtime_growth,
     }
 
 
