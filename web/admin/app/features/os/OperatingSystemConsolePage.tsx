@@ -131,6 +131,10 @@ export function OperatingSystemConsolePage() {
   const cockpitTaskHealth = cockpitContent.task_health || {};
   const cockpitAgentHealth = cockpitContent.agent_health || {};
   const cockpitRisks = cockpit.risk_summary || {};
+  const runtimeGovernance = (cockpitContent.runtime_governance as Record<string, unknown> | undefined) || {};
+  const workflowGovernance = (runtimeGovernance.workflow_governance as Record<string, unknown> | undefined) || (cockpit.workflow_governance as Record<string, unknown> | undefined) || {};
+  const workflowGovernanceDeadLetters = (workflowGovernance.dead_letters as Array<Record<string, unknown>> | undefined) || [];
+  const workflowGovernancePreflights = (workflowGovernance.preflights as Array<Record<string, unknown>> | undefined) || [];
   const productionControl = (cockpitContent.production_control_console as Record<string, unknown> | undefined) || {};
   const productionBookState = (productionControl.book_state as Record<string, unknown> | undefined) || {};
   const productionGateBoard = (productionControl.gate_status_board as Record<string, unknown> | undefined) || {};
@@ -174,6 +178,8 @@ export function OperatingSystemConsolePage() {
             <Metric label="Blocking Issues" value={String(cockpitQuality.blocking_review_issue_count ?? 0)} />
             <Metric label="Agent Runs" value={String(cockpitAgentHealth.agent_run_count ?? 0)} />
             <Metric label="Queue Ready/Running" value={String(cockpitTaskHealth.ready_or_running ?? 0)} />
+            <Metric label="Workflow Gov" value={String(workflowGovernance.status || "-")} />
+            <Metric label="Gov DL" value={String(workflowGovernance.dead_letter_count ?? 0)} />
           </div>
           <DataTable
             emptyText="暂无章节队列"
@@ -188,6 +194,16 @@ export function OperatingSystemConsolePage() {
             emptyText="暂无 V7 风险摘要"
             columns={["维度", "当前证据"]}
             rows={Object.entries(productionRiskSummary).map(([key, value]) => [key, String(value || "-")])}
+          />
+          <DataTable
+            emptyText="暂无 workflow governance preflight 证据"
+            columns={["Run", "Status", "Gate", "Evidence"]}
+            rows={workflowGovernancePreflights.slice(0, 6).map((row) => [
+              String(row.workflow_run_id || "-"),
+              <span className={statusClass(String(row.status || ""))} key={`${String(row.workflow_run_path)}-wg-status`}>{String(row.status || "-")}</span>,
+              String(row.gate_status || "-"),
+              <span className="pathText" key={`${String(row.gate_result_path)}-wg-gate`}>{String(row.gate_result_path || row.drift_report_path || "-")}</span>
+            ])}
           />
         </div>
 
@@ -205,6 +221,16 @@ export function OperatingSystemConsolePage() {
             emptyText="暂无生产 gate 状态"
             columns={["Gate", "Status"]}
             rows={Object.entries(productionGateBoard).map(([key, value]) => [key, String(value || "-")])}
+          />
+          <DataTable
+            emptyText="暂无 workflow governance dead-letter"
+            columns={["Queue", "Node", "Gate", "Run"]}
+            rows={workflowGovernanceDeadLetters.slice(0, 6).map((row) => [
+              <span className="pathText" key={`${String(row.ready_node_queue_path)}-wg-queue`}>{String(row.ready_node_queue_path || "-")}</span>,
+              String(row.node_id || "-"),
+              String(row.gate_status || "-"),
+              <span className="pathText" key={`${String(row.workflow_run_path)}-wg-run`}>{String(row.workflow_run_path || row.resume_workflow_run_path || "-")}</span>
+            ])}
           />
           <DataTable
             emptyText="暂无多书调度数据"

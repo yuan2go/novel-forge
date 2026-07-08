@@ -97,6 +97,99 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["production_governance_drift_gate"]["status"], "passed")
             self.assertEqual(pending_approval["asset"]["content"]["scope"], "publish")
 
+    def test_project_cockpit_surfaces_workflow_governance_readiness(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            preflight = {
+                "status": "failed",
+                "gate_status": "failed",
+                "blocking": True,
+                "message": "workflow governance drift has 1 blocking row(s)",
+                "environment": "production",
+                "mode": "strict",
+                "gate_result_path": "data/runs/workflow-governance-gate.json",
+                "drift_report_path": "data/runs/workflow-governance-report.json",
+                "summary": {"drift_count": 1, "blocking_drift_count": 1},
+            }
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="workflow-governance-gate",
+                    type="gate_result",
+                    title="Workflow governance drift gate",
+                    content={
+                        "gate_id": "workflow-governance-gate",
+                        "gate_kind": "workflow_governance_drift",
+                        "status": "failed",
+                        "target_paths": ["data/runs/workflow-definition.json"],
+                        "blocking": True,
+                        "message": preflight["message"],
+                        "result": {"summary": preflight["summary"], "report_path": preflight["drift_report_path"]},
+                        "created_at": "2026-07-08T00:00:00Z",
+                    },
+                    metadata={"project_id": "book-a"},
+                )
+            )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="workflow-run-governance-failed",
+                    type="workflow_run",
+                    title="Workflow governance failed run",
+                    content={
+                        "run_id": "workflow-run-governance-failed",
+                        "workflow_id": "workflow-definition",
+                        "workflow_definition_path": "data/runs/workflow-definition.json",
+                        "status": "failed",
+                        "outputs": [],
+                        "node_runs": [],
+                        "agent_runs": [],
+                        "run_log": [],
+                        "blocked": {"node_id": "chapter-production-start", "status": "failed", "gate_kind": "workflow_governance_drift"},
+                        "error_message": preflight["message"],
+                        "recovery_instruction": "repair workflow governance evidence before resume",
+                        "lineage": {"workflow_governance_preflight": preflight},
+                    },
+                    metadata={"project_id": "book-a"},
+                )
+            )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="ready-node-workflow-governance-dead-letter",
+                    type="ready_node_queue",
+                    title="Dead-lettered workflow governance node",
+                    content={
+                        "queue_id": "ready-node-workflow-governance-dead-letter",
+                        "workflow_run_id": "workflow-run-governance-failed",
+                        "workflow_run_path": "data/runs/workflow-run-governance-failed.json",
+                        "node_id": "chapter-production-start",
+                        "status": "dead_letter",
+                        "last_error": preflight["message"],
+                        "dead_letter_evidence": {
+                            "workflow_governance_preflight": preflight,
+                            "resume_workflow_run_path": "data/runs/workflow-run-governance-resume.json",
+                        },
+                    },
+                    metadata={"project_id": "book-a"},
+                )
+            )
+
+            snapshot = build_project_cockpit_snapshot(storage, project_id="book-a")
+            content = snapshot["asset"]["content"]
+            workflow_governance = content["runtime_governance"]["workflow_governance"]
+
+            self.assertEqual(workflow_governance["status"], "blocked")
+            self.assertEqual(workflow_governance["gate_status"], "failed")
+            self.assertEqual(workflow_governance["failed_preflight_count"], 1)
+            self.assertEqual(workflow_governance["dead_letter_count"], 1)
+            self.assertEqual(workflow_governance["latest_preflight"]["gate_status"], "failed")
+            self.assertEqual(workflow_governance["dead_letters"][0]["gate_result_path"], preflight["gate_result_path"])
+            self.assertIn("data/runs/workflow-governance-gate.json", workflow_governance["evidence_paths"])
+            self.assertIn(preflight["drift_report_path"], workflow_governance["evidence_paths"])
+            self.assertEqual(content["quality"]["workflow_governance_status"], "blocked")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["workflow_governance"], "blocked")
+            self.assertEqual(content["production_control_console"]["workflow_governance"]["dead_letter_count"], 1)
+            self.assertEqual(content["cockpit"]["workflow_governance"]["status"], "blocked")
+
     def test_multi_book_daily_production_report_tracks_isolation_and_capacity(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

@@ -54,11 +54,13 @@ export type NovelOsCockpitSnapshot = {
       task_health?: Record<string, unknown>;
       agent_health?: Record<string, unknown>;
       recommendations?: string[];
+      runtime_governance?: Record<string, unknown>;
       production_control_console?: Record<string, unknown>;
       cockpit?: {
         book_production_state?: string;
         today_chapter_queue?: Array<Record<string, unknown>>;
         risk_summary?: Record<string, unknown>;
+        workflow_governance?: Record<string, unknown>;
         rollback_recovery_entry?: string;
       };
     };

@@ -22,7 +22,16 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     context_governance_gate = _latest_gate_result(rows, "context_governance_runtime_coverage")
     production_governance_drift = _latest_metric_snapshot(rows, "production_governance_evidence_drift")
     production_governance_drift_gate = _latest_gate_result(rows, "production_governance_evidence_drift")
-    production_console = _production_control_console(rows, blocking_issues, release_status, long_chain_status, v1_artifact_coverage, approval_gate_summary)
+    workflow_governance = _workflow_governance_readiness(rows)
+    production_console = _production_control_console(
+        rows,
+        blocking_issues,
+        release_status,
+        long_chain_status,
+        v1_artifact_coverage,
+        approval_gate_summary,
+        workflow_governance,
+    )
     content = {
         "project_id": project_id,
         "snapshot_at": utc_now(),
@@ -42,6 +51,9 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "latest_context_governance_status": context_governance_gate["status"],
             "production_governance_drift_count": production_governance_drift["drift_count"],
             "production_governance_drift_gate_status": production_governance_drift_gate["status"],
+            "workflow_governance_status": workflow_governance["status"],
+            "workflow_governance_dead_letter_count": workflow_governance["dead_letter_count"],
+            "workflow_governance_failed_preflight_count": workflow_governance["failed_preflight_count"],
         },
         "task_health": {
             "agent_queue_status": queue_status,
@@ -63,6 +75,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "context_governance_gate": context_governance_gate,
             "production_governance_drift": production_governance_drift,
             "production_governance_drift_gate": production_governance_drift_gate,
+            "workflow_governance": workflow_governance,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -74,6 +87,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "context_governance_gate": context_governance_gate,
             "production_governance_drift": production_governance_drift,
             "production_governance_drift_gate": production_governance_drift_gate,
+            "workflow_governance": workflow_governance,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -302,6 +316,7 @@ def _latest_gate_result(rows: list[dict[str, Any]], gate_kind: str) -> dict[str,
         "blocking": bool(content.get("blocking")) and str(content.get("status") or "") not in {"passed", "warning", "skipped"},
         "message": str(content.get("message") or ""),
         "coverage_report_path": str(result.get("coverage_report_path") or ""),
+        "report_path": str(result.get("report_path") or ""),
         "summary": result.get("summary", {}) if isinstance(result.get("summary", {}), dict) else {},
     }
 
@@ -340,6 +355,117 @@ def _latest_assets(rows: list[dict[str, Any]], asset_type: str, *, limit: int) -
     matches = [row for row in rows if row.get("type") == asset_type]
     matches = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""), reverse=True)[:limit]
     return [{"id": str(row.get("id") or ""), "title": str(row.get("title") or ""), "path": str(row.get("path") or "")} for row in matches]
+
+
+def _workflow_governance_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    latest_gate = _latest_gate_result(rows, "workflow_governance_drift")
+    preflights = _workflow_governance_preflight_rows(rows)
+    dead_letters = _workflow_governance_dead_letter_rows(rows)
+    failed_preflight_count = sum(1 for item in preflights if item["status"] == "failed" or item["gate_status"] == "failed" or item["blocking"])
+    warning_preflight_count = sum(1 for item in preflights if item["gate_status"] == "warning")
+    if bool(latest_gate.get("blocking")) or str(latest_gate.get("status") or "") == "failed" or failed_preflight_count or dead_letters:
+        status = "blocked"
+    elif str(latest_gate.get("status") or "") == "warning" or warning_preflight_count:
+        status = "warning"
+    elif str(latest_gate.get("status") or "") == "missing" and not preflights:
+        status = "missing"
+    else:
+        status = "passed"
+    latest_preflight = preflights[0] if preflights else {}
+    return {
+        "contract": "workflow-governance-cockpit-readiness-v1",
+        "status": status,
+        "gate_status": latest_gate["status"],
+        "latest_gate_result": latest_gate,
+        "preflight_count": len(preflights),
+        "failed_preflight_count": failed_preflight_count,
+        "warning_preflight_count": warning_preflight_count,
+        "dead_letter_count": len(dead_letters),
+        "latest_preflight": latest_preflight,
+        "preflights": preflights[:20],
+        "dead_letters": dead_letters[:20],
+        "evidence_paths": _dedupe(
+            [
+                str(latest_gate.get("gate_result_path") or ""),
+                str(latest_gate.get("coverage_report_path") or ""),
+                str(latest_gate.get("report_path") or ""),
+                *[str(item.get("gate_result_path") or "") for item in preflights],
+                *[str(item.get("drift_report_path") or "") for item in preflights],
+                *[str(item.get("ready_node_queue_path") or "") for item in dead_letters],
+            ]
+        ),
+        "operator_action": _workflow_governance_operator_action(status),
+    }
+
+
+def _workflow_governance_preflight_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    preflights: list[dict[str, Any]] = []
+    for row in rows:
+        if row.get("type") != "workflow_run":
+            continue
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        lineage = content.get("lineage", {}) if isinstance(content.get("lineage", {}), dict) else {}
+        preflight = lineage.get("workflow_governance_preflight", {}) if isinstance(lineage.get("workflow_governance_preflight", {}), dict) else {}
+        if not preflight:
+            continue
+        preflights.append(
+            {
+                "workflow_run_id": str(content.get("run_id") or row.get("id") or ""),
+                "workflow_run_path": str(row.get("path") or ""),
+                "workflow_definition_path": str(content.get("workflow_definition_path") or ""),
+                "status": str(preflight.get("status") or ""),
+                "gate_status": str(preflight.get("gate_status") or ""),
+                "blocking": bool(preflight.get("blocking", False)),
+                "message": str(preflight.get("message") or ""),
+                "environment": str(preflight.get("environment") or ""),
+                "mode": str(preflight.get("mode") or ""),
+                "gate_result_path": str(preflight.get("gate_result_path") or ""),
+                "drift_report_path": str(preflight.get("drift_report_path") or ""),
+                "summary": preflight.get("summary", {}) if isinstance(preflight.get("summary", {}), dict) else {},
+                "recorded_at": str(row.get("updated_at") or row.get("created_at") or ""),
+            }
+        )
+    return sorted(preflights, key=lambda item: item["recorded_at"], reverse=True)
+
+
+def _workflow_governance_dead_letter_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    dead_letters: list[dict[str, Any]] = []
+    for row in rows:
+        if row.get("type") != "ready_node_queue":
+            continue
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(content.get("status") or "") != "dead_letter":
+            continue
+        evidence = content.get("dead_letter_evidence", {}) if isinstance(content.get("dead_letter_evidence", {}), dict) else {}
+        preflight = evidence.get("workflow_governance_preflight", {}) if isinstance(evidence.get("workflow_governance_preflight", {}), dict) else {}
+        if not preflight:
+            continue
+        dead_letters.append(
+            {
+                "ready_node_queue_path": str(row.get("path") or ""),
+                "queue_id": str(content.get("queue_id") or row.get("id") or ""),
+                "node_id": str(content.get("node_id") or ""),
+                "workflow_run_path": str(content.get("workflow_run_path") or ""),
+                "resume_workflow_run_path": str(evidence.get("resume_workflow_run_path") or ""),
+                "last_error": str(content.get("last_error") or ""),
+                "preflight_status": str(preflight.get("status") or ""),
+                "gate_status": str(preflight.get("gate_status") or ""),
+                "gate_result_path": str(preflight.get("gate_result_path") or ""),
+                "drift_report_path": str(preflight.get("drift_report_path") or ""),
+                "recorded_at": str(row.get("updated_at") or row.get("created_at") or ""),
+            }
+        )
+    return sorted(dead_letters, key=lambda item: item["recorded_at"], reverse=True)
+
+
+def _workflow_governance_operator_action(status: str) -> str:
+    if status == "blocked":
+        return "repair canonical workflow governance evidence before scheduler resume or chapter production"
+    if status == "warning":
+        return "review workflow governance drift warnings before production promotion"
+    if status == "missing":
+        return "run workflow governance drift gate for the canonical v1 chapter workflow"
+    return "continue governed workflow execution"
 
 
 def _capacity_plan(book_rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -445,7 +571,15 @@ def _approval_gate_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _production_control_console(rows: list[dict[str, Any]], blocking_issues: list[dict[str, Any]], release_status: str, long_chain_status: str, v1_artifact_coverage: dict[str, Any], approval_gate_summary: dict[str, Any]) -> dict[str, Any]:
+def _production_control_console(
+    rows: list[dict[str, Any]],
+    blocking_issues: list[dict[str, Any]],
+    release_status: str,
+    long_chain_status: str,
+    v1_artifact_coverage: dict[str, Any],
+    approval_gate_summary: dict[str, Any],
+    workflow_governance: dict[str, Any],
+) -> dict[str, Any]:
     chapter_queue = _latest_assets(rows, "chapter_plan", limit=20)
     draft_rows = _latest_assets(rows, "draft_chapter", limit=20)
     agent_queue = _latest_assets(rows, "agent_dispatch_queue", limit=20)
@@ -457,6 +591,7 @@ def _production_control_console(rows: list[dict[str, Any]], blocking_issues: lis
         "style": _latest_status(rows, asset_type="style_drift_report"),
         "quality": _latest_status(rows, asset_type="evaluation_gate"),
         "long_chain": long_chain_status,
+        "workflow_governance": workflow_governance["status"],
         "release": release_status,
         "publish": _latest_status(rows, asset_type="publish_gate_report"),
     }
@@ -475,6 +610,7 @@ def _production_control_console(rows: list[dict[str, Any]], blocking_issues: lis
             "canon": gate_status_board["canon"],
             "style": gate_status_board["style"],
             "quality": gate_status_board["quality"],
+            "workflow_governance": workflow_governance["status"],
             "release": release_status,
         },
         "feedback_approval_queue": feedback_proposals,
@@ -491,6 +627,7 @@ def _production_control_console(rows: list[dict[str, Any]], blocking_issues: lis
             "latest_chapter": v1_artifact_coverage["summary"]["latest_chapter"],
         },
         "approval_gate_summary": approval_gate_summary["summary"],
+        "workflow_governance": workflow_governance,
     }
 
 
@@ -584,3 +721,7 @@ def _display_path(root, path) -> str:
         return str(candidate.relative_to(root))
     except ValueError:
         return str(candidate)
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    return [value for value in dict.fromkeys(str(item) for item in values if str(item or "").strip())]
