@@ -673,11 +673,14 @@ def build_workflow_runtime_console(
         input_assets=input_assets,
         start_node_id=start_node_id,
     )
+    governance_summary = _workflow_run_governance_console_summary(storage, workflow_run_path_or_id)
     return {
         "dag": dag,
         "dependencies": dependencies,
         "ready_queue": ready_queue,
         "workflow_template_contract": dag.get("workflow_template_contract", {"enabled": False}),
+        "workflow_governance_preflight": governance_summary.get("workflow_governance_preflight", {}),
+        "governance_dead_letters": governance_summary.get("governance_dead_letters", []),
         "processor_contracts": list_processor_contracts(),
         "state_machine": workflow_state_machine(),
     }
@@ -4608,6 +4611,68 @@ def _workflow_governance_preflight_failure(result: dict[str, Any]) -> dict[str, 
     if str(preflight.get("gate_status") or "") != "failed":
         return {}
     return preflight
+
+
+def _workflow_run_governance_console_summary(storage: LocalStorage, workflow_run_path_or_id: str | Path | None) -> dict[str, Any]:
+    if not workflow_run_path_or_id:
+        return {"workflow_governance_preflight": {}, "governance_dead_letters": []}
+    try:
+        run_path, workflow_run = _resolve_workflow_run(storage, workflow_run_path_or_id)
+    except Exception:
+        return {"workflow_governance_preflight": {}, "governance_dead_letters": []}
+    run_ref = _display_path(storage.root, run_path)
+    content = workflow_run.get("content", {}) if isinstance(workflow_run.get("content", {}), dict) else {}
+    lineage = content.get("lineage", {}) if isinstance(content.get("lineage", {}), dict) else {}
+    preflight = lineage.get("workflow_governance_preflight", {}) if isinstance(lineage.get("workflow_governance_preflight", {}), dict) else {}
+    return {
+        "workflow_governance_preflight": {
+            "status": str(preflight.get("status") or ""),
+            "gate_status": str(preflight.get("gate_status") or ""),
+            "blocking": bool(preflight.get("blocking", False)),
+            "message": str(preflight.get("message") or ""),
+            "environment": str(preflight.get("environment") or ""),
+            "mode": str(preflight.get("mode") or ""),
+            "gate_result_path": str(preflight.get("gate_result_path") or ""),
+            "drift_report_path": str(preflight.get("drift_report_path") or ""),
+            "summary": preflight.get("summary", {}) if isinstance(preflight.get("summary", {}), dict) else {},
+        } if preflight else {},
+        "governance_dead_letters": _workflow_governance_dead_letter_rows(storage, run_ref),
+    }
+
+
+def _workflow_governance_dead_letter_rows(storage: LocalStorage, workflow_run_ref: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in reversed(storage.list_json("runs")):
+        data = read_json_for_scan(storage, path, context="workflow governance dead-letter console scan")
+        if not isinstance(data, dict) or data.get("type") != "ready_node_queue":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if str(content.get("status") or "") != "dead_letter":
+            continue
+        evidence = content.get("dead_letter_evidence", {}) if isinstance(content.get("dead_letter_evidence", {}), dict) else {}
+        preflight = evidence.get("workflow_governance_preflight", {}) if isinstance(evidence.get("workflow_governance_preflight", {}), dict) else {}
+        if not preflight:
+            continue
+        resume_path = str(evidence.get("resume_workflow_run_path") or "")
+        original_path = str(content.get("workflow_run_path") or "")
+        if workflow_run_ref not in {resume_path, original_path}:
+            continue
+        rows.append(
+            {
+                "ready_node_queue_path": _display_path(storage.root, path),
+                "queue_id": str(content.get("queue_id") or data.get("id") or ""),
+                "status": "dead_letter",
+                "node_id": str(content.get("node_id") or ""),
+                "workflow_run_path": original_path,
+                "resume_workflow_run_path": resume_path,
+                "last_error": str(content.get("last_error") or ""),
+                "gate_result_path": str(preflight.get("gate_result_path") or ""),
+                "drift_report_path": str(preflight.get("drift_report_path") or ""),
+                "preflight_status": str(preflight.get("status") or ""),
+                "gate_status": str(preflight.get("gate_status") or ""),
+            }
+        )
+    return rows
 
 
 def _record_ready_node_queue_item(storage: LocalStorage, candidate: dict[str, Any], *, scheduler_tick_id: str) -> dict[str, Any]:

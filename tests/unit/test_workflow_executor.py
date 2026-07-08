@@ -1282,6 +1282,13 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(queue_item.content["attempt_count"], 1)
             self.assertIn("workflow_governance_preflight", queue_item.content["dead_letter_evidence"])
             self.assertTrue(queue_item.content["dead_letter_evidence"]["workflow_governance_preflight"]["gate_result_path"])
+            console = build_workflow_runtime_console(storage, workflow_run_path_or_id=tick["errors"][0]["resume_workflow_run_path"])
+            self.assertEqual(console["workflow_governance_preflight"]["status"], "failed")
+            self.assertEqual(console["workflow_governance_preflight"]["gate_status"], "failed")
+            self.assertTrue(console["workflow_governance_preflight"]["gate_result_path"])
+            self.assertEqual(console["governance_dead_letters"][0]["status"], "dead_letter")
+            self.assertEqual(console["governance_dead_letters"][0]["ready_node_queue_path"], tick["errors"][0]["ready_node_queue_path"])
+            self.assertTrue(console["governance_dead_letters"][0]["drift_report_path"])
 
     def test_scheduler_loop_respects_active_lease(self):
         with tempfile.TemporaryDirectory() as tmp:
