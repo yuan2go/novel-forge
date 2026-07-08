@@ -19,6 +19,7 @@ RUNTIME_GROWTH_TESTS = [
     "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_agent_event_policy_flows_from_workflow_runtime_policy_to_agent_run",
     "tests.unit.test_agent_scheduler.AgentSchedulerTests.test_agent_center_snapshot_exposes_agent_event_summary",
     "tests.unit.test_agent_scheduler.AgentSchedulerTests.test_agent_center_api_surfaces_agent_event_summary",
+    "tests.unit.test_runtime_growth_regression_script.RuntimeGrowthRegressionScriptTests",
 ]
 
 
@@ -38,6 +39,7 @@ def _commands(*, include_ui: bool) -> list[list[str]]:
             "tests/unit/test_agent_workflow_and_impact.py",
             "tests/unit/test_workflow_executor.py",
             "tests/unit/test_agent_scheduler.py",
+            "tests/unit/test_runtime_growth_regression_script.py",
         ],
     ]
     if include_ui:
