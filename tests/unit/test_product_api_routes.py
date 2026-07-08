@@ -292,6 +292,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/portfolio/scheduler-plan",
                 "/product/portfolio/lifecycle-gate",
                 "/product/os/cockpit/project",
+                "/product/os/cockpit/chapter-runtime-growth-profile",
                 "/product/os/cockpit/multi-book",
                 "/product/os/cockpit/multi-book/schedule",
                 "/product/os/retrieval/pgvector-capabilities",
@@ -1226,6 +1227,90 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["production_control_console"]["gate_status_board"]["source_governance_runtime"], "failed")
             self.assertEqual(content["cockpit"]["source_guarded_apply_readiness"]["status"], "review_required")
             self.assertEqual(content["cockpit"]["source_governance_runtime_gate"]["status"], "failed")
+
+    def test_chapter_runtime_growth_profile_route_builds_profile_and_cockpit_surfaces_it(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.schemas import BaseAsset
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+            storage = LocalStorage(root)
+            draft_path = storage.write_asset_auto(
+                BaseAsset(
+                    id="route-runtime-draft",
+                    type="draft_chapter",
+                    title="Route Runtime Draft",
+                    content={"status": "available"},
+                    metadata={"project_id": "route-book-runtime"},
+                )
+            )
+            task_path = storage.write_asset_auto(
+                BaseAsset(
+                    id="route-runtime-task",
+                    type="task_status",
+                    title="Route Runtime Task",
+                    content={"status": "completed"},
+                    metadata={"project_id": "route-book-runtime"},
+                )
+            )
+            policy = {
+                "policy_version": "chapter-production-runtime-artifact-policy-v1",
+                "task_status_mode": "full",
+                "task_status_recording": {"pending": True, "running": True, "completed": True, "failed": True},
+                "node_run_recording": {"succeeded": True, "failed": True},
+                "trace_recording": {"node_run_succeeded_span": True, "node_run_failed_span": True, "external_runtime_spans": True},
+            }
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="route-runtime-run",
+                    type="chapter_production_run",
+                    title="Route runtime chapter run",
+                    content={
+                        "run_id": "route-runtime-run",
+                        "status": "succeeded",
+                        "chapter": 3,
+                        "current_step": "completed",
+                        "outputs": {"draft_v0_path": str(draft_path.relative_to(root))},
+                        "steps": {"draft": {"task_status_paths": [str(task_path.relative_to(root))], "output_paths": [str(draft_path.relative_to(root))]}},
+                        "control": {"task_status_mode": "full", "runtime_artifact_policy": policy},
+                    },
+                    metadata={"project_id": "route-book-runtime"},
+                )
+            )
+
+            profile_response = client.post(
+                "/product/os/cockpit/chapter-runtime-growth-profile",
+                params={"project_id": "route-book-runtime", "persist_report": True},
+            )
+            cockpit_response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-runtime"})
+
+            self.assertEqual(profile_response.status_code, 200, profile_response.text)
+            profile = profile_response.json()
+            self.assertEqual(profile["status"], "review_required")
+            self.assertTrue(profile["path"])
+            self.assertEqual(profile["asset"]["content"]["snapshot_kind"], "chapter_runtime_growth_profile")
+            self.assertEqual(profile["asset"]["content"]["summary"]["chapter_run_count"], 1)
+            self.assertEqual(profile["asset"]["content"]["throughput"]["full_run_count"], 1)
+            self.assertEqual(profile["asset"]["content"]["quality"]["max_linked_asset_ref_count"], 2)
+
+            self.assertEqual(cockpit_response.status_code, 200, cockpit_response.text)
+            content = cockpit_response.json()["asset"]["content"]
+            growth = content["runtime_governance"]["chapter_runtime_growth"]
+            self.assertEqual(growth["status"], "review_required")
+            self.assertEqual(growth["summary"]["chapter_run_count"], 1)
+            self.assertEqual(growth["summary"]["max_linked_asset_ref_count"], 2)
+            self.assertEqual(content["quality"]["chapter_runtime_growth_status"], "review_required")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["runtime_growth"], "review_required")
+            self.assertEqual(content["cockpit"]["chapter_runtime_growth"]["status"], "review_required")
 
     def test_project_cockpit_route_keeps_missing_workflow_governance_unready(self):
         try:
