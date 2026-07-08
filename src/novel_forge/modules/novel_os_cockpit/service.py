@@ -20,6 +20,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     v1_artifact_coverage = _v1_artifact_coverage(rows)
     approval_gate_summary = _approval_gate_summary(rows)
     context_governance_gate = _latest_gate_result(rows, "context_governance_runtime_coverage")
+    production_governance_drift = _latest_metric_snapshot(rows, "production_governance_evidence_drift")
     production_console = _production_control_console(rows, blocking_issues, release_status, long_chain_status, v1_artifact_coverage, approval_gate_summary)
     content = {
         "project_id": project_id,
@@ -38,6 +39,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "latest_v1_artifact_coverage": v1_artifact_coverage["summary"]["latest_coverage_ratio"],
             "blocking_approval_request_count": approval_gate_summary["blocking_pending_count"],
             "latest_context_governance_status": context_governance_gate["status"],
+            "production_governance_drift_count": production_governance_drift["drift_count"],
         },
         "task_health": {
             "agent_queue_status": queue_status,
@@ -57,6 +59,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         "approval_gate_summary": approval_gate_summary,
         "runtime_governance": {
             "context_governance_gate": context_governance_gate,
+            "production_governance_drift": production_governance_drift,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -66,6 +69,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "artifact_coverage": production_console["artifact_coverage"],
             "approval_gate_summary": approval_gate_summary["summary"],
             "context_governance_gate": context_governance_gate,
+            "production_governance_drift": production_governance_drift,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -294,6 +298,36 @@ def _latest_gate_result(rows: list[dict[str, Any]], gate_kind: str) -> dict[str,
         "message": str(content.get("message") or ""),
         "coverage_report_path": str(result.get("coverage_report_path") or ""),
         "summary": result.get("summary", {}) if isinstance(result.get("summary", {}), dict) else {},
+    }
+
+
+def _latest_metric_snapshot(rows: list[dict[str, Any]], snapshot_kind: str) -> dict[str, Any]:
+    matches = []
+    for row in rows:
+        if row.get("type") != "project_metric_snapshot":
+            continue
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") == snapshot_kind:
+            matches.append(row)
+    if not matches:
+        return {"snapshot_kind": snapshot_kind, "status": "missing", "path": "", "drift_count": 0, "blocking_drift_count": 0}
+    row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    quality = content.get("quality", {}) if isinstance(content.get("quality", {}), dict) else {}
+    task_health = content.get("task_health", {}) if isinstance(content.get("task_health", {}), dict) else {}
+    drift_count = int(quality.get("drift_count") or 0)
+    blocking_drift_count = int(task_health.get("blocking_drift_count") or 0)
+    return {
+        "snapshot_kind": snapshot_kind,
+        "status": "blocked" if blocking_drift_count else "warning" if drift_count else "passed",
+        "path": str(row.get("path") or ""),
+        "drift_count": drift_count,
+        "blocking_drift_count": blocking_drift_count,
+        "summary": {
+            "normalized_contract_coverage": quality.get("normalized_contract_coverage", 0.0),
+            "drift_counts_by_type": quality.get("drift_counts_by_type", {}) if isinstance(quality.get("drift_counts_by_type", {}), dict) else {},
+        },
     }
 
 

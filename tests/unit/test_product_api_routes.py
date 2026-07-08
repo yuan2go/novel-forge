@@ -272,6 +272,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/system/health",
                 "/product/system/module-completion",
                 "/product/system/module-completion/snapshot",
+                "/product/system/production-governance-drift",
                 "/product/system/operation-reports",
                 "/product/system/failure-drill",
                 "/product/system/long-chain-acceptance",
@@ -349,6 +350,7 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(client.get("/product/projects").status_code, 200)
             self.assertEqual(client.get("/product/tasks").status_code, 200)
             self.assertEqual(client.get("/product/system/health").status_code, 200)
+            self.assertEqual(client.get("/product/system/production-governance-drift?persist=false").status_code, 200)
             self.assertEqual(client.get("/product/agents/center").status_code, 200)
             self.assertEqual(client.get("/product/editor-chief/snapshot").status_code, 200)
             self.assertEqual(client.get("/product/runtime/policy/surface-coverage").status_code, 200)

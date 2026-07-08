@@ -12,6 +12,7 @@ from novel_forge.api.routers._bindings import bind_product_symbols
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.operations import create_local_ops_drill_report, create_long_chain_acceptance_report, list_operation_reports
 from novel_forge.modules.module_completion import module_completion_report
+from novel_forge.modules.production_governance import build_production_governance_evidence_drift_report
 from novel_forge.storage.local import LocalStorage
 
 bind_product_symbols(globals(), _product_services)
@@ -63,6 +64,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def module_completion_snapshot_endpoint(project_id: str | None = None) -> dict[str, Any]:
         try:
             return module_completion_report(LocalStorage(app_settings.root), project_id=project_id, persist=True)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/system/production-governance-drift")
+    def production_governance_drift_endpoint(
+        project_id: str | None = None,
+        limit: int = Query(default=500, ge=1, le=2000),
+        persist: bool = True,
+    ) -> dict[str, Any]:
+        try:
+            return build_production_governance_evidence_drift_report(
+                LocalStorage(app_settings.root),
+                project_id=project_id or "",
+                limit=limit,
+                persist=persist,
+            )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
