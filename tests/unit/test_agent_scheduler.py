@@ -327,6 +327,32 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(agent["content"]["status"], "dead_letter")
             self.assertTrue(any(item.get("content", {}).get("status") == "agent_scheduler_service_failed" for item in checkpoints))
 
+    def test_scheduler_tick_dead_letters_publish_gate_when_governance_drift_blocks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            result = _create_drifted_publish_gate_dead_letter(storage)
+            tick = result["tick"]
+            queue = result["queue"]
+            run = result["run"]
+            fixture = result["fixture"]
+            agent = storage.read_json(storage.root / run["path"])
+            checkpoints = [
+                storage.read_json(path)
+                for path in storage.list_json("runs")
+                if storage.read_json(path).get("type") == "agent_checkpoint"
+            ]
+            snapshot = agent_center_snapshot(storage, project_id=fixture["project_id"])
+
+            self.assertEqual(tick["acked_count"], 0)
+            self.assertEqual(tick["error_count"], 1)
+            self.assertEqual(queue["status"], "dead_letter")
+            self.assertIn("production governance drift gate failed", queue["last_error"])
+            self.assertEqual(agent["content"]["status"], "dead_letter")
+            self.assertTrue(any(item.get("content", {}).get("status") == "agent_scheduler_service_failed" for item in checkpoints))
+            self.assertEqual(snapshot["summary"]["governance_dead_letter_count"], 1)
+            self.assertEqual(snapshot["governance_dead_letters"][0]["operation"], "create-publish-gate-report")
+
     def test_agent_center_surfaces_governance_dead_letter_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -962,6 +988,54 @@ def _create_drifted_release_dead_letter(storage: LocalStorage) -> dict[str, obje
                 fixture["project_id"],
                 "release_package",
                 trace_id=f"trace-scheduler-release-dead-letter-{fixture['project_id']}",
+            ),
+        },
+    )
+    dispatch_agent_run(storage, agent_run_path=run["path"], max_attempts=1)
+    tick = run_agent_scheduler_tick(storage, project_id=fixture["project_id"])
+    queue = list_agent_dispatch_queue(storage, project_id=fixture["project_id"])[0]
+    return {"fixture": fixture, "run": run, "tick": tick, "queue": queue}
+
+
+def _create_drifted_publish_gate_dead_letter(storage: LocalStorage) -> dict[str, object]:
+    fixture = create_production_ready_release_inputs(storage)
+    storage.write_asset_auto(
+        PublishGateReport(
+            title="Drifted publish gate",
+            content={
+                "target_asset_id": "draft-drift",
+                "gates": {"provider_runtime_gate_passed": False},
+                "decision": "blocked",
+                "blocking_issues": [{"severity": "high", "message": "legacy blocker without dimension"}],
+                "required_reports": {},
+                "human_override": False,
+            },
+            metadata={"project_id": fixture["project_id"]},
+        )
+    )
+    run = start_agent_run(
+        storage,
+        agent_key="publishing",
+        operation="create-publish-gate-report",
+        status="prepared",
+        input_assets=[str(fixture["draft_path"].relative_to(storage.root))],
+        token_budget=500,
+        workspace_path=fixture["workspace_path"],
+        evidence={
+            "environment": "production",
+            "project_id": fixture["project_id"],
+            "workspace_path": fixture["workspace_path"],
+            "source_policy": fixture["source_policy"],
+            "provider_runtime_guard": {
+                "status": "passed",
+                "provider": "scheduler-fixture",
+                "model": "local-publish-gate",
+                "path": "runs/provider-runtime-gate.json",
+            },
+            "os_envelope": production_envelope(
+                fixture["project_id"],
+                "publish_gate_report",
+                trace_id=f"trace-scheduler-publish-dead-letter-{fixture['project_id']}",
             ),
         },
     )
