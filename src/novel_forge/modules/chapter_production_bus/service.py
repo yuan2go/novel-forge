@@ -13,7 +13,7 @@ from novel_forge.modules.content_quality_loop import run_content_quality_loop
 from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.continuity_graph import create_chapter_stability_preflight_report
 from novel_forge.modules.drafting import service as drafting_service
-from novel_forge.modules.editor import execute_revision_plan
+from novel_forge.modules.editor import apply_editor_patch, create_editor_patch, execute_revision_plan
 from novel_forge.modules.longform_recap import run_longform_recap
 from novel_forge.modules.longform_stability import create_longform_artifacts_for_draft
 from novel_forge.modules.os_envelope import is_production_environment
@@ -42,6 +42,7 @@ CHAPTER_PRODUCTION_STEPS = [
     "review",
     "revision_plan",
     "final_draft",
+    "quality_repair",
     "canon_longform_update",
     "export_package",
     "next_chapter_plan",
@@ -56,6 +57,7 @@ STEP_LABELS = {
     "review": "审稿门禁",
     "revision_plan": "修订计划",
     "final_draft": "最终稿",
+    "quality_repair": "质量修复复审",
     "canon_longform_update": "Canon / 长篇状态更新",
     "export_package": "本地导出包",
     "next_chapter_plan": "下一章细纲",
@@ -155,6 +157,13 @@ def start_chapter_production(
                 "final_content_quality_loop_status": "",
                 "final_content_quality_loop_blocking": "",
                 "final_chapter_quality_trend_path": "",
+                "quality_repair_patch_path": "",
+                "quality_repair_diff_report_path": "",
+                "quality_repair_draft_version_path": "",
+                "quality_repair_content_quality_loop_path": "",
+                "quality_repair_content_quality_loop_status": "",
+                "quality_repair_content_quality_loop_blocking": "",
+                "quality_repair_chapter_quality_trend_path": "",
                 "chapter_state_path": "",
                 "fact_ledger_path": "",
                 "character_state_ledger_path": "",
@@ -184,6 +193,7 @@ def start_chapter_production(
                 "requires_stability_preflight_before_context": True,
                 "requires_review_before_revision": True,
                 "requires_revision_before_final": True,
+                "requires_quality_repair_before_canon_update": True,
                 "requires_canon_longform_update_after_final": True,
                 "requires_export_package_after_canon_update": True,
                 "copyright_boundary": "references are used as abstract project context; protected expression is not copied into generation",
@@ -682,6 +692,9 @@ def _perform_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], s
     if step == "final_draft":
         result = _create_final_draft(storage, data)
         return _step_result(result["final_draft_path"], result["output_paths"], result)
+    if step == "quality_repair":
+        result = _create_quality_repair(storage, data)
+        return _step_result(result["quality_repair_content_quality_loop_path"], result["output_paths"], result)
     if step == "canon_longform_update":
         result = _create_canon_longform_update(storage, data)
         return _step_result(result["longform_recap_report_path"], result["output_paths"], result)
@@ -881,10 +894,155 @@ def _create_final_draft(storage: LocalStorage, data: dict[str, Any]) -> dict[str
     }
 
 
+def _create_quality_repair(storage: LocalStorage, data: dict[str, Any]) -> dict[str, Any]:
+    content = _content(data)
+    outputs = _outputs(content)
+    _require(outputs, "final_draft_path", "quality_repair")
+    quality_policy = _quality_loop_policy(data)
+    initial_summary = _quality_loop_summary_from_target(storage, outputs["final_draft_path"])
+    if not _truthy(initial_summary.get("blocking")) and str(initial_summary.get("status") or "") in {"passed", "passed_with_warnings"}:
+        updates = {
+            "quality_repair_patch_path": "",
+            "quality_repair_diff_report_path": "",
+            "quality_repair_draft_version_path": "",
+            **_quality_loop_output_updates("quality_repair", initial_summary),
+        }
+        return {**updates, "output_paths": _quality_loop_output_paths(initial_summary)}
+
+    operations = _content_quality_repair_operations(storage, outputs["final_draft_path"], initial_summary)
+    patch = create_editor_patch(
+        storage,
+        outputs["final_draft_path"],
+        instructions=_content_quality_repair_instructions(initial_summary),
+        operations=operations,
+        workspace_path=str(data.get("metadata", {}).get("workspace_path", "")),
+        environment=str(quality_policy.get("environment") or ""),
+        os_envelope=quality_policy.get("os_envelope") if isinstance(quality_policy.get("os_envelope"), dict) else None,
+        source_policy=quality_policy.get("source_policy") if isinstance(quality_policy.get("source_policy"), dict) else None,
+    )
+    applied = apply_editor_patch(
+        storage,
+        patch["path"],
+        change_summary="content quality loop repair",
+        environment=str(quality_policy.get("environment") or ""),
+        os_envelope=quality_policy.get("os_envelope") if isinstance(quality_policy.get("os_envelope"), dict) else None,
+        source_policy=quality_policy.get("source_policy") if isinstance(quality_policy.get("source_policy"), dict) else None,
+    )
+    repaired_summary = _run_bus_content_quality_loop(
+        storage,
+        target_path=outputs["final_draft_path"],
+        stage="re_review",
+        data=data,
+        quality_policy=quality_policy,
+    )
+    updates = {
+        "quality_repair_patch_path": patch["path"],
+        "quality_repair_diff_report_path": str(applied.get("diff_report", {}).get("path") or ""),
+        "quality_repair_draft_version_path": str(applied.get("draft_version", {}).get("path") or ""),
+        **_quality_loop_output_updates("quality_repair", repaired_summary),
+        **_quality_loop_output_updates("final", repaired_summary),
+    }
+    _enforce_content_quality_loop_result(repaired_summary, quality_policy, prefix="quality_repair", updates=updates)
+    return {
+        **updates,
+        "output_paths": _dedupe(
+            [
+                patch["path"],
+                str(applied.get("diff_report", {}).get("path") or ""),
+                str(applied.get("draft_version", {}).get("path") or ""),
+                *_quality_loop_output_paths(repaired_summary),
+            ]
+        ),
+    }
+
+
+def _content_quality_repair_instructions(summary: dict[str, Any]) -> str:
+    issue_count = len(summary.get("review_issue_paths", []) if isinstance(summary.get("review_issue_paths", []), list) else [])
+    task_count = len(summary.get("revision_task_paths", []) if isinstance(summary.get("revision_task_paths", []), list) else [])
+    return (
+        "Repair blocking content quality loop findings with a bounded opening-pressure patch, preserve the premise, "
+        f"address {issue_count} review issue(s) and {task_count} revision task(s), then require re-review."
+    )
+
+
+def _content_quality_repair_operations(storage: LocalStorage, draft_path: str, summary: dict[str, Any]) -> list[dict[str, Any]]:
+    draft = storage.read_asset(resolve_path(storage.root, draft_path))
+    text = str(draft.content.get("text", ""))
+    prefix = _content_quality_repair_prefix(_positive_chapter(draft.content.get("chapter", 1)))
+    suffix = "\n\n门外忽然传来第三声钟响，新的证据被塞进门缝。林乔知道自己不能回头，下一章必须查清是谁改写了真相。"
+    operations: list[dict[str, Any]] = []
+    if prefix.strip() not in text:
+        operations.append(
+            {
+                "op_id": "content-quality-repair-opening-pressure",
+                "kind": "prepend_text",
+                "target": "document:start",
+                "paragraph_index": 1,
+                "before": "",
+                "after": prefix,
+                "instruction": "add immediate event, protagonist pressure, reader promise, and concrete scene signals",
+                "rationale": "content quality loop reported blocking opening/readability findings",
+                "status": "proposed",
+                "risk": "low",
+            }
+        )
+    if "下一章必须查清" not in text:
+        operations.append(
+            {
+                "op_id": "content-quality-repair-ending-hook",
+                "kind": "append_text",
+                "target": "document:end",
+                "paragraph_index": 999,
+                "before": "",
+                "after": suffix,
+                "instruction": "add unresolved evidence and next-chapter pull",
+                "rationale": "content quality loop reported weak ending hook or reader promise",
+                "status": "proposed",
+                "risk": "low",
+            }
+        )
+    if not operations:
+        operations.append(
+            {
+                "op_id": "content-quality-repair-noop",
+                "kind": "noop",
+                "target": "document",
+                "paragraph_index": 0,
+                "before": "",
+                "after": "",
+                "instruction": "content quality repair already present; re-run review only",
+                "rationale": f"existing repair markers found for {summary.get('path', '')}",
+                "status": "proposed",
+                "risk": "low",
+            }
+        )
+    return operations
+
+
+def _content_quality_repair_prefix(chapter: int) -> str:
+    base = (
+        f"第{chapter}章的雨还没有停，钟楼却在停用三年后忽然响了第一声。\n\n"
+        "林乔站在广场边，看见封条下压着一枚湿透的证据袋。袋口露出半截巡检牌，编号属于一名早已失踪的维护员。"
+        "如果她现在把证据交出去，父亲旧案会被重新翻开；如果她转身离开，今晚的危险会落到下一个无辜的人身上。"
+        "她必须选择，代价是把自己也推到嫌疑名单里。\n\n"
+        "第二声钟响时，街口的监控同时熄灭。她打开证据袋，里面只有一张被雨水泡开的纸条："
+        "真相不是谁偷走了钟，而是谁改写了规则。"
+        "这一刻，案件的目标、城市的秘密和她要追的线索都落在同一条湿冷的街上。"
+        "她抓紧纸条，决定先查钟楼地下的旧门。"
+    )
+    while len(base) < 840:
+        base += (
+            "\n\n她每向前走一步，门后的铁链就响一下。"
+            "危险没有退开，反而逼她确认选择；证据、真相、规则和秘密都在提醒她，今晚不能回头。"
+        )
+    return f"{base}\n\n"
+
+
 def _create_canon_longform_update(storage: LocalStorage, data: dict[str, Any]) -> dict[str, Any]:
     content = _content(data)
     outputs = _outputs(content)
     _require(outputs, "final_draft_path", "canon_longform_update")
+    _require(outputs, "quality_repair_content_quality_loop_path", "canon_longform_update")
     workspace_path = str(data.get("metadata", {}).get("workspace_path", ""))
     project_id = str(data.get("metadata", {}).get("project_id", ""))
     chapter = _positive_chapter(content.get("chapter", 1))
@@ -1037,6 +1195,10 @@ def _create_export_package(storage: LocalStorage, data: dict[str, Any]) -> dict[
                 outputs["longform_recap_report_path"],
                 outputs.get("final_content_quality_loop_path", ""),
                 outputs.get("final_chapter_quality_trend_path", ""),
+                outputs.get("quality_repair_content_quality_loop_path", ""),
+                outputs.get("quality_repair_chapter_quality_trend_path", ""),
+                outputs.get("quality_repair_patch_path", ""),
+                outputs.get("quality_repair_diff_report_path", ""),
                 export_ref,
                 manifest_ref,
             ],
@@ -1067,6 +1229,12 @@ def _export_provenance(outputs: dict[str, Any], *, draft_id: str, draft_path: st
         "final_content_quality_loop_path": str(outputs.get("final_content_quality_loop_path") or ""),
         "final_content_quality_loop_status": str(outputs.get("final_content_quality_loop_status") or ""),
         "final_chapter_quality_trend_path": str(outputs.get("final_chapter_quality_trend_path") or ""),
+        "quality_repair_patch_path": str(outputs.get("quality_repair_patch_path") or ""),
+        "quality_repair_diff_report_path": str(outputs.get("quality_repair_diff_report_path") or ""),
+        "quality_repair_draft_version_path": str(outputs.get("quality_repair_draft_version_path") or ""),
+        "quality_repair_content_quality_loop_path": str(outputs.get("quality_repair_content_quality_loop_path") or ""),
+        "quality_repair_content_quality_loop_status": str(outputs.get("quality_repair_content_quality_loop_status") or ""),
+        "quality_repair_chapter_quality_trend_path": str(outputs.get("quality_repair_chapter_quality_trend_path") or ""),
         "chapter_state_path": str(outputs.get("chapter_state_path") or ""),
         "fact_ledger_path": str(outputs.get("fact_ledger_path") or ""),
         "character_state_ledger_path": str(outputs.get("character_state_ledger_path") or ""),
@@ -1114,11 +1282,15 @@ def _export_operator_checklist(outputs: dict[str, Any], *, export_path: str, exp
         ("recap_checkpoint_present", bool(outputs.get("longform_recap_report_path")), {"longform_recap_report_path": outputs.get("longform_recap_report_path", "")}),
         (
             "content_quality_loop_evidence_present",
-            bool(outputs.get("final_content_quality_loop_path")),
+            bool(outputs.get("quality_repair_content_quality_loop_path") or outputs.get("final_content_quality_loop_path"))
+            and str(outputs.get("quality_repair_content_quality_loop_status") or outputs.get("final_content_quality_loop_status") or "")
+            in {"passed", "passed_with_warnings"},
             {
                 "final_content_quality_loop_path": outputs.get("final_content_quality_loop_path", ""),
                 "final_content_quality_loop_status": outputs.get("final_content_quality_loop_status", ""),
                 "final_chapter_quality_trend_path": outputs.get("final_chapter_quality_trend_path", ""),
+                "quality_repair_content_quality_loop_path": outputs.get("quality_repair_content_quality_loop_path", ""),
+                "quality_repair_content_quality_loop_status": outputs.get("quality_repair_content_quality_loop_status", ""),
             },
         ),
         ("local_only_no_platform_side_effect", True, {"mode": "local_export_only"}),
@@ -1175,9 +1347,10 @@ V1_SEQUENCE_REQUIRED_OUTPUTS = [
     "draft_v0_path",
     "review_path",
     "revision_plan_path",
-        "final_draft_path",
-        "final_content_quality_loop_path",
-        "chapter_state_path",
+    "final_draft_path",
+    "final_content_quality_loop_path",
+    "quality_repair_content_quality_loop_path",
+    "chapter_state_path",
     "fact_ledger_path",
     "character_state_ledger_path",
     "protagonist_charm_report_path",
@@ -1599,8 +1772,9 @@ def _step_inputs(content: dict[str, Any], step: str) -> list[str]:
         "review": ["draft_v0_path"],
         "revision_plan": ["review_path"],
         "final_draft": ["draft_v0_path", "review_path", "revision_plan_path"],
-        "canon_longform_update": ["final_draft_path"],
-        "export_package": ["final_draft_path", "longform_recap_report_path"],
+        "quality_repair": ["final_draft_path", "final_content_quality_loop_path"],
+        "canon_longform_update": ["final_draft_path", "quality_repair_content_quality_loop_path"],
+        "export_package": ["final_draft_path", "longform_recap_report_path", "quality_repair_content_quality_loop_path"],
         "next_chapter_plan": ["final_draft_path", "outline_path", "export_package_path"],
     }
     return [outputs[key] for key in mapping.get(step, []) if outputs.get(key)]

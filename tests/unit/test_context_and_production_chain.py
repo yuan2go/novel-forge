@@ -620,7 +620,11 @@ class ContextAndProductionChainTests(unittest.TestCase):
             resumed = resume_chapter_production(storage, run["path"], run_to="next_chapter_plan")
 
             self.assertEqual(resumed["status"], "succeeded")
-            self.assertEqual(resumed["completed_steps"], 11)
+            self.assertEqual(resumed["completed_steps"], 12)
+            self.assertTrue(resumed["outputs"]["quality_repair_patch_path"])
+            self.assertTrue(resumed["outputs"]["quality_repair_diff_report_path"])
+            self.assertTrue(resumed["outputs"]["quality_repair_draft_version_path"])
+            self.assertTrue(resumed["outputs"]["quality_repair_content_quality_loop_path"])
             self.assertTrue(resumed["outputs"]["chapter_state_path"])
             self.assertTrue(resumed["outputs"]["fact_ledger_path"])
             self.assertTrue(resumed["outputs"]["character_state_ledger_path"])
@@ -635,6 +639,9 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertEqual(storage.read_asset(resumed["outputs"]["chapter_state_path"]).type, "chapter_state")
             self.assertEqual(storage.read_asset(resumed["outputs"]["fact_ledger_path"]).type, "fact_ledger")
             self.assertEqual(storage.read_asset(resumed["outputs"]["longform_recap_report_path"]).type, "longform_recap_report")
+            self.assertEqual(storage.read_asset(resumed["outputs"]["quality_repair_patch_path"]).type, "editor_patch")
+            self.assertEqual(storage.read_asset(resumed["outputs"]["quality_repair_diff_report_path"]).type, "draft_diff_report")
+            self.assertEqual(storage.read_asset(resumed["outputs"]["quality_repair_content_quality_loop_path"]).type, "content_quality_loop_report")
             export_package = storage.read_asset(resumed["outputs"]["export_package_path"])
             self.assertEqual(export_package.type, "publishing_plan")
             self.assertEqual(export_package.content["chapter_queue"][0]["status"], "ready_for_operator_review")
@@ -645,6 +652,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertTrue(export_package.content["operator_review_checklist"])
             self.assertTrue(all(item["status"] == "passed" for item in export_package.content["operator_review_checklist"]))
             self.assertEqual(export_package.content["provenance_evidence"]["final_content_quality_loop_path"], resumed["outputs"]["final_content_quality_loop_path"])
+            self.assertEqual(export_package.content["provenance_evidence"]["quality_repair_content_quality_loop_path"], resumed["outputs"]["quality_repair_content_quality_loop_path"])
             self.assertTrue(export_package.content["provenance_evidence"]["canon_state_machine_snapshot_path"])
             self.assertEqual(export_package.content["manual_handoff"]["next_gate"], "operator_review_then_publish_gate")
             self.assertTrue(export_package.content["source_isolation"]["export_contains_generated_draft_only"])
@@ -782,6 +790,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     "revision_plan_path": f"data/revisions/chapter-{chapter}-plan.json",
                     "final_draft_path": f"data/drafts/chapter-{chapter}-final.json",
                     "final_content_quality_loop_path": f"data/quality/chapter-{chapter}-content-loop.json",
+                    "quality_repair_content_quality_loop_path": f"data/quality/chapter-{chapter}-repair-loop.json",
                     "chapter_state_path": f"data/longform/chapter-{chapter}-state.json",
                     "fact_ledger_path": f"data/longform/chapter-{chapter}-facts.json",
                     "character_state_ledger_path": f"data/longform/chapter-{chapter}-characters.json",
