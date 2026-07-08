@@ -890,6 +890,7 @@ def agent_center_snapshot(
     revision_task_rows = [_revision_task_row(row) for row in revision_tasks]
     checkpoint_rows = [_agent_checkpoint_row(row) for row in checkpoints]
     gate_rows = [_agent_gate_row(row) for row in gates]
+    governance_dead_letters = _agent_center_governance_dead_letters(blocked_queue, runs, checkpoints, gates)
     budget_summary = _budget_coverage(budgets)
     rollback_rows = [_agent_asset_compact(row) for row in rollbacks]
     health_score = _agent_center_health_score(queue, runs, checkpoints, gates, budgets, failures, rollbacks, contracts)
@@ -903,9 +904,12 @@ def agent_center_snapshot(
         _agent_center_check("review_issues", bool(review_issues) or not revision_tasks, "ReviewIssue evidence is visible or no revision task exists", "persist issues before dispatching revision tasks"),
         _agent_center_check("loop_runs", bool(loops) or not tasks, "LoopRun evidence is visible or no agent task requires a loop", "run Loop Kernel for governed generation/review work"),
         _agent_center_check("rollback", bool(rollbacks) or not failures, "Rollback evidence exists or no failures need rollback", "create rollback report for failed agent outputs"),
+        _agent_center_check("governance_dead_letters", not governance_dead_letters, "No production governance dead-letter is blocking Agent Center", "inspect governance_dead_letters before repairing or rerunning production dispatches"),
     ]
     status = "blocked" if blocked_queue or failures else "warning" if any(check["status"] == "warning" for check in readiness_checks) else "ready"
     recommendations = _agent_center_recommendations(status, blocked_queue, failures, readiness_checks)
+    if governance_dead_letters:
+        recommendations.insert(0, "inspect governance_dead_letters and failed drift gates before repairing production dispatches")
     operation_coverage_full = agent_operation_coverage_full_report(storage, project_id=project_id or "")
     hard_stop_dashboard = agent_hard_stop_dashboard(storage, project_id=project_id or "")
     rollback_rehearsals = _agent_center_assets(storage, "agent_rollback_rehearsal", project_id=project_id, limit=limit)
@@ -933,6 +937,7 @@ def agent_center_snapshot(
             "failure_count": len(failures),
             "rollback_count": len(rollbacks),
             "contract_count": len(contracts),
+            "governance_dead_letter_count": len(governance_dead_letters),
             "queue_by_status": by_status,
         },
         "readiness_checks": readiness_checks,
@@ -949,6 +954,7 @@ def agent_center_snapshot(
         "budget_burn": budget_summary,
         "retry_controls": [row for row in blocked_queue if str(row.get("status", "")) in {"waiting_human", "retry_scheduled", "dead_letter"}][:80],
         "dead_letter_queue": [row for row in blocked_queue if str(row.get("status", "")) == "dead_letter"][:80],
+        "governance_dead_letters": governance_dead_letters[:80],
         "rollback_preview": rollback_rows[:80],
         "rollback_rehearsals": [_agent_asset_compact(row) for row in rollback_rehearsals[:80]],
         "dead_letter_repairs": [_agent_asset_compact(row) for row in dead_letter_repairs[:80]],
@@ -4002,6 +4008,149 @@ def _agent_center_recommendations(status: str, blocked_queue: list[dict[str, Any
     if status == "ready" and not recommendations:
         recommendations.append("Agent Center evidence is ready for broader autonomous operation coverage")
     return recommendations
+
+
+GOVERNANCE_DEAD_LETTER_MARKERS = (
+    "production governance",
+    "governance drift",
+    "context governance",
+    "provider_runtime_gate",
+    "publish gate",
+    "release gate",
+)
+
+GOVERNANCE_GATE_KINDS = {
+    "production_governance_evidence_drift",
+    "context_governance_runtime_coverage",
+    "provider_runtime_gate",
+    "publish_gate",
+    "release_gate",
+}
+
+
+def _agent_center_governance_dead_letters(
+    blocked_queue: list[dict[str, Any]],
+    runs: list[dict[str, Any]],
+    checkpoints: list[dict[str, Any]],
+    gates: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    run_by_path = {str(row.get("_path", "")): row for row in runs if str(row.get("_path", ""))}
+    failed_gates = [_failed_governance_gate_row(row) for row in gates]
+    failed_gates = [row for row in failed_gates if row]
+    rows: list[dict[str, Any]] = []
+    for queue in blocked_queue:
+        if str(queue.get("status", "")) != "dead_letter":
+            continue
+        last_error = str(queue.get("last_error", ""))
+        project_id = str(queue.get("project_id", ""))
+        agent_run_path = str(queue.get("agent_run_path", ""))
+        run = run_by_path.get(agent_run_path, {})
+        run_content = run.get("content", {}) if isinstance(run.get("content", {}), dict) else {}
+        run_id = str(run_content.get("run_id") or queue.get("agent_run_id") or "")
+        related_checkpoints = _failed_checkpoints_for_run(checkpoints, agent_run_path=agent_run_path, run_id=run_id)
+        related_gates = [
+            gate
+            for gate in failed_gates
+            if (not project_id or str(gate.get("project_id", "")) == project_id)
+            and _governance_gate_matches_queue(gate, queue, agent_run_path=agent_run_path)
+        ]
+        if not _is_governance_dead_letter(last_error, related_gates):
+            continue
+        if not related_gates:
+            related_gates = [gate for gate in failed_gates if not project_id or str(gate.get("project_id", "")) == project_id][:5]
+        rows.append(
+            {
+                "queue_path": queue.get("path", ""),
+                "dispatch_id": queue.get("dispatch_id", ""),
+                "operation": queue.get("operation") or run_content.get("operation", ""),
+                "agent_key": queue.get("agent_key", ""),
+                "agent_run_path": agent_run_path,
+                "agent_run_status": run_content.get("status", ""),
+                "dead_lettered_at": queue.get("dead_lettered_at", ""),
+                "last_error": last_error,
+                "failed_checkpoint_paths": [str(item.get("path", "")) for item in related_checkpoints if str(item.get("path", ""))],
+                "failed_checkpoints": related_checkpoints[:5],
+                "failed_gate_paths": [str(item.get("path", "")) for item in related_gates if str(item.get("path", ""))],
+                "failed_gates": related_gates[:5],
+                "repair": {
+                    "auto_repair": False,
+                    "requires_operator": True,
+                    "manual_operation": "repair_dead_letter_dispatch",
+                    "queue_path": queue.get("path", ""),
+                    "precondition": "operator must inspect failed_gates and failed_checkpoints before retry",
+                },
+                "recommended_actions": [
+                    "inspect failed production governance evidence",
+                    "repair drifted publish/release/gate artifacts before rerun",
+                    "use dead-letter repair only after the failed evidence is understood",
+                ],
+            }
+        )
+    return rows
+
+
+def _failed_governance_gate_row(row: dict[str, Any]) -> dict[str, Any]:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+    gate_kind = str(content.get("gate_kind") or content.get("gate_type") or "")
+    status = str(content.get("status") or "")
+    if status != "failed" or gate_kind not in GOVERNANCE_GATE_KINDS:
+        return {}
+    result = content.get("result", {}) if isinstance(content.get("result", {}), dict) else {}
+    blocking_rows = result.get("blocking_rows", []) if isinstance(result.get("blocking_rows", []), list) else []
+    return {
+        "path": row.get("_path", ""),
+        "gate_kind": gate_kind,
+        "status": status,
+        "project_id": metadata.get("project_id", ""),
+        "message": content.get("message", ""),
+        "target_paths": content.get("target_paths", []) if isinstance(content.get("target_paths", []), list) else [],
+        "report_path": result.get("report_path", ""),
+        "blocking_row_count": len(blocking_rows),
+        "blocking_rows": blocking_rows[:5],
+    }
+
+
+def _failed_checkpoints_for_run(checkpoints: list[dict[str, Any]], *, agent_run_path: str, run_id: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for row in checkpoints:
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        state = content.get("state", {}) if isinstance(content.get("state", {}), dict) else {}
+        if agent_run_path and str(content.get("agent_run_path", "")) != agent_run_path:
+            continue
+        if run_id and str(content.get("agent_run_id", "")) != run_id:
+            continue
+        status = str(content.get("status") or state.get("status") or "")
+        if "failed" not in status:
+            continue
+        rows.append(
+            {
+                "path": row.get("_path", ""),
+                "status": status,
+                "operation": state.get("operation", ""),
+                "error": state.get("error", ""),
+                "created_at": content.get("created_at", ""),
+            }
+        )
+    return rows
+
+
+def _governance_gate_matches_queue(gate: dict[str, Any], queue: dict[str, Any], *, agent_run_path: str) -> bool:
+    targets = [str(item) for item in gate.get("target_paths", []) if str(item)]
+    if agent_run_path and agent_run_path in targets:
+        return True
+    queue_path = str(queue.get("path", ""))
+    if queue_path and queue_path in targets:
+        return True
+    last_error = str(queue.get("last_error", "")).lower()
+    return any(marker in last_error for marker in GOVERNANCE_DEAD_LETTER_MARKERS)
+
+
+def _is_governance_dead_letter(last_error: str, related_gates: list[dict[str, Any]]) -> bool:
+    if related_gates:
+        return True
+    normalized = last_error.lower()
+    return any(marker in normalized for marker in GOVERNANCE_DEAD_LETTER_MARKERS)
 
 
 def _dag_nodes(value: Any) -> list[dict[str, Any]]:

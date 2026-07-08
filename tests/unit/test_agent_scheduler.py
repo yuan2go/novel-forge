@@ -275,6 +275,28 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(agent["content"]["status"], "dead_letter")
             self.assertTrue(any(item.get("content", {}).get("status") == "agent_scheduler_service_failed" for item in checkpoints))
 
+    def test_agent_center_surfaces_governance_dead_letter_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            result = _create_drifted_release_dead_letter(storage)
+
+            snapshot = agent_center_snapshot(storage, project_id=result["fixture"]["project_id"])
+
+            self.assertEqual(snapshot["summary"]["governance_dead_letter_count"], 1)
+            row = snapshot["governance_dead_letters"][0]
+            self.assertEqual(row["queue_path"], result["queue"]["path"])
+            self.assertEqual(row["agent_run_status"], "dead_letter")
+            self.assertIn("production governance drift gate failed", row["last_error"])
+            self.assertTrue(row["failed_checkpoint_paths"])
+            self.assertTrue(row["failed_gate_paths"])
+            self.assertIn("production_governance_evidence_drift", {gate["gate_kind"] for gate in row["failed_gates"]})
+            self.assertFalse(row["repair"]["auto_repair"])
+            self.assertEqual(row["repair"]["manual_operation"], "repair_dead_letter_dispatch")
+            checks = {item["key"]: item["status"] for item in snapshot["readiness_checks"]}
+            self.assertEqual(checks["governance_dead_letters"], "warning")
+            self.assertTrue(any("governance_dead_letters" in item for item in snapshot["recommendations"]))
+
     def test_agent_center_links_tasks_loops_context_and_review_issues(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -745,6 +767,55 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(asset["metadata"]["rollback_status"], "rolled_back")
             self.assertEqual(asset["metadata"]["asset_status"], "rolled_back")
             self.assertIn("rolled-back", asset["tags"])
+
+
+def _create_drifted_release_dead_letter(storage: LocalStorage) -> dict[str, object]:
+    fixture = create_production_ready_release_inputs(storage)
+    storage.write_asset_auto(
+        PublishGateReport(
+            title="Drifted publish gate",
+            content={
+                "target_asset_id": "draft-drift",
+                "gates": {"provider_runtime_gate_passed": False},
+                "decision": "blocked",
+                "blocking_issues": [{"severity": "high", "message": "legacy blocker without dimension"}],
+                "required_reports": {},
+                "human_override": False,
+            },
+            metadata={"project_id": fixture["project_id"]},
+        )
+    )
+    run = start_agent_run(
+        storage,
+        agent_key="publishing",
+        operation="create-release-package",
+        status="prepared",
+        input_assets=[str(fixture["draft_path"].relative_to(storage.root))],
+        token_budget=500,
+        workspace_path=fixture["workspace_path"],
+        evidence={
+            "publish_gate_path": str(Path(fixture["publish_gate_path"]).relative_to(storage.root)),
+            "environment": "production",
+            "project_id": fixture["project_id"],
+            "workspace_path": fixture["workspace_path"],
+            "source_policy": fixture["source_policy"],
+            "provider_runtime_guard": {
+                "status": "passed",
+                "provider": "scheduler-fixture",
+                "model": "local-release",
+                "path": "runs/provider-runtime-gate.json",
+            },
+            "os_envelope": production_envelope(
+                fixture["project_id"],
+                "release_package",
+                trace_id=f"trace-scheduler-release-dead-letter-{fixture['project_id']}",
+            ),
+        },
+    )
+    dispatch_agent_run(storage, agent_run_path=run["path"], max_attempts=1)
+    tick = run_agent_scheduler_tick(storage, project_id=fixture["project_id"])
+    queue = list_agent_dispatch_queue(storage, project_id=fixture["project_id"])[0]
+    return {"fixture": fixture, "run": run, "tick": tick, "queue": queue}
 
 
 def _scheduler_production_envelope(project_id: str) -> dict[str, object]:
