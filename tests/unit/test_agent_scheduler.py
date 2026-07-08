@@ -549,6 +549,48 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertFalse(row["repair"]["auto_repair"])
             self.assertEqual(row["repair"]["manual_operation"], "repair_dead_letter_dispatch")
 
+    def test_agent_center_api_surfaces_governance_repair_audit_evidence(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            storage = LocalStorage(root)
+            storage.ensure_layout()
+            result = _create_drifted_release_dead_letter(storage)
+            client = TestClient(create_app(IndustrialSettings(root=root)))
+            governance = client.get("/product/agents/center", params={"project_id": result["fixture"]["project_id"]}).json()["governance_dead_letters"][0]
+
+            repair_response = client.post(
+                "/product/agents/dead-letter-repair",
+                json={
+                    "queue_path": result["queue"]["path"],
+                    "project_id": result["fixture"]["project_id"],
+                    "reason": "api repair with reviewed audit trail evidence",
+                    "confirm_governance_review": True,
+                    "reviewed_failed_gate_paths": governance["failed_gate_paths"],
+                    "reviewed_failed_checkpoint_paths": governance["failed_checkpoint_paths"],
+                    "governance_review_note": "api route fixture reviewed governance repair evidence",
+                },
+            )
+            self.assertEqual(repair_response.status_code, 200)
+
+            center = client.get("/product/agents/center", params={"project_id": result["fixture"]["project_id"]})
+
+            self.assertEqual(center.status_code, 200)
+            repair = center.json()["dead_letter_repairs"][0]
+            self.assertTrue(repair["governance_review_required"])
+            self.assertTrue(repair["governance_review_confirmed"])
+            self.assertEqual(repair["reviewed_failed_gate_count"], len(governance["failed_gate_paths"]))
+            self.assertEqual(repair["reviewed_failed_checkpoint_count"], len(governance["failed_checkpoint_paths"]))
+            self.assertEqual(repair["review_note"], "api route fixture reviewed governance repair evidence")
+            self.assertEqual(repair["recovered_status"], "queued")
+            self.assertTrue(repair["rollback_rehearsal_path"])
+
     def test_non_governance_dead_letter_repair_remains_compatible(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
