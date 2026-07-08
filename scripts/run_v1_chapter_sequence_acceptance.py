@@ -15,6 +15,7 @@ if str(SRC_ROOT) not in sys.path:
 
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.chapter_production_bus import run_chapter_production_sequence
+from novel_forge.modules.chapter_runtime_growth import run_chapter_runtime_growth_threshold_gate
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.schemas import Outline
 from novel_forge.storage.local import LocalStorage
@@ -51,6 +52,7 @@ def main() -> int:
     except KeyboardInterrupt:
         interrupted = True
         result = _interrupted_result(args, workspace_path=workspace_path, outline_path=outline_path, progress_events=progress_events)
+    result = _apply_runtime_growth_acceptance_preflight(storage, args, result)
     report_path = Path(args.report_path).resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(_render_report(args, root=root, result=result, progress_events=progress_events), encoding="utf-8")
@@ -79,6 +81,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--outline-path", default="", help="Existing outline asset path. If omitted, a deterministic outline is created.")
     parser.add_argument("--workspace-title", default="V1 Slow Acceptance Project")
     parser.add_argument("--model-provider", default=os.environ.get("NOVEL_FORGE_MODEL_PROVIDER", "mock"), help="Model provider for local slow acceptance; default is mock.")
+    parser.add_argument("--runtime-growth-max-linked-asset-refs", type=int, default=120, help="Maximum linked asset refs per chapter_production_run allowed by the runtime-growth preflight.")
+    parser.add_argument("--allow-full-runtime-mode", action="store_true", help="Allow full task_status_mode in the runtime-growth preflight. Defaults to false.")
     parser.add_argument("--progress-jsonl", action="store_true", help="Print progress events as JSON lines.")
     return parser.parse_args()
 
@@ -132,6 +136,7 @@ def _render_report(args: argparse.Namespace, *, root: Path, result: dict[str, An
     acceptance = result.get("acceptance_report", {}).get("asset", {})
     content = acceptance.get("content", {}) if isinstance(acceptance, dict) else {}
     runtime = content.get("runtime_summary", {}) if isinstance(content, dict) else {}
+    runtime_growth_preflight = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
     lines = [
         "# V1 Chapter Sequence Slow Acceptance",
         "",
@@ -148,6 +153,12 @@ def _render_report(args: argparse.Namespace, *, root: Path, result: dict[str, An
         "",
         "```json",
         json.dumps(runtime, ensure_ascii=False, indent=2),
+        "```",
+        "",
+        "## Runtime Growth Preflight",
+        "",
+        "```json",
+        json.dumps(runtime_growth_preflight, ensure_ascii=False, indent=2),
         "```",
         "",
         "## Chapter Coverage",
@@ -192,9 +203,88 @@ def _render_report(args: argparse.Namespace, *, root: Path, result: dict[str, An
     return "\n".join(lines)
 
 
+def _apply_runtime_growth_acceptance_preflight(storage: LocalStorage, args: argparse.Namespace, result: dict[str, Any]) -> dict[str, Any]:
+    project_id = str(result.get("project_id") or "")
+    gate = run_chapter_runtime_growth_threshold_gate(
+        storage,
+        project_id=project_id,
+        environment="production",
+        max_linked_asset_refs=int(getattr(args, "runtime_growth_max_linked_asset_refs", 120) or 120),
+        allow_full_mode=bool(getattr(args, "allow_full_runtime_mode", False)),
+        persist_profile=True,
+    )
+    updated = _with_runtime_growth_acceptance_preflight(result, gate)
+    _persist_runtime_growth_acceptance_preflight(storage, updated)
+    return updated
+
+
+def _with_runtime_growth_acceptance_preflight(result: dict[str, Any], gate: dict[str, Any]) -> dict[str, Any]:
+    updated = dict(result)
+    preflight = {
+        "contract": "v1-acceptance-runtime-growth-preflight-v1",
+        "status": str(gate.get("status") or "missing"),
+        "blocking": bool(gate.get("blocking")),
+        "gate_result_path": str(gate.get("gate_result_path") or ""),
+        "message": str(gate.get("message") or ""),
+        "summary": gate.get("summary", {}) if isinstance(gate.get("summary", {}), dict) else {},
+        "blocking_rows": gate.get("blocking_rows", []) if isinstance(gate.get("blocking_rows", []), list) else [],
+    }
+    updated["runtime_growth_preflight"] = preflight
+    if updated.get("status") == "succeeded" and preflight["status"] != "passed":
+        updated["status"] = "failed"
+        failures = list(updated.get("failures", []) if isinstance(updated.get("failures", []), list) else [])
+        failures.append(
+            {
+                "status": "failed",
+                "failure_type": "runtime_growth_threshold_gate",
+                "error": preflight["message"] or "runtime growth threshold gate did not pass",
+                "gate_result_path": preflight["gate_result_path"],
+                "blocking_rows": preflight["blocking_rows"],
+            }
+        )
+        updated["failures"] = failures
+        acceptance = updated.get("acceptance_report", {})
+        asset = acceptance.get("asset", {}) if isinstance(acceptance, dict) else {}
+        content = asset.get("content", {}) if isinstance(asset, dict) else {}
+        if isinstance(content, dict):
+            content["recommendation"] = "repair_runtime_growth_before_acceptance"
+            content["runtime_growth_preflight"] = preflight
+    return updated
+
+
+def _persist_runtime_growth_acceptance_preflight(storage: LocalStorage, result: dict[str, Any]) -> None:
+    path = str(result.get("acceptance_report_path") or "")
+    preflight = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
+    if not path or not preflight:
+        return
+    try:
+        data = storage.read_json(path)
+    except (FileNotFoundError, ValueError):
+        return
+    if not isinstance(data, dict):
+        return
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    content["runtime_growth_preflight"] = preflight
+    if preflight.get("status") != "passed":
+        content["recommendation"] = "repair_runtime_growth_before_acceptance"
+        tags = [str(item) for item in data.get("tags", []) if str(item)] if isinstance(data.get("tags", []), list) else []
+        data["tags"] = [item for item in tags if item != "pass"] + ["block", "runtime-growth-blocked"]
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        metadata["risk_level"] = "high"
+        data["metadata"] = metadata
+    data["content"] = content
+    storage.write_json(path, data)
+    acceptance = result.get("acceptance_report", {})
+    if isinstance(acceptance, dict):
+        acceptance["asset"] = data
+
+
 def _next_step(result: dict[str, Any]) -> str:
     if result.get("status") == "interrupted":
         return "The run was interrupted. Inspect the per-chapter durations, keep the generated local assets as evidence, optimize the slow path, and rerun."
+    preflight = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
+    if preflight and preflight.get("status") != "passed":
+        return "Repair runtime growth threshold blockers, regenerate the preflight gate evidence, and rerun acceptance only after the gate passes."
     if result.get("status") != "succeeded":
         return "Inspect the failed chapter row, fix the failing gate or runtime issue, and rerun this slow acceptance with the same root."
     if int(result.get("chapter_count", 0) or 0) < 30:

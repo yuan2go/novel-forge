@@ -41,6 +41,7 @@ class RuntimeGrowthRegressionScriptTests(unittest.TestCase):
         self.assertIn("test_project_cockpit_route_surfaces_approval_request_caller_readiness", command_text)
         self.assertIn("test_chapter_runtime_growth_profile_route_builds_profile_and_cockpit_surfaces_it", command_text)
         self.assertIn("test_chapter_runtime_growth_threshold_gate_route_fails_closed_and_cockpit_surfaces_it", command_text)
+        self.assertIn("tests.unit.test_v1_chapter_sequence_acceptance_script.V1ChapterSequenceAcceptanceScriptTests", command_text)
         self.assertIn("test_approval_request_caller_readiness_reports_missing_dimensions_without_mutation", command_text)
         self.assertIn("test_approval_request_caller_readiness_passes_when_required_callers_are_covered", command_text)
         self.assertIn("test_approval_request_caller_readiness_flags_pending_blocking_review", command_text)
@@ -49,12 +50,17 @@ class RuntimeGrowthRegressionScriptTests(unittest.TestCase):
         self.assertIn("src/novel_forge/modules/novel_os_cockpit", command_text)
         self.assertIn("src/novel_forge/modules/permission_center", command_text)
         self.assertIn("src/novel_forge/api/routers/os_capabilities.py", command_text)
+        self.assertIn("scripts/run_v1_chapter_sequence_acceptance.py", command_text)
         self.assertIn("tests/unit/test_chapter_runtime_growth.py", command_text)
         self.assertIn("tests/unit/test_permission_center.py", command_text)
         self.assertIn("tests/unit/test_product_api_routes.py", command_text)
+        self.assertIn("tests/unit/test_v1_chapter_sequence_acceptance_script.py", command_text)
         self.assertIn("web/admin/tests/feature-architecture.test.mjs", command_text)
         self.assertIn("web/admin run lint", command_text)
-        self.assertNotIn("run_v1_chapter_sequence_acceptance.py", command_text)
+        self.assertFalse(
+            any(len(command) >= 2 and command[1].endswith("scripts/run_v1_chapter_sequence_acceptance.py") for command in commands),
+            "runtime-growth regression must not execute the slow acceptance script",
+        )
         self.assertNotIn("v1-slow-acceptance", command_text)
         self.assertNotIn("make test", command_text)
         self.assertNotIn("provider-proof", command_text)

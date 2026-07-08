@@ -39,6 +39,7 @@ RUNTIME_GROWTH_TESTS = [
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_surfaces_approval_request_caller_readiness",
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_chapter_runtime_growth_profile_route_builds_profile_and_cockpit_surfaces_it",
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_chapter_runtime_growth_threshold_gate_route_fails_closed_and_cockpit_surfaces_it",
+    "tests.unit.test_v1_chapter_sequence_acceptance_script.V1ChapterSequenceAcceptanceScriptTests",
     "tests.unit.test_permission_center.PermissionCenterTests.test_approval_request_caller_readiness_reports_missing_dimensions_without_mutation",
     "tests.unit.test_permission_center.PermissionCenterTests.test_approval_request_caller_readiness_passes_when_required_callers_are_covered",
     "tests.unit.test_permission_center.PermissionCenterTests.test_approval_request_caller_readiness_flags_pending_blocking_review",
@@ -63,6 +64,7 @@ def _commands(*, include_ui: bool) -> list[list[str]]:
             "src/novel_forge/modules/novel_os_cockpit",
             "src/novel_forge/modules/permission_center",
             "src/novel_forge/api/routers/os_capabilities.py",
+            "scripts/run_v1_chapter_sequence_acceptance.py",
             "tests/unit/test_context_and_production_chain.py",
             "tests/unit/test_chapter_runtime_growth.py",
             "tests/unit/test_agent_workflow_and_impact.py",
@@ -72,6 +74,7 @@ def _commands(*, include_ui: bool) -> list[list[str]]:
             "tests/unit/test_permission_center.py",
             "tests/unit/test_product_api_routes.py",
             "tests/unit/test_runtime_growth_regression_script.py",
+            "tests/unit/test_v1_chapter_sequence_acceptance_script.py",
         ],
     ]
     if include_ui:
