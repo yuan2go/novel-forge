@@ -21,6 +21,7 @@ from novel_forge.modules.agent_scheduler import service as agent_scheduler_servi
 from novel_forge.modules.continuity_graph import create_continuity_graph_snapshot
 from novel_forge.modules.loop_kernel import run_loop
 from novel_forge.modules.review_issue import create_review_issue
+from novel_forge.modules.runtime_ledger import record_gate_result
 from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs
 from novel_forge.schemas import ChapterPlan, ContextBundle, DraftChapter
 from novel_forge.storage.local import LocalStorage
@@ -97,6 +98,16 @@ class AgentSchedulerTests(unittest.TestCase):
             )
             record_agent_budget(storage, agent_run_path=run["path"], token_budget=1000, token_used=120, cost_estimate=0.02)
             record_agent_gate(storage, agent_run_path=run["path"], gate_type="permission", status="passed", result={"allowed": True})
+            record_gate_result(
+                storage,
+                gate_kind="context_governance_runtime_coverage",
+                status="passed",
+                target_paths=[],
+                result={"coverage_report_path": "data/runs/context-governance-coverage.json", "summary": {"blocking_count": 0}},
+                project_id="",
+                message="context governance runtime coverage passed",
+                blocking=False,
+            )
 
             snapshot = agent_center_snapshot(storage)
 
@@ -113,6 +124,7 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertTrue(snapshot["run_graph"]["nodes"])
             self.assertEqual(snapshot["budget_burn"]["token_used"], 120)
             self.assertTrue(snapshot["gate_timeline"])
+            self.assertIn("context_governance_runtime_coverage", {row["gate_kind"] for row in snapshot["gate_timeline"]})
 
     def test_agent_center_links_tasks_loops_context_and_review_issues(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.novel_os_cockpit import build_multi_book_daily_production_report, build_multi_book_production_schedule, build_project_cockpit_snapshot
 from novel_forge.modules.permission_center import create_approval_request, resolve_approval_request
+from novel_forge.modules.context_builder import run_context_governance_coverage_gate
 from novel_forge.modules.runtime_ledger import record_model_call_log
 from novel_forge.modules.chapter_production_bus.service import V1_SEQUENCE_REQUIRED_OUTPUTS
 from novel_forge.schemas import BaseAsset, ChapterPlan, DraftChapter
@@ -63,6 +64,7 @@ class NovelOsCockpitTests(unittest.TestCase):
                 },
             )
             resolve_approval_request(storage, approved_approval["asset"]["content"]["request_id"], {"decision": "approved", "actor": "unit-test", "reason": "fixture"})
+            run_context_governance_coverage_gate(storage, project_id="book-a", environment="production")
 
             snapshot = build_project_cockpit_snapshot(storage, project_id="book-a")
 
@@ -79,7 +81,11 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["approval_gate_summary"]["summary"]["request_count"], 2)
             self.assertEqual(snapshot["asset"]["content"]["approval_gate_summary"]["blocking_pending_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["artifact_coverage"]["latest_chapter"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["context_governance"], "passed")
+            self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["context_governance_gate"]["status"], "passed")
+            self.assertTrue(snapshot["asset"]["content"]["runtime_governance"]["context_governance_gate"]["path"])
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["approval_gate_summary"]["pending_count"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["context_governance_gate"]["status"], "passed")
             self.assertEqual(pending_approval["asset"]["content"]["scope"], "publish")
 
     def test_multi_book_daily_production_report_tracks_isolation_and_capacity(self):

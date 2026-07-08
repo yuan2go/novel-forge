@@ -457,10 +457,12 @@ def review_issues_to_gate_issues(rows: list[dict[str, Any]]) -> list[dict[str, A
     result: list[dict[str, Any]] = []
     for row in rows:
         content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        issue_type = str(content.get("issue_type") or "review_issue")
         result.append(
             {
                 "issue_id": content.get("issue_id", row.get("id", "")),
-                "issue_type": content.get("issue_type", ""),
+                "issue_type": issue_type,
+                "dimension": str(content.get("dimension") or issue_type),
                 "severity": content.get("severity", "high"),
                 "blocking": bool(content.get("blocking", True)),
                 "message": content.get("message", ""),

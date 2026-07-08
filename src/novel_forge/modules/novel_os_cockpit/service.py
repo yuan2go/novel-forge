@@ -19,6 +19,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     long_chain_status = _latest_status(rows, asset_type="long_chain_acceptance_report")
     v1_artifact_coverage = _v1_artifact_coverage(rows)
     approval_gate_summary = _approval_gate_summary(rows)
+    context_governance_gate = _latest_gate_result(rows, "context_governance_runtime_coverage")
     production_console = _production_control_console(rows, blocking_issues, release_status, long_chain_status, v1_artifact_coverage, approval_gate_summary)
     content = {
         "project_id": project_id,
@@ -36,6 +37,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "latest_release_status": release_status,
             "latest_v1_artifact_coverage": v1_artifact_coverage["summary"]["latest_coverage_ratio"],
             "blocking_approval_request_count": approval_gate_summary["blocking_pending_count"],
+            "latest_context_governance_status": context_governance_gate["status"],
         },
         "task_health": {
             "agent_queue_status": queue_status,
@@ -53,6 +55,9 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         "recommendations": _cockpit_recommendations(blocking_issues, release_status, long_chain_status),
         "v1_artifact_coverage": v1_artifact_coverage,
         "approval_gate_summary": approval_gate_summary,
+        "runtime_governance": {
+            "context_governance_gate": context_governance_gate,
+        },
         "production_control_console": production_console,
         "cockpit": {
             "book_production_state": production_console["book_state"]["status"],
@@ -60,6 +65,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "risk_summary": production_console["risk_summary"],
             "artifact_coverage": production_console["artifact_coverage"],
             "approval_gate_summary": approval_gate_summary["summary"],
+            "context_governance_gate": context_governance_gate,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -266,6 +272,31 @@ def _latest_status(rows: list[dict[str, Any]], *, asset_type: str) -> str:
     return str(content.get("status") or content.get("recommendation") or content.get("decision") or "available")
 
 
+def _latest_gate_result(rows: list[dict[str, Any]], gate_kind: str) -> dict[str, Any]:
+    matches = []
+    for row in rows:
+        if row.get("type") != "gate_result":
+            continue
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(content.get("gate_kind") or "") != gate_kind:
+            continue
+        matches.append(row)
+    if not matches:
+        return {"status": "missing", "gate_kind": gate_kind, "path": "", "blocking": False, "message": "no gate result recorded"}
+    row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    result = content.get("result", {}) if isinstance(content.get("result", {}), dict) else {}
+    return {
+        "status": str(content.get("status") or "unknown"),
+        "gate_kind": gate_kind,
+        "path": str(row.get("path") or ""),
+        "blocking": bool(content.get("blocking")) and str(content.get("status") or "") not in {"passed", "warning", "skipped"},
+        "message": str(content.get("message") or ""),
+        "coverage_report_path": str(result.get("coverage_report_path") or ""),
+        "summary": result.get("summary", {}) if isinstance(result.get("summary", {}), dict) else {},
+    }
+
+
 def _latest_assets(rows: list[dict[str, Any]], asset_type: str, *, limit: int) -> list[dict[str, str]]:
     matches = [row for row in rows if row.get("type") == asset_type]
     matches = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""), reverse=True)[:limit]
@@ -382,6 +413,7 @@ def _production_control_console(rows: list[dict[str, Any]], blocking_issues: lis
     feedback_proposals = _latest_assets(rows, "feedback_plan_mutation_proposal", limit=20)
     gate_status_board = {
         "context_builder": _latest_status(rows, asset_type="context_bundle"),
+        "context_governance": _latest_gate_result(rows, "context_governance_runtime_coverage")["status"],
         "canon": _latest_status(rows, asset_type="canon_state_machine_snapshot"),
         "style": _latest_status(rows, asset_type="style_drift_report"),
         "quality": _latest_status(rows, asset_type="evaluation_gate"),

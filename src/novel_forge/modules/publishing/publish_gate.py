@@ -7,7 +7,12 @@ from novel_forge.core.exception_policy import require_recoverable_asset_scan_err
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
-from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
+from novel_forge.modules.context_builder import (
+    build_flow_context_bundle,
+    knowledge_context_contract_from_result,
+    knowledge_context_contract_metadata,
+    run_context_governance_coverage_gate,
+)
 from novel_forge.modules.content_intelligence_governance import platform_upload_checklist_for_release, release_content_intelligence_gate
 from novel_forge.modules.longform_stability import create_revision_task_from_gate, evaluate_longform_stability_gate
 from novel_forge.modules.mkaos import list_risk_knowledge
@@ -131,6 +136,25 @@ def create_publish_gate_report(
     )
     gate_data["gates"]["content_intelligence_gate_passed"] = not content_intelligence_gate["blocking"]
     gate_data["blocking_issues"].extend(content_intelligence_gate["blocking_issues"])
+    context_governance_gate = run_context_governance_coverage_gate(
+        storage,
+        project_id=str(project.get("project_id", "")),
+        environment=environment,
+        mode=environment,
+        persist_report=True,
+    )
+    gate_data["gates"]["context_governance_gate_passed"] = context_governance_gate["status"] != "failed"
+    if context_governance_gate["status"] == "failed":
+        gate_data["blocking_issues"].append(
+            {
+                "dimension": "context_governance_gate",
+                "severity": "critical",
+                "message": context_governance_gate.get("message", "context governance coverage gate failed"),
+                "recommendation": "repair selector governance binding evidence before publish/release",
+                "gate_result_path": context_governance_gate.get("gate_result", {}).get("path", ""),
+                "coverage_report_path": context_governance_gate.get("coverage_report", {}).get("path", ""),
+            }
+        )
     blocking = gate_data["blocking_issues"]
     decision = "ready"
     if any(issue.get("severity") in {"high", "critical"} for issue in blocking):
@@ -162,6 +186,11 @@ def create_publish_gate_report(
                 "blocking": content_intelligence_gate["blocking"],
                 "path": "",
             },
+            "context_governance_gate": {
+                "status": "blocked" if context_governance_gate["status"] == "failed" else context_governance_gate["status"],
+                "blocking": context_governance_gate["status"] == "failed",
+                "path": context_governance_gate.get("gate_result", {}).get("path", ""),
+            },
         },
         source_policy=resolved_source_policy,
         evidence_refs=[
@@ -170,6 +199,8 @@ def create_publish_gate_report(
             str(evaluation_gate.get("path", "")),
             str(platform_strategy_gate.get("platform_strategy_pack_path", "")),
             *[str(item) for item in content_intelligence_gate.get("evidence_refs", [])],
+            str(context_governance_gate.get("gate_result", {}).get("path", "")),
+            str(context_governance_gate.get("coverage_report", {}).get("path", "")),
         ],
         rollback_plan={
             "rollback_action": "do_not_create_release_package",
@@ -200,6 +231,13 @@ def create_publish_gate_report(
             "provider_runtime_gate": provider_runtime_gate,
             "platform_strategy_gate": platform_strategy_gate,
             "content_intelligence_gate": content_intelligence_gate,
+            "context_governance_gate": {
+                "status": context_governance_gate["status"],
+                "blocking": context_governance_gate["status"] == "failed",
+                "gate_result_path": context_governance_gate.get("gate_result", {}).get("path", ""),
+                "coverage_report_path": context_governance_gate.get("coverage_report", {}).get("path", ""),
+                "summary": context_governance_gate.get("coverage_report", {}).get("summary", {}),
+            },
             "platform_upload_checklist": upload_checklist,
             "production_governance": {
                 "status": production_governance["status"],

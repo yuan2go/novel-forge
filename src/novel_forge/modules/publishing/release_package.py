@@ -166,6 +166,7 @@ def create_release_package(
             "provider_runtime_gate": gate_content.get("provider_runtime_gate", {}),
             "platform_strategy_gate": gate_content.get("platform_strategy_gate", {}),
             "production_governance": gate_content.get("production_governance", {}),
+            "context_governance_gate": gate_content.get("context_governance_gate", {}),
             "release_gate_evidence": release_gate_evidence,
             "content_intelligence_gate": content_intelligence_gate,
             "platform_upload_checklist": upload_checklist,

@@ -12,7 +12,7 @@ from novel_forge.modules.feedback import create_reader_simulation_report, proces
 from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding, record_usage_event
 from novel_forge.modules.platform_strategy import build_platform_strategy_pack
 from novel_forge.modules.runtime_ledger import record_gate_result, record_model_call_log
-from novel_forge.schemas import DraftChapter, ProjectWorkspaceState, ReaderFeedback, SourceChunk
+from novel_forge.schemas import ContextBundle, DraftChapter, MKAOSSelectorGovernanceReport, ProjectWorkspaceState, ReaderFeedback, SourceChunk
 from novel_forge.storage.local import LocalStorage
 from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
 
@@ -182,6 +182,8 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             self.assertEqual(gate.content["evaluation_gate"]["status"], "passed")
             self.assertEqual(gate.content["provider_runtime_gate"]["status"], "passed")
             self.assertEqual(gate.content["platform_strategy_gate"]["status"], "passed")
+            self.assertEqual(gate.content["context_governance_gate"]["status"], "passed")
+            self.assertTrue(gate.content["context_governance_gate"]["gate_result_path"])
             self.assertFalse(gate.content["mkaos_risk"]["blocking"])
             self.assertTrue(gate.content["gates"]["review_issue_blocking_clear"])
 
@@ -205,10 +207,34 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             self.assertEqual(package.content["evaluation_gate"]["status"], "passed")
             self.assertEqual(package.content["provider_runtime_gate"]["status"], "passed")
             self.assertEqual(package.content["platform_strategy_gate"]["status"], "passed")
+            self.assertEqual(package.content["context_governance_gate"]["status"], "passed")
             self.assertEqual(package.content["content_intelligence_gate"]["status"], "passed")
             self.assertEqual(package.content["platform_upload_checklist"]["status"], "passed")
             self.assertEqual(package.metadata["os_envelope"]["environment"], "production")
             self.assertEqual(package.metadata["os_envelope"]["asset_type"], "release_package")
+
+    def test_publish_gate_blocks_unbound_context_governance_in_production(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "context-governance-publish-block-p"
+            workspace = _workspace(storage, project_id)
+            draft_path = _draft(storage, workspace, project_id=project_id)
+            _publish_knowledge(storage, project_id)
+            _unbound_selector_governance_context(storage, project_id)
+
+            gate_path = create_publish_gate_report(
+                storage,
+                draft_path,
+                workspace_path=str(workspace.relative_to(storage.root)),
+                envelope=_production_envelope(project_id, "publish_gate_report", trace_id="trace-context-governance-publish-block"),
+            )
+            gate = storage.read_asset(gate_path)
+
+            self.assertEqual(gate.content["context_governance_gate"]["status"], "failed")
+            self.assertTrue(gate.content["context_governance_gate"]["blocking"])
+            self.assertEqual(gate.content["decision"], "blocked")
+            self.assertTrue(any(issue["dimension"] == "context_governance_gate" for issue in gate.content["blocking_issues"]))
 
     def test_publish_gate_blocks_without_v7_content_intelligence_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -531,6 +557,42 @@ def _record_provider_runtime_evidence(storage: LocalStorage, project_id: str, *,
         trace={"trace_id": "trace-publish-success", "span_id": "span-publish-success"},
         project_id=project_id,
         workspace_path=workspace_path,
+    )
+
+
+def _unbound_selector_governance_context(storage: LocalStorage, project_id: str) -> None:
+    report_path = storage.write_asset(
+        "runs",
+        MKAOSSelectorGovernanceReport(
+            title="Unbound selector governance report",
+            content={
+                "selector_governance_report_id": f"selector-governance-report-{project_id}",
+                "selector_policy_patch": {"weights": {"unbound": 1.0}},
+                "refresh_contract": {"selector_refresh_only": True, "raw_source_text_included": False},
+                "generated_at": "2026-07-08T00:00:00+00:00",
+            },
+            metadata={"project_id": project_id},
+        ),
+    )
+    report_ref = str(report_path.relative_to(storage.root))
+    storage.write_asset(
+        "contexts",
+        ContextBundle(
+            title="Unbound selector governance context",
+            content={
+                "build_plan_id": f"plan-unbound-{project_id}",
+                "target_asset_id": "chapter-1",
+                "selected_assets": [],
+                "compressed_context": {},
+                "token_budget": {"max_tokens": 1000},
+                "token_estimate": 10,
+                "actual_context": "context carries selector governance report without applied binding evidence",
+                "source_asset_ids": [],
+                "knowledge_context_contract": {"selector_governance": {"report_path": report_ref}},
+            },
+            metadata={"project_id": project_id, "selector_governance_report_path": report_ref},
+            references=[report_ref],
+        ),
     )
 
 

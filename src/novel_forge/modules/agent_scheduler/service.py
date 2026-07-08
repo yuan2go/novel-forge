@@ -865,6 +865,8 @@ def agent_center_snapshot(
     events = _agent_center_assets(storage, "agent_event", project_id=project_id, limit=limit)
     checkpoints = _agent_center_assets(storage, "agent_checkpoint", project_id=project_id, limit=limit)
     gates = _agent_center_assets(storage, "agent_gate", project_id=project_id, limit=limit)
+    runtime_gates = _agent_center_category_assets(storage, "runs", {"gate_result"}, project_id=project_id, limit=limit)
+    gates = _merge_asset_rows(gates, runtime_gates)
     budgets = _agent_center_assets(storage, "agent_budget", project_id=project_id, limit=limit)
     failures = _agent_center_assets(storage, "agent_failure_report", project_id=project_id, limit=limit)
     rollbacks = _agent_center_assets(storage, "agent_rollback_report", project_id=project_id, limit=limit)
