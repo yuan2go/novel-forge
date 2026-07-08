@@ -44,6 +44,8 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/workflow/execute",
                 "/product/workflow/resume",
                 "/product/workflow/runtime-console",
+                "/product/workflow/governance-drift",
+                "/product/workflow/governance-drift-gate",
                 "/product/workflow/ready-queue",
                 "/product/workflow/processor-contracts",
                 "/product/workflow/scheduler/tick",
@@ -724,6 +726,13 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(console.status_code, 200, console.text)
             self.assertEqual(console.json()["workflow_template_contract"]["contract"], "v1-chapter-production-workflow-template-v1")
             self.assertFalse(console.json()["workflow_template_contract"]["chapter_acceptance_executed"])
+            gate = client.post(
+                "/product/workflow/governance-drift-gate",
+                json={"workflow_path_or_id": body["path"], "environment": "local", "persist_report": True},
+            )
+            self.assertEqual(gate.status_code, 200, gate.text)
+            self.assertIn(gate.json()["status"], {"passed", "warning"})
+            self.assertEqual(gate.json()["gate_result"]["asset"]["type"], "gate_result")
 
 
 if __name__ == "__main__":

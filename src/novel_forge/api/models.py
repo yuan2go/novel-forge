@@ -686,6 +686,15 @@ class V1ChapterProductionWorkflowTemplateRequest(BaseModel):
     status: str = "active"
 
 
+class WorkflowGovernanceDriftGateRequest(BaseModel):
+    workflow_path_or_id: str = ""
+    project_id: str = ""
+    environment: str = ""
+    mode: str = ""
+    limit: int = 100
+    persist_report: bool = True
+
+
 class WorkflowNodeCreateRequest(BaseModel):
     workflow_id: str
     node_id: str
@@ -1961,6 +1970,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "ProductionInvalidateRequest": ProductionInvalidateRequest,
         "WorkflowDefinitionCreateRequest": WorkflowDefinitionCreateRequest,
         "V1ChapterProductionWorkflowTemplateRequest": V1ChapterProductionWorkflowTemplateRequest,
+        "WorkflowGovernanceDriftGateRequest": WorkflowGovernanceDriftGateRequest,
         "WorkflowNodeCreateRequest": WorkflowNodeCreateRequest,
         "NodeRunCreateRequest": NodeRunCreateRequest,
         "WorkflowExecuteRequest": WorkflowExecuteRequest,

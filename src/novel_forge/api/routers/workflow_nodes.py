@@ -8,6 +8,7 @@ from novel_forge.core.ids import utc_now
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.workflow_nodes import (
     build_ready_node_queue,
+    build_workflow_governance_drift_report,
     build_workflow_runtime_console,
     control_workflow_run,
     create_workflow_definition,
@@ -23,6 +24,7 @@ from novel_forge.modules.workflow_nodes import (
     resolve_workflow_dependencies,
     resume_workflow,
     run_workflow_scheduler,
+    run_workflow_governance_drift_gate,
     run_workflow_scheduler_loop,
     workflow_state_machine,
 )
@@ -36,6 +38,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(tags=["product-workflow-nodes"])
     WorkflowDefinitionCreateRequest = models["WorkflowDefinitionCreateRequest"]
     V1ChapterProductionWorkflowTemplateRequest = models["V1ChapterProductionWorkflowTemplateRequest"]
+    WorkflowGovernanceDriftGateRequest = models["WorkflowGovernanceDriftGateRequest"]
     WorkflowNodeCreateRequest = models["WorkflowNodeCreateRequest"]
     NodeRunCreateRequest = models["NodeRunCreateRequest"]
     WorkflowExecuteRequest = models["WorkflowExecuteRequest"]
@@ -137,6 +140,43 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 workflow_run_path_or_id=workflow_run_path_or_id,
                 input_assets=input_assets,
                 start_node_id=start_node_id,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/workflow/governance-drift")
+    def workflow_governance_drift(
+        workflow_path_or_id: str | None = None,
+        project_id: str = "",
+        limit: int = Query(default=100, ge=1, le=500),
+        persist: bool = False,
+    ) -> dict[str, Any]:
+        try:
+            return build_workflow_governance_drift_report(
+                LocalStorage(app_settings.root),
+                workflow_path_or_id=workflow_path_or_id,
+                project_id=project_id,
+                limit=limit,
+                persist=persist,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/workflow/governance-drift-gate")
+    def workflow_governance_drift_gate(request: WorkflowGovernanceDriftGateRequest) -> dict[str, Any]:
+        try:
+            return run_workflow_governance_drift_gate(
+                LocalStorage(app_settings.root),
+                workflow_path_or_id=request.workflow_path_or_id or None,
+                project_id=request.project_id,
+                environment=request.environment,
+                mode=request.mode,
+                limit=request.limit,
+                persist_report=request.persist_report,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

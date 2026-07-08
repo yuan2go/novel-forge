@@ -13,6 +13,7 @@ from novel_forge.modules.publishing_feedback_adapters import create_feedback_mut
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.modules.workflow_nodes import (
     build_ready_node_queue,
+    build_workflow_governance_drift_report,
     build_workflow_runtime_console,
     cancel_workflow_run,
     create_workflow_definition,
@@ -25,6 +26,7 @@ from novel_forge.modules.workflow_nodes import (
     resolve_workflow_dependencies,
     resume_workflow,
     retry_workflow_run,
+    run_workflow_governance_drift_gate,
     run_workflow_scheduler,
     run_workflow_scheduler_loop,
     validate_workflow_run_transition,
@@ -1527,6 +1529,106 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(row_missing, {"os_envelope", "source_policy", "provider_runtime_guard"})
             self.assertTrue(queue["queue"][0]["template_contract"]["production_fail_closed"])
             self.assertEqual(queue["ready_count"], 1)
+
+    def test_workflow_governance_drift_gate_passes_clean_canonical_template(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = _chapter_production_fixture(storage, project_title="Workflow Governance Clean")
+            source_policy = _workflow_source_policy()
+            workflow = create_v1_chapter_production_workflow_template(
+                storage,
+                name="Workflow Governance Clean Fixture",
+                chapter=1,
+                run_to="outline_checkpoint",
+                environment="production",
+                workspace_path=fixture["workspace_path"],
+                os_envelope=production_envelope(
+                    fixture["project_id"],
+                    "chapter_production_run",
+                    trace_id=f"trace-workflow-governance-{fixture['project_id']}",
+                    source_policy=source_policy,
+                ),
+                source_policy=source_policy,
+                provider_runtime_guard=_passed_provider_runtime_gate(),
+            )
+
+            gate = run_workflow_governance_drift_gate(
+                storage,
+                workflow_path_or_id=workflow["path"],
+                environment="production",
+            )
+
+            self.assertEqual(gate["status"], "passed")
+            self.assertFalse(gate["blocking"])
+            self.assertEqual(gate["drift_report"]["summary"]["drift_count"], 0)
+            self.assertEqual(gate["gate_result"]["asset"]["content"]["status"], "passed")
+            self.assertFalse(gate["drift_report"]["asset"]["content"]["chapter_acceptance_executed"])
+
+    def test_workflow_governance_drift_gate_blocks_drifted_workflow_in_production(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = _chapter_production_fixture(storage, project_title="Workflow Governance Drifted")
+            workflow = create_workflow_definition(
+                storage,
+                name="Drifted Chapter Workflow",
+                entry_node_id="chapter-production-start",
+                nodes=[
+                    {
+                        "node_id": "chapter-production-start",
+                        "node_type": "production",
+                        "operation": "start-chapter-production",
+                        "input_types": ["outline"],
+                        "output_types": ["chapter_production_run"],
+                        "processor": {"kind": "service", "operation": "start-chapter-production", "environment": "production"},
+                    }
+                ],
+            )
+
+            report = build_workflow_governance_drift_report(storage, workflow_path_or_id=workflow["path"], persist=False)
+            gate = run_workflow_governance_drift_gate(
+                storage,
+                workflow_path_or_id=workflow["path"],
+                environment="production",
+            )
+            drift_codes = {row["code"] for row in gate["drift_report"]["asset"]["content"]["drift_rows"]}
+
+            self.assertGreater(report["summary"]["drift_count"], 0)
+            self.assertEqual(gate["status"], "failed")
+            self.assertTrue(gate["blocking"])
+            self.assertIn("missing_template_contract", drift_codes)
+            self.assertIn("missing_production_runtime_evidence", drift_codes)
+            self.assertEqual(gate["gate_result"]["asset"]["content"]["status"], "failed")
+            self.assertIn(workflow["path"], gate["gate_result"]["asset"]["content"]["target_paths"])
+            self.assertFalse(gate["drift_report"]["asset"]["content"]["chapter_acceptance_executed"])
+            self.assertTrue(fixture["outline_path"])
+
+    def test_workflow_governance_drift_gate_warns_for_local_drift(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workflow = create_workflow_definition(
+                storage,
+                name="Local Drifted Workflow",
+                entry_node_id="chapter-production-start",
+                nodes=[
+                    {
+                        "node_id": "chapter-production-start",
+                        "node_type": "production",
+                        "operation": "start-chapter-production",
+                        "input_types": ["outline"],
+                        "output_types": ["chapter_production_run"],
+                        "processor": {"kind": "service", "operation": "start-chapter-production", "environment": "local"},
+                    }
+                ],
+            )
+
+            gate = run_workflow_governance_drift_gate(storage, workflow_path_or_id=workflow["path"], environment="local")
+
+            self.assertEqual(gate["status"], "warning")
+            self.assertFalse(gate["blocking"])
+            self.assertGreater(gate["drift_report"]["summary"]["blocking_drift_count"], 0)
 
     def test_gate_registry_schema_gate_blocks_invalid_input(self):
         with tempfile.TemporaryDirectory() as tmp:

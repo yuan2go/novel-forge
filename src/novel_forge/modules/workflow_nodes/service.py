@@ -33,7 +33,7 @@ from novel_forge.modules.workflow_nodes.query import (
     list_workflow_definitions as _query_list_workflow_definitions,
     list_workflow_runs as _query_list_workflow_runs,
 )
-from novel_forge.schemas import BaseAsset, NodeRun, WorkflowDefinition, WorkflowNode, WorkflowRun, validate_common_fields
+from novel_forge.schemas import BaseAsset, NodeRun, ProductionGovernanceReport, WorkflowDefinition, WorkflowNode, WorkflowRun, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 WORKFLOW_TERMINAL_NODE_STATUSES = {"succeeded", "failed", "dead_letter", "cancelled"}
@@ -680,6 +680,190 @@ def build_workflow_runtime_console(
         "workflow_template_contract": dag.get("workflow_template_contract", {"enabled": False}),
         "processor_contracts": list_processor_contracts(),
         "state_machine": workflow_state_machine(),
+    }
+
+
+def build_workflow_governance_drift_report(
+    storage: LocalStorage,
+    *,
+    workflow_path_or_id: str | Path | None = None,
+    project_id: str = "",
+    limit: int = 100,
+    persist: bool = True,
+) -> dict[str, Any]:
+    """Audit workflow definitions for canonical v1 chapter-production governance drift.
+
+    This is intentionally read-only except for the optional report asset write.
+    It does not execute workflows, chapters, or gates.
+    """
+
+    storage.ensure_layout()
+    workflow_refs = _workflow_governance_target_refs(storage, workflow_path_or_id=workflow_path_or_id, project_id=project_id, limit=limit)
+    rows: list[dict[str, Any]] = []
+    drifts: list[dict[str, Any]] = []
+    for workflow_ref in workflow_refs:
+        try:
+            path, workflow = _resolve_workflow_definition(storage, workflow_ref)
+            dag = parse_workflow_dag(storage, path)
+            workflow_drifts = _workflow_governance_drifts(dag)
+            row = {
+                "workflow_path": _display_path(storage.root, path),
+                "workflow_id": str(dag.get("workflow_id", "")),
+                "status": "drifted" if workflow_drifts else "clean",
+                "drift_count": len(workflow_drifts),
+                "blocking_drift_count": sum(1 for item in workflow_drifts if _drift_blocks_workflow_governance(item)),
+                "template_contract": dag.get("workflow_template_contract", {}),
+                "processor_operations": [str(node.get("processor_operation") or "") for node in dag.get("nodes", []) if isinstance(node, dict)],
+                "drifts": workflow_drifts,
+            }
+            rows.append(row)
+            drifts.extend({**item, "workflow_path": row["workflow_path"], "workflow_id": row["workflow_id"]} for item in workflow_drifts)
+        except Exception as exc:
+            workflow_path = str(workflow_ref)
+            issue = _workflow_governance_drift("workflow_definition", "unreadable_workflow", "critical", f"{type(exc).__name__}: {exc}")
+            row = {
+                "workflow_path": workflow_path,
+                "workflow_id": "",
+                "status": "drifted",
+                "drift_count": 1,
+                "blocking_drift_count": 1,
+                "template_contract": {"enabled": False},
+                "processor_operations": [],
+                "drifts": [issue],
+            }
+            rows.append(row)
+            drifts.append({**issue, "workflow_path": workflow_path, "workflow_id": ""})
+    summary = {
+        "workflow_count": len(rows),
+        "clean_workflow_count": sum(1 for row in rows if row["status"] == "clean"),
+        "drifted_workflow_count": sum(1 for row in rows if row["status"] == "drifted"),
+        "drift_count": len(drifts),
+        "blocking_drift_count": sum(1 for item in drifts if _drift_blocks_workflow_governance(item)),
+    }
+    blocked = bool(summary["blocking_drift_count"])
+    target_path = str(workflow_path_or_id or (rows[0]["workflow_path"] if rows else "workflow-governance-scan"))
+    gate_statuses = {
+        "workflow_template_contract": {
+            "dimension": "workflow_template_contract",
+            "status": "blocked" if any(row.get("dimension") == "template_contract" and _drift_blocks_workflow_governance(row) for row in drifts) else "passed",
+            "blocking": any(row.get("dimension") == "template_contract" and _drift_blocks_workflow_governance(row) for row in drifts),
+        },
+        "governed_chapter_processor": {
+            "dimension": "governed_chapter_processor",
+            "status": "blocked" if any(row.get("dimension") == "processor" and _drift_blocks_workflow_governance(row) for row in drifts) else "passed",
+            "blocking": any(row.get("dimension") == "processor" and _drift_blocks_workflow_governance(row) for row in drifts),
+        },
+        "production_runtime_evidence": {
+            "dimension": "production_runtime_evidence",
+            "status": "blocked" if any(row.get("dimension") == "runtime_evidence" and _drift_blocks_workflow_governance(row) for row in drifts) else "passed",
+            "blocking": any(row.get("dimension") == "runtime_evidence" and _drift_blocks_workflow_governance(row) for row in drifts),
+        },
+    }
+    content = {
+        "report_id": make_id("workflow_governance", f"{target_path}-{utc_now()}"),
+        "operation": "workflow_governance_drift",
+        "environment": "audit",
+        "target_asset_id": make_id("workflow_target", target_path),
+        "target_asset_path": target_path,
+        "required_gates": ["workflow_template_contract", "governed_chapter_processor", "production_runtime_evidence"],
+        "gate_statuses": gate_statuses,
+        "status": "blocked" if blocked else "passed",
+        "blocking": blocked,
+        "blocking_issues": drifts,
+        "rollback_plan": {
+            "strategy": "read_only_report_no_mutation",
+            "safe_to_rerun": True,
+            "restores": [],
+        },
+        "contract": "workflow-governance-drift-report-v1",
+        "scope": "canonical_v1_chapter_production_workflow",
+        "workflow_path_or_id": str(workflow_path_or_id or ""),
+        "project_id": project_id,
+        "created_at": utc_now(),
+        "summary": summary,
+        "rows": rows,
+        "drift_rows": drifts,
+        "non_mutating": True,
+        "chapter_acceptance_executed": False,
+    }
+    report = {
+        "type": "production_governance_report",
+        "content": content,
+        "summary": summary,
+        "path": "",
+        "asset": {},
+    }
+    if not persist:
+        return report
+    asset = ProductionGovernanceReport(
+        title="Workflow governance drift report",
+        tags=["workflow-governance-drift", "v1", "clean" if not drifts else "drifted"],
+        content=content,
+        metadata={"project_id": project_id},
+        references=filter_project_safe_references(storage, project_id, _dedupe([row["workflow_path"] for row in rows])),
+    )
+    written = _write(storage, asset)
+    return {**written, "summary": summary}
+
+
+def run_workflow_governance_drift_gate(
+    storage: LocalStorage,
+    *,
+    workflow_path_or_id: str | Path | None = None,
+    project_id: str = "",
+    environment: str = "",
+    mode: str = "",
+    limit: int = 100,
+    persist_report: bool = True,
+) -> dict[str, Any]:
+    report = build_workflow_governance_drift_report(
+        storage,
+        workflow_path_or_id=workflow_path_or_id,
+        project_id=project_id,
+        limit=limit,
+        persist=persist_report,
+    )
+    content = report.get("content", {}) if isinstance(report.get("content", {}), dict) else {}
+    if not content and isinstance(report.get("asset", {}), dict):
+        content = report.get("asset", {}).get("content", {}) if isinstance(report.get("asset", {}).get("content", {}), dict) else {}
+    summary = report.get("summary", {}) if isinstance(report.get("summary", {}), dict) else content.get("summary", {})
+    production = _workflow_governance_strict(environment=environment, mode=mode)
+    blocking_count = int(summary.get("blocking_drift_count") or 0)
+    drift_count = int(summary.get("drift_count") or 0)
+    status = "failed" if production and blocking_count else "warning" if drift_count else "passed"
+    message = (
+        f"workflow governance drift has {blocking_count} blocking row(s)"
+        if blocking_count
+        else "workflow governance drift has warnings"
+        if drift_count
+        else "workflow governance drift gate passed"
+    )
+    target_paths = _dedupe([str(report.get("path") or ""), *[str(row.get("workflow_path") or "") for row in content.get("rows", []) if isinstance(row, dict)]])
+    gate = record_gate_result(
+        storage,
+        gate_kind="workflow_governance_drift",
+        status=status,
+        target_paths=target_paths,
+        result={
+            "contract": "workflow-governance-drift-gate-v1",
+            "report_path": str(report.get("path") or ""),
+            "summary": summary,
+            "environment": environment,
+            "mode": mode,
+            "production": production,
+            "blocking_rows": content.get("drift_rows", []) if isinstance(content.get("drift_rows", []), list) else [],
+        },
+        project_id=project_id,
+        message=message,
+        blocking=production and bool(blocking_count),
+    )
+    return {
+        "status": status,
+        "production": production,
+        "blocking": production and bool(blocking_count),
+        "message": message,
+        "drift_report": report,
+        "gate_result": gate,
     }
 
 
@@ -1931,8 +2115,11 @@ def _node_template_contract_summary(node: dict[str, Any], *, workflow_template_c
     runtime_policy = node.get("runtime_policy", {}) if isinstance(node.get("runtime_policy", {}), dict) else {}
     workflow_contract = workflow_template_contract or {}
     processor_contract = str(processor.get("template_contract") or runtime_policy.get("template_contract") or workflow_contract.get("contract") or "").strip()
-    canonical_runtime = str(workflow_contract.get("canonical_runtime") or quality_gate.get("contract") or quality_gate.get("gate") or "").strip()
+    canonical_runtime = str(quality_gate.get("contract") or quality_gate.get("gate") or workflow_contract.get("canonical_runtime") or "").strip()
     required = _dedupe([str(item) for item in workflow_contract.get("requires_runtime_evidence_in_production", []) if str(item).strip()] if isinstance(workflow_contract.get("requires_runtime_evidence_in_production", []), list) else [])
+    operation = str(processor.get("operation") or node.get("operation") or "")
+    if not required and operation in {"start-chapter-production", "chapter_production_start", "resume-chapter-production", "chapter_production_resume"}:
+        required = ["os_envelope", "source_policy", "provider_runtime_guard"]
     environment = str(processor.get("environment") or runtime_policy.get("environment") or _processor_os_envelope(processor).get("environment") or "").strip()
     evidence = _processor_runtime_evidence_summary(processor, required)
     missing = [key for key, row in evidence.items() if str(row.get("status") or "") in {"missing", "failed"}]
@@ -1941,7 +2128,7 @@ def _node_template_contract_summary(node: dict[str, Any], *, workflow_template_c
         "contract": processor_contract,
         "canonical_runtime": canonical_runtime,
         "node_id": str(node.get("node_id", "")),
-        "processor_operation": str(processor.get("operation") or node.get("operation") or ""),
+        "processor_operation": operation,
         "expected_output_types": [str(item) for item in node.get("output_types", []) if str(item).strip()] if isinstance(node.get("output_types", []), list) else [],
         "quality_contract": quality_gate,
         "environment": environment,
@@ -1976,6 +2163,108 @@ def _processor_runtime_evidence_summary(processor: dict[str, Any], required: lis
             present = value is not None and value != "" and value != {}
             rows[key] = {"present": bool(present), "status": "present" if present else "missing"}
     return rows
+
+
+def _workflow_governance_target_refs(
+    storage: LocalStorage,
+    *,
+    workflow_path_or_id: str | Path | None,
+    project_id: str,
+    limit: int,
+) -> list[str | Path]:
+    if workflow_path_or_id:
+        return [workflow_path_or_id]
+    refs: list[str] = []
+    for path in storage.list_json("runs"):
+        data = read_json_for_scan(storage, path, context="workflow governance target scan")
+        if not data or data.get("type") != "workflow_definition":
+            continue
+        if project_id and str(data.get("metadata", {}).get("project_id", "")) != project_id:
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        tags = [str(item) for item in data.get("tags", [])] if isinstance(data.get("tags", []), list) else []
+        if "chapter-production" not in tags and not _workflow_definition_mentions_chapter_production(content):
+            continue
+        refs.append(_display_path(storage.root, path))
+        if len(refs) >= max(1, int(limit or 100)):
+            break
+    return refs
+
+
+def _workflow_definition_mentions_chapter_production(content: dict[str, Any]) -> bool:
+    if str(content.get("template_contract", {}).get("canonical_runtime", "") if isinstance(content.get("template_contract", {}), dict) else "").strip() == "chapter_production_bus":
+        return True
+    for node in content.get("nodes", []) if isinstance(content.get("nodes", []), list) else []:
+        if not isinstance(node, dict):
+            continue
+        processor = node.get("processor", {}) if isinstance(node.get("processor", {}), dict) else {}
+        operation = str(processor.get("operation") or node.get("operation") or "")
+        if operation in {"start-chapter-production", "chapter_production_start", "resume-chapter-production", "chapter_production_resume"}:
+            return True
+    return False
+
+
+def _workflow_governance_drifts(dag: dict[str, Any]) -> list[dict[str, Any]]:
+    drifts: list[dict[str, Any]] = []
+    template = dag.get("workflow_template_contract", {}) if isinstance(dag.get("workflow_template_contract", {}), dict) else {}
+    if not bool(template.get("enabled", False)) or not str(template.get("contract") or "").strip():
+        drifts.append(_workflow_governance_drift("template_contract", "missing_template_contract", "critical", "workflow lacks canonical v1 chapter-production template contract"))
+    elif str(template.get("contract") or "") != "v1-chapter-production-workflow-template-v1":
+        drifts.append(_workflow_governance_drift("template_contract", "invalid_template_contract", "critical", "workflow template contract must be v1-chapter-production-workflow-template-v1"))
+    if str(template.get("canonical_runtime") or "") != "chapter_production_bus":
+        drifts.append(_workflow_governance_drift("template_contract", "invalid_canonical_runtime", "critical", "workflow must route through chapter_production_bus"))
+    if not bool(template.get("does_not_execute_on_create", False)):
+        drifts.append(_workflow_governance_drift("template_contract", "missing_no_execute_contract", "high", "workflow template must record that creation does not execute chapters"))
+    if bool(template.get("chapter_acceptance_executed", False)):
+        drifts.append(_workflow_governance_drift("template_contract", "template_claims_acceptance", "high", "workflow template creation must not claim chapter acceptance execution"))
+    required = set(template.get("requires_runtime_evidence_in_production", []) if isinstance(template.get("requires_runtime_evidence_in_production", []), list) else [])
+    missing_required = {"os_envelope", "source_policy", "provider_runtime_guard"} - required
+    for evidence_key in sorted(missing_required):
+        drifts.append(_workflow_governance_drift("runtime_evidence", f"missing_required_{evidence_key}", "high", f"workflow template must require {evidence_key} in production"))
+    nodes = [node for node in dag.get("nodes", []) if isinstance(node, dict)]
+    chapter_nodes = [node for node in nodes if str(node.get("processor_operation") or "") in {"start-chapter-production", "chapter_production_start", "resume-chapter-production", "chapter_production_resume"}]
+    if not chapter_nodes:
+        drifts.append(_workflow_governance_drift("processor", "missing_governed_chapter_processor", "critical", "workflow must include a governed chapter production processor"))
+    for node in chapter_nodes:
+        node_template = node.get("template_contract", {}) if isinstance(node.get("template_contract", {}), dict) else {}
+        node_id = str(node.get("node_id") or "")
+        if str(node_template.get("canonical_runtime") or "") != "canonical_chapter_production_bus":
+            drifts.append(_workflow_governance_drift("processor", "missing_node_canonical_runtime_contract", "high", f"node {node_id} lacks canonical chapter production bus quality contract", node_id=node_id))
+        if bool(node_template.get("production_fail_closed", False)):
+            missing = ", ".join(str(item) for item in node_template.get("missing_runtime_evidence", []) if str(item).strip())
+            drifts.append(_workflow_governance_drift("runtime_evidence", "missing_production_runtime_evidence", "critical", f"node {node_id} is production fail-closed due to missing evidence: {missing}", node_id=node_id))
+    return drifts
+
+
+def _workflow_governance_drift(dimension: str, code: str, severity: str, message: str, *, node_id: str = "") -> dict[str, Any]:
+    return {
+        "dimension": dimension,
+        "code": code,
+        "severity": severity,
+        "blocking": severity in {"critical", "high"},
+        "message": message,
+        "node_id": node_id,
+        "recommendation": _workflow_governance_drift_recommendation(code),
+    }
+
+
+def _workflow_governance_drift_recommendation(code: str) -> str:
+    if code.startswith("missing_required_") or code == "missing_production_runtime_evidence":
+        return "attach OS envelope, source policy, and passed provider runtime guard evidence before production execution"
+    if code in {"missing_template_contract", "invalid_template_contract", "invalid_canonical_runtime"}:
+        return "recreate the workflow through the canonical v1 chapter-production workflow template"
+    if code == "missing_governed_chapter_processor":
+        return "route chapter execution through start-chapter-production or resume-chapter-production processors"
+    return "repair workflow governance evidence before final readiness"
+
+
+def _drift_blocks_workflow_governance(drift: dict[str, Any]) -> bool:
+    return bool(drift.get("blocking", False)) or str(drift.get("severity") or "").lower() in {"critical", "high"}
+
+
+def _workflow_governance_strict(*, environment: str = "", mode: str = "") -> bool:
+    normalized_mode = str(mode or "").strip().lower()
+    return is_production_environment(environment or normalized_mode) or normalized_mode in {"strict", "enforced", "operating_system"}
 
 
 def _processor_contract_for_node(node: dict[str, Any]) -> dict[str, Any]:

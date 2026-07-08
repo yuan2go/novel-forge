@@ -1,5 +1,6 @@
 from novel_forge.modules.workflow_nodes.service import (
     build_ready_node_queue,
+    build_workflow_governance_drift_report,
     build_workflow_runtime_console,
     create_workflow_definition,
     create_v1_chapter_production_workflow_template,
@@ -17,6 +18,7 @@ from novel_forge.modules.workflow_nodes.service import (
     resolve_workflow_dependencies,
     resume_workflow,
     retry_workflow_run,
+    run_workflow_governance_drift_gate,
     run_workflow_scheduler,
     run_workflow_scheduler_loop,
     validate_workflow_run_transition,
@@ -25,6 +27,7 @@ from novel_forge.modules.workflow_nodes.service import (
 
 __all__ = [
     "build_ready_node_queue",
+    "build_workflow_governance_drift_report",
     "build_workflow_runtime_console",
     "create_workflow_definition",
     "create_v1_chapter_production_workflow_template",
@@ -42,6 +45,7 @@ __all__ = [
     "resolve_workflow_dependencies",
     "resume_workflow",
     "retry_workflow_run",
+    "run_workflow_governance_drift_gate",
     "run_workflow_scheduler",
     "run_workflow_scheduler_loop",
     "validate_workflow_run_transition",
