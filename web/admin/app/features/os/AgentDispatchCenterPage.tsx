@@ -41,6 +41,9 @@ export function AgentDispatchCenterPage() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [governanceRepairQueuePath, setGovernanceRepairQueuePath] = useState("");
+  const [governanceRepairNote, setGovernanceRepairNote] = useState("");
+  const [governanceRepairConfirmed, setGovernanceRepairConfirmed] = useState(false);
 
   async function refresh(nextProjectId = projectId, nextStatus = status) {
     const [[projectRows, runRows, eventRows, schedulerState, queueRows, contractRows], centerSnapshot] = await Promise.all([
@@ -98,9 +101,28 @@ export function AgentDispatchCenterPage() {
   const governanceDeadLetters = agentCenter?.governance_dead_letters || [];
   const governanceDeadLetterPaths = new Set(governanceDeadLetters.map((row) => String(row.queue_path || "")));
   const repairableDeadLetter = failedQueue.find((row) => String(row.status || "") === "dead_letter" && !governanceDeadLetterPaths.has(String(row.path || "")));
+  const selectedGovernanceDeadLetter = governanceDeadLetters.find((row) => String(row.queue_path || "") === governanceRepairQueuePath);
+  const selectedGovernanceGatePaths = Array.isArray(selectedGovernanceDeadLetter?.failed_gate_paths) ? selectedGovernanceDeadLetter.failed_gate_paths.map((item) => String(item)) : [];
+  const selectedGovernanceCheckpointPaths = Array.isArray(selectedGovernanceDeadLetter?.failed_checkpoint_paths) ? selectedGovernanceDeadLetter.failed_checkpoint_paths.map((item) => String(item)) : [];
+  const governanceRepairReady = Boolean(selectedGovernanceDeadLetter && governanceRepairConfirmed);
   const agentDags = agentCenter?.agent_dags || [];
   const coverageOps = ((operationCoverageFull.operations as Array<Record<string, unknown>> | undefined) || []);
   const hardStopSummary = (hardStopDashboard.summary || {}) as Record<string, unknown>;
+
+  async function submitGovernanceDeadLetterRepair() {
+    if (!selectedGovernanceDeadLetter) {
+      throw new Error("Select a governance dead-letter before repair.");
+    }
+    const result = await repairDeadLetterDispatch(governanceRepairQueuePath, {
+      reason: "os agent center reviewed governance dead-letter repair",
+      confirm_governance_review: true,
+      reviewed_failed_gate_paths: selectedGovernanceGatePaths,
+      reviewed_failed_checkpoint_paths: selectedGovernanceCheckpointPaths,
+      governance_review_note: governanceRepairNote || "operator reviewed failed gates and checkpoints in Agent Center UI"
+    });
+    setGovernanceRepairConfirmed(false);
+    return result;
+  }
 
   return (
     <FeatureShell title="Agent Dispatch Center" subtitle="让 prepared AgentRun 进入 queue，由 scheduler lease/claim/retry/recover 执行，并留下 checkpoint、gate、budget 和 trace 证据。" eyebrow="OS Runtime">
@@ -365,7 +387,7 @@ export function AgentDispatchCenterPage() {
         <PanelHeader title="Governance Dead-letter Review" icon={<ShieldCheck size={18} />} />
         <DataTable
           emptyText="暂无治理 dead-letter"
-          columns={["Operation", "失败证据", "Repair precondition", "Queue"]}
+          columns={["Operation", "失败证据", "Repair precondition", "Queue", "Payload"]}
           rows={governanceDeadLetters.slice(0, 50).map((row) => {
             const repair = (row.repair || {}) as Record<string, unknown>;
             const failedGateCount = Array.isArray(row.failed_gate_paths) ? row.failed_gate_paths.length : 0;
@@ -374,14 +396,74 @@ export function AgentDispatchCenterPage() {
               String(row.operation || "-"),
               `gates ${failedGateCount} / checkpoints ${failedCheckpointCount}`,
               String(repair.precondition || "inspect failed gates and checkpoints before retry"),
-              pathCell(String(row.queue_path || "-"), `${String(row.queue_path)}-governance-dead-letter`)
+              pathCell(String(row.queue_path || "-"), `${String(row.queue_path)}-governance-dead-letter`),
+              row.queue_path ? (
+                <button
+                  className="secondaryButton"
+                  disabled={busy}
+                  onClick={() => {
+                    setGovernanceRepairQueuePath(String(row.queue_path || ""));
+                    setGovernanceRepairNote("");
+                    setGovernanceRepairConfirmed(false);
+                  }}
+                  key={`${String(row.queue_path)}-select-governance-payload`}
+                >
+                  Build reviewed payload
+                </button>
+              ) : "-"
             ];
           })}
         />
+        <div className="formGrid wide">
+          <select
+            value={governanceRepairQueuePath}
+            onChange={(event) => {
+              setGovernanceRepairQueuePath(event.target.value);
+              setGovernanceRepairConfirmed(false);
+            }}
+          >
+            <option value="">选择治理 dead-letter</option>
+            {governanceDeadLetters.map((row) => (
+              <option value={String(row.queue_path || "")} key={String(row.queue_path || row.dispatch_id || row.operation)}>
+                {String(row.operation || "-")} · gates {Array.isArray(row.failed_gate_paths) ? row.failed_gate_paths.length : 0} · checkpoints {Array.isArray(row.failed_checkpoint_paths) ? row.failed_checkpoint_paths.length : 0}
+              </option>
+            ))}
+          </select>
+          <textarea
+            rows={3}
+            value={governanceRepairNote}
+            onChange={(event) => setGovernanceRepairNote(event.target.value)}
+            placeholder="Reviewed Repair Payload note: explain what failed evidence was inspected before retry."
+          />
+          <label className="checkboxLine">
+            <input
+              type="checkbox"
+              checked={governanceRepairConfirmed}
+              disabled={!selectedGovernanceDeadLetter}
+              onChange={(event) => setGovernanceRepairConfirmed(event.target.checked)}
+            />
+            confirm_governance_review: I inspected failed gate/checkpoint evidence; failed gates remain failed.
+          </label>
+          <button
+            className="primaryButton"
+            disabled={busy || !governanceRepairReady}
+            onClick={() => runAction(() => submitGovernanceDeadLetterRepair(), "Governance dead-letter reviewed repair 已提交", setDispatchResult)}
+          >
+            Submit Reviewed Repair Payload
+          </button>
+        </div>
+        <pre className="jsonPreview">{compactJson({
+          queue_path: governanceRepairQueuePath || "-",
+          confirm_governance_review: governanceRepairConfirmed,
+          reviewed_failed_gate_paths: selectedGovernanceGatePaths,
+          reviewed_failed_checkpoint_paths: selectedGovernanceCheckpointPaths,
+          governance_review_note: governanceRepairNote || "operator reviewed failed gates and checkpoints in Agent Center UI"
+        }, 1600)}</pre>
         <div className="pillRow">
           <span className="badge warn">Review required</span>
           <span className="badge">no automatic repair</span>
           <span className="badge">failed gates remain failed</span>
+          <span className="badge">guarded repair endpoint only</span>
         </div>
       </section>
 

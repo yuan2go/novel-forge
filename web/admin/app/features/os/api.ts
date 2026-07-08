@@ -355,10 +355,21 @@ export function recoverAgentDispatch(queuePath: string) {
   }) as Promise<Record<string, unknown>>;
 }
 
-export function repairDeadLetterDispatch(queuePath: string) {
+export type DeadLetterRepairOptions = {
+  reason?: string;
+  confirm_governance_review?: boolean;
+  reviewed_failed_gate_paths?: string[];
+  reviewed_failed_checkpoint_paths?: string[];
+  governance_review_note?: string;
+  governance_review?: Record<string, unknown>;
+};
+
+export function repairDeadLetterDispatch(queuePath: string, options: DeadLetterRepairOptions = {}) {
+  const { reason, ...rest } = options;
   return postJson("/product/agents/dead-letter-repair", {
     queue_path: queuePath,
-    reason: "os agent center v2 dead letter repair"
+    reason: reason || "os agent center v2 dead letter repair",
+    ...rest
   }) as Promise<Record<string, unknown>>;
 }
 
