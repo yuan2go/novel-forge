@@ -113,6 +113,19 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
                 "message": "chapter runtime write budget gate has blockers",
                 "summary": {"blocking_count": 1},
                 "blocking_rows": [{"code": "chapter_runtime_write_budget_linked_refs"}],
+                "operator_repair_plan": {
+                    "status": "review_required",
+                    "action_count": 1,
+                    "actions": [
+                        {
+                            "repair_group": "runtime_reference_fanout",
+                            "recommended_action": "inspect linked refs",
+                            "auto_apply": False,
+                        }
+                    ],
+                    "read_only": True,
+                    "repair_executed": False,
+                },
             },
         )
 
@@ -122,6 +135,12 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
         self.assertEqual(result["unified_acceptance_preflight_manifest"]["enforced_failure_count"], 1)
         self.assertEqual(result["failures"][0]["failure_type"], "runtime_growth_write_budget_gate")
         self.assertEqual(result["acceptance_report"]["asset"]["content"]["recommendation"], "repair_runtime_growth_before_acceptance")
+        repair_plan = result["unified_acceptance_preflight_manifest"]["operator_repair_plan"]
+        self.assertEqual(repair_plan["status"], "review_required")
+        budget_action = [row for row in repair_plan["actions"] if row["dimension"] == "runtime_growth_write_budget"][0]
+        self.assertEqual(budget_action["linked_repair_plan_status"], "review_required")
+        self.assertEqual(budget_action["linked_repair_action_count"], 1)
+        self.assertEqual(budget_action["linked_repair_actions"][0]["repair_group"], "runtime_reference_fanout")
 
     def test_unified_preflight_manifest_resolves_existing_source_workflow_and_approval_evidence(self):
         module = _load_acceptance_script()

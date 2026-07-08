@@ -287,6 +287,7 @@ def _with_runtime_growth_acceptance_preflight(
         "message": str(budget_gate.get("message") or ""),
         "summary": budget_gate.get("summary", {}) if isinstance(budget_gate.get("summary", {}), dict) else {},
         "blocking_rows": budget_gate.get("blocking_rows", []) if isinstance(budget_gate.get("blocking_rows", []), list) else [],
+        "operator_repair_plan": budget_gate.get("operator_repair_plan", {}) if isinstance(budget_gate.get("operator_repair_plan", {}), dict) else {},
     }
     updated["runtime_growth_preflight"] = preflight
     if budget_preflight["status"]:
@@ -370,8 +371,9 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolve
     ]
     enforced_failures = [row for row in rows if row["enforced_now"] and row["status"] != "passed"]
     unready_final = [row for row in rows if row["required_for_final_unified_acceptance"] and not row["enforced_now"] and row["status"] != "passed"]
+    enforced_failure_rows = [_compact_unready_preflight_row(row) for row in enforced_failures]
     unready_final_rows = [_compact_unready_preflight_row(row) for row in unready_final]
-    operator_repair_plan = _build_preflight_operator_repair_plan(unready_final_rows)
+    operator_repair_plan = _build_preflight_operator_repair_plan([*enforced_failure_rows, *unready_final_rows])
     return {
         "contract": "v1-unified-acceptance-preflight-manifest-v1",
         "status": "failed" if enforced_failures else "review_required" if unready_final else "passed",
@@ -410,6 +412,10 @@ def _enforced_runtime_write_budget_row(runtime_write_budget: dict[str, Any], res
     evidence_path = str(runtime_write_budget.get("gate_result_path") or resolved.get("path") or "")
     message = str(runtime_write_budget.get("message") or resolved.get("message") or "")
     linked = resolved.get("linked_evidence_paths", []) if isinstance(resolved.get("linked_evidence_paths", []), list) else []
+    repair_plan = runtime_write_budget.get("operator_repair_plan", {}) if isinstance(runtime_write_budget.get("operator_repair_plan", {}), dict) else {}
+    if not repair_plan:
+        repair_plan = resolved.get("operator_repair_plan", {}) if isinstance(resolved.get("operator_repair_plan", {}), dict) else {}
+    repair_actions = repair_plan.get("actions", []) if isinstance(repair_plan.get("actions", []), list) else []
     row = {
         "key": "runtime_growth_write_budget",
         "status": status,
@@ -426,6 +432,9 @@ def _enforced_runtime_write_budget_row(runtime_write_budget: dict[str, Any], res
     }
     if linked:
         row["linked_evidence_paths"] = linked
+    if repair_plan:
+        row["linked_repair_plan_status"] = str(repair_plan.get("status") or "")
+        row["linked_repair_actions"] = repair_actions
     return row
 
 
@@ -441,6 +450,11 @@ def _compact_unready_preflight_row(row: dict[str, Any]) -> dict[str, Any]:
     linked = row.get("linked_evidence_paths", []) if isinstance(row.get("linked_evidence_paths", []), list) else []
     if linked:
         compact["linked_evidence_paths"] = linked
+    repair_actions = row.get("linked_repair_actions", []) if isinstance(row.get("linked_repair_actions", []), list) else []
+    if repair_actions:
+        compact["linked_repair_plan_status"] = str(row.get("linked_repair_plan_status") or "")
+        compact["linked_repair_action_count"] = len(repair_actions)
+        compact["linked_repair_actions"] = repair_actions
     return compact
 
 
@@ -458,6 +472,9 @@ def _build_preflight_operator_repair_plan(unready_rows: list[dict[str, Any]]) ->
                 "linked_evidence_paths": row.get("linked_evidence_paths", []) if isinstance(row.get("linked_evidence_paths", []), list) else [],
                 "blocking": bool(row.get("blocking", False)),
                 "message": str(row.get("message") or ""),
+                "linked_repair_plan_status": str(row.get("linked_repair_plan_status") or ""),
+                "linked_repair_action_count": int(row.get("linked_repair_action_count") or 0),
+                "linked_repair_actions": row.get("linked_repair_actions", []) if isinstance(row.get("linked_repair_actions", []), list) else [],
             }
         )
     return {
@@ -525,6 +542,7 @@ def _latest_gate_evidence(storage: LocalStorage, *, project_id: str, gate_kind: 
         "status": str(content.get("status") or "unknown"),
         "path": _display_path(storage.root, path),
         "operator_action": str(result.get("operator_action") or content.get("message") or ""),
+        "operator_repair_plan": result.get("operator_repair_plan", {}) if isinstance(result.get("operator_repair_plan", {}), dict) else {},
         "blocking": bool(content.get("blocking", False)),
         "message": str(content.get("message") or ""),
         "linked_evidence_paths": linked_evidence_paths,
