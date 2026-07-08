@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.modules.chapter_runtime_growth import (
     build_chapter_runtime_growth_hotspot_ledger,
     build_chapter_runtime_growth_profile,
+    build_chapter_runtime_growth_write_policy_candidate_plan,
     run_chapter_runtime_growth_threshold_gate,
 )
 from novel_forge.schemas import BaseAsset
@@ -138,6 +139,41 @@ class ChapterRuntimeGrowthTests(unittest.TestCase):
             self.assertEqual(snapshot["type"], "project_metric_snapshot")
             self.assertEqual(snapshot["metadata"]["snapshot_kind"], "chapter_runtime_growth_hotspot_ledger")
             self.assertEqual(snapshot["content"]["acceptance_report_hotspot_rows"][0]["top_output_counts"]["draft_chapter"], 12)
+
+    def test_write_policy_candidate_plan_is_reviewable_and_no_mutation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft = self._write_asset(storage, "policy-draft", "draft_chapter", project_id="book-a")
+            task = self._write_asset(storage, "policy-task", "task_status", project_id="book-a")
+            self._write_asset(storage, "policy-node-run", "node_run", project_id="book-a", content={"run_id": "policy-full"})
+            self._write_asset(storage, "policy-trace-span", "trace_span", project_id="book-a", content={"trace_id": "policy-full"})
+            self._write_chapter_run(
+                storage,
+                run_id="policy-full",
+                chapter=3,
+                task_status_mode="full",
+                outputs={"draft_v0_path": draft},
+                steps={"draft": {"task_status_paths": [task], "output_paths": [draft]}},
+            )
+
+            result = build_chapter_runtime_growth_write_policy_candidate_plan(storage, project_id="book-a", persist=True)
+
+            self.assertEqual(result["status"], "review_required")
+            self.assertTrue(result["path"])
+            self.assertFalse(result["summary"]["mutation_applied"])
+            self.assertFalse(result["summary"]["runtime_policy_changed"])
+            self.assertFalse(result["summary"]["chapter_production_executed"])
+            self.assertTrue(result["summary"]["requires_operator_review"])
+            families = {row["artifact_family"] for row in result["candidate_actions"]}
+            self.assertIn("task_status_ref", families)
+            self.assertIn("node_run", families)
+            self.assertIn("trace_span", families)
+            snapshot = storage.read_json(storage.root / result["path"])
+            self.assertEqual(snapshot["metadata"]["snapshot_kind"], "chapter_runtime_growth_write_policy_candidate_plan")
+            self.assertTrue(snapshot["content"]["safeguards"])
+            self.assertTrue(snapshot["content"]["rollback_criteria"])
+            self.assertFalse(any(row["auto_apply"] for row in snapshot["content"]["candidate_actions"]))
 
     def test_threshold_gate_passes_clean_compact_runtime_profile(self):
         with tempfile.TemporaryDirectory() as tmp:

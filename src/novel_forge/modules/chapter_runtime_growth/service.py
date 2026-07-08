@@ -16,6 +16,8 @@ CONTRACT = "chapter-runtime-growth-profile-v1"
 SNAPSHOT_KIND = "chapter_runtime_growth_profile"
 HOTSPOT_LEDGER_CONTRACT = "chapter-runtime-growth-hotspot-ledger-v1"
 HOTSPOT_LEDGER_SNAPSHOT_KIND = "chapter_runtime_growth_hotspot_ledger"
+WRITE_POLICY_PLAN_CONTRACT = "chapter-runtime-growth-write-policy-candidate-plan-v1"
+WRITE_POLICY_PLAN_SNAPSHOT_KIND = "chapter_runtime_growth_write_policy_candidate_plan"
 THRESHOLD_GATE_KIND = "chapter_runtime_growth_threshold"
 THRESHOLD_GATE_CONTRACT = "chapter-runtime-growth-threshold-gate-v1"
 HIGH_REF_THRESHOLD = 120
@@ -188,6 +190,103 @@ def build_chapter_runtime_growth_hotspot_ledger(
         "summary": summary,
         "hotspot_rows": hotspot_rows,
         "run_hotspot_rows": run_hotspot_rows,
+    }
+
+
+def build_chapter_runtime_growth_write_policy_candidate_plan(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    persist: bool = True,
+) -> dict[str, Any]:
+    """Write a reviewable, no-mutation candidate plan from runtime hotspot evidence."""
+
+    storage.ensure_layout()
+    hotspot = build_chapter_runtime_growth_hotspot_ledger(storage, project_id=project_id, persist=False)
+    hotspot_asset = hotspot.get("asset", {}) if isinstance(hotspot.get("asset", {}), dict) else {}
+    hotspot_content = hotspot_asset.get("content", {}) if isinstance(hotspot_asset.get("content", {}), dict) else {}
+    hotspot_rows = hotspot_content.get("hotspot_rows", []) if isinstance(hotspot_content.get("hotspot_rows", []), list) else []
+    candidate_actions = _write_policy_candidate_actions(hotspot_rows)
+    status = "missing" if str(hotspot.get("status") or "") == "missing" else "review_required" if candidate_actions else "passed"
+    estimated_savings = _estimated_candidate_savings(hotspot_content, candidate_actions)
+    summary = {
+        "hotspot_status": str(hotspot.get("status") or "missing"),
+        "candidate_action_count": len(candidate_actions),
+        "estimated_compacted_write_savings": estimated_savings,
+        "requires_operator_review": bool(candidate_actions),
+        "mutation_applied": False,
+        "runtime_policy_changed": False,
+        "chapter_production_executed": False,
+        "provider_proof_executed": False,
+    }
+    content = {
+        "snapshot_kind": WRITE_POLICY_PLAN_SNAPSHOT_KIND,
+        "contract": WRITE_POLICY_PLAN_CONTRACT,
+        "status": status,
+        "project_id": project_id,
+        "snapshot_at": utc_now(),
+        "summary": summary,
+        "throughput": {
+            "candidate_action_count": len(candidate_actions),
+            "hotspot_family_count": int(hotspot_content.get("summary", {}).get("hotspot_family_count") or 0)
+            if isinstance(hotspot_content.get("summary", {}), dict)
+            else 0,
+        },
+        "quality": {
+            "write_policy_candidate_status": status,
+            "requires_operator_review": bool(candidate_actions),
+            "unsafe_to_apply_automatically": True,
+        },
+        "task_health": {
+            "review_required_count": 1 if status == "review_required" else 0,
+            "mutation_applied": False,
+            "runtime_policy_changed": False,
+        },
+        "agent_health": {
+            "chapter_runtime_write_policy_plan": status,
+            "chapter_production_executed": False,
+            "provider_proof_executed": False,
+        },
+        "storage_health": {
+            "candidate_artifact_families": [str(row.get("artifact_family") or "") for row in candidate_actions],
+            "hotspot_evidence_path": str(hotspot.get("path") or ""),
+            "read_only": True,
+        },
+        "candidate_actions": candidate_actions,
+        "safeguards": _write_policy_safeguards(),
+        "rollback_criteria": _write_policy_rollback_criteria(),
+        "recommendations": _write_policy_recommendations(status, candidate_actions),
+        "evidence_paths": _dedupe(
+            [
+                str(hotspot.get("path") or ""),
+                *[
+                    str(path)
+                    for row in hotspot_content.get("run_hotspot_rows", [])
+                    if isinstance(row, dict)
+                    for path in [row.get("path")]
+                    if str(path or "").strip()
+                ],
+            ]
+        ),
+        "operator_action": _write_policy_operator_action(status),
+        "mutation_policy": "read-only: candidate plan only; requires approval before runtime policy changes",
+    }
+    asset = ProjectMetricSnapshot(
+        title=f"Chapter runtime growth write-policy candidate plan {project_id or 'all-projects'}",
+        tags=["chapter-runtime-write-policy-plan", status],
+        content=content,
+        metadata={"project_id": project_id, "snapshot_kind": WRITE_POLICY_PLAN_SNAPSHOT_KIND, "asset_status": status},
+    )
+    errors = validate_common_fields(asset.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset_auto(asset) if persist else None
+    return {
+        "status": status,
+        "path": _display_path(storage.root, path) if path else "",
+        "asset": asset.to_dict(),
+        "summary": summary,
+        "candidate_actions": candidate_actions,
     }
 
 
@@ -495,6 +594,109 @@ def _hotspot_operator_action(status: str) -> str:
     if status == "review_required":
         return "inspect hotspot rows before changing runtime write policy or running final acceptance"
     return "hotspot ledger is ready for continued runtime growth governance"
+
+
+def _write_policy_candidate_actions(hotspot_rows: list[Any]) -> list[dict[str, Any]]:
+    actions: list[dict[str, Any]] = []
+    for row in hotspot_rows:
+        if not isinstance(row, dict):
+            continue
+        family = str(row.get("artifact_family") or "")
+        risk = str(row.get("risk_level") or "low")
+        if family in {"task_status_ref", "node_run", "trace_span"}:
+            actions.append(
+                {
+                    "action_id": f"candidate-{family}",
+                    "artifact_family": family,
+                    "risk_level": risk,
+                    "recommended_policy": _runtime_policy_recommendation(family),
+                    "expected_effect": "reduce successful-run write amplification while preserving failure and governance evidence",
+                    "requires_operator_approval": True,
+                    "auto_apply": False,
+                    "source_hotspot": row,
+                }
+            )
+        elif family == "unresolved_ref":
+            actions.append(
+                {
+                    "action_id": "candidate-repair-unresolved-ref",
+                    "artifact_family": family,
+                    "risk_level": "high",
+                    "recommended_policy": {"repair": "resolve missing runtime references before policy changes"},
+                    "expected_effect": "prevent hidden evidence loss before final acceptance",
+                    "requires_operator_approval": True,
+                    "auto_apply": False,
+                    "source_hotspot": row,
+                }
+            )
+        elif family in {"draft_chapter", "draft_version", "review_issue", "review_report", "revision_task"} and risk in {"medium", "high"}:
+            actions.append(
+                {
+                    "action_id": f"candidate-audit-{family}",
+                    "artifact_family": family,
+                    "risk_level": risk,
+                    "recommended_policy": {"audit": "inspect content quality and revision fanout before suppressing any artifact family"},
+                    "expected_effect": "separate necessary creative evidence from avoidable loop fanout",
+                    "requires_operator_approval": True,
+                    "auto_apply": False,
+                    "source_hotspot": row,
+                }
+            )
+    return actions
+
+
+def _runtime_policy_recommendation(family: str) -> dict[str, Any]:
+    if family == "task_status_ref":
+        return {"task_status_recording": {"pending": False, "running": False, "completed": True, "failed": True}}
+    if family == "node_run":
+        return {"node_run_recording": {"succeeded": False, "failed": True}}
+    if family == "trace_span":
+        return {"trace_recording": {"node_run_succeeded_span": False, "node_run_failed_span": True, "external_runtime_spans": True}}
+    return {}
+
+
+def _estimated_candidate_savings(hotspot_content: dict[str, Any], candidate_actions: list[dict[str, Any]]) -> int:
+    summary = hotspot_content.get("summary", {}) if isinstance(hotspot_content.get("summary", {}), dict) else {}
+    baseline = int(summary.get("estimated_compacted_write_savings") or 0)
+    runtime_candidates = sum(1 for row in candidate_actions if row.get("artifact_family") in {"task_status_ref", "node_run", "trace_span"})
+    return baseline + runtime_candidates
+
+
+def _write_policy_safeguards() -> list[str]:
+    return [
+        "preserve failed TaskStatus, NodeRun, TraceSpan, gate, budget, approval, provider, and dead-letter evidence",
+        "do not suppress ReviewIssue, RevisionTask, DraftVersion, Canon, Context, or release evidence without a separate approved plan",
+        "apply policy changes only through an operator-approved runtime policy update with rollback evidence",
+        "rerun focused runtime-growth regression before any final chapter acceptance",
+    ]
+
+
+def _write_policy_rollback_criteria() -> list[str]:
+    return [
+        "rollback if failed chapter debugging loses required NodeRun or TraceSpan evidence",
+        "rollback if gate/budget/provider/approval evidence disappears from Cockpit or Agent Center",
+        "rollback if compact run coverage no longer satisfies V1_SEQUENCE_REQUIRED_OUTPUTS",
+    ]
+
+
+def _write_policy_operator_action(status: str) -> str:
+    if status == "missing":
+        return "build runtime hotspot ledger before creating write-policy candidate plan"
+    if status == "review_required":
+        return "review candidate actions and safeguards before changing runtime policy"
+    return "no runtime write-policy changes are recommended from current hotspot evidence"
+
+
+def _write_policy_recommendations(status: str, candidate_actions: list[dict[str, Any]]) -> list[str]:
+    if status == "missing":
+        return ["Build hotspot evidence before proposing runtime write-policy changes"]
+    if candidate_actions:
+        return [
+            "Review candidate actions with an operator before applying runtime policy changes",
+            "Preserve failure, gate, budget, approval, provider, and dead-letter evidence",
+            "Run focused runtime-growth regression after any approved write-policy change",
+        ]
+    return ["No runtime write-policy changes are recommended from current hotspot evidence"]
 
 
 def _threshold_blocking_rows(
