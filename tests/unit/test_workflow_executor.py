@@ -1337,36 +1337,22 @@ class WorkflowExecutorTests(unittest.TestCase):
             storage.ensure_layout()
             fixture = _chapter_production_fixture(storage, project_title="Workflow Chapter Start")
             source_policy = _workflow_source_policy()
-            workflow = create_workflow_definition(
+            workflow = create_v1_chapter_production_workflow_template(
                 storage,
                 name="Workflow Chapter Production Start",
-                entry_node_id="chapter-start",
-                nodes=[
-                    {
-                        "node_id": "chapter-start",
-                        "node_type": "production",
-                        "operation": "start-chapter-production",
-                        "input_types": ["outline"],
-                        "output_types": ["chapter_production_run"],
-                        "processor": {
-                            "kind": "service",
-                            "operation": "start-chapter-production",
-                            "chapter": 1,
-                            "run_to": "outline_checkpoint",
-                            "task_status_mode": "compact",
-                            "environment": "production",
-                            "os_envelope": production_envelope(
-                                fixture["project_id"],
-                                "chapter_production_run",
-                                trace_id=f"trace-workflow-chapter-start-{fixture['project_id']}",
-                                source_policy=source_policy,
-                            ),
-                            "source_policy": source_policy,
-                            "provider_runtime_guard": _passed_provider_runtime_gate(),
-                            "require_external_provider_proof": True,
-                        },
-                    }
-                ],
+                chapter=1,
+                run_to="outline_checkpoint",
+                environment="production",
+                workspace_path=fixture["workspace_path"],
+                os_envelope=production_envelope(
+                    fixture["project_id"],
+                    "chapter_production_run",
+                    trace_id=f"trace-workflow-chapter-start-{fixture['project_id']}",
+                    source_policy=source_policy,
+                ),
+                source_policy=source_policy,
+                provider_runtime_guard=_passed_provider_runtime_gate(),
+                require_external_provider_proof=True,
             )
 
             result = execute_workflow(storage, workflow["path"], input_assets=[fixture["outline_path"]])
@@ -1446,14 +1432,16 @@ class WorkflowExecutorTests(unittest.TestCase):
             )
 
             result = execute_workflow(storage, workflow["path"], input_assets=[fixture["outline_path"]])
-            node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
+            run_content = result["workflow_run"]["asset"]["content"]
+            preflight = run_content["lineage"]["workflow_governance_preflight"]
 
             self.assertEqual(result["status"], "failed")
-            self.assertEqual(node_run.content["status"], "failed")
-            self.assertIn("missing production governance evidence", node_run.content["error"])
-            self.assertIn("os_envelope", node_run.content["error"])
-            self.assertIn("source_policy", node_run.content["error"])
-            self.assertIn("provider_runtime_guard", node_run.content["error"])
+            self.assertEqual(result["node_runs"], [])
+            self.assertEqual(result["blocked"]["gate_kind"], "workflow_governance_drift")
+            self.assertEqual(preflight["status"], "failed")
+            self.assertIn("workflow governance drift", result["errors"][0])
+            self.assertTrue(preflight["gate_result_path"])
+            self.assertTrue(preflight["drift_report_path"])
 
     def test_v1_chapter_production_workflow_template_creates_governed_definition(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1501,8 +1489,13 @@ class WorkflowExecutorTests(unittest.TestCase):
             chapter_run = storage.read_json(storage.root / result["workflow_run"]["asset"]["content"]["outputs"][0])
 
             self.assertEqual(result["status"], "completed")
+            self.assertEqual(result["preflight"]["status"], "passed")
             self.assertEqual(chapter_run["type"], "chapter_production_run")
             self.assertEqual(chapter_run["content"]["current_step"], "outline_checkpoint")
+            lineage = result["workflow_run"]["asset"]["content"]["lineage"]["workflow_governance_preflight"]
+            self.assertEqual(lineage["gate_status"], "passed")
+            self.assertTrue(lineage["gate_result_path"])
+            self.assertTrue(lineage["drift_report_path"])
 
     def test_v1_chapter_production_workflow_console_marks_missing_production_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1629,6 +1622,49 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(gate["status"], "warning")
             self.assertFalse(gate["blocking"])
             self.assertGreater(gate["drift_report"]["summary"]["blocking_drift_count"], 0)
+
+    def test_execute_workflow_blocks_drifted_production_definition_before_nodes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = _chapter_production_fixture(storage, project_title="Workflow Execute Drifted")
+            workflow = create_workflow_definition(
+                storage,
+                name="Execute Drifted Chapter Workflow",
+                entry_node_id="chapter-production-start",
+                nodes=[
+                    {
+                        "node_id": "chapter-production-start",
+                        "node_type": "production",
+                        "operation": "start-chapter-production",
+                        "input_types": ["outline"],
+                        "output_types": ["chapter_production_run"],
+                        "processor": {"kind": "service", "operation": "start-chapter-production", "environment": "production"},
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[fixture["outline_path"]])
+            run_content = result["workflow_run"]["asset"]["content"]
+            preflight = run_content["lineage"]["workflow_governance_preflight"]
+
+            self.assertEqual(result["status"], "failed")
+            self.assertEqual(result["node_runs"], [])
+            self.assertEqual(result["blocked"]["gate_kind"], "workflow_governance_drift")
+            self.assertEqual(preflight["status"], "failed")
+            self.assertTrue(preflight["gate_result_path"])
+            self.assertTrue(preflight["drift_report_path"])
+            self.assertEqual(run_content["node_runs"], [])
+            gate = storage.read_asset(preflight["gate_result_path"])
+            self.assertEqual(gate.type, "gate_result")
+            self.assertEqual(gate.content["status"], "failed")
+
+            resumed = resume_workflow(storage, result["workflow_run"]["path"])
+            resumed_preflight = resumed["workflow_run"]["asset"]["content"]["lineage"]["workflow_governance_preflight"]
+            self.assertEqual(resumed["status"], "failed")
+            self.assertEqual(resumed["node_runs"], [])
+            self.assertEqual(resumed["blocked"]["gate_kind"], "workflow_governance_drift")
+            self.assertEqual(resumed_preflight["status"], "failed")
 
     def test_gate_registry_schema_gate_blocks_invalid_input(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1182,6 +1182,44 @@ def execute_workflow(
         )
         return {"status": "failed", "run_id": run_id, "workflow_run": workflow_run, "errors": [str(exc)], "order": []}
 
+    preflight = _workflow_execution_preflight_gate(
+        storage,
+        workflow=workflow,
+        workflow_path=workflow_path,
+        nodes=nodes,
+    )
+    if preflight.get("status") == "failed":
+        message = str(preflight.get("message") or "workflow governance drift gate failed")
+        workflow_run = _write_workflow_run(
+            storage,
+            workflow=workflow,
+            workflow_path=workflow_path,
+            run_id=run_id,
+            status="failed",
+            started_at=now,
+            outputs=[],
+            run_log=[],
+            blocked={"node_id": entry_node_id, "status": "failed", "reason": message, "gate_kind": "workflow_governance_drift"},
+            error_message=message,
+            recovery_instruction="Repair the WorkflowDefinition through the canonical v1 chapter-production template or attach required production governance evidence, then rerun.",
+            workspace_path=workspace_path,
+            lineage={"workflow_governance_preflight": preflight},
+        )
+        return {
+            "status": "failed",
+            "run_id": run_id,
+            "workflow_id": workflow_id,
+            "workflow_path": _display_path(storage.root, workflow_path),
+            "workflow_run": workflow_run,
+            "node_runs": [],
+            "agent_runs": [],
+            "invalidations": [],
+            "order": order,
+            "blocked": {"node_id": entry_node_id, "status": "failed", "reason": message, "gate_kind": "workflow_governance_drift"},
+            "errors": [message],
+            "preflight": preflight,
+        }
+
     executed_count = 0
     status = "completed"
     blocked: dict[str, Any] = {}
@@ -1305,6 +1343,7 @@ def execute_workflow(
         error_message="; ".join(errors),
         recovery_instruction=_workflow_recovery_instruction(status, blocked, errors),
         workspace_path=workspace_path,
+        lineage={"workflow_governance_preflight": preflight},
     )
     return {
         "status": status,
@@ -1318,6 +1357,7 @@ def execute_workflow(
         "order": order,
         "blocked": blocked,
         "errors": errors,
+        "preflight": preflight,
     }
 
 
@@ -1364,6 +1404,55 @@ def resume_workflow(
     run_id = make_id("workflow_run", f"{previous_run_id}-{node_id}-resume")
     now = utc_now()
     run_log = [dict(item) for item in previous_log if isinstance(item, dict)]
+    preflight = _workflow_execution_preflight_gate(
+        storage,
+        workflow=workflow,
+        workflow_path=workflow_path,
+        nodes=nodes,
+    )
+    if preflight.get("status") == "failed":
+        message = str(preflight.get("message") or "workflow governance drift gate failed")
+        previous_node_run_paths = previous_content.get("node_runs", []) if isinstance(previous_content.get("node_runs", []), list) else []
+        previous_agent_run_paths = previous_content.get("agent_runs", []) if isinstance(previous_content.get("agent_runs", []), list) else []
+        workflow_run = _write_workflow_run(
+            storage,
+            workflow=workflow,
+            workflow_path=workflow_path,
+            run_id=run_id,
+            status="failed",
+            started_at=now,
+            outputs=[],
+            node_run_paths=[str(item) for item in previous_node_run_paths],
+            agent_run_paths=[str(item) for item in previous_agent_run_paths],
+            run_log=run_log,
+            blocked={"node_id": node_id, "status": "failed", "reason": message, "gate_kind": "workflow_governance_drift"},
+            error_message=message,
+            recovery_instruction="Repair the WorkflowDefinition through the canonical v1 chapter-production template or attach required production governance evidence, then rerun.",
+            workspace_path=workspace_path,
+            lineage={
+                "resumed_from_run_id": previous_run_id,
+                "resumed_from_run_path": _display_path(storage.root, previous_run_path),
+                "resume_node_id": node_id,
+                "workflow_governance_preflight": preflight,
+            },
+        )
+        return {
+            "status": "failed",
+            "run_id": run_id,
+            "workflow_id": workflow_id,
+            "workflow_path": _display_path(storage.root, workflow_path),
+            "resumed_from_run_id": previous_run_id,
+            "resumed_from_run_path": _display_path(storage.root, previous_run_path),
+            "resume_node_id": node_id,
+            "workflow_run": workflow_run,
+            "node_runs": [],
+            "agent_runs": [],
+            "invalidations": [],
+            "order": order,
+            "blocked": {"node_id": node_id, "status": "failed", "reason": message, "gate_kind": "workflow_governance_drift"},
+            "errors": [message],
+            "preflight": preflight,
+        }
     outputs_by_node = _outputs_by_node_from_run_log(run_log)
     node_runs: list[dict[str, Any]] = []
     agent_runs: list[dict[str, Any]] = []
@@ -1543,6 +1632,7 @@ def resume_workflow(
             "resumed_from_run_path": _display_path(storage.root, previous_run_path),
             "resume_node_id": node_id,
             "new_output_assets": _dedupe(new_outputs),
+            "workflow_governance_preflight": preflight,
         },
     )
     if archive_previous and status != "failed":
@@ -1568,6 +1658,7 @@ def resume_workflow(
         "order": order,
         "blocked": current_blocked,
         "errors": errors,
+        "preflight": preflight,
     }
 
 
@@ -2265,6 +2356,73 @@ def _drift_blocks_workflow_governance(drift: dict[str, Any]) -> bool:
 def _workflow_governance_strict(*, environment: str = "", mode: str = "") -> bool:
     normalized_mode = str(mode or "").strip().lower()
     return is_production_environment(environment or normalized_mode) or normalized_mode in {"strict", "enforced", "operating_system"}
+
+
+def _workflow_execution_preflight_gate(
+    storage: LocalStorage,
+    *,
+    workflow: dict[str, Any],
+    workflow_path: Path,
+    nodes: list[dict[str, Any]],
+) -> dict[str, Any]:
+    content = workflow.get("content", {}) if isinstance(workflow.get("content", {}), dict) else {}
+    if not _workflow_definition_mentions_chapter_production(content):
+        return {
+            "status": "skipped",
+            "reason": "workflow governance drift preflight applies only to v1 chapter-production workflows",
+            "environment": "",
+            "mode": "",
+            "gate_result_path": "",
+            "drift_report_path": "",
+        }
+    policy = _workflow_execution_runtime_policy(workflow, nodes)
+    if not _workflow_governance_strict(environment=policy["environment"], mode=policy["mode"]):
+        return {
+            "status": "skipped",
+            "reason": "workflow governance drift preflight only runs in production/operating_system/strict modes",
+            "environment": policy["environment"],
+            "mode": policy["mode"],
+            "gate_result_path": "",
+            "drift_report_path": "",
+        }
+    gate = run_workflow_governance_drift_gate(
+        storage,
+        workflow_path_or_id=_display_path(storage.root, workflow_path),
+        project_id=policy["project_id"],
+        environment=policy["environment"],
+        mode=policy["mode"],
+        persist_report=True,
+    )
+    return {
+        "status": "failed" if gate.get("status") == "failed" else "passed",
+        "gate_status": gate.get("status", ""),
+        "blocking": bool(gate.get("blocking", False)),
+        "message": str(gate.get("message") or ""),
+        "environment": policy["environment"],
+        "mode": policy["mode"],
+        "gate_result_path": str(gate.get("gate_result", {}).get("path", "") if isinstance(gate.get("gate_result", {}), dict) else ""),
+        "drift_report_path": str(gate.get("drift_report", {}).get("path", "") if isinstance(gate.get("drift_report", {}), dict) else ""),
+        "summary": gate.get("drift_report", {}).get("summary", {}) if isinstance(gate.get("drift_report", {}), dict) else {},
+    }
+
+
+def _workflow_execution_runtime_policy(workflow: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, str]:
+    content = workflow.get("content", {}) if isinstance(workflow.get("content", {}), dict) else {}
+    metadata = workflow.get("metadata", {}) if isinstance(workflow.get("metadata", {}), dict) else {}
+    policy = content.get("runtime_policy", {}) if isinstance(content.get("runtime_policy", {}), dict) else {}
+    environment = str(policy.get("environment") or metadata.get("environment") or "").strip()
+    mode = str(policy.get("mode") or metadata.get("mode") or "").strip()
+    project_id = str(metadata.get("project_id") or "")
+    for node in nodes:
+        processor = _node_processor(node)
+        node_policy = node.get("runtime_policy", {}) if isinstance(node.get("runtime_policy", {}), dict) else {}
+        environment = environment or str(processor.get("environment") or node_policy.get("environment") or "").strip()
+        mode = mode or str(processor.get("mode") or node_policy.get("mode") or "").strip()
+        envelope = _processor_os_envelope(processor)
+        project_id = project_id or str(envelope.get("project_id") or "")
+        if environment and mode and project_id:
+            break
+    return {"environment": environment, "mode": mode, "project_id": project_id}
 
 
 def _processor_contract_for_node(node: dict[str, Any]) -> dict[str, Any]:
@@ -3744,6 +3902,7 @@ def _write_workflow_run(
                 *(node_run_paths or []),
                 *(agent_run_paths or []),
                 *outputs,
+                *_lineage_reference_paths(lineage or {}),
             ]),
         ),
     )
@@ -3785,6 +3944,20 @@ def _write_workflow_run(
     except Exception:
         pass
     return result
+
+
+def _lineage_reference_paths(value: Any) -> list[str]:
+    paths: list[str] = []
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if isinstance(item, str) and (key == "path" or key.endswith("_path") or key.endswith("_paths")) and item.strip():
+                paths.append(item)
+            elif isinstance(item, (dict, list)):
+                paths.extend(_lineage_reference_paths(item))
+    elif isinstance(value, list):
+        for item in value:
+            paths.extend(_lineage_reference_paths(item))
+    return _dedupe(paths)
 
 
 def _node_run_log_entry(node_run: dict[str, Any], *, agent_run: dict[str, Any] | None, invalidation: dict[str, Any] | None) -> dict[str, Any]:
