@@ -73,8 +73,9 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
         self.assertEqual(result["status"], "succeeded")
         self.assertEqual(manifest["status"], "review_required")
         self.assertEqual(manifest["enforced_failure_count"], 0)
-        self.assertEqual(manifest["missing_or_deferred_final_evidence_count"], 3)
+        self.assertEqual(manifest["missing_or_deferred_final_evidence_count"], 4)
         self.assertIn("source_governance_runtime", {row["key"] for row in manifest["required_evidence"]})
+        self.assertIn("quality_calibration_readiness", {row["key"] for row in manifest["required_evidence"]})
         self.assertFalse(manifest["chapter_acceptance_executed_by_manifest"])
 
     def test_unified_preflight_manifest_resolves_existing_source_workflow_and_approval_evidence(self):
@@ -114,6 +115,20 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
                     "metadata": {"project_id": "book-a", "snapshot_kind": "approval_request_caller_readiness"},
                 },
             )
+            storage.write_json(
+                "data/runs/quality-calibration-readiness.json",
+                {
+                    "id": "quality-calibration-readiness",
+                    "type": "project_metric_snapshot",
+                    "title": "quality calibration readiness",
+                    "content": {
+                        "snapshot_kind": "quality_calibration_readiness",
+                        "status": "passed",
+                        "operator_action": "quality calibration ready",
+                    },
+                    "metadata": {"project_id": "book-a", "snapshot_kind": "quality_calibration_readiness"},
+                },
+            )
 
             resolved = module._resolve_unified_acceptance_preflight_evidence(storage, project_id="book-a")
             result = module._with_runtime_growth_acceptance_preflight(
@@ -136,6 +151,7 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
             self.assertEqual(status_by_key["source_governance_runtime"], "passed")
             self.assertEqual(status_by_key["workflow_governance_drift"], "passed")
             self.assertEqual(status_by_key["approval_request_caller_readiness"], "passed")
+            self.assertEqual(status_by_key["quality_calibration_readiness"], "passed")
 
     def test_runtime_growth_preflight_persists_report_demotion(self):
         module = _load_acceptance_script()

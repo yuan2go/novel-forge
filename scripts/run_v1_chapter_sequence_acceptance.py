@@ -289,6 +289,11 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolve
             resolved=resolved.get("approval_request_caller_readiness", {}),
             deferred_action="final unified acceptance must require approval caller readiness evidence",
         ),
+        _resolved_preflight_row(
+            key="quality_calibration_readiness",
+            resolved=resolved.get("quality_calibration_readiness", {}),
+            deferred_action="final unified acceptance must require provider/human quality calibration readiness evidence",
+        ),
     ]
     enforced_failures = [row for row in rows if row["enforced_now"] and row["status"] != "passed"]
     missing_final = [row for row in rows if row["required_for_final_unified_acceptance"] and row["status"] in {"missing", "deferred"}]
@@ -320,6 +325,7 @@ def _resolve_unified_acceptance_preflight_evidence(storage: LocalStorage, *, pro
         "source_governance_runtime": _latest_gate_evidence(storage, project_id=project_id, gate_kind="source_governance_runtime"),
         "workflow_governance_drift": _latest_gate_evidence(storage, project_id=project_id, gate_kind="workflow_governance_drift"),
         "approval_request_caller_readiness": _latest_metric_snapshot_evidence(storage, project_id=project_id, snapshot_kind="approval_request_caller_readiness"),
+        "quality_calibration_readiness": _latest_metric_snapshot_evidence(storage, project_id=project_id, snapshot_kind="quality_calibration_readiness"),
     }
 
 
