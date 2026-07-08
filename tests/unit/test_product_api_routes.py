@@ -734,6 +734,108 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertIn(gate.json()["status"], {"passed", "warning"})
             self.assertEqual(gate.json()["gate_result"]["asset"]["type"], "gate_result")
 
+    def test_project_cockpit_route_surfaces_workflow_governance_readiness(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.schemas import BaseAsset
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+            storage = LocalStorage(root)
+            storage.ensure_layout()
+            preflight = {
+                "status": "failed",
+                "gate_status": "failed",
+                "blocking": True,
+                "message": "workflow governance drift has 1 blocking row(s)",
+                "environment": "production",
+                "mode": "strict",
+                "gate_result_path": "data/runs/route-workflow-governance-gate.json",
+                "drift_report_path": "data/runs/route-workflow-governance-report.json",
+                "summary": {"drift_count": 1, "blocking_drift_count": 1},
+            }
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="route-workflow-governance-gate",
+                    type="gate_result",
+                    title="Route workflow governance drift gate",
+                    content={
+                        "gate_id": "route-workflow-governance-gate",
+                        "gate_kind": "workflow_governance_drift",
+                        "status": "failed",
+                        "target_paths": ["data/runs/route-workflow-definition.json"],
+                        "blocking": True,
+                        "message": preflight["message"],
+                        "result": {"summary": preflight["summary"], "report_path": preflight["drift_report_path"]},
+                        "created_at": "2026-07-08T00:00:00Z",
+                    },
+                    metadata={"project_id": "route-book"},
+                )
+            )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="route-workflow-run-governance-failed",
+                    type="workflow_run",
+                    title="Route workflow governance failed run",
+                    content={
+                        "run_id": "route-workflow-run-governance-failed",
+                        "workflow_id": "route-workflow-definition",
+                        "workflow_definition_path": "data/runs/route-workflow-definition.json",
+                        "status": "failed",
+                        "outputs": [],
+                        "node_runs": [],
+                        "agent_runs": [],
+                        "run_log": [],
+                        "blocked": {"node_id": "chapter-production-start", "status": "failed", "gate_kind": "workflow_governance_drift"},
+                        "error_message": preflight["message"],
+                        "recovery_instruction": "repair workflow governance evidence before resume",
+                        "lineage": {"workflow_governance_preflight": preflight},
+                    },
+                    metadata={"project_id": "route-book"},
+                )
+            )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="route-ready-node-workflow-governance-dead-letter",
+                    type="ready_node_queue",
+                    title="Route dead-lettered workflow governance node",
+                    content={
+                        "queue_id": "route-ready-node-workflow-governance-dead-letter",
+                        "workflow_run_id": "route-workflow-run-governance-failed",
+                        "workflow_run_path": "data/runs/route-workflow-run-governance-failed.json",
+                        "node_id": "chapter-production-start",
+                        "status": "dead_letter",
+                        "last_error": preflight["message"],
+                        "dead_letter_evidence": {
+                            "workflow_governance_preflight": preflight,
+                            "resume_workflow_run_path": "data/runs/route-workflow-run-governance-resume.json",
+                        },
+                    },
+                    metadata={"project_id": "route-book"},
+                )
+            )
+
+            response = client.get("/product/os/cockpit/project", params={"project_id": "route-book"})
+
+            self.assertEqual(response.status_code, 200, response.text)
+            content = response.json()["asset"]["content"]
+            workflow_governance = content["runtime_governance"]["workflow_governance"]
+            self.assertEqual(workflow_governance["status"], "blocked")
+            self.assertEqual(workflow_governance["failed_preflight_count"], 1)
+            self.assertEqual(workflow_governance["dead_letter_count"], 1)
+            self.assertIn(preflight["drift_report_path"], workflow_governance["evidence_paths"])
+            self.assertEqual(content["quality"]["workflow_governance_status"], "blocked")
+            self.assertEqual(content["cockpit"]["workflow_governance"]["status"], "blocked")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["workflow_governance"], "blocked")
+
 
 if __name__ == "__main__":
     unittest.main()
