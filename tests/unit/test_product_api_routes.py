@@ -972,6 +972,60 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["cockpit"]["workflow_governance"]["status"], "passed")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["workflow_governance"], "passed")
 
+    def test_project_cockpit_route_surfaces_approval_request_caller_readiness(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.modules.permission_center import build_approval_request_caller_readiness_report, create_approval_request
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+            storage = LocalStorage(root)
+            storage.ensure_layout()
+            for scope, action, target_type in [
+                ("source", "allow_generation_context", "source_policy"),
+                ("context", "override_context_bundle", "context_bundle"),
+                ("publish", "submit_release_package", "release_package"),
+                ("feedback", "apply_feedback_mutation", "feedback_plan_mutation_proposal"),
+                ("story_mutation", "apply_outline_patch", "outline"),
+            ]:
+                create_approval_request(
+                    storage,
+                    {
+                        "project_id": "route-book-approval-readiness",
+                        "scope": scope,
+                        "action": action,
+                        "environment": "local",
+                        "risk_level": "high",
+                        "blocking": True,
+                        "target_type": target_type,
+                        "target_id": f"{scope}-fixture",
+                    },
+                )
+            build_approval_request_caller_readiness_report(storage, project_id="route-book-approval-readiness")
+
+            response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-approval-readiness"})
+
+            self.assertEqual(response.status_code, 200, response.text)
+            content = response.json()["asset"]["content"]
+            readiness = content["runtime_governance"]["approval_request_caller_readiness"]
+            self.assertEqual(readiness["status"], "review_required")
+            self.assertEqual(readiness["summary"]["covered_dimension_count"], 5)
+            self.assertEqual(readiness["summary"]["missing_dimension_count"], 0)
+            self.assertEqual(readiness["summary"]["pending_blocking_count"], 5)
+            self.assertTrue(readiness["path"])
+            self.assertEqual(content["quality"]["approval_request_caller_readiness_status"], "review_required")
+            self.assertEqual(content["quality"]["approval_request_missing_caller_count"], 0)
+            self.assertEqual(content["cockpit"]["approval_request_caller_readiness"]["status"], "review_required")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["approval_request_callers"], "review_required")
+
     def test_project_cockpit_route_keeps_missing_workflow_governance_unready(self):
         try:
             from fastapi.testclient import TestClient

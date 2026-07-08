@@ -35,6 +35,7 @@ RUNTIME_GROWTH_TESTS = [
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_surfaces_workflow_governance_readiness",
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_surfaces_clean_workflow_governance_readiness",
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_keeps_missing_workflow_governance_unready",
+    "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_surfaces_approval_request_caller_readiness",
     "tests.unit.test_permission_center.PermissionCenterTests.test_approval_request_caller_readiness_reports_missing_dimensions_without_mutation",
     "tests.unit.test_permission_center.PermissionCenterTests.test_approval_request_caller_readiness_passes_when_required_callers_are_covered",
     "tests.unit.test_permission_center.PermissionCenterTests.test_approval_request_caller_readiness_flags_pending_blocking_review",

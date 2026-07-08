@@ -37,6 +37,7 @@ class RuntimeGrowthRegressionScriptTests(unittest.TestCase):
         self.assertIn("test_project_cockpit_route_surfaces_workflow_governance_readiness", command_text)
         self.assertIn("test_project_cockpit_route_surfaces_clean_workflow_governance_readiness", command_text)
         self.assertIn("test_project_cockpit_route_keeps_missing_workflow_governance_unready", command_text)
+        self.assertIn("test_project_cockpit_route_surfaces_approval_request_caller_readiness", command_text)
         self.assertIn("test_approval_request_caller_readiness_reports_missing_dimensions_without_mutation", command_text)
         self.assertIn("test_approval_request_caller_readiness_passes_when_required_callers_are_covered", command_text)
         self.assertIn("test_approval_request_caller_readiness_flags_pending_blocking_review", command_text)
