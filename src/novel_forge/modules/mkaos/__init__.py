@@ -87,6 +87,11 @@ from .pack_policy import (
     resolve_mkaos_pack_policy,
     validate_mkaos_pack_result,
 )
+from .lifecycle import (
+    apply_mkaos_asset_lifecycle,
+    plan_mkaos_asset_lifecycle,
+    rollback_mkaos_asset_lifecycle,
+)
 
 __all__ = [
     "adapt_pack_for_flow",
@@ -168,6 +173,9 @@ __all__ = [
     "validate_extraction_provider_quality",
     "convert_assets",
     "convert_rules",
+    "apply_mkaos_asset_lifecycle",
+    "plan_mkaos_asset_lifecycle",
+    "rollback_mkaos_asset_lifecycle",
     "MkaosPackPolicyError",
     "build_mkaos_flow_context_with_policy",
     "mkaos_pack_metadata",

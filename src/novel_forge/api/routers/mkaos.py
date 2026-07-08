@@ -166,6 +166,30 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/mkaos/lifecycle/plan")
+    @router.post("/api/mkaos/lifecycle/plan")
+    def plan_mkaos_lifecycle(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.plan_mkaos_asset_lifecycle(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/lifecycle/apply")
+    @router.post("/api/mkaos/lifecycle/apply")
+    def apply_mkaos_lifecycle(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.apply_mkaos_asset_lifecycle(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/mkaos/lifecycle/rollback")
+    @router.post("/api/mkaos/lifecycle/rollback")
+    def rollback_mkaos_lifecycle(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.rollback_mkaos_asset_lifecycle(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/convert/assets")
     @router.post("/api/mkaos/convert/assets")
     def convert_assets(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
