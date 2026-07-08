@@ -27,6 +27,9 @@ SOURCE_GOVERNANCE_TESTS = [
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_source_governance_runtime_gate_route_passes_with_clean_sweeps",
     "tests.unit.test_novel_os_cockpit.NovelOsCockpitTests.test_project_cockpit_snapshot_is_schema_backed",
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_surfaces_source_guarded_apply_readiness",
+    "tests.unit.test_publishing_center.PublishingCenterTests.test_publishing_calendar_rules_logs_and_version_registry",
+    "tests.unit.test_publishing_center.PublishingCenterTests.test_release_gate_evidence_requires_source_governance_gate_in_production",
+    "tests.unit.test_context_builder_stage_profiles.ContextBuilderStageProfileTests.test_flow_context_bundle_records_source_governance_runtime_gate",
     "tests.unit.test_source_governance_regression_script.SourceGovernanceRegressionScriptTests",
 ]
 
@@ -41,11 +44,15 @@ def _commands() -> list[list[str]]:
             "-q",
             "src/novel_forge/modules/source_intake",
             "src/novel_forge/modules/novel_os_cockpit",
+            "src/novel_forge/modules/publishing",
+            "src/novel_forge/modules/context_builder",
             "src/novel_forge/api/routers/handoffs.py",
             "src/novel_forge/api/services/product.py",
             "tests/unit/test_source_intake.py",
             "tests/unit/test_novel_os_cockpit.py",
             "tests/unit/test_product_api_routes.py",
+            "tests/unit/test_publishing_center.py",
+            "tests/unit/test_context_builder_stage_profiles.py",
             "tests/unit/test_source_governance_regression_script.py",
         ],
     ]
