@@ -157,6 +157,22 @@ def run_content_quality_loop(
     if readable.get("revision_task_path"):
         revision_task_paths.append(str(readable["revision_task_path"]))
 
+    golden_opening = _run_golden_opening_gate(
+        storage,
+        target_file=target_file,
+        target=target.to_dict(),
+        stage=stage,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        persist_issues=persist_issues,
+    )
+    golden_opening_step = _record_step("golden_opening_gate", golden_opening)
+    steps.append(golden_opening_step)
+    evidence_paths.extend(golden_opening_step["paths"])
+    review_issue_paths.extend(golden_opening_step["review_issue_paths"])
+    if golden_opening.get("revision_task_path"):
+        revision_task_paths.append(str(golden_opening["revision_task_path"]))
+
     mobile = create_mobile_reading_report(
         storage,
         _display_path(storage.root, target_file),
@@ -420,6 +436,117 @@ def _run_readable_prose_gate(
     }
 
 
+def _run_golden_opening_gate(
+    storage: LocalStorage,
+    *,
+    target_file: Path,
+    target: dict[str, Any],
+    stage: str,
+    project_id: str,
+    workspace_path: str,
+    persist_issues: bool,
+) -> dict[str, Any]:
+    target_content = target.get("content", {}) if isinstance(target.get("content", {}), dict) else {}
+    chapter_no = _chapter_number(target)
+    if chapter_no not in {1, 2, 3}:
+        return {
+            "status": "skipped",
+            "blocking": False,
+            "message": "golden opening gate only applies to chapters 1-3",
+            "paths": [],
+            "review_issues": [],
+            "revision_task_path": "",
+        }
+    text = str(target_content.get("text") or target_content.get("chapter_text") or "")
+    metrics = _golden_opening_metrics(text)
+    findings = _golden_opening_findings(chapter_no, metrics)
+    blocking_findings = [item for item in findings if item.get("blocking")]
+    scores = metrics["scores"]
+    overall = int(round(sum(scores.values()) / max(len(scores), 1)))
+    status = "blocked" if blocking_findings else "passed"
+    report = QualityScoreReport(
+        title=f"Golden opening gate for chapter {chapter_no}",
+        source=str(target.get("id") or ""),
+        tags=["golden-opening-gate", stage, f"chapter-{chapter_no}", status],
+        content={
+            "target_asset_id": str(target.get("id") or ""),
+            "target_asset_path": _display_path(storage.root, target_file),
+            "chapter_no": chapter_no,
+            "standard_id": "golden-opening-gate-v1",
+            "overall_score": overall,
+            "scores": scores,
+            "gate_results": {
+                "status": status,
+                "blocking": bool(blocking_findings),
+                "blocking_issue_count": len(blocking_findings),
+                "issue_count": len(findings),
+                "metrics": metrics,
+                "applies_to_chapters": [1, 2, 3],
+            },
+            "recommendation": "block" if blocking_findings else "pass",
+            "status": status,
+            "blocking": bool(blocking_findings),
+            "blocking_issue_count": len(blocking_findings),
+            "issues": findings,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "source_system": "golden_opening_gate.v1"},
+        references=[_display_path(storage.root, target_file)],
+    )
+    report_path = _write_asset(storage, report)
+    review_issue_paths: list[str] = []
+    if persist_issues:
+        for issue in blocking_findings:
+            created = create_review_issue(
+                storage,
+                {
+                    "issue_type": "quality_gate",
+                    "severity": issue.get("severity", "high"),
+                    "blocking": True,
+                    "message": issue.get("message", ""),
+                    "fix_suggestion": issue.get("fix_suggestion", ""),
+                    "target_asset_id": str(target.get("id") or ""),
+                    "target_asset_type": str(target.get("type") or ""),
+                    "target_asset_path": _display_path(storage.root, target_file),
+                    "review_report_id": report.id,
+                    "review_report_path": report_path,
+                    "project_id": project_id,
+                    "workspace_path": workspace_path,
+                    "evidence_refs": [report_path, _display_path(storage.root, target_file)],
+                    "source_system": "golden_opening_gate.v1",
+                    "source_issue": issue,
+                },
+            )
+            review_issue_paths.append(created["path"])
+    revision_task_path = ""
+    if blocking_findings:
+        revision_task_path = _write_golden_opening_revision_task(
+            storage,
+            report_path=report_path,
+            target_path=_display_path(storage.root, target_file),
+            target_id=str(target.get("id") or ""),
+            findings=blocking_findings,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            review_issue_paths=review_issue_paths,
+        )
+    data = storage.read_json(resolve_path(storage.root, report_path))
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    content["review_issue_paths"] = review_issue_paths
+    content["revision_task_path"] = revision_task_path
+    data["content"] = content
+    data["references"] = _dedupe([*[str(item) for item in data.get("references", []) if str(item).strip()], *review_issue_paths, revision_task_path])
+    storage.write_json(resolve_path(storage.root, report_path), data)
+    return {
+        "path": report_path,
+        "asset": storage.read_json(resolve_path(storage.root, report_path)),
+        "status": status,
+        "blocking": bool(blocking_findings),
+        "review_issues": review_issue_paths,
+        "revision_task_path": revision_task_path,
+    }
+
+
 def _readable_prose_metrics(text: str) -> dict[str, Any]:
     stripped = text.strip()
     paragraphs = [part.strip() for part in stripped.splitlines() if part.strip()] or ([stripped] if stripped else [])
@@ -445,6 +572,61 @@ def _readable_prose_metrics(text: str) -> dict[str, Any]:
         "sentence_count": len(sentences),
         "max_paragraph_chars": max_paragraph,
         "scores": scores,
+    }
+
+
+def _golden_opening_metrics(text: str) -> dict[str, Any]:
+    stripped = text.strip()
+    first_300 = stripped[:300]
+    first_800 = stripped[:800]
+    ending = stripped[-320:]
+    event_terms = ["异常", "危险", "发现", "出现", "失踪", "死", "血", "案件", "证据", "爆炸", "追", "门外", "合同不见", "risk", "evidence", "dead"]
+    pressure_terms = ["必须", "选择", "决定", "代价", "不能", "逼", "若不", "否则", "不甘", "害怕", "decide", "must", "cost"]
+    promise_terms = ["真相", "案件", "目标", "体系", "规则", "嫌疑", "关系", "秘密", "敌人", "承诺", "线索", "promise", "truth"]
+    hook_terms = ["下一章", "然而", "没想到", "忽然", "真相", "门外", "谁", "为何", "新证据", "不能回头", "却", "but", "next", "truth"]
+    abstract_terms = ["复杂", "重要", "某种", "一种", "似乎", "仿佛", "命运", "内心", "事情", "意义", "无法形容", "不可名状"]
+    scores = {
+        "opening_substance": 100 if len(stripped) >= 800 else 45 if len(stripped) >= 500 else 30,
+        "first_300_event_signal": _score_bool(_contains_any(first_300, event_terms)),
+        "protagonist_pressure": _score_bool(_contains_any(first_800, pressure_terms)),
+        "reader_promise": _score_bool(_contains_any(stripped, promise_terms)),
+        "chapter_end_hook": _score_bool(_contains_any(ending, hook_terms)),
+        "opening_specificity": max(0, 100 - _count_terms(first_800, abstract_terms) * 10),
+    }
+    return {
+        "char_count": len(stripped),
+        "first_300": {"char_count": len(first_300), "has_event_signal": scores["first_300_event_signal"] >= 70},
+        "first_800": {"char_count": len(first_800), "has_pressure": scores["protagonist_pressure"] >= 70},
+        "scores": scores,
+    }
+
+
+def _golden_opening_findings(chapter_no: int, metrics: dict[str, Any]) -> list[dict[str, Any]]:
+    scores = metrics.get("scores", {}) if isinstance(metrics.get("scores", {}), dict) else {}
+    findings: list[dict[str, Any]] = []
+    if float(scores.get("opening_substance", 0) or 0) < 70:
+        findings.append(_golden_opening_issue("golden_opening.substance", "high", True, f"chapter {chapter_no} opening is too short to prove a serial opening promise", "expand the opening into a concrete scene with disturbance, choice, cost, and next-chapter pull"))
+    if float(scores.get("first_300_event_signal", 0) or 0) < 70:
+        findings.append(_golden_opening_issue("golden_opening.first_300_event_signal", "high", True, "first 300 characters lack an abnormal event, evidence, danger, or concrete disturbance", "rewrite the first 300 characters around an immediate visible disturbance"))
+    if float(scores.get("protagonist_pressure", 0) or 0) < 70:
+        findings.append(_golden_opening_issue("golden_opening.protagonist_pressure", "high", True, "opening does not force a protagonist choice, cost, or urgent constraint", "add a protagonist decision under pressure with a visible cost"))
+    if float(scores.get("reader_promise", 0) or 0) < 70:
+        findings.append(_golden_opening_issue("golden_opening.reader_promise", "high", True, "opening does not make the book-level reader promise legible", "surface the central question, genre engine, relationship pressure, or rule promise through action"))
+    if float(scores.get("chapter_end_hook", 0) or 0) < 70:
+        findings.append(_golden_opening_issue("golden_opening.chapter_end_hook", "high", True, "chapter ending does not pull the reader into the next chapter", "end with new evidence, unresolved danger, reversal, or a changed objective"))
+    if float(scores.get("opening_specificity", 0) or 0) < 65:
+        findings.append(_golden_opening_issue("golden_opening.specificity", "medium", False, "opening relies too much on abstract summary language", "replace abstract summary with concrete objects, actions, and reactions"))
+    return findings
+
+
+def _golden_opening_issue(dimension: str, severity: str, blocking: bool, message: str, fix: str) -> dict[str, Any]:
+    return {
+        "dimension": dimension,
+        "severity": severity,
+        "blocking": blocking,
+        "message": message,
+        "fix_suggestion": fix,
+        "source_system": "golden_opening_gate.v1",
     }
 
 
@@ -507,6 +689,73 @@ def _count_terms(text: str, terms: list[str]) -> int:
 
 def _score_bool(value: bool) -> int:
     return 100 if value else 35
+
+
+def _chapter_number(target: dict[str, Any]) -> int:
+    content = target.get("content", {}) if isinstance(target.get("content", {}), dict) else {}
+    metadata = target.get("metadata", {}) if isinstance(target.get("metadata", {}), dict) else {}
+    for key in ["chapter", "chapter_no", "chapter_number"]:
+        value = content.get(key, metadata.get(key))
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            continue
+    return 0
+
+
+def _write_golden_opening_revision_task(
+    storage: LocalStorage,
+    *,
+    report_path: str,
+    target_path: str,
+    target_id: str,
+    findings: list[dict[str, Any]],
+    project_id: str,
+    workspace_path: str,
+    review_issue_paths: list[str],
+) -> str:
+    strategy_ids = _dedupe(
+        [
+            "rewrite_opening_pressure",
+            *(
+                ["raise_conflict_cost"]
+                if any("protagonist_pressure" in str(item.get("dimension", "")) for item in findings)
+                else []
+            ),
+            *(
+                ["strengthen_closing_hook"]
+                if any("chapter_end_hook" in str(item.get("dimension", "")) for item in findings)
+                else []
+            ),
+        ]
+    )
+    task = RevisionTask(
+        title="Golden opening revision task",
+        source=report_path,
+        tags=["golden-opening-gate", "revision-task"],
+        content={
+            "task_id": make_id("revision_task", f"golden-opening-{target_id}-{report_path}"),
+            "review_path": report_path,
+            "source_draft_path": target_path,
+            "issue_indexes": list(range(len(findings))),
+            "issues": findings,
+            "status": "open",
+            "created_at": utc_now(),
+            "revision_strategy_plan": {
+                "strategy_ids": strategy_ids,
+                "patch_scope": "opening_300_800_words_and_closing_hook",
+                "required_output_evidence": ["golden_opening_gate_path", "readable_prose_gate_path", "re_review_path"],
+                "risk_controls": ["preserve_premise", "no_raw_reference_text", "bounded_opening_patch", "re_review_required"],
+            },
+            "outputs": {
+                "required_strategy": "rewrite chapters 1-3 opening promise before continuing production",
+                "review_issue_paths": review_issue_paths,
+            },
+        },
+        metadata={"project_id": project_id, "workspace_path": workspace_path, "source_system": "golden_opening_gate.v1"},
+        references=[report_path, target_path, *review_issue_paths],
+    )
+    return _write_asset(storage, task)
 
 
 def _write_readable_prose_revision_task(

@@ -29,8 +29,9 @@ def build_context_governance_runtime_coverage_report(
     does not infer that a path is governed because a feature exists in code.
     """
 
-    pid = str(project_id or "")
-    rows = _scan_runtime_rows(storage, project_id=pid, limit=limit)
+    requested_project_id = str(project_id or "")
+    snapshot_project_id = requested_project_id or "local-system"
+    rows = _scan_runtime_rows(storage, project_id=requested_project_id, limit=limit)
     status_counts: dict[str, int] = {}
     type_counts: dict[str, int] = {}
     for row in rows:
@@ -40,10 +41,10 @@ def build_context_governance_runtime_coverage_report(
     generated_at = utc_now()
     recommendations = _recommendations(rows, blockers)
     report = {
-        "coverage_report_id": make_id("context_governance_runtime_coverage", f"{pid or 'all'}-{utc_now()}"),
+        "coverage_report_id": make_id("context_governance_runtime_coverage", f"{requested_project_id or 'all'}-{utc_now()}"),
         "snapshot_kind": "context_governance_runtime_coverage",
         "contract": "context-governance-runtime-coverage-v1",
-        "project_id": pid,
+        "project_id": snapshot_project_id,
         "snapshot_at": generated_at,
         "generated_at": generated_at,
         "limit": limit,
@@ -79,8 +80,8 @@ def build_context_governance_runtime_coverage_report(
             source="context-builder-runtime-coverage",
             tags=["context-governance", "runtime-coverage", "ops"],
             content=report,
-            metadata={"project_id": pid, "snapshot_kind": "context_governance_runtime_coverage", "read_only": True},
-            references=_dedupe([row["path"] for row in rows[:50]]),
+            metadata={"project_id": snapshot_project_id, "snapshot_kind": "context_governance_runtime_coverage", "read_only": True},
+            references=_dedupe([row["path"] for row in rows[:50]]) if requested_project_id else [],
         )
         data = asset.to_dict()
         errors = validate_common_fields(data)
