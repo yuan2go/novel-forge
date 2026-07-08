@@ -10,6 +10,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment
 from novel_forge.modules.review_issue import persist_issue_candidates
+from novel_forge.modules.runtime_ledger import record_gate_result
 from novel_forge.schemas import (
     EvaluationGate,
     Golden10Report,
@@ -44,6 +45,9 @@ DEFAULT_DIMENSIONS = [
     "canon_consistency",
     "ai_flavor_risk",
 ]
+
+QUALITY_CALIBRATION_READINESS_GATE_KIND = "quality_calibration_readiness_gate"
+QUALITY_CALIBRATION_READINESS_GATE_CONTRACT = "quality-calibration-readiness-gate-v1"
 
 
 def build_quality_rubric_pack(
@@ -628,6 +632,86 @@ def build_quality_calibration_readiness_report(
     return {"status": status, "path": path, "asset": data, "summary": summary}
 
 
+def run_quality_calibration_readiness_gate(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    environment: str = "",
+    persist_readiness: bool = True,
+    limit: int = 1000,
+) -> dict[str, Any]:
+    """Write a read-only hard-stop gate over quality calibration readiness evidence."""
+
+    storage.ensure_layout()
+    readiness = build_quality_calibration_readiness_report(
+        storage,
+        project_id=project_id,
+        persist=persist_readiness,
+        limit=limit,
+    )
+    readiness_asset = readiness.get("asset", {}) if isinstance(readiness.get("asset", {}), dict) else {}
+    content = readiness_asset.get("content", {}) if isinstance(readiness_asset.get("content", {}), dict) else {}
+    summary = content.get("summary", {}) if isinstance(content.get("summary", {}), dict) else {}
+    dimensions = content.get("dimensions", []) if isinstance(content.get("dimensions", []), list) else []
+    readiness_status = str(readiness.get("status") or content.get("status") or "missing")
+    blockers = _quality_calibration_gate_blockers(readiness_status=readiness_status, summary=summary, dimensions=dimensions)
+    production = is_production_environment(environment)
+    status = "failed" if production and blockers else "warning" if blockers else "passed"
+    message = (
+        f"quality calibration readiness gate has {len(blockers)} blocking dimension(s)"
+        if blockers
+        else "quality calibration readiness gate passed"
+    )
+    readiness_path = str(readiness.get("path") or "")
+    evidence_paths = _dedupe([readiness_path, *[str(path) for path in content.get("evidence_paths", []) if str(path or "").strip()]])
+    gate_summary = {
+        "readiness_status": readiness_status,
+        "blocking_count": len(blockers),
+        "missing_dimension_count": int(summary.get("missing_dimension_count") or 0),
+        "external_provider_judge_count": int(summary.get("external_provider_judge_count") or 0),
+        "fixture_or_mock_provider_judge_count": int(summary.get("fixture_or_mock_provider_judge_count") or 0),
+        "human_annotation_count": int(summary.get("human_annotation_count") or 0),
+        "golden_set_count": int(summary.get("golden_set_count") or 0),
+        "passed_provider_calibration_count": int(summary.get("passed_provider_calibration_count") or 0),
+        "failed_provider_calibration_count": int(summary.get("failed_provider_calibration_count") or 0),
+        "production": production,
+        "mutation_applied": False,
+        "provider_call_executed": False,
+        "chapter_acceptance_executed": False,
+    }
+    gate = record_gate_result(
+        storage,
+        gate_kind=QUALITY_CALIBRATION_READINESS_GATE_KIND,
+        status=status,
+        target_paths=evidence_paths,
+        result={
+            "contract": QUALITY_CALIBRATION_READINESS_GATE_CONTRACT,
+            "project_id": project_id,
+            "environment": environment,
+            "summary": gate_summary,
+            "readiness_report_path": readiness_path,
+            "blocking_dimensions": blockers,
+            "operator_action": _quality_calibration_gate_operator_action(status, production, blockers),
+            "mutation_policy": "read-only: no provider call, annotation creation, calibration repair, chapter acceptance, or quality evidence mutation",
+        },
+        project_id=project_id,
+        message=message,
+        blocking=production and bool(blockers),
+    )
+    return {
+        "status": status,
+        "production": production,
+        "blocking": production and bool(blockers),
+        "message": message,
+        "summary": gate_summary,
+        "blocking_dimensions": blockers,
+        "readiness_report": readiness,
+        "readiness_report_path": readiness_path,
+        "gate_result": gate,
+        "gate_result_path": str(gate.get("path") or ""),
+    }
+
+
 def _load_rubric(storage: LocalStorage, rubric_path: str | Path) -> dict[str, Any]:
     if rubric_path:
         return storage.read_json(resolve_path(storage.root, rubric_path))
@@ -1005,6 +1089,73 @@ def _quality_calibration_recommendations(status: str, summary: dict[str, Any]) -
     if summary.get("failed_provider_calibration_count") and not summary.get("passed_provider_calibration_count"):
         actions.append("Repair provider judge calibration before final unified acceptance.")
     return actions or ["Create quality calibration evidence before final unified acceptance."]
+
+
+def _quality_calibration_gate_blockers(*, readiness_status: str, summary: dict[str, Any], dimensions: list[Any]) -> list[dict[str, Any]]:
+    blockers: list[dict[str, Any]] = []
+    if readiness_status == "passed":
+        return blockers
+    if readiness_status == "missing":
+        blockers.append(
+            {
+                "code": "quality_calibration_readiness_missing",
+                "severity": "critical",
+                "dimension": "quality_calibration_readiness",
+                "message": "quality calibration readiness has no provider/human/golden-set evidence",
+                "operator_action": "create rubric, quality suite, external provider judge proof, human annotation, golden set, and provider calibration report",
+            }
+        )
+    elif readiness_status == "blocked":
+        blockers.append(
+            {
+                "code": "quality_calibration_readiness_blocked",
+                "severity": "critical",
+                "dimension": "provider_judge_calibration",
+                "message": "provider judge calibration has failed or blocked evidence",
+                "operator_action": "repair or rerun provider judge calibration before production final acceptance",
+            }
+        )
+    missing_dimensions = summary.get("missing_dimensions", []) if isinstance(summary.get("missing_dimensions", []), list) else []
+    for dimension in missing_dimensions:
+        blockers.append(
+            {
+                "code": "quality_calibration_dimension_missing",
+                "severity": "high",
+                "dimension": str(dimension),
+                "message": f"required quality calibration dimension is missing: {dimension}",
+                "operator_action": _quality_calibration_dimension_action(str(dimension), dimensions),
+            }
+        )
+    if summary.get("fixture_or_mock_provider_judge_count") and not summary.get("external_provider_judge_count"):
+        blockers.append(
+            {
+                "code": "quality_calibration_fixture_provider_only",
+                "severity": "high",
+                "dimension": "external_provider_judge_proof",
+                "message": "fixture/mock provider judge evidence cannot satisfy production quality calibration",
+                "operator_action": "run provider quality judge with external provider proof and operator-approved route evidence",
+            }
+        )
+    return blockers
+
+
+def _quality_calibration_dimension_action(dimension: str, dimensions: list[Any]) -> str:
+    for row in dimensions:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("dimension") or "") == dimension:
+            return str(row.get("operator_action") or "")
+    return "complete this quality calibration dimension before final unified acceptance"
+
+
+def _quality_calibration_gate_operator_action(status: str, production: bool, blockers: list[dict[str, Any]]) -> str:
+    if status == "passed":
+        return "quality calibration readiness gate passed for final unified acceptance"
+    if production:
+        return "stop production final acceptance until quality calibration blockers are resolved"
+    if blockers:
+        return "review quality calibration blockers before promoting this project to production final acceptance"
+    return "review quality calibration gate status"
 
 
 def _quality_calibration_operator_action(status: str, summary: dict[str, Any]) -> str:

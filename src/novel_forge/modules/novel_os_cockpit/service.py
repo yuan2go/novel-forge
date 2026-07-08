@@ -32,6 +32,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     chapter_runtime_growth_threshold_gate = _latest_gate_result(rows, "chapter_runtime_growth_threshold")
     unified_acceptance_preflight = _latest_unified_acceptance_preflight_manifest(rows)
     quality_calibration_readiness = _quality_calibration_readiness(rows)
+    quality_calibration_readiness_gate = _latest_gate_result(rows, "quality_calibration_readiness_gate")
     production_console = _production_control_console(
         rows,
         blocking_issues,
@@ -48,6 +49,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         chapter_runtime_growth_threshold_gate,
         unified_acceptance_preflight,
         quality_calibration_readiness,
+        quality_calibration_readiness_gate,
     )
     content = {
         "project_id": project_id,
@@ -85,6 +87,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "unified_acceptance_preflight_status": unified_acceptance_preflight["status"],
             "unified_acceptance_preflight_missing_count": unified_acceptance_preflight["missing_or_deferred_final_evidence_count"],
             "quality_calibration_readiness_status": quality_calibration_readiness["status"],
+            "quality_calibration_readiness_gate_status": quality_calibration_readiness_gate["status"],
             "quality_calibration_missing_dimension_count": quality_calibration_readiness["summary"]["missing_dimension_count"],
             "quality_calibration_external_provider_judge_count": quality_calibration_readiness["summary"]["external_provider_judge_count"],
         },
@@ -117,6 +120,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
             "unified_acceptance_preflight": unified_acceptance_preflight,
             "quality_calibration_readiness": quality_calibration_readiness,
+            "quality_calibration_readiness_gate": quality_calibration_readiness_gate,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -137,6 +141,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
             "unified_acceptance_preflight": unified_acceptance_preflight,
             "quality_calibration_readiness": quality_calibration_readiness,
+            "quality_calibration_readiness_gate": quality_calibration_readiness_gate,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -366,6 +371,7 @@ def _latest_gate_result(rows: list[dict[str, Any]], gate_kind: str) -> dict[str,
         "message": str(content.get("message") or ""),
         "coverage_report_path": str(result.get("coverage_report_path") or ""),
         "report_path": str(result.get("report_path") or ""),
+        "readiness_report_path": str(result.get("readiness_report_path") or ""),
         "summary": result.get("summary", {}) if isinstance(result.get("summary", {}), dict) else {},
     }
 
@@ -1013,6 +1019,7 @@ def _production_control_console(
     chapter_runtime_growth_threshold_gate: dict[str, Any],
     unified_acceptance_preflight: dict[str, Any],
     quality_calibration_readiness: dict[str, Any],
+    quality_calibration_readiness_gate: dict[str, Any],
 ) -> dict[str, Any]:
     chapter_queue = _latest_assets(rows, "chapter_plan", limit=20)
     draft_rows = _latest_assets(rows, "draft_chapter", limit=20)
@@ -1034,6 +1041,7 @@ def _production_control_console(
         "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
         "unified_acceptance_preflight": unified_acceptance_preflight["status"],
         "quality_calibration": quality_calibration_readiness["status"],
+        "quality_calibration_gate": quality_calibration_readiness_gate["status"],
         "release": release_status,
         "publish": _latest_status(rows, asset_type="publish_gate_report"),
     }
@@ -1061,6 +1069,7 @@ def _production_control_console(
             "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
             "unified_acceptance_preflight": unified_acceptance_preflight["status"],
             "quality_calibration": quality_calibration_readiness["status"],
+            "quality_calibration_gate": quality_calibration_readiness_gate["status"],
             "release": release_status,
         },
         "feedback_approval_queue": feedback_proposals,
@@ -1086,6 +1095,7 @@ def _production_control_console(
         "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
         "unified_acceptance_preflight": unified_acceptance_preflight,
         "quality_calibration_readiness": quality_calibration_readiness,
+        "quality_calibration_readiness_gate": quality_calibration_readiness_gate,
     }
 
 

@@ -7,7 +7,14 @@ from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.chapter_economy import create_chapter_economy_report
 from novel_forge.modules.character_pressure import create_character_pressure_reports
 from novel_forge.modules.mobile_reading import create_mobile_reading_report
-from novel_forge.modules.quality_eval import build_quality_calibration_readiness_report, build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
+from novel_forge.modules.quality_eval import (
+    build_quality_calibration_readiness_report,
+    build_quality_rubric_pack,
+    run_provider_quality_judge,
+    run_quality_calibration_readiness_gate,
+    run_quality_gate,
+    run_quality_suite,
+)
 from novel_forge.storage.local import LocalStorage
 
 
@@ -169,6 +176,24 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 LocalStorage(app_settings.root),
                 project_id=project_id or "",
                 persist=persist,
+                limit=limit,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/quality/calibration-readiness-gate")
+    def quality_calibration_readiness_gate_endpoint(
+        project_id: str | None = None,
+        environment: str = "",
+        persist_readiness: bool = True,
+        limit: int = Query(default=1000, ge=1, le=5000),
+    ) -> dict:
+        try:
+            return run_quality_calibration_readiness_gate(
+                LocalStorage(app_settings.root),
+                project_id=project_id or "",
+                environment=environment,
+                persist_readiness=persist_readiness,
                 limit=limit,
             )
         except Exception as exc:

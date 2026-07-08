@@ -9,7 +9,7 @@ from novel_forge.modules.novel_os_cockpit import build_multi_book_daily_producti
 from novel_forge.modules.permission_center import build_approval_request_caller_readiness_report, create_approval_request, resolve_approval_request
 from novel_forge.modules.context_builder import run_context_governance_coverage_gate
 from novel_forge.modules.production_governance import build_production_governance_evidence_drift_report, run_production_governance_drift_gate
-from novel_forge.modules.runtime_ledger import record_model_call_log
+from novel_forge.modules.runtime_ledger import record_gate_result, record_model_call_log
 from novel_forge.modules.chapter_production_bus.service import V1_SEQUENCE_REQUIRED_OUTPUTS
 from novel_forge.schemas import BaseAsset, ChapterPlan, ContextBundle, DraftChapter, ProjectMetricSnapshot
 from novel_forge.storage.local import LocalStorage
@@ -188,6 +188,47 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["quality"]["quality_calibration_readiness_status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["quality_calibration_missing_dimension_count"], 4)
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["quality_calibration"], "review_required")
+
+    def test_project_cockpit_surfaces_quality_calibration_readiness_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            readiness_path = storage.write_asset_auto(
+                ProjectMetricSnapshot(
+                    title="Quality calibration readiness",
+                    content={
+                        "snapshot_kind": "quality_calibration_readiness",
+                        "contract": "quality-calibration-readiness-v1",
+                        "status": "missing",
+                        "summary": {"missing_dimension_count": 7, "external_provider_judge_count": 0},
+                    },
+                    metadata={"project_id": "book-a", "snapshot_kind": "quality_calibration_readiness"},
+                )
+            )
+            record_gate_result(
+                storage,
+                gate_kind="quality_calibration_readiness_gate",
+                status="failed",
+                target_paths=[str(readiness_path)],
+                result={
+                    "contract": "quality-calibration-readiness-gate-v1",
+                    "readiness_report_path": str(readiness_path),
+                    "summary": {"readiness_status": "missing", "blocking_count": 1},
+                    "blocking_dimensions": [{"dimension": "quality_calibration_readiness"}],
+                },
+                project_id="book-a",
+                message="quality calibration readiness gate has 1 blocking dimension(s)",
+                blocking=True,
+            )
+
+            snapshot = build_project_cockpit_snapshot(storage, project_id="book-a")
+
+            gate = snapshot["asset"]["content"]["runtime_governance"]["quality_calibration_readiness_gate"]
+            self.assertEqual(gate["status"], "failed")
+            self.assertEqual(gate["readiness_report_path"], str(readiness_path))
+            self.assertTrue(gate["blocking"])
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["quality_calibration_readiness_gate_status"], "failed")
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["quality_calibration_gate"], "failed")
 
     def test_project_cockpit_snapshot_is_schema_backed(self):
         with tempfile.TemporaryDirectory() as tmp:

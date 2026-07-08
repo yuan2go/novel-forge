@@ -11,7 +11,14 @@ from novel_forge.modules.evaluation_center import (
     calibrate_provider_judge,
     create_human_annotation_asset,
 )
-from novel_forge.modules.quality_eval import build_quality_calibration_readiness_report, build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
+from novel_forge.modules.quality_eval import (
+    build_quality_calibration_readiness_report,
+    build_quality_rubric_pack,
+    run_provider_quality_judge,
+    run_quality_calibration_readiness_gate,
+    run_quality_gate,
+    run_quality_suite,
+)
 from novel_forge.schemas import DraftChapter, ModelJudgeResult
 from novel_forge.storage.local import LocalStorage
 
@@ -400,6 +407,83 @@ class QualityEvalV2Tests(unittest.TestCase):
             self.assertEqual(report["summary"]["passed_provider_calibration_count"], 1)
             self.assertEqual(report["summary"]["missing_dimension_count"], 0)
             self.assertTrue(report["path"])
+
+    def test_quality_calibration_readiness_gate_fails_closed_in_production_when_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+
+            gate = run_quality_calibration_readiness_gate(storage, project_id="p-missing", environment="production")
+
+            self.assertEqual(gate["status"], "failed")
+            self.assertTrue(gate["blocking"])
+            self.assertEqual(gate["summary"]["readiness_status"], "missing")
+            self.assertFalse(gate["summary"]["provider_call_executed"])
+            self.assertFalse(gate["summary"]["chapter_acceptance_executed"])
+            self.assertEqual(gate["gate_result"]["asset"]["content"]["gate_kind"], "quality_calibration_readiness_gate")
+            self.assertEqual(gate["gate_result"]["asset"]["content"]["status"], "failed")
+            self.assertTrue(gate["gate_result"]["asset"]["content"]["blocking"])
+
+    def test_quality_calibration_readiness_gate_warns_locally_when_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+
+            gate = run_quality_calibration_readiness_gate(storage, project_id="p-missing", environment="local")
+
+            self.assertEqual(gate["status"], "warning")
+            self.assertFalse(gate["blocking"])
+            self.assertEqual(gate["summary"]["readiness_status"], "missing")
+            self.assertEqual(gate["gate_result"]["asset"]["content"]["status"], "warning")
+
+    def test_quality_calibration_readiness_gate_passes_with_external_human_golden_and_calibration(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            rubric = build_quality_rubric_pack(storage, genre_id="mystery", platform_id="local")
+            draft_path = _ready_draft(storage, project_id="p-ready")
+            run_quality_suite(storage, suite_type="opening_3", target_paths=[str(draft_path)], rubric_path=rubric["path"])
+            external_judge_path = _write_external_model_judge(storage, project_id="p-ready")
+            annotation = create_human_annotation_asset(
+                storage,
+                target_asset_path=str(draft_path),
+                annotator="chief-editor",
+                scores={"hook_strength": 0.9, "style_adherence": 0.86},
+                verdict="pass",
+                comment="calibration-ready human annotation",
+                project_id="p-ready",
+            )
+            golden = build_golden_set(
+                storage,
+                name="Readiness Golden Set",
+                case_specs=[
+                    {
+                        "target_asset_path": str(draft_path),
+                        "expected_scores": {"hook_strength": 0.9, "style_adherence": 0.86},
+                        "annotation_path": annotation["path"],
+                    }
+                ],
+                project_id="p-ready",
+            )
+            calibrate_provider_judge(
+                storage,
+                golden_set_path=golden["path"],
+                provider_judge_results=[
+                    {
+                        "target_asset_path": str(draft_path),
+                        "scores": {"hook_strength": 0.9, "style_adherence": 0.86},
+                        "provider": "external-provider",
+                        "model_judge_path": str(external_judge_path),
+                    }
+                ],
+                tolerance=0.08,
+                project_id="p-ready",
+            )
+
+            gate = run_quality_calibration_readiness_gate(storage, project_id="p-ready", environment="production")
+
+            self.assertEqual(gate["status"], "passed")
+            self.assertFalse(gate["blocking"])
+            self.assertEqual(gate["summary"]["readiness_status"], "passed")
+            self.assertEqual(gate["summary"]["external_provider_judge_count"], 1)
+            self.assertEqual(gate["gate_result"]["asset"]["content"]["status"], "passed")
 
 
 def _production_rubric(storage: LocalStorage) -> dict:
