@@ -33,6 +33,8 @@ SOURCE_GOVERNANCE_TESTS = [
     "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_runtime_policy_records_selector_governance_binding_evidence",
     "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_runtime_policy_blocks_context_without_source_governance_runtime_gate",
     "tests.unit.test_agent_scheduler.AgentSchedulerTests.test_build_context_scheduler_result_exposes_source_governance_gate_evidence",
+    "tests.unit.test_agent_scheduler.AgentSchedulerTests.test_project_scoped_agent_center_infers_source_gate_scope_from_linked_output",
+    "tests.unit.test_novel_os_cockpit.NovelOsCockpitTests.test_project_cockpit_infers_source_gate_scope_from_linked_output",
     "tests.unit.test_source_governance_regression_script.SourceGovernanceRegressionScriptTests",
 ]
 
@@ -51,6 +53,7 @@ def _commands() -> list[list[str]]:
             "src/novel_forge/modules/context_builder",
             "src/novel_forge/modules/workflow_nodes",
             "src/novel_forge/modules/agent_scheduler",
+            "src/novel_forge/modules/runtime_project_scope.py",
             "src/novel_forge/api/routers/handoffs.py",
             "src/novel_forge/api/services/product.py",
             "tests/unit/test_source_intake.py",

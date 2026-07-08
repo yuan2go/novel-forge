@@ -11,7 +11,7 @@ from novel_forge.modules.context_builder import run_context_governance_coverage_
 from novel_forge.modules.production_governance import build_production_governance_evidence_drift_report, run_production_governance_drift_gate
 from novel_forge.modules.runtime_ledger import record_model_call_log
 from novel_forge.modules.chapter_production_bus.service import V1_SEQUENCE_REQUIRED_OUTPUTS
-from novel_forge.schemas import BaseAsset, ChapterPlan, DraftChapter, ProjectMetricSnapshot
+from novel_forge.schemas import BaseAsset, ChapterPlan, ContextBundle, DraftChapter, ProjectMetricSnapshot
 from novel_forge.storage.local import LocalStorage
 
 
@@ -51,6 +51,84 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(evidence["status"], "warning")
             self.assertEqual(evidence["latest"]["status"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["source_governance_runtime_evidence_status"], "warning")
+
+    def test_project_cockpit_infers_source_gate_scope_from_linked_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            context_path = storage.write_asset_auto(
+                ContextBundle(
+                    title="Book A context bundle",
+                    content={"project_id": "book-a", "bundle": "scope fixture"},
+                    metadata={"project_id": "book-a"},
+                )
+            )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="source-governance-runtime-gate-book-a",
+                    type="gate_result",
+                    title="Source gate fixture",
+                    content={"gate_kind": "source_governance_runtime", "status": "passed"},
+                    metadata={"project_id": "book-a"},
+                )
+            )
+            run_path = storage.write_asset_auto(
+                BaseAsset(
+                    id="sparse-agent-run-source-gate",
+                    type="agent_run",
+                    title="Sparse agent run with linked context evidence",
+                    content={
+                        "run_id": "sparse-agent-run-source-gate",
+                        "agent_type": "context",
+                        "operation": "build-context-bundle",
+                        "status": "succeeded",
+                        "input_assets": [],
+                        "output_assets": [{"path": str(context_path.relative_to(storage.root)), "type": "context_bundle"}],
+                        "evidence": {
+                            "source_governance_runtime_gate": {
+                                "status": "passed",
+                                "gate_result_path": "data/runs/source-governance-runtime-gate-book-a.json",
+                                "summary": {"blocking_count": 0},
+                            }
+                        },
+                    },
+                    metadata={},
+                )
+            )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="sparse-checkpoint-source-gate",
+                    type="agent_checkpoint",
+                    title="Sparse checkpoint with linked run source gate",
+                    content={
+                        "agent_run_id": "sparse-agent-run-source-gate",
+                        "agent_run_path": str(run_path.relative_to(storage.root)),
+                        "checkpoint_id": "sparse-checkpoint-source-gate",
+                        "status": "succeeded",
+                        "state": {
+                            "operation": "build-context-bundle",
+                            "source_governance_runtime_gate": {
+                                "status": "passed",
+                                "gate_result_path": "data/runs/source-governance-runtime-gate-book-a.json",
+                                "summary": {"blocking_count": 0},
+                            },
+                        },
+                    },
+                    metadata={},
+                )
+            )
+
+            book_a = build_project_cockpit_snapshot(storage, project_id="book-a")
+            book_b = build_project_cockpit_snapshot(storage, project_id="book-b")
+
+            self.assertEqual(book_a["asset"]["content"]["quality"]["source_governance_runtime_evidence_status"], "passed")
+            self.assertEqual(book_a["asset"]["content"]["quality"]["source_governance_runtime_evidence_count"], 2)
+            self.assertEqual(
+                {row["source_type"] for row in book_a["asset"]["content"]["cockpit"]["source_governance_runtime_evidence"]["rows"]},
+                {"agent_run", "agent_checkpoint"},
+            )
+            self.assertEqual(book_b["asset"]["content"]["quality"]["source_governance_runtime_evidence_status"], "missing")
+            self.assertEqual(book_b["asset"]["content"]["quality"]["source_governance_runtime_evidence_count"], 0)
 
     def test_project_cockpit_snapshot_is_schema_backed(self):
         with tempfile.TemporaryDirectory() as tmp:

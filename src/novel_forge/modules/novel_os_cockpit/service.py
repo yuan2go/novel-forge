@@ -6,6 +6,7 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.chapter_production_bus.service import V1_SEQUENCE_REQUIRED_OUTPUTS
 from novel_forge.modules.review_issue import list_review_issues
+from novel_forge.modules.runtime_project_scope import asset_matches_project_scope
 from novel_forge.schemas import ProjectMetricSnapshot, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -26,7 +27,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     approval_request_caller_readiness = _approval_request_caller_readiness(rows)
     source_guarded_apply_readiness = _source_guarded_apply_readiness(rows)
     source_governance_runtime_gate = _latest_gate_result(rows, "source_governance_runtime")
-    source_governance_runtime_evidence = _source_governance_runtime_execution_evidence(rows)
+    source_governance_runtime_evidence = _source_governance_runtime_execution_evidence(storage, rows, project_id=project_id)
     production_console = _production_control_console(
         rows,
         blocking_issues,
@@ -491,10 +492,12 @@ def _workflow_governance_operator_action(status: str) -> str:
     return "continue governed workflow execution"
 
 
-def _source_governance_runtime_execution_evidence(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _source_governance_runtime_execution_evidence(storage: LocalStorage, rows: list[dict[str, Any]], *, project_id: str) -> dict[str, Any]:
     evidence_rows: list[dict[str, Any]] = []
     for row in rows:
         asset_type = row.get("type")
+        if asset_type in {"agent_run", "agent_checkpoint", "node_run"} and not asset_matches_project_scope(storage, row, project_id):
+            continue
         content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
         if asset_type == "agent_run":
             evidence = content.get("evidence", {}) if isinstance(content.get("evidence", {}), dict) else {}

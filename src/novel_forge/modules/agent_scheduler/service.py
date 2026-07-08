@@ -44,6 +44,7 @@ from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.review_issue import review_issue_to_revision_task_candidate
+from novel_forge.modules.runtime_project_scope import asset_matches_project_scope
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, release_scheduler_lease, scheduler_lease_status
 from novel_forge.schemas import AgentDispatchQueue, AgentTask, BaseAsset, RevisionTask, validate_common_fields
 from novel_forge.storage.local import LocalStorage
@@ -914,7 +915,18 @@ def agent_center_snapshot(
     revision_task_rows = [_revision_task_row(row) for row in revision_tasks]
     checkpoint_rows = [_agent_checkpoint_row(row) for row in checkpoints]
     gate_rows = [_agent_gate_row(row) for row in gates]
-    source_governance_runtime_evidence = _agent_source_governance_runtime_evidence_rows(runs, checkpoints)
+    source_runtime_runs = runs
+    source_runtime_checkpoints = checkpoints
+    if project_id:
+        source_runtime_runs = _merge_asset_rows(
+            source_runtime_runs,
+            _agent_center_source_governance_project_assets(storage, "agent_run", project_id=project_id, limit=limit),
+        )
+        source_runtime_checkpoints = _merge_asset_rows(
+            source_runtime_checkpoints,
+            _agent_center_source_governance_project_assets(storage, "agent_checkpoint", project_id=project_id, limit=limit),
+        )
+    source_governance_runtime_evidence = _agent_source_governance_runtime_evidence_rows(source_runtime_runs, source_runtime_checkpoints)
     governance_dead_letters = _agent_center_governance_dead_letters(blocked_queue, runs, checkpoints, gates)
     budget_summary = _budget_coverage(budgets)
     rollback_rows = [_agent_asset_compact(row) for row in rollbacks]
@@ -3789,6 +3801,41 @@ def _merge_queue_rows(primary: list[dict[str, Any]], extra: list[dict[str, Any]]
         seen.add(key)
         rows.append(row)
     return rows
+
+
+def _agent_center_source_governance_project_assets(
+    storage: LocalStorage,
+    asset_type: str,
+    *,
+    project_id: str,
+    limit: int,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in reversed(storage.list_json("runs")):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != asset_type:
+            continue
+        if not _agent_asset_has_source_governance_runtime_gate(data):
+            continue
+        if not asset_matches_project_scope(storage, data, project_id):
+            continue
+        data["_path"] = _display_path(storage.root, path)
+        rows.append(data)
+        if len(rows) >= max(1, int(limit or 300)):
+            break
+    return rows
+
+
+def _agent_asset_has_source_governance_runtime_gate(data: dict[str, Any]) -> bool:
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    evidence = content.get("evidence", {}) if isinstance(content.get("evidence", {}), dict) else {}
+    if isinstance(evidence.get("source_governance_runtime_gate"), dict):
+        return True
+    state = content.get("state", {}) if isinstance(content.get("state", {}), dict) else {}
+    if isinstance(state.get("source_governance_runtime_gate"), dict):
+        return True
+    service_result = state.get("service_result", {}) if isinstance(state.get("service_result", {}), dict) else {}
+    return isinstance(service_result.get("source_governance_runtime_gate"), dict)
 
 
 def _agent_center_category_assets(storage: LocalStorage, category: str, asset_types: set[str], *, project_id: str | None, limit: int) -> list[dict[str, Any]]:

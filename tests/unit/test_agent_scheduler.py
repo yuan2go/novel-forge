@@ -26,7 +26,7 @@ from novel_forge.modules.loop_kernel import run_loop
 from novel_forge.modules.review_issue import create_review_issue
 from novel_forge.modules.runtime_ledger import record_gate_result
 from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs
-from novel_forge.schemas import ChapterPlan, ContextBundle, DraftChapter, PublishGateReport
+from novel_forge.schemas import BaseAsset, ChapterPlan, ContextBundle, DraftChapter, PublishGateReport
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import generation_context_policy
 from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
@@ -143,6 +143,80 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertGreaterEqual(center["summary"]["source_governance_runtime_evidence_count"], 1)
             self.assertEqual(source_rows[0]["gate_result_path"], "data/runs/source-governance-runtime-gate.json")
             self.assertTrue(drawer_rows)
+
+    def test_project_scoped_agent_center_infers_source_gate_scope_from_linked_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            context_path = storage.write_asset_auto(
+                ContextBundle(
+                    title="Book A context bundle",
+                    content={"project_id": "book-a", "bundle": "scope fixture"},
+                    metadata={"project_id": "book-a"},
+                )
+            )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="source-governance-runtime-gate-book-a",
+                    title="Source gate fixture",
+                    type="gate_result",
+                    content={"gate_kind": "source_governance_runtime", "status": "passed"},
+                    metadata={"project_id": "book-a"},
+                )
+            )
+            run_path = storage.write_asset_auto(
+                BaseAsset(
+                    id="sparse-agent-run-source-gate",
+                    title="Sparse agent run with source gate",
+                    type="agent_run",
+                    content={
+                        "run_id": "sparse-agent-run-source-gate",
+                        "agent_type": "context",
+                        "operation": "build-context-bundle",
+                        "status": "succeeded",
+                        "input_assets": [],
+                        "output_assets": [{"path": str(context_path.relative_to(storage.root)), "type": "context_bundle"}],
+                        "evidence": {
+                            "source_governance_runtime_gate": {
+                                "status": "passed",
+                                "gate_result_path": "data/runs/source-governance-runtime-gate-book-a.json",
+                                "summary": {"blocking_count": 0},
+                            }
+                        },
+                    },
+                    metadata={},
+                )
+            )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="sparse-checkpoint-source-gate",
+                    title="Sparse checkpoint with linked run source gate",
+                    type="agent_checkpoint",
+                    content={
+                        "agent_run_id": "sparse-agent-run-source-gate",
+                        "agent_run_path": str(run_path.relative_to(storage.root)),
+                        "checkpoint_id": "sparse-checkpoint-source-gate",
+                        "status": "succeeded",
+                        "state": {
+                            "operation": "build-context-bundle",
+                            "source_governance_runtime_gate": {
+                                "status": "passed",
+                                "gate_result_path": "data/runs/source-governance-runtime-gate-book-a.json",
+                                "summary": {"blocking_count": 0},
+                            },
+                        },
+                    },
+                    metadata={},
+                )
+            )
+
+            book_a = agent_center_snapshot(storage, project_id="book-a")
+            book_b = agent_center_snapshot(storage, project_id="book-b")
+
+            self.assertEqual(book_a["summary"]["source_governance_runtime_evidence_count"], 2)
+            self.assertEqual({row["source_type"] for row in book_a["source_governance_runtime_evidence"]}, {"agent_run", "agent_checkpoint"})
+            self.assertEqual({row["gate_result_path"] for row in book_a["source_governance_runtime_evidence"]}, {"data/runs/source-governance-runtime-gate-book-a.json"})
+            self.assertEqual(book_b["summary"]["source_governance_runtime_evidence_count"], 0)
 
     def test_agent_center_snapshot_exposes_evidence_cockpit_fields(self):
         with tempfile.TemporaryDirectory() as tmp:
