@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.agent_runs import list_agent_runs, record_agent_budget, record_agent_checkpoint, record_agent_gate, start_agent_run
+from novel_forge.modules.agent_runs import list_agent_runs, record_agent_budget, record_agent_checkpoint, record_agent_gate, start_agent_run, update_agent_run_status
 from novel_forge.modules.agent_scheduler import (
     agent_center_snapshot,
     dispatch_revision_task_from_issue,
@@ -129,6 +129,61 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(snapshot["budget_burn"]["token_used"], 120)
             self.assertTrue(snapshot["gate_timeline"])
             self.assertIn("context_governance_runtime_coverage", {row["gate_kind"] for row in snapshot["gate_timeline"]})
+
+    def test_agent_center_snapshot_exposes_agent_event_summary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            run = start_agent_run(
+                storage,
+                agent_key="draft",
+                operation="draft",
+                status="running",
+                agent_event_policy={"mode": "success_summary"},
+                evidence={"trace": {"trace_id": "trace-agent-event-summary", "span_id": "span-agent-event-summary"}},
+            )
+            update_agent_run_status(storage, run["path"], status="succeeded", event_type="agent_run.succeeded", message="summary fixture done")
+
+            snapshot = agent_center_snapshot(storage)
+
+            self.assertEqual(snapshot["summary"]["agent_event_summary_count"], 1)
+            self.assertEqual(snapshot["summary"]["agent_event_skipped_count"], 2)
+            self.assertEqual(snapshot["agent_event_summaries"][0]["policy_mode"], "success_summary")
+            self.assertEqual(set(snapshot["agent_event_summaries"][0]["skipped_event_types"]), {"agent_run.started", "agent_run.succeeded"})
+            drawer_rows = [row for row in snapshot["evidence_drawer"] if row["type"] == "agent_event_summary"]
+            self.assertTrue(drawer_rows)
+            self.assertIn("compacted AgentRun", drawer_rows[0]["summary"])
+
+    def test_agent_center_api_surfaces_agent_event_summary(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            storage = LocalStorage(root)
+            storage.ensure_layout()
+            run = start_agent_run(
+                storage,
+                agent_key="draft",
+                operation="draft",
+                status="running",
+                agent_event_policy={"mode": "success_summary"},
+                evidence={"trace": {"trace_id": "trace-agent-event-summary-api", "span_id": "span-agent-event-summary-api"}},
+            )
+            update_agent_run_status(storage, run["path"], status="succeeded", event_type="agent_run.succeeded", message="summary fixture done")
+            client = TestClient(create_app(IndustrialSettings(root=root)))
+
+            response = client.get("/product/agents/center")
+
+            self.assertEqual(response.status_code, 200)
+            body = response.json()
+            self.assertEqual(body["summary"]["agent_event_summary_count"], 1)
+            self.assertEqual(body["summary"]["agent_event_skipped_count"], 2)
+            self.assertEqual(body["agent_event_summaries"][0]["policy_mode"], "success_summary")
 
     def test_release_package_runner_attaches_production_governance_drift_gate(self):
         with tempfile.TemporaryDirectory() as tmp:

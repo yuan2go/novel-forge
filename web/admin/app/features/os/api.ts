@@ -132,6 +132,7 @@ export type AgentCenterSnapshot = {
   rollback_rehearsals?: Array<Record<string, unknown>>;
   dead_letter_repairs?: Array<Record<string, unknown>>;
   agent_dags?: Array<Record<string, unknown>>;
+  agent_event_summaries?: Array<Record<string, unknown>>;
   recommendations?: string[];
 };
 

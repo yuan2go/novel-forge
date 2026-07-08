@@ -901,6 +901,7 @@ def agent_center_snapshot(
     blocked_queue = [row for row in queue if str(row.get("status", "")) in {"waiting_human", "dead_letter", "retry_scheduled", "cancelled"}]
     task_rows = [_agent_task_row(row) for row in tasks]
     run_rows = [_agent_run_summary(row) for row in runs]
+    agent_event_summary_rows = _agent_event_summary_rows(run_rows)
     loop_rows = [_loop_run_row(row) for row in loops]
     context_rows = [_context_bundle_row(row) for row in contexts]
     review_issue_rows = [_review_issue_row(row) for row in review_issues]
@@ -964,6 +965,8 @@ def agent_center_snapshot(
             "governance_repair_required_count": governance_repair_required_count,
             "governance_repair_confirmed_count": governance_repair_confirmed_count,
             "governance_repair_missing_review_count": governance_repair_missing_review_count,
+            "agent_event_summary_count": len(agent_event_summary_rows),
+            "agent_event_skipped_count": sum(int(row.get("skipped_event_count", 0) or 0) for row in agent_event_summary_rows),
             "queue_by_status": by_status,
         },
         "readiness_checks": readiness_checks,
@@ -988,7 +991,8 @@ def agent_center_snapshot(
         "operation_coverage_full": operation_coverage_full,
         "hard_stop_dashboard": hard_stop_dashboard,
         "sla_duration": _agent_sla_duration_rows(run_rows),
-        "evidence_drawer": _agent_evidence_drawer(events, checkpoints, gates, budgets, failures, rollbacks, tasks, loops, contexts, review_issues, revision_tasks, handoffs, dead_letter_repairs)[:220],
+        "agent_event_summaries": agent_event_summary_rows[:120],
+        "evidence_drawer": _agent_evidence_drawer(events, checkpoints, gates, budgets, failures, rollbacks, tasks, loops, contexts, review_issues, revision_tasks, handoffs, dead_letter_repairs, agent_event_summary_rows)[:220],
         "operation_coverage": contracts,
         "blocked_queue": blocked_queue[:80],
         "runs": run_rows[:80],
@@ -3814,6 +3818,8 @@ def _agent_dead_letter_repair_row(row: dict[str, Any]) -> dict[str, Any]:
 def _agent_run_summary(row: dict[str, Any]) -> dict[str, Any]:
     content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
     metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+    event_policy = content.get("agent_event_policy", {}) if isinstance(content.get("agent_event_policy", {}), dict) else {}
+    event_summary = content.get("agent_event_summary", {}) if isinstance(content.get("agent_event_summary", {}), dict) else {}
     return {
         "path": row.get("_path", ""),
         "run_id": content.get("run_id", row.get("id", "")),
@@ -3827,7 +3833,40 @@ def _agent_run_summary(row: dict[str, Any]) -> dict[str, Any]:
         "cost_estimate": content.get("cost_estimate", 0),
         "checkpoint": content.get("checkpoint", {}) if isinstance(content.get("checkpoint", {}), dict) else {},
         "output_count": len(content.get("output_assets", [])) if isinstance(content.get("output_assets", []), list) else 0,
+        "agent_event_policy": event_policy,
+        "agent_event_policy_mode": event_policy.get("mode", "full"),
+        "agent_event_summary": event_summary,
+        "agent_event_skipped_count": int(event_summary.get("skipped_event_count", 0) or 0),
+        "agent_event_skipped_types": _string_list(event_summary.get("skipped_event_types", [])),
     }
+
+
+def _agent_event_summary_rows(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for run in runs:
+        skipped_count = int(run.get("agent_event_skipped_count", 0) or 0)
+        if skipped_count <= 0:
+            continue
+        skipped_types = _string_list(run.get("agent_event_skipped_types", []))
+        policy_mode = str(run.get("agent_event_policy_mode") or "full")
+        run_path = str(run.get("path", ""))
+        rows.append(
+            {
+                "path": run_path,
+                "id": f"{run.get('run_id', run_path)}:agent_event_summary",
+                "type": "agent_event_summary",
+                "title": "Agent event summary",
+                "status": "summarized",
+                "operation": run.get("operation", ""),
+                "agent_run_path": run_path,
+                "policy_mode": policy_mode,
+                "skipped_event_count": skipped_count,
+                "skipped_event_types": skipped_types,
+                "summary": f"{skipped_count} compacted AgentRun event(s): {', '.join(skipped_types)}",
+                "created_at": "",
+            }
+        )
+    return rows
 
 
 def _agent_checkpoint_row(row: dict[str, Any]) -> dict[str, Any]:
@@ -3965,8 +4004,11 @@ def _agent_evidence_drawer(
     rows: list[dict[str, Any]] = []
     for source in [events, checkpoints, gates, budgets, failures, rollbacks, *extra_sources]:
         for row in source:
-            compact = _agent_asset_compact(row)
-            compact["summary"] = compact.get("title") or compact.get("operation") or compact.get("id")
+            if row.get("type") == "agent_event_summary" and "summary" in row:
+                compact = dict(row)
+            else:
+                compact = _agent_asset_compact(row)
+                compact["summary"] = compact.get("title") or compact.get("operation") or compact.get("id")
             rows.append(compact)
     return rows
 

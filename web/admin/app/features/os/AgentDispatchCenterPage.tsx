@@ -99,6 +99,7 @@ export function AgentDispatchCenterPage() {
   const rollbackRehearsals = agentCenter?.rollback_rehearsals || [];
   const deadLetterRepairs = agentCenter?.dead_letter_repairs || [];
   const governanceDeadLetters = agentCenter?.governance_dead_letters || [];
+  const agentEventSummaries = agentCenter?.agent_event_summaries || [];
   const governanceDeadLetterPaths = new Set(governanceDeadLetters.map((row) => String(row.queue_path || "")));
   const repairableDeadLetter = failedQueue.find((row) => String(row.status || "") === "dead_letter" && !governanceDeadLetterPaths.has(String(row.path || "")));
   const selectedGovernanceDeadLetter = governanceDeadLetters.find((row) => String(row.queue_path || "") === governanceRepairQueuePath);
@@ -143,6 +144,8 @@ export function AgentDispatchCenterPage() {
         <Metric label="DL Repairs" value={String(agentCenter?.summary?.dead_letter_repair_count ?? deadLetterRepairs.length)} />
         <Metric label="Gov Repair" value={`${String(agentCenter?.summary?.governance_repair_confirmed_count ?? 0)}/${String(agentCenter?.summary?.governance_repair_required_count ?? 0)}`} />
         <Metric label="Gov Missing" value={String(agentCenter?.summary?.governance_repair_missing_review_count ?? 0)} />
+        <Metric label="Evt Summary" value={String(agentCenter?.summary?.agent_event_summary_count ?? agentEventSummaries.length)} />
+        <Metric label="Evt Skipped" value={String(agentCenter?.summary?.agent_event_skipped_count ?? 0)} />
       </section>
 
       <section className="panel">
@@ -579,6 +582,20 @@ export function AgentDispatchCenterPage() {
             <span className="badge">repairs {deadLetterRepairs.length}</span>
           </div>
         </div>
+      </section>
+
+      <section className="panel">
+        <PanelHeader title="Agent Event Summary" icon={<Activity size={18} />} />
+        <DataTable
+          emptyText="暂无 compacted AgentRun event summary"
+          columns={["Run", "Mode", "Skipped", "Types"]}
+          rows={agentEventSummaries.slice(0, 80).map((row) => [
+            pathCell(String(row.agent_run_path || row.path || "-"), `${String(row.path)}-event-summary`),
+            <span className="badge" key={`${String(row.path)}-event-policy`}>{String(row.policy_mode || "-")}</span>,
+            String(row.skipped_event_count ?? 0),
+            Array.isArray(row.skipped_event_types) ? row.skipped_event_types.map((item) => String(item)).join(", ") : String(row.skipped_event_types || "-")
+          ])}
+        />
       </section>
 
       <section className="panel">
