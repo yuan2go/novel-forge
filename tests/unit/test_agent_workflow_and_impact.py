@@ -9,6 +9,7 @@ from novel_forge.modules.agent_runs import (
     ensure_agent_contract,
     list_agent_events,
     list_agent_runs,
+    record_agent_checkpoint,
     start_agent_run,
     update_agent_run_status,
 )
@@ -19,6 +20,51 @@ from novel_forge.storage.local import LocalStorage
 
 
 class AgentWorkflowImpactTests(unittest.TestCase):
+    def test_agent_run_event_checkpoint_write_growth_is_characterized(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            baseline = _count_assets_by_type(storage)
+            run = start_agent_run(
+                storage,
+                agent_key="draft",
+                operation="chapter-production-growth-fixture",
+                status="running",
+                evidence={"trace": {"trace_id": "trace-agent-growth", "span_id": "span-agent-growth"}},
+            )
+            after_start = _count_assets_by_type(storage)
+
+            self.assertEqual(after_start.get("agent_run", 0) - baseline.get("agent_run", 0), 1)
+            self.assertEqual(after_start.get("agent_event", 0) - baseline.get("agent_event", 0), 1)
+            self.assertEqual(after_start.get("trace_span", 0) - baseline.get("trace_span", 0), 2)
+
+            record_agent_checkpoint(
+                storage,
+                agent_run_path=run["path"],
+                status="prompt_built",
+                state={"step": "prompt_built", "status": "succeeded"},
+            )
+            after_checkpoint = _count_assets_by_type(storage)
+
+            self.assertEqual(after_checkpoint.get("agent_checkpoint", 0) - after_start.get("agent_checkpoint", 0), 1)
+            self.assertEqual(after_checkpoint.get("agent_event", 0) - after_start.get("agent_event", 0), 1)
+            self.assertEqual(after_checkpoint.get("trace_span", 0) - after_start.get("trace_span", 0), 3)
+
+            update_agent_run_status(
+                storage,
+                run["path"],
+                status="succeeded",
+                event_type="agent_run.succeeded",
+                message="growth fixture complete",
+            )
+            after_success = _count_assets_by_type(storage)
+
+            self.assertEqual(after_success.get("agent_run", 0) - baseline.get("agent_run", 0), 1)
+            self.assertEqual(after_success.get("agent_checkpoint", 0) - baseline.get("agent_checkpoint", 0), 1)
+            self.assertEqual(after_success.get("agent_event", 0) - baseline.get("agent_event", 0), 3)
+            self.assertEqual(after_success.get("trace_span", 0) - baseline.get("trace_span", 0), 7)
+
     def test_node_run_agent_run_and_change_impact_are_persisted_assets(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -122,6 +168,21 @@ class AgentWorkflowImpactTests(unittest.TestCase):
             self.assertIn("chapter_plan", impacted_types)
             self.assertIn("draft_chapter", impacted_types)
             self.assertEqual(storage.read_asset(impact["path"]).type, "change_impact_report")
+
+
+def _count_assets_by_type(storage: LocalStorage) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for category in storage.counts():
+        for path in storage.list_json(category):
+            try:
+                data = storage.read_json(path)
+            except Exception:
+                continue
+            if isinstance(data, dict):
+                asset_type = str(data.get("type", ""))
+                if asset_type:
+                    counts[asset_type] = counts.get(asset_type, 0) + 1
+    return counts
 
 
 if __name__ == "__main__":
