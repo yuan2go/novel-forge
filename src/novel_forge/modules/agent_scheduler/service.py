@@ -979,7 +979,7 @@ def agent_center_snapshot(
         "operation_coverage_full": operation_coverage_full,
         "hard_stop_dashboard": hard_stop_dashboard,
         "sla_duration": _agent_sla_duration_rows(run_rows),
-        "evidence_drawer": _agent_evidence_drawer(events, checkpoints, gates, budgets, failures, rollbacks, tasks, loops, contexts, review_issues, revision_tasks, handoffs)[:220],
+        "evidence_drawer": _agent_evidence_drawer(events, checkpoints, gates, budgets, failures, rollbacks, tasks, loops, contexts, review_issues, revision_tasks, handoffs, dead_letter_repairs)[:220],
         "operation_coverage": contracts,
         "blocked_queue": blocked_queue[:80],
         "runs": run_rows[:80],

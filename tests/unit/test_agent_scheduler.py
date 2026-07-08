@@ -591,6 +591,40 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(repair["recovered_status"], "queued")
             self.assertTrue(repair["rollback_rehearsal_path"])
 
+    def test_agent_center_evidence_drawer_includes_dead_letter_repair_assets(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            storage = LocalStorage(root)
+            storage.ensure_layout()
+            result = _create_drifted_release_dead_letter(storage)
+            client = TestClient(create_app(IndustrialSettings(root=root)))
+            governance = client.get("/product/agents/center", params={"project_id": result["fixture"]["project_id"]}).json()["governance_dead_letters"][0]
+            client.post(
+                "/product/agents/dead-letter-repair",
+                json={
+                    "queue_path": result["queue"]["path"],
+                    "project_id": result["fixture"]["project_id"],
+                    "reason": "api repair should appear in evidence drawer",
+                    "confirm_governance_review": True,
+                    "reviewed_failed_gate_paths": governance["failed_gate_paths"],
+                    "reviewed_failed_checkpoint_paths": governance["failed_checkpoint_paths"],
+                },
+            )
+
+            center = client.get("/product/agents/center", params={"project_id": result["fixture"]["project_id"]}).json()
+            repair_rows = [row for row in center["evidence_drawer"] if row["type"] == "agent_dead_letter_repair"]
+
+            self.assertTrue(repair_rows)
+            self.assertEqual(repair_rows[0]["status"], "queued")
+            self.assertEqual(repair_rows[0]["summary"], "Agent dead letter repair")
+
     def test_non_governance_dead_letter_repair_remains_compatible(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
