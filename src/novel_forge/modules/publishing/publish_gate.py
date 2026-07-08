@@ -21,6 +21,7 @@ from novel_forge.modules.production_context import build_production_context, fil
 from novel_forge.modules.production_governance import build_production_governance_report
 from novel_forge.modules.review_issue import blocking_review_issues, review_issues_to_gate_issues
 from novel_forge.modules.runtime_policy import provider_hard_stop_evidence_report
+from novel_forge.modules.source_intake import run_source_governance_runtime_gate
 from novel_forge.schemas import PublishGateReport
 from novel_forge.storage.local import LocalStorage
 
@@ -155,6 +156,26 @@ def create_publish_gate_report(
                 "coverage_report_path": context_governance_gate.get("coverage_report", {}).get("path", ""),
             }
         )
+    source_governance_gate = run_source_governance_runtime_gate(
+        storage,
+        project_id=str(project.get("project_id", "")),
+        environment=environment,
+        mode=environment,
+        limit=1000,
+        persist_readiness=True,
+    )
+    gate_data["gates"]["source_governance_gate_passed"] = source_governance_gate["status"] != "failed"
+    if source_governance_gate["status"] == "failed":
+        gate_data["blocking_issues"].append(
+            {
+                "dimension": "source_governance_gate",
+                "severity": "critical",
+                "message": source_governance_gate.get("message", "source governance runtime gate failed"),
+                "recommendation": "repair source governance readiness/sweep/eligibility evidence before publish/release",
+                "gate_result_path": source_governance_gate.get("gate_result", {}).get("path", ""),
+                "summary": source_governance_gate.get("summary", {}),
+            }
+        )
     blocking = gate_data["blocking_issues"]
     decision = "ready"
     if any(issue.get("severity") in {"high", "critical"} for issue in blocking):
@@ -192,6 +213,12 @@ def create_publish_gate_report(
                 "blocking": context_governance_gate["status"] == "failed",
                 "path": context_governance_gate.get("gate_result", {}).get("path", ""),
             },
+            "source_governance_gate": {
+                "dimension": "source_governance_gate",
+                "status": "blocked" if source_governance_gate["status"] == "failed" else source_governance_gate["status"],
+                "blocking": source_governance_gate["status"] == "failed",
+                "path": source_governance_gate.get("gate_result", {}).get("path", ""),
+            },
         },
         source_policy=resolved_source_policy,
         evidence_refs=[
@@ -202,6 +229,8 @@ def create_publish_gate_report(
             *[str(item) for item in content_intelligence_gate.get("evidence_refs", [])],
             str(context_governance_gate.get("gate_result", {}).get("path", "")),
             str(context_governance_gate.get("coverage_report", {}).get("path", "")),
+            str(source_governance_gate.get("gate_result", {}).get("path", "")),
+            str(source_governance_gate.get("readiness_report", {}).get("path", "")),
         ],
         rollback_plan={
             "rollback_action": "do_not_create_release_package",
@@ -239,6 +268,14 @@ def create_publish_gate_report(
                 "gate_result_path": context_governance_gate.get("gate_result", {}).get("path", ""),
                 "coverage_report_path": context_governance_gate.get("coverage_report", {}).get("path", ""),
                 "summary": context_governance_gate.get("coverage_report", {}).get("summary", {}),
+            },
+            "source_governance_gate": {
+                "dimension": "source_governance_gate",
+                "status": source_governance_gate["status"],
+                "blocking": source_governance_gate["status"] == "failed",
+                "gate_result_path": source_governance_gate.get("gate_result", {}).get("path", ""),
+                "readiness_report_path": source_governance_gate.get("readiness_report", {}).get("path", ""),
+                "summary": source_governance_gate.get("summary", {}),
             },
             "platform_upload_checklist": upload_checklist,
             "production_governance": {

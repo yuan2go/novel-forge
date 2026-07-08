@@ -14,6 +14,7 @@ from novel_forge.modules.publishing import (
     prepare_platform_release,
     publishing_adapter_status,
 )
+from novel_forge.modules.publishing.release_gate import release_package_gate_evidence
 from novel_forge.schemas import DraftChapter, ProjectWorkspaceState
 from novel_forge.storage.local import LocalStorage
 
@@ -67,7 +68,10 @@ class PublishingCenterTests(unittest.TestCase):
                 workspace_path=str(workspace_path.relative_to(storage.root)),
                 human_override=True,
             )
-            self.assertEqual(storage.read_asset(gate_path).type, "publish_gate_report")
+            gate_asset = storage.read_asset(gate_path)
+            self.assertEqual(gate_asset.type, "publish_gate_report")
+            self.assertIn("source_governance_gate", gate_asset.content)
+            self.assertEqual(gate_asset.content["source_governance_gate"]["status"], "warning")
 
             package_path = create_release_package(
                 storage,
@@ -83,6 +87,7 @@ class PublishingCenterTests(unittest.TestCase):
             self.assertEqual(package.content["platform_rules"]["target_platform"], "local_serial")
             self.assertTrue(package.content["metadata_optimization"]["title_candidates"])
             self.assertIn("cover_asset", package.content)
+            self.assertIn("source_governance_gate", package.content)
 
             plan = create_publishing_plan(
                 storage,
@@ -130,6 +135,27 @@ class PublishingCenterTests(unittest.TestCase):
             self.assertEqual(adapter_log.content["approval_request"]["scope"], "publish")
             self.assertTrue(adapter_log.content["approval_request"]["path"])
             self.assertTrue(adapter_log.content["adapter_payload"]["manual_checklist"])
+
+    def test_release_gate_evidence_requires_source_governance_gate_in_production(self):
+        gate = {
+            "id": "publish-gate-source-fixture",
+            "content": {
+                "decision": "ready",
+                "production_governance": {"status": "passed", "path": "data/runs/production-governance.json"},
+                "evaluation_gate": {"status": "passed", "path": "data/runs/eval.json"},
+                "provider_runtime_gate": {"status": "passed", "blocking": False},
+                "platform_strategy_gate": {"status": "passed", "platform_strategy_pack_path": "data/assets/platform.json"},
+                "context_governance_gate": {"status": "passed", "gate_result_path": "data/runs/context-gate.json"},
+            },
+        }
+
+        blocked = release_package_gate_evidence(gate, production=True)
+        gate["content"]["source_governance_gate"] = {"status": "passed", "gate_result_path": "data/runs/source-gate.json"}
+        passed = release_package_gate_evidence(gate, production=True)
+
+        self.assertTrue(blocked["blocking"])
+        self.assertIn("source_governance_gate", {issue["dimension"] for issue in blocked["blocking_issues"]})
+        self.assertFalse(passed["blocking"])
 
 
 if __name__ == "__main__":

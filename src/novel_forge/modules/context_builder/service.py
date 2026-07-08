@@ -19,6 +19,7 @@ from novel_forge.modules.novel_kg import build_novel_kg_context
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import record_trace_span
+from novel_forge.modules.source_intake import run_source_governance_runtime_gate
 from novel_forge.schemas import BaseAsset, ContextBuildPlan, ContextBundle, ProjectMetricSnapshot, RagQualityReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import build_rag_context, generation_context_policy, retrieval_metadata
@@ -766,9 +767,35 @@ def build_flow_context_bundle(
     }
     metadata["mkaos_production_gate_report_path"] = gate_report.get("path", "")
     metadata["mkaos_production_gate_passed"] = bool(gate_report.get("passed"))
+    source_governance_gate = run_source_governance_runtime_gate(
+        storage,
+        project_id=project_id or "local-system",
+        environment=environment,
+        mode=environment,
+        limit=1000,
+        persist_readiness=True,
+    )
+    source_gate_path = str(source_governance_gate.get("gate_result", {}).get("path", ""))
+    source_readiness_path = str(source_governance_gate.get("readiness_report", {}).get("path", ""))
+    content["source_governance_runtime_gate"] = {
+        "status": source_governance_gate["status"],
+        "blocking": source_governance_gate["blocking"],
+        "gate_result_path": source_gate_path,
+        "readiness_report_path": source_readiness_path,
+        "summary": source_governance_gate.get("summary", {}),
+    }
+    metadata["source_governance_runtime_gate_path"] = source_gate_path
+    metadata["source_governance_runtime_gate_status"] = source_governance_gate["status"]
+    bundle_data["references"] = filter_project_safe_references(
+        storage,
+        project_id,
+        _dedupe([*[str(item) for item in bundle_data.get("references", []) if str(item).strip()], source_gate_path, source_readiness_path]),
+    )
     bundle_data["content"] = content
     bundle_data["metadata"] = metadata
     storage.write_json(bundle_file, bundle_data)
+    if is_production_environment(environment) and source_governance_gate["status"] == "failed":
+        raise ValueError(f"context source governance runtime gate failed: {source_governance_gate.get('message', '')}")
     _record_context_span(
         storage,
         trace_id=str(metadata.get("trace_id") or context_id),
@@ -787,6 +814,7 @@ def build_flow_context_bundle(
         "context_bundle": {"path": _display_path(storage.root, bundle_file), "asset": updated_bundle},
         "mkaos_pack": mkaos_pack,
         "source_policy": policy,
+        "source_governance_runtime_gate": source_governance_gate,
         "knowledge_context_contract": knowledge_context_contract,
         "validation": {"ok": True, "errors": []},
     }

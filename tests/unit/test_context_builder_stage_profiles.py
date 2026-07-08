@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.context_builder import create_context_build_plan, create_context_bundle
+from novel_forge.modules.context_builder import build_flow_context_bundle, create_context_build_plan, create_context_bundle
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.schemas import DraftChapter, KnowledgeCard, MaterialCard, Outline, ReviewReport, SourceDocument
 from novel_forge.storage.local import LocalStorage
@@ -25,6 +25,29 @@ class ContextBuilderStageProfileTests(unittest.TestCase):
             self.assertEqual(content["context_profile_policy"]["profile"], "chapter_outline")
             self.assertEqual(content["context_profile_policy"]["stage"], "chapter_plan")
             self.assertIn("stage_profile_enforced", content["selection_policy"])
+
+    def test_flow_context_bundle_records_source_governance_runtime_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace_ref, project_id = _workspace(storage, "Source Gate Context Project")
+            outline_path = _outline(storage, project_id, workspace_ref)
+
+            bundle = build_flow_context_bundle(
+                storage,
+                outline_path,
+                flow="topic",
+                project_id=project_id,
+                workspace_path=workspace_ref,
+                current_goal="source gate context fixture",
+                environment="local",
+            )
+            content = bundle["asset"]["content"]
+
+            self.assertIn("source_governance_runtime_gate", content)
+            self.assertEqual(content["source_governance_runtime_gate"]["status"], "warning")
+            self.assertTrue(content["source_governance_runtime_gate"]["gate_result_path"])
+            self.assertEqual(bundle["source_governance_runtime_gate"]["status"], "warning")
 
     def test_topic_profile_rejects_draft_and_source_assets_even_when_manually_selected(self):
         with tempfile.TemporaryDirectory() as tmp:

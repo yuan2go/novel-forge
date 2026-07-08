@@ -131,6 +131,8 @@ def create_release_package(
     if is_production_environment(environment) and content_intelligence_gate["blocking"]:
         dimensions = ", ".join(str(issue.get("dimension", "")) for issue in content_intelligence_gate["blocking_issues"])
         raise ValueError(f"release_package blocked by content_intelligence: {dimensions}")
+    source_governance_gate = gate_content.get("source_governance_gate", {}) if isinstance(gate_content.get("source_governance_gate", {}), dict) else {}
+    source_governance_gate_path = str(source_governance_gate.get("gate_result_path") or "")
     release_version = make_id("release_version", f"{target.id}:{channel}:{utc_now()}")
     asset = ReleasePackage(
         title=f"Release package for {target.title}",
@@ -167,6 +169,7 @@ def create_release_package(
             "platform_strategy_gate": gate_content.get("platform_strategy_gate", {}),
             "production_governance": gate_content.get("production_governance", {}),
             "context_governance_gate": gate_content.get("context_governance_gate", {}),
+            "source_governance_gate": source_governance_gate,
             "release_gate_evidence": release_gate_evidence,
             "content_intelligence_gate": content_intelligence_gate,
             "platform_upload_checklist": upload_checklist,
@@ -195,7 +198,7 @@ def create_release_package(
         references=filter_project_safe_references(
             storage,
             str(project.get("project_id", "")),
-            dedupe([target.id, asset_id(gate), *content_intelligence_gate.get("evidence_refs", [])]),
+            dedupe([target.id, asset_id(gate), source_governance_gate_path, *content_intelligence_gate.get("evidence_refs", [])]),
         ),
     )
     with AgentExecutionContext(

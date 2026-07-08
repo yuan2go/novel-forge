@@ -13,6 +13,7 @@ def release_package_gate_evidence(gate: dict[str, Any], *, production: bool) -> 
         ("provider_runtime_gate", "", "passed"),
         ("platform_strategy_gate", "platform_strategy_pack_path", "passed"),
         ("context_governance_gate", "gate_result_path", "passed"),
+        ("source_governance_gate", "gate_result_path", "passed"),
     ]
     for dimension, path_field, expected_status in gate_specs:
         payload = content.get(dimension, {}) if isinstance(content.get(dimension, {}), dict) else {}
