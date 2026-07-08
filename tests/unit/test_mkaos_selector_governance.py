@@ -6,7 +6,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.context_builder import build_flow_context_bundle
-from novel_forge.modules.mkaos import build_knowledge_pack, create_knowledge_card, create_usage_binding, refresh_mkaos_selector_governance
+from novel_forge.modules.mkaos import build_knowledge_pack, create_knowledge_card, create_usage_binding, diff_mkaos_selector_governance, refresh_mkaos_selector_governance
 from novel_forge.schemas import ChapterPlan
 from novel_forge.storage.local import LocalStorage
 
@@ -146,6 +146,69 @@ class MkaosSelectorGovernanceTests(unittest.TestCase):
             contract = result["knowledge_context_contract"]
             self.assertEqual(contract["selector_governance"]["report_path"], report["path"])
             self.assertIn(card["asset"]["id"], contract["selector_governance"]["weight_overrides"])
+
+    def test_selector_governance_diff_compares_reports_and_existing_pack_without_mutation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            card = create_knowledge_card(
+                storage,
+                {
+                    "concept_name": "Diff governed mechanism",
+                    "core_explanation": "Governance diff should show changed selector impact.",
+                    "project_id": "selector-diff-p",
+                    "weight": 1.0,
+                },
+            )
+            create_usage_binding(storage, card["asset"]["id"], {"project_id": "selector-diff-p", "flow": "prose", "usage_type": "optional", "input_role": "optional", "priority": 10})
+            card_path = storage.root / card["path"]
+            card_data = storage.read_json(card_path)
+            card_data["metadata"].update(
+                {
+                    "mkaos_governance_application_status": "applied_metadata_only",
+                    "mkaos_governance_weight_delta": 1.0,
+                    "mkaos_governance_action": "boost",
+                }
+            )
+            storage.write_json(card_path, card_data)
+            report_a = refresh_mkaos_selector_governance(storage, {"project_id": "selector-diff-p"})
+            pack = build_knowledge_pack(
+                storage,
+                {
+                    "project_id": "selector-diff-p",
+                    "flow": "prose",
+                    "task_id": "selector-diff-pack",
+                    "task_goal": "diff governed selector",
+                    "selector_governance_report_path": report_a["path"],
+                },
+            )
+
+            card_data = storage.read_json(card_path)
+            card_data["metadata"].update(
+                {
+                    "mkaos_governance_weight_delta": 3.0,
+                    "mkaos_governance_action": "quarantine",
+                    "use_in_generation_rag": False,
+                }
+            )
+            storage.write_json(card_path, card_data)
+            report_b = refresh_mkaos_selector_governance(storage, {"project_id": "selector-diff-p"})
+            diff = diff_mkaos_selector_governance(
+                storage,
+                {
+                    "project_id": "selector-diff-p",
+                    "base_report_path": report_a["path"],
+                    "compare_report_path": report_b["path"],
+                    "knowledge_pack_path": pack["path"],
+                },
+            )
+            content = diff["asset"]["content"]
+            self.assertEqual(diff["status"], "diffed")
+            self.assertEqual(diff["weight_changed_count"], 1)
+            self.assertEqual(diff["exclusion_added_count"], 1)
+            self.assertEqual(diff["selected_now_excluded_count"], 1)
+            self.assertFalse(content["diff_contract"]["mutation_applied"])
+            self.assertEqual(storage.read_json(card_path)["content"]["weight"], 1.0)
 
 
 if __name__ == "__main__":

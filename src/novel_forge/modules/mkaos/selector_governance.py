@@ -122,11 +122,153 @@ def load_selector_governance_policy(storage: LocalStorage, payload: dict[str, An
     }
 
 
+def diff_mkaos_selector_governance(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    storage.ensure_layout()
+    project_id = str(payload.get("project_id") or "")
+    base_ref = str(payload.get("base_report_path") or payload.get("old_report_path") or payload.get("selector_governance_report_path") or "").strip()
+    compare_ref = str(payload.get("compare_report_path") or payload.get("new_report_path") or "").strip()
+    pack_ref = str(payload.get("knowledge_pack_path") or payload.get("knowledge_pack_ref") or payload.get("selector_decision_path") or "").strip()
+    if not base_ref:
+        raise ValueError("base_report_path or selector_governance_report_path is required")
+    base_path, base_report = _resolve_selector_report(storage, base_ref)
+    compare_report: dict[str, Any] = {}
+    compare_path = Path("")
+    pack: dict[str, Any] = {}
+    pack_path = Path("")
+    if compare_ref:
+        compare_path, compare_report = _resolve_selector_report(storage, compare_ref)
+    if pack_ref:
+        pack_path, pack = _resolve_pack_or_selector_decision(storage, pack_ref)
+    if not compare_report and not pack:
+        raise ValueError("compare_report_path or knowledge_pack_path/selector_decision_path is required")
+
+    base_policy = _selector_policy_patch(base_report)
+    compare_policy = _selector_policy_patch(compare_report) if compare_report else {}
+    report_diff = _diff_selector_policies(base_policy, compare_policy) if compare_report else {}
+    pack_diff = _diff_selector_policy_against_pack(base_policy if not compare_report else compare_policy, pack) if pack else {}
+    diff_id = make_id("mkaos_selector_governance_diff_report", f"{project_id or 'all'}-{utc_now()}")
+    content = {
+        "selector_governance_diff_report_id": diff_id,
+        "project_id": project_id or _asset_project_id(base_report) or _asset_project_id(compare_report) or _asset_project_id(pack),
+        "base_report_path": _display_path(storage.root, base_path),
+        "compare_report_path": _display_path(storage.root, compare_path) if compare_report else "",
+        "knowledge_pack_or_selector_path": _display_path(storage.root, pack_path) if pack else "",
+        "report_diff": report_diff,
+        "pack_diff": pack_diff,
+        "summary": {
+            "weight_changed_count": len(report_diff.get("weight_changed", [])) if report_diff else 0,
+            "exclusion_added_count": len(report_diff.get("exclusions_added", [])) if report_diff else 0,
+            "exclusion_removed_count": len(report_diff.get("exclusions_removed", [])) if report_diff else 0,
+            "selected_now_excluded_count": len(pack_diff.get("selected_now_excluded", [])) if pack_diff else 0,
+            "selected_weight_changed_count": len(pack_diff.get("selected_weight_changed", [])) if pack_diff else 0,
+        },
+        "diff_contract": {
+            "contract_version": "mkaos-selector-governance-diff-v1",
+            "mutation_applied": False,
+            "adoption_applied": False,
+            "raw_source_text_included": False,
+            "prose_mutation_included": False,
+        },
+        "generated_at": utc_now(),
+    }
+    asset = BaseAsset(
+        id=diff_id,
+        type="mkaos_selector_governance_diff_report",
+        title="MKAOS selector governance diff",
+        source=str(base_report.get("id") or ""),
+        tags=["mkaos", "selector-governance", "diff"],
+        content=content,
+        metadata={"project_id": content["project_id"], "asset_status": "reviewable", "use_in_generation_rag": False},
+        references=[_display_path(storage.root, base_path), _display_path(storage.root, compare_path) if compare_report else "", _display_path(storage.root, pack_path) if pack else ""],
+    )
+    data = asset.to_dict()
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset("runs", asset)
+    return {"status": "diffed", "path": _display_path(storage.root, path), "asset": storage.read_json(path), **content["summary"]}
+
+
 def _resolve_selector_report(storage: LocalStorage, ref: str) -> tuple[Path, dict[str, Any]]:
     path, data = _resolve_asset_by_ref(storage, ref)
     if not isinstance(data, dict) or data.get("type") != "mkaos_selector_governance_report":
         raise ValueError("selector_governance_report_path must point to a mkaos_selector_governance_report")
     return path, data
+
+
+def _resolve_pack_or_selector_decision(storage: LocalStorage, ref: str) -> tuple[Path, dict[str, Any]]:
+    path, data = _resolve_asset_by_ref(storage, ref)
+    if not isinstance(data, dict) or data.get("type") not in {"knowledge_pack", "selector_decision"}:
+        raise ValueError("knowledge_pack_path or selector_decision_path must point to a knowledge_pack or selector_decision")
+    return path, data
+
+
+def _selector_policy_patch(report: dict[str, Any]) -> dict[str, Any]:
+    content = report.get("content", {}) if isinstance(report.get("content", {}), dict) else {}
+    patch = content.get("selector_policy_patch", {}) if isinstance(content.get("selector_policy_patch", {}), dict) else {}
+    return {
+        "weight_overrides": patch.get("weight_overrides", {}) if isinstance(patch.get("weight_overrides", {}), dict) else {},
+        "excluded_knowledge_ids": set(_strings(patch.get("excluded_knowledge_ids"))),
+        "evidence_by_knowledge_id": patch.get("evidence_by_knowledge_id", {}) if isinstance(patch.get("evidence_by_knowledge_id", {}), dict) else {},
+    }
+
+
+def _diff_selector_policies(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
+    base_weights = base.get("weight_overrides", {}) if isinstance(base.get("weight_overrides", {}), dict) else {}
+    compare_weights = compare.get("weight_overrides", {}) if isinstance(compare.get("weight_overrides", {}), dict) else {}
+    all_weight_ids = sorted(set(base_weights) | set(compare_weights))
+    weight_added = [knowledge_id for knowledge_id in all_weight_ids if knowledge_id not in base_weights and knowledge_id in compare_weights]
+    weight_removed = [knowledge_id for knowledge_id in all_weight_ids if knowledge_id in base_weights and knowledge_id not in compare_weights]
+    weight_changed = [
+        {
+            "knowledge_id": knowledge_id,
+            "from": _float(base_weights.get(knowledge_id), 0.0),
+            "to": _float(compare_weights.get(knowledge_id), 0.0),
+        }
+        for knowledge_id in all_weight_ids
+        if knowledge_id in base_weights and knowledge_id in compare_weights and _float(base_weights.get(knowledge_id), 0.0) != _float(compare_weights.get(knowledge_id), 0.0)
+    ]
+    base_exclusions = base.get("excluded_knowledge_ids", set()) if isinstance(base.get("excluded_knowledge_ids", set()), set) else set(_strings(base.get("excluded_knowledge_ids")))
+    compare_exclusions = compare.get("excluded_knowledge_ids", set()) if isinstance(compare.get("excluded_knowledge_ids", set()), set) else set(_strings(compare.get("excluded_knowledge_ids")))
+    return {
+        "weight_added": weight_added,
+        "weight_removed": weight_removed,
+        "weight_changed": weight_changed,
+        "exclusions_added": sorted(compare_exclusions - base_exclusions),
+        "exclusions_removed": sorted(base_exclusions - compare_exclusions),
+        "mutation_applied": False,
+    }
+
+
+def _diff_selector_policy_against_pack(policy: dict[str, Any], pack: dict[str, Any]) -> dict[str, Any]:
+    content = pack.get("content", {}) if isinstance(pack.get("content", {}), dict) else {}
+    if pack.get("type") == "selector_decision":
+        selected = content.get("selected_knowledge", []) if isinstance(content.get("selected_knowledge", []), list) else []
+        rejected = content.get("rejected_knowledge", []) if isinstance(content.get("rejected_knowledge", []), list) else []
+    else:
+        selected = content.get("pack_items", []) if isinstance(content.get("pack_items", []), list) else []
+        rejected = content.get("selector_rejections", []) if isinstance(content.get("selector_rejections", []), list) else []
+    selected_ids = {str(item.get("knowledge_id") or "") for item in selected if isinstance(item, dict)}
+    rejected_ids = {str(item.get("knowledge_id") or "") for item in rejected if isinstance(item, dict)}
+    excluded = policy.get("excluded_knowledge_ids", set()) if isinstance(policy.get("excluded_knowledge_ids", set()), set) else set(_strings(policy.get("excluded_knowledge_ids")))
+    weight_overrides = policy.get("weight_overrides", {}) if isinstance(policy.get("weight_overrides", {}), dict) else {}
+    selected_weight_changed = []
+    for item in selected:
+        if not isinstance(item, dict):
+            continue
+        knowledge_id = str(item.get("knowledge_id") or "")
+        if knowledge_id not in weight_overrides:
+            continue
+        current_weight = _float(item.get("selector_decision", {}).get("weight", item.get("weight", 0.0)) if isinstance(item.get("selector_decision", {}), dict) else item.get("weight", 0.0), 0.0)
+        next_weight = _float(weight_overrides.get(knowledge_id), current_weight)
+        if current_weight != next_weight:
+            selected_weight_changed.append({"knowledge_id": knowledge_id, "from": current_weight, "to": next_weight})
+    return {
+        "selected_now_excluded": sorted(selected_ids & excluded),
+        "rejected_now_allowed": sorted(rejected_ids - excluded),
+        "selected_weight_changed": selected_weight_changed,
+        "mutation_applied": False,
+    }
 
 
 def _latest_selector_governance_report(storage: LocalStorage, *, project_id: str) -> dict[str, Any]:
@@ -184,7 +326,14 @@ def _resolve_asset_by_ref(storage: LocalStorage, ref: str) -> tuple[Path, dict[s
             if not isinstance(data, dict):
                 continue
             content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-            if text in {str(data.get("id") or ""), str(content.get("selector_governance_report_id") or ""), _display_path(storage.root, path)}:
+            if text in {
+                str(data.get("id") or ""),
+                str(content.get("selector_governance_report_id") or ""),
+                str(content.get("selector_governance_diff_report_id") or ""),
+                str(content.get("selector_decision_id") or ""),
+                str(content.get("knowledge_pack_id") or ""),
+                _display_path(storage.root, path),
+            }:
                 return path, data
     raise ValueError(f"asset not found: {text}")
 
@@ -201,6 +350,16 @@ def _display_path(root: Path, path: str | Path) -> str:
         return str(candidate.relative_to(root))
     except ValueError:
         return str(candidate)
+
+
+def _strings(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, tuple):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
 
 
 def _float(value: Any, default: float) -> float:
