@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -589,11 +590,43 @@ class ProductApiRouterTests(unittest.TestCase):
                     "workspace_path": project.json()["path"],
                     "chapter": 1,
                     "run_to": "context_bundle",
+                    "environment": "operating_system",
+                    "os_envelope": {"environment": "operating_system", "operation": "chapter-production-api-fixture", "trace_id": "trace-api-fixture"},
+                    "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
+                    "require_external_provider_proof": True,
                 },
             )
             self.assertEqual(chapter_run.status_code, 200, chapter_run.text)
             self.assertEqual(chapter_run.json()["status"], "succeeded")
             self.assertTrue(chapter_run.json()["outputs"]["context_bundle_path"])
+            quality_policy = chapter_run.json()["asset"]["content"]["quality_loop_policy"]
+            self.assertEqual(quality_policy["environment"], "operating_system")
+            self.assertEqual(quality_policy["os_envelope"]["trace_id"], "trace-api-fixture")
+            self.assertFalse(quality_policy["source_policy"]["raw_source_text_allowed"])
+            self.assertTrue(quality_policy["require_external_provider_proof"])
+            with patch("novel_forge.api.routers.production_chain._enqueue_chapter_production_task") as enqueue:
+                enqueue.return_value = type("Task", (), {"id": "celery-policy-fixture"})()
+                async_chapter_run = client.post(
+                    "/product/production/chapter-run/start",
+                    json={
+                        "outline_path": str(outline_path.relative_to(storage.root)),
+                        "workspace_path": project.json()["path"],
+                        "chapter": 2,
+                        "run_to": "outline_checkpoint",
+                        "async_task": True,
+                        "environment": "operating_system",
+                        "os_envelope": {"environment": "operating_system", "operation": "chapter-production-api-async-fixture", "trace_id": "trace-api-async-fixture"},
+                        "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
+                        "require_external_provider_proof": True,
+                    },
+                )
+            self.assertEqual(async_chapter_run.status_code, 200, async_chapter_run.text)
+            self.assertEqual(async_chapter_run.json()["mode"], "async")
+            async_quality_policy = async_chapter_run.json()["asset"]["content"]["quality_loop_policy"]
+            self.assertEqual(async_quality_policy["environment"], "operating_system")
+            self.assertEqual(async_quality_policy["os_envelope"]["trace_id"], "trace-api-async-fixture")
+            self.assertFalse(async_quality_policy["source_policy"]["raw_source_text_allowed"])
+            self.assertTrue(async_quality_policy["require_external_provider_proof"])
             chapter_runs = client.get(f"/product/production/chapter-runs?project_id={project.json()['project_id']}")
             self.assertEqual(chapter_runs.status_code, 200, chapter_runs.text)
             self.assertGreaterEqual(len(chapter_runs.json()), 1)

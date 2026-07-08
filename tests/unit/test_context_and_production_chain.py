@@ -1030,10 +1030,19 @@ class ContextAndProductionChainTests(unittest.TestCase):
                 run_to="outline_checkpoint",
                 execute=False,
                 execution_mode="celery",
+                environment="operating_system",
+                os_envelope={"environment": "operating_system", "operation": "worker-chapter-production-fixture", "trace_id": "trace-worker-fixture"},
+                source_policy={"raw_source_text_allowed": False, "generation_rag_allowed": False},
+                require_external_provider_proof=True,
             )
             worker_result = chapter_production_run_task(tmp, worker_run["path"], run_to="outline_checkpoint", clear_pause=False)
             self.assertEqual(worker_result["status"], "succeeded")
             self.assertEqual(worker_result["control"]["execution_mode"], "celery")
+            quality_policy = worker_result["asset"]["content"]["quality_loop_policy"]
+            self.assertEqual(quality_policy["environment"], "operating_system")
+            self.assertEqual(quality_policy["os_envelope"]["trace_id"], "trace-worker-fixture")
+            self.assertFalse(quality_policy["source_policy"]["raw_source_text_allowed"])
+            self.assertTrue(quality_policy["require_external_provider_proof"])
 
     def test_chapter_production_bus_blocks_before_context_on_stability_preflight_conflict(self):
         with tempfile.TemporaryDirectory() as tmp:

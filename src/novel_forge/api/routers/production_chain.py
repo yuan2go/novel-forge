@@ -116,6 +116,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     run_to=request.run_to,
                     execute=False,
                     execution_mode="celery",
+                    environment=request.environment,
+                    os_envelope=request.os_envelope,
+                    source_policy=request.source_policy,
+                    require_external_provider_proof=request.require_external_provider_proof,
                 )
                 task = _enqueue_chapter_production_task(app_settings, run["path"], run_to=request.run_to)
                 detail = mark_chapter_production_celery_task(storage, run["path"], task.id)
@@ -127,6 +131,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 workspace_path=request.workspace_path,
                 chapter=request.chapter,
                 run_to=request.run_to,
+                environment=request.environment,
+                os_envelope=request.os_envelope,
+                source_policy=request.source_policy,
+                require_external_provider_proof=request.require_external_provider_proof,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

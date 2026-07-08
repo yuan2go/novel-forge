@@ -627,6 +627,10 @@ class ChapterProductionRunRequest(BaseModel):
     chapter: int | None = None
     run_to: str = "next_chapter_plan"
     async_task: bool = False
+    environment: str = ""
+    os_envelope: dict[str, Any] = Field(default_factory=dict)
+    source_policy: dict[str, Any] = Field(default_factory=dict)
+    require_external_provider_proof: bool = False
 
 
 class ChapterProductionResumeRequest(BaseModel):
