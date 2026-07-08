@@ -39,6 +39,7 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
                 "summary": {"blocking_count": 1},
                 "blocking_rows": [{"code": "chapter_runtime_full_mode"}],
             },
+            write_budget_gate=self._passed_write_budget_gate(),
         )
 
         self.assertEqual(result["status"], "failed")
@@ -67,6 +68,7 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
                 "summary": {"blocking_count": 0},
                 "blocking_rows": [],
             },
+            write_budget_gate=self._passed_write_budget_gate(),
         )
 
         manifest = result["unified_acceptance_preflight_manifest"]
@@ -80,9 +82,46 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
         self.assertEqual(manifest["operator_repair_plan"]["status"], "review_required")
         self.assertEqual(manifest["operator_repair_plan"]["action_count"], 4)
         self.assertFalse(manifest["operator_repair_plan"]["repair_executed"])
+        self.assertIn("runtime_growth_write_budget", {row["key"] for row in manifest["required_evidence"]})
         self.assertIn("source_governance_runtime", {row["key"] for row in manifest["required_evidence"]})
         self.assertIn("quality_calibration_readiness_gate", {row["key"] for row in manifest["required_evidence"]})
         self.assertFalse(manifest["chapter_acceptance_executed_by_manifest"])
+
+    def test_runtime_write_budget_preflight_failure_demotes_success_without_running_acceptance(self):
+        module = _load_acceptance_script()
+
+        result = module._with_runtime_growth_acceptance_preflight(
+            {
+                "status": "succeeded",
+                "completed_chapters": 10,
+                "chapter_count": 10,
+                "failures": [],
+                "acceptance_report": {"asset": {"content": {"recommendation": "pass"}}},
+            },
+            {
+                "status": "passed",
+                "blocking": False,
+                "gate_result_path": "data/runs/runtime-growth-gate.json",
+                "message": "passed",
+                "summary": {"blocking_count": 0},
+                "blocking_rows": [],
+            },
+            write_budget_gate={
+                "status": "failed",
+                "blocking": True,
+                "gate_result_path": "data/runs/runtime-budget-gate.json",
+                "message": "chapter runtime write budget gate has blockers",
+                "summary": {"blocking_count": 1},
+                "blocking_rows": [{"code": "chapter_runtime_write_budget_linked_refs"}],
+            },
+        )
+
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["runtime_write_budget_preflight"]["status"], "failed")
+        self.assertEqual(result["unified_acceptance_preflight_manifest"]["status"], "failed")
+        self.assertEqual(result["unified_acceptance_preflight_manifest"]["enforced_failure_count"], 1)
+        self.assertEqual(result["failures"][0]["failure_type"], "runtime_growth_write_budget_gate")
+        self.assertEqual(result["acceptance_report"]["asset"]["content"]["recommendation"], "repair_runtime_growth_before_acceptance")
 
     def test_unified_preflight_manifest_resolves_existing_source_workflow_and_approval_evidence(self):
         module = _load_acceptance_script()
@@ -166,6 +205,7 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
                     "summary": {"blocking_count": 0},
                     "blocking_rows": [],
                 },
+                write_budget_gate=self._passed_write_budget_gate(),
                 resolved_evidence=resolved,
             )
 
@@ -178,6 +218,7 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
             self.assertEqual(manifest["operator_repair_plan"]["status"], "not_required")
             self.assertEqual(manifest["operator_repair_plan"]["action_count"], 0)
             self.assertEqual(status_by_key["source_governance_runtime"], "passed")
+            self.assertEqual(status_by_key["runtime_growth_write_budget"], "passed")
             self.assertEqual(status_by_key["workflow_governance_drift"], "passed")
             self.assertEqual(status_by_key["approval_request_caller_readiness"], "passed")
             self.assertEqual(status_by_key["quality_calibration_readiness_gate"], "passed")
@@ -262,6 +303,7 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
                     "summary": {"blocking_count": 0},
                     "blocking_rows": [],
                 },
+                write_budget_gate=self._passed_write_budget_gate(),
                 resolved_evidence=resolved,
             )
 
@@ -277,6 +319,16 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
             self.assertEqual(manifest["operator_repair_plan"]["actions"][0]["repair_group"], "quality_calibration")
             self.assertFalse(manifest["operator_repair_plan"]["provider_call_executed"])
             self.assertEqual(status_by_key["quality_calibration_readiness_gate"], "failed")
+
+    def _passed_write_budget_gate(self) -> dict:
+        return {
+            "status": "passed",
+            "blocking": False,
+            "gate_result_path": "data/runs/runtime-budget-gate.json",
+            "message": "runtime write budget passed",
+            "summary": {"blocking_count": 0},
+            "blocking_rows": [],
+        }
 
     def test_runtime_growth_preflight_persists_report_demotion(self):
         module = _load_acceptance_script()

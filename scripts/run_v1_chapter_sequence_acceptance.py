@@ -15,7 +15,7 @@ if str(SRC_ROOT) not in sys.path:
 
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.chapter_production_bus import run_chapter_production_sequence
-from novel_forge.modules.chapter_runtime_growth import run_chapter_runtime_growth_threshold_gate
+from novel_forge.modules.chapter_runtime_growth import run_chapter_runtime_growth_threshold_gate, run_chapter_runtime_growth_write_budget_gate
 from novel_forge.modules.unified_preflight import run_v1_unified_preflight_rollup_gate
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.schemas import Outline
@@ -83,6 +83,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--workspace-title", default="V1 Slow Acceptance Project")
     parser.add_argument("--model-provider", default=os.environ.get("NOVEL_FORGE_MODEL_PROVIDER", "mock"), help="Model provider for local slow acceptance; default is mock.")
     parser.add_argument("--runtime-growth-max-linked-asset-refs", type=int, default=120, help="Maximum linked asset refs per chapter_production_run allowed by the runtime-growth preflight.")
+    parser.add_argument("--runtime-growth-max-task-status-refs", type=int, default=60, help="Maximum task_status refs per chapter_production_run allowed by the runtime write-budget preflight.")
+    parser.add_argument("--runtime-growth-max-step-output-refs", type=int, default=60, help="Maximum step output refs per chapter_production_run allowed by the runtime write-budget preflight.")
+    parser.add_argument("--runtime-growth-max-node-runs", type=int, default=20, help="Maximum NodeRun records per chapter_production_run allowed by the runtime write-budget preflight.")
+    parser.add_argument("--runtime-growth-max-trace-spans", type=int, default=20, help="Maximum TraceSpan records per chapter_production_run allowed by the runtime write-budget preflight.")
+    parser.add_argument("--runtime-growth-max-repeated-asset-type-total", type=int, default=50, help="Maximum repeated runtime asset-family refs allowed by the runtime write-budget preflight.")
     parser.add_argument("--allow-full-runtime-mode", action="store_true", help="Allow full task_status_mode in the runtime-growth preflight. Defaults to false.")
     parser.add_argument("--progress-jsonl", action="store_true", help="Print progress events as JSON lines.")
     return parser.parse_args()
@@ -232,13 +237,37 @@ def _apply_runtime_growth_acceptance_preflight(storage: LocalStorage, args: argp
         allow_full_mode=bool(getattr(args, "allow_full_runtime_mode", False)),
         persist_profile=True,
     )
+    write_budget_gate = run_chapter_runtime_growth_write_budget_gate(
+        storage,
+        project_id=project_id,
+        environment="production",
+        budgets=_runtime_growth_write_budgets_from_args(args),
+        persist_profile=True,
+    )
     resolved_evidence = _resolve_unified_acceptance_preflight_evidence(storage, project_id=project_id)
-    updated = _with_runtime_growth_acceptance_preflight(result, gate, resolved_evidence=resolved_evidence)
+    updated = _with_runtime_growth_acceptance_preflight(result, gate, write_budget_gate=write_budget_gate, resolved_evidence=resolved_evidence)
     _persist_runtime_growth_acceptance_preflight(storage, updated)
     return updated
 
 
-def _with_runtime_growth_acceptance_preflight(result: dict[str, Any], gate: dict[str, Any], resolved_evidence: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
+def _runtime_growth_write_budgets_from_args(args: argparse.Namespace) -> dict[str, int]:
+    return {
+        "max_linked_asset_refs_per_run": int(getattr(args, "runtime_growth_max_linked_asset_refs", 120) or 120),
+        "max_task_status_refs_per_run": int(getattr(args, "runtime_growth_max_task_status_refs", 60) or 60),
+        "max_step_output_refs_per_run": int(getattr(args, "runtime_growth_max_step_output_refs", 60) or 60),
+        "max_node_runs_per_run": int(getattr(args, "runtime_growth_max_node_runs", 20) or 20),
+        "max_trace_spans_per_run": int(getattr(args, "runtime_growth_max_trace_spans", 20) or 20),
+        "max_repeated_asset_type_total": int(getattr(args, "runtime_growth_max_repeated_asset_type_total", 50) or 50),
+    }
+
+
+def _with_runtime_growth_acceptance_preflight(
+    result: dict[str, Any],
+    gate: dict[str, Any],
+    *,
+    write_budget_gate: dict[str, Any] | None = None,
+    resolved_evidence: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     updated = dict(result)
     preflight = {
         "contract": "v1-acceptance-runtime-growth-preflight-v1",
@@ -249,12 +278,23 @@ def _with_runtime_growth_acceptance_preflight(result: dict[str, Any], gate: dict
         "summary": gate.get("summary", {}) if isinstance(gate.get("summary", {}), dict) else {},
         "blocking_rows": gate.get("blocking_rows", []) if isinstance(gate.get("blocking_rows", []), list) else [],
     }
+    budget_gate = write_budget_gate if isinstance(write_budget_gate, dict) else {}
+    budget_preflight = {
+        "contract": "v1-acceptance-runtime-write-budget-preflight-v1",
+        "status": str(budget_gate.get("status") or ""),
+        "blocking": bool(budget_gate.get("blocking", False)),
+        "gate_result_path": str(budget_gate.get("gate_result_path") or ""),
+        "message": str(budget_gate.get("message") or ""),
+        "summary": budget_gate.get("summary", {}) if isinstance(budget_gate.get("summary", {}), dict) else {},
+        "blocking_rows": budget_gate.get("blocking_rows", []) if isinstance(budget_gate.get("blocking_rows", []), list) else [],
+    }
     updated["runtime_growth_preflight"] = preflight
+    if budget_preflight["status"]:
+        updated["runtime_write_budget_preflight"] = budget_preflight
     updated["unified_acceptance_preflight_manifest"] = _build_unified_acceptance_preflight_manifest(updated, resolved_evidence=resolved_evidence or {})
-    if updated.get("status") == "succeeded" and preflight["status"] != "passed":
-        updated["status"] = "failed"
-        failures = list(updated.get("failures", []) if isinstance(updated.get("failures", []), list) else [])
-        failures.append(
+    enforced_failures = []
+    if preflight["status"] != "passed":
+        enforced_failures.append(
             {
                 "status": "failed",
                 "failure_type": "runtime_growth_threshold_gate",
@@ -263,6 +303,20 @@ def _with_runtime_growth_acceptance_preflight(result: dict[str, Any], gate: dict
                 "blocking_rows": preflight["blocking_rows"],
             }
         )
+    if budget_preflight["status"] and budget_preflight["status"] != "passed":
+        enforced_failures.append(
+            {
+                "status": "failed",
+                "failure_type": "runtime_growth_write_budget_gate",
+                "error": budget_preflight["message"] or "runtime growth write-budget gate did not pass",
+                "gate_result_path": budget_preflight["gate_result_path"],
+                "blocking_rows": budget_preflight["blocking_rows"],
+            }
+        )
+    if updated.get("status") == "succeeded" and enforced_failures:
+        updated["status"] = "failed"
+        failures = list(updated.get("failures", []) if isinstance(updated.get("failures", []), list) else [])
+        failures.extend(enforced_failures)
         updated["failures"] = failures
         acceptance = updated.get("acceptance_report", {})
         asset = acceptance.get("asset", {}) if isinstance(acceptance, dict) else {}
@@ -270,12 +324,15 @@ def _with_runtime_growth_acceptance_preflight(result: dict[str, Any], gate: dict
         if isinstance(content, dict):
             content["recommendation"] = "repair_runtime_growth_before_acceptance"
             content["runtime_growth_preflight"] = preflight
+            if budget_preflight["status"]:
+                content["runtime_write_budget_preflight"] = budget_preflight
             content["unified_acceptance_preflight_manifest"] = updated["unified_acceptance_preflight_manifest"]
     return updated
 
 
 def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolved_evidence: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     runtime_growth = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
+    runtime_write_budget = result.get("runtime_write_budget_preflight", {}) if isinstance(result.get("runtime_write_budget_preflight", {}), dict) else {}
     resolved = resolved_evidence or {}
     rows = [
         {
@@ -286,6 +343,10 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolve
             "evidence_path": str(runtime_growth.get("gate_result_path") or ""),
             "operator_action": "repair runtime growth blockers before accepting the run" if runtime_growth.get("status") != "passed" else "runtime growth threshold passed",
         },
+        _enforced_runtime_write_budget_row(
+            runtime_write_budget,
+            resolved.get("runtime_growth_write_budget", {}),
+        ),
         _resolved_preflight_row(
             key="source_governance_runtime",
             resolved=resolved.get("source_governance_runtime", {}),
@@ -339,6 +400,30 @@ def _resolved_preflight_row(*, key: str, resolved: dict[str, Any], deferred_acti
         "operator_action": str(resolved.get("operator_action") or ("evidence resolved" if status == "passed" else deferred_action)),
     }
     linked = resolved.get("linked_evidence_paths", []) if isinstance(resolved.get("linked_evidence_paths", []), list) else []
+    if linked:
+        row["linked_evidence_paths"] = linked
+    return row
+
+
+def _enforced_runtime_write_budget_row(runtime_write_budget: dict[str, Any], resolved: dict[str, Any]) -> dict[str, Any]:
+    status = str(runtime_write_budget.get("status") or resolved.get("status") or "missing")
+    evidence_path = str(runtime_write_budget.get("gate_result_path") or resolved.get("path") or "")
+    message = str(runtime_write_budget.get("message") or resolved.get("message") or "")
+    linked = resolved.get("linked_evidence_paths", []) if isinstance(resolved.get("linked_evidence_paths", []), list) else []
+    row = {
+        "key": "runtime_growth_write_budget",
+        "status": status,
+        "required_for_final_unified_acceptance": True,
+        "enforced_now": True,
+        "evidence_path": evidence_path,
+        "blocking": bool(runtime_write_budget.get("blocking", False) or resolved.get("blocking", False)),
+        "message": message,
+        "operator_action": (
+            "runtime write-budget gate passed"
+            if status == "passed"
+            else "repair runtime write-budget blockers before accepting the run"
+        ),
+    }
     if linked:
         row["linked_evidence_paths"] = linked
     return row
@@ -402,6 +487,7 @@ def _preflight_repair_group(key: str) -> str:
 
 def _resolve_unified_acceptance_preflight_evidence(storage: LocalStorage, *, project_id: str) -> dict[str, dict[str, Any]]:
     return {
+        "runtime_growth_write_budget": _latest_gate_evidence(storage, project_id=project_id, gate_kind="chapter_runtime_growth_write_budget"),
         "source_governance_runtime": _latest_gate_evidence(storage, project_id=project_id, gate_kind="source_governance_runtime"),
         "workflow_governance_drift": _latest_gate_evidence(storage, project_id=project_id, gate_kind="workflow_governance_drift"),
         "approval_request_caller_readiness": _latest_metric_snapshot_evidence(storage, project_id=project_id, snapshot_kind="approval_request_caller_readiness"),
@@ -500,6 +586,7 @@ def _display_path(root: Path, path: Path) -> str:
 def _persist_runtime_growth_acceptance_preflight(storage: LocalStorage, result: dict[str, Any]) -> None:
     path = str(result.get("acceptance_report_path") or "")
     preflight = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
+    budget_preflight = result.get("runtime_write_budget_preflight", {}) if isinstance(result.get("runtime_write_budget_preflight", {}), dict) else {}
     manifest = result.get("unified_acceptance_preflight_manifest", {}) if isinstance(result.get("unified_acceptance_preflight_manifest", {}), dict) else {}
     if preflight and not manifest:
         manifest = _build_unified_acceptance_preflight_manifest(result)
@@ -514,9 +601,12 @@ def _persist_runtime_growth_acceptance_preflight(storage: LocalStorage, result: 
         return
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
     content["runtime_growth_preflight"] = preflight
+    if budget_preflight:
+        content["runtime_write_budget_preflight"] = budget_preflight
     if manifest:
         content["unified_acceptance_preflight_manifest"] = manifest
-    if preflight.get("status") != "passed":
+    budget_failed = bool(budget_preflight) and budget_preflight.get("status") != "passed"
+    if preflight.get("status") != "passed" or budget_failed:
         content["recommendation"] = "repair_runtime_growth_before_acceptance"
         tags = [str(item) for item in data.get("tags", []) if str(item)] if isinstance(data.get("tags", []), list) else []
         data["tags"] = [item for item in tags if item != "pass"] + ["block", "runtime-growth-blocked"]
@@ -548,8 +638,11 @@ def _next_step(result: dict[str, Any]) -> str:
     if result.get("status") == "interrupted":
         return "The run was interrupted. Inspect the per-chapter durations, keep the generated local assets as evidence, optimize the slow path, and rerun."
     preflight = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
+    budget_preflight = result.get("runtime_write_budget_preflight", {}) if isinstance(result.get("runtime_write_budget_preflight", {}), dict) else {}
     if preflight and preflight.get("status") != "passed":
         return "Repair runtime growth threshold blockers, regenerate the preflight gate evidence, and rerun acceptance only after the gate passes."
+    if budget_preflight and budget_preflight.get("status") != "passed":
+        return "Repair runtime write-budget blockers, regenerate the budget gate evidence, and rerun acceptance only after the gate passes."
     if result.get("status") != "succeeded":
         return "Inspect the failed chapter row, fix the failing gate or runtime issue, and rerun this slow acceptance with the same root."
     if int(result.get("chapter_count", 0) or 0) < 30:
