@@ -919,6 +919,35 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["cockpit"]["workflow_governance"]["status"], "passed")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["workflow_governance"], "passed")
 
+    def test_project_cockpit_route_keeps_missing_workflow_governance_unready(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+
+            response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-missing"})
+
+            self.assertEqual(response.status_code, 200, response.text)
+            content = response.json()["asset"]["content"]
+            workflow_governance = content["runtime_governance"]["workflow_governance"]
+            self.assertEqual(workflow_governance["status"], "missing")
+            self.assertEqual(workflow_governance["gate_status"], "missing")
+            self.assertEqual(workflow_governance["preflight_count"], 0)
+            self.assertEqual(workflow_governance["failed_preflight_count"], 0)
+            self.assertEqual(workflow_governance["dead_letter_count"], 0)
+            self.assertEqual(workflow_governance["evidence_paths"], [])
+            self.assertEqual(content["quality"]["workflow_governance_status"], "missing")
+            self.assertEqual(content["cockpit"]["workflow_governance"]["status"], "missing")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
+
 
 if __name__ == "__main__":
     unittest.main()

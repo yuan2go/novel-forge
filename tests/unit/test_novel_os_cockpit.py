@@ -95,6 +95,11 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["context_governance_gate"]["status"], "passed")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["production_governance_drift"]["status"], "passed")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["production_governance_drift_gate"]["status"], "passed")
+            self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["workflow_governance"]["status"], "missing")
+            self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["workflow_governance"]["preflight_count"], 0)
+            self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["workflow_governance"]["dead_letter_count"], 0)
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["workflow_governance"]["status"], "missing")
             self.assertEqual(pending_approval["asset"]["content"]["scope"], "publish")
 
     def test_project_cockpit_surfaces_workflow_governance_readiness(self):

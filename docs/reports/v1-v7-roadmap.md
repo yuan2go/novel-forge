@@ -55,12 +55,13 @@ Current evidence:
 - Focused runtime-growth regression now includes Project Cockpit service/API workflow-governance readiness fixtures without running chapter acceptance or provider proof.
 - Project Cockpit service/API now has clean/passed workflow-governance readiness fixtures, so missing evidence remains `missing`, blocked evidence remains `blocked`, and passed gate/preflight without dead-letter reports `passed`.
 - Focused runtime-growth regression now includes both blocked/dead-letter and clean/passed Project Cockpit workflow-governance readiness fixtures.
+- Project Cockpit service/API now explicitly pins missing workflow-governance evidence to `missing`, preventing no-evidence states from looking ready.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
-- Project Cockpit workflow-governance readiness still needs explicit missing-evidence fixtures so no-gate/no-preflight state cannot regress to `passed`.
+- Focused runtime-growth regression bundle does not yet include the missing-evidence Cockpit workflow-governance fixtures.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
 - Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job/refresh-report assets and context eligibility evaluation; MKAOS knowledge/material seams plus analysis conversion and Context Builder selected/rejected summaries consume eligibility evidence, while Context Bundle writes knowledge/material usage feedback, lineage governance emits reviewable invalidation recommendations, and connector execution plans are ApprovalRequest-gated with no side effects.
 - ReaderPromise, PleasurePoint/ChapterEconomy, Character Pressure, and Mobile Reading lifecycles now have schema-backed local foundations and draft-to-longform or chapter-bus integration; payoff, scene-value, agency, pressure, and mobile rhythm detection remain deterministic and need calibration plus final multi-chapter proof.
