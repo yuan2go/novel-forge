@@ -77,6 +77,66 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
         self.assertIn("source_governance_runtime", {row["key"] for row in manifest["required_evidence"]})
         self.assertFalse(manifest["chapter_acceptance_executed_by_manifest"])
 
+    def test_unified_preflight_manifest_resolves_existing_source_workflow_and_approval_evidence(self):
+        module = _load_acceptance_script()
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            storage.write_json(
+                "data/runs/source-gate.json",
+                {
+                    "id": "source-gate",
+                    "type": "gate_result",
+                    "title": "source gate",
+                    "content": {"gate_kind": "source_governance_runtime", "status": "passed", "message": "source passed"},
+                    "metadata": {"project_id": "book-a"},
+                },
+            )
+            storage.write_json(
+                "data/runs/workflow-gate.json",
+                {
+                    "id": "workflow-gate",
+                    "type": "gate_result",
+                    "title": "workflow gate",
+                    "content": {"gate_kind": "workflow_governance_drift", "status": "passed", "message": "workflow passed"},
+                    "metadata": {"project_id": "book-a"},
+                },
+            )
+            storage.write_json(
+                "data/runs/approval-readiness.json",
+                {
+                    "id": "approval-readiness",
+                    "type": "project_metric_snapshot",
+                    "title": "approval readiness",
+                    "content": {"snapshot_kind": "approval_request_caller_readiness", "status": "passed", "operator_action": "approval ready"},
+                    "metadata": {"project_id": "book-a", "snapshot_kind": "approval_request_caller_readiness"},
+                },
+            )
+
+            resolved = module._resolve_unified_acceptance_preflight_evidence(storage, project_id="book-a")
+            result = module._with_runtime_growth_acceptance_preflight(
+                {"status": "succeeded", "failures": [], "acceptance_report": {"asset": {"content": {"recommendation": "pass"}}}},
+                {
+                    "status": "passed",
+                    "blocking": False,
+                    "gate_result_path": "data/runs/runtime-growth-gate.json",
+                    "message": "passed",
+                    "summary": {"blocking_count": 0},
+                    "blocking_rows": [],
+                },
+                resolved_evidence=resolved,
+            )
+
+            manifest = result["unified_acceptance_preflight_manifest"]
+            status_by_key = {row["key"]: row["status"] for row in manifest["required_evidence"]}
+            self.assertEqual(manifest["status"], "passed")
+            self.assertEqual(manifest["missing_or_deferred_final_evidence_count"], 0)
+            self.assertEqual(status_by_key["source_governance_runtime"], "passed")
+            self.assertEqual(status_by_key["workflow_governance_drift"], "passed")
+            self.assertEqual(status_by_key["approval_request_caller_readiness"], "passed")
+
     def test_runtime_growth_preflight_persists_report_demotion(self):
         module = _load_acceptance_script()
         from novel_forge.storage.local import LocalStorage

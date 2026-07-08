@@ -220,12 +220,13 @@ def _apply_runtime_growth_acceptance_preflight(storage: LocalStorage, args: argp
         allow_full_mode=bool(getattr(args, "allow_full_runtime_mode", False)),
         persist_profile=True,
     )
-    updated = _with_runtime_growth_acceptance_preflight(result, gate)
+    resolved_evidence = _resolve_unified_acceptance_preflight_evidence(storage, project_id=project_id)
+    updated = _with_runtime_growth_acceptance_preflight(result, gate, resolved_evidence=resolved_evidence)
     _persist_runtime_growth_acceptance_preflight(storage, updated)
     return updated
 
 
-def _with_runtime_growth_acceptance_preflight(result: dict[str, Any], gate: dict[str, Any]) -> dict[str, Any]:
+def _with_runtime_growth_acceptance_preflight(result: dict[str, Any], gate: dict[str, Any], resolved_evidence: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     updated = dict(result)
     preflight = {
         "contract": "v1-acceptance-runtime-growth-preflight-v1",
@@ -237,7 +238,7 @@ def _with_runtime_growth_acceptance_preflight(result: dict[str, Any], gate: dict
         "blocking_rows": gate.get("blocking_rows", []) if isinstance(gate.get("blocking_rows", []), list) else [],
     }
     updated["runtime_growth_preflight"] = preflight
-    updated["unified_acceptance_preflight_manifest"] = _build_unified_acceptance_preflight_manifest(updated)
+    updated["unified_acceptance_preflight_manifest"] = _build_unified_acceptance_preflight_manifest(updated, resolved_evidence=resolved_evidence or {})
     if updated.get("status") == "succeeded" and preflight["status"] != "passed":
         updated["status"] = "failed"
         failures = list(updated.get("failures", []) if isinstance(updated.get("failures", []), list) else [])
@@ -261,8 +262,9 @@ def _with_runtime_growth_acceptance_preflight(result: dict[str, Any], gate: dict
     return updated
 
 
-def _build_unified_acceptance_preflight_manifest(result: dict[str, Any]) -> dict[str, Any]:
+def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolved_evidence: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     runtime_growth = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
+    resolved = resolved_evidence or {}
     rows = [
         {
             "key": "runtime_growth_threshold",
@@ -272,30 +274,21 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any]) -> dict
             "evidence_path": str(runtime_growth.get("gate_result_path") or ""),
             "operator_action": "repair runtime growth blockers before accepting the run" if runtime_growth.get("status") != "passed" else "runtime growth threshold passed",
         },
-        {
-            "key": "source_governance_runtime",
-            "status": "deferred",
-            "required_for_final_unified_acceptance": True,
-            "enforced_now": False,
-            "evidence_path": "",
-            "operator_action": "final unified acceptance must require a passed source_governance_runtime gate",
-        },
-        {
-            "key": "workflow_governance_drift",
-            "status": "deferred",
-            "required_for_final_unified_acceptance": True,
-            "enforced_now": False,
-            "evidence_path": "",
-            "operator_action": "final unified acceptance must require clean workflow governance drift evidence",
-        },
-        {
-            "key": "approval_request_caller_readiness",
-            "status": "deferred",
-            "required_for_final_unified_acceptance": True,
-            "enforced_now": False,
-            "evidence_path": "",
-            "operator_action": "final unified acceptance must require approval caller readiness evidence",
-        },
+        _resolved_preflight_row(
+            key="source_governance_runtime",
+            resolved=resolved.get("source_governance_runtime", {}),
+            deferred_action="final unified acceptance must require a passed source_governance_runtime gate",
+        ),
+        _resolved_preflight_row(
+            key="workflow_governance_drift",
+            resolved=resolved.get("workflow_governance_drift", {}),
+            deferred_action="final unified acceptance must require clean workflow governance drift evidence",
+        ),
+        _resolved_preflight_row(
+            key="approval_request_caller_readiness",
+            resolved=resolved.get("approval_request_caller_readiness", {}),
+            deferred_action="final unified acceptance must require approval caller readiness evidence",
+        ),
     ]
     enforced_failures = [row for row in rows if row["enforced_now"] and row["status"] != "passed"]
     missing_final = [row for row in rows if row["required_for_final_unified_acceptance"] and row["status"] in {"missing", "deferred"}]
@@ -308,6 +301,86 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any]) -> dict
         "chapter_acceptance_executed_by_manifest": False,
         "operator_action": "complete deferred final preflight evidence before unified acceptance" if missing_final else "preflight evidence complete",
     }
+
+
+def _resolved_preflight_row(*, key: str, resolved: dict[str, Any], deferred_action: str) -> dict[str, Any]:
+    status = str(resolved.get("status") or "deferred")
+    return {
+        "key": key,
+        "status": status,
+        "required_for_final_unified_acceptance": True,
+        "enforced_now": False,
+        "evidence_path": str(resolved.get("path") or ""),
+        "operator_action": str(resolved.get("operator_action") or ("evidence resolved" if status == "passed" else deferred_action)),
+    }
+
+
+def _resolve_unified_acceptance_preflight_evidence(storage: LocalStorage, *, project_id: str) -> dict[str, dict[str, Any]]:
+    return {
+        "source_governance_runtime": _latest_gate_evidence(storage, project_id=project_id, gate_kind="source_governance_runtime"),
+        "workflow_governance_drift": _latest_gate_evidence(storage, project_id=project_id, gate_kind="workflow_governance_drift"),
+        "approval_request_caller_readiness": _latest_metric_snapshot_evidence(storage, project_id=project_id, snapshot_kind="approval_request_caller_readiness"),
+    }
+
+
+def _latest_gate_evidence(storage: LocalStorage, *, project_id: str, gate_kind: str) -> dict[str, Any]:
+    matches: list[tuple[Path, dict[str, Any]]] = []
+    for path in storage.list_json("runs"):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != "gate_result":
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if str(content.get("gate_kind") or "") != gate_kind:
+            continue
+        if project_id and _project_id(data) not in {"", project_id}:
+            continue
+        matches.append((path, data))
+    if not matches:
+        return {}
+    path, data = sorted(matches, key=lambda item: str(item[1].get("updated_at") or item[1].get("created_at") or ""))[-1]
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    return {"status": str(content.get("status") or "unknown"), "path": _display_path(storage.root, path), "operator_action": str(content.get("message") or "")}
+
+
+def _latest_metric_snapshot_evidence(storage: LocalStorage, *, project_id: str, snapshot_kind: str) -> dict[str, Any]:
+    matches: list[tuple[Path, dict[str, Any]]] = []
+    for path in storage.list_json("runs"):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != "project_metric_snapshot":
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") != snapshot_kind:
+            continue
+        if project_id and _project_id(data) not in {"", project_id}:
+            continue
+        matches.append((path, data))
+    if not matches:
+        return {}
+    path, data = sorted(matches, key=lambda item: str(item[1].get("updated_at") or item[1].get("created_at") or ""))[-1]
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    return {"status": str(content.get("status") or "unknown"), "path": _display_path(storage.root, path), "operator_action": str(content.get("operator_action") or "")}
+
+
+def _project_id(data: dict[str, Any]) -> str:
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    return str(metadata.get("project_id") or content.get("project_id") or "")
+
+
+def _read_json_safe(storage: LocalStorage, path: Path) -> dict[str, Any]:
+    try:
+        data = storage.read_json(path)
+    except (FileNotFoundError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _display_path(root: Path, path: Path) -> str:
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
 
 
 def _persist_runtime_growth_acceptance_preflight(storage: LocalStorage, result: dict[str, Any]) -> None:
