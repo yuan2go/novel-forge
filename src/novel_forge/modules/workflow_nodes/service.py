@@ -1720,6 +1720,28 @@ def run_workflow_scheduler(
                 workspace_path=candidate.get("workspace_path") or None,
                 archive_previous=True,
             )
+            governance_preflight_failure = _workflow_governance_preflight_failure(result)
+            if governance_preflight_failure:
+                reason = str(governance_preflight_failure.get("message") or "workflow governance drift preflight failed")
+                _dead_letter_ready_node_queue_item(
+                    storage,
+                    queue_item.get("path", ""),
+                    reason=reason,
+                    evidence={
+                        "workflow_governance_preflight": governance_preflight_failure,
+                        "resume_workflow_run_path": result.get("workflow_run", {}).get("path", "") if isinstance(result.get("workflow_run", {}), dict) else "",
+                    },
+                )
+                errors.append(
+                    {
+                        "workflow_run_path": candidate.get("workflow_run_path", ""),
+                        "node_id": candidate.get("node_id", ""),
+                        "ready_node_queue_path": queue_item.get("path", ""),
+                        "resume_workflow_run_path": result.get("workflow_run", {}).get("path", "") if isinstance(result.get("workflow_run", {}), dict) else "",
+                        "error": reason,
+                    }
+                )
+                continue
             resumed.append(
                 {
                     "candidate_type": candidate_type,
@@ -4572,6 +4594,22 @@ def _scheduler_candidates(storage: LocalStorage, *, project_id: str | None, limi
     return candidates
 
 
+def _workflow_governance_preflight_failure(result: dict[str, Any]) -> dict[str, Any]:
+    if str(result.get("status") or "") != "failed":
+        return {}
+    preflight = result.get("preflight", {}) if isinstance(result.get("preflight", {}), dict) else {}
+    if not preflight and isinstance(result.get("workflow_run", {}), dict):
+        run_asset = result.get("workflow_run", {}).get("asset", {}) if isinstance(result.get("workflow_run", {}).get("asset", {}), dict) else {}
+        run_content = run_asset.get("content", {}) if isinstance(run_asset.get("content", {}), dict) else {}
+        lineage = run_content.get("lineage", {}) if isinstance(run_content.get("lineage", {}), dict) else {}
+        preflight = lineage.get("workflow_governance_preflight", {}) if isinstance(lineage.get("workflow_governance_preflight", {}), dict) else {}
+    if str(preflight.get("status") or "") != "failed":
+        return {}
+    if str(preflight.get("gate_status") or "") != "failed":
+        return {}
+    return preflight
+
+
 def _record_ready_node_queue_item(storage: LocalStorage, candidate: dict[str, Any], *, scheduler_tick_id: str) -> dict[str, Any]:
     now = utc_now()
     queue_id = _ready_node_queue_id(candidate)
@@ -4682,12 +4720,15 @@ def _ack_ready_node_queue_item(storage: LocalStorage, queue_path: str, *, resume
     )
 
 
-def _dead_letter_ready_node_queue_item(storage: LocalStorage, queue_path: str, *, reason: str) -> dict[str, Any]:
+def _dead_letter_ready_node_queue_item(storage: LocalStorage, queue_path: str, *, reason: str, evidence: dict[str, Any] | None = None) -> dict[str, Any]:
+    updates = {"dead_lettered_at": utc_now(), "last_error": reason}
+    if evidence:
+        updates["dead_letter_evidence"] = evidence
     return _update_ready_node_queue_item(
         storage,
         queue_path,
         status="dead_letter",
-        updates={"dead_lettered_at": utc_now(), "last_error": reason},
+        updates=updates,
     )
 
 

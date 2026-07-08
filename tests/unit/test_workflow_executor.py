@@ -1226,6 +1226,63 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(queue_item.content["status"], "acked")
             self.assertEqual(queue_item.content["attempt_count"], 1)
 
+    def test_scheduler_dead_letters_workflow_governance_preflight_failure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            source_path = storage.write_asset(
+                "raw",
+                SourceDocument(
+                    title="Raw",
+                    source="fixture",
+                    content={"text": "fixture"},
+                    metadata={"rights": {"authorization": "test_fixture", "copyright_boundary": "fixture"}},
+                ),
+            )
+            cleaned_path = storage.write_asset("cleaned", CleanedText(title="Cleaned", content={"text": "clean"}))
+            workflow = create_workflow_definition(
+                storage,
+                name="Scheduler Drifted Chapter Workflow",
+                entry_node_id="clean",
+                nodes=[
+                    {
+                        "node_id": "clean",
+                        "node_type": "cleaning",
+                        "operation": "clean",
+                        "input_types": ["source_document"],
+                        "output_types": ["cleaned_text"],
+                        "processor": {"kind": "deterministic", "expected_output_assets": [str(cleaned_path.relative_to(storage.root))]},
+                    },
+                    {
+                        "node_id": "chapter-start",
+                        "node_type": "production",
+                        "operation": "start-chapter-production",
+                        "depends_on": ["clean"],
+                        "input_types": ["cleaned_text"],
+                        "output_types": ["chapter_production_run"],
+                        "processor": {"kind": "service", "operation": "start-chapter-production", "environment": "local"},
+                    },
+                ],
+            )
+            initial = execute_workflow(storage, workflow["path"], input_assets=[source_path], max_nodes=1)
+            workflow_json_path = storage.root / workflow["path"]
+            workflow_json = storage.read_json(workflow_json_path)
+            workflow_json["content"]["nodes"][1]["processor"]["environment"] = "production"
+            storage.write_json(workflow_json_path, workflow_json)
+
+            tick = run_workflow_scheduler(storage)
+
+            self.assertEqual(initial["status"], "running")
+            self.assertEqual(tick["status"], "failed")
+            self.assertEqual(tick["resumed_count"], 0)
+            self.assertEqual(tick["error_count"], 1)
+            self.assertIn("workflow governance drift", tick["errors"][0]["error"])
+            queue_item = storage.read_asset(tick["errors"][0]["ready_node_queue_path"])
+            self.assertEqual(queue_item.content["status"], "dead_letter")
+            self.assertEqual(queue_item.content["attempt_count"], 1)
+            self.assertIn("workflow_governance_preflight", queue_item.content["dead_letter_evidence"])
+            self.assertTrue(queue_item.content["dead_letter_evidence"]["workflow_governance_preflight"]["gate_result_path"])
+
     def test_scheduler_loop_respects_active_lease(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

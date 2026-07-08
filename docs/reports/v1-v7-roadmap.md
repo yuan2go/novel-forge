@@ -47,12 +47,13 @@ Current evidence:
 - Workflow DAG/dependency/ready-queue/runtime-console outputs now expose the canonical workflow template contract, required production evidence, missing evidence, and production fail-closed status without executing chapters.
 - Workflow Nodes now expose a schema-backed workflow governance drift report/gate that flags missing canonical template contracts, missing governed chapter processors, missing production runtime evidence, and local warning vs production fail-closed status without executing chapters.
 - Workflow execution and resume now invoke the workflow governance drift gate in production/operating-system/strict modes before node execution, record gate/report paths in WorkflowRun lineage, and fail before node runs when definitions are drifted.
+- Workflow scheduler tick now treats governance preflight failed resumes as errors/dead-letter queue evidence, records gate/report paths on `dead_letter_evidence`, and does not acknowledge the queue as successful.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
-- Scheduler queue handling for workflow governance preflight failures remains pending; without it, scheduler tick can still acknowledge a failed resume result instead of marking the queue as dead-letter evidence.
+- Runtime-console/operator surfacing of workflow governance preflight and scheduler dead-letter evidence remains pending; without it, operators still need raw JSON inspection to find failed gate/report paths.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
 - Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job/refresh-report assets and context eligibility evaluation; MKAOS knowledge/material seams plus analysis conversion and Context Builder selected/rejected summaries consume eligibility evidence, while Context Bundle writes knowledge/material usage feedback, lineage governance emits reviewable invalidation recommendations, and connector execution plans are ApprovalRequest-gated with no side effects.
 - ReaderPromise, PleasurePoint/ChapterEconomy, Character Pressure, and Mobile Reading lifecycles now have schema-backed local foundations and draft-to-longform or chapter-bus integration; payoff, scene-value, agency, pressure, and mobile rhythm detection remain deterministic and need calibration plus final multi-chapter proof.
