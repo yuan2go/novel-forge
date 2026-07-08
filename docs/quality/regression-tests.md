@@ -39,6 +39,7 @@ Current verified result for the V7 foundation and risk closure pass: all command
 Run this when changing Agent Scheduler governance drift handling, dead-letter repair, Agent Center repair audit evidence, or related UI/API surfaces. It intentionally excludes chapter production acceptance and provider proof:
 
 ```bash
+make governance-dead-letter-regression
 python3 scripts/run_governance_dead_letter_regression.py
 python3 scripts/run_governance_dead_letter_regression.py --skip-ui
 python3 scripts/run_governance_dead_letter_regression.py --list
@@ -59,6 +60,7 @@ The command bundle covers scheduler dead-letter failure fixtures, reviewed repai
 | `make local-up` | Docker local stack and smoke | Requires Docker and free ports |
 | `make local-smoke` | Smoke running local stack | Requires services |
 | `make v1-slow-acceptance` | Run explicit true 10-chapter V1 slow acceptance | Writes `docs/reports/v1-chapter-sequence-slow-acceptance.md`; not part of default `make test` |
+| `make governance-dead-letter-regression` | Run focused governance dead-letter regression | Does not run chapter acceptance or provider proof |
 | `make web-dev` | Next.js dev console | Requires Node deps |
 
 ## Test Coverage Map
