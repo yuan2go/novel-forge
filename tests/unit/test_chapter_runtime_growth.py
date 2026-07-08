@@ -6,11 +6,13 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.chapter_runtime_growth import (
+    apply_chapter_runtime_growth_approved_policy_plan,
     build_chapter_runtime_growth_approved_policy_apply_plan,
     build_chapter_runtime_growth_hotspot_ledger,
     build_chapter_runtime_growth_profile,
     build_chapter_runtime_growth_write_policy_candidate_plan,
     request_chapter_runtime_growth_write_policy_approval,
+    rollback_chapter_runtime_growth_applied_policy,
     run_chapter_runtime_growth_threshold_gate,
 )
 from novel_forge.modules.permission_center import list_approval_requests
@@ -243,6 +245,61 @@ class ChapterRuntimeGrowthTests(unittest.TestCase):
             self.assertFalse(ready["summary"]["runtime_policy_changed"])
             self.assertTrue(ready["asset"]["content"]["policy_deltas"])
             self.assertIn("runtime-growth-regression", ready["asset"]["content"]["required_regression_gates"])
+
+    def test_approved_policy_apply_path_is_forward_only_and_rollbackable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft = self._write_asset(storage, "forward-policy-draft", "draft_chapter", project_id="book-a")
+            task = self._write_asset(storage, "forward-policy-task", "task_status", project_id="book-a")
+            run_path = self._write_chapter_run(
+                storage,
+                run_id="forward-policy-run",
+                chapter=6,
+                task_status_mode="full",
+                outputs={"draft_v0_path": draft},
+                steps={"draft": {"task_status_paths": [task], "output_paths": [draft]}},
+            )
+            before_run = storage.read_json(storage.root / run_path)
+            approval = request_chapter_runtime_growth_write_policy_approval(storage, project_id="book-a", environment="production")
+            blocked_plan = build_chapter_runtime_growth_approved_policy_apply_plan(storage, project_id="book-a", persist=True)
+            blocked_apply = apply_chapter_runtime_growth_approved_policy_plan(storage, project_id="book-a", apply_plan_path=blocked_plan["path"])
+
+            self.assertEqual(blocked_apply["status"], "blocked")
+            self.assertFalse(blocked_apply["mutation_applied"])
+            self.assertFalse(blocked_apply["runtime_policy_changed"])
+            self.assertIn("not ready", blocked_apply["blocked_reason"])
+
+            resolve_approval_request(
+                storage,
+                approval["approval_request_path"],
+                {"decision": "approved", "actor": "unit-test", "reason": "candidate plan reviewed", "project_id": "book-a"},
+            )
+            ready_plan = build_chapter_runtime_growth_approved_policy_apply_plan(storage, project_id="book-a", persist=True)
+            applied = apply_chapter_runtime_growth_approved_policy_plan(storage, project_id="book-a", apply_plan_path=ready_plan["path"])
+            applied_asset = storage.read_json(storage.root / applied["path"])
+
+            self.assertEqual(applied["status"], "applied")
+            self.assertTrue(applied["mutation_applied"])
+            self.assertTrue(applied["runtime_policy_changed"])
+            self.assertEqual(applied_asset["metadata"]["snapshot_kind"], "chapter_runtime_growth_applied_policy")
+            self.assertEqual(applied_asset["content"]["summary"]["policy_delta_count"], len(ready_plan["asset"]["content"]["policy_deltas"]))
+            self.assertFalse(applied_asset["content"]["summary"]["existing_run_artifacts_mutated"])
+            self.assertTrue(applied_asset["content"]["safeguards_preserved"]["approval_request"])
+            self.assertTrue(applied_asset["content"]["audit_event_path"])
+            self.assertEqual(applied_asset["content"]["rollback_plan"]["apply_snapshot_path"], applied["path"])
+            self.assertEqual(storage.read_json(storage.root / run_path)["content"], before_run["content"])
+
+            rolled_back = rollback_chapter_runtime_growth_applied_policy(storage, project_id="book-a", applied_policy_path=applied["path"])
+            rollback_asset = storage.read_json(storage.root / rolled_back["path"])
+
+            self.assertEqual(rolled_back["status"], "rolled_back")
+            self.assertTrue(rolled_back["rollback_applied"])
+            self.assertEqual(rollback_asset["metadata"]["snapshot_kind"], "chapter_runtime_growth_policy_rollback")
+            self.assertFalse(rollback_asset["content"]["summary"]["existing_run_artifacts_mutated"])
+            self.assertEqual(rollback_asset["content"]["restored_policy"], applied_asset["content"]["before_policy"])
+            self.assertTrue(rollback_asset["content"]["audit_event_path"])
+            self.assertEqual(storage.read_json(storage.root / run_path)["content"], before_run["content"])
 
     def test_threshold_gate_passes_clean_compact_runtime_profile(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import utc_now
+from novel_forge.modules.audit_log import record_audit_event
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.permission_center import create_approval_request, list_approval_requests
@@ -21,6 +22,10 @@ WRITE_POLICY_PLAN_CONTRACT = "chapter-runtime-growth-write-policy-candidate-plan
 WRITE_POLICY_PLAN_SNAPSHOT_KIND = "chapter_runtime_growth_write_policy_candidate_plan"
 APPROVED_APPLY_PLAN_CONTRACT = "chapter-runtime-growth-approved-policy-apply-plan-v1"
 APPROVED_APPLY_PLAN_SNAPSHOT_KIND = "chapter_runtime_growth_approved_policy_apply_plan"
+APPLIED_POLICY_CONTRACT = "chapter-runtime-growth-approved-policy-apply-v1"
+APPLIED_POLICY_SNAPSHOT_KIND = "chapter_runtime_growth_applied_policy"
+POLICY_ROLLBACK_CONTRACT = "chapter-runtime-growth-policy-rollback-v1"
+POLICY_ROLLBACK_SNAPSHOT_KIND = "chapter_runtime_growth_policy_rollback"
 THRESHOLD_GATE_KIND = "chapter_runtime_growth_threshold"
 THRESHOLD_GATE_CONTRACT = "chapter-runtime-growth-threshold-gate-v1"
 HIGH_REF_THRESHOLD = 120
@@ -429,6 +434,280 @@ def build_chapter_runtime_growth_approved_policy_apply_plan(
         raise ValueError("; ".join(errors))
     path = storage.write_asset_auto(asset) if persist else None
     return {"status": status, "path": _display_path(storage.root, path) if path else "", "asset": asset.to_dict(), "summary": summary}
+
+
+def apply_chapter_runtime_growth_approved_policy_plan(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    apply_plan_path: str = "",
+    persist: bool = True,
+) -> dict[str, Any]:
+    """Apply an approved runtime write-policy plan as forward-only policy evidence.
+
+    This is intentionally not a retroactive rewrite of chapter_production_run
+    artifacts. The active policy change is represented by a new
+    ProjectMetricSnapshot that future runners can consume.
+    """
+
+    storage.ensure_layout()
+    apply_plan = _resolve_or_latest_approved_apply_plan(storage, project_id=project_id, apply_plan_path=apply_plan_path)
+    plan_content = apply_plan.get("content", {}) if isinstance(apply_plan.get("content", {}), dict) else {}
+    plan_summary = plan_content.get("summary", {}) if isinstance(plan_content.get("summary", {}), dict) else {}
+    policy_deltas = plan_content.get("policy_deltas", []) if isinstance(plan_content.get("policy_deltas", []), list) else []
+    allowed = (
+        str(plan_content.get("snapshot_kind") or "") == APPROVED_APPLY_PLAN_SNAPSHOT_KIND
+        and str(plan_content.get("status") or "") == "ready"
+        and bool(plan_summary.get("approved", False))
+        and bool(plan_summary.get("apply_allowed", False))
+        and bool(policy_deltas)
+    )
+    previous_snapshot = _latest_project_metric_snapshot(storage, APPLIED_POLICY_SNAPSHOT_KIND, project_id=project_id)
+    before_policy = _active_runtime_write_policy(previous_snapshot)
+    after_policy = _deep_merge_runtime_policy(before_policy, policy_deltas) if allowed else before_policy
+    plan_path = str(apply_plan.get("path") or "")
+    status = "applied" if allowed else "blocked"
+    blocked_reason = "" if allowed else _policy_apply_blocked_reason(plan_content, plan_summary, policy_deltas)
+    summary = {
+        "apply_plan_path": plan_path,
+        "approval_request_path": str(plan_summary.get("approval_request_path") or ""),
+        "approved": bool(plan_summary.get("approved", False)),
+        "apply_allowed": bool(plan_summary.get("apply_allowed", False)),
+        "policy_delta_count": len(policy_deltas),
+        "mutation_applied": allowed,
+        "runtime_policy_changed": allowed,
+        "existing_run_artifacts_mutated": False,
+        "retroactive_artifact_mutation": False,
+        "chapter_production_executed": False,
+        "provider_proof_executed": False,
+    }
+    content = {
+        "snapshot_kind": APPLIED_POLICY_SNAPSHOT_KIND,
+        "contract": APPLIED_POLICY_CONTRACT,
+        "status": status,
+        "project_id": project_id,
+        "snapshot_at": utc_now(),
+        "summary": summary,
+        "throughput": {"policy_delta_count": len(policy_deltas), "applied_policy_snapshot_count": 1 if allowed else 0},
+        "quality": {
+            "applied_policy_status": status,
+            "approved": summary["approved"],
+            "apply_allowed": summary["apply_allowed"],
+            "failure_evidence_preserved": True,
+            "gate_budget_provider_approval_evidence_preserved": True,
+        },
+        "task_health": {
+            "review_required_count": 0 if allowed else 1,
+            "mutation_applied": allowed,
+            "runtime_policy_changed": allowed,
+            "existing_run_artifacts_mutated": False,
+        },
+        "agent_health": {
+            "runtime_write_policy_apply": status,
+            "chapter_production_executed": False,
+            "provider_proof_executed": False,
+            "dead_letter_evidence_preserved": True,
+        },
+        "storage_health": {
+            "active_policy_source": "forward_only_project_metric_snapshot" if allowed else "unchanged",
+            "previous_applied_policy_path": str(previous_snapshot.get("path") or ""),
+            "apply_plan_path": plan_path,
+            "existing_run_artifacts_mutated": False,
+        },
+        "before_policy": before_policy,
+        "policy_deltas": policy_deltas,
+        "after_policy": after_policy,
+        "safeguards_preserved": {
+            "failed_task_status": True,
+            "failed_node_run": True,
+            "failed_trace_span": True,
+            "gate_result": True,
+            "budget_policy": True,
+            "provider_runtime_guard": True,
+            "approval_request": True,
+            "dead_letter": True,
+        },
+        "rollback_plan": {
+            "strategy": "write forward-only rollback snapshot restoring previous runtime write-policy evidence",
+            "previous_policy": before_policy,
+            "policy_to_rollback": after_policy,
+            "apply_snapshot_path": "",
+            "required_evidence": ["applied_policy_snapshot", "audit_log", "runtime-growth-regression"],
+        },
+        "blocked_reason": blocked_reason,
+        "required_regression_gates": ["runtime-growth-regression", "chapter-production-compact-failure-preservation"],
+        "evidence_paths": _dedupe([plan_path, str(plan_summary.get("approval_request_path") or ""), str(previous_snapshot.get("path") or "")]),
+        "audit_event_path": "",
+        "operator_action": _policy_apply_operator_action(status),
+        "mutation_policy": "forward-only runtime write-policy evidence; does not mutate historical chapter run artifacts",
+        "recommendations": _policy_apply_recommendations(status),
+    }
+    asset = ProjectMetricSnapshot(
+        title=f"Chapter runtime growth applied policy {project_id or 'all-projects'}",
+        tags=["chapter-runtime-applied-policy", status],
+        content=content,
+        metadata={"project_id": project_id, "snapshot_kind": APPLIED_POLICY_SNAPSHOT_KIND, "asset_status": status},
+    )
+    errors = validate_common_fields(asset.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset_auto(asset) if persist else None
+    display_path = _display_path(storage.root, path) if path else ""
+    audit_path = ""
+    asset_dict = asset.to_dict()
+    if persist and path:
+        audit = record_audit_event(
+            storage,
+            event_type="runtime_policy",
+            action="apply_chapter_runtime_growth_write_policy",
+            project_id=project_id,
+            trace_id=f"runtime-policy-apply:{project_id or 'global'}",
+            target={"type": "project_metric_snapshot", "snapshot_kind": APPLIED_POLICY_SNAPSHOT_KIND, "path": display_path},
+            input_refs=[plan_path],
+            output_refs=[display_path],
+            evidence_refs=content["evidence_paths"],
+            status="succeeded" if allowed else "blocked",
+            blocking=not allowed,
+            rollback_ref="",
+            metadata={"contract": APPLIED_POLICY_CONTRACT, "blocked_reason": blocked_reason},
+        )
+        audit_path = str(audit.get("path") or "")
+        persisted = storage.read_json(path)
+        persisted_content = persisted.get("content", {}) if isinstance(persisted.get("content", {}), dict) else {}
+        persisted_content["audit_event_path"] = audit_path
+        persisted_content["evidence_paths"] = _dedupe([*content["evidence_paths"], audit_path])
+        if isinstance(persisted_content.get("rollback_plan", {}), dict):
+            persisted_content["rollback_plan"]["apply_snapshot_path"] = display_path
+        persisted["content"] = persisted_content
+        storage.write_json(path, persisted)
+        asset_dict = persisted
+    return {
+        "status": status,
+        "path": display_path,
+        "asset": asset_dict,
+        "summary": summary,
+        "audit_event_path": audit_path,
+        "mutation_applied": allowed,
+        "runtime_policy_changed": allowed,
+        "blocked_reason": blocked_reason,
+    }
+
+
+def rollback_chapter_runtime_growth_applied_policy(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    applied_policy_path: str = "",
+    persist: bool = True,
+) -> dict[str, Any]:
+    """Write rollback evidence for an applied runtime write-policy snapshot."""
+
+    storage.ensure_layout()
+    applied = _resolve_or_latest_applied_policy(storage, project_id=project_id, applied_policy_path=applied_policy_path)
+    applied_content = applied.get("content", {}) if isinstance(applied.get("content", {}), dict) else {}
+    rollback_plan = applied_content.get("rollback_plan", {}) if isinstance(applied_content.get("rollback_plan", {}), dict) else {}
+    allowed = str(applied_content.get("snapshot_kind") or "") == APPLIED_POLICY_SNAPSHOT_KIND and str(applied_content.get("status") or "") == "applied"
+    restored_policy = rollback_plan.get("previous_policy") if isinstance(rollback_plan.get("previous_policy"), dict) else _default_runtime_write_policy()
+    policy_to_rollback = rollback_plan.get("policy_to_rollback") if isinstance(rollback_plan.get("policy_to_rollback"), dict) else applied_content.get("after_policy", {})
+    applied_path = str(applied.get("path") or "")
+    status = "rolled_back" if allowed else "blocked"
+    blocked_reason = "" if allowed else "no applied runtime write-policy snapshot is available for rollback"
+    summary = {
+        "applied_policy_path": applied_path,
+        "rollback_allowed": allowed,
+        "rollback_applied": allowed,
+        "mutation_applied": allowed,
+        "runtime_policy_changed": allowed,
+        "existing_run_artifacts_mutated": False,
+        "retroactive_artifact_mutation": False,
+        "chapter_production_executed": False,
+        "provider_proof_executed": False,
+    }
+    content = {
+        "snapshot_kind": POLICY_ROLLBACK_SNAPSHOT_KIND,
+        "contract": POLICY_ROLLBACK_CONTRACT,
+        "status": status,
+        "project_id": project_id,
+        "snapshot_at": utc_now(),
+        "summary": summary,
+        "throughput": {"rolled_back_policy_snapshot_count": 1 if allowed else 0},
+        "quality": {
+            "rollback_status": status,
+            "failure_evidence_preserved": True,
+            "gate_budget_provider_approval_evidence_preserved": True,
+        },
+        "task_health": {
+            "review_required_count": 0 if allowed else 1,
+            "mutation_applied": allowed,
+            "runtime_policy_changed": allowed,
+            "existing_run_artifacts_mutated": False,
+        },
+        "agent_health": {
+            "runtime_write_policy_rollback": status,
+            "chapter_production_executed": False,
+            "provider_proof_executed": False,
+        },
+        "storage_health": {
+            "active_policy_source": "forward_only_rollback_snapshot" if allowed else "unchanged",
+            "applied_policy_path": applied_path,
+            "existing_run_artifacts_mutated": False,
+        },
+        "policy_to_rollback": policy_to_rollback,
+        "restored_policy": restored_policy,
+        "blocked_reason": blocked_reason,
+        "evidence_paths": _dedupe([applied_path, str(applied_content.get("audit_event_path") or "")]),
+        "audit_event_path": "",
+        "operator_action": _policy_rollback_operator_action(status),
+        "mutation_policy": "forward-only rollback evidence; does not mutate historical chapter run artifacts",
+        "recommendations": _policy_rollback_recommendations(status),
+    }
+    asset = ProjectMetricSnapshot(
+        title=f"Chapter runtime growth policy rollback {project_id or 'all-projects'}",
+        tags=["chapter-runtime-policy-rollback", status],
+        content=content,
+        metadata={"project_id": project_id, "snapshot_kind": POLICY_ROLLBACK_SNAPSHOT_KIND, "asset_status": status},
+    )
+    errors = validate_common_fields(asset.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset_auto(asset) if persist else None
+    display_path = _display_path(storage.root, path) if path else ""
+    audit_path = ""
+    asset_dict = asset.to_dict()
+    if persist and path:
+        audit = record_audit_event(
+            storage,
+            event_type="runtime_policy",
+            action="rollback_chapter_runtime_growth_write_policy",
+            project_id=project_id,
+            trace_id=f"runtime-policy-rollback:{project_id or 'global'}",
+            target={"type": "project_metric_snapshot", "snapshot_kind": POLICY_ROLLBACK_SNAPSHOT_KIND, "path": display_path},
+            input_refs=[applied_path],
+            output_refs=[display_path],
+            evidence_refs=content["evidence_paths"],
+            status="succeeded" if allowed else "blocked",
+            blocking=not allowed,
+            rollback_ref=applied_path,
+            metadata={"contract": POLICY_ROLLBACK_CONTRACT, "blocked_reason": blocked_reason},
+        )
+        audit_path = str(audit.get("path") or "")
+        persisted = storage.read_json(path)
+        persisted_content = persisted.get("content", {}) if isinstance(persisted.get("content", {}), dict) else {}
+        persisted_content["audit_event_path"] = audit_path
+        persisted_content["evidence_paths"] = _dedupe([*content["evidence_paths"], audit_path])
+        persisted["content"] = persisted_content
+        storage.write_json(path, persisted)
+        asset_dict = persisted
+    return {
+        "status": status,
+        "path": display_path,
+        "asset": asset_dict,
+        "summary": summary,
+        "audit_event_path": audit_path,
+        "rollback_applied": allowed,
+        "runtime_policy_changed": allowed,
+        "blocked_reason": blocked_reason,
+    }
 
 
 def run_chapter_runtime_growth_threshold_gate(
@@ -882,6 +1161,161 @@ def _latest_write_policy_candidate_plan(storage: LocalStorage, *, project_id: st
     if not matches:
         return {}
     return sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+
+
+def _latest_project_metric_snapshot(storage: LocalStorage, snapshot_kind: str, *, project_id: str) -> dict[str, Any]:
+    matches: list[dict[str, Any]] = []
+    for path in storage.list_json("runs"):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != "project_metric_snapshot":
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") != snapshot_kind:
+            continue
+        if project_id and not asset_matches_project_scope(storage, data, project_id):
+            continue
+        data["path"] = _display_path(storage.root, path)
+        matches.append(data)
+    if not matches:
+        return {}
+    return sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+
+
+def _resolve_or_latest_approved_apply_plan(storage: LocalStorage, *, project_id: str, apply_plan_path: str) -> dict[str, Any]:
+    if str(apply_plan_path or "").strip():
+        path = resolve_path(storage.root, apply_plan_path)
+        data = _read_json_safe(storage, path)
+        data["path"] = _display_path(storage.root, path)
+        return data
+    latest = _latest_project_metric_snapshot(storage, APPROVED_APPLY_PLAN_SNAPSHOT_KIND, project_id=project_id)
+    if latest:
+        return latest
+    generated = build_chapter_runtime_growth_approved_policy_apply_plan(storage, project_id=project_id, persist=True)
+    asset = generated.get("asset", {}) if isinstance(generated.get("asset", {}), dict) else {}
+    asset["path"] = str(generated.get("path") or "")
+    return asset
+
+
+def _resolve_or_latest_applied_policy(storage: LocalStorage, *, project_id: str, applied_policy_path: str) -> dict[str, Any]:
+    if str(applied_policy_path or "").strip():
+        path = resolve_path(storage.root, applied_policy_path)
+        data = _read_json_safe(storage, path)
+        data["path"] = _display_path(storage.root, path)
+        return data
+    return _latest_project_metric_snapshot(storage, APPLIED_POLICY_SNAPSHOT_KIND, project_id=project_id)
+
+
+def _default_runtime_write_policy() -> dict[str, Any]:
+    return {
+        "policy_version": "chapter-production-runtime-artifact-policy-v1",
+        "task_status_mode": "compact",
+        "task_status_recording": {"pending": False, "running": False, "completed": True, "failed": True},
+        "node_run_recording": {"succeeded": False, "failed": True},
+        "trace_recording": {"node_run_succeeded_span": False, "node_run_failed_span": True, "external_runtime_spans": True},
+        "evidence_preservation": {
+            "gate_result": True,
+            "budget_policy": True,
+            "provider_runtime_guard": True,
+            "approval_request": True,
+            "dead_letter": True,
+            "review_issue": True,
+            "revision_task": True,
+        },
+    }
+
+
+def _active_runtime_write_policy(previous_snapshot: dict[str, Any]) -> dict[str, Any]:
+    content = previous_snapshot.get("content", {}) if isinstance(previous_snapshot.get("content", {}), dict) else {}
+    if isinstance(content.get("after_policy"), dict) and content.get("after_policy"):
+        return content["after_policy"]
+    if isinstance(content.get("restored_policy"), dict) and content.get("restored_policy"):
+        return content["restored_policy"]
+    return _default_runtime_write_policy()
+
+
+def _deep_merge_runtime_policy(before_policy: dict[str, Any], policy_deltas: list[Any]) -> dict[str, Any]:
+    merged = _deep_copy_dict(before_policy)
+    for delta in policy_deltas:
+        if not isinstance(delta, dict):
+            continue
+        recommended = delta.get("recommended_policy", {}) if isinstance(delta.get("recommended_policy", {}), dict) else {}
+        merged = _deep_merge_dicts(merged, recommended)
+    merged["policy_version"] = str(merged.get("policy_version") or "chapter-production-runtime-artifact-policy-v1")
+    merged["policy_source"] = APPLIED_POLICY_CONTRACT
+    merged["policy_updated_at"] = utc_now()
+    return merged
+
+
+def _deep_copy_dict(value: dict[str, Any]) -> dict[str, Any]:
+    copied: dict[str, Any] = {}
+    for key, item in value.items():
+        if isinstance(item, dict):
+            copied[key] = _deep_copy_dict(item)
+        elif isinstance(item, list):
+            copied[key] = [(_deep_copy_dict(row) if isinstance(row, dict) else row) for row in item]
+        else:
+            copied[key] = item
+    return copied
+
+
+def _deep_merge_dicts(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
+    result = _deep_copy_dict(base)
+    for key, value in patch.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = _deep_merge_dicts(result[key], value)
+        elif isinstance(value, dict):
+            result[key] = _deep_copy_dict(value)
+        else:
+            result[key] = value
+    return result
+
+
+def _policy_apply_blocked_reason(plan_content: dict[str, Any], plan_summary: dict[str, Any], policy_deltas: list[Any]) -> str:
+    if not plan_content:
+        return "approved runtime write-policy apply plan is missing"
+    if str(plan_content.get("snapshot_kind") or "") != APPROVED_APPLY_PLAN_SNAPSHOT_KIND:
+        return "apply_plan_path does not point to a runtime growth approved apply plan"
+    if str(plan_content.get("status") or "") != "ready":
+        return "runtime write-policy apply plan is not ready"
+    if not bool(plan_summary.get("approved", False)):
+        return "runtime write-policy ApprovalRequest is not approved"
+    if not bool(plan_summary.get("apply_allowed", False)):
+        return "runtime write-policy apply plan is not allowed"
+    if not policy_deltas:
+        return "runtime write-policy apply plan has no policy deltas"
+    return "runtime write-policy apply blocked by unknown readiness gap"
+
+
+def _policy_apply_operator_action(status: str) -> str:
+    if status == "applied":
+        return "run focused runtime-growth regression before final unified acceptance consumes the applied policy"
+    return "approve and rebuild runtime write-policy apply plan before applying runtime policy"
+
+
+def _policy_apply_recommendations(status: str) -> list[str]:
+    if status == "applied":
+        return [
+            "Use this applied policy snapshot as the future runtime write-policy evidence source",
+            "Keep failed TaskStatus, NodeRun, TraceSpan, gate, budget, provider, approval, and dead-letter evidence enabled",
+            "Run focused runtime-growth regression before final unified acceptance",
+        ]
+    return ["Do not change runtime write policy until the apply plan is ready and approved"]
+
+
+def _policy_rollback_operator_action(status: str) -> str:
+    if status == "rolled_back":
+        return "rerun focused runtime-growth regression after rollback before final unified acceptance"
+    return "select an applied runtime write-policy snapshot before rollback"
+
+
+def _policy_rollback_recommendations(status: str) -> list[str]:
+    if status == "rolled_back":
+        return [
+            "Use restored_policy as the future runtime write-policy evidence source",
+            "Confirm cockpit and runtime-growth regression still surface failure/governance evidence",
+        ]
+    return ["No rollback was applied because no applied runtime write-policy evidence was available"]
 
 
 def _policy_deltas_from_candidate_actions(candidate_actions: list[Any]) -> list[dict[str, Any]]:

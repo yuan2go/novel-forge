@@ -22,11 +22,13 @@ from novel_forge.modules.long_memory import (
 )
 from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, list_model_router_assets, provider_approval_evidence_report, resolve_model_route
 from novel_forge.modules.chapter_runtime_growth import (
+    apply_chapter_runtime_growth_approved_policy_plan,
     build_chapter_runtime_growth_approved_policy_apply_plan,
     build_chapter_runtime_growth_hotspot_ledger,
     build_chapter_runtime_growth_profile,
     build_chapter_runtime_growth_write_policy_candidate_plan,
     request_chapter_runtime_growth_write_policy_approval,
+    rollback_chapter_runtime_growth_applied_policy,
     run_chapter_runtime_growth_threshold_gate,
 )
 from novel_forge.modules.novel_os_cockpit import build_multi_book_daily_production_report, build_multi_book_production_schedule, build_project_cockpit_snapshot
@@ -163,6 +165,42 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 LocalStorage(app_settings.root),
                 project_id=project_id,
                 persist=persist_report,
+            )
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/cockpit/chapter-runtime-growth-approved-policy-apply")
+    def chapter_runtime_growth_approved_policy_apply(
+        project_id: str = "local-project",
+        apply_plan_path: str = "",
+        persist_report: bool = True,
+        payload: dict[str, Any] = Body(default_factory=dict),
+    ) -> dict[str, Any]:
+        try:
+            body = payload if isinstance(payload, dict) else {}
+            return apply_chapter_runtime_growth_approved_policy_plan(
+                LocalStorage(app_settings.root),
+                project_id=str(body.get("project_id") or project_id),
+                apply_plan_path=str(body.get("apply_plan_path") or apply_plan_path),
+                persist=bool(body.get("persist_report", persist_report)),
+            )
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/cockpit/chapter-runtime-growth-policy-rollback")
+    def chapter_runtime_growth_policy_rollback(
+        project_id: str = "local-project",
+        applied_policy_path: str = "",
+        persist_report: bool = True,
+        payload: dict[str, Any] = Body(default_factory=dict),
+    ) -> dict[str, Any]:
+        try:
+            body = payload if isinstance(payload, dict) else {}
+            return rollback_chapter_runtime_growth_applied_policy(
+                LocalStorage(app_settings.root),
+                project_id=str(body.get("project_id") or project_id),
+                applied_policy_path=str(body.get("applied_policy_path") or applied_policy_path),
+                persist=bool(body.get("persist_report", persist_report)),
             )
         except (OSError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

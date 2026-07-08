@@ -109,6 +109,7 @@ Implementation status note:
 - 2026-07-08: `V1-S72 Runtime Growth Write Policy Candidate Plan` was implemented as a development slice. Chapter Runtime Growth now derives a reviewable, no-mutation `chapter_runtime_growth_write_policy_candidate_plan` from hotspot rows, including safeguards, rollback criteria, expected savings, API/Cockpit visibility, and explicit `auto_apply=false` candidate actions. No chapter acceptance was run.
 - 2026-07-08: `V1-S73 Runtime Growth Write Policy Approval Gate` was implemented as a development slice. Runtime write-policy candidate plans can now create or reuse an ApprovalRequest before any apply path, and Project Cockpit surfaces the approval status as a separate production-control gate row. No chapter acceptance was run.
 - 2026-07-08: `V1-S74 Runtime Growth Approved Policy Apply Plan` was implemented as a development slice. Chapter Runtime Growth now writes a read-only approved apply plan that requires approved ApprovalRequest evidence, lists exact policy deltas, rollback criteria, and required regression gates, while leaving runtime policy unchanged. No chapter acceptance was run.
+- 2026-07-08: `V1-S75 Runtime Growth Approved Policy Apply Path` was implemented as a development slice. Chapter Runtime Growth now applies approved write-policy deltas as a forward-only `chapter_runtime_growth_applied_policy` snapshot with before/after policy, audit event, preserved failure/gate/budget/provider/approval/dead-letter safeguards, and `chapter_runtime_growth_policy_rollback` evidence without mutating historical chapter run artifacts. No chapter acceptance was run.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
@@ -186,7 +187,8 @@ Implementation status note:
 | V1-S72 Runtime Growth Write Policy Candidate Plan | Convert hotspot ledger evidence into a reviewable write-policy candidate plan | The hotspot ledger shows where growth happens; the next safe step is a no-mutation candidate plan before changing chapter bus write behavior | Chapter Runtime Growth, Chapter Production Bus, Runtime Governance | ProjectMetricSnapshot, ChapterProductionRun, RuntimePolicy | Implemented: candidate plan derives runtime policy recommendations, safeguards, rollback criteria, estimated savings, and `auto_apply=false` actions from hotspot evidence; API and Cockpit expose the plan | Synthetic candidate-plan service/API/Cockpit fixtures and compileall; no chapter acceptance | Runtime docs updated through this slice matrix | Does not apply runtime policy or suppress failure/gate evidence |
 | V1-S73 Runtime Growth Write Policy Approval Gate | Route write-policy candidate plans through ApprovalRequest before any apply path exists | Candidate plans are now reviewable; production policy changes should require explicit operator approval and remain reversible | Chapter Runtime Growth, Permission Center, Runtime Governance | ProjectMetricSnapshot, ApprovalRequest, RuntimePolicy | Implemented: candidate plans can create/reuse `approve_runtime_write_policy_candidate_plan` ApprovalRequest evidence; API and Cockpit expose pending approval status without applying policy | Synthetic approval-gate service/API/Cockpit fixtures and compileall; no chapter acceptance | Runtime/permission docs updated through this slice matrix | Does not mutate runtime policy until a separate approved apply slice exists |
 | V1-S74 Runtime Growth Approved Policy Apply Plan | Define the guarded apply plan for approved runtime write-policy changes | ApprovalRequest evidence now exists, but applying runtime policy must remain explicit, reversible, and failure-evidence preserving | Chapter Runtime Growth, Chapter Production Bus, Permission Center, Runtime Governance | ApprovalRequest, RuntimePolicy, ProjectMetricSnapshot | Implemented: approved apply plan requires approved ApprovalRequest, lists exact policy deltas, rollback criteria, and required regression gates without mutating runtime policy | Synthetic approved/unapproved apply-plan service/API/Cockpit fixtures and compileall; no chapter acceptance | Runtime docs updated through this slice matrix | Does not suppress failed/gate/budget/provider/approval evidence |
-| V1-S75 Runtime Growth Approved Policy Apply Path | Apply approved runtime write-policy deltas through a guarded, reversible service seam | Apply plan now exists; the next step is the first actual policy mutation path, constrained by approval, rollback evidence, and regression gates | Chapter Production Bus, Chapter Runtime Growth, Permission Center, Runtime Governance | RuntimePolicy, ApprovalRequest, ProjectMetricSnapshot, AuditEvent | Planned: implement an apply function that only accepts approved apply plans, writes before/after evidence, preserves failure/gate evidence, and can rollback | Synthetic approved/apply/rollback fixture and compileall; no chapter acceptance | Runtime docs | Must refuse unapproved plans and must not affect existing run artifacts retroactively |
+| V1-S75 Runtime Growth Approved Policy Apply Path | Apply approved runtime write-policy deltas through a guarded, reversible service seam | Apply plan now exists; the next step is the first actual policy mutation path, constrained by approval, rollback evidence, and regression gates | Chapter Production Bus, Chapter Runtime Growth, Permission Center, Runtime Governance | RuntimePolicy, ApprovalRequest, ProjectMetricSnapshot, AuditEvent | Implemented: `apply_chapter_runtime_growth_approved_policy_plan()` refuses unapproved plans, writes forward-only applied policy evidence with before/after policy and audit event, and `rollback_chapter_runtime_growth_applied_policy()` writes rollback evidence without changing historical run artifacts; API and Cockpit expose both states | Synthetic approved/apply/rollback service fixture, Product API blocked fixture, Cockpit fixture, compileall; no chapter acceptance | Runtime docs updated through this slice matrix | Future chapter bus runs still need an explicit resolver to consume the latest applied policy snapshot |
+| V1-S76 Chapter Bus Applied Runtime Policy Resolver | Let future chapter bus executions consume the latest approved applied runtime write-policy evidence explicitly | V1-S75 writes the active policy evidence, but the chapter bus must opt in through a resolver instead of relying on implicit operator memory | Chapter Production Bus, Chapter Runtime Growth, Runtime Governance | RuntimePolicy, ProjectMetricSnapshot, ChapterProductionRun | Planned: add a resolver that selects explicit runtime policy first, then approved applied policy snapshot, then safe default; preserve failure/gate evidence and record applied policy path on new runs | Synthetic resolver fixture and compileall; no chapter acceptance | Runtime docs | Must not change historical runs and must fail closed if production policy evidence is stale or rolled back without replacement |
 | P1-S1 Source Governance Lifecycle | Add SourcePolicy, SourceRiskReport, license check result lifecycle | External corpora and MKAOS need stronger boundaries | Source Governance, MKAOS, Context Builder | SourcePolicy, LicenseCheckResult, SourceRiskReport, SourceSyncJob, SourceSnapshot, SourceEvidence | Implemented: Source Intake creates schema-backed policy/license/risk/snapshot/sync assets and evaluates R0-R4 context eligibility with evidence-only/quarantine/ApprovalRequest hooks | Added lifecycle, high-risk approval, quarantine, schema, and route fixtures; final unified v1 workflow验收 remains deferred | Source governance docs updated through this slice matrix | Context Builder and MKAOS still need deeper caller migration to consume eligibility reports everywhere |
 | P1-S2 Reader Promise Ledger | Track promise/payoff lifecycle | Needed for追读 and longform stability | Longform, Web Novel Enhancement, Review | ReaderPromise, ReaderPromiseLedger, ReviewIssue, RevisionTask | Implemented: promise ledger service, longform reducer integration, chapter bus output, and API route | Normal and broken promise fixtures plus longform/chapter-bus route coverage | Longform docs updated through this slice matrix | Heuristic payoff detection still needs provider/human calibration during final unified acceptance |
 | P1-S3 Pleasure Point / Chapter Economy Gate | Track爽点 cadence and scene value | Prevents flat or watery chapters | Reward Ledger, Quality, Chapter Blueprint, Longform | PleasurePoint, ChapterEconomyReport, RewardLedger, ReviewIssue, RevisionTask | Implemented: chapter economy service/API, quality loop step, longform reducer, and chapter bus output | Positive high-value fixture, negative water-chapter fixture, content loop and chapter bus coverage | Quality docs updated through this slice matrix | Heuristic false positives remain; provider/human calibration deferred |
@@ -253,32 +255,21 @@ Implementation status note:
 
 ## Recommended Next Slice
 
-Continue from `V1-S75 Runtime Growth Approved Policy Apply Path`.
+Continue from `V1-S76 Chapter Bus Applied Runtime Policy Resolver`.
 
-The current highest-priority development slice adds an explicit read-only gate over quality calibration readiness without running chapter acceptance:
+The current highest-priority development slice should make future chapter production runs explicitly consume the approved runtime write-policy evidence created by V1-S75 without running chapter acceptance:
 
 ```text
-quality_calibration_readiness snapshot
--> external provider proof is separated from fixture/mock provider judge evidence
--> human annotation, golden set, quality suite, rubric, and passed calibration are required for passed readiness
--> deferred slow acceptance script resolves latest quality_calibration_readiness evidence into the unified preflight manifest
--> quality_calibration_readiness_gate converts readiness status into production fail-closed gate evidence
--> unified preflight resolves the latest quality_calibration_readiness_gate result as the enforceable quality calibration dimension
--> focused runtime governance regression command covers readiness/gate/preflight fixtures
--> explicit unready final evidence count is written/read with legacy compatibility
--> compact unready evidence rows are written/read with legacy fallback
--> read-only operator repair plan is derived from unready rows
--> Cockpit quality and production-control summaries expose repair action count/status
--> read-only unified preflight rollup gate result is written and surfaced
--> rollup gate fixtures are covered by focused runtime governance regression bundle
--> acceptance script persists the rollup gate after writing the manifest
--> read-only runtime-growth artifact hotspot ledger is derived from existing run/report evidence
--> reviewable write-policy candidate plan is derived from hotspot rows without applying it
--> runtime write-policy candidate plans are routed through ApprovalRequest before any apply path
--> guarded approved apply plan with exact deltas and rollback gates is defined without running acceptance
--> next: implement the first approved apply path with rollback evidence and no retroactive artifact mutation
--> Project Cockpit surfaces preflight and gate status without running acceptance
--> later: final unified v1 acceptance can assert the gate without scanning raw source assets ad hoc
+runtime growth hotspot ledger
+-> reviewable write-policy candidate plan
+-> ApprovalRequest gate
+-> approved apply plan
+-> forward-only applied policy snapshot with audit event
+-> rollback evidence snapshot
+-> next: chapter bus runtime policy resolver consumes latest applied policy for future runs only
+-> record applied_policy_path on new ChapterProductionRun control evidence
+-> preserve failed TaskStatus, NodeRun, TraceSpan, gate, budget, provider, approval, and dead-letter evidence
+-> do not mutate historical chapter run artifacts
 -> no chapter acceptance run
 ```
 

@@ -33,6 +33,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     chapter_runtime_growth_write_policy_candidate_plan = _chapter_runtime_growth_write_policy_candidate_plan(rows)
     chapter_runtime_growth_write_policy_approval = _chapter_runtime_growth_write_policy_approval(rows)
     chapter_runtime_growth_approved_policy_apply_plan = _chapter_runtime_growth_approved_policy_apply_plan(rows)
+    chapter_runtime_growth_applied_policy = _chapter_runtime_growth_applied_policy(rows)
+    chapter_runtime_growth_policy_rollback = _chapter_runtime_growth_policy_rollback(rows)
     chapter_runtime_growth_threshold_gate = _latest_gate_result(rows, "chapter_runtime_growth_threshold")
     unified_acceptance_preflight = _latest_unified_acceptance_preflight_manifest(rows)
     unified_acceptance_preflight_gate = _latest_gate_result(rows, "v1_unified_preflight")
@@ -55,6 +57,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         chapter_runtime_growth_write_policy_candidate_plan,
         chapter_runtime_growth_write_policy_approval,
         chapter_runtime_growth_approved_policy_apply_plan,
+        chapter_runtime_growth_applied_policy,
+        chapter_runtime_growth_policy_rollback,
         chapter_runtime_growth_threshold_gate,
         unified_acceptance_preflight,
         unified_acceptance_preflight_gate,
@@ -95,6 +99,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_write_policy_plan_status": chapter_runtime_growth_write_policy_candidate_plan["status"],
             "chapter_runtime_growth_write_policy_approval_status": chapter_runtime_growth_write_policy_approval["status"],
             "chapter_runtime_growth_approved_apply_plan_status": chapter_runtime_growth_approved_policy_apply_plan["status"],
+            "chapter_runtime_growth_applied_policy_status": chapter_runtime_growth_applied_policy["status"],
+            "chapter_runtime_growth_policy_rollback_status": chapter_runtime_growth_policy_rollback["status"],
             "chapter_runtime_growth_threshold_gate_status": chapter_runtime_growth_threshold_gate["status"],
             "chapter_runtime_growth_high_run_count": chapter_runtime_growth["summary"]["high_growth_run_count"],
             "chapter_runtime_growth_hotspot_family_count": chapter_runtime_growth_hotspot_ledger["summary"]["hotspot_family_count"],
@@ -141,6 +147,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_write_policy_candidate_plan": chapter_runtime_growth_write_policy_candidate_plan,
             "chapter_runtime_growth_write_policy_approval": chapter_runtime_growth_write_policy_approval,
             "chapter_runtime_growth_approved_policy_apply_plan": chapter_runtime_growth_approved_policy_apply_plan,
+            "chapter_runtime_growth_applied_policy": chapter_runtime_growth_applied_policy,
+            "chapter_runtime_growth_policy_rollback": chapter_runtime_growth_policy_rollback,
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
             "unified_acceptance_preflight": unified_acceptance_preflight,
             "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate,
@@ -167,6 +175,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_write_policy_candidate_plan": chapter_runtime_growth_write_policy_candidate_plan,
             "chapter_runtime_growth_write_policy_approval": chapter_runtime_growth_write_policy_approval,
             "chapter_runtime_growth_approved_policy_apply_plan": chapter_runtime_growth_approved_policy_apply_plan,
+            "chapter_runtime_growth_applied_policy": chapter_runtime_growth_applied_policy,
+            "chapter_runtime_growth_policy_rollback": chapter_runtime_growth_policy_rollback,
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
             "unified_acceptance_preflight": unified_acceptance_preflight,
             "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate,
@@ -885,6 +895,106 @@ def _chapter_runtime_growth_approved_policy_apply_plan(rows: list[dict[str, Any]
     }
 
 
+def _chapter_runtime_growth_applied_policy(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    snapshot_kind = "chapter_runtime_growth_applied_policy"
+    matches = []
+    for row in rows:
+        if row.get("type") != "project_metric_snapshot":
+            continue
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") == snapshot_kind:
+            matches.append(row)
+    if not matches:
+        return {
+            "snapshot_kind": snapshot_kind,
+            "contract": "chapter-runtime-growth-approved-policy-apply-v1",
+            "status": "missing",
+            "path": "",
+            "summary": {
+                "approved": False,
+                "apply_allowed": False,
+                "policy_delta_count": 0,
+                "mutation_applied": False,
+                "runtime_policy_changed": False,
+                "existing_run_artifacts_mutated": False,
+            },
+            "after_policy": {},
+            "rollback_plan": {},
+            "audit_event_path": "",
+            "operator_action": "apply approved runtime write-policy plan before final unified acceptance",
+        }
+    row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    summary = content.get("summary", {}) if isinstance(content.get("summary", {}), dict) else {}
+    return {
+        "snapshot_kind": snapshot_kind,
+        "contract": str(content.get("contract") or "chapter-runtime-growth-approved-policy-apply-v1"),
+        "status": str(content.get("status") or "unknown"),
+        "path": str(row.get("path") or ""),
+        "summary": {
+            "approved": bool(summary.get("approved", False)),
+            "apply_allowed": bool(summary.get("apply_allowed", False)),
+            "policy_delta_count": int(summary.get("policy_delta_count") or 0),
+            "mutation_applied": bool(summary.get("mutation_applied", False)),
+            "runtime_policy_changed": bool(summary.get("runtime_policy_changed", False)),
+            "existing_run_artifacts_mutated": bool(summary.get("existing_run_artifacts_mutated", False)),
+        },
+        "after_policy": content.get("after_policy", {}) if isinstance(content.get("after_policy", {}), dict) else {},
+        "rollback_plan": content.get("rollback_plan", {}) if isinstance(content.get("rollback_plan", {}), dict) else {},
+        "audit_event_path": str(content.get("audit_event_path") or ""),
+        "operator_action": str(content.get("operator_action") or ""),
+    }
+
+
+def _chapter_runtime_growth_policy_rollback(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    snapshot_kind = "chapter_runtime_growth_policy_rollback"
+    matches = []
+    for row in rows:
+        if row.get("type") != "project_metric_snapshot":
+            continue
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") == snapshot_kind:
+            matches.append(row)
+    if not matches:
+        return {
+            "snapshot_kind": snapshot_kind,
+            "contract": "chapter-runtime-growth-policy-rollback-v1",
+            "status": "missing",
+            "path": "",
+            "summary": {
+                "rollback_allowed": False,
+                "rollback_applied": False,
+                "mutation_applied": False,
+                "runtime_policy_changed": False,
+                "existing_run_artifacts_mutated": False,
+            },
+            "restored_policy": {},
+            "audit_event_path": "",
+            "operator_action": "rollback only if applied runtime write-policy evidence breaks required runtime/governance evidence",
+        }
+    row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    summary = content.get("summary", {}) if isinstance(content.get("summary", {}), dict) else {}
+    return {
+        "snapshot_kind": snapshot_kind,
+        "contract": str(content.get("contract") or "chapter-runtime-growth-policy-rollback-v1"),
+        "status": str(content.get("status") or "unknown"),
+        "path": str(row.get("path") or ""),
+        "summary": {
+            "rollback_allowed": bool(summary.get("rollback_allowed", False)),
+            "rollback_applied": bool(summary.get("rollback_applied", False)),
+            "mutation_applied": bool(summary.get("mutation_applied", False)),
+            "runtime_policy_changed": bool(summary.get("runtime_policy_changed", False)),
+            "existing_run_artifacts_mutated": bool(summary.get("existing_run_artifacts_mutated", False)),
+        },
+        "restored_policy": content.get("restored_policy", {}) if isinstance(content.get("restored_policy", {}), dict) else {},
+        "audit_event_path": str(content.get("audit_event_path") or ""),
+        "operator_action": str(content.get("operator_action") or ""),
+    }
+
+
 def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
     matches = [row for row in rows if row.get("type") == "long_chain_acceptance_report"]
     if not matches:
@@ -1308,6 +1418,8 @@ def _production_control_console(
     chapter_runtime_growth_write_policy_candidate_plan: dict[str, Any],
     chapter_runtime_growth_write_policy_approval: dict[str, Any],
     chapter_runtime_growth_approved_policy_apply_plan: dict[str, Any],
+    chapter_runtime_growth_applied_policy: dict[str, Any],
+    chapter_runtime_growth_policy_rollback: dict[str, Any],
     chapter_runtime_growth_threshold_gate: dict[str, Any],
     unified_acceptance_preflight: dict[str, Any],
     unified_acceptance_preflight_gate: dict[str, Any],
@@ -1335,6 +1447,8 @@ def _production_control_console(
         "runtime_growth_write_policy_plan": chapter_runtime_growth_write_policy_candidate_plan["status"],
         "runtime_growth_write_policy_approval": chapter_runtime_growth_write_policy_approval["status"],
         "runtime_growth_approved_apply_plan": chapter_runtime_growth_approved_policy_apply_plan["status"],
+        "runtime_growth_applied_policy": chapter_runtime_growth_applied_policy["status"],
+        "runtime_growth_policy_rollback": chapter_runtime_growth_policy_rollback["status"],
         "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
         "unified_acceptance_preflight": unified_acceptance_preflight["status"],
         "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate["status"],
@@ -1376,6 +1490,8 @@ def _production_control_console(
             "runtime_growth_write_policy_plan": chapter_runtime_growth_write_policy_candidate_plan["status"],
             "runtime_growth_write_policy_approval": chapter_runtime_growth_write_policy_approval["status"],
             "runtime_growth_approved_apply_plan": chapter_runtime_growth_approved_policy_apply_plan["status"],
+            "runtime_growth_applied_policy": chapter_runtime_growth_applied_policy["status"],
+            "runtime_growth_policy_rollback": chapter_runtime_growth_policy_rollback["status"],
             "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
             "unified_acceptance_preflight": unified_acceptance_preflight["status"],
             "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate["status"],
@@ -1407,6 +1523,8 @@ def _production_control_console(
         "chapter_runtime_growth_write_policy_candidate_plan": chapter_runtime_growth_write_policy_candidate_plan,
         "chapter_runtime_growth_write_policy_approval": chapter_runtime_growth_write_policy_approval,
         "chapter_runtime_growth_approved_policy_apply_plan": chapter_runtime_growth_approved_policy_apply_plan,
+        "chapter_runtime_growth_applied_policy": chapter_runtime_growth_applied_policy,
+        "chapter_runtime_growth_policy_rollback": chapter_runtime_growth_policy_rollback,
         "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
         "unified_acceptance_preflight": unified_acceptance_preflight,
         "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate,
