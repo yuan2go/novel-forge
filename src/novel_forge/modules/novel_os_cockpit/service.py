@@ -25,6 +25,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     workflow_governance = _workflow_governance_readiness(rows)
     approval_request_caller_readiness = _approval_request_caller_readiness(rows)
     source_guarded_apply_readiness = _source_guarded_apply_readiness(rows)
+    source_governance_runtime_gate = _latest_gate_result(rows, "source_governance_runtime")
     production_console = _production_control_console(
         rows,
         blocking_issues,
@@ -35,6 +36,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         workflow_governance,
         approval_request_caller_readiness,
         source_guarded_apply_readiness,
+        source_governance_runtime_gate,
     )
     content = {
         "project_id": project_id,
@@ -62,6 +64,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "approval_request_missing_caller_count": approval_request_caller_readiness["summary"]["missing_dimension_count"],
             "source_guarded_apply_status": source_guarded_apply_readiness["status"],
             "source_stale_pending_regeneration_count": source_guarded_apply_readiness["summary"]["stale_pending_regeneration_count"],
+            "source_governance_runtime_gate_status": source_governance_runtime_gate["status"],
         },
         "task_health": {
             "agent_queue_status": queue_status,
@@ -86,6 +89,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "workflow_governance": workflow_governance,
             "approval_request_caller_readiness": approval_request_caller_readiness,
             "source_guarded_apply_readiness": source_guarded_apply_readiness,
+            "source_governance_runtime_gate": source_governance_runtime_gate,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -100,6 +104,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "workflow_governance": workflow_governance,
             "approval_request_caller_readiness": approval_request_caller_readiness,
             "source_guarded_apply_readiness": source_guarded_apply_readiness,
+            "source_governance_runtime_gate": source_governance_runtime_gate,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -707,6 +712,7 @@ def _production_control_console(
     workflow_governance: dict[str, Any],
     approval_request_caller_readiness: dict[str, Any],
     source_guarded_apply_readiness: dict[str, Any],
+    source_governance_runtime_gate: dict[str, Any],
 ) -> dict[str, Any]:
     chapter_queue = _latest_assets(rows, "chapter_plan", limit=20)
     draft_rows = _latest_assets(rows, "draft_chapter", limit=20)
@@ -722,6 +728,7 @@ def _production_control_console(
         "workflow_governance": workflow_governance["status"],
         "approval_request_callers": approval_request_caller_readiness["status"],
         "source_guarded_apply": source_guarded_apply_readiness["status"],
+        "source_governance_runtime": source_governance_runtime_gate["status"],
         "release": release_status,
         "publish": _latest_status(rows, asset_type="publish_gate_report"),
     }
@@ -743,6 +750,7 @@ def _production_control_console(
             "workflow_governance": workflow_governance["status"],
             "approval_request_callers": approval_request_caller_readiness["status"],
             "source_guarded_apply": source_guarded_apply_readiness["status"],
+            "source_governance_runtime": source_governance_runtime_gate["status"],
             "release": release_status,
         },
         "feedback_approval_queue": feedback_proposals,
@@ -762,6 +770,7 @@ def _production_control_console(
         "workflow_governance": workflow_governance,
         "approval_request_caller_readiness": approval_request_caller_readiness,
         "source_guarded_apply_readiness": source_guarded_apply_readiness,
+        "source_governance_runtime_gate": source_governance_runtime_gate,
     }
 
 

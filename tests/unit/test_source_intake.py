@@ -28,6 +28,7 @@ from novel_forge.modules.source_intake import (
     rollback_governance_application,
     rollback_source_diff_repair,
     run_source_connector,
+    run_source_governance_runtime_gate,
     sweep_source_retention_expiry,
     sweep_source_stale_quarantine,
 )
@@ -692,6 +693,98 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertTrue(content["repair_plans"][0]["approval_request_path"])
             self.assertFalse(content["quality"]["connector_execution_performed"])
             self.assertFalse(content["quality"]["dispatch_applied"])
+
+    def test_source_governance_runtime_gate_fails_closed_without_required_sweep_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            result = run_source_governance_runtime_gate(storage, project_id="source-runtime-gate-p", environment="production")
+
+            self.assertEqual(result["status"], "failed")
+            self.assertTrue(result["blocking"])
+            self.assertEqual(result["gate_result"]["asset"]["type"], "gate_result")
+            self.assertEqual(result["gate_result"]["asset"]["content"]["gate_kind"], "source_governance_runtime")
+            self.assertGreaterEqual(result["summary"]["missing_evidence_count"], 2)
+            self.assertFalse(result["summary"]["mutation_applied"])
+            self.assertFalse(result["summary"]["connector_execution_performed"])
+            self.assertFalse(result["summary"]["dispatch_applied"])
+            self.assertFalse(result["summary"]["rollback_applied"])
+
+    def test_source_governance_runtime_gate_passes_with_clean_readiness_and_sweeps(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            sweep_source_stale_quarantine(storage, {"project_id": "source-runtime-gate-p", "max_assets": 20})
+            sweep_source_retention_expiry(storage, {"project_id": "source-runtime-gate-p", "max_assets": 20})
+
+            result = run_source_governance_runtime_gate(storage, project_id="source-runtime-gate-p", environment="production")
+            gate_content = result["gate_result"]["asset"]["content"]
+
+            self.assertEqual(result["status"], "passed")
+            self.assertFalse(result["blocking"])
+            self.assertEqual(gate_content["status"], "passed")
+            self.assertEqual(result["summary"]["stale_sweep_status"], "clean")
+            self.assertEqual(result["summary"]["retention_sweep_status"], "clean")
+            self.assertEqual(result["summary"]["unguarded_source_derived_count"], 0)
+            self.assertFalse(gate_content["result"]["summary"]["raw_source_text_included"])
+
+    def test_source_governance_runtime_gate_warns_locally_and_fails_in_production_for_stale_assets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            storage.write_asset_auto(
+                KnowledgeCard(
+                    id="source-runtime-stale-card",
+                    title="Stale source-derived card",
+                    source="local-corpus",
+                    tags=["mkaos", "source-derived"],
+                    content={
+                        "principles": ["Use abstract source mechanism."],
+                        "principle": "Use abstract source mechanism.",
+                        "source_eligibility": {"decision": "allowed", "source_policy_ref": "data/raw/source-policy.json", "source_risk_report_ref": "data/raw/source-risk.json"},
+                    },
+                    metadata={"project_id": "source-runtime-gate-p", "asset_status": "stale", "use_in_generation_rag": False},
+                    references=["data/raw/source-policy.json", "data/raw/source-risk.json"],
+                )
+            )
+            sweep_source_stale_quarantine(storage, {"project_id": "source-runtime-gate-p", "max_assets": 20})
+            sweep_source_retention_expiry(storage, {"project_id": "source-runtime-gate-p", "max_assets": 20})
+
+            local_result = run_source_governance_runtime_gate(storage, project_id="source-runtime-gate-p", environment="local")
+            production_result = run_source_governance_runtime_gate(storage, project_id="source-runtime-gate-p", environment="production")
+
+            self.assertEqual(local_result["status"], "warning")
+            self.assertFalse(local_result["blocking"])
+            self.assertEqual(production_result["status"], "failed")
+            self.assertTrue(production_result["blocking"])
+            blocker_codes = {row["code"] for row in production_result["blocking_rows"]}
+            self.assertIn("source_guarded_apply_review_required", blocker_codes)
+            self.assertIn("source_stale_quarantine_sweep_impacted", blocker_codes)
+
+    def test_source_governance_runtime_gate_blocks_unguarded_source_derived_assets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            storage.write_asset_auto(
+                KnowledgeCard(
+                    id="source-runtime-unguarded-card",
+                    title="Unguarded source-derived card",
+                    source="local-corpus",
+                    tags=["mkaos", "source-derived"],
+                    content={"principles": ["Use abstract source mechanism."], "principle": "Use abstract source mechanism.", "source_ref": "local-corpus"},
+                    metadata={"project_id": "source-runtime-gate-p", "asset_status": "active", "use_in_generation_rag": True},
+                    references=[],
+                )
+            )
+            sweep_source_stale_quarantine(storage, {"project_id": "source-runtime-gate-p", "max_assets": 20})
+            sweep_source_retention_expiry(storage, {"project_id": "source-runtime-gate-p", "max_assets": 20})
+
+            result = run_source_governance_runtime_gate(storage, project_id="source-runtime-gate-p", environment="production")
+
+            self.assertEqual(result["status"], "failed")
+            self.assertTrue(result["blocking"])
+            self.assertIn("unguarded_source_derived_asset", {row["code"] for row in result["blocking_rows"]})
 
     def test_governance_application_applies_mkaos_recommendation_only_after_approval_and_can_rollback(self):
         with tempfile.TemporaryDirectory() as tmp:

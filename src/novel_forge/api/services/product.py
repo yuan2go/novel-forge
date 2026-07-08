@@ -42,6 +42,7 @@ from novel_forge.modules.source_intake import (
     rollback_governance_application,
     rollback_source_diff_repair,
     run_source_connector,
+    run_source_governance_runtime_gate,
     sweep_source_retention_expiry,
     sweep_source_stale_quarantine,
 )

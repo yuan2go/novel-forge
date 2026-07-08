@@ -262,6 +262,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/sources/stale-sweep",
                 "/product/sources/retention-sweep",
                 "/product/sources/guarded-apply-readiness",
+                "/product/sources/runtime-gate",
                 "/product/sources/context-eligibility",
                 "/product/drafts",
                 "/product/reviews/run",
@@ -964,6 +965,39 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertFalse(content["quality"]["connector_execution_performed"])
             self.assertFalse(content["quality"]["dispatch_applied"])
 
+    def test_source_governance_runtime_gate_route_passes_with_clean_sweeps(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.modules.source_intake import sweep_source_retention_expiry, sweep_source_stale_quarantine
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+            storage = LocalStorage(root)
+            sweep_source_stale_quarantine(storage, {"project_id": "route-source-runtime-gate", "max_assets": 20})
+            sweep_source_retention_expiry(storage, {"project_id": "route-source-runtime-gate", "max_assets": 20})
+
+            response = client.get(
+                "/product/sources/runtime-gate",
+                params={"project_id": "route-source-runtime-gate", "environment": "production"},
+            )
+
+            self.assertEqual(response.status_code, 200, response.text)
+            payload = response.json()
+            self.assertEqual(payload["status"], "passed")
+            self.assertFalse(payload["blocking"])
+            self.assertEqual(payload["gate_result"]["asset"]["type"], "gate_result")
+            self.assertEqual(payload["gate_result"]["asset"]["content"]["gate_kind"], "source_governance_runtime")
+            self.assertEqual(payload["summary"]["stale_sweep_status"], "clean")
+            self.assertEqual(payload["summary"]["retention_sweep_status"], "clean")
+
     def test_project_cockpit_route_surfaces_clean_workflow_governance_readiness(self):
         try:
             from fastapi.testclient import TestClient
@@ -1109,7 +1143,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         from novel_forge.api.app import create_app
         from novel_forge.infrastructure.settings import IndustrialSettings
-        from novel_forge.schemas import ProjectMetricSnapshot
+        from novel_forge.schemas import BaseAsset, ProjectMetricSnapshot
         from novel_forge.storage.local import LocalStorage
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -1154,6 +1188,28 @@ class ProductApiRouterTests(unittest.TestCase):
                     metadata={"project_id": "route-book-source-readiness", "snapshot_kind": "source_guarded_apply_readiness"},
                 )
             )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="route-source-governance-runtime-gate",
+                    type="gate_result",
+                    title="Route source governance runtime gate",
+                    content={
+                        "gate_id": "route-source-governance-runtime-gate",
+                        "gate_kind": "source_governance_runtime",
+                        "status": "failed",
+                        "target_paths": ["data/runs/source-readiness.json"],
+                        "blocking": True,
+                        "message": "source governance runtime gate has blockers",
+                        "result": {
+                            "contract": "source-governance-runtime-gate-v1",
+                            "summary": {"blocking_count": 1, "readiness_status": "review_required"},
+                            "blocking_rows": [{"code": "source_guarded_apply_review_required"}],
+                        },
+                        "created_at": "2026-07-08T00:00:01Z",
+                    },
+                    metadata={"project_id": "route-book-source-readiness"},
+                )
+            )
 
             response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-source-readiness"})
 
@@ -1165,8 +1221,11 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(readiness["summary"]["dispatch_ready_task_count"], 1)
             self.assertTrue(readiness["path"])
             self.assertEqual(content["quality"]["source_guarded_apply_status"], "review_required")
+            self.assertEqual(content["quality"]["source_governance_runtime_gate_status"], "failed")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["source_guarded_apply"], "review_required")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["source_governance_runtime"], "failed")
             self.assertEqual(content["cockpit"]["source_guarded_apply_readiness"]["status"], "review_required")
+            self.assertEqual(content["cockpit"]["source_governance_runtime_gate"]["status"], "failed")
 
     def test_project_cockpit_route_keeps_missing_workflow_governance_unready(self):
         try:

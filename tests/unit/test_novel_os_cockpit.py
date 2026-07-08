@@ -103,6 +103,28 @@ class NovelOsCockpitTests(unittest.TestCase):
                     metadata={"project_id": "book-a", "snapshot_kind": "source_guarded_apply_readiness"},
                 )
             )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="source-governance-runtime-gate-book-a",
+                    type="gate_result",
+                    title="Source governance runtime gate",
+                    content={
+                        "gate_id": "source-governance-runtime-gate-book-a",
+                        "gate_kind": "source_governance_runtime",
+                        "status": "failed",
+                        "target_paths": ["data/runs/source-readiness.json"],
+                        "blocking": True,
+                        "message": "source governance runtime gate has blockers",
+                        "result": {
+                            "contract": "source-governance-runtime-gate-v1",
+                            "summary": {"blocking_count": 1, "readiness_status": "review_required"},
+                            "blocking_rows": [{"code": "source_guarded_apply_review_required"}],
+                        },
+                        "created_at": "2026-07-08T00:00:02Z",
+                    },
+                    metadata={"project_id": "book-a"},
+                )
+            )
             run_context_governance_coverage_gate(storage, project_id="book-a", environment="production")
             build_production_governance_evidence_drift_report(storage, project_id="book-a", persist=True)
             run_production_governance_drift_gate(storage, project_id="book-a", environment="production")
@@ -145,12 +167,15 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["source_guarded_apply_readiness"]["summary"]["stale_pending_regeneration_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["source_guarded_apply_status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["source_stale_pending_regeneration_count"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["source_governance_runtime_gate_status"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["approval_request_callers"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_guarded_apply"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_governance_runtime"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["workflow_governance"]["status"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["approval_request_caller_readiness"]["status"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_guarded_apply_readiness"]["status"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_governance_runtime_gate"]["status"], "failed")
             self.assertEqual(pending_approval["asset"]["content"]["scope"], "publish")
 
     def test_project_cockpit_surfaces_workflow_governance_readiness(self):

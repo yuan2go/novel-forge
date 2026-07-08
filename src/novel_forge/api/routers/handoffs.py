@@ -200,6 +200,26 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.get("/product/sources/runtime-gate")
+    def source_governance_runtime_gate(
+        project_id: str | None = None,
+        environment: str = "",
+        mode: str = "",
+        persist_readiness: bool = True,
+        limit: int = Query(default=1000, ge=1, le=5000),
+    ) -> dict[str, Any]:
+        try:
+            return run_source_governance_runtime_gate(
+                LocalStorage(app_settings.root),
+                project_id=project_id or "",
+                environment=environment,
+                mode=mode,
+                persist_readiness=persist_readiness,
+                limit=limit,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/sources/context-eligibility")
     def source_context_eligibility_endpoint(request: SourceContextEligibilityRequest) -> dict[str, Any]:
         try:
