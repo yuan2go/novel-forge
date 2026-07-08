@@ -8,7 +8,7 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.materials import record_material_usage_event
-from novel_forge.modules.mkaos import build_knowledge_pack, record_usage_event
+from novel_forge.modules.mkaos import build_knowledge_pack, load_context_governance_binding_application, record_usage_event
 from novel_forge.modules.mkaos.pack_policy import (
     mkaos_pack_warning_fallback,
     resolve_mkaos_pack_policy,
@@ -550,6 +550,7 @@ def build_flow_context_bundle(
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
     selector_governance_report_path: str | Path | None = None,
+    selector_governance_binding_application_report_path: str | Path | None = None,
 ) -> dict[str, Any]:
     target_file = resolve_path(storage.root, target_path)
     target_asset = storage.read_asset(target_file)
@@ -562,6 +563,8 @@ def build_flow_context_bundle(
         "runtime_assets_in_generation_rag_allowed": False,
         "exclude_raw_sources": True,
     })
+    if is_production_environment(environment) and selector_governance_report_path and not selector_governance_binding_application_report_path:
+        raise ValueError("production selector governance binding requires selector_governance_binding_application_report_path")
     if existing_context_bundle_path:
         bundle_file = resolve_path(storage.root, existing_context_bundle_path)
         bundle_asset = storage.read_asset(bundle_file)
@@ -593,6 +596,14 @@ def build_flow_context_bundle(
         project_id = resolved_project_id
     else:
         project_id = str(project_id or resolved_project_id or "")
+    selector_governance_binding = _resolve_context_selector_governance_binding(
+        storage,
+        selector_governance_binding_application_report_path,
+        selector_governance_report_path=selector_governance_report_path,
+        project_id=project_id,
+        environment=environment,
+    )
+    effective_selector_governance_report_path = selector_governance_binding.get("selector_governance_report_path") or str(selector_governance_report_path or "")
     pack_policy = resolve_mkaos_pack_policy(mkaos_flow, environment=environment)
     try:
         mkaos_pack = build_knowledge_pack(
@@ -610,7 +621,7 @@ def build_flow_context_bundle(
                 "source_policy": policy,
                 "environment": environment,
                 "os_envelope": os_envelope or {},
-                "selector_governance_report_path": str(selector_governance_report_path or ""),
+                "selector_governance_report_path": effective_selector_governance_report_path,
             },
         )
     except Exception as exc:
@@ -646,19 +657,27 @@ def build_flow_context_bundle(
     context_id = str(bundle_data.get("id", ""))
     mkaos_asset = mkaos_pack.get("asset", {}) if isinstance(mkaos_pack.get("asset", {}), dict) else {}
     source_asset_ids = [str(item) for item in content.get("source_asset_ids", []) if str(item).strip()] if isinstance(content.get("source_asset_ids", []), list) else []
-    evidence_refs = _dedupe([str(mkaos_asset.get("id", "")), str(mkaos_pack.get("path", "")), *source_asset_ids])
+    evidence_refs = _dedupe([
+        str(mkaos_asset.get("id", "")),
+        str(mkaos_pack.get("path", "")),
+        *source_asset_ids,
+        *(_selector_governance_binding_evidence_refs(selector_governance_binding) if selector_governance_binding else []),
+    ])
     knowledge_context_contract = build_knowledge_context_contract(
         context_bundle={"path": _display_path(storage.root, bundle_file), "asset": bundle_data},
         mkaos_pack=mkaos_pack,
         flow=mkaos_flow,
         source_policy=policy,
     )
+    if selector_governance_binding:
+        knowledge_context_contract["selector_governance_binding_application"] = selector_governance_binding
     content.update(
         {
             "context_bundle_id": context_id,
             "context_builder_version": "context-builder-v2-mkaos",
             "project_id": project_id or "local-system",
             "knowledge_context_contract": knowledge_context_contract,
+            "selector_governance_binding_application": selector_governance_binding,
             "task_type": flow,
             "mkaos_flow": mkaos_flow,
             "target_asset_type": content.get("target_asset_type", ""),
@@ -702,6 +721,8 @@ def build_flow_context_bundle(
             "mkaos_pack_path": str(mkaos_pack.get("path", "")),
             "mkaos_warning": str(mkaos_pack.get("warning", "")),
             "knowledge_context_contract": knowledge_context_contract,
+            "selector_governance_binding_application_path": selector_governance_binding.get("application_report_path", "") if selector_governance_binding else "",
+            "selector_governance_report_path": effective_selector_governance_report_path,
             "knowledge_pack_id": knowledge_context_contract["knowledge_pack_id"],
             "selected_knowledge_ids": knowledge_context_contract["selected_knowledge_ids"],
             "selector_policy_version": knowledge_context_contract["selector_policy_version"],
@@ -858,6 +879,38 @@ def knowledge_context_contract_metadata(contract: dict[str, Any]) -> dict[str, A
         "selected_knowledge_ids": contract.get("selected_knowledge_ids", []) if isinstance(contract.get("selected_knowledge_ids", []), list) else [],
         "selector_policy_version": str(contract.get("selector_policy_version", "")),
     }
+
+
+def _resolve_context_selector_governance_binding(
+    storage: LocalStorage,
+    binding_application_ref: str | Path | None,
+    *,
+    selector_governance_report_path: str | Path | None,
+    project_id: str,
+    environment: str,
+) -> dict[str, Any]:
+    direct_report_ref = str(selector_governance_report_path or "").strip()
+    if binding_application_ref:
+        binding = load_context_governance_binding_application(storage, binding_application_ref, project_id=project_id, environment=environment)
+        binding_report_path = str(binding.get("selector_governance_report_path") or "")
+        if direct_report_ref and direct_report_ref != binding_report_path:
+            raise ValueError("selector_governance_report_path does not match approved binding application payload")
+        return binding
+    if is_production_environment(environment) and direct_report_ref:
+        raise ValueError("production selector governance binding requires selector_governance_binding_application_report_path")
+    return {}
+
+
+def _selector_governance_binding_evidence_refs(binding: dict[str, Any]) -> list[str]:
+    return _dedupe(
+        [
+            str(binding.get("application_report_path") or ""),
+            str(binding.get("binding_proposal_path") or ""),
+            str(binding.get("selector_governance_report_path") or ""),
+            str(binding.get("approval_request_path") or ""),
+            str(binding.get("rollback_plan_path") or ""),
+        ]
+    )
 
 
 def require_knowledge_context_contract(contract: dict[str, Any], *, operation: str, environment: str = "") -> dict[str, Any]:

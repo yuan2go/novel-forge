@@ -12,7 +12,15 @@ from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.drafting import service as drafting_service
 from novel_forge.modules.outline import service as outline_service
 from novel_forge.modules.review import service as review_service
-from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding
+from novel_forge.modules.mkaos import (
+    apply_context_governance_binding,
+    create_knowledge_card,
+    create_usage_binding,
+    propose_context_governance_binding,
+    refresh_mkaos_selector_governance,
+    rollback_context_governance_binding,
+)
+from novel_forge.modules.permission_center import resolve_approval_request
 from novel_forge.schemas import CharacterCard, ChapterPlan
 from novel_forge.storage.local import LocalStorage
 
@@ -73,6 +81,129 @@ class ContextBuilderMkaosFlowTests(unittest.TestCase):
             self.assertTrue(content["mkaos_pack"]["pack_items"])
             self.assertFalse(content["source_isolation"]["source_chunk_raw_text_allowed"])
             self.assertNotIn('"raw_text"', str(content["mkaos_pack"]))
+
+    def test_build_flow_context_bundle_consumes_approved_selector_governance_binding_application(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Governed Chapter plan",
+                    content={"chapter": 1, "objective": "use governed knowledge", "beats": ["pressure"], "hook": "cost appears"},
+                    metadata={"project_id": "ctx-binding"},
+                ),
+            )
+            card = create_knowledge_card(
+                storage,
+                {
+                    "project_id": "ctx-binding",
+                    "concept_name": "governed pressure mechanism",
+                    "core_explanation": "Governance-approved selector evidence should influence context only through an application report.",
+                    "weight": 1.0,
+                },
+            )
+            create_usage_binding(storage, card["asset"]["id"], {"project_id": "ctx-binding", "flow": "prose", "usage_type": "optional", "input_role": "optional", "priority": 10})
+            card_path = storage.root / card["path"]
+            card_data = storage.read_json(card_path)
+            card_data["metadata"].update({"mkaos_governance_application_status": "applied_metadata_only", "mkaos_governance_weight_delta": 2.0, "mkaos_governance_action": "boost"})
+            storage.write_json(card_path, card_data)
+            report = refresh_mkaos_selector_governance(storage, {"project_id": "ctx-binding"})
+            proposal = propose_context_governance_binding(storage, {"project_id": "ctx-binding", "selector_governance_report_path": report["path"]})
+            approval_path = proposal["asset"]["content"]["approval_request_path"]
+            resolve_approval_request(storage, approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve binding"})
+            applied = apply_context_governance_binding(storage, {"binding_proposal_path": proposal["path"], "approval_request_path": approval_path, "confirm_apply": True, "project_id": "ctx-binding"})
+
+            result = build_flow_context_bundle(
+                storage,
+                plan_path,
+                flow="prose",
+                project_id="ctx-binding",
+                chapter_id="1",
+                current_goal="draft governed chapter",
+                selector_governance_binding_application_report_path=applied["application_report"]["path"],
+            )
+            content = result["asset"]["content"]
+            binding = content["selector_governance_binding_application"]
+            self.assertEqual(binding["application_report_path"], applied["application_report"]["path"])
+            self.assertEqual(binding["selector_governance_report_path"], report["path"])
+            self.assertEqual(content["knowledge_context_contract"]["selector_governance_binding_application"]["application_report_path"], applied["application_report"]["path"])
+            self.assertEqual(content["knowledge_context_contract"]["selector_governance"]["report_path"], report["path"])
+            selected_by_id = {item["knowledge_id"]: item for item in content["mkaos_pack"]["pack_items"]}
+            self.assertEqual(selected_by_id[card["asset"]["id"]]["selector_decision"]["weight"], 3.0)
+            self.assertIn(applied["application_report"]["path"], content["evidence_refs"])
+
+    def test_production_context_builder_rejects_direct_selector_governance_report_without_binding_application(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Direct report production plan",
+                    content={"chapter": 1, "objective": "reject direct report", "beats": ["gate"], "hook": "gate holds"},
+                    metadata={"project_id": "ctx-direct-block"},
+                ),
+            )
+            card = create_knowledge_card(storage, {"project_id": "ctx-direct-block", "concept_name": "direct report", "core_explanation": "direct production report should be blocked"})
+            create_usage_binding(storage, card["asset"]["id"], {"project_id": "ctx-direct-block", "flow": "prose", "usage_type": "optional", "input_role": "optional", "priority": 10})
+            report = refresh_mkaos_selector_governance(storage, {"project_id": "ctx-direct-block"})
+
+            with self.assertRaisesRegex(ValueError, "production selector governance binding requires"):
+                build_flow_context_bundle(
+                    storage,
+                    plan_path,
+                    flow="prose",
+                    project_id="ctx-direct-block",
+                    chapter_id="1",
+                    current_goal="draft direct block",
+                    environment="production",
+                    os_envelope=_os_envelope("ctx-direct-block", "prose", "knowledge_pack", trace_id="trace-direct-block"),
+                    selector_governance_report_path=report["path"],
+                )
+
+    def test_context_builder_rejects_rolled_back_selector_governance_binding_application(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Rolled back binding plan",
+                    content={"chapter": 1, "objective": "reject rolled back binding", "beats": ["gate"], "hook": "gate holds"},
+                    metadata={"project_id": "ctx-rolled-back"},
+                ),
+            )
+            card = create_knowledge_card(storage, {"project_id": "ctx-rolled-back", "concept_name": "rolled back", "core_explanation": "rolled back binding should not be consumed"})
+            create_usage_binding(storage, card["asset"]["id"], {"project_id": "ctx-rolled-back", "flow": "prose", "usage_type": "optional", "input_role": "optional", "priority": 10})
+            report = refresh_mkaos_selector_governance(storage, {"project_id": "ctx-rolled-back"})
+            proposal = propose_context_governance_binding(storage, {"project_id": "ctx-rolled-back", "selector_governance_report_path": report["path"]})
+            approval_path = proposal["asset"]["content"]["approval_request_path"]
+            resolve_approval_request(storage, approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve binding"})
+            applied = apply_context_governance_binding(storage, {"binding_proposal_path": proposal["path"], "approval_request_path": approval_path, "confirm_apply": True, "project_id": "ctx-rolled-back"})
+            rollback_blocked = rollback_context_governance_binding(storage, {"rollback_plan_path": applied["rollback_plan"]["path"], "project_id": "ctx-rolled-back"})
+            rollback_approval_path = rollback_blocked["approval_request"]["path"]
+            resolve_approval_request(storage, rollback_approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve rollback"})
+            rollback_context_governance_binding(
+                storage,
+                {
+                    "rollback_plan_path": applied["rollback_plan"]["path"],
+                    "approval_request_path": rollback_approval_path,
+                    "confirm_rollback": True,
+                    "project_id": "ctx-rolled-back",
+                },
+            )
+
+            with self.assertRaisesRegex(ValueError, "binding application must be applied"):
+                build_flow_context_bundle(
+                    storage,
+                    plan_path,
+                    flow="prose",
+                    project_id="ctx-rolled-back",
+                    chapter_id="1",
+                    current_goal="draft rolled back block",
+                    selector_governance_binding_application_report_path=applied["application_report"]["path"],
+                )
 
     def test_production_context_builder_requires_os_envelope_and_can_use_enforced_envelope(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -483,6 +483,47 @@ def rollback_context_governance_binding(storage: LocalStorage, payload: dict[str
     }
 
 
+def load_context_governance_binding_application(storage: LocalStorage, ref: str | Path, *, project_id: str = "", environment: str = "") -> dict[str, Any]:
+    path, data = _resolve_asset_by_ref(storage, str(ref or ""))
+    if not isinstance(data, dict) or data.get("type") != "mkaos_selector_governance_binding_application_report":
+        raise ValueError("selector_governance_binding_application_report_path must point to a binding application report")
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    status = str(content.get("status") or metadata.get("asset_status") or "")
+    if status != "applied":
+        raise ValueError(f"selector governance binding application must be applied, got {status or 'unknown'}")
+    effective_project_id = str(project_id or "")
+    application_project_id = _asset_project_id(data)
+    if effective_project_id and application_project_id and effective_project_id != application_project_id:
+        raise ValueError("selector governance binding application project_id does not match context build project_id")
+    contract = content.get("application_contract", {}) if isinstance(content.get("application_contract", {}), dict) else {}
+    if contract.get("context_build_executed") is not False or contract.get("context_bundle_mutated") is not False:
+        raise ValueError("selector governance binding application contract is not payload-only")
+    patch = content.get("context_builder_payload_patch", {}) if isinstance(content.get("context_builder_payload_patch", {}), dict) else {}
+    report_ref = str(patch.get("selector_governance_report_path") or content.get("selector_governance_report_path") or "").strip()
+    if not report_ref:
+        raise ValueError("selector governance binding application missing selector_governance_report_path")
+    report_path, report = _resolve_selector_report(storage, report_ref)
+    report_project_id = _asset_project_id(report)
+    if effective_project_id and report_project_id and effective_project_id != report_project_id:
+        raise ValueError("selector governance report project_id does not match context build project_id")
+    return {
+        "application_report_id": str(content.get("binding_application_id") or data.get("id") or ""),
+        "application_report_path": _display_path(storage.root, path),
+        "binding_proposal_id": str(content.get("binding_proposal_id") or ""),
+        "binding_proposal_path": str(content.get("binding_proposal_path") or ""),
+        "selector_governance_report_id": str(report.get("id") or report.get("content", {}).get("selector_governance_report_id") or ""),
+        "selector_governance_report_path": _display_path(storage.root, report_path),
+        "approval_request_path": str(content.get("approval_request_path") or ""),
+        "rollback_plan_path": str(content.get("rollback_plan_path") or ""),
+        "context_builder_payload_patch": {**patch, "selector_governance_report_path": _display_path(storage.root, report_path)},
+        "application_contract": contract,
+        "environment": str(environment or ""),
+        "status": status,
+        "payload_only": True,
+    }
+
+
 def _resolve_selector_report(storage: LocalStorage, ref: str) -> tuple[Path, dict[str, Any]]:
     path, data = _resolve_asset_by_ref(storage, ref)
     if not isinstance(data, dict) or data.get("type") != "mkaos_selector_governance_report":
