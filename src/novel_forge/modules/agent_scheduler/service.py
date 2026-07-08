@@ -931,6 +931,9 @@ def agent_center_snapshot(
     hard_stop_dashboard = agent_hard_stop_dashboard(storage, project_id=project_id or "")
     rollback_rehearsals = _agent_center_assets(storage, "agent_rollback_rehearsal", project_id=project_id, limit=limit)
     dead_letter_repairs = _agent_center_assets(storage, "agent_dead_letter_repair", project_id=project_id, limit=limit)
+    dead_letter_repair_rows = [_agent_dead_letter_repair_row(row) for row in dead_letter_repairs[:80]]
+    governance_repair_required_count = sum(1 for row in dead_letter_repair_rows if row.get("governance_review_required") is True)
+    governance_repair_confirmed_count = sum(1 for row in dead_letter_repair_rows if row.get("governance_review_confirmed") is True)
     agent_dags = _agent_center_assets(storage, "agent_dag", project_id=project_id, limit=limit)
     return {
         "status": status,
@@ -955,6 +958,10 @@ def agent_center_snapshot(
             "rollback_count": len(rollbacks),
             "contract_count": len(contracts),
             "governance_dead_letter_count": len(governance_dead_letters),
+            "dead_letter_repair_count": len(dead_letter_repair_rows),
+            "governance_repair_required_count": governance_repair_required_count,
+            "governance_repair_confirmed_count": governance_repair_confirmed_count,
+            "governance_repair_missing_review_count": max(0, governance_repair_required_count - governance_repair_confirmed_count),
             "queue_by_status": by_status,
         },
         "readiness_checks": readiness_checks,
@@ -974,7 +981,7 @@ def agent_center_snapshot(
         "governance_dead_letters": governance_dead_letters[:80],
         "rollback_preview": rollback_rows[:80],
         "rollback_rehearsals": [_agent_asset_compact(row) for row in rollback_rehearsals[:80]],
-        "dead_letter_repairs": [_agent_dead_letter_repair_row(row) for row in dead_letter_repairs[:80]],
+        "dead_letter_repairs": dead_letter_repair_rows,
         "agent_dags": [_agent_asset_compact(row) for row in agent_dags[:80]],
         "operation_coverage_full": operation_coverage_full,
         "hard_stop_dashboard": hard_stop_dashboard,

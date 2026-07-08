@@ -582,7 +582,12 @@ class AgentSchedulerTests(unittest.TestCase):
             center = client.get("/product/agents/center", params={"project_id": result["fixture"]["project_id"]})
 
             self.assertEqual(center.status_code, 200)
-            repair = center.json()["dead_letter_repairs"][0]
+            body = center.json()
+            self.assertEqual(body["summary"]["dead_letter_repair_count"], 1)
+            self.assertEqual(body["summary"]["governance_repair_required_count"], 1)
+            self.assertEqual(body["summary"]["governance_repair_confirmed_count"], 1)
+            self.assertEqual(body["summary"]["governance_repair_missing_review_count"], 0)
+            repair = body["dead_letter_repairs"][0]
             self.assertTrue(repair["governance_review_required"])
             self.assertTrue(repair["governance_review_confirmed"])
             self.assertEqual(repair["reviewed_failed_gate_count"], len(governance["failed_gate_paths"]))
