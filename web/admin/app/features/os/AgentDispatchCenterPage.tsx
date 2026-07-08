@@ -142,6 +142,7 @@ export function AgentDispatchCenterPage() {
         <Metric label="Gov DL" value={String(agentCenter?.summary?.governance_dead_letter_count ?? governanceDeadLetters.length)} />
         <Metric label="DL Repairs" value={String(agentCenter?.summary?.dead_letter_repair_count ?? deadLetterRepairs.length)} />
         <Metric label="Gov Repair" value={`${String(agentCenter?.summary?.governance_repair_confirmed_count ?? 0)}/${String(agentCenter?.summary?.governance_repair_required_count ?? 0)}`} />
+        <Metric label="Gov Missing" value={String(agentCenter?.summary?.governance_repair_missing_review_count ?? 0)} />
       </section>
 
       <section className="panel">
