@@ -4,7 +4,7 @@ WEB_DIR ?= web/admin
 LOCAL_WORKSPACE ?= .local/workspace
 DEMO_WORKSPACE ?= .local/demo-workspace
 
-.PHONY: test lint validate demo local-workspace infra-up infra-down online-backends-up online-backends-smoke local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression api worker web-dev sync-skills sync-skills-dry-run check-skills help
+.PHONY: test lint validate demo local-workspace infra-up infra-down online-backends-up online-backends-smoke local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression api worker web-dev sync-skills sync-skills-dry-run check-skills help
 
 help:
 	@echo "make test      - run stdlib unittest suite"
@@ -22,6 +22,7 @@ help:
 	@echo "make failure-drill - run non-destructive failure recovery drill"
 	@echo "make v1-slow-acceptance - run explicit 10-chapter V1 slow acceptance"
 	@echo "make governance-dead-letter-regression - run focused governance dead-letter regression"
+	@echo "make runtime-growth-regression - run focused runtime write-growth regression"
 	@echo "make api       - run FastAPI backend"
 	@echo "make worker    - run Celery worker"
 	@echo "make web-dev   - run Next.js admin console"
@@ -91,6 +92,9 @@ v1-slow-acceptance:
 
 governance-dead-letter-regression:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_governance_dead_letter_regression.py
+
+runtime-growth-regression:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_runtime_growth_regression.py
 
 api:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli serve-api --root $(LOCAL_WORKSPACE)

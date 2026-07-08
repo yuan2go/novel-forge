@@ -47,6 +47,19 @@ python3 scripts/run_governance_dead_letter_regression.py --list
 
 The command bundle covers scheduler dead-letter failure fixtures, reviewed repair preflight, direct recovery blocking, Agent Center API evidence, repair audit/readiness evidence, compileall, and optional Web Admin static/type checks.
 
+## Runtime Growth Focused Regression
+
+Run this when changing chapter production runtime artifact policies, AgentRun/AgentEvent policy, Workflow runtime policy propagation, Agent Center event summary visibility, or related UI/API surfaces. It intentionally excludes chapter sequence acceptance and provider proof:
+
+```bash
+make runtime-growth-regression
+python3 scripts/run_runtime_growth_regression.py
+python3 scripts/run_runtime_growth_regression.py --skip-ui
+python3 scripts/run_runtime_growth_regression.py --list
+```
+
+The command bundle covers compact TaskStatus/NodeRun behavior, failure NodeRun/trace preservation, AgentRun event growth characterization, success-summary event compaction, failure event preservation, workflow runtime-policy propagation, Agent Center summary/API evidence, compileall, and optional Web Admin static/type checks.
+
 ## Makefile Targets
 
 | Command | Purpose | Notes |
@@ -61,6 +74,7 @@ The command bundle covers scheduler dead-letter failure fixtures, reviewed repai
 | `make local-smoke` | Smoke running local stack | Requires services |
 | `make v1-slow-acceptance` | Run explicit true 10-chapter V1 slow acceptance | Writes `docs/reports/v1-chapter-sequence-slow-acceptance.md`; not part of default `make test` |
 | `make governance-dead-letter-regression` | Run focused governance dead-letter regression | Does not run chapter acceptance or provider proof |
+| `make runtime-growth-regression` | Run focused runtime write-growth regression | Does not run chapter acceptance or provider proof |
 | `make web-dev` | Next.js dev console | Requires Node deps |
 
 ## Test Coverage Map
