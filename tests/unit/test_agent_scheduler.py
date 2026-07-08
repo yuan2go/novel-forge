@@ -26,6 +26,7 @@ from novel_forge.modules.workflow_nodes import create_workflow_definition, execu
 from novel_forge.schemas import ChapterPlan, ContextBundle, DraftChapter
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import generation_context_policy
+from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
 
 
 class AgentSchedulerTests(unittest.TestCase):
@@ -125,6 +126,39 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(snapshot["budget_burn"]["token_used"], 120)
             self.assertTrue(snapshot["gate_timeline"])
             self.assertIn("context_governance_runtime_coverage", {row["gate_kind"] for row in snapshot["gate_timeline"]})
+
+    def test_release_package_runner_attaches_production_governance_drift_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = create_production_ready_release_inputs(storage)
+            agent_run = {
+                "content": {
+                    "operation": "create-release-package",
+                    "input_assets": [{"path": str(fixture["draft_path"].relative_to(storage.root))}],
+                    "evidence": {
+                        "publish_gate_path": fixture["publish_gate_path"],
+                        "environment": "production",
+                        "project_id": fixture["project_id"],
+                        "workspace_path": fixture["workspace_path"],
+                        "source_policy": fixture["source_policy"],
+                        "os_envelope": production_envelope(
+                            fixture["project_id"],
+                            "release_package",
+                            trace_id=f"trace-scheduler-release-{fixture['project_id']}",
+                        ),
+                    },
+                },
+                "metadata": {"project_id": fixture["project_id"], "workspace_path": fixture["workspace_path"]},
+            }
+
+            result = agent_scheduler_service._run_release_package(storage, {}, agent_run)
+            gate = storage.read_asset(result["production_governance_drift_gate_path"])
+
+            self.assertTrue(result["path"])
+            self.assertEqual(result["production_governance_drift_gate"]["status"], "passed")
+            self.assertEqual(gate.type, "gate_result")
+            self.assertEqual(gate.content["gate_kind"], "production_governance_evidence_drift")
 
     def test_agent_center_links_tasks_loops_context_and_review_issues(self):
         with tempfile.TemporaryDirectory() as tmp:
