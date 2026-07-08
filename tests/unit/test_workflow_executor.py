@@ -27,11 +27,99 @@ from novel_forge.modules.workflow_nodes import (
     validate_workflow_run_transition,
     workflow_state_machine,
 )
-from novel_forge.schemas import CharacterCard, ChapterPlan, CleanedText, DraftChapter, Outline, ReviewReport, SourceDocument, WorldBible
+from novel_forge.schemas import (
+    CharacterCard,
+    ChapterPlan,
+    CleanedText,
+    ContextBundle,
+    DraftChapter,
+    MKAOSSelectorGovernanceBindingApplicationReport,
+    MKAOSSelectorGovernanceReport,
+    Outline,
+    ReviewReport,
+    SourceDocument,
+    WorldBible,
+)
 from novel_forge.storage.local import LocalStorage
 
 
 class WorkflowExecutorTests(unittest.TestCase):
+    def _write_selector_governance_context_bundle(self, storage: LocalStorage, plan_path: Path, *, project_id: str = "workflow-governance", status: str = "applied") -> dict[str, str]:
+        report_path = storage.write_asset(
+            "runs",
+            MKAOSSelectorGovernanceReport(
+                title="Workflow selector governance report",
+                content={
+                    "selector_governance_report_id": "selector-governance-report-workflow",
+                    "selector_policy_patch": {"weights": {"workflow_context": 1.0}},
+                    "refresh_contract": {"selector_refresh_only": True, "raw_source_text_included": False},
+                    "generated_at": "2026-07-08T00:00:00+00:00",
+                },
+                metadata={"project_id": project_id},
+            ),
+        )
+        report_ref = str(report_path.relative_to(storage.root))
+        application_path = storage.write_asset(
+            "runs",
+            MKAOSSelectorGovernanceBindingApplicationReport(
+                title="Workflow selector governance binding application",
+                content={
+                    "binding_application_id": "selector-governance-binding-application-workflow",
+                    "binding_proposal_path": "data/runs/selector-governance-binding-proposal-workflow.json",
+                    "selector_governance_report_path": report_ref,
+                    "context_builder_payload_patch": {
+                        "selector_governance_report_path": report_ref,
+                        "selector_governance_binding_application_report_id": "selector-governance-binding-application-workflow",
+                    },
+                    "status": status,
+                    "application_contract": {
+                        "approval_verified": True,
+                        "context_build_executed": False,
+                        "context_bundle_mutated": False,
+                        "payload_patch_only": True,
+                    },
+                    "created_at": "2026-07-08T00:00:00+00:00",
+                },
+                metadata={"project_id": project_id, "asset_status": status},
+                references=[report_ref],
+            ),
+        )
+        application_ref = str(application_path.relative_to(storage.root))
+        binding = {
+            "application_report_path": application_ref,
+            "selector_governance_report_path": report_ref,
+            "application_contract": {"approval_verified": True, "payload_patch_only": True},
+        }
+        context_path = storage.write_asset(
+            "contexts",
+            ContextBundle(
+                title="Workflow governed context",
+                source=storage.read_asset(plan_path).id,
+                content={
+                    "build_plan_id": "workflow-context-plan",
+                    "target_asset_id": storage.read_asset(plan_path).id,
+                    "selected_assets": [],
+                    "compressed_context": {},
+                    "token_budget": {"max_tokens": 1000},
+                    "token_estimate": 16,
+                    "actual_context": "workflow governed context",
+                    "source_asset_ids": [],
+                    "knowledge_context_contract": {
+                        "selector_governance": {"report_path": report_ref},
+                        "selector_governance_binding_application": binding,
+                    },
+                    "selector_governance_binding_application": binding,
+                },
+                metadata={
+                    "project_id": project_id,
+                    "selector_governance_report_path": report_ref,
+                    "selector_governance_binding_application_path": application_ref,
+                },
+                references=[str(plan_path.relative_to(storage.root)), report_ref, application_ref],
+            ),
+        )
+        return {"context_path": str(context_path.relative_to(storage.root)), "report_path": report_ref, "application_path": application_ref}
+
     def test_runtime_policy_blocks_generation_without_context_bundle(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -81,6 +169,127 @@ class WorkflowExecutorTests(unittest.TestCase):
             runtime_policy_gates = [item for item in gate_results if item.get("content", {}).get("gate_kind") == "runtime_policy"]
             self.assertTrue(runtime_policy_gates)
             self.assertEqual(runtime_policy_gates[-1]["content"]["status"], "failed")
+
+    def test_runtime_policy_records_selector_governance_binding_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}, metadata={"project_id": "workflow-governance"}),
+            )
+            refs = self._write_selector_governance_context_bundle(storage, plan_path)
+            workflow = create_workflow_definition(
+                storage,
+                name="Strict Governed Context Workflow",
+                entry_node_id="draft-agent",
+                runtime_policy={"mode": "operating_system", "require_context_bundle": True},
+                nodes=[
+                    {
+                        "node_id": "draft-agent",
+                        "node_type": "generation",
+                        "operation": "draft",
+                        "input_types": ["chapter_plan", "context_bundle"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "record_only", "context_bundle_path": refs["context_path"]},
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[plan_path, storage.root / refs["context_path"]])
+
+            self.assertEqual(result["status"], "completed")
+            node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
+            evidence = node_run.content["processor"]["runtime_policy_evidence"]
+            self.assertEqual(evidence["context_bundle_path"], refs["context_path"])
+            self.assertEqual(evidence["selector_governance_report_path"], refs["report_path"])
+            self.assertEqual(evidence["selector_governance_binding_application_report_path"], refs["application_path"])
+            self.assertEqual(evidence["selector_governance_binding_status"], "applied")
+
+    def test_runtime_policy_blocks_direct_selector_governance_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}, metadata={"project_id": "workflow-governance"}),
+            )
+            refs = self._write_selector_governance_context_bundle(storage, plan_path)
+            workflow = create_workflow_definition(
+                storage,
+                name="Strict Mismatched Governed Context Workflow",
+                entry_node_id="draft-agent",
+                runtime_policy={"mode": "operating_system", "require_context_bundle": True},
+                nodes=[
+                    {
+                        "node_id": "draft-agent",
+                        "node_type": "generation",
+                        "operation": "draft",
+                        "input_types": ["chapter_plan", "context_bundle"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {
+                            "kind": "record_only",
+                            "context_bundle_path": refs["context_path"],
+                            "selector_governance_report_path": "data/runs/different-selector-governance-report.json",
+                        },
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[plan_path, storage.root / refs["context_path"]])
+
+            self.assertEqual(result["status"], "failed")
+            self.assertIn("selector_governance_report_path does not match", result["errors"][0])
+
+    def test_runtime_policy_blocks_selector_governance_without_binding_application(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}, metadata={"project_id": "workflow-governance"}),
+            )
+            context_path = storage.write_asset(
+                "contexts",
+                ContextBundle(
+                    title="Ungoverned selector context",
+                    source=storage.read_asset(plan_path).id,
+                    content={
+                        "build_plan_id": "workflow-context-plan",
+                        "target_asset_id": storage.read_asset(plan_path).id,
+                        "selected_assets": [],
+                        "compressed_context": {},
+                        "token_budget": {"max_tokens": 1000},
+                        "token_estimate": 16,
+                        "actual_context": "workflow selector context without binding application",
+                        "source_asset_ids": [],
+                        "knowledge_context_contract": {"selector_governance": {"report_path": "data/runs/selector-report-without-application.json"}},
+                    },
+                    metadata={"project_id": "workflow-governance", "selector_governance_report_path": "data/runs/selector-report-without-application.json"},
+                    references=[str(plan_path.relative_to(storage.root))],
+                ),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Strict Ungoverned Selector Context Workflow",
+                entry_node_id="draft-agent",
+                runtime_policy={"mode": "operating_system", "require_context_bundle": True},
+                nodes=[
+                    {
+                        "node_id": "draft-agent",
+                        "node_type": "generation",
+                        "operation": "draft",
+                        "input_types": ["chapter_plan", "context_bundle"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "record_only", "context_bundle_path": str(context_path.relative_to(storage.root))},
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[plan_path, context_path])
+
+            self.assertEqual(result["status"], "failed")
+            self.assertIn("requires selector_governance_binding_application_report_path", result["errors"][0])
 
     def test_executor_runs_dag_and_records_workflow_run(self):
         with tempfile.TemporaryDirectory() as tmp:

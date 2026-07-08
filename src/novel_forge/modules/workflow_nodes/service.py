@@ -13,6 +13,7 @@ from novel_forge.modules.agent_runs import ensure_agent_contract, execute_agent_
 from novel_forge.modules.change_impact import create_change_impact_report, mark_downstream_assets_stale
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.operation_checkpoint import checkpoint_idempotency_key, operation_checkpoint_schema
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.runtime_ledger import (
     acquire_scheduler_lease,
@@ -2182,6 +2183,10 @@ def _mandatory_runtime_policy_failure(
         checks["context_bundle_path"] = context_bundle_path
         if not context_bundle_path:
             failures.append("runtime policy requires a context_bundle for generation/rework execution")
+        else:
+            governance = _context_bundle_governance_evidence(storage, context_bundle_path, processor=processor, policy=policy)
+            checks["selector_governance"] = governance
+            failures.extend(governance.get("failures", []))
     status = "failed" if failures else "passed"
     gate_result = record_gate_result(
         storage,
@@ -2201,6 +2206,13 @@ def _mandatory_runtime_policy_failure(
             processor["runtime_policy_evidence"][f"{phase}_gate_result_path"] = gate_result.get("path", "")
             if checks.get("context_bundle_path"):
                 processor["runtime_policy_evidence"]["context_bundle_path"] = checks["context_bundle_path"]
+            governance = checks.get("selector_governance", {}) if isinstance(checks.get("selector_governance", {}), dict) else {}
+            if governance.get("present"):
+                processor["runtime_policy_evidence"]["selector_governance_report_path"] = str(governance.get("selector_governance_report_path") or "")
+                processor["runtime_policy_evidence"]["selector_governance_binding_application_report_path"] = str(
+                    governance.get("selector_governance_binding_application_report_path") or ""
+                )
+                processor["runtime_policy_evidence"]["selector_governance_binding_status"] = str(governance.get("status") or "")
         return None
     return _record_executed_node(
         storage,
@@ -2270,6 +2282,107 @@ def _first_context_bundle_path(storage: LocalStorage, asset_paths: list[str], pr
             if value and _asset_type(storage, value) == "context_bundle":
                 return _display_path(storage.root, resolve_path(storage.root, value))
     return ""
+
+
+def _context_bundle_governance_evidence(storage: LocalStorage, context_bundle_path: str, *, processor: dict[str, Any], policy: dict[str, Any]) -> dict[str, Any]:
+    data = read_json_for_scan(storage, resolve_path(storage.root, context_bundle_path), context="workflow context governance evidence")
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    contract = content.get("knowledge_context_contract", {}) if isinstance(content.get("knowledge_context_contract", {}), dict) else {}
+    binding = content.get("selector_governance_binding_application", {}) if isinstance(content.get("selector_governance_binding_application", {}), dict) else {}
+    if not binding and isinstance(contract.get("selector_governance_binding_application", {}), dict):
+        binding = contract.get("selector_governance_binding_application", {})
+    selector = contract.get("selector_governance", {}) if isinstance(contract.get("selector_governance", {}), dict) else {}
+    direct_report_path = _direct_selector_governance_report_path(processor, policy)
+    application_path = _normalize_optional_path(
+        storage,
+        str(
+            binding.get("application_report_path")
+            or binding.get("selector_governance_binding_application_report_path")
+            or metadata.get("selector_governance_binding_application_path")
+            or ""
+        ),
+    )
+    selector_report_path = _normalize_optional_path(
+        storage,
+        str(
+            binding.get("selector_governance_report_path")
+            or selector.get("report_path")
+            or metadata.get("selector_governance_report_path")
+            or ""
+        ),
+    )
+    direct_report_path = _normalize_optional_path(storage, direct_report_path)
+    present = bool(application_path or selector_report_path or direct_report_path)
+    strict = _strict_runtime_policy(policy)
+    failures: list[str] = []
+    application_status = ""
+    application_selector_report_path = ""
+    if application_path:
+        application = read_json_for_scan(storage, resolve_path(storage.root, application_path), context="workflow selector governance binding application scan")
+        app_content = application.get("content", {}) if isinstance(application.get("content", {}), dict) else {}
+        app_metadata = application.get("metadata", {}) if isinstance(application.get("metadata", {}), dict) else {}
+        application_status = str(app_content.get("status") or app_metadata.get("asset_status") or "")
+        application_selector_report_path = _normalize_optional_path(
+            storage,
+            str(
+                (app_content.get("context_builder_payload_patch", {}) if isinstance(app_content.get("context_builder_payload_patch", {}), dict) else {}).get(
+                    "selector_governance_report_path"
+                )
+                or app_content.get("selector_governance_report_path")
+                or ""
+            ),
+        )
+        if application.get("type") != "mkaos_selector_governance_binding_application_report":
+            failures.append("selector governance binding application path must point to a binding application report")
+        if application_status != "applied":
+            failures.append(f"selector governance binding application must be applied, got {application_status or 'unknown'}")
+    if strict and selector_report_path and not application_path:
+        failures.append("production workflow selector governance evidence requires selector_governance_binding_application_report_path")
+    if strict and direct_report_path and not application_path:
+        failures.append("production workflow direct selector_governance_report_path requires approved binding application evidence")
+    if application_selector_report_path and selector_report_path and application_selector_report_path != selector_report_path:
+        failures.append("selector governance report path in context bundle does not match binding application report")
+    if direct_report_path and selector_report_path and direct_report_path != selector_report_path:
+        failures.append("direct selector_governance_report_path does not match context bundle selector governance evidence")
+    return {
+        "present": present,
+        "strict": strict,
+        "status": application_status or ("applied" if application_path and not failures else ""),
+        "context_bundle_path": _normalize_optional_path(storage, context_bundle_path),
+        "selector_governance_report_path": selector_report_path or direct_report_path,
+        "selector_governance_binding_application_report_path": application_path,
+        "direct_selector_governance_report_path": direct_report_path,
+        "failures": failures,
+    }
+
+
+def _direct_selector_governance_report_path(processor: dict[str, Any], policy: dict[str, Any]) -> str:
+    candidates: list[dict[str, Any]] = [processor, policy]
+    for key in ["runtime_policy", "registry_payload", "evidence"]:
+        value = processor.get(key, {}) if isinstance(processor.get(key, {}), dict) else {}
+        candidates.append(value)
+    payload = processor.get("registry_payload", {}) if isinstance(processor.get("registry_payload", {}), dict) else {}
+    if isinstance(payload.get("outputs", {}), dict):
+        candidates.append(payload.get("outputs", {}))
+    for candidate in candidates:
+        value = str(candidate.get("selector_governance_report_path") or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _strict_runtime_policy(policy: dict[str, Any]) -> bool:
+    mode = str(policy.get("mode") or "").strip().lower()
+    environment = str(policy.get("environment") or "").strip().lower()
+    return is_production_environment(environment or mode) or mode in {"strict", "enforced", "operating_system"}
+
+
+def _normalize_optional_path(storage: LocalStorage, value: str | Path) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    return _display_path(storage.root, resolve_path(storage.root, text))
 
 
 def _asset_type(storage: LocalStorage, path: str | Path) -> str:
