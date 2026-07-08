@@ -851,6 +851,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
                 task_status_mode="full",
             )
             node_runs_after_full = _count_assets_by_type(storage, "node_run")
+            trace_spans_after_full = _count_assets_by_type(storage, "trace_span")
             compact = start_chapter_production(
                 storage,
                 outline_path=outline_ref,
@@ -877,6 +878,9 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertTrue(full["control"]["runtime_artifact_policy"]["node_run_recording"]["succeeded"])
             self.assertFalse(compact["control"]["runtime_artifact_policy"]["node_run_recording"]["succeeded"])
             self.assertEqual(_count_assets_by_type(storage, "node_run"), node_runs_after_full)
+            self.assertTrue(full["control"]["runtime_artifact_policy"]["trace_recording"]["node_run_succeeded_span"])
+            self.assertFalse(compact["control"]["runtime_artifact_policy"]["trace_recording"]["node_run_succeeded_span"])
+            self.assertEqual(_count_assets_by_type(storage, "trace_span"), trace_spans_after_full)
 
     def test_project_safe_reference_index_updates_incrementally(self):
         with tempfile.TemporaryDirectory() as tmp:

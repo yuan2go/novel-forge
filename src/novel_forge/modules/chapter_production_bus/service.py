@@ -1601,7 +1601,12 @@ def _runtime_artifact_policy(*, task_status_mode: Any = "full") -> dict[str, Any
             "succeeded": mode == "full",
             "failed": True,
         },
-        "trace_mode": "full",
+        "trace_mode": "full" if mode == "full" else "success_node_run_compacted",
+        "trace_recording": {
+            "node_run_succeeded_span": mode == "full",
+            "node_run_failed_span": True,
+            "external_runtime_spans": True,
+        },
         "reason": "compact mode is only for batch chapter sequence runs; it preserves terminal task and failure NodeRun evidence while avoiding repeated pending/running status and success NodeRun assets.",
     }
 
