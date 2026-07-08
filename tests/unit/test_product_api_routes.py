@@ -836,6 +836,89 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["cockpit"]["workflow_governance"]["status"], "blocked")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["workflow_governance"], "blocked")
 
+    def test_project_cockpit_route_surfaces_clean_workflow_governance_readiness(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.schemas import BaseAsset
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+            storage = LocalStorage(root)
+            storage.ensure_layout()
+            preflight = {
+                "status": "passed",
+                "gate_status": "passed",
+                "blocking": False,
+                "message": "workflow governance drift gate passed",
+                "environment": "production",
+                "mode": "strict",
+                "gate_result_path": "data/runs/route-workflow-governance-clean-gate.json",
+                "drift_report_path": "data/runs/route-workflow-governance-clean-report.json",
+                "summary": {"drift_count": 0, "blocking_drift_count": 0},
+            }
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="route-workflow-governance-clean-gate",
+                    type="gate_result",
+                    title="Route clean workflow governance drift gate",
+                    content={
+                        "gate_id": "route-workflow-governance-clean-gate",
+                        "gate_kind": "workflow_governance_drift",
+                        "status": "passed",
+                        "target_paths": ["data/runs/route-workflow-definition-clean.json"],
+                        "blocking": False,
+                        "message": preflight["message"],
+                        "result": {"summary": preflight["summary"], "report_path": preflight["drift_report_path"]},
+                        "created_at": "2026-07-08T00:00:00Z",
+                    },
+                    metadata={"project_id": "route-book-clean"},
+                )
+            )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="route-workflow-run-governance-clean",
+                    type="workflow_run",
+                    title="Route workflow governance clean run",
+                    content={
+                        "run_id": "route-workflow-run-governance-clean",
+                        "workflow_id": "route-workflow-definition-clean",
+                        "workflow_definition_path": "data/runs/route-workflow-definition-clean.json",
+                        "status": "completed",
+                        "outputs": ["data/runs/route-chapter-production-clean.json"],
+                        "node_runs": [],
+                        "agent_runs": [],
+                        "run_log": [],
+                        "blocked": {},
+                        "error_message": "",
+                        "recovery_instruction": "",
+                        "lineage": {"workflow_governance_preflight": preflight},
+                    },
+                    metadata={"project_id": "route-book-clean"},
+                )
+            )
+
+            response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-clean"})
+
+            self.assertEqual(response.status_code, 200, response.text)
+            content = response.json()["asset"]["content"]
+            workflow_governance = content["runtime_governance"]["workflow_governance"]
+            self.assertEqual(workflow_governance["status"], "passed")
+            self.assertEqual(workflow_governance["gate_status"], "passed")
+            self.assertEqual(workflow_governance["failed_preflight_count"], 0)
+            self.assertEqual(workflow_governance["dead_letter_count"], 0)
+            self.assertIn(preflight["drift_report_path"], workflow_governance["evidence_paths"])
+            self.assertEqual(content["quality"]["workflow_governance_status"], "passed")
+            self.assertEqual(content["cockpit"]["workflow_governance"]["status"], "passed")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["workflow_governance"], "passed")
+
 
 if __name__ == "__main__":
     unittest.main()

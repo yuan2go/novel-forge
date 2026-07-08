@@ -190,6 +190,77 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(content["production_control_console"]["workflow_governance"]["dead_letter_count"], 1)
             self.assertEqual(content["cockpit"]["workflow_governance"]["status"], "blocked")
 
+    def test_project_cockpit_surfaces_clean_workflow_governance_readiness(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            preflight = {
+                "status": "passed",
+                "gate_status": "passed",
+                "blocking": False,
+                "message": "workflow governance drift gate passed",
+                "environment": "production",
+                "mode": "strict",
+                "gate_result_path": "data/runs/workflow-governance-clean-gate.json",
+                "drift_report_path": "data/runs/workflow-governance-clean-report.json",
+                "summary": {"drift_count": 0, "blocking_drift_count": 0},
+            }
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="workflow-governance-clean-gate",
+                    type="gate_result",
+                    title="Clean workflow governance drift gate",
+                    content={
+                        "gate_id": "workflow-governance-clean-gate",
+                        "gate_kind": "workflow_governance_drift",
+                        "status": "passed",
+                        "target_paths": ["data/runs/workflow-definition-clean.json"],
+                        "blocking": False,
+                        "message": preflight["message"],
+                        "result": {"summary": preflight["summary"], "report_path": preflight["drift_report_path"]},
+                        "created_at": "2026-07-08T00:00:00Z",
+                    },
+                    metadata={"project_id": "book-clean"},
+                )
+            )
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="workflow-run-governance-clean",
+                    type="workflow_run",
+                    title="Workflow governance clean run",
+                    content={
+                        "run_id": "workflow-run-governance-clean",
+                        "workflow_id": "workflow-definition-clean",
+                        "workflow_definition_path": "data/runs/workflow-definition-clean.json",
+                        "status": "completed",
+                        "outputs": ["data/runs/chapter-production-clean.json"],
+                        "node_runs": [],
+                        "agent_runs": [],
+                        "run_log": [],
+                        "blocked": {},
+                        "error_message": "",
+                        "recovery_instruction": "",
+                        "lineage": {"workflow_governance_preflight": preflight},
+                    },
+                    metadata={"project_id": "book-clean"},
+                )
+            )
+
+            snapshot = build_project_cockpit_snapshot(storage, project_id="book-clean")
+            content = snapshot["asset"]["content"]
+            workflow_governance = content["runtime_governance"]["workflow_governance"]
+
+            self.assertEqual(workflow_governance["status"], "passed")
+            self.assertEqual(workflow_governance["gate_status"], "passed")
+            self.assertEqual(workflow_governance["preflight_count"], 1)
+            self.assertEqual(workflow_governance["failed_preflight_count"], 0)
+            self.assertEqual(workflow_governance["dead_letter_count"], 0)
+            self.assertEqual(workflow_governance["latest_preflight"]["gate_status"], "passed")
+            self.assertIn(preflight["drift_report_path"], workflow_governance["evidence_paths"])
+            self.assertEqual(content["quality"]["workflow_governance_status"], "passed")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["workflow_governance"], "passed")
+            self.assertEqual(content["cockpit"]["workflow_governance"]["status"], "passed")
+
     def test_multi_book_daily_production_report_tracks_isolation_and_capacity(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
