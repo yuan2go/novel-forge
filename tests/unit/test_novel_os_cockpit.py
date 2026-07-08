@@ -487,6 +487,28 @@ class NovelOsCockpitTests(unittest.TestCase):
                 )
             )
             storage.write_asset_auto(
+                ProjectMetricSnapshot(
+                    title="Chapter runtime growth approved apply plan",
+                    content={
+                        "snapshot_kind": "chapter_runtime_growth_approved_policy_apply_plan",
+                        "contract": "chapter-runtime-growth-approved-policy-apply-plan-v1",
+                        "status": "ready",
+                        "project_id": "book-a",
+                        "snapshot_at": "2026-07-08T00:00:06Z",
+                        "summary": {
+                            "approved": True,
+                            "apply_allowed": True,
+                            "policy_delta_count": 1,
+                            "mutation_applied": False,
+                            "runtime_policy_changed": False,
+                        },
+                        "policy_deltas": [{"artifact_family": "task_status_ref", "auto_apply": False}],
+                        "operator_action": "review exact policy deltas",
+                    },
+                    metadata={"project_id": "book-a", "snapshot_kind": "chapter_runtime_growth_approved_policy_apply_plan"},
+                )
+            )
+            storage.write_asset_auto(
                 BaseAsset(
                     id="v1-acceptance-preflight-report",
                     type="long_chain_acceptance_report",
@@ -560,6 +582,7 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_write_policy_plan_status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_write_policy_candidate_count"], 2)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_write_policy_approval_status"], "pending")
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_approved_apply_plan_status"], "ready")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_high_run_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_max_ref_count"], 132)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_status"], "review_required")
@@ -576,6 +599,7 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth_hotspots"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth_write_policy_plan"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth_write_policy_approval"], "pending")
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth_approved_apply_plan"], "ready")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
             self.assertEqual(
                 snapshot["asset"]["content"]["production_control_console"]["repair_plan_summary"]["unified_acceptance_preflight"]["action_count"],
@@ -593,6 +617,7 @@ class NovelOsCockpitTests(unittest.TestCase):
                 "task_status_ref",
             )
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["chapter_runtime_growth_write_policy_approval"]["target_path"], "data/runs/chapter-runtime-growth-write-policy-candidate-plan.json")
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["chapter_runtime_growth_approved_policy_apply_plan"]["summary"]["policy_delta_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["unready_final_evidence"][0]["key"], "source_governance_runtime")

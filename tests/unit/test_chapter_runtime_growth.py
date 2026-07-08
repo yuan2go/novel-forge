@@ -6,6 +6,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.chapter_runtime_growth import (
+    build_chapter_runtime_growth_approved_policy_apply_plan,
     build_chapter_runtime_growth_hotspot_ledger,
     build_chapter_runtime_growth_profile,
     build_chapter_runtime_growth_write_policy_candidate_plan,
@@ -13,6 +14,7 @@ from novel_forge.modules.chapter_runtime_growth import (
     run_chapter_runtime_growth_threshold_gate,
 )
 from novel_forge.modules.permission_center import list_approval_requests
+from novel_forge.modules.permission_center import resolve_approval_request
 from novel_forge.schemas import BaseAsset
 from novel_forge.storage.local import LocalStorage
 
@@ -208,6 +210,39 @@ class ChapterRuntimeGrowthTests(unittest.TestCase):
             self.assertTrue(content["blocking"])
             self.assertIn("runtime_policy_update", content["required_before"])
             self.assertEqual(content["target"]["target_path"], result["plan"]["path"])
+
+    def test_approved_policy_apply_plan_requires_approved_request_without_mutation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft = self._write_asset(storage, "apply-policy-draft", "draft_chapter", project_id="book-a")
+            task = self._write_asset(storage, "apply-policy-task", "task_status", project_id="book-a")
+            self._write_chapter_run(
+                storage,
+                run_id="apply-policy-run",
+                chapter=5,
+                task_status_mode="full",
+                outputs={"draft_v0_path": draft},
+                steps={"draft": {"task_status_paths": [task], "output_paths": [draft]}},
+            )
+            approval = request_chapter_runtime_growth_write_policy_approval(storage, project_id="book-a", environment="production")
+            blocked = build_chapter_runtime_growth_approved_policy_apply_plan(storage, project_id="book-a", persist=True)
+            resolve_approval_request(
+                storage,
+                approval["approval_request_path"],
+                {"decision": "approved", "actor": "unit-test", "reason": "candidate plan reviewed", "project_id": "book-a"},
+            )
+            ready = build_chapter_runtime_growth_approved_policy_apply_plan(storage, project_id="book-a", persist=True)
+
+            self.assertEqual(blocked["status"], "review_required")
+            self.assertFalse(blocked["summary"]["apply_allowed"])
+            self.assertEqual(ready["status"], "ready")
+            self.assertTrue(ready["summary"]["approved"])
+            self.assertTrue(ready["summary"]["apply_allowed"])
+            self.assertFalse(ready["summary"]["mutation_applied"])
+            self.assertFalse(ready["summary"]["runtime_policy_changed"])
+            self.assertTrue(ready["asset"]["content"]["policy_deltas"])
+            self.assertIn("runtime-growth-regression", ready["asset"]["content"]["required_regression_gates"])
 
     def test_threshold_gate_passes_clean_compact_runtime_profile(self):
         with tempfile.TemporaryDirectory() as tmp:

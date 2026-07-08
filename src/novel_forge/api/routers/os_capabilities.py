@@ -22,6 +22,7 @@ from novel_forge.modules.long_memory import (
 )
 from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, list_model_router_assets, provider_approval_evidence_report, resolve_model_route
 from novel_forge.modules.chapter_runtime_growth import (
+    build_chapter_runtime_growth_approved_policy_apply_plan,
     build_chapter_runtime_growth_hotspot_ledger,
     build_chapter_runtime_growth_profile,
     build_chapter_runtime_growth_write_policy_candidate_plan,
@@ -148,6 +149,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 LocalStorage(app_settings.root),
                 project_id=project_id,
                 environment=environment,
+            )
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/cockpit/chapter-runtime-growth-approved-policy-apply-plan")
+    def chapter_runtime_growth_approved_policy_apply_plan(
+        project_id: str = "local-project",
+        persist_report: bool = True,
+    ) -> dict[str, Any]:
+        try:
+            return build_chapter_runtime_growth_approved_policy_apply_plan(
+                LocalStorage(app_settings.root),
+                project_id=project_id,
+                persist=persist_report,
             )
         except (OSError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

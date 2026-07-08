@@ -19,6 +19,8 @@ HOTSPOT_LEDGER_CONTRACT = "chapter-runtime-growth-hotspot-ledger-v1"
 HOTSPOT_LEDGER_SNAPSHOT_KIND = "chapter_runtime_growth_hotspot_ledger"
 WRITE_POLICY_PLAN_CONTRACT = "chapter-runtime-growth-write-policy-candidate-plan-v1"
 WRITE_POLICY_PLAN_SNAPSHOT_KIND = "chapter_runtime_growth_write_policy_candidate_plan"
+APPROVED_APPLY_PLAN_CONTRACT = "chapter-runtime-growth-approved-policy-apply-plan-v1"
+APPROVED_APPLY_PLAN_SNAPSHOT_KIND = "chapter_runtime_growth_approved_policy_apply_plan"
 THRESHOLD_GATE_KIND = "chapter_runtime_growth_threshold"
 THRESHOLD_GATE_CONTRACT = "chapter-runtime-growth-threshold-gate-v1"
 HIGH_REF_THRESHOLD = 120
@@ -356,6 +358,77 @@ def request_chapter_runtime_growth_write_policy_approval(
         "mutation_applied": False,
         "runtime_policy_changed": False,
     }
+
+
+def build_chapter_runtime_growth_approved_policy_apply_plan(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    persist: bool = True,
+) -> dict[str, Any]:
+    """Write a no-execution apply plan that requires approved ApprovalRequest evidence."""
+
+    storage.ensure_layout()
+    plan_asset = _latest_write_policy_candidate_plan(storage, project_id=project_id)
+    if not plan_asset:
+        generated = build_chapter_runtime_growth_write_policy_candidate_plan(storage, project_id=project_id, persist=True)
+        plan_asset = generated.get("asset", {}) if isinstance(generated.get("asset", {}), dict) else {}
+        plan_asset["path"] = str(generated.get("path") or "")
+    plan_content = plan_asset.get("content", {}) if isinstance(plan_asset.get("content", {}), dict) else {}
+    plan_path = str(plan_asset.get("path") or "")
+    approval = _approved_write_policy_approval(storage, project_id=project_id, plan_path=plan_path)
+    candidate_actions = plan_content.get("candidate_actions", []) if isinstance(plan_content.get("candidate_actions", []), list) else []
+    policy_deltas = _policy_deltas_from_candidate_actions(candidate_actions)
+    approved = bool(approval)
+    status = "ready" if approved and policy_deltas else "review_required" if candidate_actions else "missing"
+    summary = {
+        "candidate_plan_path": plan_path,
+        "approval_request_path": str(approval.get("path") or ""),
+        "approved": approved,
+        "apply_allowed": approved and bool(policy_deltas),
+        "policy_delta_count": len(policy_deltas),
+        "mutation_applied": False,
+        "runtime_policy_changed": False,
+        "chapter_production_executed": False,
+        "provider_proof_executed": False,
+    }
+    content = {
+        "snapshot_kind": APPROVED_APPLY_PLAN_SNAPSHOT_KIND,
+        "contract": APPROVED_APPLY_PLAN_CONTRACT,
+        "status": status,
+        "project_id": project_id,
+        "snapshot_at": utc_now(),
+        "summary": summary,
+        "throughput": {"policy_delta_count": len(policy_deltas), "candidate_action_count": len(candidate_actions)},
+        "quality": {
+            "approved_apply_plan_status": status,
+            "approved": approved,
+            "apply_allowed": approved and bool(policy_deltas),
+            "unsafe_to_apply_automatically": True,
+        },
+        "task_health": {"review_required_count": 0 if status == "ready" else 1, "mutation_applied": False, "runtime_policy_changed": False},
+        "agent_health": {"runtime_write_policy_apply_plan": status, "chapter_production_executed": False, "provider_proof_executed": False},
+        "storage_health": {"candidate_plan_path": plan_path, "approval_request_path": str(approval.get("path") or ""), "read_only": True},
+        "policy_deltas": policy_deltas,
+        "blocked_reason": "" if approved else "runtime write-policy ApprovalRequest is not approved",
+        "required_regression_gates": ["runtime-growth-regression", "chapter-production-compact-failure-preservation"],
+        "rollback_criteria": _write_policy_rollback_criteria(),
+        "evidence_paths": _dedupe([plan_path, str(approval.get("path") or "")]),
+        "operator_action": _approved_apply_operator_action(status),
+        "mutation_policy": "read-only: describes approved apply deltas but does not change runtime policy",
+        "recommendations": _approved_apply_recommendations(status),
+    }
+    asset = ProjectMetricSnapshot(
+        title=f"Chapter runtime growth approved apply plan {project_id or 'all-projects'}",
+        tags=["chapter-runtime-approved-apply-plan", status],
+        content=content,
+        metadata={"project_id": project_id, "snapshot_kind": APPROVED_APPLY_PLAN_SNAPSHOT_KIND, "asset_status": status},
+    )
+    errors = validate_common_fields(asset.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset_auto(asset) if persist else None
+    return {"status": status, "path": _display_path(storage.root, path) if path else "", "asset": asset.to_dict(), "summary": summary}
 
 
 def run_chapter_runtime_growth_threshold_gate(
@@ -779,6 +852,72 @@ def _existing_write_policy_approval(storage: LocalStorage, *, project_id: str, p
         if str(target.get("target_path") or "") == plan_path:
             return row
     return fallback
+
+
+def _approved_write_policy_approval(storage: LocalStorage, *, project_id: str, plan_path: str) -> dict[str, Any]:
+    for row in list_approval_requests(storage, project_id=project_id or None, scope="agent", status="approved", limit=500):
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        target = content.get("target", {}) if isinstance(content.get("target", {}), dict) else {}
+        if str(content.get("action") or "") != "approve_runtime_write_policy_candidate_plan":
+            continue
+        if not plan_path or str(target.get("target_path") or "") == plan_path:
+            return row
+    return {}
+
+
+def _latest_write_policy_candidate_plan(storage: LocalStorage, *, project_id: str) -> dict[str, Any]:
+    matches: list[dict[str, Any]] = []
+    for path in storage.list_json("runs"):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != "project_metric_snapshot":
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") != WRITE_POLICY_PLAN_SNAPSHOT_KIND:
+            continue
+        if project_id and not asset_matches_project_scope(storage, data, project_id):
+            continue
+        data["path"] = _display_path(storage.root, path)
+        matches.append(data)
+    if not matches:
+        return {}
+    return sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+
+
+def _policy_deltas_from_candidate_actions(candidate_actions: list[Any]) -> list[dict[str, Any]]:
+    deltas: list[dict[str, Any]] = []
+    for row in candidate_actions:
+        if not isinstance(row, dict):
+            continue
+        policy = row.get("recommended_policy", {}) if isinstance(row.get("recommended_policy", {}), dict) else {}
+        if not policy or "audit" in policy or "repair" in policy:
+            continue
+        deltas.append(
+            {
+                "artifact_family": str(row.get("artifact_family") or ""),
+                "recommended_policy": policy,
+                "preserve_failure_evidence": True,
+                "requires_approved_request": True,
+                "auto_apply": False,
+            }
+        )
+    return deltas
+
+
+def _approved_apply_operator_action(status: str) -> str:
+    if status == "ready":
+        return "review exact policy deltas and run focused regression before any future apply slice"
+    if status == "missing":
+        return "create candidate plan and approval request before apply planning"
+    return "approve runtime write-policy candidate plan before any apply path"
+
+
+def _approved_apply_recommendations(status: str) -> list[str]:
+    if status == "ready":
+        return ["Use this plan as the input to a separate guarded apply slice; do not mutate policy from this report"]
+    if status == "missing":
+        return ["Build candidate plan and ApprovalRequest evidence before planning runtime policy apply"]
+    return ["Resolve the runtime write-policy ApprovalRequest before planning any policy mutation"]
 
 
 def _threshold_blocking_rows(
