@@ -16,6 +16,72 @@ from novel_forge.storage.local import LocalStorage
 
 
 class NovelOsCockpitTests(unittest.TestCase):
+    def test_project_cockpit_surfaces_source_leakage_preflight_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "book-source-leakage"
+            storage.write_asset_auto(
+                ProjectMetricSnapshot(
+                    title="Source leakage readiness",
+                    content={
+                        "snapshot_kind": "source_leakage_readiness",
+                        "contract": "source-leakage-readiness-v1",
+                        "status": "ready",
+                        "project_id": project_id,
+                        "snapshot_at": "2026-07-08T00:00:00Z",
+                        "throughput": {"context_bundle_count": 8, "required_stage_count": 8, "passed_stage_count": 8},
+                        "quality": {
+                            "readiness_status": "ready",
+                            "all_required_stages_covered": True,
+                            "all_required_stages_passed": True,
+                            "missing_stage_count": 0,
+                            "failed_stage_count": 0,
+                            "raw_source_text_included": False,
+                            "high_risk_selected_count": 0,
+                        },
+                        "task_health": {"missing_stage_count": 0, "failed_stage_count": 0, "operator_action": "ready"},
+                        "agent_health": {"planned_agent_operations": [], "dispatch_boundary": "read-only"},
+                        "storage_health": {"evidence_path_count": 8, "asset_type": "project_metric_snapshot"},
+                        "recommendations": ["ready"],
+                        "summary": {
+                            "required_stage_count": 8,
+                            "passed_stage_count": 8,
+                            "missing_stage_count": 0,
+                            "failed_stage_count": 0,
+                            "context_bundle_count": 8,
+                            "evidence_path_count": 8,
+                            "raw_source_text_included": False,
+                            "high_risk_selected_count": 0,
+                        },
+                        "stage_rows": [{"stage": "draft", "status": "passed", "context_bundle_path": "data/runs/context-draft.json"}],
+                        "evidence_paths": ["data/runs/context-draft.json"],
+                        "operator_action": "source-leakage readiness evidence is ready",
+                    },
+                    metadata={"project_id": project_id, "snapshot_kind": "source_leakage_readiness"},
+                )
+            )
+            record_gate_result(
+                storage,
+                gate_kind="source_leakage_preflight",
+                status="passed",
+                target_paths=["data/runs/source-leakage-readiness.json"],
+                result={"contract": "source-leakage-preflight-gate-v1", "summary": {"blocking_count": 0}},
+                project_id=project_id,
+                message="source leakage preflight gate passed",
+                blocking=False,
+            )
+
+            snapshot = build_project_cockpit_snapshot(storage, project_id=project_id)
+            content = snapshot["asset"]["content"]
+
+            self.assertEqual(content["quality"]["source_leakage_readiness_status"], "ready")
+            self.assertEqual(content["quality"]["source_leakage_preflight_gate_status"], "passed")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["source_leakage_readiness"], "ready")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["source_leakage_preflight"], "passed")
+            self.assertEqual(content["cockpit"]["source_leakage_readiness"]["summary"]["passed_stage_count"], 8)
+            self.assertEqual(content["cockpit"]["source_leakage_preflight_gate"]["status"], "passed")
+
     def test_project_cockpit_treats_source_gate_evidence_without_status_as_warning(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

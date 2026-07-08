@@ -28,6 +28,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     source_guarded_apply_readiness = _source_guarded_apply_readiness(rows)
     source_governance_runtime_gate = _latest_gate_result(rows, "source_governance_runtime")
     source_governance_runtime_evidence = _source_governance_runtime_execution_evidence(storage, rows, project_id=project_id)
+    source_leakage_readiness = _source_leakage_readiness(rows)
+    source_leakage_preflight_gate = _latest_gate_result(rows, "source_leakage_preflight")
     chapter_runtime_growth = _chapter_runtime_growth_profile(rows)
     chapter_runtime_growth_hotspot_ledger = _chapter_runtime_growth_hotspot_ledger(rows)
     chapter_runtime_growth_write_policy_candidate_plan = _chapter_runtime_growth_write_policy_candidate_plan(rows)
@@ -53,6 +55,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         source_guarded_apply_readiness,
         source_governance_runtime_gate,
         source_governance_runtime_evidence,
+        source_leakage_readiness,
+        source_leakage_preflight_gate,
         chapter_runtime_growth,
         chapter_runtime_growth_hotspot_ledger,
         chapter_runtime_growth_write_policy_candidate_plan,
@@ -96,6 +100,10 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_governance_runtime_gate_status": source_governance_runtime_gate["status"],
             "source_governance_runtime_evidence_status": source_governance_runtime_evidence["status"],
             "source_governance_runtime_evidence_count": source_governance_runtime_evidence["count"],
+            "source_leakage_readiness_status": source_leakage_readiness["status"],
+            "source_leakage_preflight_gate_status": source_leakage_preflight_gate["status"],
+            "source_leakage_missing_stage_count": source_leakage_readiness["summary"]["missing_stage_count"],
+            "source_leakage_failed_stage_count": source_leakage_readiness["summary"]["failed_stage_count"],
             "chapter_runtime_growth_status": chapter_runtime_growth["status"],
             "chapter_runtime_growth_hotspot_status": chapter_runtime_growth_hotspot_ledger["status"],
             "chapter_runtime_growth_write_policy_plan_status": chapter_runtime_growth_write_policy_candidate_plan["status"],
@@ -145,6 +153,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_guarded_apply_readiness": source_guarded_apply_readiness,
             "source_governance_runtime_gate": source_governance_runtime_gate,
             "source_governance_runtime_evidence": source_governance_runtime_evidence,
+            "source_leakage_readiness": source_leakage_readiness,
+            "source_leakage_preflight_gate": source_leakage_preflight_gate,
             "chapter_runtime_growth": chapter_runtime_growth,
             "chapter_runtime_growth_hotspot_ledger": chapter_runtime_growth_hotspot_ledger,
             "chapter_runtime_growth_write_policy_candidate_plan": chapter_runtime_growth_write_policy_candidate_plan,
@@ -174,6 +184,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_guarded_apply_readiness": source_guarded_apply_readiness,
             "source_governance_runtime_gate": source_governance_runtime_gate,
             "source_governance_runtime_evidence": source_governance_runtime_evidence,
+            "source_leakage_readiness": source_leakage_readiness,
+            "source_leakage_preflight_gate": source_leakage_preflight_gate,
             "chapter_runtime_growth": chapter_runtime_growth,
             "chapter_runtime_growth_hotspot_ledger": chapter_runtime_growth_hotspot_ledger,
             "chapter_runtime_growth_write_policy_candidate_plan": chapter_runtime_growth_write_policy_candidate_plan,
@@ -1304,6 +1316,60 @@ def _source_guarded_apply_readiness(rows: list[dict[str, Any]]) -> dict[str, Any
     }
 
 
+def _source_leakage_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    snapshot_kind = "source_leakage_readiness"
+    matches = []
+    for row in rows:
+        if row.get("type") != "project_metric_snapshot":
+            continue
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") == snapshot_kind:
+            matches.append(row)
+    if not matches:
+        return {
+            "snapshot_kind": snapshot_kind,
+            "contract": "source-leakage-readiness-v1",
+            "status": "missing",
+            "path": "",
+            "summary": {
+                "required_stage_count": 8,
+                "passed_stage_count": 0,
+                "missing_stage_count": 8,
+                "failed_stage_count": 0,
+                "context_bundle_count": 0,
+                "evidence_path_count": 0,
+                "raw_source_text_included": False,
+                "high_risk_selected_count": 0,
+            },
+            "stage_rows": [],
+            "evidence_paths": [],
+            "operator_action": "run source leakage readiness before final unified acceptance",
+        }
+    row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    summary = content.get("summary", {}) if isinstance(content.get("summary", {}), dict) else {}
+    return {
+        "snapshot_kind": snapshot_kind,
+        "contract": str(content.get("contract") or "source-leakage-readiness-v1"),
+        "status": str(content.get("status") or "unknown"),
+        "path": str(row.get("path") or ""),
+        "summary": {
+            "required_stage_count": int(summary.get("required_stage_count") or 0),
+            "passed_stage_count": int(summary.get("passed_stage_count") or 0),
+            "missing_stage_count": int(summary.get("missing_stage_count") or 0),
+            "failed_stage_count": int(summary.get("failed_stage_count") or 0),
+            "context_bundle_count": int(summary.get("context_bundle_count") or 0),
+            "evidence_path_count": int(summary.get("evidence_path_count") or 0),
+            "raw_source_text_included": bool(summary.get("raw_source_text_included", False)),
+            "high_risk_selected_count": int(summary.get("high_risk_selected_count") or 0),
+        },
+        "stage_rows": content.get("stage_rows", []) if isinstance(content.get("stage_rows", []), list) else [],
+        "evidence_paths": content.get("evidence_paths", []) if isinstance(content.get("evidence_paths", []), list) else [],
+        "operator_action": str(content.get("operator_action") or ""),
+    }
+
+
 def _capacity_plan(book_rows: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "agent_capacity_units": max(1, len(book_rows)),
@@ -1419,6 +1485,8 @@ def _production_control_console(
     source_guarded_apply_readiness: dict[str, Any],
     source_governance_runtime_gate: dict[str, Any],
     source_governance_runtime_evidence: dict[str, Any],
+    source_leakage_readiness: dict[str, Any],
+    source_leakage_preflight_gate: dict[str, Any],
     chapter_runtime_growth: dict[str, Any],
     chapter_runtime_growth_hotspot_ledger: dict[str, Any],
     chapter_runtime_growth_write_policy_candidate_plan: dict[str, Any],
@@ -1449,6 +1517,8 @@ def _production_control_console(
         "source_guarded_apply": source_guarded_apply_readiness["status"],
         "source_governance_runtime": source_governance_runtime_gate["status"],
         "source_governance_runtime_evidence": source_governance_runtime_evidence["status"],
+        "source_leakage_readiness": source_leakage_readiness["status"],
+        "source_leakage_preflight": source_leakage_preflight_gate["status"],
         "runtime_growth": chapter_runtime_growth["status"],
         "runtime_growth_hotspots": chapter_runtime_growth_hotspot_ledger["status"],
         "runtime_growth_write_policy_plan": chapter_runtime_growth_write_policy_candidate_plan["status"],
@@ -1493,6 +1563,8 @@ def _production_control_console(
             "source_guarded_apply": source_guarded_apply_readiness["status"],
             "source_governance_runtime": source_governance_runtime_gate["status"],
             "source_governance_runtime_evidence": source_governance_runtime_evidence["status"],
+            "source_leakage_readiness": source_leakage_readiness["status"],
+            "source_leakage_preflight": source_leakage_preflight_gate["status"],
             "runtime_growth": chapter_runtime_growth["status"],
             "runtime_growth_hotspots": chapter_runtime_growth_hotspot_ledger["status"],
             "runtime_growth_write_policy_plan": chapter_runtime_growth_write_policy_candidate_plan["status"],
@@ -1527,6 +1599,8 @@ def _production_control_console(
         "source_guarded_apply_readiness": source_guarded_apply_readiness,
         "source_governance_runtime_gate": source_governance_runtime_gate,
         "source_governance_runtime_evidence": source_governance_runtime_evidence,
+        "source_leakage_readiness": source_leakage_readiness,
+        "source_leakage_preflight_gate": source_leakage_preflight_gate,
         "chapter_runtime_growth": chapter_runtime_growth,
         "chapter_runtime_growth_hotspot_ledger": chapter_runtime_growth_hotspot_ledger,
         "chapter_runtime_growth_write_policy_candidate_plan": chapter_runtime_growth_write_policy_candidate_plan,

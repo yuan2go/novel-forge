@@ -25,6 +25,7 @@ from novel_forge.modules.source_intake import (
     apply_governance_recommendations,
     apply_source_diff_repair,
     build_source_guarded_apply_readiness_report,
+    build_source_leakage_readiness_report,
     create_license_check_result,
     create_github_source_note,
     create_source_policy,
@@ -43,6 +44,7 @@ from novel_forge.modules.source_intake import (
     rollback_source_diff_repair,
     run_source_connector,
     run_source_governance_runtime_gate,
+    run_source_leakage_preflight_gate,
     sweep_source_retention_expiry,
     sweep_source_stale_quarantine,
 )

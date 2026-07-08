@@ -265,6 +265,8 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/sources/retention-sweep",
                 "/product/sources/guarded-apply-readiness",
                 "/product/sources/runtime-gate",
+                "/product/sources/source-leakage-readiness",
+                "/product/sources/source-leakage-preflight-gate",
                 "/product/sources/context-eligibility",
                 "/product/drafts",
                 "/product/reviews/run",
@@ -1009,6 +1011,60 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(payload["gate_result"]["asset"]["content"]["gate_kind"], "source_governance_runtime")
             self.assertEqual(payload["summary"]["stale_sweep_status"], "clean")
             self.assertEqual(payload["summary"]["retention_sweep_status"], "clean")
+
+    def test_source_leakage_preflight_gate_route_passes_with_clean_context_evidence(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.schemas import ContextBundle
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+            storage = LocalStorage(root)
+            project_id = "route-source-leakage-gate"
+            for stage in ["topic", "worldbuilding", "character", "outline", "chapter_plan", "draft", "review", "revision"]:
+                storage.write_asset_auto(
+                    ContextBundle(
+                        id=f"route-context-{stage}",
+                        title=f"Route context {stage}",
+                        content={
+                            "project_id": project_id,
+                            "stage_context_contract": {"contract": "stage-context-profile-v1", "stage": stage},
+                            "source_isolation": {"raw_source_text_allowed": False},
+                            "selected_assets": [
+                                {
+                                    "path": f"data/mkaos/route-safe-{stage}.json",
+                                    "asset_type": "knowledge_card",
+                                    "source_eligibility": {"status": "passed", "generation_context_allowed": True, "evidence_only": False},
+                                }
+                            ],
+                            "policy_rejections": [{"path": f"data/raw/route-raw-{stage}.json", "signals": ["blocked_asset_type"]}],
+                            "actual_context": f"route-safe abstract context for {stage}",
+                            "compressed_context": {"knowledge": [{"path": f"data/mkaos/route-safe-{stage}.json", "asset_type": "knowledge_card"}]},
+                        },
+                        metadata={"project_id": project_id, "context_profile": stage, "use_in_generation_rag": False},
+                    )
+                )
+
+            response = client.get(
+                "/product/sources/source-leakage-preflight-gate",
+                params={"project_id": project_id, "environment": "production"},
+            )
+
+            self.assertEqual(response.status_code, 200, response.text)
+            payload = response.json()
+            self.assertEqual(payload["status"], "passed")
+            self.assertFalse(payload["blocking"])
+            self.assertEqual(payload["summary"]["passed_stage_count"], 8)
+            self.assertEqual(payload["gate_result"]["asset"]["content"]["gate_kind"], "source_leakage_preflight")
+            self.assertFalse(payload["readiness_report"]["asset"]["content"]["summary"]["raw_source_text_included"])
 
     def test_project_cockpit_route_surfaces_clean_workflow_governance_readiness(self):
         try:

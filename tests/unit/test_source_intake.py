@@ -29,11 +29,13 @@ from novel_forge.modules.source_intake import (
     rollback_source_diff_repair,
     run_source_connector,
     run_source_governance_runtime_gate,
+    build_source_leakage_readiness_report,
+    run_source_leakage_preflight_gate,
     sweep_source_retention_expiry,
     sweep_source_stale_quarantine,
 )
 from novel_forge.modules.permission_center import resolve_approval_request
-from novel_forge.schemas import BaseAsset, ChangeImpactReport, KnowledgeCard, MaterialCard, validate_common_fields
+from novel_forge.schemas import BaseAsset, ChangeImpactReport, ContextBundle, KnowledgeCard, MaterialCard, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 
@@ -785,6 +787,65 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertEqual(result["status"], "failed")
             self.assertTrue(result["blocking"])
             self.assertIn("unguarded_source_derived_asset", {row["code"] for row in result["blocking_rows"]})
+
+    def test_source_leakage_preflight_gate_fails_closed_without_stage_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            result = run_source_leakage_preflight_gate(storage, project_id="source-leak-p", environment="production")
+
+            self.assertEqual(result["status"], "failed")
+            self.assertTrue(result["blocking"])
+            self.assertEqual(result["summary"]["missing_stage_count"], 8)
+            self.assertFalse(result["summary"]["provider_call_executed"])
+            self.assertFalse(result["summary"]["chapter_acceptance_executed"])
+            self.assertEqual(result["gate_result"]["asset"]["content"]["gate_kind"], "source_leakage_preflight")
+            self.assertIn("context_bundle_stage_evidence_missing", {row["failure_rows"][0]["code"] for row in result["blockers"]})
+
+    def test_source_leakage_preflight_gate_passes_with_clean_v1_stage_context_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "source-leak-p"
+            for stage in ["topic", "worldbuilding", "character", "outline", "chapter_plan", "draft", "review", "revision"]:
+                storage.write_asset_auto(
+                    ContextBundle(
+                        id=f"context-bundle-{stage}",
+                        title=f"Context bundle {stage}",
+                        content={
+                            "project_id": project_id,
+                            "stage_context_contract": {"contract": "stage-context-profile-v1", "stage": stage},
+                            "source_isolation": {"raw_source_text_allowed": False},
+                            "selected_assets": [
+                                {
+                                    "path": f"data/mkaos/safe-{stage}.json",
+                                    "asset_type": "knowledge_card",
+                                    "source_eligibility": {"status": "passed", "generation_context_allowed": True, "evidence_only": False},
+                                }
+                            ],
+                            "policy_rejections": [
+                                {"path": f"data/raw/raw-{stage}.json", "signals": ["blocked_asset_type"]},
+                                {"path": f"data/materials/r4-{stage}.json", "signals": ["source_quarantine"]},
+                            ],
+                            "actual_context": f"safe abstract context for {stage}",
+                            "compressed_context": {"knowledge": [{"path": f"data/mkaos/safe-{stage}.json", "asset_type": "knowledge_card"}]},
+                        },
+                        metadata={"project_id": project_id, "context_profile": stage, "use_in_generation_rag": False},
+                    )
+                )
+
+            readiness = build_source_leakage_readiness_report(storage, project_id=project_id)
+            result = run_source_leakage_preflight_gate(storage, project_id=project_id, environment="production")
+
+            self.assertEqual(readiness["status"], "ready")
+            self.assertEqual(readiness["summary"]["passed_stage_count"], 8)
+            self.assertEqual(readiness["summary"]["failed_stage_count"], 0)
+            self.assertFalse(readiness["summary"]["raw_source_text_included"])
+            self.assertEqual(result["status"], "passed")
+            self.assertFalse(result["blocking"])
+            self.assertEqual(result["summary"]["blocking_count"], 0)
+            self.assertEqual(result["gate_result"]["asset"]["content"]["result"]["contract"], "source-leakage-preflight-gate-v1")
 
     def test_governance_application_applies_mkaos_recommendation_only_after_approval_and_can_rollback(self):
         with tempfile.TemporaryDirectory() as tmp:
