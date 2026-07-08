@@ -1454,6 +1454,7 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["quality"]["unified_acceptance_preflight_unready_count"], 3)
             self.assertEqual(content["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
             self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
+            self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["unready_final_evidence"][0]["key"], "source_governance_runtime")
 
     def test_quality_calibration_readiness_route_persists_and_cockpit_surfaces_it(self):
         try:

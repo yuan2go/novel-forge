@@ -297,6 +297,7 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolve
     ]
     enforced_failures = [row for row in rows if row["enforced_now"] and row["status"] != "passed"]
     unready_final = [row for row in rows if row["required_for_final_unified_acceptance"] and not row["enforced_now"] and row["status"] != "passed"]
+    unready_final_rows = [_compact_unready_preflight_row(row) for row in unready_final]
     return {
         "contract": "v1-unified-acceptance-preflight-manifest-v1",
         "status": "failed" if enforced_failures else "review_required" if unready_final else "passed",
@@ -304,6 +305,7 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolve
         "unready_final_evidence_count": len(unready_final),
         "missing_or_deferred_final_evidence_count": len(unready_final),
         "legacy_count_compatibility": "missing_or_deferred_final_evidence_count is retained as an alias for unready_final_evidence_count",
+        "unready_final_evidence": unready_final_rows,
         "required_evidence": rows,
         "chapter_acceptance_executed_by_manifest": False,
         "operator_action": "complete unready final preflight evidence before unified acceptance" if unready_final else "preflight evidence complete",
@@ -326,6 +328,21 @@ def _resolved_preflight_row(*, key: str, resolved: dict[str, Any], deferred_acti
     if linked:
         row["linked_evidence_paths"] = linked
     return row
+
+
+def _compact_unready_preflight_row(row: dict[str, Any]) -> dict[str, Any]:
+    compact = {
+        "key": str(row.get("key") or ""),
+        "status": str(row.get("status") or ""),
+        "evidence_path": str(row.get("evidence_path") or ""),
+        "blocking": bool(row.get("blocking", False)),
+        "message": str(row.get("message") or ""),
+        "operator_action": str(row.get("operator_action") or ""),
+    }
+    linked = row.get("linked_evidence_paths", []) if isinstance(row.get("linked_evidence_paths", []), list) else []
+    if linked:
+        compact["linked_evidence_paths"] = linked
+    return compact
 
 
 def _resolve_unified_acceptance_preflight_evidence(storage: LocalStorage, *, project_id: str) -> dict[str, dict[str, Any]]:

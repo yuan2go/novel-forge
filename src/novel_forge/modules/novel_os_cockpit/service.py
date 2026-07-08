@@ -692,6 +692,7 @@ def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) ->
             "enforced_failure_count": 0,
             "unready_final_evidence_count": 0,
             "missing_or_deferred_final_evidence_count": 0,
+            "unready_final_evidence": [],
             "required_evidence": [],
             "operator_action": "run deferred v1 acceptance preflight helper before final unified acceptance",
         }
@@ -706,10 +707,14 @@ def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) ->
             "enforced_failure_count": 0,
             "unready_final_evidence_count": 0,
             "missing_or_deferred_final_evidence_count": 0,
+            "unready_final_evidence": [],
             "required_evidence": [],
             "operator_action": "latest acceptance report has no unified preflight manifest",
         }
     evidence = manifest.get("required_evidence", []) if isinstance(manifest.get("required_evidence", []), list) else []
+    unready_rows = manifest.get("unready_final_evidence", []) if isinstance(manifest.get("unready_final_evidence", []), list) else []
+    if not unready_rows:
+        unready_rows = _unready_preflight_rows(evidence)
     return {
         "contract": str(manifest.get("contract") or "v1-unified-acceptance-preflight-manifest-v1"),
         "status": str(manifest.get("status") or "unknown"),
@@ -720,8 +725,35 @@ def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) ->
         ),
         "missing_or_deferred_final_evidence_count": int(manifest.get("missing_or_deferred_final_evidence_count") or 0),
         "required_evidence": evidence,
+        "unready_final_evidence": unready_rows,
         "operator_action": str(manifest.get("operator_action") or ""),
     }
+
+
+def _unready_preflight_rows(evidence: list[Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in evidence:
+        if not isinstance(item, dict):
+            continue
+        if not bool(item.get("required_for_final_unified_acceptance", True)):
+            continue
+        if bool(item.get("enforced_now", False)):
+            continue
+        if str(item.get("status") or "") == "passed":
+            continue
+        compact = {
+            "key": str(item.get("key") or ""),
+            "status": str(item.get("status") or ""),
+            "evidence_path": str(item.get("evidence_path") or ""),
+            "blocking": bool(item.get("blocking", False)),
+            "message": str(item.get("message") or ""),
+            "operator_action": str(item.get("operator_action") or ""),
+        }
+        linked = item.get("linked_evidence_paths", []) if isinstance(item.get("linked_evidence_paths", []), list) else []
+        if linked:
+            compact["linked_evidence_paths"] = linked
+        rows.append(compact)
+    return rows
 
 
 def _quality_calibration_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
