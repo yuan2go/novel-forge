@@ -9,6 +9,7 @@ from novel_forge.modules.context_builder.service import (
     list_context_assets,
     require_knowledge_context_contract,
 )
+from novel_forge.modules.context_builder.runtime_coverage import build_context_governance_runtime_coverage_report
 
 __all__ = [
     "compare_context_bundles",
@@ -20,4 +21,5 @@ __all__ = [
     "create_context_bundle",
     "list_context_assets",
     "require_knowledge_context_contract",
+    "build_context_governance_runtime_coverage_report",
 ]

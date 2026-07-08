@@ -5,7 +5,13 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from novel_forge.api.routers.context import ProductRouterContext
-from novel_forge.modules.context_builder import compare_context_bundles, create_context_build_plan, create_context_bundle, list_context_assets
+from novel_forge.modules.context_builder import (
+    build_context_governance_runtime_coverage_report,
+    compare_context_bundles,
+    create_context_build_plan,
+    create_context_bundle,
+    list_context_assets,
+)
 from novel_forge.storage.local import LocalStorage
 
 
@@ -25,6 +31,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ) -> list[dict[str, Any]]:
         try:
             return list_context_assets(LocalStorage(app_settings.root), project_id=project_id, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/context/governance-runtime-coverage")
+    def context_governance_runtime_coverage(
+        project_id: str | None = None,
+        limit: int = Query(default=500, ge=1, le=2000),
+        persist: bool = False,
+    ) -> dict[str, Any]:
+        try:
+            return build_context_governance_runtime_coverage_report(
+                LocalStorage(app_settings.root),
+                project_id=project_id,
+                limit=limit,
+                persist=persist,
+            )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

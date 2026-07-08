@@ -94,6 +94,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/context/build-plan",
                 "/product/context/bundle",
                 "/product/context/diff",
+                "/product/context/governance-runtime-coverage",
                 "/product/continuity/graph",
                 "/product/continuity/graph-snapshot",
                 "/product/continuity/canon-snapshot",
@@ -562,6 +563,9 @@ class ProductApiRouterTests(unittest.TestCase):
             )
             self.assertEqual(context_diff.status_code, 200, context_diff.text)
             self.assertEqual(client.get(f"/product/context/assets?project_id={project.json()['project_id']}").status_code, 200)
+            context_governance_coverage = client.get(f"/product/context/governance-runtime-coverage?project_id={project.json()['project_id']}&persist=false")
+            self.assertEqual(context_governance_coverage.status_code, 200, context_governance_coverage.text)
+            self.assertEqual(context_governance_coverage.json()["snapshot_kind"], "context_governance_runtime_coverage")
             outline_version = client.post("/product/production/outline-version", json={"outline_path": str(outline_path.relative_to(storage.root))})
             self.assertEqual(outline_version.status_code, 200, outline_version.text)
             chapter_plan_version = client.post("/product/production/chapter-plan-version", json={"chapter_plan_path": chapter_plan_ref})
