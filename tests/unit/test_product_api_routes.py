@@ -295,6 +295,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/portfolio/lifecycle-gate",
                 "/product/os/cockpit/project",
                 "/product/os/cockpit/chapter-runtime-growth-profile",
+                "/product/os/cockpit/chapter-runtime-growth-hotspot-ledger",
                 "/product/os/cockpit/chapter-runtime-growth-threshold-gate",
                 "/product/os/cockpit/unified-preflight-gate",
                 "/product/os/cockpit/multi-book",
@@ -1295,6 +1296,10 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/os/cockpit/chapter-runtime-growth-profile",
                 params={"project_id": "route-book-runtime", "persist_report": True},
             )
+            hotspot_response = client.post(
+                "/product/os/cockpit/chapter-runtime-growth-hotspot-ledger",
+                params={"project_id": "route-book-runtime", "persist_report": True, "top_n": 5},
+            )
             cockpit_response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-runtime"})
 
             self.assertEqual(profile_response.status_code, 200, profile_response.text)
@@ -1306,15 +1311,27 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(profile["asset"]["content"]["throughput"]["full_run_count"], 1)
             self.assertEqual(profile["asset"]["content"]["quality"]["max_linked_asset_ref_count"], 2)
 
+            self.assertEqual(hotspot_response.status_code, 200, hotspot_response.text)
+            hotspot = hotspot_response.json()
+            self.assertEqual(hotspot["status"], "review_required")
+            self.assertEqual(hotspot["asset"]["content"]["snapshot_kind"], "chapter_runtime_growth_hotspot_ledger")
+            self.assertFalse(hotspot["asset"]["content"]["summary"]["chapter_production_executed"])
+            self.assertFalse(hotspot["asset"]["content"]["summary"]["provider_proof_executed"])
+            self.assertIn("draft_chapter", {row["artifact_family"] for row in hotspot["asset"]["content"]["hotspot_rows"]})
+
             self.assertEqual(cockpit_response.status_code, 200, cockpit_response.text)
             content = cockpit_response.json()["asset"]["content"]
             growth = content["runtime_governance"]["chapter_runtime_growth"]
             self.assertEqual(growth["status"], "review_required")
             self.assertEqual(growth["summary"]["chapter_run_count"], 1)
             self.assertEqual(growth["summary"]["max_linked_asset_ref_count"], 2)
+            self.assertEqual(content["runtime_governance"]["chapter_runtime_growth_hotspot_ledger"]["status"], "review_required")
+            self.assertEqual(content["quality"]["chapter_runtime_growth_hotspot_status"], "review_required")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["runtime_growth_hotspots"], "review_required")
             self.assertEqual(content["quality"]["chapter_runtime_growth_status"], "review_required")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["runtime_growth"], "review_required")
             self.assertEqual(content["cockpit"]["chapter_runtime_growth"]["status"], "review_required")
+            self.assertEqual(content["cockpit"]["chapter_runtime_growth_hotspot_ledger"]["status"], "review_required")
 
     def test_chapter_runtime_growth_threshold_gate_route_fails_closed_and_cockpit_surfaces_it(self):
         try:

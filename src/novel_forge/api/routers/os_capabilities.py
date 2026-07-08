@@ -21,7 +21,11 @@ from novel_forge.modules.long_memory import (
     select_memory_for_node,
 )
 from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, list_model_router_assets, provider_approval_evidence_report, resolve_model_route
-from novel_forge.modules.chapter_runtime_growth import build_chapter_runtime_growth_profile, run_chapter_runtime_growth_threshold_gate
+from novel_forge.modules.chapter_runtime_growth import (
+    build_chapter_runtime_growth_hotspot_ledger,
+    build_chapter_runtime_growth_profile,
+    run_chapter_runtime_growth_threshold_gate,
+)
 from novel_forge.modules.novel_os_cockpit import build_multi_book_daily_production_report, build_multi_book_production_schedule, build_project_cockpit_snapshot
 from novel_forge.modules.pgvector_store import (
     build_embedding_job,
@@ -99,6 +103,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def chapter_runtime_growth_profile(project_id: str = "local-project", persist_report: bool = True) -> dict[str, Any]:
         try:
             return build_chapter_runtime_growth_profile(LocalStorage(app_settings.root), project_id=project_id, persist=persist_report)
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/cockpit/chapter-runtime-growth-hotspot-ledger")
+    def chapter_runtime_growth_hotspot_ledger(
+        project_id: str = "local-project",
+        persist_report: bool = True,
+        top_n: int = Query(default=10, ge=1, le=100),
+    ) -> dict[str, Any]:
+        try:
+            return build_chapter_runtime_growth_hotspot_ledger(
+                LocalStorage(app_settings.root),
+                project_id=project_id,
+                persist=persist_report,
+                top_n=top_n,
+            )
         except (OSError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

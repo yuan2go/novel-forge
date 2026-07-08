@@ -404,6 +404,37 @@ class NovelOsCockpitTests(unittest.TestCase):
                 )
             )
             storage.write_asset_auto(
+                ProjectMetricSnapshot(
+                    title="Chapter runtime growth hotspot ledger",
+                    content={
+                        "snapshot_kind": "chapter_runtime_growth_hotspot_ledger",
+                        "contract": "chapter-runtime-growth-hotspot-ledger-v1",
+                        "status": "review_required",
+                        "project_id": "book-a",
+                        "snapshot_at": "2026-07-08T00:00:04Z",
+                        "summary": {
+                            "chapter_run_count": 2,
+                            "hotspot_family_count": 2,
+                            "high_risk_hotspot_count": 1,
+                            "max_linked_asset_ref_count": 132,
+                            "estimated_compacted_write_savings": 12,
+                        },
+                        "hotspot_rows": [
+                            {
+                                "artifact_family": "draft_chapter",
+                                "total_count": 40,
+                                "run_count": 2,
+                                "max_per_run": 28,
+                                "risk_level": "medium",
+                            }
+                        ],
+                        "run_hotspot_rows": [{"run_id": "run-1", "linked_asset_ref_count": 132}],
+                        "operator_action": "inspect hotspot rows",
+                    },
+                    metadata={"project_id": "book-a", "snapshot_kind": "chapter_runtime_growth_hotspot_ledger"},
+                )
+            )
+            storage.write_asset_auto(
                 BaseAsset(
                     id="v1-acceptance-preflight-report",
                     type="long_chain_acceptance_report",
@@ -472,6 +503,8 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["quality"]["source_governance_runtime_evidence_status"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["source_governance_runtime_evidence_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_status"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_hotspot_status"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_hotspot_family_count"], 2)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_high_run_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_max_ref_count"], 132)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_status"], "review_required")
@@ -485,6 +518,7 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_governance_runtime"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_governance_runtime_evidence"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth_hotspots"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
             self.assertEqual(
                 snapshot["asset"]["content"]["production_control_console"]["repair_plan_summary"]["unified_acceptance_preflight"]["action_count"],
@@ -496,6 +530,7 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_governance_runtime_gate"]["status"], "failed")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_governance_runtime_evidence"]["latest"]["gate_result_path"], "data/runs/source-governance-runtime-gate-book-a.json")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["chapter_runtime_growth"]["summary"]["max_linked_asset_ref_count"], 132)
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["chapter_runtime_growth_hotspot_ledger"]["hotspot_rows"][0]["artifact_family"], "draft_chapter")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["unready_final_evidence"][0]["key"], "source_governance_runtime")

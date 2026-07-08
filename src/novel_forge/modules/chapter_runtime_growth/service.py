@@ -14,6 +14,8 @@ from novel_forge.storage.local import LocalStorage
 
 CONTRACT = "chapter-runtime-growth-profile-v1"
 SNAPSHOT_KIND = "chapter_runtime_growth_profile"
+HOTSPOT_LEDGER_CONTRACT = "chapter-runtime-growth-hotspot-ledger-v1"
+HOTSPOT_LEDGER_SNAPSHOT_KIND = "chapter_runtime_growth_hotspot_ledger"
 THRESHOLD_GATE_KIND = "chapter_runtime_growth_threshold"
 THRESHOLD_GATE_CONTRACT = "chapter-runtime-growth-threshold-gate-v1"
 HIGH_REF_THRESHOLD = 120
@@ -84,6 +86,108 @@ def build_chapter_runtime_growth_profile(storage: LocalStorage, *, project_id: s
         "asset": asset.to_dict(),
         "summary": summary,
         "runtime_rows": runtime_rows,
+    }
+
+
+def build_chapter_runtime_growth_hotspot_ledger(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    persist: bool = True,
+    top_n: int = 10,
+) -> dict[str, Any]:
+    """Write a read-only hotspot ledger over existing chapter runtime evidence."""
+
+    storage.ensure_layout()
+    limit = max(1, int(top_n or 10))
+    profile = build_chapter_runtime_growth_profile(storage, project_id=project_id, persist=False)
+    runtime_rows = profile.get("runtime_rows", []) if isinstance(profile.get("runtime_rows", []), list) else []
+    hotspot_rows = _artifact_hotspot_rows(runtime_rows, limit=limit)
+    run_hotspot_rows = _run_hotspot_rows(runtime_rows, limit=limit)
+    acceptance_report_rows = _acceptance_report_hotspot_rows(storage, project_id=project_id, limit=limit)
+    status = _hotspot_status(runtime_rows, hotspot_rows)
+    summary = {
+        "chapter_run_count": len(runtime_rows),
+        "hotspot_family_count": len(hotspot_rows),
+        "high_risk_hotspot_count": sum(1 for row in hotspot_rows if row.get("risk_level") in {"high", "critical"}),
+        "max_linked_asset_ref_count": int(profile.get("summary", {}).get("max_linked_asset_ref_count") or 0)
+        if isinstance(profile.get("summary", {}), dict)
+        else 0,
+        "average_linked_asset_ref_count": float(profile.get("summary", {}).get("average_linked_asset_ref_count") or 0.0)
+        if isinstance(profile.get("summary", {}), dict)
+        else 0.0,
+        "estimated_compacted_write_savings": int(profile.get("summary", {}).get("estimated_compacted_write_savings") or 0)
+        if isinstance(profile.get("summary", {}), dict)
+        else 0,
+        "read_only": True,
+        "chapter_production_executed": False,
+        "provider_proof_executed": False,
+        "mutation_applied": False,
+    }
+    content = {
+        "snapshot_kind": HOTSPOT_LEDGER_SNAPSHOT_KIND,
+        "contract": HOTSPOT_LEDGER_CONTRACT,
+        "status": status,
+        "project_id": project_id,
+        "snapshot_at": utc_now(),
+        "summary": summary,
+        "throughput": {
+            "chapter_run_count": len(runtime_rows),
+            "hotspot_family_count": len(hotspot_rows),
+            "run_hotspot_count": len(run_hotspot_rows),
+            "acceptance_report_hotspot_count": len(acceptance_report_rows),
+        },
+        "quality": {
+            "runtime_growth_hotspot_status": status,
+            "high_risk_hotspot_count": summary["high_risk_hotspot_count"],
+            "max_linked_asset_ref_count": summary["max_linked_asset_ref_count"],
+            "hotspot_family_count": summary["hotspot_family_count"],
+        },
+        "task_health": {
+            "review_required_count": 1 if status == "review_required" else 0,
+            "estimated_compacted_write_savings": summary["estimated_compacted_write_savings"],
+            "mutation_applied": False,
+        },
+        "agent_health": {
+            "chapter_runtime_hotspot_ledger": status,
+            "chapter_production_executed": False,
+            "provider_proof_executed": False,
+        },
+        "storage_health": {
+            "artifact_hotspot_families": [str(row.get("artifact_family") or "") for row in hotspot_rows],
+            "top_hotspot_count": int(hotspot_rows[0].get("total_count") or 0) if hotspot_rows else 0,
+            "read_only": True,
+        },
+        "hotspot_rows": hotspot_rows,
+        "run_hotspot_rows": run_hotspot_rows,
+        "acceptance_report_hotspot_rows": acceptance_report_rows,
+        "evidence_paths": _dedupe(
+            [
+                *[str(row.get("path") or "") for row in runtime_rows if isinstance(row, dict)],
+                *[str(row.get("path") or "") for row in acceptance_report_rows if isinstance(row, dict)],
+            ]
+        ),
+        "recommendations": _hotspot_recommendations(status, hotspot_rows),
+        "operator_action": _hotspot_operator_action(status),
+        "mutation_policy": "read-only: identify artifact hotspots before changing runtime write policies",
+    }
+    asset = ProjectMetricSnapshot(
+        title=f"Chapter runtime growth hotspot ledger {project_id or 'all-projects'}",
+        tags=["chapter-runtime-growth-hotspot", status],
+        content=content,
+        metadata={"project_id": project_id, "snapshot_kind": HOTSPOT_LEDGER_SNAPSHOT_KIND, "asset_status": status},
+    )
+    errors = validate_common_fields(asset.to_dict())
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = storage.write_asset_auto(asset) if persist else None
+    return {
+        "status": status,
+        "path": _display_path(storage.root, path) if path else "",
+        "asset": asset.to_dict(),
+        "summary": summary,
+        "hotspot_rows": hotspot_rows,
+        "run_hotspot_rows": run_hotspot_rows,
     }
 
 
@@ -242,6 +346,155 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "referenced_asset_type_counts": dict(sorted(type_counts.items())),
         "repeated_asset_type_counts": dict(sorted(repeated.items())),
     }
+
+
+def _artifact_hotspot_rows(rows: list[dict[str, Any]], *, limit: int) -> list[dict[str, Any]]:
+    family_counts: Counter[str] = Counter()
+    family_run_counts: dict[str, int] = {}
+    family_max_per_run: dict[str, int] = {}
+    for row in rows:
+        counts = Counter(row.get("referenced_asset_type_counts", {}) if isinstance(row.get("referenced_asset_type_counts", {}), dict) else {})
+        if int(row.get("task_status_ref_count") or 0):
+            counts["task_status_ref"] += int(row.get("task_status_ref_count") or 0)
+        if int(row.get("output_ref_count") or 0):
+            counts["chapter_output_ref"] += int(row.get("output_ref_count") or 0)
+        if int(row.get("step_output_ref_count") or 0):
+            counts["step_output_ref"] += int(row.get("step_output_ref_count") or 0)
+        if int(row.get("node_run_count") or 0):
+            counts["node_run"] += int(row.get("node_run_count") or 0)
+        if int(row.get("trace_span_count") or 0):
+            counts["trace_span"] += int(row.get("trace_span_count") or 0)
+        for family, count in counts.items():
+            if count <= 0:
+                continue
+            family_counts[str(family)] += int(count)
+            family_run_counts[str(family)] = family_run_counts.get(str(family), 0) + 1
+            family_max_per_run[str(family)] = max(family_max_per_run.get(str(family), 0), int(count))
+    run_count = max(1, len(rows))
+    result = []
+    for family, count in family_counts.most_common(limit):
+        max_per_run = family_max_per_run.get(family, 0)
+        average_per_run = round(count / run_count, 3)
+        result.append(
+            {
+                "artifact_family": family,
+                "total_count": int(count),
+                "run_count": int(family_run_counts.get(family, 0)),
+                "max_per_run": int(max_per_run),
+                "average_per_run": average_per_run,
+                "risk_level": _artifact_family_risk(family, total_count=int(count), max_per_run=max_per_run, run_count=run_count),
+                "operator_action": _artifact_family_operator_action(family),
+            }
+        )
+    return result
+
+
+def _run_hotspot_rows(rows: list[dict[str, Any]], *, limit: int) -> list[dict[str, Any]]:
+    sorted_rows = sorted(
+        [row for row in rows if isinstance(row, dict)],
+        key=lambda item: (
+            int(item.get("linked_asset_ref_count") or 0),
+            int(item.get("node_run_count") or 0) + int(item.get("trace_span_count") or 0),
+        ),
+        reverse=True,
+    )
+    result = []
+    for row in sorted_rows[:limit]:
+        ref_counts = row.get("referenced_asset_type_counts", {}) if isinstance(row.get("referenced_asset_type_counts", {}), dict) else {}
+        result.append(
+            {
+                "run_id": str(row.get("run_id") or ""),
+                "chapter": int(row.get("chapter") or 0),
+                "path": str(row.get("path") or ""),
+                "risk_level": str(row.get("risk_level") or "unknown"),
+                "linked_asset_ref_count": int(row.get("linked_asset_ref_count") or 0),
+                "node_run_count": int(row.get("node_run_count") or 0),
+                "trace_span_count": int(row.get("trace_span_count") or 0),
+                "top_referenced_asset_types": dict(Counter(ref_counts).most_common(5)),
+                "recommendation": str(row.get("recommendation") or ""),
+            }
+        )
+    return result
+
+
+def _acceptance_report_hotspot_rows(storage: LocalStorage, *, project_id: str, limit: int) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in storage.list_json("runs"):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != "long_chain_acceptance_report":
+            continue
+        if project_id and not asset_matches_project_scope(storage, data, project_id):
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        output_counts = content.get("output_counts", {}) if isinstance(content.get("output_counts", {}), dict) else {}
+        if not output_counts:
+            continue
+        rows.append(
+            {
+                "path": _display_path(storage.root, path),
+                "status": str(content.get("status") or data.get("status") or ""),
+                "top_output_counts": dict(Counter({str(key): int(value or 0) for key, value in output_counts.items()}).most_common(limit)),
+            }
+        )
+    return sorted(rows, key=lambda item: str(item.get("path") or ""))[-limit:]
+
+
+def _artifact_family_risk(family: str, *, total_count: int, max_per_run: int, run_count: int) -> str:
+    if family in {"unresolved_ref"}:
+        return "high"
+    if family in {"trace_span", "node_run", "task_status_ref"} and max_per_run > 10:
+        return "high"
+    if max_per_run > HIGH_REF_THRESHOLD or total_count > run_count * HIGH_REF_THRESHOLD:
+        return "high"
+    if max_per_run > 25 or total_count > run_count * 25:
+        return "medium"
+    return "low"
+
+
+def _artifact_family_operator_action(family: str) -> str:
+    if family in {"task_status_ref", "node_run", "trace_span"}:
+        return "review runtime artifact recording policy for compact sequence runs"
+    if family in {"draft_chapter", "draft_version", "revision_task", "review_issue", "review_report"}:
+        return "inspect chapter quality loop and revision artifact fanout before final acceptance"
+    if family == "unresolved_ref":
+        return "repair unresolved runtime references before final acceptance"
+    return "monitor this artifact family before changing write policy"
+
+
+def _hotspot_status(runtime_rows: list[dict[str, Any]], hotspot_rows: list[dict[str, Any]]) -> str:
+    if not runtime_rows:
+        return "missing"
+    if any(row.get("risk_level") == "high" for row in hotspot_rows):
+        return "review_required"
+    if any(row.get("risk_level") == "medium" for row in hotspot_rows):
+        return "review_required"
+    if any(str(row.get("risk_level") or "") in {"medium", "high", "critical"} for row in runtime_rows):
+        return "review_required"
+    return "passed"
+
+
+def _hotspot_recommendations(status: str, hotspot_rows: list[dict[str, Any]]) -> list[str]:
+    if status == "missing":
+        return ["Create or import chapter_production_run evidence before building artifact hotspot ledger"]
+    recommendations = []
+    families = {str(row.get("artifact_family") or "") for row in hotspot_rows if row.get("risk_level") in {"medium", "high"}}
+    if families & {"task_status_ref", "node_run", "trace_span"}:
+        recommendations.append("Inspect runtime artifact policy before reducing or expanding chapter sequence runs")
+    if families & {"draft_chapter", "draft_version", "revision_task", "review_issue", "review_report"}:
+        recommendations.append("Inspect quality-loop and revision fanout before changing draft/review write policy")
+    if "unresolved_ref" in families:
+        recommendations.append("Resolve missing artifact references before final unified acceptance")
+    if not recommendations:
+        recommendations.append("Runtime artifact hotspots are within current development bounds")
+    return recommendations
+
+
+def _hotspot_operator_action(status: str) -> str:
+    if status == "missing":
+        return "build hotspot ledger after chapter runtime evidence exists"
+    if status == "review_required":
+        return "inspect hotspot rows before changing runtime write policy or running final acceptance"
+    return "hotspot ledger is ready for continued runtime growth governance"
 
 
 def _threshold_blocking_rows(
