@@ -850,6 +850,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
                 run_to="outline_checkpoint",
                 task_status_mode="full",
             )
+            node_runs_after_full = _count_assets_by_type(storage, "node_run")
             compact = start_chapter_production(
                 storage,
                 outline_path=outline_ref,
@@ -873,6 +874,9 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertTrue(full["control"]["runtime_artifact_policy"]["task_status_recording"]["running"])
             self.assertFalse(compact["control"]["runtime_artifact_policy"]["task_status_recording"]["running"])
             self.assertTrue(compact["control"]["runtime_artifact_policy"]["task_status_recording"]["failed"])
+            self.assertTrue(full["control"]["runtime_artifact_policy"]["node_run_recording"]["succeeded"])
+            self.assertFalse(compact["control"]["runtime_artifact_policy"]["node_run_recording"]["succeeded"])
+            self.assertEqual(_count_assets_by_type(storage, "node_run"), node_runs_after_full)
 
     def test_project_safe_reference_index_updates_incrementally(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1107,6 +1111,19 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertEqual(storage.read_asset(acceptance["path"]).type, "long_chain_acceptance_report")
             self.assertEqual(storage.read_asset(acceptance["path"]).content["chapter_count"], 10)
             self.assertIn(storage.read_asset(acceptance["path"]).content["recommendation"], {"pass", "revise", "block"})
+
+
+def _count_assets_by_type(storage: LocalStorage, asset_type: str) -> int:
+    total = 0
+    for category in storage.counts():
+        for path in storage.list_json(category):
+            try:
+                data = storage.read_json(path)
+            except Exception:
+                continue
+            if isinstance(data, dict) and data.get("type") == asset_type:
+                total += 1
+    return total
 
 
 if __name__ == "__main__":

@@ -507,7 +507,8 @@ def chapter_production_run_detail(storage: LocalStorage, run_path: str | Path) -
 def _execute_bus_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], step: str) -> bool:
     content = _content(data)
     run_id = str(content.get("run_id", ""))
-    task_status_mode = _runtime_artifact_policy_from_control(_control(content))["task_status_mode"]
+    runtime_artifact_policy = _runtime_artifact_policy_from_control(_control(content))
+    task_status_mode = runtime_artifact_policy["task_status_mode"]
     input_paths = _step_inputs(content, step)
     step_result: dict[str, Any] = {}
     status_paths: list[Path] = []
@@ -518,7 +519,7 @@ def _execute_bus_step(storage: LocalStorage, run_file: Path, data: dict[str, Any
         return resolve_path(storage.root, step_result["main_path"])
 
     try:
-        _execute_task(storage, run_id, f"chapter-production:{step}", input_paths, action, status_paths, task_status_mode=task_status_mode)
+        _execute_task(storage, run_id, f"chapter-production:{step}", input_paths, action, status_paths, runtime_artifact_policy=runtime_artifact_policy)
     except Exception as exc:
         data = _read_run_data(storage, run_file)
         run_log = _build_run_log(storage, status_paths)
@@ -1523,8 +1524,11 @@ def _execute_task(
     status_paths: list[Path],
     *,
     task_status_mode: str = "full",
+    runtime_artifact_policy: dict[str, Any] | None = None,
 ) -> Path:
-    task_status_mode = _task_status_mode(task_status_mode)
+    runtime_artifact_policy = _runtime_artifact_policy_from_control(runtime_artifact_policy or {"task_status_mode": task_status_mode})
+    task_status_mode = runtime_artifact_policy["task_status_mode"]
+    node_run_recording = runtime_artifact_policy.get("node_run_recording", {}) if isinstance(runtime_artifact_policy.get("node_run_recording", {}), dict) else {}
     if task_status_mode == "full":
         status_paths.append(_write_task_status(storage, run_id, step, "pending", input_paths=input_paths))
     started_at = utc_now()
@@ -1535,37 +1539,39 @@ def _execute_task(
     except Exception as exc:
         error_message = f"{type(exc).__name__}: {exc}"
         status_paths.append(_write_task_status(storage, run_id, step, "failed", input_paths=input_paths, error_message=error_message))
+        if node_run_recording.get("failed", True):
+            record_node_run(
+                storage,
+                run_id=run_id,
+                node_id=step,
+                node_type="chapter_production_step",
+                operation=step,
+                status="failed",
+                input_assets=input_paths,
+                output_assets=[],
+                processor={"kind": "chapter_production_bus", "name": step},
+                started_at=started_at,
+                finished_at=utc_now(),
+                error=error_message,
+                quality_gate={"required": True, "status": "failed"},
+            )
+        raise
+    output_paths = [result]
+    if node_run_recording.get("succeeded", True):
         record_node_run(
             storage,
             run_id=run_id,
             node_id=step,
             node_type="chapter_production_step",
             operation=step,
-            status="failed",
+            status="succeeded",
             input_assets=input_paths,
-            output_assets=[],
+            output_assets=output_paths,
             processor={"kind": "chapter_production_bus", "name": step},
             started_at=started_at,
             finished_at=utc_now(),
-            error=error_message,
-            quality_gate={"required": True, "status": "failed"},
+            quality_gate={"required": True, "status": "passed"},
         )
-        raise
-    output_paths = [result]
-    record_node_run(
-        storage,
-        run_id=run_id,
-        node_id=step,
-        node_type="chapter_production_step",
-        operation=step,
-        status="succeeded",
-        input_assets=input_paths,
-        output_assets=output_paths,
-        processor={"kind": "chapter_production_bus", "name": step},
-        started_at=started_at,
-        finished_at=utc_now(),
-        quality_gate={"required": True, "status": "passed"},
-    )
     status_paths.append(_write_task_status(storage, run_id, step, "completed", input_paths=input_paths, output_paths=output_paths))
     return result
 
@@ -1590,9 +1596,13 @@ def _runtime_artifact_policy(*, task_status_mode: Any = "full") -> dict[str, Any
             "paused": True,
             "cancelled": True,
         },
-        "node_run_mode": "full",
+        "node_run_mode": "full" if mode == "full" else "failure_only",
+        "node_run_recording": {
+            "succeeded": mode == "full",
+            "failed": True,
+        },
         "trace_mode": "full",
-        "reason": "compact mode is only for batch chapter sequence runs; it preserves terminal task evidence while avoiding repeated pending/running status assets.",
+        "reason": "compact mode is only for batch chapter sequence runs; it preserves terminal task and failure NodeRun evidence while avoiding repeated pending/running status and success NodeRun assets.",
     }
 
 
