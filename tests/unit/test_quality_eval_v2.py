@@ -11,8 +11,8 @@ from novel_forge.modules.evaluation_center import (
     calibrate_provider_judge,
     create_human_annotation_asset,
 )
-from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
-from novel_forge.schemas import DraftChapter
+from novel_forge.modules.quality_eval import build_quality_calibration_readiness_report, build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
+from novel_forge.schemas import DraftChapter, ModelJudgeResult
 from novel_forge.storage.local import LocalStorage
 
 
@@ -323,6 +323,84 @@ class QualityEvalV2Tests(unittest.TestCase):
             self.assertEqual(calibration["asset"]["content"]["calibration_status"], "passed")
             self.assertLessEqual(calibration["asset"]["content"]["mean_absolute_error"], 0.08)
 
+    def test_quality_calibration_readiness_missing_is_read_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+
+            report = build_quality_calibration_readiness_report(storage, project_id="p-missing")
+
+            self.assertEqual(report["status"], "missing")
+            self.assertEqual(report["asset"]["type"], "project_metric_snapshot")
+            self.assertEqual(report["asset"]["metadata"]["snapshot_kind"], "quality_calibration_readiness")
+            self.assertFalse(report["asset"]["content"]["task_health"]["provider_call_executed"])
+            self.assertEqual(report["summary"]["model_judge_result_count"], 0)
+
+    def test_quality_calibration_readiness_keeps_fixture_provider_unready(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            _write_fixture_model_judge(storage, project_id="p-fixture")
+
+            report = build_quality_calibration_readiness_report(storage, project_id="p-fixture")
+
+            self.assertEqual(report["status"], "review_required")
+            self.assertEqual(report["summary"]["model_judge_result_count"], 1)
+            self.assertEqual(report["summary"]["fixture_or_mock_provider_judge_count"], 1)
+            self.assertEqual(report["summary"]["external_provider_judge_count"], 0)
+            self.assertIn("external_provider_judge_proof", report["summary"]["missing_dimensions"])
+
+    def test_quality_calibration_readiness_passes_with_external_human_golden_and_calibration(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            rubric = build_quality_rubric_pack(storage, genre_id="mystery", platform_id="local")
+            run_quality_suite(storage, suite_type="opening_3", target_paths=[str(_ready_draft(storage, project_id="p-ready"))], rubric_path=rubric["path"])
+            external_judge_path = _write_external_model_judge(storage, project_id="p-ready")
+            draft_path = _ready_draft(storage, project_id="p-ready")
+            annotation = create_human_annotation_asset(
+                storage,
+                target_asset_path=str(draft_path),
+                annotator="chief-editor",
+                scores={"hook_strength": 0.9, "style_adherence": 0.86},
+                verdict="pass",
+                comment="calibration-ready human annotation",
+                project_id="p-ready",
+            )
+            golden = build_golden_set(
+                storage,
+                name="Readiness Golden Set",
+                case_specs=[
+                    {
+                        "target_asset_path": str(draft_path),
+                        "expected_scores": {"hook_strength": 0.9, "style_adherence": 0.86},
+                        "annotation_path": annotation["path"],
+                    }
+                ],
+                project_id="p-ready",
+            )
+            calibrate_provider_judge(
+                storage,
+                golden_set_path=golden["path"],
+                provider_judge_results=[
+                    {
+                        "target_asset_path": str(draft_path),
+                        "scores": {"hook_strength": 0.9, "style_adherence": 0.86},
+                        "provider": "external-provider",
+                        "model_judge_path": str(external_judge_path),
+                    }
+                ],
+                tolerance=0.08,
+                project_id="p-ready",
+            )
+
+            report = build_quality_calibration_readiness_report(storage, project_id="p-ready")
+
+            self.assertEqual(report["status"], "passed")
+            self.assertEqual(report["summary"]["external_provider_judge_count"], 1)
+            self.assertEqual(report["summary"]["human_annotation_count"], 1)
+            self.assertEqual(report["summary"]["golden_set_count"], 1)
+            self.assertEqual(report["summary"]["passed_provider_calibration_count"], 1)
+            self.assertEqual(report["summary"]["missing_dimension_count"], 0)
+            self.assertTrue(report["path"])
+
 
 def _production_rubric(storage: LocalStorage) -> dict:
     return build_quality_rubric_pack(
@@ -334,7 +412,7 @@ def _production_rubric(storage: LocalStorage) -> dict:
     )
 
 
-def _ready_draft(storage: LocalStorage) -> Path:
+def _ready_draft(storage: LocalStorage, *, project_id: str = "p1") -> Path:
     draft = DraftChapter(
         title="provider judged chapter",
         content={
@@ -342,7 +420,7 @@ def _ready_draft(storage: LocalStorage) -> Path:
             "text": ("目标、案件、关系和冲突同时推进。然而新证据带来代价，下一章真相会继续逼近。主角必须选择。 " * 30),
             "copyright_boundary": "original draft",
         },
-        metadata={"project_id": "p1"},
+        metadata={"project_id": project_id},
     )
     return storage.write_asset_auto(draft)
 
@@ -358,6 +436,56 @@ def _envelope(task_type: str, asset_type: str, trace_id: str) -> dict:
         "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
         "environment": "production",
     }
+
+
+def _write_fixture_model_judge(storage: LocalStorage, *, project_id: str) -> Path:
+    asset = ModelJudgeResult(
+        title="Fixture model judge",
+        tags=["quality-eval-v2", "model-judge", "fixture"],
+        content={
+            "judge_id": "judge-fixture",
+            "target_asset_id": "draft-fixture",
+            "rubric_id": "rubric-fixture",
+            "scores": {"overall": 88},
+            "recommendation": "ready",
+            "provider_evidence": {
+                "provider": "mock",
+                "model": "mock-model",
+                "provider_policy": {"status": "passed", "mock_provider_fixture_mode": True},
+                "approval_evidence": {"approved": True},
+                "external_provider_proof": {"status": "blocked"},
+            },
+        },
+        metadata={"project_id": project_id},
+    )
+    return storage.write_asset_auto(asset)
+
+
+def _write_external_model_judge(storage: LocalStorage, *, project_id: str) -> Path:
+    asset = ModelJudgeResult(
+        title="External model judge",
+        tags=["quality-eval-v2", "model-judge", "external-provider"],
+        content={
+            "judge_id": "judge-external",
+            "target_asset_id": "draft-external",
+            "rubric_id": "rubric-external",
+            "scores": {"overall": 90},
+            "recommendation": "ready",
+            "provider_evidence": {
+                "provider": "external-provider",
+                "model": "premium-judge-v1",
+                "model_route_resolution_path": "data/runs/model-route-external.json",
+                "model_call_log_path": "data/runs/model-call-external.json",
+                "runtime_policy_path": "data/runs/runtime-policy-external.json",
+                "cost_ledger_path": "data/runs/cost-ledger-external.json",
+                "provider_policy": {"status": "passed", "mock_provider_fixture_mode": False},
+                "approval_evidence": {"approved": True, "approval_id": "approval-external"},
+                "external_provider_proof": {"status": "passed", "path": "data/runs/external-provider-proof.json"},
+            },
+        },
+        metadata={"project_id": project_id},
+    )
+    return storage.write_asset_auto(asset)
 
 
 if __name__ == "__main__":

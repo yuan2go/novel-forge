@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from novel_forge.api.provider_adapters import adapter_from_provider_payload, ensure_model_route_from_payload
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.chapter_economy import create_chapter_economy_report
 from novel_forge.modules.character_pressure import create_character_pressure_reports
 from novel_forge.modules.mobile_reading import create_mobile_reading_report
-from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
+from novel_forge.modules.quality_eval import build_quality_calibration_readiness_report, build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
 from novel_forge.storage.local import LocalStorage
 
 
@@ -159,6 +159,18 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             return result
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/product/quality/calibration-readiness")
+    def quality_calibration_readiness_endpoint(project_id: str | None = None, persist: bool = True, limit: int = Query(default=1000, ge=1, le=5000)) -> dict:
+        try:
+            return build_quality_calibration_readiness_report(
+                LocalStorage(app_settings.root),
+                project_id=project_id or "",
+                persist=persist,
+                limit=limit,
+            )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

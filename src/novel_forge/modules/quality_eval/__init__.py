@@ -1,4 +1,5 @@
 from .service import (
+    build_quality_calibration_readiness_report,
     build_quality_rubric_pack,
     run_provider_quality_judge,
     run_quality_gate,
@@ -6,6 +7,7 @@ from .service import (
 )
 
 __all__ = [
+    "build_quality_calibration_readiness_report",
     "build_quality_rubric_pack",
     "run_provider_quality_judge",
     "run_quality_gate",

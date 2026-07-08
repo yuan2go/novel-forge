@@ -31,6 +31,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     chapter_runtime_growth = _chapter_runtime_growth_profile(rows)
     chapter_runtime_growth_threshold_gate = _latest_gate_result(rows, "chapter_runtime_growth_threshold")
     unified_acceptance_preflight = _latest_unified_acceptance_preflight_manifest(rows)
+    quality_calibration_readiness = _quality_calibration_readiness(rows)
     production_console = _production_control_console(
         rows,
         blocking_issues,
@@ -46,6 +47,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         chapter_runtime_growth,
         chapter_runtime_growth_threshold_gate,
         unified_acceptance_preflight,
+        quality_calibration_readiness,
     )
     content = {
         "project_id": project_id,
@@ -82,6 +84,9 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_max_ref_count": chapter_runtime_growth["summary"]["max_linked_asset_ref_count"],
             "unified_acceptance_preflight_status": unified_acceptance_preflight["status"],
             "unified_acceptance_preflight_missing_count": unified_acceptance_preflight["missing_or_deferred_final_evidence_count"],
+            "quality_calibration_readiness_status": quality_calibration_readiness["status"],
+            "quality_calibration_missing_dimension_count": quality_calibration_readiness["summary"]["missing_dimension_count"],
+            "quality_calibration_external_provider_judge_count": quality_calibration_readiness["summary"]["external_provider_judge_count"],
         },
         "task_health": {
             "agent_queue_status": queue_status,
@@ -111,6 +116,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth": chapter_runtime_growth,
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
             "unified_acceptance_preflight": unified_acceptance_preflight,
+            "quality_calibration_readiness": quality_calibration_readiness,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -130,6 +136,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth": chapter_runtime_growth,
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
             "unified_acceptance_preflight": unified_acceptance_preflight,
+            "quality_calibration_readiness": quality_calibration_readiness,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -705,6 +712,74 @@ def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) ->
     }
 
 
+def _quality_calibration_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    snapshot_kind = "quality_calibration_readiness"
+    matches = []
+    for row in rows:
+        if row.get("type") != "project_metric_snapshot":
+            continue
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") == snapshot_kind:
+            matches.append(row)
+    if not matches:
+        return {
+            "snapshot_kind": snapshot_kind,
+            "contract": "quality-calibration-readiness-v1",
+            "status": "missing",
+            "path": "",
+            "summary": {
+                "quality_rubric_pack_count": 0,
+                "quality_suite_report_count": 0,
+                "model_judge_result_count": 0,
+                "external_provider_judge_count": 0,
+                "provider_route_approved_judge_count": 0,
+                "fixture_or_mock_provider_judge_count": 0,
+                "human_annotation_count": 0,
+                "golden_set_count": 0,
+                "provider_calibration_report_count": 0,
+                "passed_provider_calibration_count": 0,
+                "failed_provider_calibration_count": 0,
+                "missing_dimension_count": 0,
+                "missing_dimensions": [],
+            },
+            "dimensions": [],
+            "evidence_paths": [],
+            "operator_action": "run quality calibration readiness before final unified acceptance",
+        }
+    row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    summary = content.get("summary", {}) if isinstance(content.get("summary", {}), dict) else {}
+    return {
+        "snapshot_kind": snapshot_kind,
+        "contract": str(content.get("contract") or "quality-calibration-readiness-v1"),
+        "status": str(content.get("status") or "unknown"),
+        "path": str(row.get("path") or ""),
+        "summary": {
+            "quality_rubric_pack_count": int(summary.get("quality_rubric_pack_count") or 0),
+            "quality_suite_report_count": int(summary.get("quality_suite_report_count") or 0),
+            "model_judge_result_count": int(summary.get("model_judge_result_count") or 0),
+            "external_provider_judge_count": int(summary.get("external_provider_judge_count") or 0),
+            "provider_route_approved_judge_count": int(summary.get("provider_route_approved_judge_count") or 0),
+            "fixture_or_mock_provider_judge_count": int(summary.get("fixture_or_mock_provider_judge_count") or 0),
+            "human_annotation_count": int(summary.get("human_annotation_count") or 0),
+            "golden_set_count": int(summary.get("golden_set_count") or 0),
+            "provider_calibration_report_count": int(summary.get("provider_calibration_report_count") or 0),
+            "passed_provider_calibration_count": int(summary.get("passed_provider_calibration_count") or 0),
+            "failed_provider_calibration_count": int(summary.get("failed_provider_calibration_count") or 0),
+            "missing_dimension_count": int(summary.get("missing_dimension_count") or 0),
+            "missing_dimensions": summary.get("missing_dimensions", []) if isinstance(summary.get("missing_dimensions", []), list) else [],
+        },
+        "dimensions": content.get("dimensions", []) if isinstance(content.get("dimensions", []), list) else [],
+        "model_judge_rows": content.get("model_judge_rows", []) if isinstance(content.get("model_judge_rows", []), list) else [],
+        "human_annotation_rows": content.get("human_annotation_rows", []) if isinstance(content.get("human_annotation_rows", []), list) else [],
+        "golden_set_rows": content.get("golden_set_rows", []) if isinstance(content.get("golden_set_rows", []), list) else [],
+        "calibration_report_rows": content.get("calibration_report_rows", []) if isinstance(content.get("calibration_report_rows", []), list) else [],
+        "evidence_paths": content.get("evidence_paths", []) if isinstance(content.get("evidence_paths", []), list) else [],
+        "operator_action": str(content.get("operator_action") or ""),
+    }
+
+
 def _approval_request_caller_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
     snapshot_kind = "approval_request_caller_readiness"
     matches = []
@@ -937,6 +1012,7 @@ def _production_control_console(
     chapter_runtime_growth: dict[str, Any],
     chapter_runtime_growth_threshold_gate: dict[str, Any],
     unified_acceptance_preflight: dict[str, Any],
+    quality_calibration_readiness: dict[str, Any],
 ) -> dict[str, Any]:
     chapter_queue = _latest_assets(rows, "chapter_plan", limit=20)
     draft_rows = _latest_assets(rows, "draft_chapter", limit=20)
@@ -957,6 +1033,7 @@ def _production_control_console(
         "runtime_growth": chapter_runtime_growth["status"],
         "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
         "unified_acceptance_preflight": unified_acceptance_preflight["status"],
+        "quality_calibration": quality_calibration_readiness["status"],
         "release": release_status,
         "publish": _latest_status(rows, asset_type="publish_gate_report"),
     }
@@ -983,6 +1060,7 @@ def _production_control_console(
             "runtime_growth": chapter_runtime_growth["status"],
             "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
             "unified_acceptance_preflight": unified_acceptance_preflight["status"],
+            "quality_calibration": quality_calibration_readiness["status"],
             "release": release_status,
         },
         "feedback_approval_queue": feedback_proposals,
@@ -1007,6 +1085,7 @@ def _production_control_console(
         "chapter_runtime_growth": chapter_runtime_growth,
         "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
         "unified_acceptance_preflight": unified_acceptance_preflight,
+        "quality_calibration_readiness": quality_calibration_readiness,
     }
 
 

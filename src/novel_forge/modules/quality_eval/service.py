@@ -5,6 +5,7 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
+from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment
@@ -16,6 +17,7 @@ from novel_forge.schemas import (
     Longform100Report,
     ModelJudgeResult,
     Opening3Report,
+    ProjectMetricSnapshot,
     QualityRegressionReport,
     QualityRubricPack,
     RevisionTask,
@@ -496,6 +498,136 @@ def create_quality_regression_report(storage: LocalStorage, *, baseline_score: f
     return {"path": path, "asset": storage.read_json(resolve_path(storage.root, path))}
 
 
+def build_quality_calibration_readiness_report(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    limit: int = 1000,
+    persist: bool = True,
+) -> dict[str, Any]:
+    """Summarize provider/human quality calibration evidence without calling providers.
+
+    The report intentionally separates route-approved fixture/provider results from
+    strict external-provider proof. It is readiness evidence for operators and the
+    final unified acceptance preflight, not a premium quality judgment by itself.
+    """
+
+    storage.ensure_layout()
+    rows = _quality_calibration_rows(storage, project_id=project_id, limit=max(1, int(limit or 1000)))
+    by_type = _rows_by_type(rows)
+    model_judges = by_type.get("model_judge_result", [])
+    classified_judges = [_classify_model_judge(row) for row in model_judges]
+    external_judges = [row for row in classified_judges if row["classification"] == "external_provider"]
+    route_approved_judges = [row for row in classified_judges if row["classification"] == "provider_route_approved"]
+    fixture_judges = [row for row in classified_judges if row["classification"] == "fixture_or_mock"]
+    human_annotations = by_type.get("human_annotation", [])
+    rubric_packs = by_type.get("quality_rubric_pack", [])
+    suite_reports = [row for row in rows if row.get("type") in {"opening_3_report", "golden_10_report", "volume_30_report", "longform_100_report"}]
+    golden_sets = [row for row in by_type.get("evaluation_suite", []) if _is_golden_set(row)]
+    calibration_reports = [row for row in by_type.get("evaluation_regression_report", []) if _is_provider_calibration_report(row)]
+    passed_calibration_reports = [row for row in calibration_reports if _calibration_status(row) == "passed"]
+    failed_calibration_reports = [row for row in calibration_reports if _calibration_status(row) in {"needs_calibration", "failed", "blocked"}]
+
+    dimensions = [
+        _readiness_dimension("quality_rubric_pack", bool(rubric_packs), "build a quality rubric pack for the project"),
+        _readiness_dimension("quality_suite_report", bool(suite_reports), "run at least one quality suite over owned/generated text"),
+        _readiness_dimension("provider_judge_result", bool(model_judges), "record a provider judge result through the runtime guard"),
+        _readiness_dimension("external_provider_judge_proof", bool(external_judges), "run a provider judge with external provider proof, not fixture/mock evidence"),
+        _readiness_dimension("human_annotation", bool(human_annotations), "add human annotations for a calibration target"),
+        _readiness_dimension("golden_set", bool(golden_sets), "build a golden set linked to human/expected scores"),
+        _readiness_dimension("provider_judge_calibration", bool(passed_calibration_reports), "calibrate provider judge results against the golden set"),
+    ]
+    missing_dimensions = [row["dimension"] for row in dimensions if row["status"] == "missing"]
+    if not rows:
+        status = "missing"
+    elif failed_calibration_reports and not passed_calibration_reports:
+        status = "blocked"
+    elif missing_dimensions:
+        status = "review_required"
+    else:
+        status = "passed"
+    evidence_paths = _dedupe([str(row.get("path") or "") for row in rows])
+    summary = {
+        "quality_rubric_pack_count": len(rubric_packs),
+        "quality_suite_report_count": len(suite_reports),
+        "model_judge_result_count": len(model_judges),
+        "external_provider_judge_count": len(external_judges),
+        "provider_route_approved_judge_count": len(route_approved_judges),
+        "fixture_or_mock_provider_judge_count": len(fixture_judges),
+        "human_annotation_count": len(human_annotations),
+        "golden_set_count": len(golden_sets),
+        "provider_calibration_report_count": len(calibration_reports),
+        "passed_provider_calibration_count": len(passed_calibration_reports),
+        "failed_provider_calibration_count": len(failed_calibration_reports),
+        "missing_dimension_count": len(missing_dimensions),
+        "missing_dimensions": missing_dimensions,
+        "external_provider_proof_required_for_pass": True,
+        "read_only": True,
+    }
+    content = {
+        "snapshot_kind": "quality_calibration_readiness",
+        "contract": "quality-calibration-readiness-v1",
+        "status": status,
+        "project_id": project_id,
+        "snapshot_at": utc_now(),
+        "throughput": {
+            "asset_count": len(rows),
+            "model_judge_result_count": len(model_judges),
+            "human_annotation_count": len(human_annotations),
+            "golden_set_count": len(golden_sets),
+        },
+        "quality": {
+            "readiness_status": status,
+            "external_provider_judge_count": len(external_judges),
+            "human_annotation_count": len(human_annotations),
+            "golden_set_count": len(golden_sets),
+            "passed_provider_calibration_count": len(passed_calibration_reports),
+            "missing_dimension_count": len(missing_dimensions),
+            "fixture_or_mock_provider_judge_count": len(fixture_judges),
+        },
+        "task_health": {
+            "review_required": status in {"missing", "review_required", "blocked"},
+            "blocked_calibration_count": len(failed_calibration_reports),
+            "provider_call_executed": False,
+        },
+        "agent_health": {
+            "calibration_boundary": "read-only evidence scan; provider judge calls must use run_provider_quality_judge",
+            "premium_judge_claim_allowed": status == "passed",
+        },
+        "storage_health": {
+            "evidence_path_count": len(evidence_paths),
+            "asset_types_scanned": sorted(by_type),
+            "data_dirs_scanned": len(DATA_DIRS),
+        },
+        "recommendations": _quality_calibration_recommendations(status, summary),
+        "summary": summary,
+        "dimensions": dimensions,
+        "model_judge_rows": classified_judges[:50],
+        "human_annotation_rows": [_compact_quality_row(row) for row in human_annotations[:50]],
+        "golden_set_rows": [_compact_quality_row(row) for row in golden_sets[:50]],
+        "calibration_report_rows": [_compact_calibration_report(row) for row in calibration_reports[:50]],
+        "evidence_paths": evidence_paths,
+        "operator_action": _quality_calibration_operator_action(status, summary),
+        "mutation_policy": "read-only: this report does not call providers, create annotations, approve assets, or change quality gates",
+    }
+    asset = ProjectMetricSnapshot(
+        title=f"Quality calibration readiness {project_id or 'workspace'}",
+        tags=["quality-eval-v2", "quality-calibration-readiness", status],
+        content=content,
+        metadata={"project_id": project_id, "snapshot_kind": "quality_calibration_readiness", "asset_status": status, "use_in_generation_rag": False},
+        references=evidence_paths,
+    )
+    data = asset.to_dict()
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = ""
+    if persist:
+        path = _display_path(storage.root, storage.write_asset_auto(asset))
+        data = storage.read_json(resolve_path(storage.root, path))
+    return {"status": status, "path": path, "asset": data, "summary": summary}
+
+
 def _load_rubric(storage: LocalStorage, rubric_path: str | Path) -> dict[str, Any]:
     if rubric_path:
         return storage.read_json(resolve_path(storage.root, rubric_path))
@@ -728,6 +860,175 @@ def _write_revision_task(storage: LocalStorage, *, report_path: str, target_path
         references=[report_path, *target_paths],
     )
     return _write_asset(storage, task)
+
+
+def _quality_calibration_rows(storage: LocalStorage, *, project_id: str, limit: int) -> list[dict[str, Any]]:
+    target_types = {
+        "quality_rubric_pack",
+        "opening_3_report",
+        "golden_10_report",
+        "volume_30_report",
+        "longform_100_report",
+        "model_judge_result",
+        "human_annotation",
+        "evaluation_suite",
+        "evaluation_regression_report",
+        "external_provider_proof_report",
+    }
+    rows: list[dict[str, Any]] = []
+    for category in DATA_DIRS:
+        for path in reversed(storage.list_json(category)):
+            data = _read_json_safe(storage, path)
+            if data.get("type") not in target_types:
+                continue
+            metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+            content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            row_project = str(metadata.get("project_id") or content.get("project_id") or "")
+            if project_id and row_project and row_project != project_id:
+                continue
+            rows.append({**data, "path": _display_path(storage.root, path)})
+            if len(rows) >= limit:
+                return _sort_latest(rows)
+    return _sort_latest(rows)
+
+
+def _rows_by_type(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault(str(row.get("type") or ""), []).append(row)
+    return grouped
+
+
+def _classify_model_judge(row: dict[str, Any]) -> dict[str, Any]:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    evidence = content.get("provider_evidence", {}) if isinstance(content.get("provider_evidence", {}), dict) else {}
+    provider = str(evidence.get("provider") or "").strip()
+    provider_policy = evidence.get("provider_policy", {}) if isinstance(evidence.get("provider_policy", {}), dict) else {}
+    approval_evidence = evidence.get("approval_evidence", {}) if isinstance(evidence.get("approval_evidence", {}), dict) else {}
+    external_proof = evidence.get("external_provider_proof", {}) if isinstance(evidence.get("external_provider_proof", {}), dict) else {}
+    provider_lower = provider.lower()
+    fixture_mode = bool(
+        provider_policy.get("mock_provider_fixture_mode")
+        or provider_lower in {"mock", "mock-provider", "local-mock", "mock-openai", "fixture-mock"}
+        or "fixture" in provider_lower
+        or str(evidence.get("mode") or "").lower() in {"fixture", "mock"}
+    )
+    production_ready_evidence = bool(
+        evidence.get("model_route_resolution_path")
+        and evidence.get("model_call_log_path")
+        and evidence.get("runtime_policy_path")
+        and evidence.get("cost_ledger_path")
+        and provider_policy.get("status") == "passed"
+        and approval_evidence.get("approved")
+    )
+    if str(external_proof.get("status") or "") == "passed":
+        classification = "external_provider"
+    elif fixture_mode:
+        classification = "fixture_or_mock"
+    elif production_ready_evidence:
+        classification = "provider_route_approved"
+    elif evidence:
+        classification = "provider_evidence_incomplete"
+    else:
+        classification = "missing_provider_evidence"
+    return {
+        "id": str(row.get("id") or ""),
+        "path": str(row.get("path") or ""),
+        "target_asset_id": str(content.get("target_asset_id") or ""),
+        "recommendation": str(content.get("recommendation") or ""),
+        "provider": provider,
+        "model": str(evidence.get("model") or ""),
+        "classification": classification,
+        "external_provider_proof_status": str(external_proof.get("status") or "missing"),
+        "external_provider_proof_path": str(external_proof.get("path") or ""),
+        "route_resolution_path": str(evidence.get("model_route_resolution_path") or ""),
+        "model_call_log_path": str(evidence.get("model_call_log_path") or ""),
+        "runtime_policy_path": str(evidence.get("runtime_policy_path") or ""),
+        "cost_ledger_path": str(evidence.get("cost_ledger_path") or ""),
+        "provider_policy_status": str(provider_policy.get("status") or ""),
+        "approval_evidence_present": bool(approval_evidence.get("approved")),
+    }
+
+
+def _is_golden_set(row: dict[str, Any]) -> bool:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    golden_set = content.get("golden_set", {}) if isinstance(content.get("golden_set", {}), dict) else {}
+    return bool(golden_set.get("enabled"))
+
+
+def _is_provider_calibration_report(row: dict[str, Any]) -> bool:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    return bool(content.get("calibration_status") or "provider-judge-calibration" in {str(tag) for tag in row.get("tags", [])})
+
+
+def _calibration_status(row: dict[str, Any]) -> str:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+    return str(content.get("calibration_status") or content.get("status") or metadata.get("status") or "")
+
+
+def _readiness_dimension(dimension: str, present: bool, action: str) -> dict[str, Any]:
+    return {"dimension": dimension, "status": "present" if present else "missing", "required_for_pass": True, "operator_action": "" if present else action}
+
+
+def _compact_quality_row(row: dict[str, Any]) -> dict[str, str]:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+    return {
+        "id": str(row.get("id") or ""),
+        "type": str(row.get("type") or ""),
+        "path": str(row.get("path") or ""),
+        "status": str(content.get("status") or content.get("recommendation") or content.get("verdict") or metadata.get("status") or ""),
+    }
+
+
+def _compact_calibration_report(row: dict[str, Any]) -> dict[str, Any]:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    return {
+        "id": str(row.get("id") or ""),
+        "path": str(row.get("path") or ""),
+        "status": _calibration_status(row),
+        "mean_absolute_error": content.get("mean_absolute_error", 0),
+        "tolerance": content.get("tolerance", 0),
+        "golden_set_path": str(content.get("golden_set_path") or ""),
+    }
+
+
+def _quality_calibration_recommendations(status: str, summary: dict[str, Any]) -> list[str]:
+    if status == "passed":
+        return ["Quality calibration readiness has external provider proof, human annotation, golden set, and passed calibration evidence."]
+    actions = []
+    for dimension in summary.get("missing_dimensions", []):
+        actions.append(f"Complete missing quality calibration dimension: {dimension}")
+    if summary.get("fixture_or_mock_provider_judge_count") and not summary.get("external_provider_judge_count"):
+        actions.append("Fixture/mock provider judge evidence is useful for tests but cannot satisfy external provider calibration readiness.")
+    if summary.get("failed_provider_calibration_count") and not summary.get("passed_provider_calibration_count"):
+        actions.append("Repair provider judge calibration before final unified acceptance.")
+    return actions or ["Create quality calibration evidence before final unified acceptance."]
+
+
+def _quality_calibration_operator_action(status: str, summary: dict[str, Any]) -> str:
+    if status == "passed":
+        return "quality calibration evidence is ready for final unified acceptance preflight"
+    if status == "missing":
+        return "create rubric, quality suite, provider judge, human annotation, golden set, and calibration evidence"
+    if status == "blocked":
+        return "repair failed provider judge calibration before treating quality gates as production calibrated"
+    if summary.get("external_provider_judge_count", 0) <= 0:
+        return "run an approved external provider quality judge with external proof, then calibrate it against human/golden evidence"
+    return "complete missing provider/human/golden calibration evidence before final unified acceptance"
+
+
+def _sort_latest(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(rows, key=lambda row: str(row.get("updated_at") or row.get("created_at") or ""), reverse=True)
+
+
+def _read_json_safe(storage: LocalStorage, path: Path) -> dict[str, Any]:
+    try:
+        data = storage.read_json(path)
+    except (FileNotFoundError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _write_asset(storage: LocalStorage, asset: Any) -> str:

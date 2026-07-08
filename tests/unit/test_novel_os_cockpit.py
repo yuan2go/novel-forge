@@ -130,6 +130,65 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(book_b["asset"]["content"]["quality"]["source_governance_runtime_evidence_status"], "missing")
             self.assertEqual(book_b["asset"]["content"]["quality"]["source_governance_runtime_evidence_count"], 0)
 
+    def test_project_cockpit_surfaces_quality_calibration_readiness(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            storage.write_asset_auto(
+                ProjectMetricSnapshot(
+                    title="Quality calibration readiness",
+                    content={
+                        "snapshot_kind": "quality_calibration_readiness",
+                        "contract": "quality-calibration-readiness-v1",
+                        "status": "review_required",
+                        "project_id": "book-a",
+                        "snapshot_at": "2026-07-08T00:00:00Z",
+                        "throughput": {"asset_count": 3, "model_judge_result_count": 1, "human_annotation_count": 0, "golden_set_count": 0},
+                        "quality": {
+                            "readiness_status": "review_required",
+                            "external_provider_judge_count": 0,
+                            "human_annotation_count": 0,
+                            "golden_set_count": 0,
+                            "passed_provider_calibration_count": 0,
+                            "missing_dimension_count": 4,
+                            "fixture_or_mock_provider_judge_count": 1,
+                        },
+                        "task_health": {"review_required": True, "blocked_calibration_count": 0, "provider_call_executed": False},
+                        "agent_health": {"calibration_boundary": "read-only", "premium_judge_claim_allowed": False},
+                        "storage_health": {"evidence_path_count": 1, "asset_types_scanned": ["model_judge_result"], "data_dirs_scanned": 1},
+                        "recommendations": ["run external provider judge and human calibration"],
+                        "summary": {
+                            "quality_rubric_pack_count": 1,
+                            "quality_suite_report_count": 1,
+                            "model_judge_result_count": 1,
+                            "external_provider_judge_count": 0,
+                            "provider_route_approved_judge_count": 0,
+                            "fixture_or_mock_provider_judge_count": 1,
+                            "human_annotation_count": 0,
+                            "golden_set_count": 0,
+                            "provider_calibration_report_count": 0,
+                            "passed_provider_calibration_count": 0,
+                            "failed_provider_calibration_count": 0,
+                            "missing_dimension_count": 4,
+                            "missing_dimensions": ["external_provider_judge_proof"],
+                        },
+                        "dimensions": [{"dimension": "external_provider_judge_proof", "status": "missing"}],
+                        "evidence_paths": ["data/runs/fixture-model-judge.json"],
+                        "operator_action": "run external provider judge with calibration",
+                    },
+                    metadata={"project_id": "book-a", "snapshot_kind": "quality_calibration_readiness"},
+                )
+            )
+
+            snapshot = build_project_cockpit_snapshot(storage, project_id="book-a")
+
+            readiness = snapshot["asset"]["content"]["runtime_governance"]["quality_calibration_readiness"]
+            self.assertEqual(readiness["status"], "review_required")
+            self.assertEqual(readiness["summary"]["fixture_or_mock_provider_judge_count"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["quality_calibration_readiness_status"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["quality_calibration_missing_dimension_count"], 4)
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["quality_calibration"], "review_required")
+
     def test_project_cockpit_snapshot_is_schema_backed(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

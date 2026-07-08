@@ -166,6 +166,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/quality/character-pressure",
                 "/product/quality/mobile-reading",
                 "/product/quality/provider-judge",
+                "/product/quality/calibration-readiness",
                 "/product/style/health",
                 "/product/style/sample",
                 "/product/style/fingerprint",
@@ -1451,6 +1452,37 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["quality"]["unified_acceptance_preflight_missing_count"], 3)
             self.assertEqual(content["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
             self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
+
+    def test_quality_calibration_readiness_route_persists_and_cockpit_surfaces_it(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+
+            readiness_response = client.get("/product/quality/calibration-readiness", params={"project_id": "route-quality-calibration"})
+            cockpit_response = client.get("/product/os/cockpit/project", params={"project_id": "route-quality-calibration"})
+
+            self.assertEqual(readiness_response.status_code, 200, readiness_response.text)
+            readiness = readiness_response.json()
+            self.assertEqual(readiness["status"], "missing")
+            self.assertEqual(readiness["asset"]["metadata"]["snapshot_kind"], "quality_calibration_readiness")
+            self.assertFalse(readiness["asset"]["content"]["task_health"]["provider_call_executed"])
+
+            self.assertEqual(cockpit_response.status_code, 200, cockpit_response.text)
+            content = cockpit_response.json()["asset"]["content"]
+            self.assertEqual(content["runtime_governance"]["quality_calibration_readiness"]["status"], "missing")
+            self.assertEqual(content["quality"]["quality_calibration_readiness_status"], "missing")
+            self.assertEqual(content["quality"]["quality_calibration_missing_dimension_count"], 7)
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["quality_calibration"], "missing")
+            self.assertEqual(content["cockpit"]["quality_calibration_readiness"]["summary"]["external_provider_judge_count"], 0)
 
     def test_project_cockpit_route_keeps_missing_workflow_governance_unready(self):
         try:
