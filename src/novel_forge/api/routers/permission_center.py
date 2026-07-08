@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.permission_center import (
+    build_approval_request_caller_readiness_report,
     create_approval_request,
     create_human_approval_gate,
     create_permission_policy,
@@ -59,6 +60,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def approval_requests(project_id: str | None = None, status: str | None = None, scope: str | None = None, limit: int = Query(default=300, ge=1, le=1000)) -> list[dict[str, Any]]:
         try:
             return list_approval_requests(storage(), project_id=project_id, status=status, scope=scope, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/approval-request-caller-readiness")
+    def approval_request_caller_readiness(project_id: str | None = None, persist: bool = True, limit: int = Query(default=1000, ge=1, le=5000)) -> dict[str, Any]:
+        try:
+            return build_approval_request_caller_readiness_report(storage(), project_id=project_id or "", persist=persist, limit=limit)
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

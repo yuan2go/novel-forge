@@ -1,4 +1,5 @@
 from novel_forge.modules.permission_center.service import (
+    build_approval_request_caller_readiness_report,
     create_approval_request,
     create_human_approval_gate,
     create_permission_policy,
@@ -12,6 +13,7 @@ from novel_forge.modules.permission_center.service import (
 )
 
 __all__ = [
+    "build_approval_request_caller_readiness_report",
     "create_approval_request",
     "create_human_approval_gate",
     "create_permission_policy",

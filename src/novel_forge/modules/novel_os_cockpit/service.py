@@ -23,6 +23,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     production_governance_drift = _latest_metric_snapshot(rows, "production_governance_evidence_drift")
     production_governance_drift_gate = _latest_gate_result(rows, "production_governance_evidence_drift")
     workflow_governance = _workflow_governance_readiness(rows)
+    approval_request_caller_readiness = _approval_request_caller_readiness(rows)
     production_console = _production_control_console(
         rows,
         blocking_issues,
@@ -31,6 +32,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         v1_artifact_coverage,
         approval_gate_summary,
         workflow_governance,
+        approval_request_caller_readiness,
     )
     content = {
         "project_id": project_id,
@@ -54,6 +56,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "workflow_governance_status": workflow_governance["status"],
             "workflow_governance_dead_letter_count": workflow_governance["dead_letter_count"],
             "workflow_governance_failed_preflight_count": workflow_governance["failed_preflight_count"],
+            "approval_request_caller_readiness_status": approval_request_caller_readiness["status"],
+            "approval_request_missing_caller_count": approval_request_caller_readiness["summary"]["missing_dimension_count"],
         },
         "task_health": {
             "agent_queue_status": queue_status,
@@ -76,6 +80,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "production_governance_drift": production_governance_drift,
             "production_governance_drift_gate": production_governance_drift_gate,
             "workflow_governance": workflow_governance,
+            "approval_request_caller_readiness": approval_request_caller_readiness,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -88,6 +93,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "production_governance_drift": production_governance_drift,
             "production_governance_drift_gate": production_governance_drift_gate,
             "workflow_governance": workflow_governance,
+            "approval_request_caller_readiness": approval_request_caller_readiness,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -468,6 +474,58 @@ def _workflow_governance_operator_action(status: str) -> str:
     return "continue governed workflow execution"
 
 
+def _approval_request_caller_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    snapshot_kind = "approval_request_caller_readiness"
+    matches = []
+    for row in rows:
+        if row.get("type") != "project_metric_snapshot":
+            continue
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") == snapshot_kind:
+            matches.append(row)
+    if not matches:
+        return {
+            "snapshot_kind": snapshot_kind,
+            "status": "missing",
+            "path": "",
+            "summary": {
+                "required_dimension_count": 0,
+                "covered_dimension_count": 0,
+                "missing_dimension_count": 0,
+                "pending_count": 0,
+                "pending_blocking_count": 0,
+                "terminal_unready_count": 0,
+                "approval_request_count": 0,
+                "missing_dimensions": [],
+            },
+            "caller_dimensions": [],
+            "evidence_paths": [],
+            "operator_action": "run ApprovalRequest caller readiness report before production promotion",
+        }
+    row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    summary = content.get("summary", {}) if isinstance(content.get("summary", {}), dict) else {}
+    return {
+        "snapshot_kind": snapshot_kind,
+        "status": str(content.get("status") or "unknown"),
+        "path": str(row.get("path") or ""),
+        "summary": {
+            "required_dimension_count": int(summary.get("required_dimension_count") or 0),
+            "covered_dimension_count": int(summary.get("covered_dimension_count") or 0),
+            "missing_dimension_count": int(summary.get("missing_dimension_count") or 0),
+            "pending_count": int(summary.get("pending_count") or 0),
+            "pending_blocking_count": int(summary.get("pending_blocking_count") or 0),
+            "terminal_unready_count": int(summary.get("terminal_unready_count") or 0),
+            "approval_request_count": int(summary.get("approval_request_count") or 0),
+            "missing_dimensions": summary.get("missing_dimensions", []) if isinstance(summary.get("missing_dimensions", []), list) else [],
+        },
+        "caller_dimensions": content.get("caller_dimensions", []) if isinstance(content.get("caller_dimensions", []), list) else [],
+        "evidence_paths": content.get("evidence_paths", []) if isinstance(content.get("evidence_paths", []), list) else [],
+        "operator_action": str(content.get("operator_action") or ""),
+    }
+
+
 def _capacity_plan(book_rows: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "agent_capacity_units": max(1, len(book_rows)),
@@ -579,6 +637,7 @@ def _production_control_console(
     v1_artifact_coverage: dict[str, Any],
     approval_gate_summary: dict[str, Any],
     workflow_governance: dict[str, Any],
+    approval_request_caller_readiness: dict[str, Any],
 ) -> dict[str, Any]:
     chapter_queue = _latest_assets(rows, "chapter_plan", limit=20)
     draft_rows = _latest_assets(rows, "draft_chapter", limit=20)
@@ -592,6 +651,7 @@ def _production_control_console(
         "quality": _latest_status(rows, asset_type="evaluation_gate"),
         "long_chain": long_chain_status,
         "workflow_governance": workflow_governance["status"],
+        "approval_request_callers": approval_request_caller_readiness["status"],
         "release": release_status,
         "publish": _latest_status(rows, asset_type="publish_gate_report"),
     }
@@ -611,6 +671,7 @@ def _production_control_console(
             "style": gate_status_board["style"],
             "quality": gate_status_board["quality"],
             "workflow_governance": workflow_governance["status"],
+            "approval_request_callers": approval_request_caller_readiness["status"],
             "release": release_status,
         },
         "feedback_approval_queue": feedback_proposals,
@@ -628,6 +689,7 @@ def _production_control_console(
         },
         "approval_gate_summary": approval_gate_summary["summary"],
         "workflow_governance": workflow_governance,
+        "approval_request_caller_readiness": approval_request_caller_readiness,
     }
 
 

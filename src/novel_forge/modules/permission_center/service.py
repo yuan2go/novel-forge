@@ -8,7 +8,7 @@ from novel_forge.modules.audit_log import record_audit_event
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references
-from novel_forge.schemas import ApprovalRequest, BaseAsset, validate_common_fields
+from novel_forge.schemas import ApprovalRequest, BaseAsset, ProjectMetricSnapshot, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 PERMISSION_SCOPES = {"agent", "tool", "source", "publish", "bypass"}
@@ -16,6 +16,38 @@ DECISION_STATUSES = {"allowed", "denied", "waiting_human"}
 APPROVAL_STATUSES = {"pending", "approved", "rejected", "expired", "cancelled"}
 APPROVAL_REQUEST_SCOPES = {"source", "context", "publish", "story_mutation", "provider", "fallback", "canon", "feedback", "agent", "budget"}
 APPROVAL_REQUEST_RISK_LEVELS = {"low", "medium", "high", "critical"}
+APPROVAL_REQUEST_CALLER_DIMENSIONS = [
+    {
+        "dimension": "source_context_and_asset_activation",
+        "scope": "source",
+        "blueprint_boundary": "High-risk source evidence must request approval before generation context or asset activation.",
+        "required_before": ["source_context_injection", "mkaos_asset_activation"],
+    },
+    {
+        "dimension": "context_override",
+        "scope": "context",
+        "blueprint_boundary": "Rejected, manual, or policy-override context selections must be approval-traceable.",
+        "required_before": ["context_bundle_build", "context_policy_override"],
+    },
+    {
+        "dimension": "publish_submission",
+        "scope": "publish",
+        "blueprint_boundary": "Manual or external platform submission must be operator-approved before release handoff.",
+        "required_before": ["publish_gate", "external_platform_submission"],
+    },
+    {
+        "dimension": "feedback_mutation_application",
+        "scope": "feedback",
+        "blueprint_boundary": "Reader feedback may propose story changes but must not silently mutate plans.",
+        "required_before": ["mutation_application", "downstream_invalidation"],
+    },
+    {
+        "dimension": "major_story_mutation",
+        "scope": "story_mutation",
+        "blueprint_boundary": "Major outline, chapter-plan, or character-state changes require human approval evidence.",
+        "required_before": ["outline_patch", "chapter_plan_patch", "regeneration_task"],
+    },
+]
 
 
 def create_approval_request(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -164,6 +196,102 @@ def expire_approval_requests(storage: LocalStorage, *, project_id: str | None = 
         resolved = resolve_approval_request(storage, row.get("path", ""), {"decision": "expired", "actor": "permission-center", "reason": "approval request deadline expired", "project_id": project_id or ""})
         expired.append({"request_id": content.get("request_id", ""), "path": resolved["path"], "status": "expired"})
     return {"status": "completed", "expired_count": len(expired), "expired": expired, "checked_at": now_value}
+
+
+def build_approval_request_caller_readiness_report(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    limit: int = 1000,
+    persist: bool = True,
+) -> dict[str, Any]:
+    """Summarize ApprovalRequest caller coverage without creating or resolving approvals."""
+    storage.ensure_layout()
+    rows = list_approval_requests(storage, project_id=project_id or None, limit=max(1, int(limit or 1000)))
+    dimensions = [_approval_request_dimension_summary(row_def, rows) for row_def in APPROVAL_REQUEST_CALLER_DIMENSIONS]
+    missing_dimensions = [row["dimension"] for row in dimensions if row["status"] == "missing"]
+    pending_blocking_count = sum(int(row["pending_blocking_count"]) for row in dimensions)
+    unresolved_count = sum(int(row["pending_count"]) for row in dimensions)
+    terminal_unready_count = sum(int(row["terminal_unready_count"]) for row in dimensions)
+    covered_count = sum(1 for row in dimensions if row["status"] != "missing")
+    if missing_dimensions:
+        status = "partial"
+    elif pending_blocking_count or terminal_unready_count:
+        status = "review_required"
+    else:
+        status = "ready"
+    evidence_paths = _dedupe([path for row in dimensions for path in row["evidence_paths"]])
+    content = {
+        "snapshot_kind": "approval_request_caller_readiness",
+        "contract": "approval-request-caller-readiness-v1",
+        "status": status,
+        "project_id": project_id,
+        "snapshot_at": utc_now(),
+        "throughput": {
+            "approval_request_count": len(rows),
+            "required_dimension_count": len(dimensions),
+            "covered_dimension_count": covered_count,
+        },
+        "quality": {
+            "readiness_status": status,
+            "missing_dimension_count": len(missing_dimensions),
+            "pending_blocking_count": pending_blocking_count,
+            "terminal_unready_count": terminal_unready_count,
+            "non_mutating": True,
+        },
+        "task_health": {
+            "pending_count": unresolved_count,
+            "pending_blocking_count": pending_blocking_count,
+            "operator_review_required": status in {"partial", "review_required"},
+        },
+        "agent_health": {
+            "caller_dimension_count": len(dimensions),
+            "caller_policy": "high-risk caller classes must create ApprovalRequest evidence before side effects",
+        },
+        "storage_health": {
+            "evidence_path_count": len(evidence_paths),
+            "asset_type": "project_metric_snapshot",
+            "source_asset_type": "approval_request",
+        },
+        "recommendations": [_approval_request_readiness_action(status, missing_dimensions=missing_dimensions)],
+        "non_mutating": True,
+        "caller_dimensions": dimensions,
+        "summary": {
+            "required_dimension_count": len(dimensions),
+            "covered_dimension_count": covered_count,
+            "missing_dimension_count": len(missing_dimensions),
+            "pending_count": unresolved_count,
+            "pending_blocking_count": pending_blocking_count,
+            "terminal_unready_count": terminal_unready_count,
+            "approval_request_count": len(rows),
+            "missing_dimensions": missing_dimensions,
+            "audit_required": True,
+        },
+        "evidence_paths": evidence_paths,
+        "operator_action": _approval_request_readiness_action(status, missing_dimensions=missing_dimensions),
+        "mutation_policy": "read-only: this report never creates, resolves, approves, rejects, or applies approval requests",
+    }
+    asset = ProjectMetricSnapshot(
+        title=f"ApprovalRequest caller readiness {project_id or 'workspace'}",
+        tags=["permission-center", "approval-request-caller-readiness", status],
+        content=content,
+        metadata={
+            "project_id": project_id,
+            "snapshot_kind": "approval_request_caller_readiness",
+            "asset_status": status,
+            "use_in_generation_rag": False,
+        },
+        references=filter_project_safe_references(storage, project_id, evidence_paths),
+    )
+    data = asset.to_dict()
+    errors = validate_common_fields(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    path = ""
+    if persist:
+        path = _display_path(storage.root, storage.write_asset_auto(asset))
+        data = storage.read_json(storage.root / path)
+    return {"status": status, "path": path, "asset": data, "summary": content["summary"]}
 
 
 def create_permission_policy(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
@@ -399,6 +527,73 @@ def permission_center_snapshot(storage: LocalStorage, *, project_id: str = "", l
         "approval_request_scopes": sorted(APPROVAL_REQUEST_SCOPES),
         "created_at": utc_now(),
     }
+
+
+def _approval_request_dimension_summary(row_def: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
+    scope = str(row_def["scope"])
+    matches = []
+    for row in rows:
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(content.get("scope") or "") == scope:
+            matches.append(_approval_request_readiness_row(row))
+    matches = sorted(matches, key=lambda item: item["updated_at"] or item["created_at"], reverse=True)
+    pending = [row for row in matches if row["status"] == "pending"]
+    pending_blocking = [row for row in pending if row["blocking"]]
+    terminal_unready = [row for row in matches if row["status"] in {"rejected", "expired", "cancelled"}]
+    status = "missing"
+    if matches and pending_blocking:
+        status = "needs_review"
+    elif matches and terminal_unready:
+        status = "needs_repair"
+    elif matches:
+        status = "covered"
+    return {
+        "dimension": str(row_def["dimension"]),
+        "scope": scope,
+        "status": status,
+        "blueprint_boundary": str(row_def["blueprint_boundary"]),
+        "required_before": list(row_def["required_before"]),
+        "approval_request_count": len(matches),
+        "pending_count": len(pending),
+        "pending_blocking_count": len(pending_blocking),
+        "terminal_unready_count": len(terminal_unready),
+        "latest_request": matches[0] if matches else {},
+        "evidence_paths": _dedupe([str(row.get("path") or "") for row in matches]),
+        "caller_policy": "caller must create ApprovalRequest evidence before side effects; this report only observes that evidence",
+    }
+
+
+def _approval_request_readiness_row(row: dict[str, Any]) -> dict[str, Any]:
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    target = content.get("target", {}) if isinstance(content.get("target", {}), dict) else {}
+    decision = content.get("decision", {}) if isinstance(content.get("decision", {}), dict) else {}
+    return {
+        "request_id": str(content.get("request_id") or row.get("id") or ""),
+        "path": str(row.get("path") or ""),
+        "scope": str(content.get("scope") or ""),
+        "action": str(content.get("action") or ""),
+        "status": str(content.get("status") or ""),
+        "risk_level": str(content.get("risk_level") or ""),
+        "environment": str(content.get("environment") or ""),
+        "blocking": bool(content.get("blocking")),
+        "target_type": str(target.get("target_type") or ""),
+        "target_id": str(target.get("target_id") or ""),
+        "target_path": str(target.get("target_path") or ""),
+        "required_before": _strings(content.get("required_before")),
+        "decision_status": str(decision.get("status") or ""),
+        "created_at": str(content.get("created_at") or row.get("created_at") or ""),
+        "updated_at": str(content.get("updated_at") or row.get("updated_at") or row.get("created_at") or ""),
+    }
+
+
+def _approval_request_readiness_action(status: str, *, missing_dimensions: list[str]) -> str:
+    if status == "ready":
+        return "approval request caller coverage is present; resolve any business approvals before side effects"
+    if status == "review_required":
+        return "review pending or terminal approval requests before production side effects"
+    if missing_dimensions:
+        return "migrate or instrument missing high-risk caller classes: " + ", ".join(missing_dimensions)
+    return "inspect approval request caller readiness evidence"
 
 
 def _approval_scope(value: Any) -> str:

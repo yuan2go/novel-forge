@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.audit_log import list_audit_events
 from novel_forge.modules.permission_center import (
+    build_approval_request_caller_readiness_report,
     create_approval_request,
     create_permission_policy,
     evaluate_permission,
@@ -178,6 +179,92 @@ class PermissionCenterTests(unittest.TestCase):
             self.assertEqual(snapshot["summary"]["approval_request_count"], 4)
             self.assertEqual(snapshot["summary"]["pending_approval_request_count"], 1)
             self.assertEqual(snapshot["summary"]["blocking_approval_request_count"], 0)
+
+    def test_approval_request_caller_readiness_reports_missing_dimensions_without_mutation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            report = build_approval_request_caller_readiness_report(storage, project_id="approval-readiness-p")
+            content = report["asset"]["content"]
+
+            self.assertEqual(report["asset"]["type"], "project_metric_snapshot")
+            self.assertEqual(report["asset"]["metadata"]["snapshot_kind"], "approval_request_caller_readiness")
+            self.assertEqual(content["status"], "partial")
+            self.assertTrue(content["non_mutating"])
+            self.assertEqual(content["summary"]["required_dimension_count"], 5)
+            self.assertEqual(content["summary"]["covered_dimension_count"], 0)
+            self.assertEqual(content["summary"]["missing_dimension_count"], 5)
+            self.assertEqual(list_approval_requests(storage, project_id="approval-readiness-p"), [])
+
+    def test_approval_request_caller_readiness_passes_when_required_callers_are_covered(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixtures = [
+                ("source", "allow_generation_context", "source_policy"),
+                ("context", "override_context_bundle", "context_bundle"),
+                ("publish", "submit_release_package", "release_package"),
+                ("feedback", "apply_feedback_mutation", "feedback_plan_mutation_proposal"),
+                ("story_mutation", "apply_outline_patch", "outline"),
+            ]
+            for scope, action, target_type in fixtures:
+                request = create_approval_request(
+                    storage,
+                    {
+                        "project_id": "approval-readiness-p",
+                        "scope": scope,
+                        "action": action,
+                        "environment": "production",
+                        "risk_level": "high",
+                        "target_type": target_type,
+                        "target_id": f"{scope}-fixture",
+                        "reason": f"fixture coverage for {scope}",
+                    },
+                )
+                resolve_approval_request(
+                    storage,
+                    request["asset"]["content"]["request_id"],
+                    {"decision": "approved", "actor": "unit-test", "reason": "covered", "project_id": "approval-readiness-p"},
+                )
+
+            report = build_approval_request_caller_readiness_report(storage, project_id="approval-readiness-p")
+            content = report["asset"]["content"]
+            dimension_statuses = {row["dimension"]: row["status"] for row in content["caller_dimensions"]}
+
+            self.assertEqual(content["status"], "ready")
+            self.assertEqual(content["summary"]["covered_dimension_count"], 5)
+            self.assertEqual(content["summary"]["missing_dimension_count"], 0)
+            self.assertEqual(content["summary"]["pending_blocking_count"], 0)
+            self.assertEqual(set(dimension_statuses.values()), {"covered"})
+            self.assertEqual(len(content["evidence_paths"]), 5)
+
+    def test_approval_request_caller_readiness_flags_pending_blocking_review(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            for scope in ["source", "context", "publish", "feedback", "story_mutation"]:
+                create_approval_request(
+                    storage,
+                    {
+                        "project_id": "approval-readiness-p",
+                        "scope": scope,
+                        "action": f"{scope}_operator_action",
+                        "environment": "production",
+                        "risk_level": "high",
+                        "target_type": scope,
+                        "target_id": f"{scope}-fixture",
+                    },
+                )
+
+            report = build_approval_request_caller_readiness_report(storage, project_id="approval-readiness-p")
+            content = report["asset"]["content"]
+
+            self.assertEqual(content["status"], "review_required")
+            self.assertEqual(content["summary"]["covered_dimension_count"], 5)
+            self.assertEqual(content["summary"]["missing_dimension_count"], 0)
+            self.assertEqual(content["summary"]["pending_blocking_count"], 5)
+            self.assertEqual({row["status"] for row in content["caller_dimensions"]}, {"needs_review"})
 
 
 if __name__ == "__main__":

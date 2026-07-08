@@ -6,7 +6,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.novel_os_cockpit import build_multi_book_daily_production_report, build_multi_book_production_schedule, build_project_cockpit_snapshot
-from novel_forge.modules.permission_center import create_approval_request, resolve_approval_request
+from novel_forge.modules.permission_center import build_approval_request_caller_readiness_report, create_approval_request, resolve_approval_request
 from novel_forge.modules.context_builder import run_context_governance_coverage_gate
 from novel_forge.modules.production_governance import build_production_governance_evidence_drift_report, run_production_governance_drift_gate
 from novel_forge.modules.runtime_ledger import record_model_call_log
@@ -65,6 +65,7 @@ class NovelOsCockpitTests(unittest.TestCase):
                 },
             )
             resolve_approval_request(storage, approved_approval["asset"]["content"]["request_id"], {"decision": "approved", "actor": "unit-test", "reason": "fixture"})
+            build_approval_request_caller_readiness_report(storage, project_id="book-a")
             run_context_governance_coverage_gate(storage, project_id="book-a", environment="production")
             build_production_governance_evidence_drift_report(storage, project_id="book-a", persist=True)
             run_production_governance_drift_gate(storage, project_id="book-a", environment="production")
@@ -98,8 +99,15 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["workflow_governance"]["status"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["workflow_governance"]["preflight_count"], 0)
             self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["workflow_governance"]["dead_letter_count"], 0)
+            self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["approval_request_caller_readiness"]["status"], "partial")
+            self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["approval_request_caller_readiness"]["summary"]["covered_dimension_count"], 2)
+            self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["approval_request_caller_readiness"]["summary"]["missing_dimension_count"], 3)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["approval_request_caller_readiness_status"], "partial")
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["approval_request_missing_caller_count"], 3)
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["approval_request_callers"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["workflow_governance"]["status"], "missing")
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["approval_request_caller_readiness"]["status"], "partial")
             self.assertEqual(pending_approval["asset"]["content"]["scope"], "publish")
 
     def test_project_cockpit_surfaces_workflow_governance_readiness(self):

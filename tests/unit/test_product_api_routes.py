@@ -235,6 +235,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/provider-fallback/resolve",
                 "/product/permission-center/snapshot",
                 "/product/permission-center/approval-requests",
+                "/product/permission-center/approval-request-caller-readiness",
                 "/product/permission-center/approval-requests/expire",
                 "/product/permission-center/approval-requests/{request_id}/resolve",
                 "/product/impact/reports",
@@ -835,6 +836,58 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["quality"]["workflow_governance_status"], "blocked")
             self.assertEqual(content["cockpit"]["workflow_governance"]["status"], "blocked")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["workflow_governance"], "blocked")
+
+    def test_permission_center_route_surfaces_approval_request_caller_readiness(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            app = create_app(IndustrialSettings(root=Path(tmp).resolve()))
+            client = TestClient(app)
+            fixtures = [
+                ("source", "allow_generation_context", "source_policy"),
+                ("context", "override_context_bundle", "context_bundle"),
+                ("publish", "submit_release_package", "release_package"),
+                ("feedback", "apply_feedback_mutation", "feedback_plan_mutation_proposal"),
+                ("story_mutation", "apply_outline_patch", "outline"),
+            ]
+            for scope, action, target_type in fixtures:
+                response = client.post(
+                    "/product/permission-center/approval-requests",
+                    json={
+                        "project_id": "route-approval-readiness",
+                        "scope": scope,
+                        "action": action,
+                        "environment": "local",
+                        "risk_level": "high",
+                        "blocking": True,
+                        "target_type": target_type,
+                        "target_id": f"{scope}-fixture",
+                    },
+                )
+                self.assertEqual(response.status_code, 200, response.text)
+
+            response = client.get(
+                "/product/permission-center/approval-request-caller-readiness",
+                params={"project_id": "route-approval-readiness"},
+            )
+
+            self.assertEqual(response.status_code, 200, response.text)
+            payload = response.json()
+            content = payload["asset"]["content"]
+            self.assertEqual(payload["asset"]["type"], "project_metric_snapshot")
+            self.assertEqual(payload["asset"]["metadata"]["snapshot_kind"], "approval_request_caller_readiness")
+            self.assertEqual(content["status"], "review_required")
+            self.assertTrue(content["non_mutating"])
+            self.assertEqual(content["summary"]["covered_dimension_count"], 5)
+            self.assertEqual(content["summary"]["missing_dimension_count"], 0)
+            self.assertEqual(content["summary"]["pending_blocking_count"], 5)
+            self.assertEqual(len(content["evidence_paths"]), 5)
 
     def test_project_cockpit_route_surfaces_clean_workflow_governance_readiness(self):
         try:
