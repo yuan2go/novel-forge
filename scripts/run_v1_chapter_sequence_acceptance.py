@@ -354,6 +354,11 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolve
             deferred_action="final unified acceptance must require a passed source_governance_runtime gate",
         ),
         _resolved_preflight_row(
+            key="source_leakage_preflight",
+            resolved=resolved.get("source_leakage_preflight", {}),
+            deferred_action="final unified acceptance must require a passed source_leakage_preflight gate",
+        ),
+        _resolved_preflight_row(
             key="workflow_governance_drift",
             resolved=resolved.get("workflow_governance_drift", {}),
             deferred_action="final unified acceptance must require clean workflow governance drift evidence",
@@ -506,6 +511,7 @@ def _resolve_unified_acceptance_preflight_evidence(storage: LocalStorage, *, pro
     return {
         "runtime_growth_write_budget": _latest_gate_evidence(storage, project_id=project_id, gate_kind="chapter_runtime_growth_write_budget"),
         "source_governance_runtime": _latest_gate_evidence(storage, project_id=project_id, gate_kind="source_governance_runtime"),
+        "source_leakage_preflight": _latest_gate_evidence(storage, project_id=project_id, gate_kind="source_leakage_preflight"),
         "workflow_governance_drift": _latest_gate_evidence(storage, project_id=project_id, gate_kind="workflow_governance_drift"),
         "approval_request_caller_readiness": _latest_metric_snapshot_evidence(storage, project_id=project_id, snapshot_kind="approval_request_caller_readiness"),
         "quality_calibration_readiness_gate": _latest_gate_evidence(storage, project_id=project_id, gate_kind="quality_calibration_readiness_gate"),
@@ -533,6 +539,7 @@ def _latest_gate_evidence(storage: LocalStorage, *, project_id: str, gate_kind: 
     linked_evidence_paths = _dedupe(
         [
             str(result.get("readiness_report_path") or ""),
+            str(result.get("readiness_path") or ""),
             str(result.get("report_path") or ""),
             str(result.get("coverage_report_path") or ""),
             *[str(item) for item in evidence_paths if str(item or "").strip()],

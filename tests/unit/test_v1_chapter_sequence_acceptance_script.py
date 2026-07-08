@@ -75,15 +75,16 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
         self.assertEqual(result["status"], "succeeded")
         self.assertEqual(manifest["status"], "review_required")
         self.assertEqual(manifest["enforced_failure_count"], 0)
-        self.assertEqual(manifest["unready_final_evidence_count"], 4)
-        self.assertEqual(manifest["missing_or_deferred_final_evidence_count"], 4)
+        self.assertEqual(manifest["unready_final_evidence_count"], 5)
+        self.assertEqual(manifest["missing_or_deferred_final_evidence_count"], 5)
         self.assertIn("legacy_count_compatibility", manifest)
-        self.assertEqual(len(manifest["unready_final_evidence"]), 4)
+        self.assertEqual(len(manifest["unready_final_evidence"]), 5)
         self.assertEqual(manifest["operator_repair_plan"]["status"], "review_required")
-        self.assertEqual(manifest["operator_repair_plan"]["action_count"], 4)
+        self.assertEqual(manifest["operator_repair_plan"]["action_count"], 5)
         self.assertFalse(manifest["operator_repair_plan"]["repair_executed"])
         self.assertIn("runtime_growth_write_budget", {row["key"] for row in manifest["required_evidence"]})
         self.assertIn("source_governance_runtime", {row["key"] for row in manifest["required_evidence"]})
+        self.assertIn("source_leakage_preflight", {row["key"] for row in manifest["required_evidence"]})
         self.assertIn("quality_calibration_readiness_gate", {row["key"] for row in manifest["required_evidence"]})
         self.assertFalse(manifest["chapter_acceptance_executed_by_manifest"])
 
@@ -170,6 +171,24 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
                 },
             )
             storage.write_json(
+                "data/runs/source-leakage-gate.json",
+                {
+                    "id": "source-leakage-gate",
+                    "type": "gate_result",
+                    "title": "source leakage gate",
+                    "content": {
+                        "gate_kind": "source_leakage_preflight",
+                        "status": "passed",
+                        "message": "source leakage passed",
+                        "result": {
+                            "operator_action": "source leakage gate ready",
+                            "readiness_path": "data/runs/source-leakage-readiness.json",
+                        },
+                    },
+                    "metadata": {"project_id": "book-a"},
+                },
+            )
+            storage.write_json(
                 "data/runs/approval-readiness.json",
                 {
                     "id": "approval-readiness",
@@ -237,12 +256,15 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
             self.assertEqual(manifest["operator_repair_plan"]["status"], "not_required")
             self.assertEqual(manifest["operator_repair_plan"]["action_count"], 0)
             self.assertEqual(status_by_key["source_governance_runtime"], "passed")
+            self.assertEqual(status_by_key["source_leakage_preflight"], "passed")
             self.assertEqual(status_by_key["runtime_growth_write_budget"], "passed")
             self.assertEqual(status_by_key["workflow_governance_drift"], "passed")
             self.assertEqual(status_by_key["approval_request_caller_readiness"], "passed")
             self.assertEqual(status_by_key["quality_calibration_readiness_gate"], "passed")
             quality_row = [row for row in manifest["required_evidence"] if row["key"] == "quality_calibration_readiness_gate"][0]
             self.assertEqual(quality_row["linked_evidence_paths"], ["data/runs/quality-calibration-readiness.json"])
+            leakage_row = [row for row in manifest["required_evidence"] if row["key"] == "source_leakage_preflight"][0]
+            self.assertEqual(leakage_row["linked_evidence_paths"], ["data/runs/source-leakage-readiness.json"])
 
     def test_unified_preflight_requires_passed_quality_calibration_gate_not_only_snapshot(self):
         module = _load_acceptance_script()
@@ -268,6 +290,21 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
                     "type": "gate_result",
                     "title": "workflow gate",
                     "content": {"gate_kind": "workflow_governance_drift", "status": "passed", "message": "workflow passed"},
+                    "metadata": {"project_id": "book-a"},
+                },
+            )
+            storage.write_json(
+                "data/runs/source-leakage-gate.json",
+                {
+                    "id": "source-leakage-gate",
+                    "type": "gate_result",
+                    "title": "source leakage gate",
+                    "content": {
+                        "gate_kind": "source_leakage_preflight",
+                        "status": "passed",
+                        "message": "source leakage passed",
+                        "result": {"operator_action": "source leakage gate ready", "readiness_path": "data/runs/source-leakage-readiness.json"},
+                    },
                     "metadata": {"project_id": "book-a"},
                 },
             )

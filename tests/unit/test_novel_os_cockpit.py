@@ -634,10 +634,11 @@ class NovelOsCockpitTests(unittest.TestCase):
                             "contract": "v1-unified-acceptance-preflight-manifest-v1",
                             "status": "review_required",
                             "enforced_failure_count": 0,
-                            "missing_or_deferred_final_evidence_count": 2,
+                            "missing_or_deferred_final_evidence_count": 3,
                             "required_evidence": [
                                 {"key": "runtime_growth_threshold", "status": "passed"},
                                 {"key": "source_governance_runtime", "status": "deferred"},
+                                {"key": "source_leakage_preflight", "status": "deferred"},
                             ],
                             "operator_action": "complete deferred final preflight evidence before unified acceptance",
                         },
@@ -702,10 +703,10 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_high_run_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_max_ref_count"], 132)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_status"], "review_required")
-            self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_missing_count"], 2)
-            self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_unready_count"], 2)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_missing_count"], 3)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_unready_count"], 3)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_repair_plan_status"], "review_required")
-            self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_repair_action_count"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_repair_action_count"], 2)
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["approval_request_callers"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_guarded_apply"], "review_required")
@@ -721,7 +722,7 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
             self.assertEqual(
                 snapshot["asset"]["content"]["production_control_console"]["repair_plan_summary"]["unified_acceptance_preflight"]["action_count"],
-                1,
+                2,
             )
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["workflow_governance"]["status"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["approval_request_caller_readiness"]["status"], "partial")
@@ -741,6 +742,7 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["unready_final_evidence"][0]["key"], "source_governance_runtime")
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["unready_final_evidence"][1]["key"], "source_leakage_preflight")
             repair_plan = snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["operator_repair_plan"]
             self.assertEqual(repair_plan["status"], "review_required")
             self.assertEqual(repair_plan["actions"][0]["repair_group"], "source_governance")

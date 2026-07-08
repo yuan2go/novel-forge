@@ -1675,10 +1675,11 @@ class ProductApiRouterTests(unittest.TestCase):
                             "contract": "v1-unified-acceptance-preflight-manifest-v1",
                             "status": "review_required",
                             "enforced_failure_count": 0,
-                            "missing_or_deferred_final_evidence_count": 3,
+                            "missing_or_deferred_final_evidence_count": 4,
                             "required_evidence": [
                                 {"key": "runtime_growth_threshold", "status": "passed"},
                                 {"key": "source_governance_runtime", "status": "deferred"},
+                                {"key": "source_leakage_preflight", "status": "deferred"},
                             ],
                             "operator_action": "complete deferred final preflight evidence before unified acceptance",
                         },
@@ -1709,15 +1710,16 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["runtime_governance"]["unified_acceptance_preflight_gate"]["status"], "failed")
             self.assertEqual(content["quality"]["unified_acceptance_preflight_status"], "review_required")
             self.assertEqual(content["quality"]["unified_acceptance_preflight_gate_status"], "failed")
-            self.assertEqual(content["quality"]["unified_acceptance_preflight_missing_count"], 3)
-            self.assertEqual(content["quality"]["unified_acceptance_preflight_unready_count"], 3)
+            self.assertEqual(content["quality"]["unified_acceptance_preflight_missing_count"], 4)
+            self.assertEqual(content["quality"]["unified_acceptance_preflight_unready_count"], 4)
             self.assertEqual(content["quality"]["unified_acceptance_preflight_repair_plan_status"], "review_required")
-            self.assertEqual(content["quality"]["unified_acceptance_preflight_repair_action_count"], 1)
+            self.assertEqual(content["quality"]["unified_acceptance_preflight_repair_action_count"], 2)
             self.assertEqual(content["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["unified_acceptance_preflight_gate"], "failed")
-            self.assertEqual(content["production_control_console"]["repair_plan_summary"]["unified_acceptance_preflight"]["action_count"], 1)
+            self.assertEqual(content["production_control_console"]["repair_plan_summary"]["unified_acceptance_preflight"]["action_count"], 2)
             self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
             self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["unready_final_evidence"][0]["key"], "source_governance_runtime")
+            self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["unready_final_evidence"][1]["key"], "source_leakage_preflight")
             repair_plan = content["cockpit"]["unified_acceptance_preflight"]["operator_repair_plan"]
             self.assertEqual(repair_plan["status"], "review_required")
             self.assertEqual(repair_plan["actions"][0]["repair_group"], "source_governance")
@@ -1757,6 +1759,7 @@ class ProductApiRouterTests(unittest.TestCase):
                             "required_evidence": [
                                 {"key": "runtime_growth_threshold", "status": "passed", "enforced_now": True},
                                 {"key": "source_governance_runtime", "status": "passed", "enforced_now": False},
+                                {"key": "source_leakage_preflight", "status": "passed", "enforced_now": False},
                                 {"key": "workflow_governance_drift", "status": "passed", "enforced_now": False},
                                 {"key": "approval_request_caller_readiness", "status": "passed", "enforced_now": False},
                                 {"key": "quality_calibration_readiness_gate", "status": "passed", "enforced_now": False},
