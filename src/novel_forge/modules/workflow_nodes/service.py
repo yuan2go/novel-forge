@@ -2878,6 +2878,11 @@ def _mandatory_runtime_policy_failure(
                     governance.get("selector_governance_binding_application_report_path") or ""
                 )
                 processor["runtime_policy_evidence"]["selector_governance_binding_status"] = str(governance.get("status") or "")
+            source_gate = governance.get("source_governance_runtime_gate", {}) if isinstance(governance.get("source_governance_runtime_gate", {}), dict) else {}
+            if source_gate.get("present"):
+                processor["runtime_policy_evidence"]["source_governance_runtime_gate_path"] = str(source_gate.get("gate_result_path") or "")
+                processor["runtime_policy_evidence"]["source_governance_runtime_gate_status"] = str(source_gate.get("status") or "")
+                processor["runtime_policy_evidence"]["source_governance_readiness_report_path"] = str(source_gate.get("readiness_report_path") or "")
         return None
     return _record_executed_node(
         storage,
@@ -3010,6 +3015,8 @@ def _context_bundle_governance_evidence(storage: LocalStorage, context_bundle_pa
         failures.append("selector governance report path in context bundle does not match binding application report")
     if direct_report_path and selector_report_path and direct_report_path != selector_report_path:
         failures.append("direct selector_governance_report_path does not match context bundle selector governance evidence")
+    source_gate = _context_bundle_source_governance_evidence(storage, content, metadata, processor=processor, policy=policy)
+    failures.extend(source_gate.get("failures", []))
     return {
         "present": present,
         "strict": strict,
@@ -3018,6 +3025,7 @@ def _context_bundle_governance_evidence(storage: LocalStorage, context_bundle_pa
         "selector_governance_report_path": selector_report_path or direct_report_path,
         "selector_governance_binding_application_report_path": application_path,
         "direct_selector_governance_report_path": direct_report_path,
+        "source_governance_runtime_gate": source_gate,
         "failures": failures,
     }
 
@@ -3032,6 +3040,68 @@ def _direct_selector_governance_report_path(processor: dict[str, Any], policy: d
         candidates.append(payload.get("outputs", {}))
     for candidate in candidates:
         value = str(candidate.get("selector_governance_report_path") or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _context_bundle_source_governance_evidence(
+    storage: LocalStorage,
+    content: dict[str, Any],
+    metadata: dict[str, Any],
+    *,
+    processor: dict[str, Any],
+    policy: dict[str, Any],
+) -> dict[str, Any]:
+    gate = content.get("source_governance_runtime_gate", {}) if isinstance(content.get("source_governance_runtime_gate", {}), dict) else {}
+    direct_gate_path = _direct_source_governance_gate_result_path(processor, policy)
+    gate_path = _normalize_optional_path(
+        storage,
+        str(gate.get("gate_result_path") or metadata.get("source_governance_runtime_gate_path") or direct_gate_path or ""),
+    )
+    readiness_path = _normalize_optional_path(storage, str(gate.get("readiness_report_path") or metadata.get("source_governance_readiness_report_path") or ""))
+    status = str(gate.get("status") or metadata.get("source_governance_runtime_gate_status") or "").strip()
+    failures: list[str] = []
+    if gate_path:
+        gate_data = read_json_for_scan(storage, resolve_path(storage.root, gate_path), context="workflow source governance runtime gate scan")
+        gate_content = gate_data.get("content", {}) if isinstance(gate_data.get("content", {}), dict) else {}
+        gate_kind = str(gate_content.get("gate_kind") or "")
+        gate_status = str(gate_content.get("status") or "")
+        if gate_data.get("type") != "gate_result":
+            failures.append("source_governance_runtime_gate_path must point to a gate_result asset")
+        if gate_kind and gate_kind != "source_governance_runtime":
+            failures.append("source_governance_runtime_gate_path must point to source_governance_runtime gate evidence")
+        if status and gate_status and status != gate_status:
+            failures.append("source governance runtime gate status does not match gate_result evidence")
+        status = gate_status or status
+    strict = _strict_runtime_policy(policy)
+    if strict and not gate_path:
+        failures.append("production workflow source governance evidence requires source_governance_runtime_gate gate_result_path")
+    if strict and gate_path and status != "passed":
+        failures.append(f"production workflow source governance runtime gate must be passed, got {status or 'unknown'}")
+    if not strict and status == "failed":
+        failures.append("source governance runtime gate is failed")
+    return {
+        "present": bool(gate_path),
+        "strict": strict,
+        "status": status,
+        "gate_result_path": gate_path,
+        "readiness_report_path": readiness_path,
+        "direct_gate_result_path": direct_gate_path,
+        "failures": failures,
+    }
+
+
+def _direct_source_governance_gate_result_path(processor: dict[str, Any], policy: dict[str, Any]) -> str:
+    candidates: list[dict[str, Any]] = [processor, policy]
+    for key in ["runtime_policy", "registry_payload", "evidence", "runtime_policy_evidence"]:
+        value = processor.get(key, {}) if isinstance(processor.get(key, {}), dict) else {}
+        candidates.append(value)
+    payload = processor.get("registry_payload", {}) if isinstance(processor.get("registry_payload", {}), dict) else {}
+    if isinstance(payload.get("outputs", {}), dict):
+        candidates.append(payload.get("outputs", {}))
+    for candidate in candidates:
+        value = str(candidate.get("source_governance_runtime_gate_path") or candidate.get("source_governance_gate_result_path") or "").strip()
         if value:
             return value
     return ""

@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.agent_runs import list_agent_runs
 from novel_forge.modules.chapter_production_bus import start_chapter_production
-from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, create_budget_policy, scheduler_lease_status
+from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, create_budget_policy, record_gate_result, scheduler_lease_status
 from novel_forge.modules.publishing_feedback_adapters import create_feedback_mutation_proposal, resolve_feedback_mutation_proposal
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.modules.workflow_nodes import (
@@ -50,7 +50,16 @@ from tests.unit.publishing_fixtures import production_envelope
 
 
 class WorkflowExecutorTests(unittest.TestCase):
-    def _write_selector_governance_context_bundle(self, storage: LocalStorage, plan_path: Path, *, project_id: str = "workflow-governance", status: str = "applied") -> dict[str, str]:
+    def _write_selector_governance_context_bundle(
+        self,
+        storage: LocalStorage,
+        plan_path: Path,
+        *,
+        project_id: str = "workflow-governance",
+        status: str = "applied",
+        include_source_gate: bool = True,
+        source_gate_status: str = "passed",
+    ) -> dict[str, str]:
         report_path = storage.write_asset(
             "runs",
             MKAOSSelectorGovernanceReport(
@@ -96,35 +105,66 @@ class WorkflowExecutorTests(unittest.TestCase):
             "selector_governance_report_path": report_ref,
             "application_contract": {"approval_verified": True, "payload_patch_only": True},
         }
+        source_gate_ref = ""
+        source_gate = {}
+        if include_source_gate:
+            source_gate_result = record_gate_result(
+                storage,
+                gate_kind="source_governance_runtime",
+                status=source_gate_status,
+                target_paths=[str(plan_path.relative_to(storage.root))],
+                result={
+                    "contract": "source-governance-runtime-gate-v1",
+                    "summary": {"blocking_count": 0, "raw_source_text_included": False},
+                    "mutation_policy": "read-only fixture evidence",
+                },
+                project_id=project_id,
+                blocking=source_gate_status == "failed",
+            )
+            source_gate_ref = str(source_gate_result.get("path") or "")
+            source_gate = {
+                "status": source_gate_status,
+                "blocking": source_gate_status == "failed",
+                "gate_result_path": source_gate_ref,
+                "readiness_report_path": "",
+                "summary": {"blocking_count": 0, "raw_source_text_included": False},
+            }
+        context_content = {
+            "build_plan_id": "workflow-context-plan",
+            "target_asset_id": storage.read_asset(plan_path).id,
+            "selected_assets": [],
+            "compressed_context": {},
+            "token_budget": {"max_tokens": 1000},
+            "token_estimate": 16,
+            "actual_context": "workflow governed context",
+            "source_asset_ids": [],
+            "knowledge_context_contract": {
+                "selector_governance": {"report_path": report_ref},
+                "selector_governance_binding_application": binding,
+            },
+            "selector_governance_binding_application": binding,
+        }
+        if source_gate:
+            context_content["source_governance_runtime_gate"] = source_gate
+        context_metadata = {
+            "project_id": project_id,
+            "selector_governance_report_path": report_ref,
+            "selector_governance_binding_application_path": application_ref,
+        }
+        if source_gate_ref:
+            context_metadata["source_governance_runtime_gate_path"] = source_gate_ref
+            context_metadata["source_governance_runtime_gate_status"] = source_gate_status
         context_path = storage.write_asset(
             "contexts",
             ContextBundle(
                 title="Workflow governed context",
                 source=storage.read_asset(plan_path).id,
-                content={
-                    "build_plan_id": "workflow-context-plan",
-                    "target_asset_id": storage.read_asset(plan_path).id,
-                    "selected_assets": [],
-                    "compressed_context": {},
-                    "token_budget": {"max_tokens": 1000},
-                    "token_estimate": 16,
-                    "actual_context": "workflow governed context",
-                    "source_asset_ids": [],
-                    "knowledge_context_contract": {
-                        "selector_governance": {"report_path": report_ref},
-                        "selector_governance_binding_application": binding,
-                    },
-                    "selector_governance_binding_application": binding,
-                },
-                metadata={
-                    "project_id": project_id,
-                    "selector_governance_report_path": report_ref,
-                    "selector_governance_binding_application_path": application_ref,
-                },
-                references=[str(plan_path.relative_to(storage.root)), report_ref, application_ref],
+                content=context_content,
+                metadata=context_metadata,
+                references=[item for item in [str(plan_path.relative_to(storage.root)), report_ref, application_ref, source_gate_ref] if item],
             ),
         )
-        return {"context_path": str(context_path.relative_to(storage.root)), "report_path": report_ref, "application_path": application_ref}
+        return {"context_path": str(context_path.relative_to(storage.root)), "report_path": report_ref, "application_path": application_ref, "source_gate_path": source_gate_ref}
 
     def test_runtime_policy_blocks_generation_without_context_bundle(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -249,6 +289,39 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(evidence["selector_governance_report_path"], refs["report_path"])
             self.assertEqual(evidence["selector_governance_binding_application_report_path"], refs["application_path"])
             self.assertEqual(evidence["selector_governance_binding_status"], "applied")
+            self.assertEqual(evidence["source_governance_runtime_gate_path"], refs["source_gate_path"])
+            self.assertEqual(evidence["source_governance_runtime_gate_status"], "passed")
+
+    def test_runtime_policy_blocks_context_without_source_governance_runtime_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Plan", content={"chapter": 1, "objective": "open", "beats": ["beat"], "hook": "hook"}, metadata={"project_id": "workflow-governance"}),
+            )
+            refs = self._write_selector_governance_context_bundle(storage, plan_path, include_source_gate=False)
+            workflow = create_workflow_definition(
+                storage,
+                name="Strict Context Without Source Gate Workflow",
+                entry_node_id="draft-agent",
+                runtime_policy={"mode": "operating_system", "require_context_bundle": True},
+                nodes=[
+                    {
+                        "node_id": "draft-agent",
+                        "node_type": "generation",
+                        "operation": "draft",
+                        "input_types": ["chapter_plan", "context_bundle"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "record_only", "context_bundle_path": refs["context_path"]},
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[plan_path, storage.root / refs["context_path"]])
+
+            self.assertEqual(result["status"], "failed")
+            self.assertIn("source governance evidence requires", result["errors"][0])
 
     def test_runtime_policy_blocks_direct_selector_governance_mismatch(self):
         with tempfile.TemporaryDirectory() as tmp:

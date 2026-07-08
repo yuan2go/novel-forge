@@ -120,12 +120,14 @@ class AgentOperationRegistry(OperationRegistryCatalog):
         existing_outputs.extend([str(row.get("path", "")) for row in output_rows if isinstance(row, dict) and row.get("path")])
         existing_outputs = _dedupe(existing_outputs)
         existing_knowledge_context = _knowledge_context_from_service_result(storage, {"knowledge_context_contract": evidence.get("knowledge_context_contract", {})}, existing_outputs)
+        existing_source_governance_evidence = _source_governance_evidence_from_service_result(storage, {}, existing_outputs)
         checkpoint = {
             "status": "agent_scheduler_output_reuse",
             "dispatch_id": queue_content.get("dispatch_id", ""),
             "idempotency_key": queue_content.get("idempotency_key", ""),
             "expected_output_assets": expected_outputs,
             "output_assets": existing_outputs,
+            **({"source_governance_runtime_gate": existing_source_governance_evidence} if existing_source_governance_evidence else {}),
         }
         if existing_outputs:
             _enforce_operation_knowledge_context(canonical, existing_knowledge_context, environment=environment)
@@ -169,6 +171,7 @@ class AgentOperationRegistry(OperationRegistryCatalog):
                         if existing_knowledge_context
                         else {}
                     ),
+                    **({"source_governance_runtime_gate": existing_source_governance_evidence} if existing_source_governance_evidence else {}),
                     "provider_usage": evidence.get("provider_usage", {}) if isinstance(evidence.get("provider_usage", {}), dict) else {},
                     "provider_runtime_guard": evidence.get("provider_runtime_guard", {}) if isinstance(evidence.get("provider_runtime_guard", {}), dict) else {},
                     **_governance_evidence(preflight_governance, final_governance),
@@ -224,6 +227,7 @@ class AgentOperationRegistry(OperationRegistryCatalog):
             if not output_assets:
                 raise RuntimeError(f"agent operation {canonical} completed without output assets")
             knowledge_context = _knowledge_context_from_service_result(storage, service_result, output_assets)
+            source_governance_evidence = _source_governance_evidence_from_service_result(storage, service_result, output_assets)
             _enforce_operation_knowledge_context(canonical, knowledge_context, environment=environment)
             final_governance = enforce_scheduler_final_governance(
                 storage,
@@ -251,6 +255,7 @@ class AgentOperationRegistry(OperationRegistryCatalog):
                 "service_result": _json_safe_result(service_result),
                 "output_assets": output_assets,
                 "production_governance": _governance_evidence(preflight_governance, final_governance),
+                **({"source_governance_runtime_gate": source_governance_evidence} if source_governance_evidence else {}),
                 "checkpoint_schema": spec.checkpoint_schema() if spec else {"version": "0.1.0", "strategy": "local_service"},
             }
             checkpoint_asset = _record_operation_checkpoint(storage, queue_item, agent_run, status="agent_scheduler_service_completed", state=checkpoint_state)
@@ -268,6 +273,7 @@ class AgentOperationRegistry(OperationRegistryCatalog):
                     "checkpoint_path": checkpoint_asset.get("path", ""),
                     "service_result": _json_safe_result(service_result),
                     **({"knowledge_context_contract": knowledge_context, "context_bundle_id": knowledge_context.get("context_bundle_id", ""), "knowledge_pack_id": knowledge_context.get("knowledge_pack_id", "")} if knowledge_context else {}),
+                    **({"source_governance_runtime_gate": source_governance_evidence} if source_governance_evidence else {}),
                     "runtime_policy": evidence.get("runtime_policy", {}) if isinstance(evidence.get("runtime_policy", {}), dict) else {},
                     "context_bundle_path": evidence.get("context_bundle_path", ""),
                     "provider_usage": evidence.get("provider_usage", {}) if isinstance(evidence.get("provider_usage", {}), dict) else {},
@@ -1762,7 +1768,7 @@ def _operation_specs() -> list[AgentOperationSpec]:
             agent_key="context",
             input_types=(),
             output_types=("context_bundle",),
-            required_tool="write_context_bundle",
+            required_tool="build_context_bundle",
             sla_seconds=300,
         ),
         AgentOperationSpec(
@@ -3618,6 +3624,62 @@ def _knowledge_context_from_service_result(storage: LocalStorage, result: dict[s
         if found:
             return found
     return {}
+
+
+def _source_governance_evidence_from_service_result(storage: LocalStorage, result: dict[str, Any], output_assets: list[str]) -> dict[str, Any]:
+    if isinstance(result, dict):
+        direct = _normalize_source_governance_evidence(result.get("source_governance_runtime_gate"))
+        if direct:
+            return direct
+        asset = result.get("asset", {}) if isinstance(result.get("asset", {}), dict) else {}
+        direct = _source_governance_evidence_from_asset(asset)
+        if direct:
+            return direct
+    for path_text in output_assets:
+        try:
+            data = storage.read_json(resolve_path(storage.root, path_text))
+        except Exception:
+            continue
+        found = _source_governance_evidence_from_asset(data)
+        if found:
+            return found
+    return {}
+
+
+def _source_governance_evidence_from_asset(data: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(data, dict):
+        return {}
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    evidence = _normalize_source_governance_evidence(content.get("source_governance_runtime_gate"))
+    if evidence:
+        return evidence
+    gate_path = str(metadata.get("source_governance_runtime_gate_path") or "").strip()
+    if not gate_path:
+        return {}
+    return {
+        "status": str(metadata.get("source_governance_runtime_gate_status") or ""),
+        "gate_result_path": gate_path,
+        "readiness_report_path": str(metadata.get("source_governance_readiness_report_path") or ""),
+    }
+
+
+def _normalize_source_governance_evidence(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict) or not value:
+        return {}
+    gate_result = value.get("gate_result", {}) if isinstance(value.get("gate_result", {}), dict) else {}
+    readiness_report = value.get("readiness_report", {}) if isinstance(value.get("readiness_report", {}), dict) else {}
+    gate_path = str(value.get("gate_result_path") or gate_result.get("path") or "").strip()
+    readiness_path = str(value.get("readiness_report_path") or readiness_report.get("path") or "").strip()
+    if not gate_path and not value.get("status"):
+        return {}
+    return {
+        "status": str(value.get("status") or ""),
+        "blocking": bool(value.get("blocking", False)),
+        "gate_result_path": gate_path,
+        "readiness_report_path": readiness_path,
+        "summary": value.get("summary", {}) if isinstance(value.get("summary", {}), dict) else {},
+    }
 
 
 def _knowledge_context_from_asset(data: dict[str, Any]) -> dict[str, Any]:

@@ -81,6 +81,63 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(kwargs["selector_governance_binding_application_report_path"], "data/runs/binding-application.json")
             self.assertEqual(kwargs["project_id"], "sched-binding")
 
+    def test_build_context_scheduler_result_exposes_source_governance_gate_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Scheduler context target", content={"chapter": 1, "objective": "build context", "beats": ["beat"], "hook": "hook"}, metadata={"project_id": "sched-source-gate"}),
+            )
+            context_path = storage.write_asset(
+                "contexts",
+                ContextBundle(
+                    title="Scheduler governed context",
+                    source=storage.read_asset(plan_path).id,
+                    content={
+                        "build_plan_id": "scheduler-context-plan",
+                        "target_asset_id": storage.read_asset(plan_path).id,
+                        "selected_assets": [],
+                        "compressed_context": {},
+                        "token_budget": {"max_tokens": 1000},
+                        "token_estimate": 12,
+                        "actual_context": "scheduler governed context",
+                        "source_asset_ids": [],
+                    },
+                    metadata={"project_id": "sched-source-gate"},
+                ),
+            )
+            source_gate = {
+                "status": "passed",
+                "blocking": False,
+                "gate_result": {"path": "data/runs/source-governance-runtime-gate.json"},
+                "readiness_report": {"path": "data/reports/source-readiness.json"},
+                "summary": {"blocking_count": 0},
+            }
+            run = start_agent_run(
+                storage,
+                agent_key="context",
+                operation="build-context-bundle",
+                input_assets=[str(plan_path.relative_to(storage.root))],
+                status="prepared",
+                evidence={"target_path": str(plan_path.relative_to(storage.root)), "project_id": "sched-source-gate", "workspace_path": "data/workspaces/sched-source-gate.json"},
+            )
+            dispatch_agent_run(storage, agent_run_path=run["path"])
+
+            with patch(
+                "novel_forge.modules.context_builder.build_flow_context_bundle",
+                return_value={"path": str(context_path.relative_to(storage.root)), "asset": storage.read_json(context_path), "source_governance_runtime_gate": source_gate},
+            ):
+                tick = run_agent_scheduler_tick(storage)
+
+            queue_asset = storage.read_json(storage.root / list_agent_dispatch_queue(storage)[0]["path"])
+            evidence = queue_asset["content"]["result"]["evidence"]["source_governance_runtime_gate"]
+            checkpoint = queue_asset["content"]["result"]["checkpoint"]["source_governance_runtime_gate"]
+            self.assertEqual(tick["acked_count"], 1)
+            self.assertEqual(evidence["status"], "passed")
+            self.assertEqual(evidence["gate_result_path"], "data/runs/source-governance-runtime-gate.json")
+            self.assertEqual(checkpoint["gate_result_path"], "data/runs/source-governance-runtime-gate.json")
+
     def test_agent_center_snapshot_exposes_evidence_cockpit_fields(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

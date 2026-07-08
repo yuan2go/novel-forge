@@ -66,12 +66,13 @@ Current evidence:
 - Source Intake now exposes `run_source_governance_runtime_gate()` and `/product/sources/runtime-gate`; the gate writes a standard `source_governance_runtime` `gate_result`, passes with clean sweeps, warns locally for blockers, fails closed in production for missing sweep evidence, stale/quarantined impacts, or unguarded source-derived assets, and is visible through Project Cockpit.
 - PublishGate now runs source governance runtime gate and records it in gate data plus production governance evidence; ReleasePackage production evidence requires `source_governance_gate`; Context Builder writes source governance runtime gate evidence into ContextBundle metadata/content and fails closed in production if the source gate fails.
 - Focused source-governance regression now includes source gate caller fixtures for PublishGate, ReleasePackage gate evidence, and Context Builder source gate evidence while still excluding connector execution, provider proof, chapter acceptance, and broad `make test`.
+- Agent Scheduler now propagates source governance runtime gate evidence from context-builder service results/output reuse into checkpoint and execution evidence, and Workflow runtime policy now requires ContextBundle source gate evidence in strict/production modes while recording source gate paths/status on NodeRun runtime policy evidence.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
-- ApprovalRequest caller readiness, source guarded apply readiness, and source governance runtime gate evidence are visible through read-only reports, Product API routes, Project Cockpit summaries, and focused no-acceptance regression bundles; publish/release/context callers now consume source gate evidence, while scheduler/workflow production entrypoint propagation remains the next gap.
+- ApprovalRequest caller readiness, source guarded apply readiness, and source governance runtime gate evidence are visible through read-only reports, Product API routes, Project Cockpit summaries, and focused no-acceptance regression bundles; publish/release/context/scheduler/workflow callers now consume or propagate source gate evidence, while deeper runtime console visibility remains the next gap.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
 - Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job/refresh-report assets and context eligibility evaluation; MKAOS knowledge/material seams plus analysis conversion and Context Builder selected/rejected summaries consume eligibility evidence, while Context Bundle writes knowledge/material usage feedback, lineage governance emits reviewable invalidation recommendations, and connector execution plans are ApprovalRequest-gated with no side effects.
 - ReaderPromise, PleasurePoint/ChapterEconomy, Character Pressure, and Mobile Reading lifecycles now have schema-backed local foundations and draft-to-longform or chapter-bus integration; payoff, scene-value, agency, pressure, and mobile rhythm detection remain deterministic and need calibration plus final multi-chapter proof.
@@ -79,7 +80,7 @@ Current evidence:
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
 2. Portfolio project boundary for future multi-book scheduling and cost/quality rollups.
-3. Propagate source governance runtime gate evidence through scheduler/workflow production entrypoints without connector execution, source mutation, provider proof, or chapter acceptance.
+3. Surface scheduler/workflow source governance runtime gate evidence in Agent Center, Workflow runtime console, and Project Cockpit without connector execution, source mutation, provider proof, or chapter acceptance.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
 验收标准:
