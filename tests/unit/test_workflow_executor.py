@@ -7,8 +7,10 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.agent_runs import list_agent_runs
+from novel_forge.modules.chapter_production_bus import start_chapter_production
 from novel_forge.modules.runtime_ledger import acquire_scheduler_lease, create_budget_policy, scheduler_lease_status
 from novel_forge.modules.publishing_feedback_adapters import create_feedback_mutation_proposal, resolve_feedback_mutation_proposal
+from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.modules.workflow_nodes import (
     build_ready_node_queue,
     build_workflow_runtime_console,
@@ -41,6 +43,7 @@ from novel_forge.schemas import (
     WorldBible,
 )
 from novel_forge.storage.local import LocalStorage
+from tests.unit.publishing_fixtures import production_envelope
 
 
 class WorkflowExecutorTests(unittest.TestCase):
@@ -1325,6 +1328,130 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(second_node.content["status"], "recovered")
             self.assertEqual(second_node.content["processor"]["checkpoint"]["contract"]["operation"], "module_completion_snapshot")
 
+    def test_service_processor_starts_chapter_production_with_runtime_policy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = _chapter_production_fixture(storage, project_title="Workflow Chapter Start")
+            source_policy = _workflow_source_policy()
+            workflow = create_workflow_definition(
+                storage,
+                name="Workflow Chapter Production Start",
+                entry_node_id="chapter-start",
+                nodes=[
+                    {
+                        "node_id": "chapter-start",
+                        "node_type": "production",
+                        "operation": "start-chapter-production",
+                        "input_types": ["outline"],
+                        "output_types": ["chapter_production_run"],
+                        "processor": {
+                            "kind": "service",
+                            "operation": "start-chapter-production",
+                            "chapter": 1,
+                            "run_to": "outline_checkpoint",
+                            "task_status_mode": "compact",
+                            "environment": "production",
+                            "os_envelope": production_envelope(
+                                fixture["project_id"],
+                                "chapter_production_run",
+                                trace_id=f"trace-workflow-chapter-start-{fixture['project_id']}",
+                                source_policy=source_policy,
+                            ),
+                            "source_policy": source_policy,
+                            "provider_runtime_guard": _passed_provider_runtime_gate(),
+                            "require_external_provider_proof": True,
+                        },
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[fixture["outline_path"]])
+            output_path = result["workflow_run"]["asset"]["content"]["outputs"][0]
+            chapter_run = storage.read_json(storage.root / output_path)
+            node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
+            policy = chapter_run["content"]["quality_loop_policy"]
+
+            self.assertEqual(result["status"], "completed")
+            self.assertEqual(chapter_run["type"], "chapter_production_run")
+            self.assertEqual(chapter_run["content"]["current_step"], "outline_checkpoint")
+            self.assertEqual(node_run.content["processor"]["registry_operation"], "chapter_production_start")
+            self.assertEqual(policy["environment"], "production")
+            self.assertEqual(policy["source_policy"]["source_isolation_required"], True)
+            self.assertEqual(policy["os_envelope"]["asset_type"], "chapter_production_run")
+            self.assertEqual(policy["require_external_provider_proof"], True)
+
+    def test_service_processor_resumes_chapter_production(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = _chapter_production_fixture(storage, project_title="Workflow Chapter Resume")
+            planned = start_chapter_production(
+                storage,
+                outline_path=fixture["outline_path"],
+                workspace_path=fixture["workspace_path"],
+                chapter=1,
+                run_to="outline_checkpoint",
+                execute=False,
+                task_status_mode="compact",
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Workflow Chapter Production Resume",
+                entry_node_id="chapter-resume",
+                nodes=[
+                    {
+                        "node_id": "chapter-resume",
+                        "node_type": "production",
+                        "operation": "resume-chapter-production",
+                        "input_types": ["chapter_production_run"],
+                        "output_types": ["chapter_production_run"],
+                        "processor": {"kind": "service", "operation": "resume-chapter-production", "run_to": "outline_checkpoint"},
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[planned["path"]])
+            chapter_run = storage.read_json(storage.root / result["workflow_run"]["asset"]["content"]["outputs"][0])
+            node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
+
+            self.assertEqual(result["status"], "completed")
+            self.assertEqual(chapter_run["type"], "chapter_production_run")
+            self.assertEqual(chapter_run["content"]["status"], "succeeded")
+            self.assertEqual(chapter_run["content"]["current_step"], "outline_checkpoint")
+            self.assertEqual(node_run.content["processor"]["registry_operation"], "chapter_production_resume")
+
+    def test_service_processor_blocks_production_chapter_without_governance_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = _chapter_production_fixture(storage, project_title="Workflow Chapter Block")
+            workflow = create_workflow_definition(
+                storage,
+                name="Workflow Chapter Production Block",
+                entry_node_id="chapter-start",
+                nodes=[
+                    {
+                        "node_id": "chapter-start",
+                        "node_type": "production",
+                        "operation": "start-chapter-production",
+                        "input_types": ["outline"],
+                        "output_types": ["chapter_production_run"],
+                        "processor": {"kind": "service", "operation": "start-chapter-production", "environment": "production", "run_to": "outline_checkpoint"},
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[fixture["outline_path"]])
+            node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
+
+            self.assertEqual(result["status"], "failed")
+            self.assertEqual(node_run.content["status"], "failed")
+            self.assertIn("missing production governance evidence", node_run.content["error"])
+            self.assertIn("os_envelope", node_run.content["error"])
+            self.assertIn("source_policy", node_run.content["error"])
+            self.assertIn("provider_runtime_guard", node_run.content["error"])
+
     def test_gate_registry_schema_gate_blocks_invalid_input(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -1635,6 +1762,51 @@ def _run_assets_by_type(storage: LocalStorage, asset_type: str) -> list[dict[str
         if isinstance(data, dict) and data.get("type") == asset_type:
             rows.append(data)
     return rows
+
+
+def _chapter_production_fixture(storage: LocalStorage, *, project_title: str) -> dict[str, str]:
+    workspace = init_workspace(storage, project_title)
+    workspace_asset = storage.read_asset(workspace)
+    project_id = workspace_asset.content["project_id"]
+    workspace_ref = str(workspace.relative_to(storage.root))
+    outline = storage.write_asset(
+        "outlines",
+        Outline(
+            title=f"{project_title} Outline",
+            content={"acts": [{"act": 1, "goal": "open with a governed workflow chapter"}]},
+            metadata={"project_id": project_id, "workspace_path": workspace_ref},
+            references=[workspace_ref],
+        ),
+    )
+    return {
+        "project_id": project_id,
+        "workspace_path": workspace_ref,
+        "outline_path": str(outline.relative_to(storage.root)),
+    }
+
+
+def _workflow_source_policy() -> dict[str, object]:
+    return {
+        "source_isolation_required": True,
+        "raw_source_text_allowed": False,
+        "generation_rag_allowed": False,
+        "external_reference_mode": "evidence_only",
+        "workflow_policy_marker": "chapter-production-processor",
+    }
+
+
+def _passed_provider_runtime_gate() -> dict[str, object]:
+    return {
+        "status": "passed",
+        "blocking": False,
+        "provider": "codex-fixture",
+        "route": "approved-fixture-route",
+        "summary": {
+            "route_approved": True,
+            "approval_ref": "unit-test-provider-runtime-approval",
+            "mock_provider_test_mode": True,
+        },
+    }
 
 
 if __name__ == "__main__":

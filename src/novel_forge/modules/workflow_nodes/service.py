@@ -76,6 +76,8 @@ WORKFLOW_SERVICE_OPERATIONS = {
     "outline_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_outline_version"]},
     "chapter_plan_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_chapter_plan_version"]},
     "draft_version": {"category": "production_chain", "checkpoint_strategy": "output_reuse", "aliases": ["create_draft_version"]},
+    "chapter_production_start": {"category": "production_chain", "checkpoint_strategy": "operation_state", "aliases": ["start-chapter-production", "start_chapter_production", "chapter-production-start", "start-chapter-run"]},
+    "chapter_production_resume": {"category": "production_chain", "checkpoint_strategy": "operation_state", "aliases": ["resume-chapter-production", "resume_chapter_production", "chapter-production-resume", "resume-chapter-run"]},
     "model_route_resolution": {"category": "model_router", "checkpoint_strategy": "operation_state", "aliases": ["resolve_model_route"]},
     "model_gateway_call": {"category": "model_router", "checkpoint_strategy": "operation_state", "aliases": ["execute_model_gateway_call"]},
     "prompt_template": {"category": "prompt_registry", "checkpoint_strategy": "output_reuse", "aliases": ["create_prompt_template"]},
@@ -4718,6 +4720,40 @@ def _execute_registered_service_processor_impl(
 
         result = create_draft_version(storage, _processor_path(processor, input_assets, "draft_path", "target_path"), change_summary=str(processor.get("change_summary") or "workflow service processor"), status=str(processor.get("status") or "active"))
         return _service_success(storage, operation, result)
+    if operation in {"chapter_production_start", "start-chapter-production", "start_chapter_production", "chapter-production-start", "start-chapter-run"}:
+        from novel_forge.modules.chapter_production_bus import start_chapter_production
+
+        _enforce_workflow_chapter_production_governance(processor, operation=operation)
+        result = start_chapter_production(
+            storage,
+            outline_path=_processor_path(processor, input_assets, "outline_path", "target_path"),
+            chapter_plan_path=str(processor.get("chapter_plan_path") or "") or None,
+            workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,
+            chapter=_optional_positive_int(processor.get("chapter")),
+            run_to=str(processor.get("run_to") or "next_chapter_plan"),
+            execute=bool(processor.get("execute", True)),
+            execution_mode=str(processor.get("execution_mode") or "sync"),
+            task_status_mode=str(processor.get("task_status_mode") or "compact"),
+            selector_governance_binding_application_report_path=str(processor.get("selector_governance_binding_application_report_path") or "") or None,
+            environment=str(processor.get("environment") or ""),
+            os_envelope=_processor_os_envelope(processor),
+            source_policy=_processor_source_policy(processor) or None,
+            require_external_provider_proof=bool(processor.get("require_external_provider_proof", False)),
+        )
+        return _service_success(storage, operation, result)
+    if operation in {"chapter_production_resume", "resume-chapter-production", "resume_chapter_production", "chapter-production-resume", "resume-chapter-run"}:
+        from novel_forge.modules.chapter_production_bus import resume_chapter_production
+
+        _enforce_workflow_chapter_production_governance(processor, operation=operation)
+        result = resume_chapter_production(
+            storage,
+            _processor_path(processor, input_assets, "run_path", "chapter_production_run_path", "target_path"),
+            from_step=str(processor.get("from_step") or "") or None,
+            run_to=str(processor.get("run_to") or "") or None,
+            force=bool(processor.get("force", False)),
+            clear_pause=bool(processor.get("clear_pause", True)),
+        )
+        return _service_success(storage, operation, result)
     if operation in {"review", "review_report"}:
         from novel_forge.modules.review.service import review
 
@@ -5051,6 +5087,68 @@ def _execute_registered_service_processor_impl(
         result = hybrid_retrieve(storage, query=str(processor.get("query") or ""), project_id=str(processor.get("project_id") or ""), retrieval_backend=str(processor.get("retrieval_backend") or "hybrid"), limit=int(processor.get("limit", 12) or 12), levels=[str(item) for item in processor.get("levels", [])] if isinstance(processor.get("levels", []), list) else [], persist=bool(processor.get("persist", True)))
         return _service_success(storage, operation, result)
     raise ValueError(f"unknown service processor operation: {operation or '<empty>'}")
+
+
+def _enforce_workflow_chapter_production_governance(processor: dict[str, Any], *, operation: str) -> None:
+    envelope = _processor_os_envelope(processor)
+    environment = str(processor.get("environment") or envelope.get("environment") or "").strip()
+    if not is_production_environment(environment):
+        return
+    missing: list[str] = []
+    if not envelope:
+        missing.append("os_envelope")
+    if not _processor_source_policy(processor):
+        missing.append("source_policy")
+    provider_gate = _processor_provider_runtime_guard(processor)
+    if str(provider_gate.get("status") or "").strip().lower() != "passed":
+        missing.append("provider_runtime_guard")
+    if missing:
+        raise ValueError(f"workflow chapter production processor {operation} missing production governance evidence: {', '.join(missing)}")
+
+
+def _processor_os_envelope(processor: dict[str, Any]) -> dict[str, Any]:
+    if isinstance(processor.get("os_envelope"), dict):
+        return processor["os_envelope"]
+    if isinstance(processor.get("envelope"), dict):
+        return processor["envelope"]
+    evidence = processor.get("evidence", {}) if isinstance(processor.get("evidence", {}), dict) else {}
+    if isinstance(evidence.get("os_envelope"), dict):
+        return evidence["os_envelope"]
+    if isinstance(evidence.get("envelope"), dict):
+        return evidence["envelope"]
+    return {}
+
+
+def _processor_source_policy(processor: dict[str, Any]) -> dict[str, Any]:
+    if isinstance(processor.get("source_policy"), dict):
+        return processor["source_policy"]
+    envelope = _processor_os_envelope(processor)
+    if isinstance(envelope.get("source_policy"), dict):
+        return envelope["source_policy"]
+    evidence = processor.get("evidence", {}) if isinstance(processor.get("evidence", {}), dict) else {}
+    if isinstance(evidence.get("source_policy"), dict):
+        return evidence["source_policy"]
+    return {}
+
+
+def _processor_provider_runtime_guard(processor: dict[str, Any]) -> dict[str, Any]:
+    if isinstance(processor.get("provider_runtime_guard"), dict):
+        return processor["provider_runtime_guard"]
+    evidence = processor.get("evidence", {}) if isinstance(processor.get("evidence", {}), dict) else {}
+    if isinstance(evidence.get("provider_runtime_guard"), dict):
+        return evidence["provider_runtime_guard"]
+    if isinstance(evidence.get("provider_runtime_gate"), dict):
+        return evidence["provider_runtime_gate"]
+    return {}
+
+
+def _optional_positive_int(value: Any) -> int | None:
+    if not str(value or "").strip():
+        return None
+    parsed = int(value)
+    if parsed < 1:
+        raise ValueError("chapter must be a positive integer")
+    return parsed
 
 
 def _service_success(storage: LocalStorage, operation: str, result: Any) -> dict[str, Any]:
