@@ -320,6 +320,8 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/mkaos/selector-governance/refresh",
                 "/product/mkaos/selector-governance/diff",
                 "/product/mkaos/selector-governance/binding-proposal",
+                "/product/mkaos/selector-governance/binding-apply",
+                "/product/mkaos/selector-governance/binding-rollback",
                 "/product/mkaos/production-gate/run",
                 "/product/mkaos/production-gate/reports",
                 "/product/mkaos/production-gate/latest",

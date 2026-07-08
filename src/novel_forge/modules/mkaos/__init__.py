@@ -93,10 +93,12 @@ from .lifecycle import (
     rollback_mkaos_asset_lifecycle,
 )
 from .selector_governance import (
+    apply_context_governance_binding,
     diff_mkaos_selector_governance,
     load_selector_governance_policy,
     propose_context_governance_binding,
     refresh_mkaos_selector_governance,
+    rollback_context_governance_binding,
 )
 
 __all__ = [
@@ -186,6 +188,8 @@ __all__ = [
     "refresh_mkaos_selector_governance",
     "diff_mkaos_selector_governance",
     "propose_context_governance_binding",
+    "apply_context_governance_binding",
+    "rollback_context_governance_binding",
     "MkaosPackPolicyError",
     "build_mkaos_flow_context_with_policy",
     "mkaos_pack_metadata",

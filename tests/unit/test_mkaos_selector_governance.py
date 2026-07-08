@@ -7,13 +7,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.mkaos import (
+    apply_context_governance_binding,
     build_knowledge_pack,
     create_knowledge_card,
     create_usage_binding,
     diff_mkaos_selector_governance,
     propose_context_governance_binding,
     refresh_mkaos_selector_governance,
+    rollback_context_governance_binding,
 )
+from novel_forge.modules.permission_center import resolve_approval_request
 from novel_forge.schemas import ChapterPlan
 from novel_forge.storage.local import LocalStorage
 
@@ -302,6 +305,91 @@ class MkaosSelectorGovernanceTests(unittest.TestCase):
 
             self.assertEqual(proposal["diff_report"]["asset"]["type"], "mkaos_selector_governance_diff_report")
             self.assertEqual(proposal["diff_report"]["selected_now_excluded_count"], 1)
+            self.assertEqual(storage.read_json(card_path)["content"]["weight"], 1.0)
+
+    def test_context_governance_binding_apply_and_rollback_are_approval_bound_and_payload_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            card = create_knowledge_card(
+                storage,
+                {
+                    "concept_name": "Apply governed mechanism",
+                    "core_explanation": "Approved selector governance binding should produce a payload patch, not a context bundle.",
+                    "project_id": "selector-apply-p",
+                    "weight": 1.0,
+                },
+            )
+            create_usage_binding(storage, card["asset"]["id"], {"project_id": "selector-apply-p", "flow": "prose", "usage_type": "optional", "input_role": "optional", "priority": 10})
+            card_path = storage.root / card["path"]
+            card_data = storage.read_json(card_path)
+            card_data["metadata"].update({"mkaos_governance_application_status": "applied_metadata_only", "mkaos_governance_weight_delta": 1.0, "mkaos_governance_action": "boost"})
+            storage.write_json(card_path, card_data)
+            report = refresh_mkaos_selector_governance(storage, {"project_id": "selector-apply-p"})
+            proposal = propose_context_governance_binding(storage, {"project_id": "selector-apply-p", "selector_governance_report_path": report["path"], "environment": "production"})
+
+            blocked = apply_context_governance_binding(storage, {"binding_proposal_path": proposal["path"], "project_id": "selector-apply-p"})
+            self.assertEqual(blocked["status"], "approval_required")
+            approval_path = proposal["asset"]["content"]["approval_request_path"]
+            resolve_approval_request(storage, approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve binding"})
+
+            ready = apply_context_governance_binding(storage, {"binding_proposal_path": proposal["path"], "approval_request_path": approval_path, "project_id": "selector-apply-p"})
+            self.assertEqual(ready["status"], "ready_for_confirm")
+
+            applied = apply_context_governance_binding(
+                storage,
+                {
+                    "binding_proposal_path": proposal["path"],
+                    "approval_request_path": approval_path,
+                    "project_id": "selector-apply-p",
+                    "confirm_apply": True,
+                },
+            )
+            self.assertEqual(applied["status"], "applied")
+            application_content = applied["application_report"]["asset"]["content"]
+            self.assertEqual(applied["application_report"]["asset"]["type"], "mkaos_selector_governance_binding_application_report")
+            self.assertEqual(application_content["context_builder_payload_patch"]["selector_governance_report_path"], report["path"])
+            self.assertFalse(application_content["application_contract"]["context_build_executed"])
+            self.assertFalse(application_content["application_contract"]["context_bundle_mutated"])
+            self.assertEqual(applied["rollback_plan"]["asset"]["type"], "rollback_plan")
+            self.assertEqual(applied["rollback_plan"]["asset"]["content"]["strategy"], "rollback_context_governance_binding_application")
+
+            repeated = apply_context_governance_binding(storage, {"binding_proposal_path": proposal["path"], "approval_request_path": approval_path, "project_id": "selector-apply-p", "confirm_apply": True})
+            self.assertEqual(repeated["status"], "already_applied")
+            self.assertEqual(repeated["application_report"]["path"], applied["application_report"]["path"])
+
+            task_path = proposal["asset"]["content"]["agent_task_path"]
+            task_after_apply = storage.read_json(storage.root / task_path)
+            self.assertEqual(task_after_apply["content"]["status"], "approved_pending_dispatch")
+            self.assertFalse(task_after_apply["content"]["evidence"]["dispatch_allowed"])
+
+            rollback_blocked = rollback_context_governance_binding(storage, {"rollback_plan_path": applied["rollback_plan"]["path"], "project_id": "selector-apply-p"})
+            self.assertEqual(rollback_blocked["status"], "approval_required")
+            rollback_approval_path = rollback_blocked["approval_request"]["path"]
+            resolve_approval_request(storage, rollback_approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve binding rollback"})
+            rollback_ready = rollback_context_governance_binding(
+                storage,
+                {"rollback_plan_path": applied["rollback_plan"]["path"], "approval_request_path": rollback_approval_path, "project_id": "selector-apply-p"},
+            )
+            self.assertEqual(rollback_ready["status"], "ready_for_confirm")
+            rolled_back = rollback_context_governance_binding(
+                storage,
+                {
+                    "rollback_plan_path": applied["rollback_plan"]["path"],
+                    "approval_request_path": rollback_approval_path,
+                    "project_id": "selector-apply-p",
+                    "confirm_rollback": True,
+                    "actor": "unit-test",
+                },
+            )
+            self.assertEqual(rolled_back["status"], "applied")
+            task_after_rollback = storage.read_json(storage.root / task_path)
+            self.assertEqual(task_after_rollback["content"]["status"], "needs_review")
+            application_after_rollback = storage.read_json(storage.root / applied["application_report"]["path"])
+            self.assertEqual(application_after_rollback["content"]["status"], "rolled_back")
+            proposal_after_rollback = storage.read_json(storage.root / proposal["path"])
+            self.assertEqual(proposal_after_rollback["content"]["status"], "needs_approval")
+            self.assertNotIn("binding_apply_result", proposal_after_rollback["content"])
             self.assertEqual(storage.read_json(card_path)["content"]["weight"], 1.0)
 
 

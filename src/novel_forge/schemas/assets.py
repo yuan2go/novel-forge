@@ -167,6 +167,11 @@ class MKAOSSelectorGovernanceBindingProposal(BaseAsset):
 
 
 @dataclass
+class MKAOSSelectorGovernanceBindingApplicationReport(BaseAsset):
+    type: str = "mkaos_selector_governance_binding_application_report"
+
+
+@dataclass
 class KnowledgeGraphSnapshot(BaseAsset):
     type: str = "knowledge_graph_snapshot"
 
@@ -1488,6 +1493,7 @@ SCHEMA_CLASSES = {
         MKAOSSelectorGovernanceReport,
         MKAOSSelectorGovernanceDiffReport,
         MKAOSSelectorGovernanceBindingProposal,
+        MKAOSSelectorGovernanceBindingApplicationReport,
         KnowledgeGraphSnapshot,
         KnowledgeLearningSnapshot,
         MaterialCard,

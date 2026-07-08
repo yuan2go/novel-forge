@@ -138,6 +138,7 @@ ASSET_DIR_BY_TYPE = {
     "mkaos_selector_governance_report": "runs",
     "mkaos_selector_governance_diff_report": "runs",
     "mkaos_selector_governance_binding_proposal": "runs",
+    "mkaos_selector_governance_binding_application_report": "runs",
     "material_card": "materials",
     "material_usage_event": "runs",
     "asset_collection": "materials",
