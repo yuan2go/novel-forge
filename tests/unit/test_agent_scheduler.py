@@ -635,27 +635,7 @@ class AgentSchedulerTests(unittest.TestCase):
             storage = LocalStorage(tmp)
             storage.ensure_layout()
             project_id = "project-governance-repair-drift"
-            storage.write_json(
-                storage.data_dir("runs") / "historical-governance-repair-missing-review.json",
-                {
-                    "id": "historical-governance-repair-missing-review",
-                    "type": "agent_dead_letter_repair",
-                    "title": "Historical governance repair missing review",
-                    "content": {
-                        "status": "queued",
-                        "queue_path": "runs/queue-governance-dead-letter.json",
-                        "governance_review": {
-                            "required": True,
-                            "confirmed": False,
-                            "reviewed_failed_gate_paths": [],
-                            "reviewed_failed_checkpoint_paths": [],
-                        },
-                        "created_at": "2026-07-08T00:00:00Z",
-                    },
-                    "metadata": {"project_id": project_id},
-                    "references": [],
-                },
-            )
+            _write_historical_governance_repair_missing_review(storage, project_id)
 
             snapshot = agent_center_snapshot(storage, project_id=project_id)
             repair_check = next(check for check in snapshot["readiness_checks"] if check["key"] == "governance_repair_review")
@@ -663,6 +643,31 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(snapshot["summary"]["governance_repair_required_count"], 1)
             self.assertEqual(snapshot["summary"]["governance_repair_confirmed_count"], 0)
             self.assertEqual(snapshot["summary"]["governance_repair_missing_review_count"], 1)
+            self.assertEqual(repair_check["status"], "warning")
+            self.assertIn("missing governance review", repair_check["recommendation"])
+
+    def test_agent_center_api_surfaces_governance_repair_readiness_warning(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            storage = LocalStorage(root)
+            storage.ensure_layout()
+            project_id = "project-governance-repair-drift-api"
+            _write_historical_governance_repair_missing_review(storage, project_id)
+            client = TestClient(create_app(IndustrialSettings(root=root)))
+
+            response = client.get("/product/agents/center", params={"project_id": project_id})
+
+            self.assertEqual(response.status_code, 200)
+            body = response.json()
+            repair_check = next(check for check in body["readiness_checks"] if check["key"] == "governance_repair_review")
+            self.assertEqual(body["summary"]["governance_repair_missing_review_count"], 1)
             self.assertEqual(repair_check["status"], "warning")
             self.assertIn("missing governance review", repair_check["recommendation"])
 
@@ -1158,6 +1163,30 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(asset["metadata"]["rollback_status"], "rolled_back")
             self.assertEqual(asset["metadata"]["asset_status"], "rolled_back")
             self.assertIn("rolled-back", asset["tags"])
+
+
+def _write_historical_governance_repair_missing_review(storage: LocalStorage, project_id: str) -> Path:
+    return storage.write_json(
+        storage.data_dir("runs") / f"historical-governance-repair-missing-review-{project_id}.json",
+        {
+            "id": f"historical-governance-repair-missing-review-{project_id}",
+            "type": "agent_dead_letter_repair",
+            "title": "Historical governance repair missing review",
+            "content": {
+                "status": "queued",
+                "queue_path": "runs/queue-governance-dead-letter.json",
+                "governance_review": {
+                    "required": True,
+                    "confirmed": False,
+                    "reviewed_failed_gate_paths": [],
+                    "reviewed_failed_checkpoint_paths": [],
+                },
+                "created_at": "2026-07-08T00:00:00Z",
+            },
+            "metadata": {"project_id": project_id},
+            "references": [],
+        },
+    )
 
 
 def _create_drifted_release_dead_letter(storage: LocalStorage) -> dict[str, object]:
