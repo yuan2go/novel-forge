@@ -488,6 +488,34 @@ export function AgentDispatchCenterPage() {
           />
         </div>
         <div className="panel">
+          <PanelHeader title="Governance Repair Audit Trail" icon={<ShieldCheck size={18} />} />
+          <DataTable
+            emptyText="暂无治理 repair 审计记录"
+            columns={["Review", "Reviewed evidence", "Queue", "Rollback", "Note"]}
+            rows={deadLetterRepairs.slice(0, 50).map((row) => {
+              const reviewRequired = row.governance_review_required === true;
+              const reviewConfirmed = row.governance_review_confirmed === true;
+              return [
+                <span className={statusClass(reviewConfirmed ? "passed" : reviewRequired ? "warning" : "local")} key={`${String(row.path)}-repair-review-status`}>
+                  {reviewRequired ? reviewConfirmed ? "reviewed repair" : "review missing" : "non-governance repair"}
+                </span>,
+                `gates ${String(row.reviewed_failed_gate_count ?? 0)} / checkpoints ${String(row.reviewed_failed_checkpoint_count ?? 0)}`,
+                pathCell(String(row.recovered_queue_path || row.queue_path || "-"), `${String(row.path)}-repair-queue`),
+                pathCell(String(row.rollback_rehearsal_path || "-"), `${String(row.path)}-repair-rollback`),
+                String(row.review_note || row.reason || "-")
+              ];
+            })}
+          />
+          <div className="pillRow">
+            <span className="badge">queue recovery evidence</span>
+            <span className="badge">rollback rehearsal retained</span>
+            <span className="badge warn">failed gates remain failed</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="workspaceGrid">
+        <div className="panel">
           <PanelHeader title="Rollback Preview / Rehearsal" icon={<RotateCcw size={18} />} />
           <DataTable
             emptyText="暂无 rollback preview"

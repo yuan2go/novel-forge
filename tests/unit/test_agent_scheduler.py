@@ -421,6 +421,14 @@ class AgentSchedulerTests(unittest.TestCase):
             queue = list_agent_dispatch_queue(storage, project_id=result["fixture"]["project_id"])[0]
             self.assertEqual(queue["status"], "queued")
             self.assertEqual(list_agent_runs(storage)[0]["status"], "prepared")
+            repair_audit = agent_center_snapshot(storage, project_id=result["fixture"]["project_id"])["dead_letter_repairs"][0]
+            self.assertTrue(repair_audit["governance_review_required"])
+            self.assertTrue(repair_audit["governance_review_confirmed"])
+            self.assertEqual(repair_audit["reviewed_failed_gate_count"], len(governance["failed_gate_paths"]))
+            self.assertEqual(repair_audit["reviewed_failed_checkpoint_count"], len(governance["failed_checkpoint_paths"]))
+            self.assertEqual(repair_audit["review_note"], "unit test reviewed failed drift gate and checkpoint before retry")
+            self.assertEqual(repair_audit["recovered_status"], "queued")
+            self.assertTrue(repair_audit["rollback_rehearsal_path"])
 
     def test_direct_recover_rejects_governance_dead_letter(self):
         with tempfile.TemporaryDirectory() as tmp:

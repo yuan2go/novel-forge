@@ -974,7 +974,7 @@ def agent_center_snapshot(
         "governance_dead_letters": governance_dead_letters[:80],
         "rollback_preview": rollback_rows[:80],
         "rollback_rehearsals": [_agent_asset_compact(row) for row in rollback_rehearsals[:80]],
-        "dead_letter_repairs": [_agent_asset_compact(row) for row in dead_letter_repairs[:80]],
+        "dead_letter_repairs": [_agent_dead_letter_repair_row(row) for row in dead_letter_repairs[:80]],
         "agent_dags": [_agent_asset_compact(row) for row in agent_dags[:80]],
         "operation_coverage_full": operation_coverage_full,
         "hard_stop_dashboard": hard_stop_dashboard,
@@ -3771,6 +3771,35 @@ def _agent_asset_compact(row: dict[str, Any]) -> dict[str, Any]:
         "agent_run_path": content.get("agent_run_path", metadata.get("agent_run_path", "")),
         "created_at": content.get("created_at", row.get("created_at", "")),
     }
+
+
+def _agent_dead_letter_repair_row(row: dict[str, Any]) -> dict[str, Any]:
+    compact = _agent_asset_compact(row)
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    governance_review = content.get("governance_review", {}) if isinstance(content.get("governance_review", {}), dict) else {}
+    recovered_queue = content.get("recovered_queue", {}) if isinstance(content.get("recovered_queue", {}), dict) else {}
+    reviewed_gate_paths = _string_list(governance_review.get("reviewed_failed_gate_paths", []))
+    reviewed_checkpoint_paths = _string_list(governance_review.get("reviewed_failed_checkpoint_paths", []))
+    compact.update(
+        {
+            "repair_id": content.get("repair_id", row.get("id", "")),
+            "before_status": content.get("before_status", ""),
+            "queue_path": content.get("queue_path", ""),
+            "rollback_rehearsal_path": content.get("rollback_rehearsal_path", ""),
+            "reason": content.get("reason", ""),
+            "governance_review": governance_review,
+            "governance_review_required": bool(governance_review.get("required")),
+            "governance_review_confirmed": bool(governance_review.get("confirmed")),
+            "reviewed_failed_gate_count": len(reviewed_gate_paths),
+            "reviewed_failed_checkpoint_count": len(reviewed_checkpoint_paths),
+            "reviewed_failed_gate_paths": reviewed_gate_paths,
+            "reviewed_failed_checkpoint_paths": reviewed_checkpoint_paths,
+            "review_note": governance_review.get("review_note", ""),
+            "recovered_queue_path": recovered_queue.get("queue_path", content.get("queue_path", "")) if isinstance(recovered_queue, dict) else content.get("queue_path", ""),
+            "recovered_status": recovered_queue.get("status", "") if isinstance(recovered_queue, dict) else "",
+        }
+    )
+    return compact
 
 
 def _agent_run_summary(row: dict[str, Any]) -> dict[str, Any]:
