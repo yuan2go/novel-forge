@@ -549,6 +549,7 @@ def build_flow_context_bundle(
     source_policy: dict[str, Any] | None = None,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
+    selector_governance_report_path: str | Path | None = None,
 ) -> dict[str, Any]:
     target_file = resolve_path(storage.root, target_path)
     target_asset = storage.read_asset(target_file)
@@ -609,6 +610,7 @@ def build_flow_context_bundle(
                 "source_policy": policy,
                 "environment": environment,
                 "os_envelope": os_envelope or {},
+                "selector_governance_report_path": str(selector_governance_report_path or ""),
             },
         )
     except Exception as exc:
@@ -803,6 +805,7 @@ def build_knowledge_context_contract(
         "review_rules": pack_content.get("review_rules", []) if isinstance(pack_content.get("review_rules", []), list) else [],
         "risk_warnings": pack_content.get("risk_warnings", []) if isinstance(pack_content.get("risk_warnings", []), list) else [],
         "selector_policy_version": str(selector_policy.get("version") or "selector-v1"),
+        "selector_governance": selector_policy.get("selector_governance", {}) if isinstance(selector_policy.get("selector_governance", {}), dict) else {},
     }
 
 

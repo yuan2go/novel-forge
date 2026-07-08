@@ -92,6 +92,10 @@ from .lifecycle import (
     plan_mkaos_asset_lifecycle,
     rollback_mkaos_asset_lifecycle,
 )
+from .selector_governance import (
+    load_selector_governance_policy,
+    refresh_mkaos_selector_governance,
+)
 
 __all__ = [
     "adapt_pack_for_flow",
@@ -176,6 +180,8 @@ __all__ = [
     "apply_mkaos_asset_lifecycle",
     "plan_mkaos_asset_lifecycle",
     "rollback_mkaos_asset_lifecycle",
+    "load_selector_governance_policy",
+    "refresh_mkaos_selector_governance",
     "MkaosPackPolicyError",
     "build_mkaos_flow_context_with_policy",
     "mkaos_pack_metadata",

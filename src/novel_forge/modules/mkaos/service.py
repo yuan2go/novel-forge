@@ -687,6 +687,11 @@ def build_knowledge_pack(storage: LocalStorage, payload: dict[str, Any]) -> dict
         token_budget=budget,
     )
     selector_policy = _selector_policy(payload, os_envelope, budget)
+    from novel_forge.modules.mkaos.selector_governance import load_selector_governance_policy
+
+    selector_governance = load_selector_governance_policy(storage, payload, project_id=project_id)
+    if selector_governance:
+        selector_policy["selector_governance"] = selector_governance
     bindings = list_usage_bindings(storage, flow=flow, enabled=True, limit=500)
     knowledge_items: list[dict[str, Any]] = []
     selector_rejections: list[dict[str, Any]] = []
@@ -5755,6 +5760,25 @@ def _selector_decision(
     risk_level = _normalize_risk_level(str(item.get("risk_level") or "low"))
     excluded_risks = set(_strings(selector_policy.get("exclude_risk_levels")))
     estimated_tokens = _estimate_pack_item_tokens(item)
+    selector_governance = selector_policy.get("selector_governance") if isinstance(selector_policy.get("selector_governance"), dict) else {}
+    knowledge_id = str(item.get("knowledge_id") or "")
+    excluded_by_governance = set(_strings(selector_governance.get("excluded_knowledge_ids"))) if selector_governance else set()
+    if knowledge_id and knowledge_id in excluded_by_governance:
+        evidence_by_id = selector_governance.get("evidence_by_knowledge_id", {}) if isinstance(selector_governance.get("evidence_by_knowledge_id", {}), dict) else {}
+        exclusions = selector_governance.get("exclusions", {}) if isinstance(selector_governance.get("exclusions", {}), dict) else {}
+        exclusion = exclusions.get(knowledge_id, {}) if isinstance(exclusions.get(knowledge_id, {}), dict) else {}
+        return {
+            "selected": False,
+            "reason": "selector_governance_excluded",
+            "selection_score": 0.0,
+            "quality_adjusted_score": 0.0,
+            "estimated_tokens": estimated_tokens,
+            "risk_level": risk_level,
+            "selector_governance_report_id": selector_governance.get("report_id", ""),
+            "selector_governance_report_path": selector_governance.get("report_path", ""),
+            "selector_governance_reason": exclusion.get("reason", ""),
+            "selector_governance_evidence_refs": evidence_by_id.get(knowledge_id, []),
+        }
     source_eligibility = item.get("source_eligibility") if isinstance(item.get("source_eligibility"), dict) else {}
     if _source_eligibility_blocks_pack_selection(item, source_eligibility, selector_policy):
         return {
@@ -5793,6 +5817,10 @@ def _selector_decision(
     elif genre and genre in genre_weights:
         weight = max(0.0, _float(genre_weights.get(genre), weight))
         weight_source = f"genre:{genre}"
+    governance_weight_overrides = selector_governance.get("weight_overrides", {}) if isinstance(selector_governance.get("weight_overrides", {}), dict) else {}
+    if knowledge_id and knowledge_id in governance_weight_overrides:
+        weight = max(0.0, _float(governance_weight_overrides.get(knowledge_id), weight))
+        weight_source = f"selector_governance:{selector_governance.get('report_id', '')}"
     priority = int(item.get("priority", 100) or 100)
     priority_bonus = max(0.0, (100 - min(priority, 100)) / 100)
     risk_penalty = {"low": 0.0, "medium": 0.05, "high": 0.2, "critical": 0.45}.get(risk_level, 0.0)
@@ -5817,6 +5845,8 @@ def _selector_decision(
         "priority": priority,
         "weight": round(weight, 4),
         "weight_source": weight_source,
+        "selector_governance_report_id": selector_governance.get("report_id", "") if selector_governance else "",
+        "selector_governance_report_path": selector_governance.get("report_path", "") if selector_governance else "",
         "recency_bonus": round(recency_bonus, 4),
         "score_breakdown": {
             "flow_match_score": 1.0,

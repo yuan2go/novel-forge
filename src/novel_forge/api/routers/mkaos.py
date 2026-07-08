@@ -190,6 +190,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/product/mkaos/selector-governance/refresh")
+    @router.post("/api/mkaos/selector-governance/refresh")
+    def refresh_selector_governance(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+        try:
+            return _mkaos_response(mkaos_service.refresh_mkaos_selector_governance(storage(), payload))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/mkaos/convert/assets")
     @router.post("/api/mkaos/convert/assets")
     def convert_assets(payload: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:

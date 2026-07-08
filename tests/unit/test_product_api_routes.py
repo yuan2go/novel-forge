@@ -317,6 +317,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/mkaos/lifecycle/plan",
                 "/product/mkaos/lifecycle/apply",
                 "/product/mkaos/lifecycle/rollback",
+                "/product/mkaos/selector-governance/refresh",
                 "/product/mkaos/production-gate/run",
                 "/product/mkaos/production-gate/reports",
                 "/product/mkaos/production-gate/latest",
