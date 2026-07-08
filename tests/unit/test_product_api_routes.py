@@ -297,6 +297,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/os/cockpit/chapter-runtime-growth-profile",
                 "/product/os/cockpit/chapter-runtime-growth-hotspot-ledger",
                 "/product/os/cockpit/chapter-runtime-growth-write-policy-candidate-plan",
+                "/product/os/cockpit/chapter-runtime-growth-write-policy-approval-request",
                 "/product/os/cockpit/chapter-runtime-growth-threshold-gate",
                 "/product/os/cockpit/unified-preflight-gate",
                 "/product/os/cockpit/multi-book",
@@ -1305,6 +1306,10 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/os/cockpit/chapter-runtime-growth-write-policy-candidate-plan",
                 params={"project_id": "route-book-runtime", "persist_report": True},
             )
+            approval_response = client.post(
+                "/product/os/cockpit/chapter-runtime-growth-write-policy-approval-request",
+                params={"project_id": "route-book-runtime", "environment": "local"},
+            )
             cockpit_response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-runtime"})
 
             self.assertEqual(profile_response.status_code, 200, profile_response.text)
@@ -1332,6 +1337,13 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertFalse(plan["asset"]["content"]["summary"]["mutation_applied"])
             self.assertTrue(plan["asset"]["content"]["safeguards"])
 
+            self.assertEqual(approval_response.status_code, 200, approval_response.text)
+            approval = approval_response.json()
+            self.assertEqual(approval["status"], "pending")
+            self.assertTrue(approval["approval_created"])
+            self.assertFalse(approval["runtime_policy_changed"])
+            self.assertEqual(approval["approval_request"]["content"]["action"], "approve_runtime_write_policy_candidate_plan")
+
             self.assertEqual(cockpit_response.status_code, 200, cockpit_response.text)
             content = cockpit_response.json()["asset"]["content"]
             growth = content["runtime_governance"]["chapter_runtime_growth"]
@@ -1340,15 +1352,19 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(growth["summary"]["max_linked_asset_ref_count"], 2)
             self.assertEqual(content["runtime_governance"]["chapter_runtime_growth_hotspot_ledger"]["status"], "review_required")
             self.assertEqual(content["runtime_governance"]["chapter_runtime_growth_write_policy_candidate_plan"]["status"], "review_required")
+            self.assertEqual(content["runtime_governance"]["chapter_runtime_growth_write_policy_approval"]["status"], "pending")
             self.assertEqual(content["quality"]["chapter_runtime_growth_hotspot_status"], "review_required")
             self.assertEqual(content["quality"]["chapter_runtime_growth_write_policy_plan_status"], "review_required")
+            self.assertEqual(content["quality"]["chapter_runtime_growth_write_policy_approval_status"], "pending")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["runtime_growth_hotspots"], "review_required")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["runtime_growth_write_policy_plan"], "review_required")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["runtime_growth_write_policy_approval"], "pending")
             self.assertEqual(content["quality"]["chapter_runtime_growth_status"], "review_required")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["runtime_growth"], "review_required")
             self.assertEqual(content["cockpit"]["chapter_runtime_growth"]["status"], "review_required")
             self.assertEqual(content["cockpit"]["chapter_runtime_growth_hotspot_ledger"]["status"], "review_required")
             self.assertEqual(content["cockpit"]["chapter_runtime_growth_write_policy_candidate_plan"]["status"], "review_required")
+            self.assertEqual(content["cockpit"]["chapter_runtime_growth_write_policy_approval"]["status"], "pending")
 
     def test_chapter_runtime_growth_threshold_gate_route_fails_closed_and_cockpit_surfaces_it(self):
         try:

@@ -9,8 +9,10 @@ from novel_forge.modules.chapter_runtime_growth import (
     build_chapter_runtime_growth_hotspot_ledger,
     build_chapter_runtime_growth_profile,
     build_chapter_runtime_growth_write_policy_candidate_plan,
+    request_chapter_runtime_growth_write_policy_approval,
     run_chapter_runtime_growth_threshold_gate,
 )
+from novel_forge.modules.permission_center import list_approval_requests
 from novel_forge.schemas import BaseAsset
 from novel_forge.storage.local import LocalStorage
 
@@ -174,6 +176,38 @@ class ChapterRuntimeGrowthTests(unittest.TestCase):
             self.assertTrue(snapshot["content"]["safeguards"])
             self.assertTrue(snapshot["content"]["rollback_criteria"])
             self.assertFalse(any(row["auto_apply"] for row in snapshot["content"]["candidate_actions"]))
+
+    def test_write_policy_approval_request_is_required_before_apply(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft = self._write_asset(storage, "approval-policy-draft", "draft_chapter", project_id="book-a")
+            task = self._write_asset(storage, "approval-policy-task", "task_status", project_id="book-a")
+            self._write_chapter_run(
+                storage,
+                run_id="approval-policy-run",
+                chapter=4,
+                task_status_mode="full",
+                outputs={"draft_v0_path": draft},
+                steps={"draft": {"task_status_paths": [task], "output_paths": [draft]}},
+            )
+
+            result = request_chapter_runtime_growth_write_policy_approval(storage, project_id="book-a", environment="production")
+            duplicate = request_chapter_runtime_growth_write_policy_approval(storage, project_id="book-a", environment="production")
+
+            self.assertEqual(result["status"], "pending")
+            self.assertTrue(result["approval_created"])
+            self.assertFalse(result["mutation_applied"])
+            self.assertFalse(result["runtime_policy_changed"])
+            self.assertEqual(duplicate["status"], "pending")
+            self.assertFalse(duplicate["approval_created"])
+            approvals = list_approval_requests(storage, project_id="book-a", scope="agent")
+            self.assertEqual(len(approvals), 1)
+            content = approvals[0]["content"]
+            self.assertEqual(content["action"], "approve_runtime_write_policy_candidate_plan")
+            self.assertTrue(content["blocking"])
+            self.assertIn("runtime_policy_update", content["required_before"])
+            self.assertEqual(content["target"]["target_path"], result["plan"]["path"])
 
     def test_threshold_gate_passes_clean_compact_runtime_profile(self):
         with tempfile.TemporaryDirectory() as tmp:

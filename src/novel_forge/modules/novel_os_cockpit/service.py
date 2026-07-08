@@ -31,6 +31,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     chapter_runtime_growth = _chapter_runtime_growth_profile(rows)
     chapter_runtime_growth_hotspot_ledger = _chapter_runtime_growth_hotspot_ledger(rows)
     chapter_runtime_growth_write_policy_candidate_plan = _chapter_runtime_growth_write_policy_candidate_plan(rows)
+    chapter_runtime_growth_write_policy_approval = _chapter_runtime_growth_write_policy_approval(rows)
     chapter_runtime_growth_threshold_gate = _latest_gate_result(rows, "chapter_runtime_growth_threshold")
     unified_acceptance_preflight = _latest_unified_acceptance_preflight_manifest(rows)
     unified_acceptance_preflight_gate = _latest_gate_result(rows, "v1_unified_preflight")
@@ -51,6 +52,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         chapter_runtime_growth,
         chapter_runtime_growth_hotspot_ledger,
         chapter_runtime_growth_write_policy_candidate_plan,
+        chapter_runtime_growth_write_policy_approval,
         chapter_runtime_growth_threshold_gate,
         unified_acceptance_preflight,
         unified_acceptance_preflight_gate,
@@ -89,6 +91,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_status": chapter_runtime_growth["status"],
             "chapter_runtime_growth_hotspot_status": chapter_runtime_growth_hotspot_ledger["status"],
             "chapter_runtime_growth_write_policy_plan_status": chapter_runtime_growth_write_policy_candidate_plan["status"],
+            "chapter_runtime_growth_write_policy_approval_status": chapter_runtime_growth_write_policy_approval["status"],
             "chapter_runtime_growth_threshold_gate_status": chapter_runtime_growth_threshold_gate["status"],
             "chapter_runtime_growth_high_run_count": chapter_runtime_growth["summary"]["high_growth_run_count"],
             "chapter_runtime_growth_hotspot_family_count": chapter_runtime_growth_hotspot_ledger["summary"]["hotspot_family_count"],
@@ -133,6 +136,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth": chapter_runtime_growth,
             "chapter_runtime_growth_hotspot_ledger": chapter_runtime_growth_hotspot_ledger,
             "chapter_runtime_growth_write_policy_candidate_plan": chapter_runtime_growth_write_policy_candidate_plan,
+            "chapter_runtime_growth_write_policy_approval": chapter_runtime_growth_write_policy_approval,
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
             "unified_acceptance_preflight": unified_acceptance_preflight,
             "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate,
@@ -157,6 +161,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth": chapter_runtime_growth,
             "chapter_runtime_growth_hotspot_ledger": chapter_runtime_growth_hotspot_ledger,
             "chapter_runtime_growth_write_policy_candidate_plan": chapter_runtime_growth_write_policy_candidate_plan,
+            "chapter_runtime_growth_write_policy_approval": chapter_runtime_growth_write_policy_approval,
             "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
             "unified_acceptance_preflight": unified_acceptance_preflight,
             "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate,
@@ -803,6 +808,38 @@ def _chapter_runtime_growth_write_policy_candidate_plan(rows: list[dict[str, Any
     }
 
 
+def _chapter_runtime_growth_write_policy_approval(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    matches = []
+    for row in rows:
+        if row.get("type") != "approval_request":
+            continue
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(content.get("action") or "") == "approve_runtime_write_policy_candidate_plan":
+            matches.append(row)
+    if not matches:
+        return {
+            "status": "missing",
+            "path": "",
+            "blocking": False,
+            "scope": "agent",
+            "action": "approve_runtime_write_policy_candidate_plan",
+            "target_path": "",
+            "operator_action": "request ApprovalRequest before applying runtime write-policy candidate plan",
+        }
+    row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    target = content.get("target", {}) if isinstance(content.get("target", {}), dict) else {}
+    return {
+        "status": str(content.get("status") or "unknown"),
+        "path": str(row.get("path") or ""),
+        "blocking": bool(content.get("blocking", False)),
+        "scope": str(content.get("scope") or ""),
+        "action": str(content.get("action") or ""),
+        "target_path": str(target.get("target_path") or ""),
+        "operator_action": "resolve runtime write-policy ApprovalRequest before any policy apply path",
+    }
+
+
 def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
     matches = [row for row in rows if row.get("type") == "long_chain_acceptance_report"]
     if not matches:
@@ -1224,6 +1261,7 @@ def _production_control_console(
     chapter_runtime_growth: dict[str, Any],
     chapter_runtime_growth_hotspot_ledger: dict[str, Any],
     chapter_runtime_growth_write_policy_candidate_plan: dict[str, Any],
+    chapter_runtime_growth_write_policy_approval: dict[str, Any],
     chapter_runtime_growth_threshold_gate: dict[str, Any],
     unified_acceptance_preflight: dict[str, Any],
     unified_acceptance_preflight_gate: dict[str, Any],
@@ -1249,6 +1287,7 @@ def _production_control_console(
         "runtime_growth": chapter_runtime_growth["status"],
         "runtime_growth_hotspots": chapter_runtime_growth_hotspot_ledger["status"],
         "runtime_growth_write_policy_plan": chapter_runtime_growth_write_policy_candidate_plan["status"],
+        "runtime_growth_write_policy_approval": chapter_runtime_growth_write_policy_approval["status"],
         "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
         "unified_acceptance_preflight": unified_acceptance_preflight["status"],
         "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate["status"],
@@ -1288,6 +1327,7 @@ def _production_control_console(
             "runtime_growth": chapter_runtime_growth["status"],
             "runtime_growth_hotspots": chapter_runtime_growth_hotspot_ledger["status"],
             "runtime_growth_write_policy_plan": chapter_runtime_growth_write_policy_candidate_plan["status"],
+            "runtime_growth_write_policy_approval": chapter_runtime_growth_write_policy_approval["status"],
             "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
             "unified_acceptance_preflight": unified_acceptance_preflight["status"],
             "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate["status"],
@@ -1317,6 +1357,7 @@ def _production_control_console(
         "chapter_runtime_growth": chapter_runtime_growth,
         "chapter_runtime_growth_hotspot_ledger": chapter_runtime_growth_hotspot_ledger,
         "chapter_runtime_growth_write_policy_candidate_plan": chapter_runtime_growth_write_policy_candidate_plan,
+        "chapter_runtime_growth_write_policy_approval": chapter_runtime_growth_write_policy_approval,
         "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
         "unified_acceptance_preflight": unified_acceptance_preflight,
         "unified_acceptance_preflight_gate": unified_acceptance_preflight_gate,

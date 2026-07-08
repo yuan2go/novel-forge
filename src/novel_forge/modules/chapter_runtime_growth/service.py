@@ -7,6 +7,7 @@ from typing import Any
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import is_production_environment
+from novel_forge.modules.permission_center import create_approval_request, list_approval_requests
 from novel_forge.modules.runtime_ledger import record_gate_result
 from novel_forge.modules.runtime_project_scope import asset_matches_project_scope
 from novel_forge.schemas import ProjectMetricSnapshot, validate_common_fields
@@ -287,6 +288,73 @@ def build_chapter_runtime_growth_write_policy_candidate_plan(
         "asset": asset.to_dict(),
         "summary": summary,
         "candidate_actions": candidate_actions,
+    }
+
+
+def request_chapter_runtime_growth_write_policy_approval(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    environment: str = "production",
+) -> dict[str, Any]:
+    """Create or reuse an ApprovalRequest for a runtime write-policy candidate plan."""
+
+    storage.ensure_layout()
+    plan = build_chapter_runtime_growth_write_policy_candidate_plan(storage, project_id=project_id, persist=True)
+    plan_path = str(plan.get("path") or "")
+    if str(plan.get("status") or "") == "missing" or not plan_path:
+        return {
+            "status": "missing",
+            "message": "runtime write-policy candidate plan is missing",
+            "plan": plan,
+            "approval_request_path": "",
+            "approval_created": False,
+            "mutation_applied": False,
+            "runtime_policy_changed": False,
+        }
+    existing = _existing_write_policy_approval(storage, project_id=project_id, plan_path=plan_path)
+    if existing:
+        content = existing.get("content", {}) if isinstance(existing.get("content", {}), dict) else {}
+        return {
+            "status": str(content.get("status") or "unknown"),
+            "message": "runtime write-policy candidate plan already has ApprovalRequest evidence",
+            "plan": plan,
+            "approval_request_path": str(existing.get("path") or ""),
+            "approval_request": existing,
+            "approval_created": False,
+            "mutation_applied": False,
+            "runtime_policy_changed": False,
+        }
+    approval = create_approval_request(
+        storage,
+        {
+            "project_id": project_id,
+            "scope": "agent",
+            "action": "approve_runtime_write_policy_candidate_plan",
+            "risk_level": "high",
+            "environment": environment,
+            "target_type": "project_metric_snapshot",
+            "target_id": str(plan.get("asset", {}).get("id") or ""),
+            "target_path": plan_path,
+            "target_refs": [plan_path],
+            "evidence_refs": [plan_path],
+            "required_before": ["runtime_policy_update", "chapter_sequence_growth_reduction", "final_v1_acceptance"],
+            "reason": "Runtime write-policy candidate plan must be approved before any write-policy apply path.",
+            "rollback_plan": {
+                "strategy": "do not apply policy automatically; if a later apply slice fails, restore previous runtime policy and rerun focused regression",
+                "required_evidence": ["approval_request", "runtime_growth_regression", "cockpit_visibility"],
+            },
+        },
+    )
+    return {
+        "status": "pending",
+        "message": "runtime write-policy candidate plan approval requested",
+        "plan": plan,
+        "approval_request_path": approval["path"],
+        "approval_request": approval["asset"],
+        "approval_created": True,
+        "mutation_applied": False,
+        "runtime_policy_changed": False,
     }
 
 
@@ -697,6 +765,20 @@ def _write_policy_recommendations(status: str, candidate_actions: list[dict[str,
             "Run focused runtime-growth regression after any approved write-policy change",
         ]
     return ["No runtime write-policy changes are recommended from current hotspot evidence"]
+
+
+def _existing_write_policy_approval(storage: LocalStorage, *, project_id: str, plan_path: str) -> dict[str, Any]:
+    fallback: dict[str, Any] = {}
+    for row in list_approval_requests(storage, project_id=project_id or None, scope="agent", limit=500):
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        target = content.get("target", {}) if isinstance(content.get("target", {}), dict) else {}
+        if str(content.get("action") or "") != "approve_runtime_write_policy_candidate_plan":
+            continue
+        if str(content.get("status") or "") in {"pending", "approved"} and not fallback:
+            fallback = row
+        if str(target.get("target_path") or "") == plan_path:
+            return row
+    return fallback
 
 
 def _threshold_blocking_rows(

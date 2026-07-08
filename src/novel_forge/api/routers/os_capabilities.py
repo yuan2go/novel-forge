@@ -25,6 +25,7 @@ from novel_forge.modules.chapter_runtime_growth import (
     build_chapter_runtime_growth_hotspot_ledger,
     build_chapter_runtime_growth_profile,
     build_chapter_runtime_growth_write_policy_candidate_plan,
+    request_chapter_runtime_growth_write_policy_approval,
     run_chapter_runtime_growth_threshold_gate,
 )
 from novel_forge.modules.novel_os_cockpit import build_multi_book_daily_production_report, build_multi_book_production_schedule, build_project_cockpit_snapshot
@@ -133,6 +134,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 LocalStorage(app_settings.root),
                 project_id=project_id,
                 persist=persist_report,
+            )
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/cockpit/chapter-runtime-growth-write-policy-approval-request")
+    def chapter_runtime_growth_write_policy_approval_request(
+        project_id: str = "local-project",
+        environment: str = "production",
+    ) -> dict[str, Any]:
+        try:
+            return request_chapter_runtime_growth_write_policy_approval(
+                LocalStorage(app_settings.root),
+                project_id=project_id,
+                environment=environment,
             )
         except (OSError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

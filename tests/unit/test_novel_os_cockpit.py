@@ -468,6 +468,26 @@ class NovelOsCockpitTests(unittest.TestCase):
             )
             storage.write_asset_auto(
                 BaseAsset(
+                    id="runtime-write-policy-approval",
+                    type="approval_request",
+                    title="Runtime write policy approval",
+                    content={
+                        "request_id": "runtime-write-policy-approval",
+                        "status": "pending",
+                        "scope": "agent",
+                        "action": "approve_runtime_write_policy_candidate_plan",
+                        "blocking": True,
+                        "target": {
+                            "target_type": "project_metric_snapshot",
+                            "target_id": "chapter-runtime-growth-write-policy-candidate-plan",
+                            "target_path": "data/runs/chapter-runtime-growth-write-policy-candidate-plan.json",
+                        },
+                    },
+                    metadata={"project_id": "book-a", "asset_status": "pending", "blocking": True},
+                )
+            )
+            storage.write_asset_auto(
+                BaseAsset(
                     id="v1-acceptance-preflight-report",
                     type="long_chain_acceptance_report",
                     title="V1 acceptance with preflight manifest",
@@ -505,8 +525,8 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertIn("gate_status_board", snapshot["asset"]["content"]["production_control_console"])
             self.assertEqual(snapshot["asset"]["content"]["v1_artifact_coverage"]["summary"]["latest_coverage_ratio"], 1.0)
             self.assertEqual(snapshot["asset"]["content"]["v1_artifact_coverage"]["summary"]["full_coverage_run_count"], 1)
-            self.assertEqual(snapshot["asset"]["content"]["approval_gate_summary"]["summary"]["request_count"], 2)
-            self.assertEqual(snapshot["asset"]["content"]["approval_gate_summary"]["blocking_pending_count"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["approval_gate_summary"]["summary"]["request_count"], 3)
+            self.assertEqual(snapshot["asset"]["content"]["approval_gate_summary"]["blocking_pending_count"], 2)
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["artifact_coverage"]["latest_chapter"], 1)
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["context_governance"], "passed")
             self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["context_governance_gate"]["status"], "passed")
@@ -515,7 +535,7 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertTrue(snapshot["asset"]["content"]["runtime_governance"]["production_governance_drift"]["path"])
             self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["production_governance_drift_gate"]["status"], "passed")
             self.assertTrue(snapshot["asset"]["content"]["runtime_governance"]["production_governance_drift_gate"]["gate_result_path"])
-            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["approval_gate_summary"]["pending_count"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["approval_gate_summary"]["pending_count"], 2)
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["context_governance_gate"]["status"], "passed")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["production_governance_drift"]["status"], "passed")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["production_governance_drift_gate"]["status"], "passed")
@@ -539,6 +559,7 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_hotspot_family_count"], 2)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_write_policy_plan_status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_write_policy_candidate_count"], 2)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_write_policy_approval_status"], "pending")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_high_run_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_max_ref_count"], 132)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_status"], "review_required")
@@ -554,6 +575,7 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth_hotspots"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth_write_policy_plan"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["runtime_growth_write_policy_approval"], "pending")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
             self.assertEqual(
                 snapshot["asset"]["content"]["production_control_console"]["repair_plan_summary"]["unified_acceptance_preflight"]["action_count"],
@@ -570,6 +592,7 @@ class NovelOsCockpitTests(unittest.TestCase):
                 snapshot["asset"]["content"]["cockpit"]["chapter_runtime_growth_write_policy_candidate_plan"]["candidate_actions"][0]["artifact_family"],
                 "task_status_ref",
             )
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["chapter_runtime_growth_write_policy_approval"]["target_path"], "data/runs/chapter-runtime-growth-write-policy-candidate-plan.json")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["unified_acceptance_preflight"]["unready_final_evidence"][0]["key"], "source_governance_runtime")
