@@ -25,17 +25,7 @@ def fail_queue_item(
     attempt_count = int(content.get("attempt_count", 0) or 0)
     max_attempts = int(content.get("max_attempts", 3) or 3)
     if attempt_count >= max_attempts:
-        try:
-            update_agent_run_status(
-                storage,
-                str(content.get("agent_run_path", "")),
-                status="dead_letter",
-                error=reason,
-                event_type="agent_dispatch.dead_letter",
-                message=reason,
-            )
-        except (FileNotFoundError, ValueError):
-            pass
+        _mark_agent_run_dead_letter(storage, str(content.get("agent_run_path", "")), reason=reason)
         updates = {"dead_lettered_at": utc_now(), "last_error": reason}
         if result is not None:
             updates["result"] = result
@@ -54,3 +44,42 @@ def fail_queue_item(
     if result is not None:
         updates["result"] = result
     return update_queue_item(storage, path, status="retry_scheduled", updates=updates)
+
+
+def _mark_agent_run_dead_letter(storage: LocalStorage, agent_run_path: str, *, reason: str) -> None:
+    if not agent_run_path:
+        return
+    try:
+        update_agent_run_status(
+            storage,
+            agent_run_path,
+            status="dead_letter",
+            error=reason,
+            event_type="agent_dispatch.dead_letter",
+            message=reason,
+        )
+        return
+    except FileNotFoundError:
+        return
+    except ValueError as exc:
+        if "invalid agent_run transition" not in str(exc):
+            return
+    try:
+        update_agent_run_status(
+            storage,
+            agent_run_path,
+            status="failed",
+            error=reason,
+            event_type="agent_dispatch.failed",
+            message=reason,
+        )
+        update_agent_run_status(
+            storage,
+            agent_run_path,
+            status="dead_letter",
+            error=reason,
+            event_type="agent_dispatch.dead_letter",
+            message=reason,
+        )
+    except (FileNotFoundError, ValueError):
+        return
