@@ -514,6 +514,33 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertTrue(body["repair"]["governance_review"]["required"])
             self.assertEqual(list_agent_dispatch_queue(storage, project_id=result["fixture"]["project_id"])[0]["status"], "queued")
 
+    def test_agent_center_api_surfaces_governance_dead_letter_evidence(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            storage = LocalStorage(root)
+            storage.ensure_layout()
+            result = _create_drifted_release_dead_letter(storage)
+            client = TestClient(create_app(IndustrialSettings(root=root)))
+
+            response = client.get("/product/agents/center", params={"project_id": result["fixture"]["project_id"]})
+
+            self.assertEqual(response.status_code, 200)
+            body = response.json()
+            self.assertEqual(body["summary"]["governance_dead_letter_count"], 1)
+            row = body["governance_dead_letters"][0]
+            self.assertEqual(row["queue_path"], result["queue"]["path"])
+            self.assertTrue(row["failed_gate_paths"])
+            self.assertTrue(row["failed_checkpoint_paths"])
+            self.assertFalse(row["repair"]["auto_repair"])
+            self.assertEqual(row["repair"]["manual_operation"], "repair_dead_letter_dispatch")
+
     def test_non_governance_dead_letter_repair_remains_compatible(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
