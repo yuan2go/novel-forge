@@ -41,11 +41,13 @@ Current evidence:
 - Local export package hardening now writes a generated-draft-only markdown file plus a JSON manifest containing hash/size, provenance over review/revision/canon/reducer/recap evidence, source-isolation policy, operator checklist, rollback instructions, and manual handoff to operator review before publish gate.
 - ApprovalRequest foundation now exists as a schema-backed Permission Center asset/API with approve/reject/expire lifecycle, risk/environment/blocking policy, evidence refs, rollback plan, and snapshot aggregation.
 - Project cockpit snapshots now expose V1 artifact coverage from chapter production run outputs, reducer/recap/export status, and ApprovalRequest summaries for operator inspection without running a chapter acceptance pass.
+- Agent Scheduler now registers `start-chapter-production` and `resume-chapter-production` as Workflow Agent operations. The runners call the canonical chapter production bus, preserve production `environment` / OS envelope / source policy / provider runtime evidence, and write scheduler output assets without running a chapter acceptance pass.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
+- Workflow Processor coverage for the same governed chapter production start/resume operations remains pending, so workflow-node callers are the next v1 runtime coverage slice.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
 - Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job/refresh-report assets and context eligibility evaluation; MKAOS knowledge/material seams plus analysis conversion and Context Builder selected/rejected summaries consume eligibility evidence, while Context Bundle writes knowledge/material usage feedback, lineage governance emits reviewable invalidation recommendations, and connector execution plans are ApprovalRequest-gated with no side effects.
 - ReaderPromise, PleasurePoint/ChapterEconomy, Character Pressure, and Mobile Reading lifecycles now have schema-backed local foundations and draft-to-longform or chapter-bus integration; payoff, scene-value, agency, pressure, and mobile rhythm detection remain deterministic and need calibration plus final multi-chapter proof.

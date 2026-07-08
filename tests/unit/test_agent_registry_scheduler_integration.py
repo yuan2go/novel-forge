@@ -8,7 +8,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.modules.agent_registry import record_agent_lifecycle_event, sync_runtime_profiles
 from novel_forge.modules.agent_runs import list_agent_runs, start_agent_run
 from novel_forge.modules.agent_scheduler import dispatch_agent_run, list_agent_dispatch_queue, run_agent_scheduler_tick
-from novel_forge.schemas import DraftChapter, TopicSeed
+from novel_forge.modules.chapter_production_bus import start_chapter_production
+from novel_forge.modules.workspace.service import init_workspace
+from novel_forge.schemas import DraftChapter, Outline, TopicSeed
 from novel_forge.storage.local import LocalStorage
 from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
 
@@ -174,6 +176,96 @@ class AgentRegistrySchedulerIntegrationTests(unittest.TestCase):
             self.assertEqual(package["metadata"]["os_envelope"]["asset_type"], "release_package")
             self.assertEqual(package["metadata"]["source_policy"]["scheduler_policy_marker"], "release-runner")
 
+    def test_scheduler_executes_chapter_production_start_with_runtime_policy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            sync_runtime_profiles(storage)
+            fixture = _chapter_production_fixture(storage, project_title="Scheduler Chapter Start")
+            source_policy = _scheduler_source_policy()
+            run = start_agent_run(
+                storage,
+                agent_key="workflow",
+                operation="start-chapter-production",
+                input_assets=[fixture["outline_path"]],
+                status="prepared",
+                evidence={
+                    "project_id": fixture["project_id"],
+                    "workspace_path": fixture["workspace_path"],
+                    "chapter": 1,
+                    "run_to": "outline_checkpoint",
+                    "task_status_mode": "compact",
+                    "environment": "production",
+                    "os_envelope": production_envelope(
+                        fixture["project_id"],
+                        "chapter_production_run",
+                        trace_id=f"trace-scheduler-chapter-start-{fixture['project_id']}",
+                        source_policy=source_policy,
+                    ),
+                    "source_policy": source_policy,
+                    "provider_runtime_guard": _passed_provider_runtime_gate(),
+                    "require_external_provider_proof": True,
+                },
+            )
+            dispatch_agent_run(storage, agent_run_path=run["path"])
+
+            tick = run_agent_scheduler_tick(storage)
+            runs = [row for row in list_agent_runs(storage, operation="start-chapter-production")]
+            queue = list_agent_dispatch_queue(storage)[0]
+            queue_asset = storage.read_json(storage.root / queue["path"])
+            output_assets = queue_asset["content"]["result"]["output_assets"]
+            chapter_run_path = next(path for path in output_assets if storage.read_json(storage.root / path)["type"] == "chapter_production_run")
+            chapter_run = storage.read_json(storage.root / chapter_run_path)
+            policy = chapter_run["content"]["quality_loop_policy"]
+
+            self.assertEqual(tick["status"], "completed")
+            self.assertEqual(tick["acked_count"], 1)
+            self.assertEqual(queue["status"], "acked")
+            self.assertEqual(runs[0]["agent_type"], "Workflow Agent")
+            self.assertEqual(chapter_run["content"]["current_step"], "outline_checkpoint")
+            self.assertEqual(policy["environment"], "production")
+            self.assertEqual(policy["source_policy"]["source_isolation_required"], True)
+            self.assertEqual(policy["os_envelope"]["asset_type"], "chapter_production_run")
+            self.assertEqual(policy["require_external_provider_proof"], True)
+            self.assertEqual(queue_asset["content"]["result"]["evidence"]["production_governance_status"], "passed")
+
+    def test_scheduler_executes_chapter_production_resume(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            sync_runtime_profiles(storage)
+            fixture = _chapter_production_fixture(storage, project_title="Scheduler Chapter Resume")
+            planned = start_chapter_production(
+                storage,
+                outline_path=fixture["outline_path"],
+                workspace_path=fixture["workspace_path"],
+                chapter=1,
+                run_to="outline_checkpoint",
+                execute=False,
+                task_status_mode="compact",
+            )
+            run = start_agent_run(
+                storage,
+                agent_key="workflow",
+                operation="resume-chapter-production",
+                input_assets=[planned["path"]],
+                status="prepared",
+                evidence={"project_id": fixture["project_id"], "workspace_path": fixture["workspace_path"], "run_to": "outline_checkpoint"},
+            )
+            dispatch_agent_run(storage, agent_run_path=run["path"])
+
+            tick = run_agent_scheduler_tick(storage)
+            queue = list_agent_dispatch_queue(storage)[0]
+            queue_asset = storage.read_json(storage.root / queue["path"])
+            output_assets = queue_asset["content"]["result"]["output_assets"]
+            chapter_run = storage.read_json(storage.root / output_assets[0])
+
+            self.assertEqual(tick["status"], "completed")
+            self.assertEqual(queue["status"], "acked")
+            self.assertEqual(chapter_run["type"], "chapter_production_run")
+            self.assertEqual(chapter_run["content"]["status"], "succeeded")
+            self.assertEqual(chapter_run["content"]["current_step"], "outline_checkpoint")
+
 
 def _longform_recap_fixture(storage: LocalStorage) -> Path:
     latest_path = None
@@ -208,3 +300,48 @@ def _topic_fixture(storage: LocalStorage, *, project_id: str) -> Path:
             metadata={"project_id": project_id},
         ),
     )
+
+
+def _chapter_production_fixture(storage: LocalStorage, *, project_title: str) -> dict[str, str]:
+    workspace = init_workspace(storage, project_title)
+    workspace_asset = storage.read_asset(workspace)
+    project_id = workspace_asset.content["project_id"]
+    workspace_ref = str(workspace.relative_to(storage.root))
+    outline = storage.write_asset(
+        "outlines",
+        Outline(
+            title=f"{project_title} Outline",
+            content={"acts": [{"act": 1, "goal": "open with a governed scheduler chapter"}]},
+            metadata={"project_id": project_id, "workspace_path": workspace_ref},
+            references=[workspace_ref],
+        ),
+    )
+    return {
+        "project_id": project_id,
+        "workspace_path": workspace_ref,
+        "outline_path": str(outline.relative_to(storage.root)),
+    }
+
+
+def _scheduler_source_policy() -> dict[str, object]:
+    return {
+        "source_isolation_required": True,
+        "raw_source_text_allowed": False,
+        "generation_rag_allowed": False,
+        "external_reference_mode": "evidence_only",
+        "scheduler_policy_marker": "chapter-production-runner",
+    }
+
+
+def _passed_provider_runtime_gate() -> dict[str, object]:
+    return {
+        "status": "passed",
+        "blocking": False,
+        "provider": "codex-fixture",
+        "route": "approved-fixture-route",
+        "summary": {
+            "route_approved": True,
+            "approval_ref": "unit-test-provider-runtime-approval",
+            "mock_provider_test_mode": True,
+        },
+    }

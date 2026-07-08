@@ -22,7 +22,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "agent": "Workflow Agent",
         "permission_profile": "workflow_coordination_and_recovery",
         "allowed_tools": ["read_asset", "run_validation", "run_worker_task", "record_checkpoint", "coordinate_loop"],
-        "allowed_write_types": ["workflow_run", "task_status", "agent_run", "loop_run", "loop_step", "loop_checkpoint", "loop_report"],
+        "allowed_write_types": ["workflow_run", "task_status", "agent_run", "chapter_production_run", "loop_run", "loop_step", "loop_checkpoint", "loop_report"],
         "forbidden": ["bypass_schema_validation", "suppress_blocking_issue", "execute_unregistered_operation"],
     },
     "context": {

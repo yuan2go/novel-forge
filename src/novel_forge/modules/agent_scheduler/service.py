@@ -1786,6 +1786,28 @@ def _operation_specs() -> list[AgentOperationSpec]:
             sla_seconds=900,
         ),
         AgentOperationSpec(
+            operation="start-chapter-production",
+            aliases=("chapter-production-start", "start-chapter-run"),
+            runner=_run_start_chapter_production,
+            agent_key="workflow",
+            input_types=("outline",),
+            output_types=("chapter_production_run",),
+            required_tool="run_worker_task",
+            rollback_strategy="recover_or_cancel_chapter_production_run",
+            sla_seconds=2400,
+        ),
+        AgentOperationSpec(
+            operation="resume-chapter-production",
+            aliases=("chapter-production-resume", "resume-chapter-run"),
+            runner=_run_resume_chapter_production,
+            agent_key="workflow",
+            input_types=("chapter_production_run",),
+            output_types=("chapter_production_run",),
+            required_tool="run_worker_task",
+            rollback_strategy="recover_or_cancel_chapter_production_run",
+            sla_seconds=2400,
+        ),
+        AgentOperationSpec(
             operation="run-longform-recap",
             aliases=("longform-recap", "recap"),
             runner=_run_longform_recap,
@@ -2570,6 +2592,69 @@ def _run_review_revision_publish_loop(storage: LocalStorage, queue_item: dict[st
             "bypass_reason": str(evidence.get("bypass_reason") or "agent center governed local loop"),
         },
     )
+
+
+def _run_start_chapter_production(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.chapter_production_bus import start_chapter_production
+
+    evidence = _evidence(agent_run)
+    chapter_value = evidence.get("chapter")
+    result = start_chapter_production(
+        storage,
+        outline_path=str(evidence.get("outline_path") or _required_input_path(agent_run)),
+        chapter_plan_path=str(evidence.get("chapter_plan_path") or "") or None,
+        workspace_path=_workspace_path(agent_run) or str(evidence.get("workspace_path") or "") or None,
+        chapter=int(chapter_value) if str(chapter_value or "").strip() else None,
+        run_to=str(evidence.get("run_to") or "next_chapter_plan"),
+        execute=bool(evidence.get("execute", True)),
+        execution_mode=str(evidence.get("execution_mode") or "sync"),
+        task_status_mode=str(evidence.get("task_status_mode") or "compact"),
+        selector_governance_binding_application_report_path=str(evidence.get("selector_governance_binding_application_report_path") or "") or None,
+        environment=str(evidence.get("environment") or ""),
+        os_envelope=_envelope_from_evidence(evidence),
+        source_policy=evidence.get("source_policy") if isinstance(evidence.get("source_policy"), dict) else None,
+        require_external_provider_proof=bool(evidence.get("require_external_provider_proof", False)),
+    )
+    return _chapter_production_scheduler_result(storage, result)
+
+
+def _run_resume_chapter_production(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.chapter_production_bus import resume_chapter_production
+
+    evidence = _evidence(agent_run)
+    result = resume_chapter_production(
+        storage,
+        str(evidence.get("run_path") or evidence.get("chapter_production_run_path") or _required_input_path(agent_run)),
+        from_step=str(evidence.get("from_step") or "") or None,
+        run_to=str(evidence.get("run_to") or "") or None,
+        force=bool(evidence.get("force", False)),
+        clear_pause=bool(evidence.get("clear_pause", True)),
+    )
+    return _chapter_production_scheduler_result(storage, result)
+
+
+def _chapter_production_scheduler_result(storage: LocalStorage, result: dict[str, Any]) -> dict[str, Any]:
+    outputs = result.get("outputs", {}) if isinstance(result.get("outputs", {}), dict) else {}
+    asset = result.get("asset", {}) if isinstance(result.get("asset", {}), dict) else {}
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    output_paths = _dedupe(
+        [
+            str(path)
+            for path in [result.get("path"), *outputs.values()]
+            if str(path or "").strip() and _path_exists(storage, str(path))
+        ]
+    )
+    return {
+        "path": str(result.get("path") or ""),
+        "chapter_production_run_path": str(result.get("path") or ""),
+        "output_paths": output_paths,
+        "chapter": result.get("chapter", content.get("chapter", "")),
+        "status": result.get("status", content.get("status", "")),
+        "current_step": result.get("current_step", content.get("current_step", "")),
+        "completed_steps": result.get("completed_steps", ""),
+        "quality_loop_policy": content.get("quality_loop_policy", {}) if isinstance(content.get("quality_loop_policy"), dict) else {},
+        "outputs": outputs,
+    }
 
 
 def _run_longform_recap(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
