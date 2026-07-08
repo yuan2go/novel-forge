@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.model_adapters.runtime import ProviderRuntimeGuard, evaluate_provider_runtime_guard
 from novel_forge.modules.evaluation_center import create_evaluation_gate
 from novel_forge.modules.publishing import create_publish_gate_report, create_release_package
+from novel_forge.modules.production_governance import run_production_governance_drift_gate
 from novel_forge.modules.feedback import create_reader_simulation_report, process_publish_feedback_loop, process_real_feedback_backflow
 from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding, record_usage_event
 from novel_forge.modules.platform_strategy import build_platform_strategy_pack
@@ -212,6 +213,12 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             self.assertEqual(package.content["platform_upload_checklist"]["status"], "passed")
             self.assertEqual(package.metadata["os_envelope"]["environment"], "production")
             self.assertEqual(package.metadata["os_envelope"]["asset_type"], "release_package")
+            drift_gate = run_production_governance_drift_gate(
+                storage,
+                project_id=fixture["project_id"],
+                environment="production",
+            )
+            self.assertEqual(drift_gate["status"], "passed", drift_gate["drift_report"]["summary"])
 
     def test_publish_gate_blocks_unbound_context_governance_in_production(self):
         with tempfile.TemporaryDirectory() as tmp:

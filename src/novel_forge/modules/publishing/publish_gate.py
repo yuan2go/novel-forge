@@ -187,6 +187,7 @@ def create_publish_gate_report(
                 "path": "",
             },
             "context_governance_gate": {
+                "dimension": "context_governance_gate",
                 "status": "blocked" if context_governance_gate["status"] == "failed" else context_governance_gate["status"],
                 "blocking": context_governance_gate["status"] == "failed",
                 "path": context_governance_gate.get("gate_result", {}).get("path", ""),
@@ -232,6 +233,7 @@ def create_publish_gate_report(
             "platform_strategy_gate": platform_strategy_gate,
             "content_intelligence_gate": content_intelligence_gate,
             "context_governance_gate": {
+                "dimension": "context_governance_gate",
                 "status": context_governance_gate["status"],
                 "blocking": context_governance_gate["status"] == "failed",
                 "gate_result_path": context_governance_gate.get("gate_result", {}).get("path", ""),
@@ -240,6 +242,7 @@ def create_publish_gate_report(
             },
             "platform_upload_checklist": upload_checklist,
             "production_governance": {
+                "dimension": "production_governance",
                 "status": production_governance["status"],
                 "path": production_governance["path"],
                 "gate_result_path": production_governance["gate_result_path"],
