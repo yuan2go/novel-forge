@@ -499,6 +499,14 @@ class ChapterRuntimeGrowthTests(unittest.TestCase):
             self.assertIn("chapter_runtime_write_budget_node_runs", codes)
             self.assertIn("chapter_runtime_write_budget_trace_spans", codes)
             self.assertIn("chapter_runtime_write_budget_repeated_asset_family", codes)
+            repair_plan = production_result["operator_repair_plan"]
+            self.assertEqual(repair_plan["status"], "review_required")
+            self.assertGreaterEqual(repair_plan["action_count"], 3)
+            self.assertTrue(repair_plan["read_only"])
+            self.assertFalse(repair_plan["repair_executed"])
+            self.assertFalse(repair_plan["mutation_applied"])
+            self.assertIn("runtime_reference_fanout", {row["repair_group"] for row in repair_plan["actions"]})
+            self.assertIn("runtime_event_compaction", {row["repair_group"] for row in repair_plan["actions"]})
 
     def _write_asset(self, storage: LocalStorage, asset_id: str, asset_type: str, *, project_id: str, content: dict | None = None) -> str:
         path = storage.write_asset_auto(

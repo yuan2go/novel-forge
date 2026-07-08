@@ -1579,14 +1579,18 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertTrue(gate["blocking"])
             self.assertEqual(gate["gate_result"]["asset"]["content"]["gate_kind"], "chapter_runtime_growth_write_budget")
             self.assertIn("chapter_runtime_write_budget_linked_refs", {row["code"] for row in gate["blocking_rows"]})
+            self.assertEqual(gate["operator_repair_plan"]["status"], "review_required")
+            self.assertTrue(gate["operator_repair_plan"]["read_only"])
             self.assertFalse(gate["gate_result"]["asset"]["content"]["result"]["summary"]["chapter_production_executed"])
 
             self.assertEqual(cockpit_response.status_code, 200, cockpit_response.text)
             content = cockpit_response.json()["asset"]["content"]
             self.assertEqual(content["runtime_governance"]["chapter_runtime_growth_write_budget_gate"]["status"], "failed")
+            self.assertEqual(content["runtime_governance"]["chapter_runtime_growth_write_budget_gate"]["operator_repair_plan"]["status"], "review_required")
             self.assertEqual(content["quality"]["chapter_runtime_growth_write_budget_gate_status"], "failed")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["runtime_growth_write_budget"], "failed")
             self.assertEqual(content["cockpit"]["chapter_runtime_growth_write_budget_gate"]["status"], "failed")
+            self.assertFalse(content["cockpit"]["chapter_runtime_growth_write_budget_gate"]["operator_repair_plan"]["repair_executed"])
 
     def test_project_cockpit_route_surfaces_unified_acceptance_preflight_manifest(self):
         try:

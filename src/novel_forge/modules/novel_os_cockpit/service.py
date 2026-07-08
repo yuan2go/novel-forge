@@ -418,6 +418,7 @@ def _latest_gate_result(rows: list[dict[str, Any]], gate_kind: str) -> dict[str,
         "report_path": str(result.get("report_path") or ""),
         "readiness_report_path": str(result.get("readiness_report_path") or ""),
         "summary": result.get("summary", {}) if isinstance(result.get("summary", {}), dict) else {},
+        "operator_repair_plan": result.get("operator_repair_plan", {}) if isinstance(result.get("operator_repair_plan", {}), dict) else {},
     }
 
 

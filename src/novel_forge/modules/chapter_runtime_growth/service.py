@@ -839,10 +839,12 @@ def run_chapter_runtime_growth_write_budget_gate(
     )
     profile_path = str(profile.get("path") or "")
     evidence_paths = _dedupe([profile_path, *[str(row.get("path") or "") for row in runtime_rows], *[str(row.get("path") or "") for row in blockers]])
+    operator_repair_plan = _write_budget_operator_repair_plan(blockers, budgets=normalized_budgets)
     summary = {
         "profile_status": profile_status,
         "chapter_run_count": len(runtime_rows),
         "blocking_count": len(blockers),
+        "repair_action_count": int(operator_repair_plan.get("action_count") or 0),
         "budgets": normalized_budgets,
         "max_linked_asset_ref_count": int(profile_summary.get("max_linked_asset_ref_count") or 0),
         "max_task_status_ref_count": max((int(row.get("task_status_ref_count") or 0) for row in runtime_rows), default=0),
@@ -867,6 +869,7 @@ def run_chapter_runtime_growth_write_budget_gate(
             "summary": summary,
             "blocking_rows": blockers,
             "profile_path": profile_path,
+            "operator_repair_plan": operator_repair_plan,
             "operator_action": _write_budget_operator_action(blockers),
             "mutation_policy": "read-only: no chapter production, acceptance, provider proof, compaction, or artifact deletion",
         },
@@ -881,6 +884,7 @@ def run_chapter_runtime_growth_write_budget_gate(
         "message": message,
         "summary": summary,
         "blocking_rows": blockers,
+        "operator_repair_plan": operator_repair_plan,
         "profile": profile,
         "gate_result": gate,
         "gate_result_path": str(gate.get("path") or ""),
@@ -1708,6 +1712,71 @@ def _write_budget_operator_action(blockers: list[dict[str, Any]]) -> str:
     if "chapter_runtime_write_budget_repeated_asset_family" in codes:
         return "inspect repeated runtime asset families before final acceptance"
     return "tighten runtime write policy or reduce chapter run artifact fanout before final acceptance"
+
+
+def _write_budget_operator_repair_plan(blockers: list[dict[str, Any]], *, budgets: dict[str, int]) -> dict[str, Any]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for blocker in blockers:
+        group = _write_budget_repair_group(str(blocker.get("code") or ""))
+        grouped.setdefault(group, []).append(blocker)
+    actions: list[dict[str, Any]] = []
+    for index, (group, rows) in enumerate(sorted(grouped.items()), start=1):
+        run_ids = _dedupe([str(row.get("run_id") or "") for row in rows])
+        metrics = sorted({str(row.get("metric") or "") for row in rows if str(row.get("metric") or "")})
+        actions.append(
+            {
+                "action_index": index,
+                "repair_group": group,
+                "blocker_count": len(rows),
+                "affected_run_ids": run_ids,
+                "metrics": metrics,
+                "evidence_paths": _dedupe([str(row.get("path") or "") for row in rows]),
+                "recommended_action": _write_budget_repair_action(group),
+                "requires_operator_approval": True,
+                "auto_apply": False,
+            }
+        )
+    return {
+        "contract": "chapter-runtime-write-budget-operator-repair-plan-v1",
+        "status": "review_required" if actions else "not_required",
+        "action_count": len(actions),
+        "actions": actions,
+        "budgets": budgets,
+        "read_only": True,
+        "repair_executed": False,
+        "mutation_applied": False,
+        "runtime_policy_changed": False,
+        "provider_call_executed": False,
+        "chapter_acceptance_executed": False,
+    }
+
+
+def _write_budget_repair_group(code: str) -> str:
+    if code == "chapter_runtime_write_budget_profile_missing":
+        return "profile_evidence"
+    if code in {
+        "chapter_runtime_write_budget_linked_refs",
+        "chapter_runtime_write_budget_task_status_refs",
+        "chapter_runtime_write_budget_step_output_refs",
+    }:
+        return "runtime_reference_fanout"
+    if code in {"chapter_runtime_write_budget_node_runs", "chapter_runtime_write_budget_trace_spans"}:
+        return "runtime_event_compaction"
+    if code == "chapter_runtime_write_budget_repeated_asset_family":
+        return "asset_family_deduplication"
+    return "runtime_write_budget"
+
+
+def _write_budget_repair_action(group: str) -> str:
+    if group == "profile_evidence":
+        return "build a fresh runtime growth profile before applying write-budget decisions"
+    if group == "runtime_reference_fanout":
+        return "inspect chapter run linked refs and tighten task/output reference recording without suppressing failure evidence"
+    if group == "runtime_event_compaction":
+        return "compact success-path NodeRun/TraceSpan writes while preserving failed, gate, provider, budget, approval, and dead-letter evidence"
+    if group == "asset_family_deduplication":
+        return "inspect repeated runtime asset families and deduplicate only after operator-approved policy review"
+    return "review runtime write-budget blockers before final acceptance"
 
 
 def _runtime_asset_counts(storage: LocalStorage, *, run_id: str) -> dict[str, int]:
