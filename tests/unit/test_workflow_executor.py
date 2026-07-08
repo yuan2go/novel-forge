@@ -1486,12 +1486,47 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertEqual(node["processor"]["operation"], "start-chapter-production")
             self.assertEqual(node["processor"]["source_policy"]["workflow_policy_marker"], "chapter-production-processor")
 
+            queue = build_ready_node_queue(storage, workflow_path_or_id=workflow["path"], input_assets=[fixture["outline_path"]])
+            console = build_workflow_runtime_console(storage, workflow_path_or_id=workflow["path"], input_assets=[fixture["outline_path"]])
+            self.assertEqual(queue["workflow_template_contract"]["contract"], "v1-chapter-production-workflow-template-v1")
+            self.assertFalse(queue["workflow_template_contract"]["production_fail_closed"])
+            self.assertEqual(console["workflow_template_contract"]["canonical_runtime"], "chapter_production_bus")
+            self.assertFalse(console["workflow_template_contract"]["chapter_acceptance_executed"])
+            self.assertEqual(console["ready_queue"]["queue"][0]["template_contract"]["processor_operation"], "start-chapter-production")
+            self.assertFalse(console["ready_queue"]["queue"][0]["template_contract"]["production_fail_closed"])
+
             result = execute_workflow(storage, workflow["path"], input_assets=[fixture["outline_path"]])
             chapter_run = storage.read_json(storage.root / result["workflow_run"]["asset"]["content"]["outputs"][0])
 
             self.assertEqual(result["status"], "completed")
             self.assertEqual(chapter_run["type"], "chapter_production_run")
             self.assertEqual(chapter_run["content"]["current_step"], "outline_checkpoint")
+
+    def test_v1_chapter_production_workflow_console_marks_missing_production_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = _chapter_production_fixture(storage, project_title="Workflow Template Missing Evidence")
+            workflow = create_v1_chapter_production_workflow_template(
+                storage,
+                name="Template Missing Evidence Fixture",
+                chapter=1,
+                run_to="outline_checkpoint",
+                environment="production",
+                workspace_path=fixture["workspace_path"],
+            )
+
+            console = build_workflow_runtime_console(storage, workflow_path_or_id=workflow["path"], input_assets=[fixture["outline_path"]])
+            queue = build_ready_node_queue(storage, workflow_path_or_id=workflow["path"], input_assets=[fixture["outline_path"]])
+            missing = set(console["workflow_template_contract"]["missing_runtime_evidence"])
+            row_missing = set(queue["queue"][0]["template_contract"]["missing_runtime_evidence"])
+
+            self.assertEqual(console["workflow_template_contract"]["contract"], "v1-chapter-production-workflow-template-v1")
+            self.assertTrue(console["workflow_template_contract"]["production_fail_closed"])
+            self.assertEqual(missing, {"os_envelope", "source_policy", "provider_runtime_guard"})
+            self.assertEqual(row_missing, {"os_envelope", "source_policy", "provider_runtime_guard"})
+            self.assertTrue(queue["queue"][0]["template_contract"]["production_fail_closed"])
+            self.assertEqual(queue["ready_count"], 1)
 
     def test_gate_registry_schema_gate_blocks_invalid_input(self):
         with tempfile.TemporaryDirectory() as tmp:

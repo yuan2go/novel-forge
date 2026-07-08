@@ -720,6 +720,11 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(node["quality_gate"]["contract"], "canonical_chapter_production_bus")
             self.assertNotIn("workflow_run", body["asset"]["content"])
 
+            console = client.get("/product/workflow/runtime-console", params={"workflow_path_or_id": body["path"]})
+            self.assertEqual(console.status_code, 200, console.text)
+            self.assertEqual(console.json()["workflow_template_contract"]["contract"], "v1-chapter-production-workflow-template-v1")
+            self.assertFalse(console.json()["workflow_template_contract"]["chapter_acceptance_executed"])
+
 
 if __name__ == "__main__":
     unittest.main()

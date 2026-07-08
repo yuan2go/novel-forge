@@ -607,6 +607,7 @@ def build_ready_node_queue(
         if not bool(node.get("ready")) and not blocked_match:
             continue
         contract = _processor_contract_for_node(node)
+        template_contract = node.get("template_contract", {}) if isinstance(node.get("template_contract", {}), dict) else {}
         rows.append(
             {
                 "queue_id": make_id("ready_node", f"{plan.get('workflow_id', '')}-{run_path}-{node_id}-{index}"),
@@ -623,6 +624,7 @@ def build_ready_node_queue(
                 "priority": int(node.get("priority", index + 1) or index + 1),
                 "blocked_status": str(blocked.get("status", "")) if blocked_match else "",
                 "contract": contract,
+                "template_contract": template_contract,
                 "resume_supported": bool(contract.get("resume_supported", False)),
             }
         )
@@ -633,6 +635,7 @@ def build_ready_node_queue(
         "workflow_path": str(plan.get("workflow_path", "")),
         "workflow_run_path": run_path,
         "workflow_run_status": run_status,
+        "workflow_template_contract": plan.get("workflow_template_contract", {"enabled": False}),
         "queue": sorted(rows, key=lambda item: (int(item.get("priority", 0) or 0), str(item.get("node_id", "")))),
         "ready_count": len(rows),
         "state_machine": workflow_state_machine(),
@@ -655,22 +658,26 @@ def build_workflow_runtime_console(
         workflow_ref = str(content.get("workflow_definition_path") or content.get("workflow_id") or workflow_run.get("source", ""))
     if not workflow_ref:
         raise ValueError("workflow_path_or_id or workflow_run_path_or_id is required")
+    dag = parse_workflow_dag(storage, workflow_ref, start_node_id=start_node_id)
+    dependencies = resolve_workflow_dependencies(
+        storage,
+        workflow_ref,
+        input_assets=input_assets,
+        workflow_run_path_or_id=workflow_run_path_or_id,
+        start_node_id=start_node_id,
+    )
+    ready_queue = build_ready_node_queue(
+        storage,
+        workflow_path_or_id=workflow_ref,
+        workflow_run_path_or_id=workflow_run_path_or_id,
+        input_assets=input_assets,
+        start_node_id=start_node_id,
+    )
     return {
-        "dag": parse_workflow_dag(storage, workflow_ref, start_node_id=start_node_id),
-        "dependencies": resolve_workflow_dependencies(
-            storage,
-            workflow_ref,
-            input_assets=input_assets,
-            workflow_run_path_or_id=workflow_run_path_or_id,
-            start_node_id=start_node_id,
-        ),
-        "ready_queue": build_ready_node_queue(
-            storage,
-            workflow_path_or_id=workflow_ref,
-            workflow_run_path_or_id=workflow_run_path_or_id,
-            input_assets=input_assets,
-            start_node_id=start_node_id,
-        ),
+        "dag": dag,
+        "dependencies": dependencies,
+        "ready_queue": ready_queue,
+        "workflow_template_contract": dag.get("workflow_template_contract", {"enabled": False}),
         "processor_contracts": list_processor_contracts(),
         "state_machine": workflow_state_machine(),
     }
@@ -689,6 +696,7 @@ def parse_workflow_dag(storage: LocalStorage, workflow_path_or_id: str | Path, *
     workflow_id = str(content.get("workflow_id") or workflow.get("id") or workflow_path_or_id)
     nodes = _workflow_nodes(storage, workflow)
     node_map = {str(node.get("node_id", "")): node for node in nodes if str(node.get("node_id", "")).strip()}
+    workflow_template_contract = _workflow_template_contract_summary(workflow, nodes)
     entry_node_id = start_node_id or str(content.get("entry_node_id", ""))
     order = _topological_order(node_map, entry_node_id)
     dependency_map = {node_id: _node_dependencies(node) for node_id, node in node_map.items()}
@@ -705,13 +713,14 @@ def parse_workflow_dag(storage: LocalStorage, workflow_path_or_id: str | Path, *
         "workflow_path": _display_path(storage.root, workflow_path),
         "entry_node_id": entry_node_id,
         "order": order,
-        "nodes": [_node_plan_row(node_map[node_id]) for node_id in order],
+        "nodes": [_node_plan_row(node_map[node_id], workflow_template_contract=workflow_template_contract) for node_id in order],
         "edges": [edge for edge in edges if edge["from"] in reachable and edge["to"] in reachable],
         "dependencies": {node_id: dependency_map.get(node_id, []) for node_id in order},
         "dependents": {node_id: [item for item in dependents.get(node_id, []) if item in reachable] for node_id in order},
         "unreachable_node_ids": sorted(set(node_map) - reachable),
         "node_count": len(order),
         "edge_count": sum(1 for edge in edges if edge["from"] in reachable and edge["to"] in reachable),
+        "workflow_template_contract": workflow_template_contract,
     }
 
 
@@ -734,6 +743,7 @@ def resolve_workflow_dependencies(
     workflow_path, workflow = _resolve_workflow_definition(storage, workflow_path_or_id)
     nodes = _workflow_nodes(storage, workflow)
     node_map = {str(node.get("node_id", "")): node for node in nodes if str(node.get("node_id", "")).strip()}
+    workflow_template_contract = dag.get("workflow_template_contract", _workflow_template_contract_summary(workflow, nodes))
     initial_inputs = [str(_display_path(storage.root, resolve_path(storage.root, item))) if _path_exists(storage, item) else str(item) for item in input_assets or []]
     previous_log: list[dict[str, Any]] = []
     run_status = ""
@@ -765,7 +775,7 @@ def resolve_workflow_dependencies(
             blocked_reason = f"missing required input asset types: {', '.join(missing_types)}"
         rows.append(
             {
-                **_node_plan_row(node),
+                **_node_plan_row(node, workflow_template_contract=workflow_template_contract),
                 "dependencies": dependencies,
                 "dependency_statuses": dependency_statuses,
                 "input_assets": node_inputs,
@@ -785,6 +795,7 @@ def resolve_workflow_dependencies(
         "entry_node_id": dag["entry_node_id"],
         "order": dag["order"],
         "nodes": rows,
+        "workflow_template_contract": workflow_template_contract,
         "ready_nodes": ready_nodes,
         "blocked_nodes": blocked_nodes,
         "summary": {
@@ -1863,9 +1874,10 @@ def _attach_workflow_runtime_policy(node: dict[str, Any], workflow_policy: dict[
     return {**node, "runtime_policy": merged_policy, "processor": {**processor, "runtime_policy": {**merged_policy, **processor_policy}}}
 
 
-def _node_plan_row(node: dict[str, Any]) -> dict[str, Any]:
+def _node_plan_row(node: dict[str, Any], *, workflow_template_contract: dict[str, Any] | None = None) -> dict[str, Any]:
     processor = _node_processor(node)
     contract = _processor_contract_for_node(node)
+    template_contract = _node_template_contract_summary(node, workflow_template_contract=workflow_template_contract or {})
     return {
         "node_id": str(node.get("node_id", "")),
         "workflow_id": str(node.get("workflow_id", "")),
@@ -1878,7 +1890,92 @@ def _node_plan_row(node: dict[str, Any]) -> dict[str, Any]:
         "processor_contract": contract,
         "quality_gate": node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {},
         "human_gate": node.get("human_gate", {}) if isinstance(node.get("human_gate", {}), dict) else {},
+        "template_contract": template_contract,
     }
+
+
+def _workflow_template_contract_summary(workflow: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    content = workflow.get("content", {}) if isinstance(workflow.get("content", {}), dict) else {}
+    contract = content.get("template_contract", {}) if isinstance(content.get("template_contract", {}), dict) else {}
+    runtime_policy = content.get("runtime_policy", {}) if isinstance(content.get("runtime_policy", {}), dict) else {}
+    contract_id = str(contract.get("contract") or runtime_policy.get("template_contract") or "").strip()
+    node_summaries = [
+        summary
+        for summary in (_node_template_contract_summary(node, workflow_template_contract=contract) for node in nodes)
+        if bool(summary.get("enabled", False))
+    ]
+    required = _dedupe([str(item) for item in contract.get("requires_runtime_evidence_in_production", []) if str(item).strip()] if isinstance(contract.get("requires_runtime_evidence_in_production", []), list) else [])
+    return {
+        "enabled": bool(contract_id or node_summaries),
+        "contract": contract_id,
+        "canonical_runtime": str(contract.get("canonical_runtime") or ""),
+        "does_not_execute_on_create": bool(contract.get("does_not_execute_on_create", False)),
+        "chapter_acceptance_executed": bool(contract.get("chapter_acceptance_executed", False)),
+        "requires_runtime_evidence_in_production": required,
+        "processor_operations": [str(item) for item in contract.get("processor_operations", []) if str(item).strip()] if isinstance(contract.get("processor_operations", []), list) else [],
+        "resume_operation": str(contract.get("resume_operation") or ""),
+        "runtime_policy": {
+            "environment": str(runtime_policy.get("environment") or ""),
+            "workspace_path": str(runtime_policy.get("workspace_path") or ""),
+            "acceptance_run": bool(runtime_policy.get("acceptance_run", False)),
+        },
+        "node_contracts": node_summaries,
+        "missing_runtime_evidence": _dedupe([item for summary in node_summaries for item in summary.get("missing_runtime_evidence", []) if str(item).strip()]),
+        "production_fail_closed": any(bool(summary.get("production_fail_closed", False)) for summary in node_summaries),
+    }
+
+
+def _node_template_contract_summary(node: dict[str, Any], *, workflow_template_contract: dict[str, Any] | None = None) -> dict[str, Any]:
+    processor = _node_processor(node)
+    quality_gate = node.get("quality_gate", {}) if isinstance(node.get("quality_gate", {}), dict) else {}
+    runtime_policy = node.get("runtime_policy", {}) if isinstance(node.get("runtime_policy", {}), dict) else {}
+    workflow_contract = workflow_template_contract or {}
+    processor_contract = str(processor.get("template_contract") or runtime_policy.get("template_contract") or workflow_contract.get("contract") or "").strip()
+    canonical_runtime = str(workflow_contract.get("canonical_runtime") or quality_gate.get("contract") or quality_gate.get("gate") or "").strip()
+    required = _dedupe([str(item) for item in workflow_contract.get("requires_runtime_evidence_in_production", []) if str(item).strip()] if isinstance(workflow_contract.get("requires_runtime_evidence_in_production", []), list) else [])
+    environment = str(processor.get("environment") or runtime_policy.get("environment") or _processor_os_envelope(processor).get("environment") or "").strip()
+    evidence = _processor_runtime_evidence_summary(processor, required)
+    missing = [key for key, row in evidence.items() if str(row.get("status") or "") in {"missing", "failed"}]
+    return {
+        "enabled": bool(processor_contract or canonical_runtime or required),
+        "contract": processor_contract,
+        "canonical_runtime": canonical_runtime,
+        "node_id": str(node.get("node_id", "")),
+        "processor_operation": str(processor.get("operation") or node.get("operation") or ""),
+        "expected_output_types": [str(item) for item in node.get("output_types", []) if str(item).strip()] if isinstance(node.get("output_types", []), list) else [],
+        "quality_contract": quality_gate,
+        "environment": environment,
+        "requires_runtime_evidence_in_production": required,
+        "runtime_evidence": evidence,
+        "missing_runtime_evidence": missing,
+        "production_fail_closed": bool(is_production_environment(environment) and missing),
+        "does_not_execute_on_create": bool(workflow_contract.get("does_not_execute_on_create", False)),
+        "chapter_acceptance_executed": bool(workflow_contract.get("chapter_acceptance_executed", False)),
+    }
+
+
+def _processor_runtime_evidence_summary(processor: dict[str, Any], required: list[str]) -> dict[str, dict[str, Any]]:
+    rows: dict[str, dict[str, Any]] = {}
+    envelope = _processor_os_envelope(processor)
+    source_policy = _processor_source_policy(processor)
+    provider_guard = _processor_provider_runtime_guard(processor)
+    for key in required:
+        if key == "os_envelope":
+            rows[key] = {"present": bool(envelope), "status": "present" if envelope else "missing"}
+        elif key == "source_policy":
+            rows[key] = {"present": bool(source_policy), "status": "present" if source_policy else "missing"}
+        elif key == "provider_runtime_guard":
+            provider_status = str(provider_guard.get("status") or "").strip().lower()
+            rows[key] = {
+                "present": bool(provider_guard),
+                "provider_status": provider_status,
+                "status": "present" if provider_status == "passed" else "failed" if provider_guard else "missing",
+            }
+        else:
+            value = processor.get(key)
+            present = value is not None and value != "" and value != {}
+            rows[key] = {"present": bool(present), "status": "present" if present else "missing"}
+    return rows
 
 
 def _processor_contract_for_node(node: dict[str, Any]) -> dict[str, Any]:
