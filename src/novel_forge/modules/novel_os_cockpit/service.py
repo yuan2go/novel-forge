@@ -29,6 +29,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     source_governance_runtime_gate = _latest_gate_result(rows, "source_governance_runtime")
     source_governance_runtime_evidence = _source_governance_runtime_execution_evidence(storage, rows, project_id=project_id)
     chapter_runtime_growth = _chapter_runtime_growth_profile(rows)
+    chapter_runtime_growth_threshold_gate = _latest_gate_result(rows, "chapter_runtime_growth_threshold")
     production_console = _production_control_console(
         rows,
         blocking_issues,
@@ -42,6 +43,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         source_governance_runtime_gate,
         source_governance_runtime_evidence,
         chapter_runtime_growth,
+        chapter_runtime_growth_threshold_gate,
     )
     content = {
         "project_id": project_id,
@@ -73,6 +75,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_governance_runtime_evidence_status": source_governance_runtime_evidence["status"],
             "source_governance_runtime_evidence_count": source_governance_runtime_evidence["count"],
             "chapter_runtime_growth_status": chapter_runtime_growth["status"],
+            "chapter_runtime_growth_threshold_gate_status": chapter_runtime_growth_threshold_gate["status"],
             "chapter_runtime_growth_high_run_count": chapter_runtime_growth["summary"]["high_growth_run_count"],
             "chapter_runtime_growth_max_ref_count": chapter_runtime_growth["summary"]["max_linked_asset_ref_count"],
         },
@@ -102,6 +105,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_governance_runtime_gate": source_governance_runtime_gate,
             "source_governance_runtime_evidence": source_governance_runtime_evidence,
             "chapter_runtime_growth": chapter_runtime_growth,
+            "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -119,6 +123,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "source_governance_runtime_gate": source_governance_runtime_gate,
             "source_governance_runtime_evidence": source_governance_runtime_evidence,
             "chapter_runtime_growth": chapter_runtime_growth,
+            "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -887,6 +892,7 @@ def _production_control_console(
     source_governance_runtime_gate: dict[str, Any],
     source_governance_runtime_evidence: dict[str, Any],
     chapter_runtime_growth: dict[str, Any],
+    chapter_runtime_growth_threshold_gate: dict[str, Any],
 ) -> dict[str, Any]:
     chapter_queue = _latest_assets(rows, "chapter_plan", limit=20)
     draft_rows = _latest_assets(rows, "draft_chapter", limit=20)
@@ -905,6 +911,7 @@ def _production_control_console(
         "source_governance_runtime": source_governance_runtime_gate["status"],
         "source_governance_runtime_evidence": source_governance_runtime_evidence["status"],
         "runtime_growth": chapter_runtime_growth["status"],
+        "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
         "release": release_status,
         "publish": _latest_status(rows, asset_type="publish_gate_report"),
     }
@@ -929,6 +936,7 @@ def _production_control_console(
             "source_governance_runtime": source_governance_runtime_gate["status"],
             "source_governance_runtime_evidence": source_governance_runtime_evidence["status"],
             "runtime_growth": chapter_runtime_growth["status"],
+            "runtime_growth_threshold": chapter_runtime_growth_threshold_gate["status"],
             "release": release_status,
         },
         "feedback_approval_queue": feedback_proposals,
@@ -951,6 +959,7 @@ def _production_control_console(
         "source_governance_runtime_gate": source_governance_runtime_gate,
         "source_governance_runtime_evidence": source_governance_runtime_evidence,
         "chapter_runtime_growth": chapter_runtime_growth,
+        "chapter_runtime_growth_threshold_gate": chapter_runtime_growth_threshold_gate,
     }
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Body, HTTPException, Query
 
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.agent_messages import (
@@ -21,7 +21,7 @@ from novel_forge.modules.long_memory import (
     select_memory_for_node,
 )
 from novel_forge.modules.model_router import create_model_route, execute_model_gateway_call, list_model_router_assets, provider_approval_evidence_report, resolve_model_route
-from novel_forge.modules.chapter_runtime_growth import build_chapter_runtime_growth_profile
+from novel_forge.modules.chapter_runtime_growth import build_chapter_runtime_growth_profile, run_chapter_runtime_growth_threshold_gate
 from novel_forge.modules.novel_os_cockpit import build_multi_book_daily_production_report, build_multi_book_production_schedule, build_project_cockpit_snapshot
 from novel_forge.modules.pgvector_store import (
     build_embedding_job,
@@ -98,6 +98,28 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def chapter_runtime_growth_profile(project_id: str = "local-project", persist_report: bool = True) -> dict[str, Any]:
         try:
             return build_chapter_runtime_growth_profile(LocalStorage(app_settings.root), project_id=project_id, persist=persist_report)
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/cockpit/chapter-runtime-growth-threshold-gate")
+    def chapter_runtime_growth_threshold_gate(
+        project_id: str = "local-project",
+        environment: str = "local",
+        max_linked_asset_refs: int = Query(default=120, ge=1, le=10000),
+        allow_full_mode: bool = False,
+        persist_profile: bool = True,
+        payload: dict[str, Any] = Body(default_factory=dict),
+    ) -> dict[str, Any]:
+        try:
+            body = payload if isinstance(payload, dict) else {}
+            return run_chapter_runtime_growth_threshold_gate(
+                LocalStorage(app_settings.root),
+                project_id=str(body.get("project_id") or project_id),
+                environment=str(body.get("environment") or environment),
+                max_linked_asset_refs=int(body.get("max_linked_asset_refs") or max_linked_asset_refs),
+                allow_full_mode=bool(body.get("allow_full_mode", allow_full_mode)),
+                persist_profile=bool(body.get("persist_profile", persist_profile)),
+            )
         except (OSError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

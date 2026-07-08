@@ -6,12 +6,16 @@ from typing import Any
 
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.common import resolve_path
+from novel_forge.modules.os_envelope import is_production_environment
+from novel_forge.modules.runtime_ledger import record_gate_result
 from novel_forge.modules.runtime_project_scope import asset_matches_project_scope
 from novel_forge.schemas import ProjectMetricSnapshot, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 CONTRACT = "chapter-runtime-growth-profile-v1"
 SNAPSHOT_KIND = "chapter_runtime_growth_profile"
+THRESHOLD_GATE_KIND = "chapter_runtime_growth_threshold"
+THRESHOLD_GATE_CONTRACT = "chapter-runtime-growth-threshold-gate-v1"
 HIGH_REF_THRESHOLD = 120
 
 
@@ -80,6 +84,85 @@ def build_chapter_runtime_growth_profile(storage: LocalStorage, *, project_id: s
         "asset": asset.to_dict(),
         "summary": summary,
         "runtime_rows": runtime_rows,
+    }
+
+
+def run_chapter_runtime_growth_threshold_gate(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    environment: str = "",
+    max_linked_asset_refs: int = HIGH_REF_THRESHOLD,
+    allow_full_mode: bool = False,
+    persist_profile: bool = True,
+) -> dict[str, Any]:
+    """Write a read-only gate over existing chapter runtime-growth evidence."""
+
+    storage.ensure_layout()
+    threshold = max(1, int(max_linked_asset_refs or HIGH_REF_THRESHOLD))
+    profile = build_chapter_runtime_growth_profile(storage, project_id=project_id, persist=persist_profile)
+    profile_content = profile.get("asset", {}).get("content", {}) if isinstance(profile.get("asset", {}), dict) else {}
+    profile_status = str(profile.get("status") or profile_content.get("status") or "missing")
+    runtime_rows = profile.get("runtime_rows", []) if isinstance(profile.get("runtime_rows", []), list) else []
+    blockers = _threshold_blocking_rows(
+        profile_status=profile_status,
+        runtime_rows=runtime_rows,
+        max_linked_asset_refs=threshold,
+        allow_full_mode=allow_full_mode,
+    )
+    production = is_production_environment(environment)
+    status = "failed" if production and blockers else "warning" if blockers else "passed"
+    message = (
+        f"chapter runtime growth threshold gate has {len(blockers)} blocking row(s)"
+        if blockers
+        else "chapter runtime growth threshold gate passed"
+    )
+    profile_path = str(profile.get("path") or "")
+    evidence_paths = _dedupe([profile_path, *[str(row.get("path") or "") for row in runtime_rows], *[str(row.get("path") or "") for row in blockers]])
+    summary = {
+        "profile_status": profile_status,
+        "chapter_run_count": int(profile.get("summary", {}).get("chapter_run_count") or 0) if isinstance(profile.get("summary", {}), dict) else 0,
+        "blocking_count": len(blockers),
+        "max_linked_asset_refs_threshold": threshold,
+        "allow_full_mode": allow_full_mode,
+        "production": production,
+        "mutation_applied": False,
+        "chapter_production_executed": False,
+        "provider_proof_executed": False,
+    }
+    gate = record_gate_result(
+        storage,
+        gate_kind=THRESHOLD_GATE_KIND,
+        status=status,
+        target_paths=evidence_paths,
+        result={
+            "contract": THRESHOLD_GATE_CONTRACT,
+            "project_id": project_id,
+            "environment": environment,
+            "thresholds": {
+                "max_linked_asset_refs": threshold,
+                "allow_full_mode": allow_full_mode,
+            },
+            "summary": summary,
+            "blocking_rows": blockers,
+            "profile_path": profile_path,
+            "operator_action": _threshold_operator_action(blockers),
+            "mutation_policy": "read-only: no chapter production, acceptance, provider proof, or run mutation",
+        },
+        project_id=project_id,
+        message=message,
+        blocking=production and bool(blockers),
+    )
+    return {
+        "status": status,
+        "production": production,
+        "blocking": production and bool(blockers),
+        "message": message,
+        "summary": summary,
+        "blocking_rows": blockers,
+        "profile": profile,
+        "gate_result": gate,
+        "gate_result_path": str(gate.get("path") or ""),
     }
 
 
@@ -159,6 +242,76 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "referenced_asset_type_counts": dict(sorted(type_counts.items())),
         "repeated_asset_type_counts": dict(sorted(repeated.items())),
     }
+
+
+def _threshold_blocking_rows(
+    *,
+    profile_status: str,
+    runtime_rows: list[dict[str, Any]],
+    max_linked_asset_refs: int,
+    allow_full_mode: bool,
+) -> list[dict[str, Any]]:
+    blockers: list[dict[str, Any]] = []
+    if profile_status == "missing" or not runtime_rows:
+        blockers.append(
+            {
+                "code": "chapter_runtime_growth_profile_missing",
+                "severity": "high",
+                "message": "chapter runtime growth profile has no chapter run evidence",
+                "path": "",
+            }
+        )
+        return blockers
+    for row in runtime_rows:
+        run_id = str(row.get("run_id") or "")
+        path = str(row.get("path") or "")
+        linked_count = int(row.get("linked_asset_ref_count") or 0)
+        if str(row.get("runtime_artifact_policy_status") or "") != "present":
+            blockers.append(
+                {
+                    "code": "chapter_runtime_policy_missing",
+                    "severity": "high",
+                    "run_id": run_id,
+                    "path": path,
+                    "message": "chapter production run is missing runtime_artifact_policy evidence",
+                }
+            )
+        if not allow_full_mode and str(row.get("task_status_mode") or "") == "full":
+            blockers.append(
+                {
+                    "code": "chapter_runtime_full_mode",
+                    "severity": "medium",
+                    "run_id": run_id,
+                    "path": path,
+                    "message": "chapter production run uses full task status mode instead of compact mode",
+                }
+            )
+        if linked_count > max_linked_asset_refs:
+            blockers.append(
+                {
+                    "code": "chapter_runtime_high_fanout",
+                    "severity": "high",
+                    "run_id": run_id,
+                    "path": path,
+                    "linked_asset_ref_count": linked_count,
+                    "threshold": max_linked_asset_refs,
+                    "message": "chapter production run exceeds linked asset reference threshold",
+                }
+            )
+    return blockers
+
+
+def _threshold_operator_action(blockers: list[dict[str, Any]]) -> str:
+    if not blockers:
+        return "chapter runtime growth is within threshold"
+    codes = {str(row.get("code") or "") for row in blockers}
+    if "chapter_runtime_growth_profile_missing" in codes:
+        return "create a chapter runtime growth profile before final unified acceptance"
+    if "chapter_runtime_high_fanout" in codes:
+        return "inspect high-fanout chapter runs and compact runtime artifacts before final acceptance"
+    if "chapter_runtime_full_mode" in codes or "chapter_runtime_policy_missing" in codes:
+        return "switch sequence runs to compact runtime artifact policy before final acceptance"
+    return "review chapter runtime growth threshold blockers"
 
 
 def _runtime_asset_counts(storage: LocalStorage, *, run_id: str) -> dict[str, int]:

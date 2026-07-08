@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from novel_forge.modules.chapter_runtime_growth import build_chapter_runtime_growth_profile
+from novel_forge.modules.chapter_runtime_growth import build_chapter_runtime_growth_profile, run_chapter_runtime_growth_threshold_gate
 from novel_forge.schemas import BaseAsset
 from novel_forge.storage.local import LocalStorage
 
@@ -81,6 +81,65 @@ class ChapterRuntimeGrowthTests(unittest.TestCase):
             self.assertEqual(snapshot["type"], "project_metric_snapshot")
             self.assertEqual(snapshot["metadata"]["snapshot_kind"], "chapter_runtime_growth_profile")
             self.assertEqual(snapshot["content"]["task_health"]["review_required_count"], 1)
+
+    def test_threshold_gate_passes_clean_compact_runtime_profile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft = self._write_asset(storage, "clean-draft", "draft_chapter", project_id="book-a")
+            task = self._write_asset(storage, "clean-task", "task_status", project_id="book-a")
+            self._write_chapter_run(
+                storage,
+                run_id="clean-run",
+                chapter=1,
+                task_status_mode="compact",
+                outputs={"draft_v0_path": draft},
+                steps={"draft": {"task_status_paths": [task], "output_paths": [draft]}},
+            )
+
+            result = run_chapter_runtime_growth_threshold_gate(storage, project_id="book-a", environment="production", max_linked_asset_refs=10)
+
+            self.assertEqual(result["status"], "passed")
+            self.assertFalse(result["blocking"])
+            self.assertEqual(result["summary"]["blocking_count"], 0)
+            self.assertEqual(result["gate_result"]["asset"]["content"]["gate_kind"], "chapter_runtime_growth_threshold")
+            self.assertFalse(result["gate_result"]["asset"]["content"]["result"]["summary"]["chapter_production_executed"])
+
+    def test_threshold_gate_warns_locally_and_fails_in_production_for_full_mode(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft = self._write_asset(storage, "full-draft", "draft_chapter", project_id="book-a")
+            task = self._write_asset(storage, "full-task", "task_status", project_id="book-a")
+            self._write_chapter_run(
+                storage,
+                run_id="full-run",
+                chapter=2,
+                task_status_mode="full",
+                outputs={"draft_v0_path": draft},
+                steps={"draft": {"task_status_paths": [task], "output_paths": [draft]}},
+            )
+
+            local_result = run_chapter_runtime_growth_threshold_gate(storage, project_id="book-a", environment="local", max_linked_asset_refs=10)
+            production_result = run_chapter_runtime_growth_threshold_gate(storage, project_id="book-a", environment="production", max_linked_asset_refs=10)
+
+            self.assertEqual(local_result["status"], "warning")
+            self.assertFalse(local_result["blocking"])
+            self.assertEqual(production_result["status"], "failed")
+            self.assertTrue(production_result["blocking"])
+            self.assertIn("chapter_runtime_full_mode", {row["code"] for row in production_result["blocking_rows"]})
+
+    def test_threshold_gate_fails_closed_without_profile_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            result = run_chapter_runtime_growth_threshold_gate(storage, project_id="book-a", environment="production")
+
+            self.assertEqual(result["status"], "failed")
+            self.assertTrue(result["blocking"])
+            self.assertEqual(result["summary"]["profile_status"], "missing")
+            self.assertIn("chapter_runtime_growth_profile_missing", {row["code"] for row in result["blocking_rows"]})
 
     def _write_asset(self, storage: LocalStorage, asset_id: str, asset_type: str, *, project_id: str, content: dict | None = None) -> str:
         path = storage.write_asset_auto(
