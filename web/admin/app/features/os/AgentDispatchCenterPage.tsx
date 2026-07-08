@@ -95,6 +95,9 @@ export function AgentDispatchCenterPage() {
   const hardStopDashboard = (agentCenter?.hard_stop_dashboard || {}) as Record<string, unknown>;
   const rollbackRehearsals = agentCenter?.rollback_rehearsals || [];
   const deadLetterRepairs = agentCenter?.dead_letter_repairs || [];
+  const governanceDeadLetters = agentCenter?.governance_dead_letters || [];
+  const governanceDeadLetterPaths = new Set(governanceDeadLetters.map((row) => String(row.queue_path || "")));
+  const repairableDeadLetter = failedQueue.find((row) => String(row.status || "") === "dead_letter" && !governanceDeadLetterPaths.has(String(row.path || "")));
   const agentDags = agentCenter?.agent_dags || [];
   const coverageOps = ((operationCoverageFull.operations as Array<Record<string, unknown>> | undefined) || []);
   const hardStopSummary = (hardStopDashboard.summary || {}) as Record<string, unknown>;
@@ -114,6 +117,7 @@ export function AgentDispatchCenterPage() {
         <Metric label="Agent Tasks" value={String(agentTasks.length)} />
         <Metric label="Health" value={String(agentCenter?.health_score ?? 0)} />
         <Metric label="Center" value={String(agentCenter?.agent_center_version || "v1")} />
+        <Metric label="Gov DL" value={String(agentCenter?.summary?.governance_dead_letter_count ?? governanceDeadLetters.length)} />
       </section>
 
       <section className="panel">
@@ -121,7 +125,7 @@ export function AgentDispatchCenterPage() {
         <div className="studioActions">
           <button className="primaryButton" disabled={busy} onClick={() => runAction(() => createAgentDag(projectId), "Agent DAG 已创建", setDispatchResult)}><ListChecks size={16} />Create Review DAG</button>
           <button className="secondaryButton" disabled={busy || !failedQueue[0]?.path} onClick={() => runAction(() => rehearseAgentRollback(String(failedQueue[0]?.path || "")), "Rollback rehearsal 已生成", setDispatchResult)}>Rollback Rehearsal</button>
-          <button className="secondaryButton" disabled={busy || !failedQueue.find((row) => String(row.status || "") === "dead_letter")?.path} onClick={() => runAction(() => repairDeadLetterDispatch(String(failedQueue.find((row) => String(row.status || "") === "dead_letter")?.path || "")), "Dead-letter repair 已执行", setDispatchResult)}>Repair Dead Letter</button>
+          <button className="secondaryButton" disabled={busy || !repairableDeadLetter?.path} onClick={() => runAction(() => repairDeadLetterDispatch(String(repairableDeadLetter?.path || "")), "Dead-letter repair 已执行", setDispatchResult)}>Repair Dead Letter</button>
         </div>
         <div className="summaryBand">
           <Metric label="Hard-stop" value={String(hardStopSummary.provider_status || hardStopDashboard.status || "-")} />
@@ -345,13 +349,39 @@ export function AgentDispatchCenterPage() {
               <span className={statusClass(String(row.status || ""))} key={`${String(row.path)}-retry-status`}>{String(row.status || "-")}</span>,
               String(row.operation || "-"),
               `${String(row.attempt_count ?? 0)}/${String(row.max_attempts ?? 0)}`,
-              row.path ? (
+              governanceDeadLetterPaths.has(String(row.path || "")) ? (
+                <span className="badge warn" key={`${String(row.path)}-retry-governance-review-required`}>Review required</span>
+              ) : row.path ? (
                 <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => recoverAgentDispatch(String(row.path || "")), "Dispatch 已恢复", setDispatchResult)} key={`${String(row.path)}-retry`}>
                   Recover
                 </button>
               ) : "-"
             ])}
           />
+        </div>
+      </section>
+
+      <section className="panel">
+        <PanelHeader title="Governance Dead-letter Review" icon={<ShieldCheck size={18} />} />
+        <DataTable
+          emptyText="暂无治理 dead-letter"
+          columns={["Operation", "失败证据", "Repair precondition", "Queue"]}
+          rows={governanceDeadLetters.slice(0, 50).map((row) => {
+            const repair = (row.repair || {}) as Record<string, unknown>;
+            const failedGateCount = Array.isArray(row.failed_gate_paths) ? row.failed_gate_paths.length : 0;
+            const failedCheckpointCount = Array.isArray(row.failed_checkpoint_paths) ? row.failed_checkpoint_paths.length : 0;
+            return [
+              String(row.operation || "-"),
+              `gates ${failedGateCount} / checkpoints ${failedCheckpointCount}`,
+              String(repair.precondition || "inspect failed gates and checkpoints before retry"),
+              pathCell(String(row.queue_path || "-"), `${String(row.queue_path)}-governance-dead-letter`)
+            ];
+          })}
+        />
+        <div className="pillRow">
+          <span className="badge warn">Review required</span>
+          <span className="badge">no automatic repair</span>
+          <span className="badge">failed gates remain failed</span>
         </div>
       </section>
 
@@ -365,7 +395,9 @@ export function AgentDispatchCenterPage() {
               String(row.operation || "-"),
               String(row.last_error || row.error || "-"),
               pathCell(String(row.path || "-"), `${String(row.path)}-dead-letter`),
-              row.path ? (
+              governanceDeadLetterPaths.has(String(row.path || "")) ? (
+                <span className="badge warn" key={`${String(row.path)}-governance-review-required`}>Review required</span>
+              ) : row.path ? (
                 <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => repairDeadLetterDispatch(String(row.path || "")), "Dead-letter repair 已执行", setDispatchResult)} key={`${String(row.path)}-repair`}>
                   Repair
                 </button>
@@ -480,7 +512,9 @@ export function AgentDispatchCenterPage() {
             `${String(row.attempt_count ?? 0)}/${String(row.max_attempts ?? 0)}`,
             String(row.lease_owner || "-"),
             `${String(row.token_used ?? 0)} / ${String(row.cost_estimate ?? 0)}`,
-            ["dead_letter", "waiting_human", "retry_scheduled"].includes(String(row.status || "")) ? (
+            governanceDeadLetterPaths.has(String(row.path || "")) ? (
+              <span className="badge warn" key={`${row.path}-governance-review-required`}>Review required</span>
+            ) : ["dead_letter", "waiting_human", "retry_scheduled"].includes(String(row.status || "")) ? (
               <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => recoverAgentDispatch(String(row.path || "")), "Dispatch 已恢复", setDispatchResult)} key={`${row.path}-recover`}>
                 Recover
               </button>

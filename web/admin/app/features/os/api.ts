@@ -122,6 +122,7 @@ export type AgentCenterSnapshot = {
   budget_burn?: Record<string, unknown>;
   retry_controls?: Array<Record<string, unknown>>;
   dead_letter_queue?: Array<Record<string, unknown>>;
+  governance_dead_letters?: Array<Record<string, unknown>>;
   rollback_preview?: Array<Record<string, unknown>>;
   sla_duration?: Array<Record<string, unknown>>;
   evidence_drawer?: Array<Record<string, unknown>>;

@@ -110,7 +110,7 @@ describe("Novel Forge admin feature architecture", () => {
     assert.match(workflowConsole, /DAG Graph/);
 
     const agentConsole = read("app/features/os/AgentDispatchCenterPage.tsx");
-    for (const token of ["Agent Center v2 Control", "Run Graph", "Gate Timeline", "Checkpoint List", "Budget Burn", "Dead-letter Queue", "Rollback Preview", "Rollback Rehearsal", "Repair Dead Letter", "SLA \\/ Duration", "Evidence Drawer", "Operation Coverage Full"]) {
+    for (const token of ["Agent Center v2 Control", "Run Graph", "Gate Timeline", "Checkpoint List", "Budget Burn", "Governance Dead-letter Review", "Review required", "no automatic repair", "Dead-letter Queue", "Rollback Preview", "Rollback Rehearsal", "Repair Dead Letter", "SLA \\/ Duration", "Evidence Drawer", "Operation Coverage Full"]) {
       assert.match(agentConsole, new RegExp(token));
     }
 
