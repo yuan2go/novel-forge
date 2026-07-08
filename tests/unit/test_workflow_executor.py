@@ -16,6 +16,7 @@ from novel_forge.modules.workflow_nodes import (
     build_workflow_runtime_console,
     cancel_workflow_run,
     create_workflow_definition,
+    create_v1_chapter_production_workflow_template,
     execute_workflow,
     list_processor_contracts,
     list_node_runs,
@@ -1451,6 +1452,46 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertIn("os_envelope", node_run.content["error"])
             self.assertIn("source_policy", node_run.content["error"])
             self.assertIn("provider_runtime_guard", node_run.content["error"])
+
+    def test_v1_chapter_production_workflow_template_creates_governed_definition(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = _chapter_production_fixture(storage, project_title="Workflow Template Project")
+            source_policy = _workflow_source_policy()
+            workflow = create_v1_chapter_production_workflow_template(
+                storage,
+                name="Template Fixture",
+                chapter=1,
+                run_to="outline_checkpoint",
+                environment="production",
+                workspace_path=fixture["workspace_path"],
+                os_envelope=production_envelope(
+                    fixture["project_id"],
+                    "chapter_production_run",
+                    trace_id=f"trace-workflow-template-{fixture['project_id']}",
+                    source_policy=source_policy,
+                ),
+                source_policy=source_policy,
+                provider_runtime_guard=_passed_provider_runtime_gate(),
+                require_external_provider_proof=True,
+            )
+            workflow_asset = storage.read_json(storage.root / workflow["path"])
+            template_contract = workflow_asset["content"]["template_contract"]
+            node = workflow_asset["content"]["nodes"][0]
+
+            self.assertEqual(template_contract["contract"], "v1-chapter-production-workflow-template-v1")
+            self.assertEqual(template_contract["canonical_runtime"], "chapter_production_bus")
+            self.assertFalse(template_contract["chapter_acceptance_executed"])
+            self.assertEqual(node["processor"]["operation"], "start-chapter-production")
+            self.assertEqual(node["processor"]["source_policy"]["workflow_policy_marker"], "chapter-production-processor")
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[fixture["outline_path"]])
+            chapter_run = storage.read_json(storage.root / result["workflow_run"]["asset"]["content"]["outputs"][0])
+
+            self.assertEqual(result["status"], "completed")
+            self.assertEqual(chapter_run["type"], "chapter_production_run")
+            self.assertEqual(chapter_run["content"]["current_step"], "outline_checkpoint")
 
     def test_gate_registry_schema_gate_blocks_invalid_input(self):
         with tempfile.TemporaryDirectory() as tmp:

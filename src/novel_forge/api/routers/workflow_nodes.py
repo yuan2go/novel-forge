@@ -11,6 +11,7 @@ from novel_forge.modules.workflow_nodes import (
     build_workflow_runtime_console,
     control_workflow_run,
     create_workflow_definition,
+    create_v1_chapter_production_workflow_template,
     create_workflow_node,
     execute_workflow,
     list_processor_contracts,
@@ -34,6 +35,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     globals().update(models)
     router = APIRouter(tags=["product-workflow-nodes"])
     WorkflowDefinitionCreateRequest = models["WorkflowDefinitionCreateRequest"]
+    V1ChapterProductionWorkflowTemplateRequest = models["V1ChapterProductionWorkflowTemplateRequest"]
     WorkflowNodeCreateRequest = models["WorkflowNodeCreateRequest"]
     NodeRunCreateRequest = models["NodeRunCreateRequest"]
     WorkflowExecuteRequest = models["WorkflowExecuteRequest"]
@@ -155,6 +157,27 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 entry_node_id=request.entry_node_id,
                 status=request.status,
                 version=request.version,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/workflow/templates/v1-chapter-production")
+    def v1_chapter_production_workflow_template_endpoint(request: V1ChapterProductionWorkflowTemplateRequest) -> dict[str, Any]:
+        try:
+            return create_v1_chapter_production_workflow_template(
+                LocalStorage(app_settings.root),
+                name=request.name,
+                chapter=request.chapter,
+                run_to=request.run_to,
+                environment=request.environment,
+                workspace_path=request.workspace_path,
+                task_status_mode=request.task_status_mode,
+                os_envelope=request.os_envelope,
+                source_policy=request.source_policy,
+                provider_runtime_guard=request.provider_runtime_guard,
+                require_external_provider_proof=request.require_external_provider_proof,
+                selector_governance_binding_application_report_path=request.selector_governance_binding_application_report_path,
+                status=request.status,
             )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

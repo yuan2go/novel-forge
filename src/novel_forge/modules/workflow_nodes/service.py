@@ -282,6 +282,100 @@ def create_workflow_definition(
     return _write(storage, asset)
 
 
+def create_v1_chapter_production_workflow_template(
+    storage: LocalStorage,
+    *,
+    name: str = "V1 Chapter Production Workflow",
+    chapter: int = 1,
+    run_to: str = "next_chapter_plan",
+    environment: str = "",
+    workspace_path: str = "",
+    task_status_mode: str = "compact",
+    os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
+    provider_runtime_guard: dict[str, Any] | None = None,
+    require_external_provider_proof: bool = False,
+    selector_governance_binding_application_report_path: str = "",
+    status: str = "active",
+) -> dict[str, Any]:
+    """Create the canonical v1 WorkflowDefinition for governed chapter production.
+
+    The template only writes a WorkflowDefinition. It does not execute chapter
+    generation or imply acceptance evidence.
+    """
+
+    processor: dict[str, Any] = {
+        "kind": "service",
+        "operation": "start-chapter-production",
+        "chapter": _optional_positive_int(chapter) or 1,
+        "run_to": run_to,
+        "task_status_mode": task_status_mode,
+        "environment": environment,
+        "source_policy": source_policy or {},
+        "provider_runtime_guard": provider_runtime_guard or {},
+        "require_external_provider_proof": bool(require_external_provider_proof),
+        "selector_governance_binding_application_report_path": selector_governance_binding_application_report_path,
+        "template_contract": "v1-chapter-production-workflow-template-v1",
+    }
+    if os_envelope:
+        processor["os_envelope"] = os_envelope
+    node = {
+        "node_id": "chapter-production-start",
+        "node_type": "production",
+        "operation": "start-chapter-production",
+        "input_types": ["outline"],
+        "output_types": ["chapter_production_run"],
+        "depends_on": [],
+        "processor": processor,
+        "quality_gate": {
+            "required": False,
+            "status": "configured",
+            "contract": "canonical_chapter_production_bus",
+            "expected_output_type": "chapter_production_run",
+            "enforced_by": "chapter_production_processor_governance",
+        },
+    }
+    workflow_id = make_id("workflow", name)
+    template_contract = {
+        "contract": "v1-chapter-production-workflow-template-v1",
+        "canonical_runtime": "chapter_production_bus",
+        "does_not_execute_on_create": True,
+        "chapter_acceptance_executed": False,
+        "requires_runtime_evidence_in_production": ["os_envelope", "source_policy", "provider_runtime_guard"],
+        "processor_operations": ["start-chapter-production"],
+        "resume_operation": "resume-chapter-production",
+        "scope": "single_chapter_or_chapter_sequence_definition_surface",
+    }
+    asset = WorkflowDefinition(
+        title=name,
+        tags=["workflow-definition", status, "v1", "chapter-production", "template"],
+        content={
+            "workflow_id": workflow_id,
+            "name": name,
+            "version": "v1-chapter-production-template-1.0",
+            "nodes": [node],
+            "entry_node_id": "chapter-production-start",
+            "status": status,
+            "runtime_policy": {
+                "template_contract": template_contract["contract"],
+                "environment": environment,
+                "workspace_path": workspace_path,
+                "acceptance_run": False,
+            },
+            "template_contract": template_contract,
+        },
+        metadata={
+            "project_id": str((os_envelope or {}).get("project_id") or ""),
+            "workspace_path": workspace_path,
+            "template_contract": template_contract["contract"],
+            "environment": environment,
+            "acceptance_run": False,
+        },
+        references=filter_project_safe_references(storage, str((os_envelope or {}).get("project_id") or ""), _dedupe([workspace_path, selector_governance_binding_application_report_path])),
+    )
+    return _write(storage, asset)
+
+
 def create_workflow_node(
     storage: LocalStorage,
     *,

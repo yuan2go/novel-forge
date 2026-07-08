@@ -671,6 +671,21 @@ class WorkflowDefinitionCreateRequest(BaseModel):
     version: str = "0.1.0"
 
 
+class V1ChapterProductionWorkflowTemplateRequest(BaseModel):
+    name: str = "V1 Chapter Production Workflow"
+    chapter: int = 1
+    run_to: str = "next_chapter_plan"
+    environment: str = ""
+    workspace_path: str = ""
+    task_status_mode: str = "compact"
+    os_envelope: dict[str, Any] = Field(default_factory=dict)
+    source_policy: dict[str, Any] = Field(default_factory=dict)
+    provider_runtime_guard: dict[str, Any] = Field(default_factory=dict)
+    require_external_provider_proof: bool = False
+    selector_governance_binding_application_report_path: str = ""
+    status: str = "active"
+
+
 class WorkflowNodeCreateRequest(BaseModel):
     workflow_id: str
     node_id: str
@@ -1945,6 +1960,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "ChapterProductionRecoverRequest": ChapterProductionRecoverRequest,
         "ProductionInvalidateRequest": ProductionInvalidateRequest,
         "WorkflowDefinitionCreateRequest": WorkflowDefinitionCreateRequest,
+        "V1ChapterProductionWorkflowTemplateRequest": V1ChapterProductionWorkflowTemplateRequest,
         "WorkflowNodeCreateRequest": WorkflowNodeCreateRequest,
         "NodeRunCreateRequest": NodeRunCreateRequest,
         "WorkflowExecuteRequest": WorkflowExecuteRequest,

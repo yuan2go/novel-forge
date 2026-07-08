@@ -39,6 +39,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/tasks/timeline",
                 "/product/workflow/node-runs",
                 "/product/workflow/definitions",
+                "/product/workflow/templates/v1-chapter-production",
                 "/product/workflow/nodes",
                 "/product/workflow/execute",
                 "/product/workflow/resume",
@@ -680,6 +681,44 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(manuscript_json["selected_draft"]["path"], draft_ref)
             self.assertGreaterEqual(manuscript_json["trace_summary"]["generation_run_count"], 1)
             self.assertEqual(client.get(f"/product/production/versions?project_id={project.json()['project_id']}").status_code, 200)
+
+    def test_v1_chapter_production_workflow_template_route_creates_definition_only(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            app = create_app(IndustrialSettings(root=Path(tmp).resolve()))
+            client = TestClient(app)
+
+            response = client.post(
+                "/product/workflow/templates/v1-chapter-production",
+                json={
+                    "name": "API Template Fixture",
+                    "chapter": 2,
+                    "run_to": "outline_checkpoint",
+                    "environment": "local",
+                    "workspace_path": str(Path(tmp).resolve()),
+                    "source_policy": {"workflow_policy_marker": "api-template"},
+                    "provider_runtime_guard": {"status": "passed", "provider": "fixture"},
+                },
+            )
+
+            self.assertEqual(response.status_code, 200, response.text)
+            body = response.json()
+            self.assertEqual(body["asset"]["type"], "workflow_definition")
+            self.assertEqual(body["asset"]["content"]["template_contract"]["contract"], "v1-chapter-production-workflow-template-v1")
+            self.assertFalse(body["asset"]["content"]["template_contract"]["chapter_acceptance_executed"])
+            node = body["asset"]["content"]["nodes"][0]
+            self.assertEqual(node["processor"]["operation"], "start-chapter-production")
+            self.assertEqual(node["processor"]["chapter"], 2)
+            self.assertEqual(node["processor"]["source_policy"]["workflow_policy_marker"], "api-template")
+            self.assertEqual(node["quality_gate"]["contract"], "canonical_chapter_production_bus")
+            self.assertNotIn("workflow_run", body["asset"]["content"])
 
 
 if __name__ == "__main__":
