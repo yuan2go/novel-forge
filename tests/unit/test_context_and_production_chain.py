@@ -12,6 +12,7 @@ from novel_forge.modules.continuity_graph import create_canon_graph_snapshot
 from novel_forge.modules.drafting import service as drafting_service
 from novel_forge.modules.outline import service as outline_service
 from novel_forge.modules.chapter_plan import service as chapter_plan_service
+from novel_forge.modules.chapter_production_bus import service as chapter_bus_service
 from novel_forge.modules.chapter_production_bus import (
     cancel_chapter_production,
     mark_chapter_production_celery_task,
@@ -882,6 +883,39 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertFalse(compact["control"]["runtime_artifact_policy"]["trace_recording"]["node_run_succeeded_span"])
             self.assertEqual(_count_assets_by_type(storage, "trace_span"), trace_spans_after_full)
 
+    def test_chapter_production_compact_mode_preserves_failure_node_run_and_trace(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            status_paths = []
+            policy = chapter_bus_service._runtime_artifact_policy(task_status_mode="compact")
+
+            def fail_action():
+                raise RuntimeError("fixture compact failure")
+
+            with self.assertRaisesRegex(RuntimeError, "fixture compact failure"):
+                chapter_bus_service._execute_task(
+                    storage,
+                    "run-compact-failure",
+                    "chapter-production:fixture_failure",
+                    [],
+                    fail_action,
+                    status_paths,
+                    runtime_artifact_policy=policy,
+                )
+
+            status_assets = [storage.read_asset(path) for path in status_paths]
+            node_runs = _assets_by_type(storage, "node_run")
+            trace_spans = _assets_by_type(storage, "trace_span")
+
+            self.assertEqual([asset.content["status"] for asset in status_assets], ["failed"])
+            self.assertEqual(len(node_runs), 1)
+            self.assertEqual(node_runs[0]["content"]["status"], "failed")
+            self.assertEqual(len(trace_spans), 1)
+            self.assertEqual(trace_spans[0]["content"]["status"], "failed")
+            self.assertTrue(policy["node_run_recording"]["failed"])
+            self.assertTrue(policy["trace_recording"]["node_run_failed_span"])
+
     def test_project_safe_reference_index_updates_incrementally(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -1118,7 +1152,11 @@ class ContextAndProductionChainTests(unittest.TestCase):
 
 
 def _count_assets_by_type(storage: LocalStorage, asset_type: str) -> int:
-    total = 0
+    return len(_assets_by_type(storage, asset_type))
+
+
+def _assets_by_type(storage: LocalStorage, asset_type: str) -> list[dict]:
+    assets = []
     for category in storage.counts():
         for path in storage.list_json(category):
             try:
@@ -1126,8 +1164,8 @@ def _count_assets_by_type(storage: LocalStorage, asset_type: str) -> int:
             except Exception:
                 continue
             if isinstance(data, dict) and data.get("type") == asset_type:
-                total += 1
-    return total
+                assets.append(data)
+    return assets
 
 
 if __name__ == "__main__":
