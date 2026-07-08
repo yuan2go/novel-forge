@@ -87,6 +87,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "unified_acceptance_preflight_status": unified_acceptance_preflight["status"],
             "unified_acceptance_preflight_missing_count": unified_acceptance_preflight["missing_or_deferred_final_evidence_count"],
             "unified_acceptance_preflight_unready_count": unified_acceptance_preflight["unready_final_evidence_count"],
+            "unified_acceptance_preflight_repair_plan_status": unified_acceptance_preflight["operator_repair_plan"]["status"],
+            "unified_acceptance_preflight_repair_action_count": unified_acceptance_preflight["operator_repair_plan"]["action_count"],
             "quality_calibration_readiness_status": quality_calibration_readiness["status"],
             "quality_calibration_readiness_gate_status": quality_calibration_readiness_gate["status"],
             "quality_calibration_missing_dimension_count": quality_calibration_readiness["summary"]["missing_dimension_count"],
@@ -1140,6 +1142,14 @@ def _production_control_console(
         "draft_queue": draft_rows,
         "agent_queue": agent_queue,
         "gate_status_board": gate_status_board,
+        "repair_plan_summary": {
+            "unified_acceptance_preflight": {
+                "status": unified_acceptance_preflight["operator_repair_plan"]["status"],
+                "action_count": unified_acceptance_preflight["operator_repair_plan"]["action_count"],
+                "read_only": bool(unified_acceptance_preflight["operator_repair_plan"].get("read_only", True)),
+                "repair_executed": bool(unified_acceptance_preflight["operator_repair_plan"].get("repair_executed", False)),
+            }
+        },
         "risk_summary": {
             "context": gate_status_board["context_builder"],
             "canon": gate_status_board["canon"],
