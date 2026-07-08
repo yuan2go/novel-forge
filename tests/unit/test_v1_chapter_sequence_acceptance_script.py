@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 
@@ -376,6 +377,116 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
             self.assertFalse(manifest["operator_repair_plan"]["provider_call_executed"])
             self.assertEqual(status_by_key["quality_calibration_readiness_gate"], "failed")
 
+    def test_acceptance_helper_generates_source_leakage_gate_before_manifest(self):
+        module = _load_acceptance_script()
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            report_path = "data/runs/v1-acceptance-report.json"
+            storage.write_json(
+                report_path,
+                {
+                    "id": "v1-acceptance-report",
+                    "type": "long_chain_acceptance_report",
+                    "title": "V1 acceptance",
+                    "tags": ["acceptance", "pass"],
+                    "content": {"recommendation": "pass"},
+                    "metadata": {"project_id": "book-a", "risk_level": "low"},
+                },
+            )
+            self._write_clean_deferred_preflight_evidence(storage)
+
+            source_gate_calls: list[dict] = []
+
+            def fake_runtime_gate(storage_arg, **kwargs):
+                return {
+                    "status": "passed",
+                    "blocking": False,
+                    "gate_result_path": "data/runs/runtime-growth-gate.json",
+                    "message": "runtime growth passed",
+                    "summary": {"blocking_count": 0},
+                    "blocking_rows": [],
+                }
+
+            def fake_write_budget_gate(storage_arg, **kwargs):
+                return self._passed_write_budget_gate()
+
+            def fake_source_leakage_gate(storage_arg, **kwargs):
+                source_gate_calls.append(dict(kwargs))
+                storage_arg.write_json(
+                    "data/runs/source-leakage-gate.json",
+                    {
+                        "id": "source-leakage-gate",
+                        "type": "gate_result",
+                        "title": "source leakage gate",
+                        "content": {
+                            "gate_kind": "source_leakage_preflight",
+                            "status": "passed",
+                            "message": "source leakage passed",
+                            "blocking": False,
+                            "result": {
+                                "operator_action": "source leakage ready",
+                                "readiness_path": "data/runs/source-leakage-readiness.json",
+                                "summary": {"blocking_count": 0},
+                            },
+                        },
+                        "metadata": {"project_id": "book-a"},
+                    },
+                )
+                return {
+                    "status": "passed",
+                    "blocking": False,
+                    "gate_result_path": "data/runs/source-leakage-gate.json",
+                    "message": "source leakage passed",
+                    "summary": {"blocking_count": 0},
+                    "blockers": [],
+                    "readiness_report": {"path": "data/runs/source-leakage-readiness.json"},
+                }
+
+            module.run_chapter_runtime_growth_threshold_gate = fake_runtime_gate
+            module.run_chapter_runtime_growth_write_budget_gate = fake_write_budget_gate
+            module.run_source_leakage_preflight_gate = fake_source_leakage_gate
+            args = SimpleNamespace(
+                runtime_growth_max_linked_asset_refs=120,
+                runtime_growth_max_task_status_refs=60,
+                runtime_growth_max_step_output_refs=60,
+                runtime_growth_max_node_runs=20,
+                runtime_growth_max_trace_spans=20,
+                runtime_growth_max_repeated_asset_type_total=50,
+                allow_full_runtime_mode=False,
+            )
+
+            result = module._apply_runtime_growth_acceptance_preflight(
+                storage,
+                args,
+                {
+                    "status": "succeeded",
+                    "project_id": "book-a",
+                    "completed_chapters": 10,
+                    "chapter_count": 10,
+                    "failures": [],
+                    "acceptance_report_path": report_path,
+                    "acceptance_report": {"asset": {"content": {"recommendation": "pass"}}},
+                },
+            )
+
+            self.assertEqual(source_gate_calls, [{"project_id": "book-a", "environment": "production", "persist_readiness": True}])
+            self.assertEqual(result["source_leakage_preflight"]["status"], "passed")
+            self.assertFalse(result["source_leakage_preflight"]["provider_call_executed"])
+            self.assertFalse(result["source_leakage_preflight"]["connector_execution_performed"])
+            self.assertFalse(result["source_leakage_preflight"]["chapter_acceptance_executed"])
+            manifest = result["unified_acceptance_preflight_manifest"]
+            status_by_key = {row["key"]: row["status"] for row in manifest["required_evidence"]}
+            self.assertEqual(status_by_key["source_leakage_preflight"], "passed")
+            leakage_row = [row for row in manifest["required_evidence"] if row["key"] == "source_leakage_preflight"][0]
+            self.assertEqual(leakage_row["linked_evidence_paths"], ["data/runs/source-leakage-readiness.json"])
+            persisted = storage.read_json(report_path)
+            self.assertEqual(persisted["content"]["source_leakage_preflight"]["status"], "passed")
+            self.assertEqual(persisted["content"]["source_leakage_preflight"]["readiness_path"], "data/runs/source-leakage-readiness.json")
+            self.assertEqual(persisted["content"]["unified_acceptance_preflight_manifest"]["status"], "passed")
+
     def _passed_write_budget_gate(self) -> dict:
         return {
             "status": "passed",
@@ -385,6 +496,71 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
             "summary": {"blocking_count": 0},
             "blocking_rows": [],
         }
+
+    def _write_clean_deferred_preflight_evidence(self, storage) -> None:
+        storage.write_json(
+            "data/runs/source-gate.json",
+            {
+                "id": "source-gate",
+                "type": "gate_result",
+                "title": "source gate",
+                "content": {"gate_kind": "source_governance_runtime", "status": "passed", "message": "source passed"},
+                "metadata": {"project_id": "book-a"},
+            },
+        )
+        storage.write_json(
+            "data/runs/workflow-gate.json",
+            {
+                "id": "workflow-gate",
+                "type": "gate_result",
+                "title": "workflow gate",
+                "content": {"gate_kind": "workflow_governance_drift", "status": "passed", "message": "workflow passed"},
+                "metadata": {"project_id": "book-a"},
+            },
+        )
+        storage.write_json(
+            "data/runs/approval-readiness.json",
+            {
+                "id": "approval-readiness",
+                "type": "project_metric_snapshot",
+                "title": "approval readiness",
+                "content": {"snapshot_kind": "approval_request_caller_readiness", "status": "passed", "operator_action": "approval ready"},
+                "metadata": {"project_id": "book-a", "snapshot_kind": "approval_request_caller_readiness"},
+            },
+        )
+        storage.write_json(
+            "data/runs/quality-calibration-readiness.json",
+            {
+                "id": "quality-calibration-readiness",
+                "type": "project_metric_snapshot",
+                "title": "quality calibration readiness",
+                "content": {
+                    "snapshot_kind": "quality_calibration_readiness",
+                    "status": "passed",
+                    "operator_action": "quality calibration ready",
+                },
+                "metadata": {"project_id": "book-a", "snapshot_kind": "quality_calibration_readiness"},
+            },
+        )
+        storage.write_json(
+            "data/runs/quality-calibration-gate.json",
+            {
+                "id": "quality-calibration-gate",
+                "type": "gate_result",
+                "title": "quality calibration gate",
+                "content": {
+                    "gate_kind": "quality_calibration_readiness_gate",
+                    "status": "passed",
+                    "message": "quality calibration passed",
+                    "blocking": False,
+                    "result": {
+                        "operator_action": "quality calibration gate ready",
+                        "readiness_report_path": "data/runs/quality-calibration-readiness.json",
+                    },
+                },
+                "metadata": {"project_id": "book-a"},
+            },
+        )
 
     def test_runtime_growth_preflight_persists_report_demotion(self):
         module = _load_acceptance_script()

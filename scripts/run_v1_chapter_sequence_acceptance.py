@@ -16,6 +16,7 @@ if str(SRC_ROOT) not in sys.path:
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.chapter_production_bus import run_chapter_production_sequence
 from novel_forge.modules.chapter_runtime_growth import run_chapter_runtime_growth_threshold_gate, run_chapter_runtime_growth_write_budget_gate
+from novel_forge.modules.source_intake import run_source_leakage_preflight_gate
 from novel_forge.modules.unified_preflight import run_v1_unified_preflight_rollup_gate
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.schemas import Outline
@@ -244,8 +245,20 @@ def _apply_runtime_growth_acceptance_preflight(storage: LocalStorage, args: argp
         budgets=_runtime_growth_write_budgets_from_args(args),
         persist_profile=True,
     )
+    source_leakage_gate = run_source_leakage_preflight_gate(
+        storage,
+        project_id=project_id,
+        environment="production",
+        persist_readiness=True,
+    )
     resolved_evidence = _resolve_unified_acceptance_preflight_evidence(storage, project_id=project_id)
-    updated = _with_runtime_growth_acceptance_preflight(result, gate, write_budget_gate=write_budget_gate, resolved_evidence=resolved_evidence)
+    updated = _with_runtime_growth_acceptance_preflight(
+        result,
+        gate,
+        write_budget_gate=write_budget_gate,
+        source_leakage_gate=source_leakage_gate,
+        resolved_evidence=resolved_evidence,
+    )
     _persist_runtime_growth_acceptance_preflight(storage, updated)
     return updated
 
@@ -266,6 +279,7 @@ def _with_runtime_growth_acceptance_preflight(
     gate: dict[str, Any],
     *,
     write_budget_gate: dict[str, Any] | None = None,
+    source_leakage_gate: dict[str, Any] | None = None,
     resolved_evidence: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     updated = dict(result)
@@ -292,6 +306,8 @@ def _with_runtime_growth_acceptance_preflight(
     updated["runtime_growth_preflight"] = preflight
     if budget_preflight["status"]:
         updated["runtime_write_budget_preflight"] = budget_preflight
+    if isinstance(source_leakage_gate, dict) and source_leakage_gate:
+        updated["source_leakage_preflight"] = _compact_source_leakage_gate(source_leakage_gate)
     updated["unified_acceptance_preflight_manifest"] = _build_unified_acceptance_preflight_manifest(updated, resolved_evidence=resolved_evidence or {})
     enforced_failures = []
     if preflight["status"] != "passed":
@@ -327,8 +343,29 @@ def _with_runtime_growth_acceptance_preflight(
             content["runtime_growth_preflight"] = preflight
             if budget_preflight["status"]:
                 content["runtime_write_budget_preflight"] = budget_preflight
+            source_leakage_preflight = updated.get("source_leakage_preflight", {})
+            if isinstance(source_leakage_preflight, dict) and source_leakage_preflight:
+                content["source_leakage_preflight"] = source_leakage_preflight
             content["unified_acceptance_preflight_manifest"] = updated["unified_acceptance_preflight_manifest"]
     return updated
+
+
+def _compact_source_leakage_gate(gate: dict[str, Any]) -> dict[str, Any]:
+    readiness = gate.get("readiness_report", {}) if isinstance(gate.get("readiness_report", {}), dict) else {}
+    summary = gate.get("summary", {}) if isinstance(gate.get("summary", {}), dict) else {}
+    return {
+        "contract": "v1-acceptance-source-leakage-preflight-v1",
+        "status": str(gate.get("status") or "missing"),
+        "blocking": bool(gate.get("blocking", False)),
+        "gate_result_path": str(gate.get("gate_result_path") or ""),
+        "readiness_path": str(readiness.get("path") or ""),
+        "message": str(gate.get("message") or ""),
+        "summary": summary,
+        "blocker_count": int(summary.get("blocking_count", len(gate.get("blockers", []) if isinstance(gate.get("blockers", []), list) else [])) or 0),
+        "provider_call_executed": False,
+        "connector_execution_performed": False,
+        "chapter_acceptance_executed": False,
+    }
 
 
 def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolved_evidence: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
@@ -612,6 +649,7 @@ def _persist_runtime_growth_acceptance_preflight(storage: LocalStorage, result: 
     path = str(result.get("acceptance_report_path") or "")
     preflight = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
     budget_preflight = result.get("runtime_write_budget_preflight", {}) if isinstance(result.get("runtime_write_budget_preflight", {}), dict) else {}
+    source_leakage_preflight = result.get("source_leakage_preflight", {}) if isinstance(result.get("source_leakage_preflight", {}), dict) else {}
     manifest = result.get("unified_acceptance_preflight_manifest", {}) if isinstance(result.get("unified_acceptance_preflight_manifest", {}), dict) else {}
     if preflight and not manifest:
         manifest = _build_unified_acceptance_preflight_manifest(result)
@@ -628,6 +666,8 @@ def _persist_runtime_growth_acceptance_preflight(storage: LocalStorage, result: 
     content["runtime_growth_preflight"] = preflight
     if budget_preflight:
         content["runtime_write_budget_preflight"] = budget_preflight
+    if source_leakage_preflight:
+        content["source_leakage_preflight"] = source_leakage_preflight
     if manifest:
         content["unified_acceptance_preflight_manifest"] = manifest
     budget_failed = bool(budget_preflight) and budget_preflight.get("status") != "passed"
