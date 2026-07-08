@@ -11,6 +11,7 @@ from novel_forge.api.product import create_github_knowledge_handoff
 from novel_forge.modules.source_intake import (
     apply_governance_recommendations,
     apply_source_diff_repair,
+    build_source_guarded_apply_readiness_report,
     create_license_check_result,
     create_source_policy,
     create_source_refresh_report,
@@ -546,6 +547,151 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertEqual(restored["metadata"]["asset_status"], "active")
             self.assertTrue(restored["metadata"]["use_in_generation_rag"])
             self.assertIn("needs_review", restored_task_statuses)
+
+    def test_source_guarded_apply_readiness_reports_missing_without_mutation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            report = build_source_guarded_apply_readiness_report(storage, project_id="source-readiness-p")
+            content = report["asset"]["content"]
+
+            self.assertEqual(report["asset"]["type"], "project_metric_snapshot")
+            self.assertEqual(report["asset"]["metadata"]["snapshot_kind"], "source_guarded_apply_readiness")
+            self.assertEqual(content["status"], "missing")
+            self.assertEqual(content["summary"]["repair_plan_count"], 0)
+            self.assertEqual(content["summary"]["stale_pending_regeneration_count"], 0)
+            self.assertFalse(content["quality"]["connector_execution_performed"])
+            self.assertFalse(content["quality"]["dispatch_applied"])
+
+    def test_source_guarded_apply_readiness_surfaces_reviewable_diff_plan(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(storage, {"source_ref": "local-corpus", "risk_tier": "R1", "project_id": "source-readiness-p"})
+            risk = create_source_risk_report(storage, {"source_ref": "local-corpus", "source_policy_path": policy["path"], "project_id": "source-readiness-p"})
+            old_snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "old-hash",
+                    "source_path": "sources/local-corpus/manifest.json",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-readiness-p",
+                },
+            )
+            new_snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "new-hash",
+                    "source_path": "sources/local-corpus/manifest.json",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-readiness-p",
+                },
+            )
+            storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Source-derived abstraction",
+                    source="local-corpus",
+                    tags=["mkaos", "source-derived"],
+                    content={"principles": ["Abstract source mechanism."], "principle": "Abstract source mechanism.", "source_snapshot_ref": old_snapshot["asset"]["id"]},
+                    metadata={
+                        "project_id": "source-readiness-p",
+                        "asset_status": "active",
+                        "use_in_generation_rag": True,
+                        "copyright_boundary": "abstract structure only; no raw source expression",
+                    },
+                    references=[old_snapshot["path"], old_snapshot["asset"]["id"]],
+                )
+            )
+            plan_source_diff_repair(storage, {"old_snapshot_path": old_snapshot["path"], "new_snapshot_path": new_snapshot["path"], "project_id": "source-readiness-p"})
+
+            report = build_source_guarded_apply_readiness_report(storage, project_id="source-readiness-p")
+            content = report["asset"]["content"]
+
+            self.assertEqual(content["status"], "review_required")
+            self.assertEqual(content["summary"]["repair_plan_count"], 1)
+            self.assertEqual(content["summary"]["pending_review_plan_count"], 1)
+            self.assertGreaterEqual(content["summary"]["review_task_count"], 1)
+            self.assertEqual(content["summary"]["stale_pending_regeneration_count"], 0)
+            self.assertFalse(content["quality"]["silent_mutation_allowed"])
+            self.assertFalse(content["quality"]["dispatch_applied"])
+
+    def test_source_guarded_apply_readiness_surfaces_applied_stale_and_dispatch_ready_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            policy = create_source_policy(storage, {"source_ref": "local-corpus", "risk_tier": "R1", "project_id": "source-readiness-p"})
+            risk = create_source_risk_report(storage, {"source_ref": "local-corpus", "source_policy_path": policy["path"], "project_id": "source-readiness-p"})
+            old_snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "old-hash",
+                    "source_path": "sources/local-corpus/manifest.json",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-readiness-p",
+                },
+            )
+            new_snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "new-hash",
+                    "source_path": "sources/local-corpus/manifest.json",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "source-readiness-p",
+                },
+            )
+            storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Source-derived abstraction",
+                    source="local-corpus",
+                    tags=["mkaos", "source-derived"],
+                    content={"principles": ["Abstract source mechanism."], "principle": "Abstract source mechanism.", "source_snapshot_ref": old_snapshot["asset"]["id"]},
+                    metadata={
+                        "project_id": "source-readiness-p",
+                        "asset_status": "active",
+                        "use_in_generation_rag": True,
+                        "copyright_boundary": "abstract structure only; no raw source expression",
+                    },
+                    references=[old_snapshot["path"], old_snapshot["asset"]["id"]],
+                )
+            )
+            plan = plan_source_diff_repair(storage, {"old_snapshot_path": old_snapshot["path"], "new_snapshot_path": new_snapshot["path"], "project_id": "source-readiness-p"})
+            blocked = apply_source_diff_repair(storage, {"repair_plan_path": plan["path"], "project_id": "source-readiness-p"})
+            approval_path = blocked["approval_request"]["path"]
+            resolve_approval_request(storage, approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve source repair"})
+            apply_source_diff_repair(
+                storage,
+                {
+                    "repair_plan_path": plan["path"],
+                    "approval_request_path": approval_path,
+                    "confirm_apply": True,
+                    "actor": "unit-test",
+                    "project_id": "source-readiness-p",
+                },
+            )
+
+            report = build_source_guarded_apply_readiness_report(storage, project_id="source-readiness-p")
+            content = report["asset"]["content"]
+
+            self.assertEqual(content["status"], "review_required")
+            self.assertEqual(content["summary"]["repair_plan_count"], 1)
+            self.assertEqual(content["summary"]["applied_plan_count"], 1)
+            self.assertEqual(content["summary"]["stale_pending_regeneration_count"], 1)
+            self.assertGreaterEqual(content["summary"]["dispatch_ready_task_count"], 1)
+            self.assertEqual(content["summary"]["approval_request_count"], 1)
+            self.assertTrue(content["repair_plans"][0]["approval_request_path"])
+            self.assertFalse(content["quality"]["connector_execution_performed"])
+            self.assertFalse(content["quality"]["dispatch_applied"])
 
     def test_governance_application_applies_mkaos_recommendation_only_after_approval_and_can_rollback(self):
         with tempfile.TemporaryDirectory() as tmp:

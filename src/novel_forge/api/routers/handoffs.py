@@ -193,6 +193,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.get("/product/sources/guarded-apply-readiness")
+    def source_guarded_apply_readiness(project_id: str | None = None, persist: bool = True, limit: int = Query(default=1000, ge=1, le=5000)) -> dict[str, Any]:
+        try:
+            return build_source_guarded_apply_readiness_report(LocalStorage(app_settings.root), project_id=project_id or "", persist=persist, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/product/sources/context-eligibility")
     def source_context_eligibility_endpoint(request: SourceContextEligibilityRequest) -> dict[str, Any]:
         try:

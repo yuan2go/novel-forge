@@ -24,6 +24,7 @@ from novel_forge.modules.ingestion.service import discover_source_files
 from novel_forge.modules.source_intake import (
     apply_governance_recommendations,
     apply_source_diff_repair,
+    build_source_guarded_apply_readiness_report,
     create_license_check_result,
     create_github_source_note,
     create_source_policy,

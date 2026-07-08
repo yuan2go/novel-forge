@@ -13,6 +13,7 @@ from novel_forge.modules.source_intake.service import (
     plan_source_connector_execution,
 )
 from novel_forge.modules.source_intake.diff_repair import apply_source_diff_repair, plan_source_diff_repair, rollback_source_diff_repair
+from novel_forge.modules.source_intake.guarded_apply_readiness import build_source_guarded_apply_readiness_report
 from novel_forge.modules.source_intake.connector_runner import run_source_connector
 from novel_forge.modules.source_intake.governance_application import apply_governance_recommendations, rollback_governance_application
 from novel_forge.modules.source_intake.connector_adapters import list_source_connector_adapters, plan_source_connector_adapter_lifecycle
@@ -35,6 +36,7 @@ __all__ = [
     "plan_source_connector_execution",
     "plan_source_connector_adapter_lifecycle",
     "apply_source_diff_repair",
+    "build_source_guarded_apply_readiness_report",
     "apply_governance_recommendations",
     "plan_source_diff_repair",
     "rollback_source_diff_repair",

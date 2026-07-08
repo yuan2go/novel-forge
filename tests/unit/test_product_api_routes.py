@@ -261,6 +261,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/sources/governance-rollback",
                 "/product/sources/stale-sweep",
                 "/product/sources/retention-sweep",
+                "/product/sources/guarded-apply-readiness",
                 "/product/sources/context-eligibility",
                 "/product/drafts",
                 "/product/reviews/run",
@@ -888,6 +889,80 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["summary"]["missing_dimension_count"], 0)
             self.assertEqual(content["summary"]["pending_blocking_count"], 5)
             self.assertEqual(len(content["evidence_paths"]), 5)
+
+    def test_source_guarded_apply_readiness_route_surfaces_reviewable_evidence(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.modules.source_intake import create_source_policy, create_source_risk_report, create_source_snapshot, plan_source_diff_repair
+        from novel_forge.schemas import KnowledgeCard
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+            storage = LocalStorage(root)
+            policy = create_source_policy(storage, {"source_ref": "local-corpus", "risk_tier": "R1", "project_id": "route-source-readiness"})
+            risk = create_source_risk_report(storage, {"source_ref": "local-corpus", "source_policy_path": policy["path"], "project_id": "route-source-readiness"})
+            old_snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "old-hash",
+                    "source_path": "sources/local-corpus/manifest.json",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "route-source-readiness",
+                },
+            )
+            new_snapshot = create_source_snapshot(
+                storage,
+                {
+                    "source_ref": "local-corpus",
+                    "source_type": "local_manifest",
+                    "content_hash": "new-hash",
+                    "source_path": "sources/local-corpus/manifest.json",
+                    "source_policy_path": policy["path"],
+                    "risk_report_path": risk["path"],
+                    "project_id": "route-source-readiness",
+                },
+            )
+            storage.write_asset_auto(
+                KnowledgeCard(
+                    title="Source-derived abstraction",
+                    source="local-corpus",
+                    tags=["mkaos", "source-derived"],
+                    content={"principles": ["Abstract source mechanism."], "principle": "Abstract source mechanism.", "source_snapshot_ref": old_snapshot["asset"]["id"]},
+                    metadata={
+                        "project_id": "route-source-readiness",
+                        "asset_status": "active",
+                        "use_in_generation_rag": True,
+                        "copyright_boundary": "abstract structure only; no raw source expression",
+                    },
+                    references=[old_snapshot["path"], old_snapshot["asset"]["id"]],
+                )
+            )
+            plan_source_diff_repair(storage, {"old_snapshot_path": old_snapshot["path"], "new_snapshot_path": new_snapshot["path"], "project_id": "route-source-readiness"})
+
+            response = client.get("/product/sources/guarded-apply-readiness", params={"project_id": "route-source-readiness"})
+
+            self.assertEqual(response.status_code, 200, response.text)
+            payload = response.json()
+            content = payload["asset"]["content"]
+            self.assertEqual(payload["asset"]["type"], "project_metric_snapshot")
+            self.assertEqual(payload["asset"]["metadata"]["snapshot_kind"], "source_guarded_apply_readiness")
+            self.assertEqual(content["status"], "review_required")
+            self.assertEqual(content["summary"]["repair_plan_count"], 1)
+            self.assertEqual(content["summary"]["pending_review_plan_count"], 1)
+            self.assertGreaterEqual(content["summary"]["review_task_count"], 1)
+            self.assertFalse(content["quality"]["connector_execution_performed"])
+            self.assertFalse(content["quality"]["dispatch_applied"])
 
     def test_project_cockpit_route_surfaces_clean_workflow_governance_readiness(self):
         try:

@@ -60,12 +60,13 @@ Current evidence:
 - Permission Center now writes a non-mutating `approval-request-caller-readiness-v1` `project_metric_snapshot` over source/context/publish/feedback/story-mutation caller evidence; the Product API and Project Cockpit expose the latest readiness state without creating or resolving approvals.
 - Focused runtime-growth regression now includes ApprovalRequest caller readiness missing/ready/pending-blocking fixtures and the Product API readiness route without running chapter acceptance or provider proof.
 - `/product/os/cockpit/project` now has explicit route coverage for ApprovalRequest caller readiness evidence and is included in the focused runtime-growth regression bundle.
+- Source Intake now writes a non-mutating `source-guarded-apply-readiness-v1` `project_metric_snapshot` over source diff repair plans, source approval refs, stale source-derived assets, regeneration AgentTasks, and rollback evidence; `/product/sources/guarded-apply-readiness` exposes it without connector execution, mutation, dispatch, provider proof, or chapter acceptance.
 
 阻塞项:
 - True 30-chapter local slow acceptance is intentionally deferred until the unified acceptance phase and is not yet passing inside an acceptable runtime envelope.
 - 10-chapter runtime growth is high: chapter 1 took 22.571s, chapter 10 took 306.933s.
 - Readable prose/page-turning/mobile has a first local gate, but provider/human calibration and final full-loop proof remain pending.
-- ApprovalRequest caller readiness is now visible through a read-only report/API/Cockpit summary, included in focused runtime-growth regression, and covered at `/product/os/cockpit/project`; source governance guarded apply readiness remains the next source-safety gap.
+- ApprovalRequest caller readiness is now visible through a read-only report/API/Cockpit summary, included in focused runtime-growth regression, and covered at `/product/os/cockpit/project`; source governance guarded apply readiness is implemented but still needs focused regression command coverage.
 - ApprovalRequest caller migration is still pending for every high-risk source/context/publish/story mutation path.
 - Source policy lifecycle now has schema-backed policy/license/risk/snapshot/sync-job/refresh-report assets and context eligibility evaluation; MKAOS knowledge/material seams plus analysis conversion and Context Builder selected/rejected summaries consume eligibility evidence, while Context Bundle writes knowledge/material usage feedback, lineage governance emits reviewable invalidation recommendations, and connector execution plans are ApprovalRequest-gated with no side effects.
 - ReaderPromise, PleasurePoint/ChapterEconomy, Character Pressure, and Mobile Reading lifecycles now have schema-backed local foundations and draft-to-longform or chapter-bus integration; payoff, scene-value, agency, pressure, and mobile rhythm detection remain deterministic and need calibration plus final multi-chapter proof.
@@ -73,7 +74,7 @@ Current evidence:
 推荐切片:
 1. Continue reducing per-chapter runtime growth and asset-volume amplification in the true chapter bus without running chapter acceptance during development.
 2. Portfolio project boundary for future multi-book scheduling and cost/quality rollups.
-3. Add source governance guarded apply readiness over repair/invalidation/approval/regeneration evidence without connector execution or chapter acceptance.
+3. Add source guarded apply readiness fixtures to a focused no-acceptance regression command without connector execution or chapter acceptance.
 4. Continue reducing per-chapter runtime growth and asset-volume amplification before the final unified acceptance phase.
 
 验收标准:
