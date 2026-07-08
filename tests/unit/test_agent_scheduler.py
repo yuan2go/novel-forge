@@ -630,6 +630,42 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(repair_rows[0]["status"], "queued")
             self.assertEqual(repair_rows[0]["summary"], "Agent dead letter repair")
 
+    def test_agent_center_readiness_warns_on_historical_governance_repair_missing_review(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            project_id = "project-governance-repair-drift"
+            storage.write_json(
+                storage.data_dir("runs") / "historical-governance-repair-missing-review.json",
+                {
+                    "id": "historical-governance-repair-missing-review",
+                    "type": "agent_dead_letter_repair",
+                    "title": "Historical governance repair missing review",
+                    "content": {
+                        "status": "queued",
+                        "queue_path": "runs/queue-governance-dead-letter.json",
+                        "governance_review": {
+                            "required": True,
+                            "confirmed": False,
+                            "reviewed_failed_gate_paths": [],
+                            "reviewed_failed_checkpoint_paths": [],
+                        },
+                        "created_at": "2026-07-08T00:00:00Z",
+                    },
+                    "metadata": {"project_id": project_id},
+                    "references": [],
+                },
+            )
+
+            snapshot = agent_center_snapshot(storage, project_id=project_id)
+            repair_check = next(check for check in snapshot["readiness_checks"] if check["key"] == "governance_repair_review")
+
+            self.assertEqual(snapshot["summary"]["governance_repair_required_count"], 1)
+            self.assertEqual(snapshot["summary"]["governance_repair_confirmed_count"], 0)
+            self.assertEqual(snapshot["summary"]["governance_repair_missing_review_count"], 1)
+            self.assertEqual(repair_check["status"], "warning")
+            self.assertIn("missing governance review", repair_check["recommendation"])
+
     def test_non_governance_dead_letter_repair_remains_compatible(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

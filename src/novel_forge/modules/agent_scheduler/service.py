@@ -910,6 +910,11 @@ def agent_center_snapshot(
     governance_dead_letters = _agent_center_governance_dead_letters(blocked_queue, runs, checkpoints, gates)
     budget_summary = _budget_coverage(budgets)
     rollback_rows = [_agent_asset_compact(row) for row in rollbacks]
+    dead_letter_repairs = _agent_center_assets(storage, "agent_dead_letter_repair", project_id=project_id, limit=limit)
+    dead_letter_repair_rows = [_agent_dead_letter_repair_row(row) for row in dead_letter_repairs[:80]]
+    governance_repair_required_count = sum(1 for row in dead_letter_repair_rows if row.get("governance_review_required") is True)
+    governance_repair_confirmed_count = sum(1 for row in dead_letter_repair_rows if row.get("governance_review_confirmed") is True)
+    governance_repair_missing_review_count = max(0, governance_repair_required_count - governance_repair_confirmed_count)
     health_score = _agent_center_health_score(queue, runs, checkpoints, gates, budgets, failures, rollbacks, contracts)
     readiness_checks = [
         _agent_center_check("operation_contracts", bool(contracts), "Agent operation contracts are registered", "register at least one operation contract"),
@@ -922,6 +927,7 @@ def agent_center_snapshot(
         _agent_center_check("loop_runs", bool(loops) or not tasks, "LoopRun evidence is visible or no agent task requires a loop", "run Loop Kernel for governed generation/review work"),
         _agent_center_check("rollback", bool(rollbacks) or not failures, "Rollback evidence exists or no failures need rollback", "create rollback report for failed agent outputs"),
         _agent_center_check("governance_dead_letters", not governance_dead_letters, "No production governance dead-letter is blocking Agent Center", "inspect governance_dead_letters before repairing or rerunning production dispatches"),
+        _agent_center_check("governance_repair_review", governance_repair_missing_review_count == 0, "Governance repair records have explicit review evidence", "inspect dead_letter_repairs with missing governance review confirmation"),
     ]
     status = "blocked" if blocked_queue or failures else "warning" if any(check["status"] == "warning" for check in readiness_checks) else "ready"
     recommendations = _agent_center_recommendations(status, blocked_queue, failures, readiness_checks)
@@ -930,10 +936,6 @@ def agent_center_snapshot(
     operation_coverage_full = agent_operation_coverage_full_report(storage, project_id=project_id or "")
     hard_stop_dashboard = agent_hard_stop_dashboard(storage, project_id=project_id or "")
     rollback_rehearsals = _agent_center_assets(storage, "agent_rollback_rehearsal", project_id=project_id, limit=limit)
-    dead_letter_repairs = _agent_center_assets(storage, "agent_dead_letter_repair", project_id=project_id, limit=limit)
-    dead_letter_repair_rows = [_agent_dead_letter_repair_row(row) for row in dead_letter_repairs[:80]]
-    governance_repair_required_count = sum(1 for row in dead_letter_repair_rows if row.get("governance_review_required") is True)
-    governance_repair_confirmed_count = sum(1 for row in dead_letter_repair_rows if row.get("governance_review_confirmed") is True)
     agent_dags = _agent_center_assets(storage, "agent_dag", project_id=project_id, limit=limit)
     return {
         "status": status,
@@ -961,7 +963,7 @@ def agent_center_snapshot(
             "dead_letter_repair_count": len(dead_letter_repair_rows),
             "governance_repair_required_count": governance_repair_required_count,
             "governance_repair_confirmed_count": governance_repair_confirmed_count,
-            "governance_repair_missing_review_count": max(0, governance_repair_required_count - governance_repair_confirmed_count),
+            "governance_repair_missing_review_count": governance_repair_missing_review_count,
             "queue_by_status": by_status,
         },
         "readiness_checks": readiness_checks,
