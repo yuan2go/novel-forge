@@ -34,6 +34,18 @@ npm --prefix web/admin test
 
 Current verified result for the V7 foundation and risk closure pass: all commands above passed. `make test` passed with Python 527 tests OK, skipped=2, and Web Admin 10 passed, 1 optional browser-related skipped test.
 
+## Governance Dead-Letter Focused Regression
+
+Run this when changing Agent Scheduler governance drift handling, dead-letter repair, Agent Center repair audit evidence, or related UI/API surfaces. It intentionally excludes chapter production acceptance and provider proof:
+
+```bash
+python3 scripts/run_governance_dead_letter_regression.py
+python3 scripts/run_governance_dead_letter_regression.py --skip-ui
+python3 scripts/run_governance_dead_letter_regression.py --list
+```
+
+The command bundle covers scheduler dead-letter failure fixtures, reviewed repair preflight, direct recovery blocking, Agent Center API evidence, repair audit/readiness evidence, compileall, and optional Web Admin static/type checks.
+
 ## Makefile Targets
 
 | Command | Purpose | Notes |

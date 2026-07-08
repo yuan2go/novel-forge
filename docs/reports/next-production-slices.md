@@ -72,6 +72,7 @@ Implementation status note:
 - 2026-07-08: `P4-S47 Governance Repair Readiness Check` was implemented as a development slice. Agent Center readiness now includes `governance_repair_review`, warning when historical or malformed `agent_dead_letter_repair` assets require governance review but lack confirmation. Normal repair paths still require review before writing repair evidence. Unit coverage exists in `tests/unit/test_agent_scheduler.py`. No chapter acceptance was run.
 - 2026-07-08: `P4-S48 Governance Repair Readiness API Fixture` was implemented as a development slice. `/product/agents/center` now has route-level coverage proving the governance repair readiness warning and missing-review summary count survive the HTTP boundary for a synthetic historical malformed repair asset. Unit/API-route coverage exists in `tests/unit/test_agent_scheduler.py`. No chapter acceptance was run.
 - 2026-07-08: `P4-S49 Governance Repair Missing Review UI Metric` was implemented as a development slice. The Agent Center top metric band now exposes `Gov Missing` from `governance_repair_missing_review_count`, so operators can see unreviewed historical repair drift without opening the readiness table. Static UI coverage exists in `web/admin/tests/feature-architecture.test.mjs`. No chapter acceptance was run.
+- 2026-07-08: `P4-S50 Governance Dead-Letter Focused Regression Bundle` was implemented as a development slice. `scripts/run_governance_dead_letter_regression.py` now runs the focused non-acceptance regression bundle for scheduler governance dead-letter failures, reviewed repair preflight, direct recovery blocking, Agent Center API evidence, repair audit/readiness evidence, compileall, and optional Web Admin static/type checks. `docs/quality/regression-tests.md` documents the command. No chapter acceptance was run.
 
 | 切片 | 目标 | 为什么优先 | 涉及模块 | 涉及数据模型 | 涉及 API / Service | 测试 | 文档 | 风险 |
 |---|---|---|---|---|---|---|---|---|
@@ -146,13 +147,14 @@ Implementation status note:
 | P4-S47 Governance Repair Readiness Check | Turn governance repair missing-review summary into an Agent Center readiness warning | Summary metrics exist, but malformed historical repair assets should degrade readiness instead of hiding behind counts | Agent Center, Runtime Readiness, Dead Letter Repair | AgentDeadLetterRepair, AgentCenterSnapshot | Implemented: `governance_repair_review` readiness check warns when governance-required repair rows are not confirmed; synthetic historical malformed repair fixture proves the warning | Service fixture; no chapter acceptance | Runtime/agent/ops docs updated through this slice matrix | Normal repair path still cannot create unreviewed governance repair evidence |
 | P4-S48 Governance Repair Readiness API Fixture | Prove governance repair readiness warning is visible through `/product/agents/center` | P4-S47 covers service behavior, but ops/UI callers consume the API route | Agent API, Agent Center, Runtime Readiness | AgentDeadLetterRepair, AgentCenterSnapshot | Implemented: route-level malformed historical repair fixture asserts missing-review summary count and `governance_repair_review` warning survive HTTP boundary | API route fixture; no chapter acceptance | Runtime/agent/API docs updated through this slice matrix | Fixture does not use normal repair endpoint to create invalid evidence |
 | P4-S49 Governance Repair Missing Review UI Metric | Surface missing-review repair count in the Agent Center top metrics | P4-S48 exposes API evidence, but operators should see missing repair review count without opening readiness rows | Web Admin Agent Center, Agent API Client | AgentCenterSnapshot | Implemented: `Gov Missing` top metric bound to `governance_repair_missing_review_count` | Static UI test; no chapter acceptance | Runtime/agent/UI docs updated through this slice matrix | UI does not present missing-review repair as recoverable one-click action |
-| P4-S50 Governance Dead-Letter Focused Regression Bundle | Add a focused unittest target that covers the governance dead-letter/repair/API/readiness chain without chapter acceptance | The chain now spans scheduler failure, API, UI source, evidence drawer, and readiness; maintainers need a compact regression command | Agent Scheduler Tests, Web Admin Static Test | AgentDispatchQueue, AgentDeadLetterRepair, GateResult, AgentCenterSnapshot | Add or document a focused command group and ensure existing targeted tests cover the chain; no full acceptance | Focused unittest names plus UI static test; no chapter acceptance | Runtime/agent/test docs | Must not invoke chapter production sequence or provider proof |
+| P4-S50 Governance Dead-Letter Focused Regression Bundle | Add a focused unittest target that covers the governance dead-letter/repair/API/readiness chain without chapter acceptance | The chain now spans scheduler failure, API, UI source, evidence drawer, and readiness; maintainers need a compact regression command | Agent Scheduler Tests, Web Admin Static Test | AgentDispatchQueue, AgentDeadLetterRepair, GateResult, AgentCenterSnapshot | Implemented: `scripts/run_governance_dead_letter_regression.py` with `--list`/`--skip-ui`, focused scheduler/API/readiness tests, compileall, and optional UI static/type checks | Script list/run checks; no chapter acceptance | `docs/quality/regression-tests.md` updated | Does not invoke chapter production sequence or provider proof |
+| P4-S51 Makefile Governance Regression Target | Add a Makefile shortcut for the focused governance dead-letter regression bundle | Developers should not need to remember the script path or flags | Makefile, Regression Docs | Test command surface | Add `make governance-dead-letter-regression` and document it | `make governance-dead-letter-regression` focused run; no chapter acceptance | Regression docs | Target must call the focused script only |
 
 ## Recommended Next Slice
 
-Continue from `P4-S50 Governance Dead-Letter Focused Regression Bundle`.
+Continue from `P4-S51 Makefile Governance Regression Target`.
 
-The current highest-priority development slice is to consolidate the governance dead-letter chain into a compact regression bundle:
+The current highest-priority development slice is to add a stable Makefile target for the focused governance dead-letter regression bundle:
 
 ```text
 historical unreviewed governance repair asset
@@ -160,6 +162,7 @@ historical unreviewed governance repair asset
 -> readiness warning
 -> Agent Center top metric
 -> focused non-acceptance regression command
+-> Makefile shortcut
 -> failed gates remain failed
 -> no chapter acceptance run
 ```
