@@ -26,6 +26,8 @@ class RuntimeGrowthRegressionScriptTests(unittest.TestCase):
         command_text = "\n".join(" ".join(command) for command in commands)
 
         self.assertIn("test_chapter_production_compact_task_status_mode_preserves_completed_step_evidence", command_text)
+        self.assertIn("test_chapter_production_uses_latest_applied_runtime_write_policy_for_future_runs", command_text)
+        self.assertIn("test_chapter_production_fails_closed_when_latest_runtime_policy_is_rolled_back_in_production", command_text)
         self.assertIn("tests.unit.test_chapter_runtime_growth.ChapterRuntimeGrowthTests", command_text)
         self.assertIn("test_agent_center_api_surfaces_agent_event_summary", command_text)
         self.assertIn("test_v1_chapter_production_workflow_template_creates_governed_definition", command_text)

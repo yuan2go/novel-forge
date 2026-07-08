@@ -84,6 +84,7 @@ def start_chapter_production(
     execute: bool = True,
     execution_mode: str = "sync",
     task_status_mode: str = "full",
+    runtime_artifact_policy: dict[str, Any] | None = None,
     selector_governance_binding_application_report_path: str | Path | None = None,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
@@ -92,8 +93,6 @@ def start_chapter_production(
 ) -> dict[str, Any]:
     storage.ensure_layout()
     _validate_step(run_to)
-    runtime_artifact_policy = _runtime_artifact_policy(task_status_mode=task_status_mode)
-    task_status_mode = runtime_artifact_policy["task_status_mode"]
     outline_file = resolve_path(storage.root, outline_path)
     outline = storage.read_asset(outline_file)
     if outline.type != "outline":
@@ -103,6 +102,15 @@ def start_chapter_production(
     workspace = str(project.get("workspace_path", "") or workspace_path or "")
     if not project_id or not workspace:
         raise ValueError("chapter production bus requires a project workspace; pass workspace_path or project-bound outline")
+    runtime_policy_resolution = _resolve_runtime_artifact_policy(
+        storage,
+        project_id=project_id,
+        task_status_mode=task_status_mode,
+        explicit_policy=runtime_artifact_policy,
+        environment=environment,
+    )
+    runtime_artifact_policy = runtime_policy_resolution["runtime_artifact_policy"]
+    task_status_mode = runtime_artifact_policy["task_status_mode"]
     production_context = build_production_context(storage, outline, input_path=outline_file, workspace_path=workspace)
     if not production_context.get("preflight", {}).get("ready", False):
         missing = ", ".join(production_context.get("preflight", {}).get("missing", []))
@@ -210,6 +218,9 @@ def start_chapter_production(
                 "execution_mode": execution_mode,
                 "task_status_mode": task_status_mode,
                 "runtime_artifact_policy": runtime_artifact_policy,
+                "runtime_artifact_policy_source": runtime_policy_resolution["source"],
+                "runtime_artifact_policy_path": runtime_policy_resolution["path"],
+                "runtime_artifact_policy_resolution": runtime_policy_resolution,
                 "celery_task_id": "",
                 "pause_requested": False,
                 "pause_reason": "",
@@ -249,6 +260,7 @@ def run_chapter_production_sequence(
     chapter_plan_path: str | Path | None = None,
     max_chapters: int = 30,
     task_status_mode: str = "compact",
+    runtime_artifact_policy: dict[str, Any] | None = None,
     selector_governance_binding_application_report_path: str | Path | None = None,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
@@ -257,11 +269,10 @@ def run_chapter_production_sequence(
     progress_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     storage.ensure_layout()
-    runtime_artifact_policy = _runtime_artifact_policy(task_status_mode=task_status_mode)
-    task_status_mode = runtime_artifact_policy["task_status_mode"]
     sequence_started_at = utc_now()
     sequence_started = time.monotonic()
     asset_counts_before = storage.counts()
+    explicit_runtime_artifact_policy = runtime_artifact_policy
     total = _bounded_chapter_count(chapter_count, max_chapters=max_chapters)
     first_chapter = _positive_chapter(start_chapter)
     outline_file = resolve_path(storage.root, outline_path)
@@ -273,6 +284,15 @@ def run_chapter_production_sequence(
     workspace = str(project.get("workspace_path", "") or workspace_path or "")
     if not project_id or not workspace:
         raise ValueError("chapter production sequence requires a project workspace; pass workspace_path or project-bound outline")
+    runtime_policy_resolution = _resolve_runtime_artifact_policy(
+        storage,
+        project_id=project_id,
+        task_status_mode=task_status_mode,
+        explicit_policy=explicit_runtime_artifact_policy,
+        environment=environment,
+    )
+    runtime_artifact_policy = runtime_policy_resolution["runtime_artifact_policy"]
+    task_status_mode = runtime_artifact_policy["task_status_mode"]
     current_plan = str(chapter_plan_path or "")
     runs: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
@@ -293,6 +313,7 @@ def run_chapter_production_sequence(
                 chapter=chapter,
                 run_to="next_chapter_plan",
                 task_status_mode=task_status_mode,
+                runtime_artifact_policy=explicit_runtime_artifact_policy,
                 selector_governance_binding_application_report_path=selector_governance_binding_application_report_path,
                 environment=environment,
                 os_envelope=os_envelope,
@@ -379,6 +400,7 @@ def run_chapter_production_sequence(
         "duration_seconds": sequence_duration,
         "task_status_mode": task_status_mode,
         "runtime_artifact_policy": runtime_artifact_policy,
+        "runtime_artifact_policy_resolution": runtime_policy_resolution,
         "asset_counts_before": asset_counts_before,
         "asset_counts_after": asset_counts_after,
         "asset_count_delta": _asset_count_delta(asset_counts_before, asset_counts_after),
@@ -1547,6 +1569,14 @@ def _read_run_data(storage: LocalStorage, run_file: Path) -> dict[str, Any]:
     return data
 
 
+def _read_json_safe(storage: LocalStorage, path: Path) -> dict[str, Any]:
+    try:
+        data = storage.read_json(path)
+    except (FileNotFoundError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 def _write_run_data(storage: LocalStorage, run_file: Path, data: dict[str, Any]) -> None:
     data = {key: value for key, value in data.items() if key != "_path"}
     errors = validate_common_fields(data)
@@ -2002,7 +2032,105 @@ def _runtime_artifact_policy(*, task_status_mode: Any = "full") -> dict[str, Any
 
 def _runtime_artifact_policy_from_control(control: dict[str, Any]) -> dict[str, Any]:
     policy = control.get("runtime_artifact_policy", {}) if isinstance(control.get("runtime_artifact_policy", {}), dict) else {}
-    return _runtime_artifact_policy(task_status_mode=policy.get("task_status_mode") or control.get("task_status_mode", "full"))
+    normalized = _runtime_artifact_policy(task_status_mode=policy.get("task_status_mode") or control.get("task_status_mode", "full"))
+    for section in ["task_status_recording", "node_run_recording", "trace_recording", "evidence_preservation"]:
+        if isinstance(policy.get(section), dict):
+            existing = normalized.get(section, {}) if isinstance(normalized.get(section), dict) else {}
+            normalized[section] = {**existing, **policy[section]}
+    for key in [
+        "policy_version",
+        "policy_source",
+        "policy_updated_at",
+        "applied_policy_path",
+        "rollback_policy_path",
+        "node_run_mode",
+        "trace_mode",
+        "reason",
+    ]:
+        if str(policy.get(key) or "").strip():
+            normalized[key] = policy[key]
+    return normalized
+
+
+def _resolve_runtime_artifact_policy(
+    storage: LocalStorage,
+    *,
+    project_id: str,
+    task_status_mode: str,
+    explicit_policy: dict[str, Any] | None,
+    environment: str = "",
+) -> dict[str, Any]:
+    if isinstance(explicit_policy, dict) and explicit_policy:
+        policy = _runtime_artifact_policy_from_control({"runtime_artifact_policy": explicit_policy, "task_status_mode": task_status_mode})
+        return {
+            "source": "explicit",
+            "status": "resolved",
+            "path": str(explicit_policy.get("applied_policy_path") or explicit_policy.get("source_path") or ""),
+            "runtime_artifact_policy": policy,
+            "production": is_production_environment(environment),
+            "operator_action": "explicit runtime artifact policy supplied by caller",
+        }
+    applied = _latest_runtime_growth_snapshot(storage, "chapter_runtime_growth_applied_policy", project_id=project_id)
+    rollback = _latest_runtime_growth_snapshot(storage, "chapter_runtime_growth_policy_rollback", project_id=project_id)
+    production = is_production_environment(environment)
+    if rollback and (not applied or str(rollback.get("updated_at") or rollback.get("created_at") or "") >= str(applied.get("updated_at") or applied.get("created_at") or "")):
+        if production:
+            raise ValueError("latest applied runtime write-policy has been rolled back; pass explicit runtime_artifact_policy or apply a replacement before production chapter run")
+        content = rollback.get("content", {}) if isinstance(rollback.get("content", {}), dict) else {}
+        restored = content.get("restored_policy", {}) if isinstance(content.get("restored_policy", {}), dict) else {}
+        policy = _runtime_artifact_policy_from_control({"runtime_artifact_policy": {**restored, "rollback_policy_path": str(rollback.get("path") or "")}, "task_status_mode": task_status_mode})
+        return {
+            "source": "rollback",
+            "status": "resolved",
+            "path": str(rollback.get("path") or ""),
+            "runtime_artifact_policy": policy,
+            "production": production,
+            "operator_action": "using restored runtime write-policy evidence after rollback",
+        }
+    if applied:
+        content = applied.get("content", {}) if isinstance(applied.get("content", {}), dict) else {}
+        after_policy = content.get("after_policy", {}) if isinstance(content.get("after_policy", {}), dict) else {}
+        policy = _runtime_artifact_policy_from_control({"runtime_artifact_policy": {**after_policy, "applied_policy_path": str(applied.get("path") or "")}, "task_status_mode": task_status_mode})
+        return {
+            "source": "applied_policy",
+            "status": "resolved",
+            "path": str(applied.get("path") or ""),
+            "runtime_artifact_policy": policy,
+            "production": production,
+            "operator_action": "using latest approved runtime write-policy snapshot for future chapter run",
+        }
+    policy = _runtime_artifact_policy(task_status_mode=task_status_mode)
+    return {
+        "source": "default",
+        "status": "resolved",
+        "path": "",
+        "runtime_artifact_policy": policy,
+        "production": production,
+        "operator_action": "no applied runtime write-policy evidence found; using caller task_status_mode default",
+    }
+
+
+def _latest_runtime_growth_snapshot(storage: LocalStorage, snapshot_kind: str, *, project_id: str) -> dict[str, Any]:
+    matches: list[dict[str, Any]] = []
+    for path in storage.list_json("runs"):
+        data = _read_json_safe(storage, path)
+        if data.get("type") != "project_metric_snapshot":
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") != snapshot_kind:
+            continue
+        if project_id and str(metadata.get("project_id") or content.get("project_id") or "") != project_id:
+            continue
+        if snapshot_kind == "chapter_runtime_growth_applied_policy" and str(content.get("status") or "") != "applied":
+            continue
+        if snapshot_kind == "chapter_runtime_growth_policy_rollback" and str(content.get("status") or "") != "rolled_back":
+            continue
+        data["path"] = _display_path(storage.root, path)
+        matches.append(data)
+    if not matches:
+        return {}
+    return sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
 
 
 def _write_task_status(

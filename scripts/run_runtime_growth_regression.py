@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_GROWTH_TESTS = [
     "tests.unit.test_context_and_production_chain.ContextAndProductionChainTests.test_chapter_production_compact_task_status_mode_preserves_completed_step_evidence",
     "tests.unit.test_context_and_production_chain.ContextAndProductionChainTests.test_chapter_production_compact_mode_preserves_failure_node_run_and_trace",
+    "tests.unit.test_context_and_production_chain.ContextAndProductionChainTests.test_chapter_production_uses_latest_applied_runtime_write_policy_for_future_runs",
+    "tests.unit.test_context_and_production_chain.ContextAndProductionChainTests.test_chapter_production_fails_closed_when_latest_runtime_policy_is_rolled_back_in_production",
     "tests.unit.test_chapter_runtime_growth.ChapterRuntimeGrowthTests",
     "tests.unit.test_agent_workflow_and_impact.AgentWorkflowImpactTests.test_agent_run_event_checkpoint_write_growth_is_characterized",
     "tests.unit.test_agent_workflow_and_impact.AgentWorkflowImpactTests.test_agent_run_success_summary_event_policy_compacts_success_path_events",

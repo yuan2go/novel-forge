@@ -57,6 +57,7 @@ from novel_forge.schemas import (
     KnowledgeCard,
     MaterialCard,
     Outline,
+    ProjectMetricSnapshot,
     ReleasePackage,
     SourceDocument,
     WebFictionBusinessAnalysisReport,
@@ -917,6 +918,110 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertTrue(full["control"]["runtime_artifact_policy"]["trace_recording"]["node_run_succeeded_span"])
             self.assertFalse(compact["control"]["runtime_artifact_policy"]["trace_recording"]["node_run_succeeded_span"])
             self.assertEqual(_count_assets_by_type(storage, "trace_span"), trace_spans_after_full)
+
+    def test_chapter_production_uses_latest_applied_runtime_write_policy_for_future_runs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = init_workspace(storage, "Applied Runtime Policy Bus Project")
+            workspace_asset = storage.read_asset(workspace)
+            project_id = workspace_asset.content["project_id"]
+            workspace_ref = str(workspace.relative_to(storage.root))
+            applied_path = storage.write_asset_auto(
+                ProjectMetricSnapshot(
+                    title="Applied runtime write policy",
+                    content={
+                        "snapshot_kind": "chapter_runtime_growth_applied_policy",
+                        "contract": "chapter-runtime-growth-approved-policy-apply-v1",
+                        "status": "applied",
+                        "project_id": project_id,
+                        "summary": {"mutation_applied": True, "runtime_policy_changed": True},
+                        "after_policy": {
+                            "policy_version": "chapter-production-runtime-artifact-policy-v1",
+                            "task_status_mode": "compact",
+                            "task_status_recording": {"pending": False, "running": False, "completed": True, "failed": True},
+                            "node_run_recording": {"succeeded": False, "failed": True},
+                            "trace_recording": {
+                                "node_run_succeeded_span": False,
+                                "node_run_failed_span": True,
+                                "external_runtime_spans": True,
+                            },
+                        },
+                    },
+                    metadata={"project_id": project_id, "snapshot_kind": "chapter_runtime_growth_applied_policy"},
+                )
+            )
+            outline = storage.write_asset(
+                "outlines",
+                Outline(
+                    title="Applied Runtime Policy Outline",
+                    content={"acts": [{"act": 1, "goal": "prove applied policy resolver"}]},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+
+            run = start_chapter_production(
+                storage,
+                outline_path=str(outline.relative_to(storage.root)),
+                workspace_path=workspace_ref,
+                chapter=1,
+                run_to="outline_checkpoint",
+            )
+
+            applied_ref = str(applied_path.relative_to(storage.root))
+            self.assertEqual(run["control"]["task_status_mode"], "compact")
+            self.assertEqual(run["control"]["runtime_artifact_policy_source"], "applied_policy")
+            self.assertEqual(run["control"]["runtime_artifact_policy_path"], applied_ref)
+            self.assertEqual(run["control"]["runtime_artifact_policy"]["applied_policy_path"], applied_ref)
+            self.assertFalse(run["control"]["runtime_artifact_policy"]["task_status_recording"]["running"])
+            self.assertFalse(run["control"]["runtime_artifact_policy"]["node_run_recording"]["succeeded"])
+
+    def test_chapter_production_fails_closed_when_latest_runtime_policy_is_rolled_back_in_production(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = init_workspace(storage, "Rolled Back Runtime Policy Bus Project")
+            workspace_asset = storage.read_asset(workspace)
+            project_id = workspace_asset.content["project_id"]
+            workspace_ref = str(workspace.relative_to(storage.root))
+            storage.write_asset_auto(
+                ProjectMetricSnapshot(
+                    title="Rolled back runtime write policy",
+                    content={
+                        "snapshot_kind": "chapter_runtime_growth_policy_rollback",
+                        "contract": "chapter-runtime-growth-policy-rollback-v1",
+                        "status": "rolled_back",
+                        "project_id": project_id,
+                        "summary": {"rollback_applied": True, "runtime_policy_changed": True},
+                        "restored_policy": {
+                            "policy_version": "chapter-production-runtime-artifact-policy-v1",
+                            "task_status_mode": "compact",
+                            "task_status_recording": {"pending": False, "running": False, "completed": True, "failed": True},
+                        },
+                    },
+                    metadata={"project_id": project_id, "snapshot_kind": "chapter_runtime_growth_policy_rollback"},
+                )
+            )
+            outline = storage.write_asset(
+                "outlines",
+                Outline(
+                    title="Rolled Back Runtime Policy Outline",
+                    content={"acts": [{"act": 1, "goal": "prove rollback fail closed"}]},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+
+            with self.assertRaisesRegex(ValueError, "rolled back"):
+                start_chapter_production(
+                    storage,
+                    outline_path=str(outline.relative_to(storage.root)),
+                    workspace_path=workspace_ref,
+                    chapter=1,
+                    run_to="outline_checkpoint",
+                    environment="production",
+                )
 
     def test_chapter_production_compact_mode_preserves_failure_node_run_and_trace(self):
         with tempfile.TemporaryDirectory() as tmp:
