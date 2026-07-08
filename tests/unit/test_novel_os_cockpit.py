@@ -11,7 +11,7 @@ from novel_forge.modules.context_builder import run_context_governance_coverage_
 from novel_forge.modules.production_governance import build_production_governance_evidence_drift_report, run_production_governance_drift_gate
 from novel_forge.modules.runtime_ledger import record_model_call_log
 from novel_forge.modules.chapter_production_bus.service import V1_SEQUENCE_REQUIRED_OUTPUTS
-from novel_forge.schemas import BaseAsset, ChapterPlan, DraftChapter
+from novel_forge.schemas import BaseAsset, ChapterPlan, DraftChapter, ProjectMetricSnapshot
 from novel_forge.storage.local import LocalStorage
 
 
@@ -66,6 +66,43 @@ class NovelOsCockpitTests(unittest.TestCase):
             )
             resolve_approval_request(storage, approved_approval["asset"]["content"]["request_id"], {"decision": "approved", "actor": "unit-test", "reason": "fixture"})
             build_approval_request_caller_readiness_report(storage, project_id="book-a")
+            storage.write_asset_auto(
+                ProjectMetricSnapshot(
+                    title="Source guarded apply readiness",
+                    content={
+                        "snapshot_kind": "source_guarded_apply_readiness",
+                        "contract": "source-guarded-apply-readiness-v1",
+                        "status": "review_required",
+                        "project_id": "book-a",
+                        "snapshot_at": "2026-07-08T00:00:00Z",
+                        "throughput": {"repair_plan_count": 1, "approval_request_count": 1, "stale_asset_count": 1, "agent_task_count": 2},
+                        "quality": {"readiness_status": "review_required", "stale_pending_regeneration_count": 1, "dispatch_applied": False},
+                        "task_health": {"dispatch_ready_task_count": 1, "operator_action": "dispatch approved regeneration"},
+                        "agent_health": {"planned_agent_operations": ["plan-source-derived-regeneration"]},
+                        "storage_health": {"evidence_path_count": 3},
+                        "recommendations": ["dispatch approved regeneration"],
+                        "summary": {
+                            "repair_plan_count": 1,
+                            "pending_review_plan_count": 0,
+                            "applied_plan_count": 1,
+                            "approval_request_count": 1,
+                            "pending_approval_count": 0,
+                            "blocking_approval_count": 0,
+                            "stale_pending_regeneration_count": 1,
+                            "review_task_count": 0,
+                            "dispatch_ready_task_count": 1,
+                            "rollback_plan_count": 1,
+                            "rollback_result_count": 0,
+                        },
+                        "repair_plans": [{"path": "data/runs/source-repair.json", "asset_status": "applied"}],
+                        "stale_assets": [{"path": "data/knowledge/stale-card.json", "asset_status": "stale"}],
+                        "agent_tasks": [{"path": "data/runs/source-task.json", "status": "approved_pending_dispatch"}],
+                        "evidence_paths": ["data/runs/source-repair.json", "data/knowledge/stale-card.json", "data/runs/source-task.json"],
+                        "operator_action": "dispatch approved regeneration",
+                    },
+                    metadata={"project_id": "book-a", "snapshot_kind": "source_guarded_apply_readiness"},
+                )
+            )
             run_context_governance_coverage_gate(storage, project_id="book-a", environment="production")
             build_production_governance_evidence_drift_report(storage, project_id="book-a", persist=True)
             run_production_governance_drift_gate(storage, project_id="book-a", environment="production")
@@ -104,10 +141,16 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["approval_request_caller_readiness"]["summary"]["missing_dimension_count"], 3)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["approval_request_caller_readiness_status"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["approval_request_missing_caller_count"], 3)
+            self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["source_guarded_apply_readiness"]["status"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["runtime_governance"]["source_guarded_apply_readiness"]["summary"]["stale_pending_regeneration_count"], 1)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["source_guarded_apply_status"], "review_required")
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["source_stale_pending_regeneration_count"], 1)
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["approval_request_callers"], "partial")
+            self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_guarded_apply"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["workflow_governance"]["status"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["cockpit"]["approval_request_caller_readiness"]["status"], "partial")
+            self.assertEqual(snapshot["asset"]["content"]["cockpit"]["source_guarded_apply_readiness"]["status"], "review_required")
             self.assertEqual(pending_approval["asset"]["content"]["scope"], "publish")
 
     def test_project_cockpit_surfaces_workflow_governance_readiness(self):

@@ -20,6 +20,8 @@ SOURCE_GOVERNANCE_TESTS = [
     "tests.unit.test_source_intake.SourceIntakeTests.test_source_guarded_apply_readiness_surfaces_reviewable_diff_plan",
     "tests.unit.test_source_intake.SourceIntakeTests.test_source_guarded_apply_readiness_surfaces_applied_stale_and_dispatch_ready_evidence",
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_source_guarded_apply_readiness_route_surfaces_reviewable_evidence",
+    "tests.unit.test_novel_os_cockpit.NovelOsCockpitTests.test_project_cockpit_snapshot_is_schema_backed",
+    "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_surfaces_source_guarded_apply_readiness",
     "tests.unit.test_source_governance_regression_script.SourceGovernanceRegressionScriptTests",
 ]
 
@@ -33,9 +35,11 @@ def _commands() -> list[list[str]]:
             "compileall",
             "-q",
             "src/novel_forge/modules/source_intake",
+            "src/novel_forge/modules/novel_os_cockpit",
             "src/novel_forge/api/routers/handoffs.py",
             "src/novel_forge/api/services/product.py",
             "tests/unit/test_source_intake.py",
+            "tests/unit/test_novel_os_cockpit.py",
             "tests/unit/test_product_api_routes.py",
             "tests/unit/test_source_governance_regression_script.py",
         ],

@@ -24,6 +24,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     production_governance_drift_gate = _latest_gate_result(rows, "production_governance_evidence_drift")
     workflow_governance = _workflow_governance_readiness(rows)
     approval_request_caller_readiness = _approval_request_caller_readiness(rows)
+    source_guarded_apply_readiness = _source_guarded_apply_readiness(rows)
     production_console = _production_control_console(
         rows,
         blocking_issues,
@@ -33,6 +34,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         approval_gate_summary,
         workflow_governance,
         approval_request_caller_readiness,
+        source_guarded_apply_readiness,
     )
     content = {
         "project_id": project_id,
@@ -58,6 +60,8 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "workflow_governance_failed_preflight_count": workflow_governance["failed_preflight_count"],
             "approval_request_caller_readiness_status": approval_request_caller_readiness["status"],
             "approval_request_missing_caller_count": approval_request_caller_readiness["summary"]["missing_dimension_count"],
+            "source_guarded_apply_status": source_guarded_apply_readiness["status"],
+            "source_stale_pending_regeneration_count": source_guarded_apply_readiness["summary"]["stale_pending_regeneration_count"],
         },
         "task_health": {
             "agent_queue_status": queue_status,
@@ -81,6 +85,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "production_governance_drift_gate": production_governance_drift_gate,
             "workflow_governance": workflow_governance,
             "approval_request_caller_readiness": approval_request_caller_readiness,
+            "source_guarded_apply_readiness": source_guarded_apply_readiness,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -94,6 +99,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "production_governance_drift_gate": production_governance_drift_gate,
             "workflow_governance": workflow_governance,
             "approval_request_caller_readiness": approval_request_caller_readiness,
+            "source_guarded_apply_readiness": source_guarded_apply_readiness,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -526,6 +532,68 @@ def _approval_request_caller_readiness(rows: list[dict[str, Any]]) -> dict[str, 
     }
 
 
+def _source_guarded_apply_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    snapshot_kind = "source_guarded_apply_readiness"
+    matches = []
+    for row in rows:
+        if row.get("type") != "project_metric_snapshot":
+            continue
+        metadata = row.get("metadata", {}) if isinstance(row.get("metadata", {}), dict) else {}
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(metadata.get("snapshot_kind") or content.get("snapshot_kind") or "") == snapshot_kind:
+            matches.append(row)
+    if not matches:
+        return {
+            "snapshot_kind": snapshot_kind,
+            "status": "missing",
+            "path": "",
+            "summary": {
+                "repair_plan_count": 0,
+                "pending_review_plan_count": 0,
+                "applied_plan_count": 0,
+                "approval_request_count": 0,
+                "pending_approval_count": 0,
+                "blocking_approval_count": 0,
+                "stale_pending_regeneration_count": 0,
+                "review_task_count": 0,
+                "dispatch_ready_task_count": 0,
+                "rollback_plan_count": 0,
+                "rollback_result_count": 0,
+            },
+            "repair_plans": [],
+            "stale_assets": [],
+            "agent_tasks": [],
+            "evidence_paths": [],
+            "operator_action": "run source guarded apply readiness report before source-derived regeneration or context promotion",
+        }
+    row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
+    content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+    summary = content.get("summary", {}) if isinstance(content.get("summary", {}), dict) else {}
+    return {
+        "snapshot_kind": snapshot_kind,
+        "status": str(content.get("status") or "unknown"),
+        "path": str(row.get("path") or ""),
+        "summary": {
+            "repair_plan_count": int(summary.get("repair_plan_count") or 0),
+            "pending_review_plan_count": int(summary.get("pending_review_plan_count") or 0),
+            "applied_plan_count": int(summary.get("applied_plan_count") or 0),
+            "approval_request_count": int(summary.get("approval_request_count") or 0),
+            "pending_approval_count": int(summary.get("pending_approval_count") or 0),
+            "blocking_approval_count": int(summary.get("blocking_approval_count") or 0),
+            "stale_pending_regeneration_count": int(summary.get("stale_pending_regeneration_count") or 0),
+            "review_task_count": int(summary.get("review_task_count") or 0),
+            "dispatch_ready_task_count": int(summary.get("dispatch_ready_task_count") or 0),
+            "rollback_plan_count": int(summary.get("rollback_plan_count") or 0),
+            "rollback_result_count": int(summary.get("rollback_result_count") or 0),
+        },
+        "repair_plans": content.get("repair_plans", []) if isinstance(content.get("repair_plans", []), list) else [],
+        "stale_assets": content.get("stale_assets", []) if isinstance(content.get("stale_assets", []), list) else [],
+        "agent_tasks": content.get("agent_tasks", []) if isinstance(content.get("agent_tasks", []), list) else [],
+        "evidence_paths": content.get("evidence_paths", []) if isinstance(content.get("evidence_paths", []), list) else [],
+        "operator_action": str(content.get("operator_action") or ""),
+    }
+
+
 def _capacity_plan(book_rows: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "agent_capacity_units": max(1, len(book_rows)),
@@ -638,6 +706,7 @@ def _production_control_console(
     approval_gate_summary: dict[str, Any],
     workflow_governance: dict[str, Any],
     approval_request_caller_readiness: dict[str, Any],
+    source_guarded_apply_readiness: dict[str, Any],
 ) -> dict[str, Any]:
     chapter_queue = _latest_assets(rows, "chapter_plan", limit=20)
     draft_rows = _latest_assets(rows, "draft_chapter", limit=20)
@@ -652,6 +721,7 @@ def _production_control_console(
         "long_chain": long_chain_status,
         "workflow_governance": workflow_governance["status"],
         "approval_request_callers": approval_request_caller_readiness["status"],
+        "source_guarded_apply": source_guarded_apply_readiness["status"],
         "release": release_status,
         "publish": _latest_status(rows, asset_type="publish_gate_report"),
     }
@@ -672,6 +742,7 @@ def _production_control_console(
             "quality": gate_status_board["quality"],
             "workflow_governance": workflow_governance["status"],
             "approval_request_callers": approval_request_caller_readiness["status"],
+            "source_guarded_apply": source_guarded_apply_readiness["status"],
             "release": release_status,
         },
         "feedback_approval_queue": feedback_proposals,
@@ -690,6 +761,7 @@ def _production_control_console(
         "approval_gate_summary": approval_gate_summary["summary"],
         "workflow_governance": workflow_governance,
         "approval_request_caller_readiness": approval_request_caller_readiness,
+        "source_guarded_apply_readiness": source_guarded_apply_readiness,
     }
 
 

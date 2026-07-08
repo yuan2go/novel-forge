@@ -145,7 +145,8 @@ Implementation status note:
 | V1-S42 Cockpit ApprovalRequest Readiness API Coverage | Prove `/product/os/cockpit/project` exposes latest ApprovalRequest caller readiness evidence | Cockpit service reads the snapshot, but UI/API callers should have explicit HTTP-boundary coverage | Product API, Novel OS Cockpit, Permission Center | ProjectMetricSnapshot, ApprovalRequest | Implemented: route fixture seeds readiness report and asserts cockpit runtime governance/quality/gate board values; focused runtime-growth bundle includes it | API route fixture and script guardrail; no chapter acceptance | Cockpit/runtime docs updated through this slice matrix | Cockpit route remains read-only and does not create/resolve approvals |
 | V1-S43 Source Governance Guarded Apply Readiness | Close the next v1 source governance gap by proving approved source repair/invalidation evidence can be inspected before dispatch | Source refresh/diff/rollback assets exist, but operator-facing readiness for guarded apply remains less explicit than approval/runtime gates | Source Governance, MKAOS Lineage, Permission Center, Agent Scheduler | SourceRefreshReport, ChangeImpactReport, ApprovalRequest, AgentTask, ProjectMetricSnapshot | Implemented: read-only readiness report over source repair/invalidation plans, approval refs, stale markers, downstream regeneration task evidence, rollback evidence, and Product API route | Missing/reviewable/applied-stale fixtures plus route fixture; no chapter acceptance | Source governance docs updated through this slice matrix | Does not execute connectors, mutate sources, or dispatch regeneration |
 | V1-S44 Source Guarded Apply Regression Coverage | Add Source guarded apply readiness fixtures to a focused no-acceptance regression surface | The readiness report has unit/API coverage; maintainers need a compact command or guardrail coverage path that keeps connector execution/chapter acceptance out | Regression Script, Source Governance, Product API | Test command surface, ProjectMetricSnapshot | Implemented: new focused script, Makefile target, docs, guardrail test, source readiness fixtures, route fixture, and compile targets | Script list/run checks; no chapter acceptance | Regression docs updated | Does not run connector execution, provider proof, chapter acceptance, or broad `make test` |
-| V1-S45 Source Guarded Apply Cockpit Surface | Surface source guarded apply readiness in Project Cockpit runtime governance | Source readiness now exists and has focused regression, but the project operator cockpit should show source-safety status beside workflow/approval readiness | Novel OS Cockpit, Source Governance, Product API | ProjectMetricSnapshot | Planned: Cockpit reads latest `source_guarded_apply_readiness` snapshot and surfaces status/counts/gate board value | Cockpit service/API fixtures; no chapter acceptance | Cockpit/runtime docs | Must remain read-only and must not run source apply or connector execution |
+| V1-S45 Source Guarded Apply Cockpit Surface | Surface source guarded apply readiness in Project Cockpit runtime governance | Source readiness now exists and has focused regression, but the project operator cockpit should show source-safety status beside workflow/approval readiness | Novel OS Cockpit, Source Governance, Product API | ProjectMetricSnapshot | Implemented: Cockpit reads latest `source_guarded_apply_readiness` snapshot and surfaces status, stale/regeneration counts, runtime governance details, quality counters, and production gate board value without mutation | Cockpit service/API fixtures plus focused source-governance regression coverage; no chapter acceptance | Cockpit/runtime docs updated through this slice matrix | Read-only surface only; it does not run source apply, connector execution, task dispatch, rollback, or regeneration |
+| V1-S46 Source Governance Runtime Gate Surface | Add a reusable source governance runtime gate over stale/quarantined/unguarded source-derived assets | Reports and Cockpit readiness are visible, but production callers still need a single hard-stop evidence shape before final unified acceptance | Source Governance, Context Builder, Runtime Ledger, Novel OS Cockpit, Product API | GateResult, ProjectMetricSnapshot, ChangeImpactReport, SourceRiskReport | Planned: run a non-mutating gate that consumes source guarded apply readiness, stale/quarantine sweep, retention/expiry sweep, and source eligibility evidence; expose gate status/path through Product API and Project Cockpit | Gate positive/negative/local-warning fixtures plus API/Cockpit fixtures; no chapter acceptance | Source/runtime docs | Must remain read-only and must not execute connector, source apply, rollback, regeneration, or provider proof |
 | P1-S1 Source Governance Lifecycle | Add SourcePolicy, SourceRiskReport, license check result lifecycle | External corpora and MKAOS need stronger boundaries | Source Governance, MKAOS, Context Builder | SourcePolicy, LicenseCheckResult, SourceRiskReport, SourceSyncJob, SourceSnapshot, SourceEvidence | Implemented: Source Intake creates schema-backed policy/license/risk/snapshot/sync assets and evaluates R0-R4 context eligibility with evidence-only/quarantine/ApprovalRequest hooks | Added lifecycle, high-risk approval, quarantine, schema, and route fixtures; final unified v1 workflow验收 remains deferred | Source governance docs updated through this slice matrix | Context Builder and MKAOS still need deeper caller migration to consume eligibility reports everywhere |
 | P1-S2 Reader Promise Ledger | Track promise/payoff lifecycle | Needed for追读 and longform stability | Longform, Web Novel Enhancement, Review | ReaderPromise, ReaderPromiseLedger, ReviewIssue, RevisionTask | Implemented: promise ledger service, longform reducer integration, chapter bus output, and API route | Normal and broken promise fixtures plus longform/chapter-bus route coverage | Longform docs updated through this slice matrix | Heuristic payoff detection still needs provider/human calibration during final unified acceptance |
 | P1-S3 Pleasure Point / Chapter Economy Gate | Track爽点 cadence and scene value | Prevents flat or watery chapters | Reward Ledger, Quality, Chapter Blueprint, Longform | PleasurePoint, ChapterEconomyReport, RewardLedger, ReviewIssue, RevisionTask | Implemented: chapter economy service/API, quality loop step, longform reducer, and chapter bus output | Positive high-value fixture, negative water-chapter fixture, content loop and chapter bus coverage | Quality docs updated through this slice matrix | Heuristic false positives remain; provider/human calibration deferred |
@@ -212,47 +213,16 @@ Implementation status note:
 
 ## Recommended Next Slice
 
-Continue from `V1-S45 Source Guarded Apply Cockpit Surface`.
+Continue from `V1-S46 Source Governance Runtime Gate Surface`.
 
-The current highest-priority development slice continues write-amplification work on AgentRun/AgentEvent records:
+The current highest-priority development slice continues source-governance runtime hardening without running chapter acceptance:
 
 ```text
-10-chapter slow baseline
--> compact success NodeRun policy implemented
--> count trace span growth in compact bus success path
--> compact failure fixture for task_status/node_run/trace_span
--> characterize AgentRun/AgentEvent growth
--> add explicit AgentRun event summary policy
--> expose skipped-event summaries in Agent Center
--> add focused runtime-growth regression command
--> add guardrails around focused runtime-growth command discovery
--> document full vs success-summary AgentRun event policy usage
--> add chapter 1-3 Golden Opening gate to quality loop
--> route chapter bus draft/revision outputs through content quality loop evidence
--> route content quality RevisionTask into bounded repair and re-review evidence
--> propagate chapter production runtime quality policy through API and worker callers
--> register Agent Scheduler chapter production operation coverage
--> register Workflow Processor chapter production operation coverage
--> add canonical v1 workflow definition template
--> surface canonical workflow template evidence in runtime console and ready queue
--> add canonical workflow governance drift gate/report
--> invoke workflow governance drift gate before production workflow execution
--> make scheduler queue handling treat workflow governance preflight failure as dead-letter evidence
--> surface workflow preflight/dead-letter evidence in runtime console
--> add workflow governance fixtures to focused runtime-growth regression command
--> surface workflow governance readiness in Project Cockpit
--> prove Project Cockpit workflow governance readiness across Product API route
--> add Cockpit governance fixtures to focused runtime-growth regression command
--> add clean/passed Cockpit governance readiness fixtures
--> add clean Cockpit governance fixtures to focused runtime-growth regression command
--> add missing-evidence Cockpit governance readiness fixtures
--> add missing Cockpit governance fixtures to focused runtime-growth regression command
--> surface v1 ApprovalRequest caller readiness
--> add ApprovalRequest caller readiness fixtures to focused runtime-growth regression command
--> prove Cockpit API exposes ApprovalRequest caller readiness
--> surface source governance guarded apply readiness
--> add source guarded apply readiness to focused no-acceptance regression
--> surface source guarded apply readiness in Project Cockpit
+source refresh/diff/apply/rollback/readiness assets
+-> source guarded apply readiness in Project Cockpit
+-> next: reusable source governance runtime gate over stale/quarantined/unguarded source-derived assets
+-> next: expose that gate through Product API and Project Cockpit runtime governance
+-> later: final unified v1 acceptance can assert the gate without scanning raw source assets ad hoc
 -> no chapter acceptance run
 ```
 

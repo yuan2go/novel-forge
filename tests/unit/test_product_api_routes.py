@@ -1101,6 +1101,73 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["cockpit"]["approval_request_caller_readiness"]["status"], "review_required")
             self.assertEqual(content["production_control_console"]["gate_status_board"]["approval_request_callers"], "review_required")
 
+    def test_project_cockpit_route_surfaces_source_guarded_apply_readiness(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.schemas import ProjectMetricSnapshot
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+            storage = LocalStorage(root)
+            storage.write_asset_auto(
+                ProjectMetricSnapshot(
+                    title="Route source guarded apply readiness",
+                    content={
+                        "snapshot_kind": "source_guarded_apply_readiness",
+                        "contract": "source-guarded-apply-readiness-v1",
+                        "status": "review_required",
+                        "project_id": "route-book-source-readiness",
+                        "snapshot_at": "2026-07-08T00:00:00Z",
+                        "throughput": {"repair_plan_count": 1, "approval_request_count": 1, "stale_asset_count": 1, "agent_task_count": 1},
+                        "quality": {"readiness_status": "review_required", "stale_pending_regeneration_count": 1, "dispatch_applied": False},
+                        "task_health": {"dispatch_ready_task_count": 1, "operator_action": "dispatch approved regeneration"},
+                        "agent_health": {"planned_agent_operations": ["plan-source-derived-regeneration"]},
+                        "storage_health": {"evidence_path_count": 2},
+                        "recommendations": ["dispatch approved regeneration"],
+                        "summary": {
+                            "repair_plan_count": 1,
+                            "pending_review_plan_count": 0,
+                            "applied_plan_count": 1,
+                            "approval_request_count": 1,
+                            "pending_approval_count": 0,
+                            "blocking_approval_count": 0,
+                            "stale_pending_regeneration_count": 1,
+                            "review_task_count": 0,
+                            "dispatch_ready_task_count": 1,
+                            "rollback_plan_count": 1,
+                            "rollback_result_count": 0,
+                        },
+                        "repair_plans": [{"path": "data/runs/source-repair.json", "asset_status": "applied"}],
+                        "stale_assets": [{"path": "data/knowledge/stale-card.json", "asset_status": "stale"}],
+                        "agent_tasks": [{"path": "data/runs/source-task.json", "status": "approved_pending_dispatch"}],
+                        "evidence_paths": ["data/runs/source-repair.json", "data/knowledge/stale-card.json"],
+                        "operator_action": "dispatch approved regeneration",
+                    },
+                    metadata={"project_id": "route-book-source-readiness", "snapshot_kind": "source_guarded_apply_readiness"},
+                )
+            )
+
+            response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-source-readiness"})
+
+            self.assertEqual(response.status_code, 200, response.text)
+            content = response.json()["asset"]["content"]
+            readiness = content["runtime_governance"]["source_guarded_apply_readiness"]
+            self.assertEqual(readiness["status"], "review_required")
+            self.assertEqual(readiness["summary"]["stale_pending_regeneration_count"], 1)
+            self.assertEqual(readiness["summary"]["dispatch_ready_task_count"], 1)
+            self.assertTrue(readiness["path"])
+            self.assertEqual(content["quality"]["source_guarded_apply_status"], "review_required")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["source_guarded_apply"], "review_required")
+            self.assertEqual(content["cockpit"]["source_guarded_apply_readiness"]["status"], "review_required")
+
     def test_project_cockpit_route_keeps_missing_workflow_governance_unready(self):
         try:
             from fastapi.testclient import TestClient
