@@ -19,6 +19,16 @@ RUNTIME_GROWTH_TESTS = [
     "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_agent_event_policy_flows_from_workflow_runtime_policy_to_agent_run",
     "tests.unit.test_agent_scheduler.AgentSchedulerTests.test_agent_center_snapshot_exposes_agent_event_summary",
     "tests.unit.test_agent_scheduler.AgentSchedulerTests.test_agent_center_api_surfaces_agent_event_summary",
+    "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_service_processor_starts_chapter_production_with_runtime_policy",
+    "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_service_processor_resumes_chapter_production",
+    "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_service_processor_blocks_production_chapter_without_governance_evidence",
+    "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_v1_chapter_production_workflow_template_creates_governed_definition",
+    "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_v1_chapter_production_workflow_console_marks_missing_production_evidence",
+    "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_workflow_governance_drift_gate_passes_clean_canonical_template",
+    "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_workflow_governance_drift_gate_blocks_drifted_workflow_in_production",
+    "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_workflow_governance_drift_gate_warns_for_local_drift",
+    "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_execute_workflow_blocks_drifted_production_definition_before_nodes",
+    "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_scheduler_dead_letters_workflow_governance_preflight_failure",
     "tests.unit.test_runtime_growth_regression_script.RuntimeGrowthRegressionScriptTests",
 ]
 

@@ -27,6 +27,10 @@ class RuntimeGrowthRegressionScriptTests(unittest.TestCase):
 
         self.assertIn("test_chapter_production_compact_task_status_mode_preserves_completed_step_evidence", command_text)
         self.assertIn("test_agent_center_api_surfaces_agent_event_summary", command_text)
+        self.assertIn("test_v1_chapter_production_workflow_template_creates_governed_definition", command_text)
+        self.assertIn("test_workflow_governance_drift_gate_blocks_drifted_workflow_in_production", command_text)
+        self.assertIn("test_execute_workflow_blocks_drifted_production_definition_before_nodes", command_text)
+        self.assertIn("test_scheduler_dead_letters_workflow_governance_preflight_failure", command_text)
         self.assertIn("web/admin/tests/feature-architecture.test.mjs", command_text)
         self.assertIn("web/admin run lint", command_text)
         self.assertNotIn("run_v1_chapter_sequence_acceptance.py", command_text)
