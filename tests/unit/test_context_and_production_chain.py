@@ -25,7 +25,15 @@ from novel_forge.modules.change_impact import mark_downstream_assets_stale
 from novel_forge.modules.editor import apply_editor_patch
 from novel_forge.modules.longform_stability import create_chapter_state_package
 from novel_forge.modules.long_planning import create_long_form_macro_plan
+from novel_forge.modules.mkaos import (
+    apply_context_governance_binding,
+    create_knowledge_card,
+    create_usage_binding,
+    propose_context_governance_binding,
+    refresh_mkaos_selector_governance,
+)
 from novel_forge.modules.operations import create_local_ops_drill_report, create_long_chain_acceptance_report
+from novel_forge.modules.permission_center import resolve_approval_request
 from novel_forge.modules.publishing import create_publishing_log, create_publishing_plan
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.production_chain import (
@@ -645,6 +653,70 @@ class ContextAndProductionChainTests(unittest.TestCase):
             rollback_result = apply_editor_patch(storage, run["outputs"]["final_rollback_patch_path"])
             self.assertTrue(rollback_result["applied"])
             self.assertEqual(storage.read_asset(rollback_result["diff_report"]["path"]).type, "draft_diff_report")
+
+    def test_chapter_production_bus_propagates_context_governance_binding_application(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            workspace = init_workspace(storage, "Governed Bus Project")
+            workspace_asset = storage.read_asset(workspace)
+            project_id = workspace_asset.content["project_id"]
+            workspace_ref = str(workspace.relative_to(storage.root))
+            outline = storage.write_asset(
+                "outlines",
+                Outline(
+                    title="Governed Bus Outline",
+                    content={"acts": [{"act": 1, "goal": "open with governed pressure"}]},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref],
+                ),
+            )
+            chapter_plan = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(
+                    title="Governed Bus Chapter Plan",
+                    content={"chapter": 1, "objective": "open with governed pressure", "beats": ["pressure", "choice"], "hook": "the cost appears"},
+                    metadata={"project_id": project_id, "workspace_path": workspace_ref},
+                    references=[workspace_ref, str(outline.relative_to(storage.root))],
+                ),
+            )
+            card = create_knowledge_card(
+                storage,
+                {
+                    "project_id": project_id,
+                    "concept_name": "governed bus pressure",
+                    "core_explanation": "The production bus should pass selector governance binding evidence into Context Builder.",
+                    "weight": 1.0,
+                },
+            )
+            create_usage_binding(storage, card["asset"]["id"], {"project_id": project_id, "flow": "prose", "usage_type": "optional", "input_role": "optional", "priority": 10})
+            card_path = storage.root / card["path"]
+            card_data = storage.read_json(card_path)
+            card_data["metadata"].update({"mkaos_governance_application_status": "applied_metadata_only", "mkaos_governance_weight_delta": 1.0, "mkaos_governance_action": "boost"})
+            storage.write_json(card_path, card_data)
+            report = refresh_mkaos_selector_governance(storage, {"project_id": project_id})
+            proposal = propose_context_governance_binding(storage, {"project_id": project_id, "selector_governance_report_path": report["path"]})
+            approval_path = proposal["asset"]["content"]["approval_request_path"]
+            resolve_approval_request(storage, approval_path, {"decision": "approved", "actor": "unit-test", "reason": "approve bus binding"})
+            applied = apply_context_governance_binding(storage, {"binding_proposal_path": proposal["path"], "approval_request_path": approval_path, "confirm_apply": True, "project_id": project_id})
+
+            run = start_chapter_production(
+                storage,
+                outline_path=str(outline.relative_to(storage.root)),
+                chapter_plan_path=str(chapter_plan.relative_to(storage.root)),
+                workspace_path=workspace_ref,
+                chapter=1,
+                run_to="context_bundle",
+                selector_governance_binding_application_report_path=applied["application_report"]["path"],
+            )
+
+            self.assertEqual(run["status"], "succeeded")
+            self.assertEqual(run["current_step"], "context_bundle")
+            self.assertEqual(run["outputs"]["selector_governance_binding_application_report_path"], applied["application_report"]["path"])
+            self.assertEqual(run["outputs"]["selector_governance_report_path"], report["path"])
+            bundle = storage.read_json(storage.root / run["outputs"]["context_bundle_path"])
+            self.assertEqual(bundle["content"]["selector_governance_binding_application"]["application_report_path"], applied["application_report"]["path"])
+            self.assertEqual(bundle["content"]["knowledge_context_contract"]["selector_governance"]["report_path"], report["path"])
 
     def test_chapter_production_sequence_runs_10_chapter_v1_acceptance(self):
         with tempfile.TemporaryDirectory() as tmp:

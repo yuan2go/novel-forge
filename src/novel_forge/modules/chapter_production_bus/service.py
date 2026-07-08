@@ -9,7 +9,7 @@ from typing import Any, Callable
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.chapter_plan.service import generate_chapter_plan as generate_chapter_plan_service
 from novel_forge.modules.common import resolve_path, run_metadata
-from novel_forge.modules.context_builder import create_context_build_plan, create_context_bundle
+from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.continuity_graph import create_chapter_stability_preflight_report
 from novel_forge.modules.drafting import service as drafting_service
 from novel_forge.modules.editor import execute_revision_plan
@@ -80,6 +80,7 @@ def start_chapter_production(
     execute: bool = True,
     execution_mode: str = "sync",
     task_status_mode: str = "full",
+    selector_governance_binding_application_report_path: str | Path | None = None,
 ) -> dict[str, Any]:
     storage.ensure_layout()
     _validate_step(run_to)
@@ -129,6 +130,8 @@ def start_chapter_production(
                 "stability_preflight_path": "",
                 "context_build_plan_path": "",
                 "context_bundle_path": "",
+                "selector_governance_binding_application_report_path": str(selector_governance_binding_application_report_path or ""),
+                "selector_governance_report_path": "",
                 "draft_v0_path": "",
                 "review_path": "",
                 "revision_plan_path": "",
@@ -215,6 +218,7 @@ def run_chapter_production_sequence(
     chapter_plan_path: str | Path | None = None,
     max_chapters: int = 30,
     task_status_mode: str = "compact",
+    selector_governance_binding_application_report_path: str | Path | None = None,
     progress_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     storage.ensure_layout()
@@ -254,6 +258,7 @@ def run_chapter_production_sequence(
                 chapter=chapter,
                 run_to="next_chapter_plan",
                 task_status_mode=task_status_mode,
+                selector_governance_binding_application_report_path=selector_governance_binding_application_report_path,
             )
         except Exception as exc:
             failure = {
@@ -557,7 +562,9 @@ def _execute_bus_step(storage: LocalStorage, run_file: Path, data: dict[str, Any
 def _perform_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], step: str) -> dict[str, Any]:
     content = _content(data)
     outputs = _outputs(content)
-    workspace_path = str(data.get("metadata", {}).get("workspace_path", ""))
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    project_id = str(metadata.get("project_id") or "")
+    workspace_path = str(metadata.get("workspace_path") or "")
     chapter = _positive_chapter(content.get("chapter", 1))
     if step == "outline_checkpoint":
         result = create_outline_version(storage, outputs["outline_path"], change_summary=f"chapter {chapter} production checkpoint")
@@ -582,17 +589,35 @@ def _perform_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], s
     if step == "context_bundle":
         _require(outputs, "stability_preflight_path", step)
         _require(outputs, "chapter_plan_path", step)
-        context_plan = create_context_build_plan(
+        context = build_flow_context_bundle(
             storage,
             outputs["chapter_plan_path"],
+            flow="prose",
+            project_id=project_id,
+            workspace_path=workspace_path,
+            chapter_id=str(chapter),
+            current_goal=f"produce chapter {chapter}",
             query=_context_query(storage, outputs["chapter_plan_path"]),
             top_k=10,
             token_budget=6000,
-            backend="auto",
-            workspace_path=workspace_path,
+            selector_governance_binding_application_report_path=str(outputs.get("selector_governance_binding_application_report_path") or "") or None,
         )
-        bundle = create_context_bundle(storage, context_plan["path"])
-        return _step_result(bundle["path"], [context_plan["path"], bundle["path"]], {"context_build_plan_path": context_plan["path"], "context_bundle_path": bundle["path"]})
+        context_plan_path = str(context.get("context_plan", {}).get("path") or "")
+        context_bundle_path = str(context.get("path") or context.get("context_bundle", {}).get("path") or "")
+        bundle_asset = context.get("asset", {}) if isinstance(context.get("asset", {}), dict) else {}
+        bundle_content = bundle_asset.get("content", {}) if isinstance(bundle_asset.get("content", {}), dict) else {}
+        bundle_metadata = bundle_asset.get("metadata", {}) if isinstance(bundle_asset.get("metadata", {}), dict) else {}
+        binding = bundle_content.get("selector_governance_binding_application", {}) if isinstance(bundle_content.get("selector_governance_binding_application", {}), dict) else {}
+        return _step_result(
+            context_bundle_path,
+            [path for path in [context_plan_path, context_bundle_path, str(context.get("mkaos_pack", {}).get("path") or "")] if path],
+            {
+                "context_build_plan_path": context_plan_path,
+                "context_bundle_path": context_bundle_path,
+                "selector_governance_binding_application_report_path": str(binding.get("application_report_path") or outputs.get("selector_governance_binding_application_report_path") or ""),
+                "selector_governance_report_path": str(binding.get("selector_governance_report_path") or bundle_metadata.get("selector_governance_report_path") or ""),
+            },
+        )
     if step == "draft_v0":
         _require(outputs, "chapter_plan_path", step)
         _require(outputs, "context_bundle_path", step)

@@ -2485,6 +2485,8 @@ def _run_build_context_bundle(storage: LocalStorage, queue_item: dict[str, Any],
         source_policy=evidence.get("source_policy", {}) if isinstance(evidence.get("source_policy", {}), dict) else {},
         environment=str(evidence.get("environment") or ""),
         os_envelope=evidence.get("os_envelope") if isinstance(evidence.get("os_envelope"), dict) else evidence.get("envelope") if isinstance(evidence.get("envelope"), dict) else None,
+        selector_governance_report_path=str(evidence.get("selector_governance_report_path") or "") or None,
+        selector_governance_binding_application_report_path=str(evidence.get("selector_governance_binding_application_report_path") or "") or None,
     )
 
 

@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -16,6 +17,7 @@ from novel_forge.modules.agent_scheduler import (
     run_agent_scheduler_tick,
     scheduler_status,
 )
+from novel_forge.modules.agent_scheduler import service as agent_scheduler_service
 from novel_forge.modules.continuity_graph import create_continuity_graph_snapshot
 from novel_forge.modules.loop_kernel import run_loop
 from novel_forge.modules.review_issue import create_review_issue
@@ -42,6 +44,37 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertIn(operation, contracts)
             self.assertEqual(contracts[operation]["runner_kind"], "local_service")
             self.assertTrue(contracts[operation]["required_tools"])
+
+    def test_build_context_runner_propagates_selector_governance_binding_application_ref(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Scheduler context target", content={"chapter": 1, "objective": "build context", "beats": ["beat"], "hook": "hook"}, metadata={"project_id": "sched-binding"}),
+            )
+            agent_run = {
+                "content": {
+                    "evidence": {
+                        "target_path": str(plan_path.relative_to(storage.root)),
+                        "flow": "prose",
+                        "project_id": "sched-binding",
+                        "workspace_path": "data/workspaces/sched-binding.json",
+                        "selector_governance_report_path": "data/runs/selector-report.json",
+                        "selector_governance_binding_application_report_path": "data/runs/binding-application.json",
+                    }
+                },
+                "metadata": {"project_id": "sched-binding", "workspace_path": "data/workspaces/sched-binding.json"},
+            }
+
+            with patch("novel_forge.modules.context_builder.build_flow_context_bundle", return_value={"path": "data/context/fake.json", "asset": {"content": {}}}) as mocked:
+                result = agent_scheduler_service._run_build_context_bundle(storage, {}, agent_run)
+
+            self.assertEqual(result["path"], "data/context/fake.json")
+            kwargs = mocked.call_args.kwargs
+            self.assertEqual(kwargs["selector_governance_report_path"], "data/runs/selector-report.json")
+            self.assertEqual(kwargs["selector_governance_binding_application_report_path"], "data/runs/binding-application.json")
+            self.assertEqual(kwargs["project_id"], "sched-binding")
 
     def test_agent_center_snapshot_exposes_evidence_cockpit_fields(self):
         with tempfile.TemporaryDirectory() as tmp:
