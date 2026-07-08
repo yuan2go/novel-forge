@@ -21,6 +21,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
     approval_gate_summary = _approval_gate_summary(rows)
     context_governance_gate = _latest_gate_result(rows, "context_governance_runtime_coverage")
     production_governance_drift = _latest_metric_snapshot(rows, "production_governance_evidence_drift")
+    production_governance_drift_gate = _latest_gate_result(rows, "production_governance_evidence_drift")
     production_console = _production_control_console(rows, blocking_issues, release_status, long_chain_status, v1_artifact_coverage, approval_gate_summary)
     content = {
         "project_id": project_id,
@@ -40,6 +41,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "blocking_approval_request_count": approval_gate_summary["blocking_pending_count"],
             "latest_context_governance_status": context_governance_gate["status"],
             "production_governance_drift_count": production_governance_drift["drift_count"],
+            "production_governance_drift_gate_status": production_governance_drift_gate["status"],
         },
         "task_health": {
             "agent_queue_status": queue_status,
@@ -60,6 +62,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
         "runtime_governance": {
             "context_governance_gate": context_governance_gate,
             "production_governance_drift": production_governance_drift,
+            "production_governance_drift_gate": production_governance_drift_gate,
         },
         "production_control_console": production_console,
         "cockpit": {
@@ -70,6 +73,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "approval_gate_summary": approval_gate_summary["summary"],
             "context_governance_gate": context_governance_gate,
             "production_governance_drift": production_governance_drift,
+            "production_governance_drift_gate": production_governance_drift_gate,
             "rollback_recovery_entry": "use runtime rollback and workflow resume APIs with trace evidence",
         },
     }
@@ -286,7 +290,7 @@ def _latest_gate_result(rows: list[dict[str, Any]], gate_kind: str) -> dict[str,
             continue
         matches.append(row)
     if not matches:
-        return {"status": "missing", "gate_kind": gate_kind, "path": "", "blocking": False, "message": "no gate result recorded"}
+        return {"status": "missing", "gate_kind": gate_kind, "path": "", "gate_result_path": "", "blocking": False, "message": "no gate result recorded"}
     row = sorted(matches, key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""))[-1]
     content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
     result = content.get("result", {}) if isinstance(content.get("result", {}), dict) else {}
@@ -294,6 +298,7 @@ def _latest_gate_result(rows: list[dict[str, Any]], gate_kind: str) -> dict[str,
         "status": str(content.get("status") or "unknown"),
         "gate_kind": gate_kind,
         "path": str(row.get("path") or ""),
+        "gate_result_path": str(row.get("path") or ""),
         "blocking": bool(content.get("blocking")) and str(content.get("status") or "") not in {"passed", "warning", "skipped"},
         "message": str(content.get("message") or ""),
         "coverage_report_path": str(result.get("coverage_report_path") or ""),

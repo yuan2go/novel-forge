@@ -292,6 +292,64 @@ def build_production_governance_evidence_drift_report(
     return result
 
 
+def run_production_governance_drift_gate(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    environment: str = "",
+    mode: str = "",
+    limit: int = 500,
+    persist_report: bool = True,
+) -> dict[str, Any]:
+    report = build_production_governance_evidence_drift_report(
+        storage,
+        project_id=project_id,
+        limit=limit,
+        persist=persist_report,
+    )
+    content = report.get("content", {}) if isinstance(report.get("content", {}), dict) else {}
+    summary = report.get("summary", {}) if isinstance(report.get("summary", {}), dict) else {}
+    production = _strict_mode(environment=environment, mode=mode)
+    drift_count = int(summary.get("drift_count") or 0)
+    blocking_drift_count = int(summary.get("blocking_drift_count") or 0)
+    status = "failed" if production and blocking_drift_count else "warning" if drift_count else "passed"
+    message = (
+        f"production governance evidence drift has {blocking_drift_count} blocking row(s)"
+        if blocking_drift_count
+        else "production governance evidence drift has warnings"
+        if drift_count
+        else "production governance evidence drift gate passed"
+    )
+    drift_rows = content.get("drift_rows", []) if isinstance(content.get("drift_rows", []), list) else []
+    gate = record_gate_result(
+        storage,
+        gate_kind="production_governance_evidence_drift",
+        status=status,
+        target_paths=_dedupe([str(report.get("path") or ""), *[str(row.get("path") or "") for row in drift_rows[:50]]]),
+        result={
+            "report_path": str(report.get("path") or ""),
+            "snapshot_kind": "production_governance_evidence_drift",
+            "summary": summary,
+            "blocking_rows": drift_rows,
+            "environment": environment,
+            "mode": mode,
+            "production": production,
+            "contract": "production-governance-evidence-drift-gate-v1",
+        },
+        project_id=project_id,
+        message=message,
+        blocking=production and bool(blocking_drift_count),
+    )
+    return {
+        "status": status,
+        "production": production,
+        "blocking": production and bool(blocking_drift_count),
+        "message": message,
+        "drift_report": report,
+        "gate_result": gate,
+    }
+
+
 def _normalize_gate(dimension: str, payload: Any) -> dict[str, Any]:
     if isinstance(payload, bool):
         return {"dimension": dimension, "status": "passed" if payload else "blocked", "blocking": not payload, "path": "", "summary": {}}
@@ -306,6 +364,11 @@ def _normalize_gate(dimension: str, payload: Any) -> dict[str, Any]:
     blocking = bool(data.get("blocking")) or status in {"blocked", "missing"}
     path = str(data.get("path") or data.get("gate_result_path") or data.get("context_bundle_path") or data.get("platform_strategy_pack_path") or "")
     return {"dimension": dimension, "status": status, "blocking": blocking, "path": path, "summary": data}
+
+
+def _strict_mode(*, environment: str = "", mode: str = "") -> bool:
+    resolved = str(environment or mode or "").strip().lower()
+    return is_production_environment(resolved) or resolved in {"strict", "enforced", "operating_system"}
 
 
 def _governance_evidence_rows(storage: LocalStorage, *, project_id: str, limit: int) -> list[dict[str, Any]]:
