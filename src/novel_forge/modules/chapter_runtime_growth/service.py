@@ -727,11 +727,16 @@ def run_chapter_runtime_growth_threshold_gate(
     profile_content = profile.get("asset", {}).get("content", {}) if isinstance(profile.get("asset", {}), dict) else {}
     profile_status = str(profile.get("status") or profile_content.get("status") or "missing")
     runtime_rows = profile.get("runtime_rows", []) if isinstance(profile.get("runtime_rows", []), list) else []
+    applied_policy = _latest_project_metric_snapshot(storage, APPLIED_POLICY_SNAPSHOT_KIND, project_id=project_id)
+    applied_policy_path = str(applied_policy.get("path") or "")
+    applied_policy_recorded_at = str(applied_policy.get("updated_at") or applied_policy.get("created_at") or "")
     blockers = _threshold_blocking_rows(
         profile_status=profile_status,
         runtime_rows=runtime_rows,
         max_linked_asset_refs=threshold,
         allow_full_mode=allow_full_mode,
+        applied_policy_path=applied_policy_path,
+        applied_policy_recorded_at=applied_policy_recorded_at,
     )
     production = is_production_environment(environment)
     status = "failed" if production and blockers else "warning" if blockers else "passed"
@@ -741,13 +746,16 @@ def run_chapter_runtime_growth_threshold_gate(
         else "chapter runtime growth threshold gate passed"
     )
     profile_path = str(profile.get("path") or "")
-    evidence_paths = _dedupe([profile_path, *[str(row.get("path") or "") for row in runtime_rows], *[str(row.get("path") or "") for row in blockers]])
+    evidence_paths = _dedupe([profile_path, applied_policy_path, *[str(row.get("path") or "") for row in runtime_rows], *[str(row.get("path") or "") for row in blockers]])
     summary = {
         "profile_status": profile_status,
         "chapter_run_count": int(profile.get("summary", {}).get("chapter_run_count") or 0) if isinstance(profile.get("summary", {}), dict) else 0,
         "blocking_count": len(blockers),
         "max_linked_asset_refs_threshold": threshold,
         "allow_full_mode": allow_full_mode,
+        "latest_applied_policy_path": applied_policy_path,
+        "latest_applied_policy_recorded_at": applied_policy_recorded_at,
+        "applied_policy_consumed_run_count": sum(1 for row in runtime_rows if _runtime_row_consumed_applied_policy(row, applied_policy_path)),
         "production": production,
         "mutation_applied": False,
         "chapter_production_executed": False,
@@ -816,6 +824,7 @@ def _runtime_row(storage: LocalStorage, run: dict[str, Any]) -> dict[str, Any]:
     runtime_counts = _runtime_asset_counts(storage, run_id=run_id)
     ref_type_counts = _referenced_asset_type_counts(storage, linked_refs)
     task_status_mode = str(control.get("task_status_mode") or policy.get("task_status_mode") or "missing")
+    runtime_policy_path = str(control.get("runtime_artifact_policy_path") or policy.get("applied_policy_path") or policy.get("source_path") or "")
     linked_count = len(linked_refs)
     risk_level = _risk_level(linked_count=linked_count, task_status_mode=task_status_mode, policy=policy)
     step_count = len(steps)
@@ -823,11 +832,15 @@ def _runtime_row(storage: LocalStorage, run: dict[str, Any]) -> dict[str, Any]:
     return {
         "run_id": run_id,
         "path": str(run.get("_path") or run.get("path") or ""),
+        "recorded_at": str(run.get("updated_at") or run.get("created_at") or ""),
         "chapter": int(content.get("chapter") or 0),
         "status": str(content.get("status") or ""),
         "current_step": str(content.get("current_step") or ""),
         "task_status_mode": task_status_mode,
         "runtime_artifact_policy_status": "present" if policy else "missing",
+        "runtime_artifact_policy_source": str(control.get("runtime_artifact_policy_source") or ""),
+        "runtime_artifact_policy_path": runtime_policy_path,
+        "runtime_artifact_policy_applied_policy_path": str(policy.get("applied_policy_path") or ""),
         "step_count": step_count,
         "linked_asset_ref_count": linked_count,
         "output_ref_count": len(output_refs),
@@ -1360,6 +1373,8 @@ def _threshold_blocking_rows(
     runtime_rows: list[dict[str, Any]],
     max_linked_asset_refs: int,
     allow_full_mode: bool,
+    applied_policy_path: str = "",
+    applied_policy_recorded_at: str = "",
 ) -> list[dict[str, Any]]:
     blockers: list[dict[str, Any]] = []
     if profile_status == "missing" or not runtime_rows:
@@ -1372,10 +1387,36 @@ def _threshold_blocking_rows(
             }
         )
         return blockers
+    post_apply_rows = [
+        row
+        for row in runtime_rows
+        if applied_policy_path and _runtime_row_is_at_or_after_policy(row, applied_policy_recorded_at)
+    ]
+    if applied_policy_path and not post_apply_rows:
+        blockers.append(
+            {
+                "code": "chapter_runtime_applied_policy_no_post_apply_run",
+                "severity": "high",
+                "message": "latest applied runtime write-policy has no future chapter run evidence",
+                "path": applied_policy_path,
+                "applied_policy_path": applied_policy_path,
+            }
+        )
     for row in runtime_rows:
         run_id = str(row.get("run_id") or "")
         path = str(row.get("path") or "")
         linked_count = int(row.get("linked_asset_ref_count") or 0)
+        if applied_policy_path and _runtime_row_is_at_or_after_policy(row, applied_policy_recorded_at) and not _runtime_row_consumed_applied_policy(row, applied_policy_path):
+            blockers.append(
+                {
+                    "code": "chapter_runtime_applied_policy_not_consumed",
+                    "severity": "high",
+                    "run_id": run_id,
+                    "path": path,
+                    "applied_policy_path": applied_policy_path,
+                    "message": "chapter production run did not record consumption of the latest applied runtime write-policy",
+                }
+            )
         if str(row.get("runtime_artifact_policy_status") or "") != "present":
             blockers.append(
                 {
@@ -1411,12 +1452,31 @@ def _threshold_blocking_rows(
     return blockers
 
 
+def _runtime_row_is_at_or_after_policy(row: dict[str, Any], applied_policy_recorded_at: str) -> bool:
+    if not applied_policy_recorded_at:
+        return True
+    recorded_at = str(row.get("recorded_at") or "")
+    if not recorded_at:
+        return False
+    return recorded_at >= applied_policy_recorded_at
+
+
+def _runtime_row_consumed_applied_policy(row: dict[str, Any], applied_policy_path: str) -> bool:
+    if not applied_policy_path:
+        return False
+    if str(row.get("runtime_artifact_policy_source") or "") == "applied_policy" and str(row.get("runtime_artifact_policy_path") or "") == applied_policy_path:
+        return True
+    return str(row.get("runtime_artifact_policy_applied_policy_path") or "") == applied_policy_path
+
+
 def _threshold_operator_action(blockers: list[dict[str, Any]]) -> str:
     if not blockers:
         return "chapter runtime growth is within threshold"
     codes = {str(row.get("code") or "") for row in blockers}
     if "chapter_runtime_growth_profile_missing" in codes:
         return "create a chapter runtime growth profile before final unified acceptance"
+    if "chapter_runtime_applied_policy_not_consumed" in codes or "chapter_runtime_applied_policy_no_post_apply_run" in codes:
+        return "run a future chapter through the applied runtime write-policy resolver before final acceptance"
     if "chapter_runtime_high_fanout" in codes:
         return "inspect high-fanout chapter runs and compact runtime artifacts before final acceptance"
     if "chapter_runtime_full_mode" in codes or "chapter_runtime_policy_missing" in codes:

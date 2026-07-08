@@ -74,7 +74,7 @@ Current implementation proves many slices and fixtures, including a true one-cha
 ## Test Gaps
 
 - Need future unified 30-chapter local deterministic acceptance with per-chapter artifact coverage and runtime summary; do not run it during the current development loop.
-- Need runtime growth controls: true 10-chapter slow acceptance took 1460.716s and wrote/updated 7,615 local assets. Runtime growth now has profiler, hotspot, write-policy candidate, approval, approved apply plan, forward-only applied-policy evidence, audit event, rollback evidence, and a chapter bus resolver that records applied policy source/path on future runs; the next gap is preflight enforcement that detects runs which fail to consume applied policy evidence.
+- Need runtime growth controls: true 10-chapter slow acceptance took 1460.716s and wrote/updated 7,615 local assets. Runtime growth now has profiler, hotspot, write-policy candidate, approval, approved apply plan, forward-only applied-policy evidence, audit event, rollback evidence, a chapter bus resolver that records applied policy source/path on future runs, and threshold/preflight enforcement that detects post-apply runs which fail to consume applied policy evidence; the next gap is a stricter write-amplification budget gate over future run evidence.
 - Need hard negative fixtures for source leakage into generation context at each v1 stage.
 - Need provider/human calibration for readable-prose/page-turning/mobile gates after the local fixtures.
 - Need caller-level ApprovalRequest integration for high-risk material and major plot mutation.

@@ -18,6 +18,7 @@ from novel_forge.modules.chapter_runtime_growth import (
 from novel_forge.modules.permission_center import list_approval_requests
 from novel_forge.modules.permission_center import resolve_approval_request
 from novel_forge.schemas import BaseAsset
+from novel_forge.schemas import ProjectMetricSnapshot
 from novel_forge.storage.local import LocalStorage
 
 
@@ -360,6 +361,57 @@ class ChapterRuntimeGrowthTests(unittest.TestCase):
             self.assertEqual(result["summary"]["profile_status"], "missing")
             self.assertIn("chapter_runtime_growth_profile_missing", {row["code"] for row in result["blocking_rows"]})
 
+    def test_threshold_gate_passes_when_future_run_consumes_applied_policy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            applied_path = self._write_applied_policy(storage, project_id="book-a")
+            draft = self._write_asset(storage, "applied-consumed-draft", "draft_chapter", project_id="book-a")
+            task = self._write_asset(storage, "applied-consumed-task", "task_status", project_id="book-a")
+            self._write_chapter_run(
+                storage,
+                run_id="applied-consumed-run",
+                chapter=3,
+                task_status_mode="compact",
+                outputs={"draft_v0_path": draft},
+                steps={"draft": {"task_status_paths": [task], "output_paths": [draft]}},
+                control_overrides={
+                    "runtime_artifact_policy_source": "applied_policy",
+                    "runtime_artifact_policy_path": applied_path,
+                },
+                policy_overrides={"applied_policy_path": applied_path},
+            )
+
+            result = run_chapter_runtime_growth_threshold_gate(storage, project_id="book-a", environment="production", max_linked_asset_refs=10)
+
+            self.assertEqual(result["status"], "passed")
+            self.assertFalse(result["blocking"])
+            self.assertEqual(result["summary"]["latest_applied_policy_path"], applied_path)
+            self.assertEqual(result["summary"]["applied_policy_consumed_run_count"], 1)
+
+    def test_threshold_gate_fails_when_future_run_skips_applied_policy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            applied_path = self._write_applied_policy(storage, project_id="book-a")
+            draft = self._write_asset(storage, "applied-skipped-draft", "draft_chapter", project_id="book-a")
+            task = self._write_asset(storage, "applied-skipped-task", "task_status", project_id="book-a")
+            self._write_chapter_run(
+                storage,
+                run_id="applied-skipped-run",
+                chapter=4,
+                task_status_mode="compact",
+                outputs={"draft_v0_path": draft},
+                steps={"draft": {"task_status_paths": [task], "output_paths": [draft]}},
+            )
+
+            result = run_chapter_runtime_growth_threshold_gate(storage, project_id="book-a", environment="production", max_linked_asset_refs=10)
+
+            self.assertEqual(result["status"], "failed")
+            self.assertTrue(result["blocking"])
+            self.assertEqual(result["summary"]["latest_applied_policy_path"], applied_path)
+            self.assertIn("chapter_runtime_applied_policy_not_consumed", {row["code"] for row in result["blocking_rows"]})
+
     def _write_asset(self, storage: LocalStorage, asset_id: str, asset_type: str, *, project_id: str, content: dict | None = None) -> str:
         path = storage.write_asset_auto(
             BaseAsset(
@@ -382,6 +434,8 @@ class ChapterRuntimeGrowthTests(unittest.TestCase):
         outputs: dict[str, str],
         steps: dict[str, dict],
         project_id: str = "book-a",
+        control_overrides: dict | None = None,
+        policy_overrides: dict | None = None,
     ) -> str:
         policy = {
             "policy_version": "chapter-production-runtime-artifact-policy-v1",
@@ -390,6 +444,11 @@ class ChapterRuntimeGrowthTests(unittest.TestCase):
             "node_run_recording": {"succeeded": task_status_mode == "full", "failed": True},
             "trace_recording": {"node_run_succeeded_span": task_status_mode == "full", "node_run_failed_span": True, "external_runtime_spans": True},
         }
+        if policy_overrides:
+            policy.update(policy_overrides)
+        control = {"task_status_mode": task_status_mode, "runtime_artifact_policy": policy}
+        if control_overrides:
+            control.update(control_overrides)
         path = storage.write_asset_auto(
             BaseAsset(
                 id=run_id,
@@ -402,9 +461,28 @@ class ChapterRuntimeGrowthTests(unittest.TestCase):
                     "current_step": "completed",
                     "outputs": outputs,
                     "steps": steps,
-                    "control": {"task_status_mode": task_status_mode, "runtime_artifact_policy": policy},
+                    "control": control,
                 },
                 metadata={"project_id": project_id},
+            )
+        )
+        return str(path.relative_to(storage.root))
+
+    def _write_applied_policy(self, storage: LocalStorage, *, project_id: str) -> str:
+        path = storage.write_asset_auto(
+            ProjectMetricSnapshot(
+                id=f"{project_id}-applied-runtime-policy",
+                title="Applied Runtime Policy",
+                content={
+                    "contract": "chapter-runtime-growth-applied-policy-v1",
+                    "snapshot_kind": "chapter_runtime_growth_applied_policy",
+                    "status": "applied",
+                    "project_id": project_id,
+                    "summary": {"policy_delta_count": 1, "existing_run_artifacts_mutated": False},
+                    "after_policy": {"task_status_mode": "compact"},
+                    "rollback_plan": {"status": "available"},
+                },
+                metadata={"project_id": project_id, "snapshot_kind": "chapter_runtime_growth_applied_policy"},
             )
         )
         return str(path.relative_to(storage.root))
