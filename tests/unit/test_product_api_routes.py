@@ -1451,6 +1451,7 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(content["runtime_governance"]["unified_acceptance_preflight"]["status"], "review_required")
             self.assertEqual(content["quality"]["unified_acceptance_preflight_status"], "review_required")
             self.assertEqual(content["quality"]["unified_acceptance_preflight_missing_count"], 3)
+            self.assertEqual(content["quality"]["unified_acceptance_preflight_unready_count"], 3)
             self.assertEqual(content["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
             self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
 

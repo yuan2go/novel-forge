@@ -86,6 +86,7 @@ def build_project_cockpit_snapshot(storage: LocalStorage, *, project_id: str = "
             "chapter_runtime_growth_max_ref_count": chapter_runtime_growth["summary"]["max_linked_asset_ref_count"],
             "unified_acceptance_preflight_status": unified_acceptance_preflight["status"],
             "unified_acceptance_preflight_missing_count": unified_acceptance_preflight["missing_or_deferred_final_evidence_count"],
+            "unified_acceptance_preflight_unready_count": unified_acceptance_preflight["unready_final_evidence_count"],
             "quality_calibration_readiness_status": quality_calibration_readiness["status"],
             "quality_calibration_readiness_gate_status": quality_calibration_readiness_gate["status"],
             "quality_calibration_missing_dimension_count": quality_calibration_readiness["summary"]["missing_dimension_count"],
@@ -689,6 +690,7 @@ def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) ->
             "status": "missing",
             "path": "",
             "enforced_failure_count": 0,
+            "unready_final_evidence_count": 0,
             "missing_or_deferred_final_evidence_count": 0,
             "required_evidence": [],
             "operator_action": "run deferred v1 acceptance preflight helper before final unified acceptance",
@@ -702,6 +704,7 @@ def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) ->
             "status": "missing",
             "path": str(row.get("path") or ""),
             "enforced_failure_count": 0,
+            "unready_final_evidence_count": 0,
             "missing_or_deferred_final_evidence_count": 0,
             "required_evidence": [],
             "operator_action": "latest acceptance report has no unified preflight manifest",
@@ -712,6 +715,9 @@ def _latest_unified_acceptance_preflight_manifest(rows: list[dict[str, Any]]) ->
         "status": str(manifest.get("status") or "unknown"),
         "path": str(row.get("path") or ""),
         "enforced_failure_count": int(manifest.get("enforced_failure_count") or 0),
+        "unready_final_evidence_count": int(
+            manifest.get("unready_final_evidence_count") or manifest.get("missing_or_deferred_final_evidence_count") or 0
+        ),
         "missing_or_deferred_final_evidence_count": int(manifest.get("missing_or_deferred_final_evidence_count") or 0),
         "required_evidence": evidence,
         "operator_action": str(manifest.get("operator_action") or ""),

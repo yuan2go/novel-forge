@@ -476,6 +476,7 @@ class NovelOsCockpitTests(unittest.TestCase):
             self.assertEqual(snapshot["asset"]["content"]["quality"]["chapter_runtime_growth_max_ref_count"], 132)
             self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_status"], "review_required")
             self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_missing_count"], 2)
+            self.assertEqual(snapshot["asset"]["content"]["quality"]["unified_acceptance_preflight_unready_count"], 2)
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["approval_request_callers"], "partial")
             self.assertEqual(snapshot["asset"]["content"]["production_control_console"]["gate_status_board"]["source_guarded_apply"], "review_required")

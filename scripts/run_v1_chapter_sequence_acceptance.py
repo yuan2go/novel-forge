@@ -296,15 +296,17 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolve
         ),
     ]
     enforced_failures = [row for row in rows if row["enforced_now"] and row["status"] != "passed"]
-    missing_final = [row for row in rows if row["required_for_final_unified_acceptance"] and not row["enforced_now"] and row["status"] != "passed"]
+    unready_final = [row for row in rows if row["required_for_final_unified_acceptance"] and not row["enforced_now"] and row["status"] != "passed"]
     return {
         "contract": "v1-unified-acceptance-preflight-manifest-v1",
-        "status": "failed" if enforced_failures else "review_required" if missing_final else "passed",
+        "status": "failed" if enforced_failures else "review_required" if unready_final else "passed",
         "enforced_failure_count": len(enforced_failures),
-        "missing_or_deferred_final_evidence_count": len(missing_final),
+        "unready_final_evidence_count": len(unready_final),
+        "missing_or_deferred_final_evidence_count": len(unready_final),
+        "legacy_count_compatibility": "missing_or_deferred_final_evidence_count is retained as an alias for unready_final_evidence_count",
         "required_evidence": rows,
         "chapter_acceptance_executed_by_manifest": False,
-        "operator_action": "complete deferred final preflight evidence before unified acceptance" if missing_final else "preflight evidence complete",
+        "operator_action": "complete unready final preflight evidence before unified acceptance" if unready_final else "preflight evidence complete",
     }
 
 

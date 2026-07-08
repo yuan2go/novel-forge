@@ -73,7 +73,9 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
         self.assertEqual(result["status"], "succeeded")
         self.assertEqual(manifest["status"], "review_required")
         self.assertEqual(manifest["enforced_failure_count"], 0)
+        self.assertEqual(manifest["unready_final_evidence_count"], 4)
         self.assertEqual(manifest["missing_or_deferred_final_evidence_count"], 4)
+        self.assertIn("legacy_count_compatibility", manifest)
         self.assertIn("source_governance_runtime", {row["key"] for row in manifest["required_evidence"]})
         self.assertIn("quality_calibration_readiness_gate", {row["key"] for row in manifest["required_evidence"]})
         self.assertFalse(manifest["chapter_acceptance_executed_by_manifest"])
@@ -166,6 +168,7 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
             manifest = result["unified_acceptance_preflight_manifest"]
             status_by_key = {row["key"]: row["status"] for row in manifest["required_evidence"]}
             self.assertEqual(manifest["status"], "passed")
+            self.assertEqual(manifest["unready_final_evidence_count"], 0)
             self.assertEqual(manifest["missing_or_deferred_final_evidence_count"], 0)
             self.assertEqual(status_by_key["source_governance_runtime"], "passed")
             self.assertEqual(status_by_key["workflow_governance_drift"], "passed")
@@ -260,6 +263,7 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
             self.assertEqual(result["status"], "succeeded")
             self.assertEqual(manifest["status"], "review_required")
             self.assertEqual(manifest["enforced_failure_count"], 0)
+            self.assertEqual(manifest["unready_final_evidence_count"], 1)
             self.assertEqual(manifest["missing_or_deferred_final_evidence_count"], 1)
             self.assertEqual(status_by_key["quality_calibration_readiness_gate"], "failed")
 
