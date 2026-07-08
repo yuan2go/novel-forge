@@ -37,6 +37,7 @@ class RuntimeGrowthRegressionScriptTests(unittest.TestCase):
     def test_runtime_growth_bundle_is_documented_and_discoverable(self):
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
         regression_docs = (ROOT / "docs" / "quality" / "regression-tests.md").read_text(encoding="utf-8")
+        agent_registry_docs = (ROOT / "docs" / "architecture" / "agent-registry.md").read_text(encoding="utf-8")
 
         self.assertIn("make runtime-growth-regression - run focused runtime write-growth regression", makefile)
         self.assertIn("runtime-growth-regression:", makefile)
@@ -44,6 +45,10 @@ class RuntimeGrowthRegressionScriptTests(unittest.TestCase):
         self.assertIn("## Runtime Growth Focused Regression", regression_docs)
         self.assertIn("make runtime-growth-regression", regression_docs)
         self.assertIn("excludes chapter sequence acceptance and provider proof", regression_docs)
+        self.assertIn("## AgentRun Event Policy", agent_registry_docs)
+        self.assertIn("agent_event_policy", agent_registry_docs)
+        self.assertIn("success_summary", agent_registry_docs)
+        self.assertIn("不能压缩的证据", agent_registry_docs)
 
 
 if __name__ == "__main__":

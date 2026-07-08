@@ -62,6 +62,45 @@ Agent Registry 将 Novel OS 中分散的 `AGENT_RUNTIME_PROFILES`、Agent operat
 - `tests/unit/test_agent_registry_scheduler_integration.py`
 - `tests/integration/test_novel_os_governance_loop.py`
 
+## AgentRun Event Policy
+
+AgentRun 默认使用 `agent_event_policy.mode=full`，保持历史行为：创建 run、checkpoint、状态变化都会写入 `agent_event` 和对应 trace span。这个模式适用于生产治理、失败恢复、dead-letter、gate、budget、人工审批、provider hard-stop、发布、回滚和任何需要完整事件审计的路径。
+
+批量章节生产或开发期 runtime-growth 回归可以显式使用 `success_summary`：
+
+```json
+{
+  "runtime_policy": {
+    "agent_event_policy": {
+      "mode": "success_summary"
+    }
+  }
+}
+```
+
+`success_summary` 只压缩自动成功路径事件：
+
+- `agent_run.started`
+- `agent_run.checkpoint`
+- `agent_run.succeeded`
+
+被压缩的事件不会创建 `agent_event` 资产和 event trace span，但会写回 AgentRun 的 `agent_event_summary`，并在 Agent Center 的 summary、evidence drawer 和 Agent Event Summary 表格中可见。
+
+不能压缩的证据：
+
+- `failed` / `dead_letter` / `cancelled` 状态事件；
+- scheduler dispatch / retry / repair 直接事件；
+- checkpoint 资产本身；
+- gate / budget / audit / cost / model-call 证据；
+- production governance hard-stop 证据。
+
+使用规则：
+
+- 默认写 full，只有明确需要降低成功路径写放大时才使用 `success_summary`。
+- workflow 作者应通过 `runtime_policy.agent_event_policy` 传入，不要绕过 AgentRun service。
+- 若某条路径会触发 provider、发布、外部 adapter、人工审批或 dead-letter repair，保持 full，除非已有单独证据证明压缩不会影响恢复。
+- 修改该策略后运行 `make runtime-growth-regression`；不要用它替代最终章节验收。
+
 ## 当前限制
 
 - Registry 只治理 Agent 元数据与调度资格，不做 Permission Center。
