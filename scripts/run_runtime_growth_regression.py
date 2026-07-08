@@ -30,7 +30,9 @@ RUNTIME_GROWTH_TESTS = [
     "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_execute_workflow_blocks_drifted_production_definition_before_nodes",
     "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_scheduler_dead_letters_workflow_governance_preflight_failure",
     "tests.unit.test_novel_os_cockpit.NovelOsCockpitTests.test_project_cockpit_surfaces_workflow_governance_readiness",
+    "tests.unit.test_novel_os_cockpit.NovelOsCockpitTests.test_project_cockpit_surfaces_clean_workflow_governance_readiness",
     "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_surfaces_workflow_governance_readiness",
+    "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_surfaces_clean_workflow_governance_readiness",
     "tests.unit.test_runtime_growth_regression_script.RuntimeGrowthRegressionScriptTests",
 ]
 
