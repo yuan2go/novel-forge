@@ -296,6 +296,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/os/cockpit/project",
                 "/product/os/cockpit/chapter-runtime-growth-profile",
                 "/product/os/cockpit/chapter-runtime-growth-threshold-gate",
+                "/product/os/cockpit/unified-preflight-gate",
                 "/product/os/cockpit/multi-book",
                 "/product/os/cockpit/multi-book/schedule",
                 "/product/os/retrieval/pgvector-capabilities",
@@ -1444,17 +1445,34 @@ class ProductApiRouterTests(unittest.TestCase):
                 )
             )
 
+            gate_response = client.post(
+                "/product/os/cockpit/unified-preflight-gate",
+                json={
+                    "project_id": "route-book-preflight",
+                    "environment": "production",
+                    "envelope": {"project_id": "route-book-preflight", "task_type": "runtime_governance", "asset_type": "gate_result"},
+                },
+            )
             response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-preflight"})
 
+            self.assertEqual(gate_response.status_code, 200, gate_response.text)
+            gate_payload = gate_response.json()
+            self.assertEqual(gate_payload["status"], "failed")
+            self.assertTrue(gate_payload["blocking"])
+            self.assertEqual(gate_payload["gate_result"]["asset"]["content"]["gate_kind"], "v1_unified_preflight")
+            self.assertFalse(gate_payload["summary"]["chapter_acceptance_executed"])
             self.assertEqual(response.status_code, 200, response.text)
             content = response.json()["asset"]["content"]
             self.assertEqual(content["runtime_governance"]["unified_acceptance_preflight"]["status"], "review_required")
+            self.assertEqual(content["runtime_governance"]["unified_acceptance_preflight_gate"]["status"], "failed")
             self.assertEqual(content["quality"]["unified_acceptance_preflight_status"], "review_required")
+            self.assertEqual(content["quality"]["unified_acceptance_preflight_gate_status"], "failed")
             self.assertEqual(content["quality"]["unified_acceptance_preflight_missing_count"], 3)
             self.assertEqual(content["quality"]["unified_acceptance_preflight_unready_count"], 3)
             self.assertEqual(content["quality"]["unified_acceptance_preflight_repair_plan_status"], "review_required")
             self.assertEqual(content["quality"]["unified_acceptance_preflight_repair_action_count"], 1)
             self.assertEqual(content["production_control_console"]["gate_status_board"]["unified_acceptance_preflight"], "review_required")
+            self.assertEqual(content["production_control_console"]["gate_status_board"]["unified_acceptance_preflight_gate"], "failed")
             self.assertEqual(content["production_control_console"]["repair_plan_summary"]["unified_acceptance_preflight"]["action_count"], 1)
             self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["required_evidence"][0]["key"], "runtime_growth_threshold")
             self.assertEqual(content["cockpit"]["unified_acceptance_preflight"]["unready_final_evidence"][0]["key"], "source_governance_runtime")
@@ -1462,6 +1480,66 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(repair_plan["status"], "review_required")
             self.assertEqual(repair_plan["actions"][0]["repair_group"], "source_governance")
             self.assertFalse(repair_plan["chapter_acceptance_executed"])
+
+    def test_unified_preflight_rollup_gate_route_passes_with_clean_manifest(self):
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+
+        from novel_forge.api.app import create_app
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.schemas import BaseAsset
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            app = create_app(IndustrialSettings(root=root))
+            client = TestClient(app)
+            storage = LocalStorage(root)
+            storage.write_asset_auto(
+                BaseAsset(
+                    id="route-v1-preflight-clean-report",
+                    type="long_chain_acceptance_report",
+                    title="Route V1 clean preflight",
+                    content={
+                        "status": "passed",
+                        "unified_acceptance_preflight_manifest": {
+                            "contract": "v1-unified-acceptance-preflight-manifest-v1",
+                            "status": "passed",
+                            "enforced_failure_count": 0,
+                            "unready_final_evidence_count": 0,
+                            "missing_or_deferred_final_evidence_count": 0,
+                            "unready_final_evidence": [],
+                            "operator_repair_plan": {"status": "not_required", "action_count": 0, "actions": [], "read_only": True},
+                            "required_evidence": [
+                                {"key": "runtime_growth_threshold", "status": "passed", "enforced_now": True},
+                                {"key": "source_governance_runtime", "status": "passed", "enforced_now": False},
+                                {"key": "workflow_governance_drift", "status": "passed", "enforced_now": False},
+                                {"key": "approval_request_caller_readiness", "status": "passed", "enforced_now": False},
+                                {"key": "quality_calibration_readiness_gate", "status": "passed", "enforced_now": False},
+                            ],
+                        },
+                    },
+                    metadata={"project_id": "route-book-preflight-clean"},
+                )
+            )
+
+            gate_response = client.post(
+                "/product/os/cockpit/unified-preflight-gate",
+                json={
+                    "project_id": "route-book-preflight-clean",
+                    "environment": "production",
+                    "envelope": {"project_id": "route-book-preflight-clean", "task_type": "runtime_governance", "asset_type": "gate_result"},
+                },
+            )
+
+            self.assertEqual(gate_response.status_code, 200, gate_response.text)
+            gate_payload = gate_response.json()
+            self.assertEqual(gate_payload["status"], "passed")
+            self.assertFalse(gate_payload["blocking"])
+            self.assertEqual(gate_payload["summary"]["unready_final_evidence_count"], 0)
+            self.assertEqual(gate_payload["gate_result"]["asset"]["content"]["status"], "passed")
 
     def test_quality_calibration_readiness_route_persists_and_cockpit_surfaces_it(self):
         try:

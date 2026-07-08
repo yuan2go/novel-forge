@@ -51,6 +51,7 @@ from novel_forge.modules.tool_gateway import (
     register_internal_tools,
     register_mcp_server,
 )
+from novel_forge.modules.unified_preflight import run_v1_unified_preflight_rollup_gate
 from novel_forge.storage.local import LocalStorage
 
 
@@ -119,6 +120,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 max_linked_asset_refs=int(body.get("max_linked_asset_refs") or max_linked_asset_refs),
                 allow_full_mode=bool(body.get("allow_full_mode", allow_full_mode)),
                 persist_profile=bool(body.get("persist_profile", persist_profile)),
+            )
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/cockpit/unified-preflight-gate")
+    def unified_preflight_rollup_gate(
+        project_id: str = "local-project",
+        environment: str = "local",
+        payload: dict[str, Any] = Body(default_factory=dict),
+    ) -> dict[str, Any]:
+        try:
+            body = payload if isinstance(payload, dict) else {}
+            return run_v1_unified_preflight_rollup_gate(
+                LocalStorage(app_settings.root),
+                project_id=str(body.get("project_id") or project_id),
+                environment=str(body.get("environment") or environment),
             )
         except (OSError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
