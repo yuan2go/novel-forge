@@ -42,6 +42,8 @@ AGENT_RUN_STATUSES = {
     "cancelled",
 }
 TERMINAL_STATUSES = {"succeeded", "failed", "dead_letter", "cancelled"}
+AGENT_EVENT_POLICY_VERSION = "agent-event-policy-v1"
+AGENT_EVENT_POLICY_MODES = {"full", "success_summary"}
 
 
 class AgentRunStateMachine:
@@ -104,6 +106,160 @@ class AgentRunStateMachine:
         return {"from_status": current_status, "to_status": target_status, "allowed": True, "asset": data}
 
 
+def _agent_event_policy(
+    policy: dict[str, Any] | None = None,
+    *,
+    evidence: dict[str, Any] | None = None,
+    stored: Any = None,
+) -> dict[str, Any]:
+    merged: dict[str, Any] = {}
+    if isinstance(stored, dict):
+        merged.update(stored)
+    if isinstance(evidence, dict):
+        runtime_spec = evidence.get("runtime_policy")
+        if isinstance(runtime_spec, dict) and isinstance(runtime_spec.get("agent_event_policy"), dict):
+            merged.update(runtime_spec["agent_event_policy"])
+        runtime_policy = evidence.get("runtime_event_policy")
+        if isinstance(runtime_policy, dict) and isinstance(runtime_policy.get("agent_event_policy"), dict):
+            merged.update(runtime_policy["agent_event_policy"])
+        artifact_policy = evidence.get("runtime_artifact_policy")
+        if isinstance(artifact_policy, dict) and isinstance(artifact_policy.get("agent_event_policy"), dict):
+            merged.update(artifact_policy["agent_event_policy"])
+        if isinstance(evidence.get("agent_event_policy"), dict):
+            merged.update(evidence["agent_event_policy"])
+    if isinstance(policy, dict):
+        merged.update(policy)
+
+    mode = str(merged.get("mode") or "full").strip().lower()
+    if mode in {"summary", "compact", "success_compact"}:
+        mode = "success_summary"
+    if mode not in AGENT_EVENT_POLICY_MODES:
+        mode = "full"
+
+    recording = {
+        "started": mode == "full",
+        "checkpoint": mode == "full",
+        "succeeded": mode == "full",
+        "needs_revision": True,
+        "waiting_human": True,
+        "failed": True,
+        "dead_letter": True,
+        "cancelled": True,
+        "direct_event": True,
+    }
+    overrides = merged.get("recording", {}) if isinstance(merged.get("recording", {}), dict) else {}
+    for key in ["started", "checkpoint", "succeeded", "needs_revision", "waiting_human"]:
+        if key in overrides:
+            recording[key] = bool(overrides[key])
+    for key in ["failed", "dead_letter", "cancelled", "direct_event"]:
+        recording[key] = True
+
+    return {
+        "policy_version": AGENT_EVENT_POLICY_VERSION,
+        "mode": mode,
+        "recording": recording,
+        "reason": str(
+            merged.get("reason")
+            or (
+                "success_summary skips low-value success-path AgentEvent assets and their event trace spans while preserving failure, dead-letter, checkpoint asset, gate, budget, audit, and status history evidence."
+                if mode == "success_summary"
+                else "full event recording preserves historical AgentRun behavior."
+            )
+        ),
+    }
+
+
+def _should_record_agent_event(*, policy: dict[str, Any], event_type: str, status: str) -> bool:
+    recording = policy.get("recording", {}) if isinstance(policy.get("recording", {}), dict) else {}
+    normalized_status = str(status or "").strip().lower()
+    normalized_event = str(event_type or "").strip().lower()
+    if normalized_status in {"failed", "dead_letter", "cancelled"}:
+        return True
+    if any(marker in normalized_event for marker in ["failed", "dead_letter", "cancelled"]):
+        return True
+    if normalized_event == "agent_run.started":
+        return bool(recording.get("started", True))
+    if normalized_event == "agent_run.checkpoint":
+        return bool(recording.get("checkpoint", True))
+    if normalized_status == "succeeded" or normalized_event.endswith(".succeeded"):
+        return bool(recording.get("succeeded", True))
+    if normalized_status == "needs_revision":
+        return bool(recording.get("needs_revision", True))
+    if normalized_status == "waiting_human":
+        return bool(recording.get("waiting_human", True))
+    return bool(recording.get("direct_event", True))
+
+
+def _skipped_agent_event(*, event_type: str, status: str, message: str, policy: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "skipped": True,
+        "event_type": event_type,
+        "status": status,
+        "message": message,
+        "policy_version": policy.get("policy_version", AGENT_EVENT_POLICY_VERSION),
+        "policy_mode": policy.get("mode", "full"),
+        "reason": "agent_event_policy compacted this low-value success-path event",
+    }
+
+
+def _record_agent_event_if_enabled(
+    storage: LocalStorage,
+    *,
+    agent_run_path: str,
+    event_type: str,
+    status: str = "info",
+    message: str = "",
+    payload: dict[str, Any] | None = None,
+    policy: dict[str, Any],
+) -> dict[str, Any]:
+    if _should_record_agent_event(policy=policy, event_type=event_type, status=status):
+        return record_agent_event(
+            storage,
+            agent_run_path=agent_run_path,
+            event_type=event_type,
+            status=status,
+            message=message,
+            payload=payload,
+        )
+    skipped = _skipped_agent_event(event_type=event_type, status=status, message=message, policy=policy)
+    _append_skipped_agent_event_summary(storage, agent_run_path=agent_run_path, skipped=skipped)
+    return skipped
+
+
+def _append_skipped_agent_event_summary(storage: LocalStorage, *, agent_run_path: str, skipped: dict[str, Any]) -> None:
+    path = _resolve_agent_run(storage, agent_run_path)
+    data = storage.read_json(path)
+    if not isinstance(data, dict) or data.get("type") != "agent_run":
+        return
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    summary = content.get("agent_event_summary", {}) if isinstance(content.get("agent_event_summary", {}), dict) else {}
+    event_types = summary.get("skipped_event_types", []) if isinstance(summary.get("skipped_event_types", []), list) else []
+    events = summary.get("recent_skipped_events", []) if isinstance(summary.get("recent_skipped_events", []), list) else []
+    event_type = str(skipped.get("event_type", ""))
+    summary.update(
+        {
+            "policy_version": skipped.get("policy_version", AGENT_EVENT_POLICY_VERSION),
+            "policy_mode": skipped.get("policy_mode", "full"),
+            "skipped_event_count": int(summary.get("skipped_event_count", 0) or 0) + 1,
+            "skipped_event_types": _dedupe([*[str(item) for item in event_types], event_type]),
+            "recent_skipped_events": [
+                *events,
+                {
+                    "event_type": event_type,
+                    "status": skipped.get("status", ""),
+                    "message": skipped.get("message", ""),
+                    "reason": skipped.get("reason", ""),
+                    "skipped_at": utc_now(),
+                },
+            ][-20:],
+        }
+    )
+    content["agent_event_summary"] = summary
+    data["content"] = content
+    data["updated_at"] = utc_now()
+    _write_json_validated(storage, path, data)
+
+
 @dataclass
 class AgentExecutionContext:
     storage: LocalStorage
@@ -119,6 +275,7 @@ class AgentExecutionContext:
     sla_seconds: int = 1800
     workspace_path: str | None = None
     knowledge_context_contract: dict[str, Any] | None = None
+    agent_event_policy: dict[str, Any] | None = None
     run: dict[str, Any] | None = None
 
     def __enter__(self) -> "AgentExecutionContext":
@@ -144,6 +301,7 @@ class AgentExecutionContext:
             model_name=self.model_name,
             prompt_version=self.prompt_version,
             token_budget=self.token_budget,
+            agent_event_policy=self.agent_event_policy,
             evidence={
                 "sla_seconds": self.sla_seconds,
                 **(_knowledge_context_evidence(self.knowledge_context_contract) if self.knowledge_context_contract else {}),
@@ -305,6 +463,7 @@ def start_agent_run(
     model_name: str = "local",
     prompt_version: str = "prompt-v1",
     token_budget: int = 0,
+    agent_event_policy: dict[str, Any] | None = None,
     evidence: dict[str, Any] | None = None,
     human_gate: dict[str, Any] | None = None,
     retry_count: int = 0,
@@ -331,6 +490,7 @@ def start_agent_run(
     now = utc_now()
     run_id = make_id("agent_run", f"{profile.get('agent', agent_key)}-{operation}")
     evidence_payload = evidence or {}
+    normalized_event_policy = _agent_event_policy(agent_event_policy, evidence=evidence_payload)
     knowledge_context = _knowledge_context_from_evidence(evidence_payload)
     agent_registry = _agent_registry_for_run(storage, agent_key, operation, evidence_payload)
     trace_payload = _agent_trace_payload(evidence_payload, fallback_trace_id=run_id, span_name=f"agent-run-{operation}")
@@ -388,6 +548,7 @@ def start_agent_run(
             "error": "",
             "checkpoint": {},
             "evidence": evidence_payload,
+            "agent_event_policy": normalized_event_policy,
             **_knowledge_context_content(knowledge_context),
             "agent_registry": agent_registry,
             "trace": trace_payload,
@@ -429,13 +590,14 @@ def start_agent_run(
         attributes={"agent_run_path": result.get("path", ""), "agent_type": profile.get("agent", agent_key), "operation": operation},
         references=[result.get("path", "")],
     )
-    event = record_agent_event(
+    event = _record_agent_event_if_enabled(
         storage,
         agent_run_path=result["path"],
         event_type="agent_run.started",
         status=status,
         message=f"{profile.get('agent', agent_key)} started {operation}",
         payload={"operation": operation, "skill": skill},
+        policy=normalized_event_policy,
     )
     _record_audit_safely(
         storage,
@@ -503,6 +665,7 @@ def update_agent_run_status(
     checkpoint: dict[str, Any] | None = None,
     evidence: dict[str, Any] | None = None,
     human_gate: dict[str, Any] | None = None,
+    agent_event_policy: dict[str, Any] | None = None,
     event_type: str = "agent_run.status",
     message: str = "",
 ) -> dict[str, Any]:
@@ -528,6 +691,8 @@ def update_agent_run_status(
         content["evidence"] = merged_evidence
     if human_gate is not None:
         content["human_gate"] = human_gate
+    normalized_event_policy = _agent_event_policy(agent_event_policy, stored=content.get("agent_event_policy", {}))
+    content["agent_event_policy"] = normalized_event_policy
     data["content"] = content
     AgentRunStateMachine.apply_transition(data, status, action=event_type, message=message)
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
@@ -557,13 +722,14 @@ def update_agent_run_status(
         attributes={"agent_run_path": _display_path(storage.root, path), "event_type": event_type, "status": status, "message": message, "error": error},
         references=[_display_path(storage.root, path)],
     )
-    event = record_agent_event(
+    event = _record_agent_event_if_enabled(
         storage,
         agent_run_path=_display_path(storage.root, path),
         event_type=event_type,
         status=status,
         message=message or f"agent run moved to {status}",
         payload={"error": error, "output_count": len(content["output_assets"])},
+        policy=normalized_event_policy,
     )
     _record_audit_safely(
         storage,

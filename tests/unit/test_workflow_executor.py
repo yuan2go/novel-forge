@@ -170,6 +170,44 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertTrue(runtime_policy_gates)
             self.assertEqual(runtime_policy_gates[-1]["content"]["status"], "failed")
 
+    def test_agent_event_policy_flows_from_workflow_runtime_policy_to_agent_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            plan_path = storage.write_asset(
+                "chapter_plans",
+                ChapterPlan(title="Workflow event policy plan", content={"chapter": 1, "objective": "draft", "beats": ["beat"], "hook": "hook"}),
+            )
+            workflow = create_workflow_definition(
+                storage,
+                name="Agent Event Policy Workflow",
+                entry_node_id="draft-agent",
+                runtime_policy={"agent_event_policy": {"mode": "success_summary"}},
+                nodes=[
+                    {
+                        "node_id": "draft-agent",
+                        "node_type": "agent",
+                        "operation": "draft",
+                        "input_types": ["chapter_plan"],
+                        "output_types": ["draft_chapter"],
+                        "processor": {"kind": "agent", "agent_key": "draft", "agent_status": "prepared"},
+                    }
+                ],
+            )
+
+            result = execute_workflow(storage, workflow["path"], input_assets=[plan_path], execute_agents=False)
+
+            self.assertEqual(result["status"], "running")
+            agent_runs = _run_assets_by_type(storage, "agent_run")
+            self.assertEqual(agent_runs[-1]["content"]["agent_event_policy"]["mode"], "success_summary")
+            self.assertEqual(agent_runs[-1]["content"]["agent_event_summary"]["skipped_event_count"], 1)
+            event_types = [row["content"]["event_type"] for row in _run_assets_by_type(storage, "agent_event")]
+            self.assertNotIn("agent_run.started", event_types)
+            self.assertIn("agent_dispatch.queued", event_types)
+            span_names = [row["content"]["name"] for row in _run_assets_by_type(storage, "trace_span")]
+            self.assertNotIn("agent_run.started", span_names)
+            self.assertIn("agent_dispatch.queued", span_names)
+
     def test_runtime_policy_records_selector_governance_binding_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

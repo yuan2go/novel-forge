@@ -65,6 +65,88 @@ class AgentWorkflowImpactTests(unittest.TestCase):
             self.assertEqual(after_success.get("agent_event", 0) - baseline.get("agent_event", 0), 3)
             self.assertEqual(after_success.get("trace_span", 0) - baseline.get("trace_span", 0), 7)
 
+    def test_agent_run_success_summary_event_policy_compacts_success_path_events(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            baseline = _count_assets_by_type(storage)
+            run = start_agent_run(
+                storage,
+                agent_key="draft",
+                operation="chapter-production-summary-policy",
+                status="running",
+                agent_event_policy={"mode": "success_summary"},
+                evidence={"trace": {"trace_id": "trace-agent-summary", "span_id": "span-agent-summary"}},
+            )
+            after_start = _count_assets_by_type(storage)
+            run_asset = storage.read_json(run["path"])
+
+            self.assertTrue(run["event"]["skipped"])
+            self.assertEqual(run_asset["content"]["agent_event_policy"]["mode"], "success_summary")
+            self.assertEqual(after_start.get("agent_event", 0) - baseline.get("agent_event", 0), 0)
+            self.assertEqual(after_start.get("trace_span", 0) - baseline.get("trace_span", 0), 1)
+
+            record_agent_checkpoint(
+                storage,
+                agent_run_path=run["path"],
+                status="prompt_built",
+                state={"step": "prompt_built", "status": "succeeded"},
+            )
+            after_checkpoint = _count_assets_by_type(storage)
+
+            self.assertEqual(after_checkpoint.get("agent_checkpoint", 0) - after_start.get("agent_checkpoint", 0), 1)
+            self.assertEqual(after_checkpoint.get("agent_event", 0) - after_start.get("agent_event", 0), 0)
+            self.assertEqual(after_checkpoint.get("trace_span", 0) - after_start.get("trace_span", 0), 2)
+
+            updated = update_agent_run_status(
+                storage,
+                run["path"],
+                status="succeeded",
+                event_type="agent_run.succeeded",
+                message="summary policy complete",
+            )
+            after_success = _count_assets_by_type(storage)
+
+            self.assertTrue(updated["event"]["skipped"])
+            self.assertEqual(after_success.get("agent_run", 0) - baseline.get("agent_run", 0), 1)
+            self.assertEqual(after_success.get("agent_checkpoint", 0) - baseline.get("agent_checkpoint", 0), 1)
+            self.assertEqual(after_success.get("agent_event", 0) - baseline.get("agent_event", 0), 0)
+            self.assertEqual(after_success.get("trace_span", 0) - baseline.get("trace_span", 0), 4)
+            summary = storage.read_json(run["path"])["content"]["agent_event_summary"]
+            self.assertEqual(summary["policy_mode"], "success_summary")
+            self.assertEqual(summary["skipped_event_count"], 3)
+            self.assertEqual(set(summary["skipped_event_types"]), {"agent_run.started", "agent_run.checkpoint", "agent_run.succeeded"})
+
+    def test_agent_run_success_summary_event_policy_preserves_failure_events(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            baseline = _count_assets_by_type(storage)
+            run = start_agent_run(
+                storage,
+                agent_key="draft",
+                operation="chapter-production-summary-failure",
+                status="running",
+                agent_event_policy={"mode": "success_summary"},
+                evidence={"trace": {"trace_id": "trace-agent-summary-fail", "span_id": "span-agent-summary-fail"}},
+            )
+            updated = update_agent_run_status(
+                storage,
+                run["path"],
+                status="failed",
+                error="fixture failure",
+                event_type="agent_run.failed",
+                message="summary policy failure",
+            )
+            after_failure = _count_assets_by_type(storage)
+
+            self.assertFalse(updated["event"].get("skipped", False))
+            self.assertEqual(after_failure.get("agent_run", 0) - baseline.get("agent_run", 0), 1)
+            self.assertEqual(after_failure.get("agent_event", 0) - baseline.get("agent_event", 0), 1)
+            self.assertEqual(after_failure.get("trace_span", 0) - baseline.get("trace_span", 0), 3)
+
     def test_node_run_agent_run_and_change_impact_are_persisted_assets(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
