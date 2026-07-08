@@ -29,6 +29,8 @@ RUNTIME_GROWTH_TESTS = [
     "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_workflow_governance_drift_gate_warns_for_local_drift",
     "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_execute_workflow_blocks_drifted_production_definition_before_nodes",
     "tests.unit.test_workflow_executor.WorkflowExecutorTests.test_scheduler_dead_letters_workflow_governance_preflight_failure",
+    "tests.unit.test_novel_os_cockpit.NovelOsCockpitTests.test_project_cockpit_surfaces_workflow_governance_readiness",
+    "tests.unit.test_product_api_routes.ProductApiRouterTests.test_project_cockpit_route_surfaces_workflow_governance_readiness",
     "tests.unit.test_runtime_growth_regression_script.RuntimeGrowthRegressionScriptTests",
 ]
 
@@ -45,10 +47,13 @@ def _commands(*, include_ui: bool) -> list[list[str]]:
             "src/novel_forge/modules/agent_runs",
             "src/novel_forge/modules/agent_scheduler",
             "src/novel_forge/modules/workflow_nodes",
+            "src/novel_forge/modules/novel_os_cockpit",
             "tests/unit/test_context_and_production_chain.py",
             "tests/unit/test_agent_workflow_and_impact.py",
             "tests/unit/test_workflow_executor.py",
             "tests/unit/test_agent_scheduler.py",
+            "tests/unit/test_novel_os_cockpit.py",
+            "tests/unit/test_product_api_routes.py",
             "tests/unit/test_runtime_growth_regression_script.py",
         ],
     ]

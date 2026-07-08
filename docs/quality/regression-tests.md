@@ -58,7 +58,7 @@ python3 scripts/run_runtime_growth_regression.py --skip-ui
 python3 scripts/run_runtime_growth_regression.py --list
 ```
 
-The command bundle covers compact TaskStatus/NodeRun behavior, failure NodeRun/trace preservation, AgentRun event growth characterization, success-summary event compaction, failure event preservation, workflow runtime-policy propagation, Agent Scheduler and Workflow Processor chapter production start/resume operation coverage, canonical v1 workflow template service/API fixtures, runtime-console/ready-queue template evidence, workflow governance drift report/gate fixtures, production execute/resume preflight fixtures, scheduler dead-letter handling for workflow governance preflight failures, Agent Center summary/API evidence, compileall, and optional Web Admin static/type checks.
+The command bundle covers compact TaskStatus/NodeRun behavior, failure NodeRun/trace preservation, AgentRun event growth characterization, success-summary event compaction, failure event preservation, workflow runtime-policy propagation, Agent Scheduler and Workflow Processor chapter production start/resume operation coverage, canonical v1 workflow template service/API fixtures, runtime-console/ready-queue template evidence, workflow governance drift report/gate fixtures, production execute/resume preflight fixtures, scheduler dead-letter handling for workflow governance preflight failures, Project Cockpit service/API workflow-governance readiness fixtures, Agent Center summary/API evidence, compileall, and optional Web Admin static/type checks.
 
 ## Makefile Targets
 
