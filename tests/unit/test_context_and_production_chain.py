@@ -590,6 +590,10 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertEqual(run["completed_steps"], 8)
             self.assertTrue(run["outputs"]["stability_preflight_path"])
             self.assertTrue(run["outputs"]["final_draft_path"])
+            self.assertEqual(run["outputs"]["draft_v0_content_quality_loop_status"], "deferred")
+            self.assertTrue(run["outputs"]["final_content_quality_loop_path"])
+            self.assertTrue(run["outputs"]["final_content_quality_loop_status"])
+            self.assertTrue(run["outputs"]["final_chapter_quality_trend_path"])
             self.assertTrue(run["outputs"]["final_draft_version_path"])
             self.assertTrue(run["outputs"]["final_diff_report_path"])
             self.assertTrue(run["outputs"]["final_generation_run_path"])
@@ -598,6 +602,8 @@ class ContextAndProductionChainTests(unittest.TestCase):
             final_draft = storage.read_asset(run["outputs"]["final_draft_path"])
             self.assertEqual(final_draft.type, "draft_chapter")
             self.assertEqual(final_draft.metadata["draft_status"], "final")
+            self.assertEqual(final_draft.metadata["content_quality_loop_path"], run["outputs"]["final_content_quality_loop_path"])
+            self.assertEqual(storage.read_asset(run["outputs"]["final_content_quality_loop_path"]).type, "content_quality_loop_report")
             forward_patch = storage.read_asset(run["outputs"]["final_forward_patch_path"])
             rollback_patch = storage.read_asset(run["outputs"]["final_rollback_patch_path"])
             diff_report = storage.read_asset(run["outputs"]["final_diff_report_path"])
@@ -638,6 +644,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
             self.assertEqual(export_package.content["export_package"]["manifest_path"], resumed["outputs"]["export_manifest_path"])
             self.assertTrue(export_package.content["operator_review_checklist"])
             self.assertTrue(all(item["status"] == "passed" for item in export_package.content["operator_review_checklist"]))
+            self.assertEqual(export_package.content["provenance_evidence"]["final_content_quality_loop_path"], resumed["outputs"]["final_content_quality_loop_path"])
             self.assertTrue(export_package.content["provenance_evidence"]["canon_state_machine_snapshot_path"])
             self.assertEqual(export_package.content["manual_handoff"]["next_gate"], "operator_review_then_publish_gate")
             self.assertTrue(export_package.content["source_isolation"]["export_contains_generated_draft_only"])
@@ -654,6 +661,24 @@ class ContextAndProductionChainTests(unittest.TestCase):
             rollback_result = apply_editor_patch(storage, run["outputs"]["final_rollback_patch_path"])
             self.assertTrue(rollback_result["applied"])
             self.assertEqual(storage.read_asset(rollback_result["diff_report"]["path"]).type, "draft_diff_report")
+
+    def test_chapter_production_bus_production_blocks_missing_content_quality_loop(self):
+        policy = {"environment": "production", "fail_closed_in_production": True}
+        updates = {"draft_v0_path": "data/drafts/chapter-1-v0.json", "draft_v0_content_quality_loop_status": "deferred"}
+
+        with self.assertRaisesRegex(chapter_bus_service.ChapterProductionGateBlocked, "content quality loop blocked draft_v0"):
+            chapter_bus_service._enforce_content_quality_loop_result(
+                {
+                    "target_path": "data/drafts/chapter-1-v0.json",
+                    "path": "",
+                    "status": "deferred",
+                    "blocking": False,
+                    "reason": "fixture missing V7 evidence",
+                },
+                policy,
+                prefix="draft_v0",
+                updates=updates,
+            )
 
     def test_chapter_production_bus_propagates_context_governance_binding_application(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -756,6 +781,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     "review_path": f"data/reviews/chapter-{chapter}-review.json",
                     "revision_plan_path": f"data/revisions/chapter-{chapter}-plan.json",
                     "final_draft_path": f"data/drafts/chapter-{chapter}-final.json",
+                    "final_content_quality_loop_path": f"data/quality/chapter-{chapter}-content-loop.json",
                     "chapter_state_path": f"data/longform/chapter-{chapter}-state.json",
                     "fact_ledger_path": f"data/longform/chapter-{chapter}-facts.json",
                     "character_state_ledger_path": f"data/longform/chapter-{chapter}-characters.json",

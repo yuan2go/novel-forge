@@ -9,12 +9,14 @@ from typing import Any, Callable
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.chapter_plan.service import generate_chapter_plan as generate_chapter_plan_service
 from novel_forge.modules.common import resolve_path, run_metadata
+from novel_forge.modules.content_quality_loop import run_content_quality_loop
 from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.continuity_graph import create_chapter_stability_preflight_report
 from novel_forge.modules.drafting import service as drafting_service
 from novel_forge.modules.editor import execute_revision_plan
 from novel_forge.modules.longform_recap import run_longform_recap
 from novel_forge.modules.longform_stability import create_longform_artifacts_for_draft
+from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_chain.service import (
     create_chapter_plan_version,
     create_outline_version,
@@ -81,6 +83,10 @@ def start_chapter_production(
     execution_mode: str = "sync",
     task_status_mode: str = "full",
     selector_governance_binding_application_report_path: str | Path | None = None,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
+    require_external_provider_proof: bool = False,
 ) -> dict[str, Any]:
     storage.ensure_layout()
     _validate_step(run_to)
@@ -133,6 +139,10 @@ def start_chapter_production(
                 "selector_governance_binding_application_report_path": str(selector_governance_binding_application_report_path or ""),
                 "selector_governance_report_path": "",
                 "draft_v0_path": "",
+                "draft_v0_content_quality_loop_path": "",
+                "draft_v0_content_quality_loop_status": "",
+                "draft_v0_content_quality_loop_blocking": "",
+                "draft_v0_chapter_quality_trend_path": "",
                 "review_path": "",
                 "revision_plan_path": "",
                 "final_draft_path": "",
@@ -141,6 +151,10 @@ def start_chapter_production(
                 "final_generation_run_path": "",
                 "final_forward_patch_path": "",
                 "final_rollback_patch_path": "",
+                "final_content_quality_loop_path": "",
+                "final_content_quality_loop_status": "",
+                "final_content_quality_loop_blocking": "",
+                "final_chapter_quality_trend_path": "",
                 "chapter_state_path": "",
                 "fact_ledger_path": "",
                 "character_state_ledger_path": "",
@@ -175,6 +189,13 @@ def start_chapter_production(
                 "copyright_boundary": "references are used as abstract project context; protected expression is not copied into generation",
             },
             "production_context_preflight": production_context.get("preflight", {}),
+            "quality_loop_policy": {
+                "environment": environment,
+                "os_envelope": os_envelope or {},
+                "source_policy": source_policy or {},
+                "require_external_provider_proof": bool(require_external_provider_proof),
+                "fail_closed_in_production": True,
+            },
             "control": {
                 "execution_mode": execution_mode,
                 "task_status_mode": task_status_mode,
@@ -219,6 +240,10 @@ def run_chapter_production_sequence(
     max_chapters: int = 30,
     task_status_mode: str = "compact",
     selector_governance_binding_application_report_path: str | Path | None = None,
+    environment: str = "",
+    os_envelope: dict[str, Any] | None = None,
+    source_policy: dict[str, Any] | None = None,
+    require_external_provider_proof: bool = False,
     progress_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     storage.ensure_layout()
@@ -259,6 +284,10 @@ def run_chapter_production_sequence(
                 run_to="next_chapter_plan",
                 task_status_mode=task_status_mode,
                 selector_governance_binding_application_report_path=selector_governance_binding_application_report_path,
+                environment=environment,
+                os_envelope=os_envelope,
+                source_policy=source_policy,
+                require_external_provider_proof=require_external_provider_proof,
             )
         except Exception as exc:
             failure = {
@@ -623,15 +652,24 @@ def _perform_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], s
         _require(outputs, "chapter_plan_path", step)
         _require(outputs, "context_bundle_path", step)
         _require(outputs, "stability_preflight_path", step)
+        quality_policy = _quality_loop_policy(data)
         draft_path = drafting_service.draft(
             storage,
             outputs["chapter_plan_path"],
             context_bundle_path=outputs["context_bundle_path"],
             stability_preflight_path=outputs["stability_preflight_path"],
             workspace_path=workspace_path,
+            environment=str(quality_policy.get("environment") or ""),
+            os_envelope=quality_policy.get("os_envelope") if isinstance(quality_policy.get("os_envelope"), dict) else None,
+            source_policy=quality_policy.get("source_policy") if isinstance(quality_policy.get("source_policy"), dict) else None,
+            require_external_provider_proof=bool(quality_policy.get("require_external_provider_proof")),
         )
+        draft_ref = _display_path(storage.root, draft_path)
+        quality_summary = _quality_loop_summary_from_target(storage, draft_ref)
+        updates = {"draft_v0_path": draft_ref, **_quality_loop_output_updates("draft_v0", quality_summary)}
+        _enforce_content_quality_loop_result(quality_summary, quality_policy, prefix="draft_v0", updates=updates)
         _update_workspace_best_effort(storage, workspace_path, draft_path, chapter, "drafted")
-        return _step_result(_display_path(storage.root, draft_path), [_display_path(storage.root, draft_path)], {"draft_v0_path": _display_path(storage.root, draft_path)})
+        return _step_result(draft_ref, _dedupe([draft_ref, *_quality_loop_output_paths(quality_summary)]), updates)
     if step == "review":
         _require(outputs, "draft_v0_path", step)
         review_path = review_service.review(storage, outputs["draft_v0_path"])
@@ -666,6 +704,141 @@ def _create_chapter_plan_from_outline(storage: LocalStorage, data: dict[str, Any
     return _display_path(storage.root, generated)
 
 
+def _quality_loop_policy(data: dict[str, Any]) -> dict[str, Any]:
+    content = _content(data)
+    policy = content.get("quality_loop_policy", {}) if isinstance(content.get("quality_loop_policy", {}), dict) else {}
+    return {
+        "environment": str(policy.get("environment") or ""),
+        "os_envelope": policy.get("os_envelope") if isinstance(policy.get("os_envelope"), dict) else {},
+        "source_policy": policy.get("source_policy") if isinstance(policy.get("source_policy"), dict) else {},
+        "require_external_provider_proof": bool(policy.get("require_external_provider_proof")),
+        "fail_closed_in_production": policy.get("fail_closed_in_production", True) is not False,
+    }
+
+
+def _run_bus_content_quality_loop(
+    storage: LocalStorage,
+    *,
+    target_path: str,
+    stage: str,
+    data: dict[str, Any],
+    quality_policy: dict[str, Any],
+) -> dict[str, Any]:
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    environment = str(quality_policy.get("environment") or "")
+    envelope = quality_policy.get("os_envelope") if isinstance(quality_policy.get("os_envelope"), dict) else None
+    result = run_content_quality_loop(
+        storage,
+        target_path=target_path,
+        stage=stage,
+        platform_id="local",
+        environment=environment,
+        envelope=envelope,
+        require_external_provider_proof=bool(quality_policy.get("require_external_provider_proof")),
+        persist_issues=True,
+    )
+    summary = _quality_loop_summary_from_result(result, target_path=target_path)
+    summary["project_id"] = str(metadata.get("project_id") or "")
+    summary["workspace_path"] = str(metadata.get("workspace_path") or "")
+    return summary
+
+
+def _quality_loop_summary_from_target(storage: LocalStorage, target_path: str | Path) -> dict[str, Any]:
+    target_file = resolve_path(storage.root, target_path)
+    target = storage.read_json(target_file)
+    content = target.get("content", {}) if isinstance(target.get("content", {}), dict) else {}
+    metadata = target.get("metadata", {}) if isinstance(target.get("metadata", {}), dict) else {}
+    loop = content.get("content_quality_loop", {}) if isinstance(content.get("content_quality_loop", {}), dict) else {}
+    path = str(metadata.get("content_quality_loop_path") or loop.get("path") or "")
+    trend_path = str(metadata.get("chapter_quality_trend_path") or loop.get("chapter_quality_trend_path") or "")
+    status = str(metadata.get("content_quality_loop_status") or loop.get("status") or "missing")
+    blocking = _truthy(metadata.get("content_quality_loop_blocking", loop.get("blocking", False)))
+    summary = {
+        "target_path": _display_path(storage.root, target_file),
+        "path": path,
+        "status": status,
+        "blocking": blocking,
+        "chapter_quality_trend_path": trend_path,
+        "reason": str(loop.get("reason") or ""),
+        "review_issue_paths": [],
+        "revision_task_paths": [],
+    }
+    if path:
+        try:
+            report = storage.read_json(resolve_path(storage.root, path))
+            report_content = report.get("content", {}) if isinstance(report.get("content", {}), dict) else {}
+            summary["review_issue_paths"] = [str(item) for item in report_content.get("review_issue_paths", []) if str(item).strip()]
+            summary["revision_task_paths"] = [str(item) for item in report_content.get("revision_task_paths", []) if str(item).strip()]
+        except (OSError, ValueError, KeyError, TypeError):
+            summary["status"] = "missing"
+            summary["reason"] = f"content quality loop report could not be read: {path}"
+    return summary
+
+
+def _quality_loop_summary_from_result(result: dict[str, Any], *, target_path: str) -> dict[str, Any]:
+    asset = result.get("asset", {}) if isinstance(result.get("asset", {}), dict) else {}
+    content = asset.get("content", {}) if isinstance(asset.get("content", {}), dict) else {}
+    return {
+        "target_path": str(target_path),
+        "path": str(result.get("path") or ""),
+        "status": str(result.get("status") or content.get("status") or "missing"),
+        "blocking": bool(result.get("blocking") or content.get("blocking")),
+        "chapter_quality_trend_path": str(result.get("chapter_quality_trend_path") or content.get("chapter_quality_trend_path") or ""),
+        "reason": "",
+        "review_issue_paths": [str(item) for item in content.get("review_issue_paths", []) if str(item).strip()],
+        "revision_task_paths": [str(item) for item in content.get("revision_task_paths", []) if str(item).strip()],
+    }
+
+
+def _quality_loop_output_updates(prefix: str, summary: dict[str, Any]) -> dict[str, Any]:
+    return {
+        f"{prefix}_content_quality_loop_path": str(summary.get("path") or ""),
+        f"{prefix}_content_quality_loop_status": str(summary.get("status") or ""),
+        f"{prefix}_content_quality_loop_blocking": "true" if _truthy(summary.get("blocking")) else "false",
+        f"{prefix}_chapter_quality_trend_path": str(summary.get("chapter_quality_trend_path") or ""),
+    }
+
+
+def _quality_loop_output_paths(summary: dict[str, Any]) -> list[str]:
+    return _dedupe([str(summary.get("path") or ""), str(summary.get("chapter_quality_trend_path") or "")])
+
+
+def _enforce_content_quality_loop_result(
+    summary: dict[str, Any],
+    policy: dict[str, Any],
+    *,
+    prefix: str,
+    updates: dict[str, Any],
+) -> None:
+    if not _quality_loop_fail_closed(policy):
+        return
+    status = str(summary.get("status") or "missing")
+    if status in {"passed", "passed_with_warnings"} and not _truthy(summary.get("blocking")) and str(summary.get("path") or "").strip():
+        return
+    report_path = str(summary.get("path") or summary.get("target_path") or "")
+    reason = str(summary.get("reason") or status)
+    raise ChapterProductionGateBlocked(
+        f"content quality loop blocked {prefix}: status={status}; reason={reason}",
+        report_path=report_path,
+        updates=updates,
+    )
+
+
+def _quality_loop_fail_closed(policy: dict[str, Any]) -> bool:
+    if policy.get("fail_closed_in_production") is False:
+        return False
+    envelope = policy.get("os_envelope") if isinstance(policy.get("os_envelope"), dict) else {}
+    return is_production_environment(str(policy.get("environment") or envelope.get("environment") or ""))
+
+
+def _truthy(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "blocked"}
+    return bool(value)
+
+
 def _create_final_draft(storage: LocalStorage, data: dict[str, Any]) -> dict[str, Any]:
     content = _content(data)
     outputs = _outputs(content)
@@ -682,15 +855,29 @@ def _create_final_draft(storage: LocalStorage, data: dict[str, Any]) -> dict[str
         chapter_production_run_id=str(data.get("id", "")),
         chapter_production_run_path=_display_path(storage.root, resolve_path(storage.root, data.get("_path", ""))) if data.get("_path") else "",
     )
-    _update_workspace_best_effort(storage, workspace_path, result["final_draft_path"], _positive_chapter(content.get("chapter", 1)), "final")
-    return {
+    quality_policy = _quality_loop_policy(data)
+    quality_summary = _run_bus_content_quality_loop(
+        storage,
+        target_path=result["final_draft_path"],
+        stage="revision",
+        data=data,
+        quality_policy=quality_policy,
+    )
+    quality_updates = _quality_loop_output_updates("final", quality_summary)
+    updates = {
         "final_draft_path": result["final_draft_path"],
         "final_draft_version_path": result["final_draft_version_path"],
         "final_diff_report_path": result["final_diff_report_path"],
         "final_generation_run_path": result["final_generation_run_path"],
         "final_forward_patch_path": result["forward_patch_path"],
         "final_rollback_patch_path": result["rollback_patch_path"],
-        "output_paths": result["output_paths"],
+        **quality_updates,
+    }
+    _enforce_content_quality_loop_result(quality_summary, quality_policy, prefix="final", updates=updates)
+    _update_workspace_best_effort(storage, workspace_path, result["final_draft_path"], _positive_chapter(content.get("chapter", 1)), "final")
+    return {
+        **updates,
+        "output_paths": _dedupe([*result["output_paths"], *_quality_loop_output_paths(quality_summary)]),
     }
 
 
@@ -841,7 +1028,19 @@ def _create_export_package(storage: LocalStorage, data: dict[str, Any]) -> dict[
             "created_at": utc_now(),
         },
         metadata={"project_id": project_id, "workspace_path": workspace_path, "workflow": "v1-single-book-loop", "channel": "local_export"},
-        references=filter_project_safe_references(storage, project_id, [draft.id, _display_path(storage.root, draft_file), outputs["longform_recap_report_path"], export_ref, manifest_ref]),
+        references=filter_project_safe_references(
+            storage,
+            project_id,
+            [
+                draft.id,
+                _display_path(storage.root, draft_file),
+                outputs["longform_recap_report_path"],
+                outputs.get("final_content_quality_loop_path", ""),
+                outputs.get("final_chapter_quality_trend_path", ""),
+                export_ref,
+                manifest_ref,
+            ],
+        ),
     )
     errors = validate_common_fields(asset.to_dict())
     if errors:
@@ -862,6 +1061,12 @@ def _export_provenance(outputs: dict[str, Any], *, draft_id: str, draft_path: st
         "final_diff_report_path": str(outputs.get("final_diff_report_path") or ""),
         "final_forward_patch_path": str(outputs.get("final_forward_patch_path") or ""),
         "final_rollback_patch_path": str(outputs.get("final_rollback_patch_path") or ""),
+        "draft_v0_content_quality_loop_path": str(outputs.get("draft_v0_content_quality_loop_path") or ""),
+        "draft_v0_content_quality_loop_status": str(outputs.get("draft_v0_content_quality_loop_status") or ""),
+        "draft_v0_chapter_quality_trend_path": str(outputs.get("draft_v0_chapter_quality_trend_path") or ""),
+        "final_content_quality_loop_path": str(outputs.get("final_content_quality_loop_path") or ""),
+        "final_content_quality_loop_status": str(outputs.get("final_content_quality_loop_status") or ""),
+        "final_chapter_quality_trend_path": str(outputs.get("final_chapter_quality_trend_path") or ""),
         "chapter_state_path": str(outputs.get("chapter_state_path") or ""),
         "fact_ledger_path": str(outputs.get("fact_ledger_path") or ""),
         "character_state_ledger_path": str(outputs.get("character_state_ledger_path") or ""),
@@ -907,6 +1112,15 @@ def _export_operator_checklist(outputs: dict[str, Any], *, export_path: str, exp
             },
         ),
         ("recap_checkpoint_present", bool(outputs.get("longform_recap_report_path")), {"longform_recap_report_path": outputs.get("longform_recap_report_path", "")}),
+        (
+            "content_quality_loop_evidence_present",
+            bool(outputs.get("final_content_quality_loop_path")),
+            {
+                "final_content_quality_loop_path": outputs.get("final_content_quality_loop_path", ""),
+                "final_content_quality_loop_status": outputs.get("final_content_quality_loop_status", ""),
+                "final_chapter_quality_trend_path": outputs.get("final_chapter_quality_trend_path", ""),
+            },
+        ),
         ("local_only_no_platform_side_effect", True, {"mode": "local_export_only"}),
         ("operator_review_required", True, {"next_gate": "operator_review_then_publish_gate"}),
     ]
@@ -961,8 +1175,9 @@ V1_SEQUENCE_REQUIRED_OUTPUTS = [
     "draft_v0_path",
     "review_path",
     "revision_plan_path",
-    "final_draft_path",
-    "chapter_state_path",
+        "final_draft_path",
+        "final_content_quality_loop_path",
+        "chapter_state_path",
     "fact_ledger_path",
     "character_state_ledger_path",
     "protagonist_charm_report_path",
