@@ -75,7 +75,7 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
         self.assertEqual(manifest["enforced_failure_count"], 0)
         self.assertEqual(manifest["missing_or_deferred_final_evidence_count"], 4)
         self.assertIn("source_governance_runtime", {row["key"] for row in manifest["required_evidence"]})
-        self.assertIn("quality_calibration_readiness", {row["key"] for row in manifest["required_evidence"]})
+        self.assertIn("quality_calibration_readiness_gate", {row["key"] for row in manifest["required_evidence"]})
         self.assertFalse(manifest["chapter_acceptance_executed_by_manifest"])
 
     def test_unified_preflight_manifest_resolves_existing_source_workflow_and_approval_evidence(self):
@@ -129,6 +129,25 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
                     "metadata": {"project_id": "book-a", "snapshot_kind": "quality_calibration_readiness"},
                 },
             )
+            storage.write_json(
+                "data/runs/quality-calibration-gate.json",
+                {
+                    "id": "quality-calibration-gate",
+                    "type": "gate_result",
+                    "title": "quality calibration gate",
+                    "content": {
+                        "gate_kind": "quality_calibration_readiness_gate",
+                        "status": "passed",
+                        "message": "quality calibration passed",
+                        "blocking": False,
+                        "result": {
+                            "operator_action": "quality calibration gate ready",
+                            "readiness_report_path": "data/runs/quality-calibration-readiness.json",
+                        },
+                    },
+                    "metadata": {"project_id": "book-a"},
+                },
+            )
 
             resolved = module._resolve_unified_acceptance_preflight_evidence(storage, project_id="book-a")
             result = module._with_runtime_growth_acceptance_preflight(
@@ -151,7 +170,98 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
             self.assertEqual(status_by_key["source_governance_runtime"], "passed")
             self.assertEqual(status_by_key["workflow_governance_drift"], "passed")
             self.assertEqual(status_by_key["approval_request_caller_readiness"], "passed")
-            self.assertEqual(status_by_key["quality_calibration_readiness"], "passed")
+            self.assertEqual(status_by_key["quality_calibration_readiness_gate"], "passed")
+            quality_row = [row for row in manifest["required_evidence"] if row["key"] == "quality_calibration_readiness_gate"][0]
+            self.assertEqual(quality_row["linked_evidence_paths"], ["data/runs/quality-calibration-readiness.json"])
+
+    def test_unified_preflight_requires_passed_quality_calibration_gate_not_only_snapshot(self):
+        module = _load_acceptance_script()
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            storage.write_json(
+                "data/runs/source-gate.json",
+                {
+                    "id": "source-gate",
+                    "type": "gate_result",
+                    "title": "source gate",
+                    "content": {"gate_kind": "source_governance_runtime", "status": "passed", "message": "source passed"},
+                    "metadata": {"project_id": "book-a"},
+                },
+            )
+            storage.write_json(
+                "data/runs/workflow-gate.json",
+                {
+                    "id": "workflow-gate",
+                    "type": "gate_result",
+                    "title": "workflow gate",
+                    "content": {"gate_kind": "workflow_governance_drift", "status": "passed", "message": "workflow passed"},
+                    "metadata": {"project_id": "book-a"},
+                },
+            )
+            storage.write_json(
+                "data/runs/approval-readiness.json",
+                {
+                    "id": "approval-readiness",
+                    "type": "project_metric_snapshot",
+                    "title": "approval readiness",
+                    "content": {"snapshot_kind": "approval_request_caller_readiness", "status": "passed", "operator_action": "approval ready"},
+                    "metadata": {"project_id": "book-a", "snapshot_kind": "approval_request_caller_readiness"},
+                },
+            )
+            storage.write_json(
+                "data/runs/quality-calibration-readiness.json",
+                {
+                    "id": "quality-calibration-readiness",
+                    "type": "project_metric_snapshot",
+                    "title": "quality calibration readiness",
+                    "content": {"snapshot_kind": "quality_calibration_readiness", "status": "passed"},
+                    "metadata": {"project_id": "book-a", "snapshot_kind": "quality_calibration_readiness"},
+                },
+            )
+            storage.write_json(
+                "data/runs/quality-calibration-gate.json",
+                {
+                    "id": "quality-calibration-gate",
+                    "type": "gate_result",
+                    "title": "quality calibration gate",
+                    "content": {
+                        "gate_kind": "quality_calibration_readiness_gate",
+                        "status": "failed",
+                        "message": "quality calibration failed",
+                        "blocking": True,
+                        "result": {
+                            "operator_action": "repair quality calibration",
+                            "readiness_report_path": "data/runs/quality-calibration-readiness.json",
+                        },
+                    },
+                    "metadata": {"project_id": "book-a"},
+                },
+            )
+
+            resolved = module._resolve_unified_acceptance_preflight_evidence(storage, project_id="book-a")
+            result = module._with_runtime_growth_acceptance_preflight(
+                {"status": "succeeded", "failures": [], "acceptance_report": {"asset": {"content": {"recommendation": "pass"}}}},
+                {
+                    "status": "passed",
+                    "blocking": False,
+                    "gate_result_path": "data/runs/runtime-growth-gate.json",
+                    "message": "passed",
+                    "summary": {"blocking_count": 0},
+                    "blocking_rows": [],
+                },
+                resolved_evidence=resolved,
+            )
+
+            manifest = result["unified_acceptance_preflight_manifest"]
+            status_by_key = {row["key"]: row["status"] for row in manifest["required_evidence"]}
+            self.assertEqual(result["status"], "succeeded")
+            self.assertEqual(manifest["status"], "review_required")
+            self.assertEqual(manifest["enforced_failure_count"], 0)
+            self.assertEqual(manifest["missing_or_deferred_final_evidence_count"], 1)
+            self.assertEqual(status_by_key["quality_calibration_readiness_gate"], "failed")
 
     def test_runtime_growth_preflight_persists_report_demotion(self):
         module = _load_acceptance_script()

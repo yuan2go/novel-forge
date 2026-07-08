@@ -290,13 +290,13 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolve
             deferred_action="final unified acceptance must require approval caller readiness evidence",
         ),
         _resolved_preflight_row(
-            key="quality_calibration_readiness",
-            resolved=resolved.get("quality_calibration_readiness", {}),
-            deferred_action="final unified acceptance must require provider/human quality calibration readiness evidence",
+            key="quality_calibration_readiness_gate",
+            resolved=resolved.get("quality_calibration_readiness_gate", {}),
+            deferred_action="final unified acceptance must require a passed provider/human quality calibration readiness gate",
         ),
     ]
     enforced_failures = [row for row in rows if row["enforced_now"] and row["status"] != "passed"]
-    missing_final = [row for row in rows if row["required_for_final_unified_acceptance"] and row["status"] in {"missing", "deferred"}]
+    missing_final = [row for row in rows if row["required_for_final_unified_acceptance"] and not row["enforced_now"] and row["status"] != "passed"]
     return {
         "contract": "v1-unified-acceptance-preflight-manifest-v1",
         "status": "failed" if enforced_failures else "review_required" if missing_final else "passed",
@@ -310,14 +310,20 @@ def _build_unified_acceptance_preflight_manifest(result: dict[str, Any], resolve
 
 def _resolved_preflight_row(*, key: str, resolved: dict[str, Any], deferred_action: str) -> dict[str, Any]:
     status = str(resolved.get("status") or "deferred")
-    return {
+    row = {
         "key": key,
         "status": status,
         "required_for_final_unified_acceptance": True,
         "enforced_now": False,
         "evidence_path": str(resolved.get("path") or ""),
+        "blocking": bool(resolved.get("blocking", False)),
+        "message": str(resolved.get("message") or ""),
         "operator_action": str(resolved.get("operator_action") or ("evidence resolved" if status == "passed" else deferred_action)),
     }
+    linked = resolved.get("linked_evidence_paths", []) if isinstance(resolved.get("linked_evidence_paths", []), list) else []
+    if linked:
+        row["linked_evidence_paths"] = linked
+    return row
 
 
 def _resolve_unified_acceptance_preflight_evidence(storage: LocalStorage, *, project_id: str) -> dict[str, dict[str, Any]]:
@@ -325,7 +331,7 @@ def _resolve_unified_acceptance_preflight_evidence(storage: LocalStorage, *, pro
         "source_governance_runtime": _latest_gate_evidence(storage, project_id=project_id, gate_kind="source_governance_runtime"),
         "workflow_governance_drift": _latest_gate_evidence(storage, project_id=project_id, gate_kind="workflow_governance_drift"),
         "approval_request_caller_readiness": _latest_metric_snapshot_evidence(storage, project_id=project_id, snapshot_kind="approval_request_caller_readiness"),
-        "quality_calibration_readiness": _latest_metric_snapshot_evidence(storage, project_id=project_id, snapshot_kind="quality_calibration_readiness"),
+        "quality_calibration_readiness_gate": _latest_gate_evidence(storage, project_id=project_id, gate_kind="quality_calibration_readiness_gate"),
     }
 
 
@@ -345,7 +351,24 @@ def _latest_gate_evidence(storage: LocalStorage, *, project_id: str, gate_kind: 
         return {}
     path, data = sorted(matches, key=lambda item: str(item[1].get("updated_at") or item[1].get("created_at") or ""))[-1]
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-    return {"status": str(content.get("status") or "unknown"), "path": _display_path(storage.root, path), "operator_action": str(content.get("message") or "")}
+    result = content.get("result", {}) if isinstance(content.get("result", {}), dict) else {}
+    evidence_paths = result.get("evidence_paths", []) if isinstance(result.get("evidence_paths", []), list) else []
+    linked_evidence_paths = _dedupe(
+        [
+            str(result.get("readiness_report_path") or ""),
+            str(result.get("report_path") or ""),
+            str(result.get("coverage_report_path") or ""),
+            *[str(item) for item in evidence_paths if str(item or "").strip()],
+        ]
+    )
+    return {
+        "status": str(content.get("status") or "unknown"),
+        "path": _display_path(storage.root, path),
+        "operator_action": str(result.get("operator_action") or content.get("message") or ""),
+        "blocking": bool(content.get("blocking", False)),
+        "message": str(content.get("message") or ""),
+        "linked_evidence_paths": linked_evidence_paths,
+    }
 
 
 def _latest_metric_snapshot_evidence(storage: LocalStorage, *, project_id: str, snapshot_kind: str) -> dict[str, Any]:
@@ -380,6 +403,17 @@ def _read_json_safe(storage: LocalStorage, path: Path) -> dict[str, Any]:
     except (FileNotFoundError, ValueError):
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        item = str(value or "").strip()
+        if item and item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
 
 
 def _display_path(root: Path, path: Path) -> str:
