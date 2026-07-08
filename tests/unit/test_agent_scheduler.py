@@ -23,7 +23,7 @@ from novel_forge.modules.loop_kernel import run_loop
 from novel_forge.modules.review_issue import create_review_issue
 from novel_forge.modules.runtime_ledger import record_gate_result
 from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs
-from novel_forge.schemas import ChapterPlan, ContextBundle, DraftChapter
+from novel_forge.schemas import ChapterPlan, ContextBundle, DraftChapter, PublishGateReport
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import generation_context_policy
 from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
@@ -159,6 +159,55 @@ class AgentSchedulerTests(unittest.TestCase):
             self.assertEqual(result["production_governance_drift_gate"]["status"], "passed")
             self.assertEqual(gate.type, "gate_result")
             self.assertEqual(gate.content["gate_kind"], "production_governance_evidence_drift")
+
+    def test_release_package_runner_fails_when_production_governance_drift_blocks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = create_production_ready_release_inputs(storage)
+            storage.write_asset_auto(
+                PublishGateReport(
+                    title="Drifted publish gate",
+                    content={
+                        "target_asset_id": "draft-drift",
+                        "gates": {"provider_runtime_gate_passed": False},
+                        "decision": "blocked",
+                        "blocking_issues": [{"severity": "high", "message": "legacy blocker without dimension"}],
+                        "required_reports": {},
+                        "human_override": False,
+                    },
+                    metadata={"project_id": fixture["project_id"]},
+                )
+            )
+            agent_run = {
+                "content": {
+                    "operation": "create-release-package",
+                    "input_assets": [{"path": str(fixture["draft_path"].relative_to(storage.root))}],
+                    "evidence": {
+                        "publish_gate_path": fixture["publish_gate_path"],
+                        "environment": "production",
+                        "project_id": fixture["project_id"],
+                        "workspace_path": fixture["workspace_path"],
+                        "source_policy": fixture["source_policy"],
+                        "os_envelope": production_envelope(
+                            fixture["project_id"],
+                            "release_package",
+                            trace_id=f"trace-scheduler-release-drift-{fixture['project_id']}",
+                        ),
+                    },
+                },
+                "metadata": {"project_id": fixture["project_id"], "workspace_path": fixture["workspace_path"]},
+            }
+
+            with self.assertRaisesRegex(RuntimeError, "production governance drift gate failed"):
+                agent_scheduler_service._run_release_package(storage, {}, agent_run)
+            failed_gates = []
+            for path in storage.list_json("runs"):
+                data = storage.read_json(path)
+                content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+                if data.get("type") == "gate_result" and content.get("gate_kind") == "production_governance_evidence_drift" and content.get("status") == "failed":
+                    failed_gates.append(data)
+            self.assertTrue(failed_gates)
 
     def test_agent_center_links_tasks_loops_context_and_review_issues(self):
         with tempfile.TemporaryDirectory() as tmp:
