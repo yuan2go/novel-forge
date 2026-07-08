@@ -16,6 +16,7 @@ if str(SRC_ROOT) not in sys.path:
 from novel_forge.core.ids import utc_now
 from novel_forge.modules.chapter_production_bus import run_chapter_production_sequence
 from novel_forge.modules.chapter_runtime_growth import run_chapter_runtime_growth_threshold_gate
+from novel_forge.modules.unified_preflight import run_v1_unified_preflight_rollup_gate
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.schemas import Outline
 from novel_forge.storage.local import LocalStorage
@@ -138,6 +139,11 @@ def _render_report(args: argparse.Namespace, *, root: Path, result: dict[str, An
     runtime = content.get("runtime_summary", {}) if isinstance(content, dict) else {}
     runtime_growth_preflight = result.get("runtime_growth_preflight", {}) if isinstance(result.get("runtime_growth_preflight", {}), dict) else {}
     unified_preflight_manifest = result.get("unified_acceptance_preflight_manifest", {}) if isinstance(result.get("unified_acceptance_preflight_manifest", {}), dict) else {}
+    unified_preflight_rollup_gate = (
+        result.get("unified_acceptance_preflight_rollup_gate", {})
+        if isinstance(result.get("unified_acceptance_preflight_rollup_gate", {}), dict)
+        else {}
+    )
     lines = [
         "# V1 Chapter Sequence Slow Acceptance",
         "",
@@ -166,6 +172,12 @@ def _render_report(args: argparse.Namespace, *, root: Path, result: dict[str, An
         "",
         "```json",
         json.dumps(unified_preflight_manifest, ensure_ascii=False, indent=2),
+        "```",
+        "",
+        "## Unified Acceptance Preflight Rollup Gate",
+        "",
+        "```json",
+        json.dumps(unified_preflight_rollup_gate, ensure_ascii=False, indent=2),
         "```",
         "",
         "## Chapter Coverage",
@@ -513,6 +525,20 @@ def _persist_runtime_growth_acceptance_preflight(storage: LocalStorage, result: 
         data["metadata"] = metadata
     data["content"] = content
     storage.write_json(path, data)
+    rollup = run_v1_unified_preflight_rollup_gate(storage, project_id=_project_id(data), environment="production")
+    rollup_summary = {
+        "status": str(rollup.get("status") or ""),
+        "blocking": bool(rollup.get("blocking", False)),
+        "gate_result_path": str(rollup.get("gate_result_path") or ""),
+        "message": str(rollup.get("message") or ""),
+        "summary": rollup.get("summary", {}) if isinstance(rollup.get("summary", {}), dict) else {},
+        "provider_call_executed": False,
+        "chapter_acceptance_executed": False,
+    }
+    content["unified_acceptance_preflight_rollup_gate"] = rollup_summary
+    data["content"] = content
+    storage.write_json(path, data)
+    result["unified_acceptance_preflight_rollup_gate"] = rollup_summary
     acceptance = result.get("acceptance_report", {})
     if isinstance(acceptance, dict):
         acceptance["asset"] = data
