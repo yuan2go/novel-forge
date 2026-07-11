@@ -11,6 +11,7 @@
 - 服务端按 `idempotency_key` 和 request digest 做回放/冲突判断：同一请求返回既有父记录，不再重复调用 child；同 key 不同请求拒绝并保留原运行。
 - child 抛出异常时，父记录进入 `failed`，包含错误类型、错误消息和 recovery instruction。
 - production 环境仍由现有 `enforce_os_envelope` fail-closed；compat/local 请求明确归入 `system` scope，不伪装成小说项目。
+- `ProductionOperationReconciliationReport` 对账父 projection 与 child Run，标记 `aligned`、`asynchronous_child`、`diverged` 或 `missing_child`；报告不修改历史状态。
 
 ## 代码证据
 
@@ -20,10 +21,11 @@
 - `src/novel_forge/modules/production_kernel/entrypoints.py`：注册入口和 `parent_state_owner`
 - `src/novel_forge/modules/production_kernel/service.py`：父记录创建、回放、冲突、失败更新、child projection 和 bounded lifecycle control
 - `src/novel_forge/api/routers/runtime.py`：生产入口审计、父运行查询和 control API
+- `src/novel_forge/schemas/assets.py`：`ProductionOperationReconciliationReport`
 
 ## 测试证据
 
-- `tests/unit/test_production_entrypoint_contract.py`：12 tests，包括 schema、入口父级、重复请求、幂等冲突、child 异常恢复、write budget、bypass scan、父级查询和 cancel control。
+- `tests/unit/test_production_entrypoint_contract.py`：13 tests，包括 schema、入口父级、重复请求、幂等冲突、child 异常恢复、write budget、bypass scan、父级查询、cancel control 和状态对账。
 - `tests/unit/test_os_envelope_v2.py`、`tests/unit/test_chapter_production_envelope_contract.py`：共 15 tests 通过。
 - Phase 0 基线：Python 812 pass / 0 fail / 0 error / 2 skipped；`make validate`、`make lint`、`make check-skills`、Web lint/test、`git diff --check` 均通过；Playwright 仍未安装，Web browser smoke 未执行。
 
@@ -34,7 +36,7 @@
 ## 没有解决什么
 
 - 仍未证明 CLI、所有 API/Worker、Revision、Recap、Publish 等历史 control 调用全部经过 Kernel；启动 child-runner 的当前静态扫描为零 bypass，但部分旧 control API 仍直接操作 child。
-- parent boundary 当前支持有限的 pause/resume/cancel/recover；统一 retry/timeout/compensate/fail/complete command API 尚未完成，子 Run 的领域状态机仍分散。
+- parent boundary 当前支持有限的 pause/resume/cancel/recover，并能生成只读状态对账；统一 retry/timeout/compensate/fail/complete command API 尚未完成，子 Run 的领域状态机仍分散。
 - Envelope 尚未由 PostgreSQL 工业事务库权威保存，当前持久化是 LocalStorage JSON；没有 Asset + StateEvent + Outbox 原子 UoW 或双写故障注入证据。
 - Kernel 尚未强制每个 child 写入完整 ContextManifest/ContextBundle、Provider Runtime Gate、model call log 和 cost ledger；这些仍由下游路径分别治理。
 
