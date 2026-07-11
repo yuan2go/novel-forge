@@ -33,6 +33,7 @@ def create_release_package(
     publish_gate_path: str | Path | None = None,
     channel: str = "local",
     human_override: bool = False,
+    approval_request_ref: str = "",
     envelope: dict[str, Any] | None = None,
     environment: str = "",
     source_policy: dict[str, Any] | None = None,
@@ -69,6 +70,7 @@ def create_release_package(
             path,
             workspace_path=workspace_path,
             human_override=human_override,
+            approval_request_ref=approval_request_ref,
             envelope=envelope,
             environment=environment,
             source_policy=resolved_source_policy,
@@ -79,6 +81,24 @@ def create_release_package(
     if decision == "blocked" and gate_has_mkaos_blocker(gate):
         raise ValueError("release_package blocked by MKAOS high/critical risk")
     gate_content = gate.get("content", {}) if isinstance(gate.get("content", {}), dict) else {}
+    approval_verification = gate_content.get("approval_verification", {}) if isinstance(gate_content.get("approval_verification", {}), dict) else {}
+    if is_production_environment(environment) and human_override:
+        from novel_forge.modules.permission_center import verify_approval_request
+
+        if not approval_request_ref:
+            raise ValueError("release_package human override requires approval_request_ref")
+        approval_verification = verify_approval_request(
+            storage,
+            approval_request_ref,
+            project_id=str(project.get("project_id", "")),
+            scope="publish",
+            action="approve_publish_gate_override",
+            target_ref=display_path(storage.root, path),
+            consume=True,
+            actor="publishing.release_package",
+        )
+        if not approval_verification.get("verified"):
+            raise ValueError(f"release_package blocked by ApprovalRequest: {', '.join(approval_verification.get('reasons', []))}")
     release_gate_evidence = release_package_gate_evidence(gate, production=is_production_environment(environment))
     if is_production_environment(environment) and release_gate_evidence["blocking"]:
         dimensions = ", ".join(str(issue.get("dimension", "")) for issue in release_gate_evidence["blocking_issues"])
@@ -173,6 +193,7 @@ def create_release_package(
             "release_gate_evidence": release_gate_evidence,
             "content_intelligence_gate": content_intelligence_gate,
             "release_quality": gate_content.get("release_quality", {}),
+            "approval_verification": approval_verification,
             "platform_upload_checklist": upload_checklist,
             "source_isolation": {
                 "source_chunk_raw_text_allowed": False,

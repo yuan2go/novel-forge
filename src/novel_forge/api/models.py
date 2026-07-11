@@ -1483,6 +1483,7 @@ class PublishGateRequest(BaseModel):
     workspace_path: str | None = None
     chapter_audit_path: str | None = None
     human_override: bool = False
+    approval_request_ref: str = ""
     envelope: dict[str, Any] = Field(default_factory=dict)
     environment: str = ""
     source_policy: dict[str, Any] = Field(default_factory=dict)
@@ -1494,6 +1495,7 @@ class ReleasePackageRequest(BaseModel):
     publish_gate_path: str | None = None
     channel: str = "local"
     human_override: bool = False
+    approval_request_ref: str = ""
     envelope: dict[str, Any] = Field(default_factory=dict)
     environment: str = ""
     source_policy: dict[str, Any] = Field(default_factory=dict)

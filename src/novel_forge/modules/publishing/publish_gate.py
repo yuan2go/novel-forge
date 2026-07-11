@@ -33,6 +33,7 @@ def create_publish_gate_report(
     workspace_path: str | None = None,
     chapter_audit_path: str | Path | None = None,
     human_override: bool = False,
+    approval_request_ref: str = "",
     envelope: dict[str, Any] | None = None,
     environment: str = "",
     source_policy: dict[str, Any] | None = None,
@@ -123,6 +124,31 @@ def create_publish_gate_report(
     gate_data["blocking_issues"].extend(review_issues_to_gate_issues(review_issue_rows))
     gate_data["gates"]["review_issue_blocking_clear"] = not review_issue_rows
     production_policy = is_production_environment(environment)
+    approval_verification: dict[str, Any] = {"verified": not (production_policy and human_override), "required": bool(production_policy and human_override), "reasons": []}
+    if production_policy and human_override:
+        from novel_forge.modules.permission_center import verify_approval_request
+
+        if not approval_request_ref:
+            approval_verification = {"verified": False, "required": True, "reasons": ["approval_request_ref_required"]}
+        else:
+            approval_verification = verify_approval_request(
+                storage,
+                approval_request_ref,
+                project_id=str(project.get("project_id", "")),
+                scope="publish",
+                action="approve_publish_gate_override",
+                target_ref=display_path(storage.root, path),
+            )
+        if not approval_verification.get("verified"):
+            gate_data["blocking_issues"].append(
+                {
+                    "dimension": "approval_request",
+                    "severity": "critical",
+                    "message": "production human override requires server-verified ApprovalRequest bound to the current draft version",
+                    "recommendation": "create, approve, and pass the matching ApprovalRequest reference before retrying",
+                    "approval_verification": approval_verification,
+                }
+            )
     evaluation_gate = evaluation_gate_summary(storage, target.to_dict(), display_path(storage.root, path), project_id=str(project.get("project_id", "")), required=production_policy)
     gate_data["gates"]["evaluation_gate_passed"] = not evaluation_gate["blocking"]
     gate_data["blocking_issues"].extend(evaluation_gate["blocking_issues"])
@@ -277,6 +303,7 @@ def create_publish_gate_report(
             "platform_strategy_gate": platform_strategy_gate,
             "content_intelligence_gate": content_intelligence_gate,
             "release_quality": release_quality,
+            "approval_verification": approval_verification,
             "context_governance_gate": {
                 "dimension": "context_governance_gate",
                 "status": context_governance_gate["status"],
