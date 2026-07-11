@@ -353,6 +353,11 @@ def _with_runtime_growth_acceptance_preflight(
 def _compact_source_leakage_gate(gate: dict[str, Any]) -> dict[str, Any]:
     readiness = gate.get("readiness_report", {}) if isinstance(gate.get("readiness_report", {}), dict) else {}
     summary = gate.get("summary", {}) if isinstance(gate.get("summary", {}), dict) else {}
+    gate_result = gate.get("gate_result", {}) if isinstance(gate.get("gate_result", {}), dict) else {}
+    gate_asset = gate_result.get("asset", {}) if isinstance(gate_result.get("asset", {}), dict) else {}
+    gate_content = gate_asset.get("content", {}) if isinstance(gate_asset.get("content", {}), dict) else {}
+    gate_payload = gate_content.get("result", {}) if isinstance(gate_content.get("result", {}), dict) else {}
+    blockers = gate.get("blockers", []) if isinstance(gate.get("blockers", []), list) else []
     return {
         "contract": "v1-acceptance-source-leakage-preflight-v1",
         "status": str(gate.get("status") or "missing"),
@@ -360,11 +365,27 @@ def _compact_source_leakage_gate(gate: dict[str, Any]) -> dict[str, Any]:
         "gate_result_path": str(gate.get("gate_result_path") or ""),
         "readiness_path": str(readiness.get("path") or ""),
         "message": str(gate.get("message") or ""),
+        "operator_action": str(gate_payload.get("operator_action") or ""),
         "summary": summary,
-        "blocker_count": int(summary.get("blocking_count", len(gate.get("blockers", []) if isinstance(gate.get("blockers", []), list) else [])) or 0),
+        "blocker_count": int(summary.get("blocking_count", len(blockers)) or 0),
+        "blockers": [_compact_source_leakage_blocker(row) for row in blockers[:20] if isinstance(row, dict)],
+        "mutation_applied": False,
+        "repair_executed": False,
         "provider_call_executed": False,
         "connector_execution_performed": False,
         "chapter_acceptance_executed": False,
+    }
+
+
+def _compact_source_leakage_blocker(row: dict[str, Any]) -> dict[str, Any]:
+    summary = row.get("summary", {}) if isinstance(row.get("summary", {}), dict) else {}
+    return {
+        "stage": str(row.get("stage") or ""),
+        "status": str(row.get("status") or ""),
+        "context_bundle_path": str(row.get("context_bundle_path") or ""),
+        "operator_action": str(row.get("operator_action") or ""),
+        "raw_source_selected_count": int(summary.get("raw_source_selected_count") or 0),
+        "high_risk_selected_count": int(summary.get("high_risk_selected_count") or 0),
     }
 
 

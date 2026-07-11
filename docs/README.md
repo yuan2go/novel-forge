@@ -1,7 +1,7 @@
 # Autonomous Novel OS Documentation
 
-Updated: 2026-07-07
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `75bb3e3`
+Updated: 2026-07-11
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `f66ebb7`
 
 This directory is the current documentation entrypoint for Autonomous Novel OS on the `novel-forge` codebase. The repository/package/CLI remain Novel Forge v6 until an explicit rename migration is approved.
 
@@ -15,6 +15,8 @@ The active product target is defined by the blueprint files and the current cont
 
 - [blueprint/autonomous-novel-os-full-blueprint.md](blueprint/autonomous-novel-os-full-blueprint.md) - full functional blueprint.
 - [blueprint/novel-os-project-blueprint.md](blueprint/novel-os-project-blueprint.md) - project blueprint and phase plan.
+- [reports/novel-os-final-blueprint-gap-analysis.md](reports/novel-os-final-blueprint-gap-analysis.md) - evidence-first final-blueprint requirement traceability and maturity audit.
+- [plans/novel-os-final-blueprint-completion-plan.md](plans/novel-os-final-blueprint-completion-plan.md) - target architecture, migration, phased delivery, and acceptance plan.
 - [reports/blueprint-gap-audit.md](reports/blueprint-gap-audit.md) - current gap audit against the blueprint.
 - [reports/module-maturity-matrix.md](reports/module-maturity-matrix.md) - M0-M5 module maturity matrix.
 - [reports/data-model-gap-matrix.md](reports/data-model-gap-matrix.md) - data model gap matrix.
@@ -58,6 +60,8 @@ Risk closure addendum: [reports/v7-content-intelligence-risk-closure-report.md](
 | Engineering | [engineering/extension-guide.md](engineering/extension-guide.md) | Extension checklist for schema/service/API/UI/tests/docs |
 | Testing | [quality/regression-tests.md](quality/regression-tests.md) | Regression suite and command map |
 | Roadmap | [roadmap/current-roadmap.md](roadmap/current-roadmap.md) | Current implementation priorities |
+| Final blueprint gap | [reports/novel-os-final-blueprint-gap-analysis.md](reports/novel-os-final-blueprint-gap-analysis.md) | Evidence-first 135-requirement traceability, gaps, and weighted maturity score |
+| Final blueprint plan | [plans/novel-os-final-blueprint-completion-plan.md](plans/novel-os-final-blueprint-completion-plan.md) | Target architecture, phased dependencies, migrations, tests, and acceptance gates |
 | Blueprint gap | [reports/blueprint-gap-audit.md](reports/blueprint-gap-audit.md) | Autonomous Novel OS gap audit and v1 blockers |
 | Module maturity | [reports/module-maturity-matrix.md](reports/module-maturity-matrix.md) | M0-M5 module maturity matrix |
 | Data model gap | [reports/data-model-gap-matrix.md](reports/data-model-gap-matrix.md) | Blueprint data model coverage |

@@ -487,6 +487,150 @@ class V1ChapterSequenceAcceptanceScriptTests(unittest.TestCase):
             self.assertEqual(persisted["content"]["source_leakage_preflight"]["readiness_path"], "data/runs/source-leakage-readiness.json")
             self.assertEqual(persisted["content"]["unified_acceptance_preflight_manifest"]["status"], "passed")
 
+    def test_acceptance_helper_persists_failed_source_leakage_gate_as_repair_evidence(self):
+        module = _load_acceptance_script()
+        from novel_forge.storage.local import LocalStorage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            report_path = "data/runs/v1-acceptance-report.json"
+            storage.write_json(
+                report_path,
+                {
+                    "id": "v1-acceptance-report",
+                    "type": "long_chain_acceptance_report",
+                    "title": "V1 acceptance",
+                    "tags": ["acceptance", "pass"],
+                    "content": {"recommendation": "pass"},
+                    "metadata": {"project_id": "book-a", "risk_level": "low"},
+                },
+            )
+            self._write_clean_deferred_preflight_evidence(storage)
+
+            def fake_runtime_gate(storage_arg, **kwargs):
+                return {
+                    "status": "passed",
+                    "blocking": False,
+                    "gate_result_path": "data/runs/runtime-growth-gate.json",
+                    "message": "runtime growth passed",
+                    "summary": {"blocking_count": 0},
+                    "blocking_rows": [],
+                }
+
+            def fake_write_budget_gate(storage_arg, **kwargs):
+                return self._passed_write_budget_gate()
+
+            def fake_source_leakage_gate(storage_arg, **kwargs):
+                blockers = [
+                    {
+                        "stage": "draft",
+                        "status": "missing",
+                        "context_bundle_path": "",
+                        "operator_action": "build clean draft ContextBundle evidence before final acceptance",
+                        "summary": {
+                            "raw_source_selected_count": 0,
+                            "high_risk_selected_count": 0,
+                        },
+                    }
+                ]
+                storage_arg.write_json(
+                    "data/runs/source-leakage-gate.json",
+                    {
+                        "id": "source-leakage-gate",
+                        "type": "gate_result",
+                        "title": "source leakage gate",
+                        "content": {
+                            "gate_kind": "source_leakage_preflight",
+                            "status": "failed",
+                            "message": "source leakage failed",
+                            "blocking": True,
+                            "result": {
+                                "operator_action": "repair source leakage evidence before final acceptance",
+                                "readiness_path": "data/runs/source-leakage-readiness.json",
+                                "summary": {"blocking_count": 1},
+                                "blockers": blockers,
+                            },
+                        },
+                        "metadata": {"project_id": "book-a"},
+                    },
+                )
+                return {
+                    "status": "failed",
+                    "blocking": True,
+                    "gate_result_path": "data/runs/source-leakage-gate.json",
+                    "message": "source leakage failed",
+                    "summary": {"blocking_count": 1},
+                    "blockers": blockers,
+                    "readiness_report": {"path": "data/runs/source-leakage-readiness.json"},
+                    "gate_result": {
+                        "asset": {
+                            "content": {
+                                "result": {
+                                    "operator_action": "repair source leakage evidence before final acceptance",
+                                }
+                            }
+                        }
+                    },
+                }
+
+            module.run_chapter_runtime_growth_threshold_gate = fake_runtime_gate
+            module.run_chapter_runtime_growth_write_budget_gate = fake_write_budget_gate
+            module.run_source_leakage_preflight_gate = fake_source_leakage_gate
+            args = SimpleNamespace(
+                runtime_growth_max_linked_asset_refs=120,
+                runtime_growth_max_task_status_refs=60,
+                runtime_growth_max_step_output_refs=60,
+                runtime_growth_max_node_runs=20,
+                runtime_growth_max_trace_spans=20,
+                runtime_growth_max_repeated_asset_type_total=50,
+                allow_full_runtime_mode=False,
+            )
+
+            result = module._apply_runtime_growth_acceptance_preflight(
+                storage,
+                args,
+                {
+                    "status": "succeeded",
+                    "project_id": "book-a",
+                    "completed_chapters": 10,
+                    "chapter_count": 10,
+                    "failures": [],
+                    "acceptance_report_path": report_path,
+                    "acceptance_report": {"asset": {"content": {"recommendation": "pass"}}},
+                },
+            )
+
+            self.assertEqual(result["status"], "succeeded")
+            self.assertEqual(result["source_leakage_preflight"]["status"], "failed")
+            self.assertEqual(result["source_leakage_preflight"]["blocker_count"], 1)
+            self.assertEqual(result["source_leakage_preflight"]["blockers"][0]["stage"], "draft")
+            self.assertFalse(result["source_leakage_preflight"]["mutation_applied"])
+            self.assertFalse(result["source_leakage_preflight"]["repair_executed"])
+            self.assertFalse(result["source_leakage_preflight"]["provider_call_executed"])
+            self.assertFalse(result["source_leakage_preflight"]["connector_execution_performed"])
+            self.assertFalse(result["source_leakage_preflight"]["chapter_acceptance_executed"])
+            manifest = result["unified_acceptance_preflight_manifest"]
+            self.assertEqual(manifest["status"], "review_required")
+            self.assertEqual(manifest["enforced_failure_count"], 0)
+            leakage_rows = [row for row in manifest["unready_final_evidence"] if row["key"] == "source_leakage_preflight"]
+            self.assertEqual(len(leakage_rows), 1)
+            self.assertEqual(leakage_rows[0]["status"], "failed")
+            self.assertEqual(leakage_rows[0]["linked_evidence_paths"], ["data/runs/source-leakage-readiness.json"])
+            repair_actions = manifest["operator_repair_plan"]["actions"]
+            leakage_actions = [row for row in repair_actions if row["dimension"] == "source_leakage_preflight"]
+            self.assertEqual(leakage_actions[0]["repair_group"], "source_governance")
+            self.assertFalse(manifest["operator_repair_plan"]["repair_executed"])
+            persisted = storage.read_json(report_path)
+            self.assertEqual(persisted["content"]["recommendation"], "pass")
+            self.assertEqual(persisted["content"]["source_leakage_preflight"]["status"], "failed")
+            self.assertEqual(persisted["content"]["source_leakage_preflight"]["blockers"][0]["stage"], "draft")
+            rollup = persisted["content"]["unified_acceptance_preflight_rollup_gate"]
+            self.assertEqual(rollup["status"], "failed")
+            self.assertTrue(rollup["blocking"])
+            self.assertFalse(rollup["provider_call_executed"])
+            self.assertFalse(rollup["chapter_acceptance_executed"])
+
     def _passed_write_budget_gate(self) -> dict:
         return {
             "status": "passed",
