@@ -103,22 +103,28 @@ def develop_topic(
 
 def _write_topic(storage: LocalStorage, material: Any, generated: dict[str, Any], model: ModelAdapter) -> Path:
     material_tags = _string_list(material.tags)
+    material_content = material.content if isinstance(material.content, dict) else {}
+    patterns = _string_list(material_content.get("usable_patterns"))
+    primary_pattern = patterns[0] if patterns else (material_tags[0] if material_tags else "核心冲突")
+    project_id = str(material.metadata.get("project_id") or "")
+    workspace_path = str(material.metadata.get("workspace_path") or "")
+    title = f"{material.title}：原创叙事方案"
     asset = TopicSeed(
-        title="钟楼回声调查",
+        title=title,
         source=material.id,
-        tags=_dedupe(["topic", "topic-development", "suspense", "original", *material_tags]),
+        tags=_dedupe(["topic", "topic-development", "original", *material_tags]),
         content={
-            "logline": "A novice investigator tracks a sequence of public signals that expose a hidden civic bargain.",
-            "reader_attraction": "mystery clock signal, escalating public stakes, ethical choice pressure",
-            "differentiation": "focus on civic memory systems instead of copying any existing detective plot",
+            "logline": f"一名主角必须在“{primary_pattern}”造成的持续压力中行动，并承担每次选择带来的升级代价。",
+            "reader_attraction": f"以{primary_pattern}建立清晰钩子、冲突升级和章节兑现。",
+            "differentiation": f"从“{material.title}”的抽象机制发展原创题材，不复制任何既有故事表达。",
             "market_positioning": {
-                "target_reader": "urban suspense readers who want clear hooks and moral pressure",
-                "platform_fit": "chapter-driven mystery with repeatable public-signal hooks",
-                "commercial_hooks": ["visible countdown", "public clue trail", "ethical tradeoff"],
+                "target_reader": "偏好明确冲突、选择代价和连续钩子的连载读者",
+                "platform_fit": "以章节目标、转折和钩子推进的长篇连载",
+                "commercial_hooks": [primary_pattern, "选择代价", "章节反转"],
             },
             "trope_variation": {
-                "base_mechanism": "low-status investigator + public signal mystery + escalating civic cost",
-                "variation": "the clue system is a public archive mechanism, not a copied case or setting",
+                "base_mechanism": primary_pattern,
+                "variation": "把抽象机制转为原创人物目标、对手压力和世界规则，不复用来源的场景或情节组合。",
             },
             "source_material_tags": material_tags,
             "model_output": generated,
@@ -128,6 +134,8 @@ def _write_topic(storage: LocalStorage, material: Any, generated: dict[str, Any]
             "skill": "topic-development",
             "model": model.name,
             "provider": generated.get("provider", model.name),
+            "project_id": project_id,
+            "workspace_path": workspace_path,
             "originality_boundary": "new premise generated from abstract materials; do not copy source expression",
         },
         references=[material.id],
