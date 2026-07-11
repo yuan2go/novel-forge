@@ -565,6 +565,19 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "agent_evaluation_binding": ["binding_id", "agent_id", "evaluation_suite_id", "status", "created_at"],
     "agent_registry_snapshot": ["snapshot_id", "entries", "coverage", "created_at"],
     "operation_transaction": ["transaction_id", "operation", "created_assets", "updated_assets", "rollback_status", "created_at"],
+    "production_operation": [
+        "operation_id",
+        "operation",
+        "state_owner",
+        "status",
+        "idempotency_key",
+        "request_digest",
+        "execution_envelope",
+        "input_refs",
+        "expected_output_types",
+        "created_at",
+        "updated_at",
+    ],
     "rollback_plan": ["plan_id", "transaction_id", "strategy", "actions", "rollback_status", "created_at"],
     "rollback_result": ["result_id", "plan_id", "transaction_id", "status", "applied_actions", "created_at"],
     "scheduler_lease": ["lease_key", "owner", "status", "acquired_at", "expires_at"],
@@ -927,6 +940,8 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
             errors.append(f"{asset_type} missing required field: {key}")
     if asset_type == "workflow_run" and isinstance(content, dict):
         errors.extend(_validate_workflow_run_content(content))
+    if asset_type == "production_operation" and isinstance(content, dict):
+        errors.extend(_validate_production_operation_content(content))
     if asset_type == "state_event" and isinstance(content, dict):
         errors.extend(_validate_state_event_content(content))
     if asset_type == "outbox_event" and isinstance(content, dict):
@@ -1119,6 +1134,36 @@ def _validate_workflow_run_content(content: dict[str, Any]) -> list[str]:
             errors.append("failed workflow_run must include recovery_instruction")
         if _is_missing(content.get("run_log")):
             errors.append("failed workflow_run must include run_log")
+    return errors
+
+
+def _validate_production_operation_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    statuses = {
+        "planned",
+        "running",
+        "checkpointed",
+        "needs_review",
+        "accepted",
+        "needs_revision",
+        "failed",
+        "recovering",
+        "cancelled",
+        "completed",
+    }
+    if content.get("status") not in statuses:
+        errors.append("production_operation status is invalid")
+    if not isinstance(content.get("execution_envelope"), dict):
+        errors.append("production_operation execution_envelope must be an object")
+    envelope = content.get("execution_envelope", {}) if isinstance(content.get("execution_envelope"), dict) else {}
+    for key in ["project_id", "operation", "idempotency_key", "trace_id", "environment"]:
+        if not str(envelope.get(key, "") or "").strip():
+            errors.append(f"production_operation execution_envelope missing {key}")
+    for key in ["input_refs", "expected_output_types"]:
+        if not isinstance(content.get(key), list):
+            errors.append(f"production_operation {key} must be a list")
+    if not isinstance(content.get("child"), dict):
+        errors.append("production_operation child must be an object")
     return errors
 
 

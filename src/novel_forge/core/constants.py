@@ -332,6 +332,7 @@ ASSET_DIR_BY_TYPE = {
     "ready_node_queue": "runs",
     "processor_rollback": "runs",
     "operation_transaction": "runs",
+    "production_operation": "runs",
     "operation_raw_output_segment": "runs",
     "operation_raw_output_manifest": "runs",
     "rollback_plan": "runs",

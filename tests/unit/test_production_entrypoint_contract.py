@@ -7,10 +7,44 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from unittest.mock import patch
 
 from novel_forge.modules.production_kernel import dispatch_production_operation, production_entrypoints, require_production_entrypoint
+from novel_forge.schemas import ProductionOperation, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 
 class ProductionEntrypointContractTests(unittest.TestCase):
+    def test_production_operation_schema_requires_envelope_and_child_projection(self):
+        asset = ProductionOperation(
+            title="Kernel operation",
+            metadata={"project_id": "project-a", "workspace_path": "/tmp/project-a"},
+            content={
+                "operation_id": "op-1",
+                "operation": "loop.run",
+                "state_owner": "loop_run",
+                "status": "running",
+                "idempotency_key": "idem-1",
+                "request_digest": "digest-1",
+                "execution_envelope": {
+                    "project_id": "project-a",
+                    "operation": "loop.run",
+                    "idempotency_key": "idem-1",
+                    "trace_id": "trace-1",
+                    "environment": "local",
+                },
+                "input_refs": [],
+                "expected_output_types": ["loop_run"],
+                "child": {"status": "running"},
+                "created_at": "2026-07-11T00:00:00+00:00",
+                "updated_at": "2026-07-11T00:00:00+00:00",
+            },
+        )
+        self.assertEqual(validate_common_fields(asset.to_dict()), [])
+
+        invalid = asset.to_dict()
+        invalid["content"] = {**invalid["content"], "status": "unknown", "execution_envelope": {}}
+        errors = validate_common_fields(invalid)
+        self.assertIn("production_operation status is invalid", errors)
+        self.assertIn("production_operation execution_envelope missing project_id", errors)
+
     def test_every_registered_entrypoint_declares_one_state_owner_and_policy(self):
         entries = production_entrypoints()
         self.assertTrue(entries)

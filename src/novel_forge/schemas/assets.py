@@ -879,6 +879,18 @@ class OperationTransaction(BaseAsset):
 
 
 @dataclass
+class ProductionOperation(BaseAsset):
+    """Durable parent record for a registered production dispatch.
+
+    Child run assets remain authoritative for their domain-specific state. This
+    asset owns the request identity, execution envelope, and parent/child
+    lineage needed to inspect or safely resume a production operation.
+    """
+
+    type: str = "production_operation"
+
+
+@dataclass
 class RollbackPlan(BaseAsset):
     type: str = "rollback_plan"
 
@@ -1639,6 +1651,7 @@ SCHEMA_CLASSES = {
         AgentEvaluationBinding,
         AgentRegistrySnapshot,
         OperationTransaction,
+        ProductionOperation,
         RollbackPlan,
         RollbackResult,
         SchedulerLease,
