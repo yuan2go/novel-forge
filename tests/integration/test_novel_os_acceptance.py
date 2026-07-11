@@ -13,10 +13,12 @@ from novel_forge.modules.context_builder import create_context_build_plan, creat
 from novel_forge.modules.operations import create_long_chain_acceptance_report
 from novel_forge.modules.review import service as review_service
 from novel_forge.modules.runtime_ledger import create_budget_policy, create_cost_quality_dashboard, list_cost_ledgers, trace_timeline_payload
+from novel_forge.modules.source_intake import run_source_governance_runtime_gate
 from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs, resume_workflow
 from novel_forge.modules.workspace import service as workspace_service
 from novel_forge.schemas import CharacterCard, ChapterPlan, ContinuityBible, DraftChapter, Outline, WorldBible, validate_common_fields
 from novel_forge.storage.local import LocalStorage
+from tests.unit.source_governance_fixtures import record_clean_source_governance_evidence
 
 
 class NovelOSAcceptanceTests(unittest.TestCase):
@@ -55,6 +57,8 @@ class NovelOSAcceptanceTests(unittest.TestCase):
             review_path = review_service.review(storage, draft_rel, model=model)
             review_rel = _rel(storage, review_path)
             self.assertTrue(storage.read_asset(review_path).issues)
+            record_clean_source_governance_evidence(storage, project_id=fixture["project_id"], workspace_path=fixture["workspace_path"])
+            source_gate = run_source_governance_runtime_gate(storage, project_id=fixture["project_id"], environment="production")
 
             workflow = create_workflow_definition(
                 storage,
@@ -67,6 +71,7 @@ class NovelOSAcceptanceTests(unittest.TestCase):
                     "require_budget_policy": True,
                     "project_id": fixture["project_id"],
                     "workspace_path": fixture["workspace_path"],
+                    "source_governance_runtime_gate_path": source_gate["gate_result"]["path"],
                 },
                 nodes=[
                     {
@@ -136,7 +141,7 @@ class NovelOSAcceptanceTests(unittest.TestCase):
                 execute_agents=False,
                 workspace_path=fixture["workspace_path"],
             )
-            self.assertEqual(initial["status"], "running")
+            self.assertEqual(initial["status"], "running", initial)
             self.assertEqual(initial["blocked"]["node_id"], "draft-agent")
             self.assertEqual(list_agent_dispatch_queue(storage)[0]["status"], "queued")
 

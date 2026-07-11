@@ -40,7 +40,12 @@ class NovelOS12ChapterIndustrialPressureTests(unittest.TestCase):
                         title=f"Pressure Chapter {chapter}",
                         content={
                             "chapter": chapter,
-                            "text": f"第{chapter}章。阿照继续追查旧城隐税，夜档司账册的竹筹线索推进到第{chapter}个证据点，章尾留下新的行动钩子。",
+                            "text": (
+                                f"第{chapter}章。阿照决定亲自追查旧城隐税。"
+                                f"城课司逼她交出夜档司账册，她选择公开第{chapter}枚竹筹的去向，"
+                                "以承担师父旧债为代价换取证人的口供。她查明竹筹指向新的账房，"
+                                "却也让追兵锁定下一处行动地点，章尾的钟声迫使她立即转移证人。"
+                            ),
                             "copyright_boundary": "project-owned deterministic 12 chapter pressure fixture",
                         },
                         metadata={"project_id": project_id, "workspace_path": workspace_ref},

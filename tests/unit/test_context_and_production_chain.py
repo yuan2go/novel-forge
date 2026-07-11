@@ -795,9 +795,17 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     "chapter_state_path": f"data/longform/chapter-{chapter}-state.json",
                     "fact_ledger_path": f"data/longform/chapter-{chapter}-facts.json",
                     "character_state_ledger_path": f"data/longform/chapter-{chapter}-characters.json",
+                    "protagonist_charm_report_path": f"data/reviews/chapter-{chapter}-protagonist-charm.json",
+                    "antagonist_pressure_report_path": f"data/reviews/chapter-{chapter}-antagonist-pressure.json",
+                    "mobile_reading_report_path": f"data/reviews/chapter-{chapter}-mobile-reading.json",
                     "foreshadowing_graph_path": f"data/longform/chapter-{chapter}-foreshadowing.json",
+                    "reader_promise_ledger_path": f"data/longform/chapter-{chapter}-reader-promises.json",
                     "reward_ledger_path": f"data/longform/chapter-{chapter}-rewards.json",
+                    "chapter_economy_report_path": f"data/reviews/chapter-{chapter}-economy.json",
                     "review_score_system_report_path": f"data/reviews/chapter-{chapter}-scores.json",
+                    "canon_state_machine_ledger_path": f"data/longform/chapter-{chapter}-canon-ledger.json",
+                    "canon_state_machine_snapshot_path": f"data/longform/chapter-{chapter}-canon-snapshot.json",
+                    "canon_state_machine_diff_report_path": f"data/longform/chapter-{chapter}-canon-diff.json",
                     "longform_recap_report_path": f"data/longform/chapter-{chapter}-recap.json",
                     "export_package_path": f"data/publishing/chapter-{chapter}-export.json",
                     "export_markdown_path": str(export_markdown_path),
@@ -820,7 +828,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     progress_callback=progress.append,
                 )
 
-            self.assertEqual(result["status"], "succeeded")
+            self.assertEqual(result["status"], "succeeded", result)
             self.assertEqual(result["completed_chapters"], 10)
             self.assertEqual(len(result["runs"]), 10)
             self.assertEqual(len(calls), 10)

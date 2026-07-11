@@ -8,7 +8,7 @@
 | WP-00A 基线分类 | completed | 已取得首次全量基线、16项重核验和五层测试证据口径 | Python 779 tests / 7F / 35E / 2S；聚焦Source/Publish/Scheduler 79 tests / 1F / 21E；Web 11 pass / 1 skip；validate 3 unscoped | 无；失败已归入Source Gate、项目隔离、旧运行期望和质量门禁四组 | 执行Task 0.2 |
 | WP-00B Source Gate迁移 | completed | 修复workspace readiness Schema；建立可复用的自有来源、Policy、Risk、eligibility和clean sweep fixture | Source/Review 37 pass；Publish/Editor/Analysis 29 pass；Platform/Registry 21 pass | 无；Scheduler仍有1个独立旧状态期望，归入WP-00D | Task 0.4 |
 | WP-00C 项目隔离 | completed | Pipeline在创作前创建项目并逐步绑定资产；Registry/Workflow/Lease使用显式system scope；历史3资产经审计修复 | 8个scope/pipeline聚焦测试通过；`make validate`通过 | 无 | Task 0.5 |
-| WP-00D 质量门禁语义 | not-started | 已确认agency rule阻断旧12章验收 | 12章、acceptance、loop、sequence失败 | 合格成功fixture和明确阻断期望 | Task 0.5 |
+| WP-00D 质量门禁语义 | completed | strict workflow夹具补齐Source Gate证据；10章fake覆盖27项当前契约；12章正文具备真实主动选择和代价 | Acceptance/Sequence/Loop/Scheduler/12章共28 tests通过 | 无 | Task 0.6 |
 | WP-00E Phase 0关闭 | not-started | 轻量lint/type/skills/diff已通过 | 尚无两次完整绿色 | 全量回归与文档同步 | Task 0.6 |
 | WP-01..15 | not-started | 已完成依赖排序和重基线 | `novel-os-priority-issues-rebaseline.md` | 等待Phase 0绿色 | 按依赖逐阶段细化 |
 
@@ -63,3 +63,15 @@ git diff --check: PASSED
 7. 风险：完整套件仍可能暴露其他创建器的scope问题；将在Task 0.6验证。
 8. 阶段标准：WP-00C通过；Phase 0未通过。
 9. 下一阶段条件：已满足Task 0.5进入条件。
+
+## WP-00D 完成记录
+
+1. 解决内容：strict Workflow成功样本补齐不可绕过的Source Gate引用；章节序列fixture迁移到27项当前输出契约；12章成功样本不再因主角无主动性被正确质量门禁阻断。
+2. 核心模块：仅测试/验收fixture；没有降低`character_pressure`、ReviewIssue或Release Gate阈值。
+3. 旧路径：旧19项artifact coverage fixture升级为27项；缺Source Gate的strict workflow不再被误当作可进入Scheduler。
+4. 协议/模型：Workflow runtime policy显式引用`source_governance_runtime_gate_path`。
+5. 测试：Novel OS acceptance、10章sequence、Loop Kernel、strict Scheduler budget和12章industrial pressure。
+6. 结果：28个聚焦测试通过；低agency和缺Source Gate负例仍保持阻断。
+7. 风险：12章仍是确定性pressure fixture，不是精品内容验收或真实Provider证据。
+8. 阶段标准：WP-00D通过；Phase 0等待完整套件。
+9. 下一阶段条件：已满足Task 0.6进入条件。

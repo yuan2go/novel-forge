@@ -25,11 +25,13 @@ from novel_forge.modules.continuity_graph import create_continuity_graph_snapsho
 from novel_forge.modules.loop_kernel import run_loop
 from novel_forge.modules.review_issue import create_review_issue
 from novel_forge.modules.runtime_ledger import record_gate_result
+from novel_forge.modules.source_intake import run_source_governance_runtime_gate
 from novel_forge.modules.workflow_nodes import create_workflow_definition, execute_workflow, list_node_runs
 from novel_forge.schemas import BaseAsset, ChapterPlan, ContextBundle, DraftChapter, PublishGateReport
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import generation_context_policy
 from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
+from tests.unit.source_governance_fixtures import record_clean_source_governance_evidence
 
 
 class AgentSchedulerTests(unittest.TestCase):
@@ -982,11 +984,18 @@ class AgentSchedulerTests(unittest.TestCase):
                     references=[storage.read_asset(plan_path).id, str(plan_path.relative_to(storage.root))],
                 ),
             )
+            record_clean_source_governance_evidence(storage, project_id="local-system")
+            source_gate = run_source_governance_runtime_gate(storage, project_id="local-system", environment="production")
             workflow = create_workflow_definition(
                 storage,
                 name="Strict Agent Scheduler Workflow",
                 entry_node_id="draft-agent",
-                runtime_policy={"mode": "operating_system", "require_context_bundle": True, "require_budget_policy": True},
+                runtime_policy={
+                    "mode": "operating_system",
+                    "require_context_bundle": True,
+                    "require_budget_policy": True,
+                    "source_governance_runtime_gate_path": source_gate["gate_result"]["path"],
+                },
                 nodes=[
                     {
                         "node_id": "draft-agent",
@@ -1009,7 +1018,7 @@ class AgentSchedulerTests(unittest.TestCase):
                 ],
             )
             initial = execute_workflow(storage, workflow["path"], input_assets=[plan_path, context_path], execute_agents=False)
-            self.assertEqual(initial["status"], "running")
+            self.assertEqual(initial["status"], "running", initial)
 
             tick = run_agent_scheduler_tick(storage)
 
