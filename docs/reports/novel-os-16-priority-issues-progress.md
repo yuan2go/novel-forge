@@ -17,7 +17,7 @@
 | WP-07 审批版本绑定 | completed | ApprovalRequest保存目标asset digest/version/path；服务端检查状态、scope、action、project、expiry、撤销、消费和目标版本；发布Adapter/生产override均使用verifier | Permission Center/Publishing Center 9项通过，覆盖stale、错误scope、过期、撤销、replay | 多角色RBAC和审批人资格仍属安全硬化 | 纳入治理E2E |
 | WP-08 Kernel写预算 | completed | `LocalStorage.write_budget`统计文件/asset/字节/扫描/Context构建；超预算在下一次写入前失败并返回恢复提示 | WriteBudget/Kernel 8项通过 | 默认阈值需通过10章真实Provider校准；工业双写预算未完成 | 与长篇验收联动 |
 | WP-09 typed StateEvent与Outbox | completed | StateEvent支持领域引用、evidence/confidence/correlation/causation/schema；确定性reducer和state_hash Snapshot/Replay；新增幂等Outbox queued/claimed/acked/failed | StateBus/Schema/OS能力29项通过；最新全量810 tests通过 | Postgres事务UoW、投影恢复和故障注入仍未完成 | 进入真实Provider验收前置 |
-| WP-10 Golden/Human Calibration | completed（本地实现） | Human annotation支持版本、角色、置信度；Golden Set支持多标注者和预期 verdict；Provider calibration计算人类共识、多人一致性、MAE和保守阈值建议；可生成不可变 calibrated rubric 版本；生产模式额外要求至少两个人工标注案例、两名标注者及 agreement≥0.8 | Quality Eval 15项通过；覆盖双标注者一致性、阈值推荐、rubric calibration ref、生产阈值强制绑定和版本不变性 | 尚无真实 Provider 10/30 章数据；单案例或单标注只能是 calibration baseline，不能宣称生产质量已校准 | 运行外部Provider并提交人工校准证据 |
+| WP-10 Golden/Human Calibration | completed（本地实现） | Human annotation支持版本、角色、置信度；Golden Set支持多标注者和预期 verdict；Provider calibration计算人类共识、多人一致性、MAE和保守阈值建议；可生成不可变 calibrated rubric 版本；生产模式额外要求至少两个人工标注案例、两名标注者及 agreement≥0.8；缺失Provider case结果 fail-closed | Quality Eval 16项通过；覆盖双标注者一致性、阈值推荐、rubric calibration ref、生产阈值强制绑定、缺失结果阻断和版本不变性 | 尚无真实 Provider 10/30 章数据；单案例或单标注只能是 calibration baseline，不能宣称生产质量已校准 | 运行外部Provider并提交人工校准证据 |
 | WP-01..15 | not-started | 已完成依赖排序和重基线 | `novel-os-priority-issues-rebaseline.md` | Phase 1需先重核验Envelope和执行入口 | 细化WP-01 |
 
 ## 当前基线

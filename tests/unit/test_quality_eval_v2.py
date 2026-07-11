@@ -652,6 +652,33 @@ class QualityEvalV2Tests(unittest.TestCase):
             self.assertTrue(calibration_meta["calibration_ref"])
             self.assertTrue(report["asset"]["content"]["judge_policy"]["threshold_calibration_required_for_production_acceptance"])
 
+    def test_provider_calibration_missing_case_result_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            draft_path = _ready_draft(storage, project_id="p-missing-provider")
+            golden = build_golden_set(
+                storage,
+                name="Missing Provider Result Golden Set",
+                case_specs=[
+                    {
+                        "target_asset_path": str(draft_path),
+                        "expected_scores": {"hook_strength": 0.9},
+                        "expected_verdict": "pass",
+                    }
+                ],
+                project_id="p-missing-provider",
+            )
+
+            calibration = calibrate_provider_judge(
+                storage,
+                golden_set_path=golden["path"],
+                provider_judge_results=[],
+                project_id="p-missing-provider",
+            )
+
+            self.assertEqual(calibration["asset"]["content"]["calibration_status"], "needs_calibration")
+            self.assertEqual(calibration["asset"]["content"]["comparisons"][0]["status"], "missing_provider_result")
+
 
 def _production_rubric(storage: LocalStorage) -> dict:
     return build_quality_rubric_pack(

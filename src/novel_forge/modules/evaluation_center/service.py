@@ -829,6 +829,21 @@ def calibrate_provider_judge(
         if not expected_scores and human_scores:
             expected_scores = human_scores
         judge_scores = result.get("scores", {}) if isinstance(result.get("scores", {}), dict) else {}
+        if not result or not judge_scores:
+            comparisons.append(
+                {
+                    "case_id": case.get("case_id", ""),
+                    "target_asset_path": target_path,
+                    "provider": str(result.get("provider") or ""),
+                    "reference_scores": reference_scores,
+                    "human_calibration": human_meta,
+                    "expected_verdict": str(case.get("expected_verdict") or ""),
+                    "dimension_errors": {},
+                    "status": "missing_provider_result",
+                }
+            )
+            errors.append(1.0)
+            continue
         dimensions = sorted(set(expected_scores) | set(judge_scores))
         dimension_errors = {}
         for dimension in dimensions:
@@ -850,7 +865,7 @@ def calibrate_provider_judge(
             }
         )
     mean_absolute_error = round(sum(errors) / max(1, len(errors)), 4)
-    status = "passed" if mean_absolute_error <= tolerance else "needs_calibration"
+    status = "passed" if mean_absolute_error <= tolerance and not any(row.get("status") == "missing_provider_result" for row in comparisons) else "needs_calibration"
     threshold_recommendation = _calibrated_threshold_recommendation(comparisons)
     human_calibration = _human_calibration_summary(comparisons)
     asset = BaseAsset(
