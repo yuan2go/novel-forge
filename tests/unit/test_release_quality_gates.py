@@ -53,6 +53,9 @@ class ReleaseQualityGateTests(unittest.TestCase):
 
             self.assertEqual(gates["asset_integrity"]["status"], "failed")
             self.assertTrue(any(row["dimension"] == "content_completeness" for row in gates["asset_integrity"]["issues"]))
+            self.assertEqual(gates["asset_integrity"]["gate_kind"], "release_asset_integrity")
+            self.assertEqual(gates["content_quality"]["gate_kind"], "release_content_quality")
+            self.assertNotIn("content_completeness", gates["content_quality"]["checks"])
 
 
 def _draft(storage: LocalStorage, title: str, text: str, project_id: str):

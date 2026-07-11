@@ -15,6 +15,7 @@ from novel_forge.modules.publishing import (
     publishing_adapter_status,
 )
 from novel_forge.modules.publishing.release_gate import release_package_gate_evidence
+from novel_forge.modules.permission_center import resolve_approval_request
 from novel_forge.schemas import DraftChapter, ProjectWorkspaceState
 from novel_forge.storage.local import LocalStorage
 
@@ -134,7 +135,27 @@ class PublishingCenterTests(unittest.TestCase):
             self.assertTrue(adapter_log.content["approval_request"]["required"])
             self.assertEqual(adapter_log.content["approval_request"]["scope"], "publish")
             self.assertTrue(adapter_log.content["approval_request"]["path"])
+            approval = storage.read_json(storage.root / adapter_log.content["approval_request"]["path"])
+            self.assertEqual(approval["content"]["target"]["version_binding"]["status"], "bound")
+            self.assertTrue(approval["content"]["target"]["version_binding"]["digest"])
             self.assertTrue(adapter_log.content["adapter_payload"]["manual_checklist"])
+            resolve_approval_request(
+                storage,
+                adapter_log.content["approval_request"]["path"],
+                {"decision": "approved", "actor": "chief-editor", "reason": "release version inspected"},
+            )
+
+            verified_external = prepare_platform_release(
+                storage,
+                str(package_path.relative_to(storage.root)),
+                publishing_plan_path=plan["path"],
+                adapter_key="external_webhook",
+                dry_run=False,
+                approval_request_ref=adapter_log.content["approval_request"]["path"],
+            )
+            verified_log = storage.read_asset(verified_external["path"])
+            self.assertEqual(verified_log.content["adapter_result"]["status"], "approval_verified", verified_log.content["adapter_result"])
+            self.assertTrue(verified_log.content["adapter_result"]["approval_verification"]["consumed"])
 
     def test_release_gate_evidence_requires_source_governance_gate_in_production(self):
         gate = {

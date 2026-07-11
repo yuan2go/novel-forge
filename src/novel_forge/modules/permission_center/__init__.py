@@ -10,6 +10,7 @@ from novel_forge.modules.permission_center.service import (
     permission_center_snapshot,
     resolve_approval_request,
     resolve_human_approval_gate,
+    verify_approval_request,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "permission_center_snapshot",
     "resolve_approval_request",
     "resolve_human_approval_gate",
+    "verify_approval_request",
 ]

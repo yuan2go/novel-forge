@@ -58,8 +58,22 @@ def record_release_quality_gates(
         blocking=production,
     )
     return {
-        "asset_integrity": {"status": integrity_status, "blocking": production and bool(integrity["issues"]), "path": integrity_gate["path"], **integrity},
-        "content_quality": {"status": quality_status, "blocking": production and bool(quality["issues"]), "path": quality_gate["path"], **quality},
+        "asset_integrity": {
+            "gate_kind": "release_asset_integrity",
+            "status": integrity_status,
+            "blocking": production and bool(integrity["issues"]),
+            "path": integrity_gate["path"],
+            "gate_result_path": integrity_gate["path"],
+            **integrity,
+        },
+        "content_quality": {
+            "gate_kind": "release_content_quality",
+            "status": quality_status,
+            "blocking": production and bool(quality["issues"]),
+            "path": quality_gate["path"],
+            "gate_result_path": quality_gate["path"],
+            **quality,
+        },
     }
 
 
@@ -81,7 +95,7 @@ def _content_quality(storage: LocalStorage, target: dict[str, Any], *, text: str
     issues: list[dict[str, str]] = []
     normalized = _normalize_body(text)
     if len(normalized) < 80:
-        issues.append(_issue("content_completeness", "chapter body is too short for release quality review"))
+        issues.append(_issue("chapter_length_quality", "chapter body is too short for release quality review"))
     if normalized and _duplicate_body(storage, target_id=str(target.get("id") or ""), body=normalized, project_id=project_id):
         issues.append(_issue("body_uniqueness", "chapter body duplicates an earlier project draft"))
     audit_content = audit.get("content", {}) if isinstance(audit.get("content", {}), dict) else {}
@@ -92,7 +106,7 @@ def _content_quality(storage: LocalStorage, target: dict[str, Any], *, text: str
         issues.append(_issue("chapter_progression", "chapter audit found semantic/progression failure"))
     if stability and not bool(stability.get("passed", False)):
         issues.append(_issue("state_consistency", "chapter audit found continuity or stability failure"))
-    return {"contract": "release-content-quality-v1", "issues": issues, "checks": {"body_uniqueness": not any(row["dimension"] == "body_uniqueness" for row in issues), "chapter_progression": not any(row["dimension"] == "chapter_progression" for row in issues), "state_consistency": not any(row["dimension"] == "state_consistency" for row in issues), "content_completeness": not any(row["dimension"] == "content_completeness" for row in issues)}}
+    return {"contract": "release-content-quality-v1", "issues": issues, "checks": {"body_uniqueness": not any(row["dimension"] == "body_uniqueness" for row in issues), "chapter_progression": not any(row["dimension"] == "chapter_progression" for row in issues), "state_consistency": not any(row["dimension"] == "state_consistency" for row in issues), "chapter_length_quality": not any(row["dimension"] == "chapter_length_quality" for row in issues)}}
 
 
 def _duplicate_body(storage: LocalStorage, *, target_id: str, body: str, project_id: str) -> bool:

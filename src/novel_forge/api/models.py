@@ -1517,6 +1517,7 @@ class PublishingAdapterRequest(BaseModel):
     adapter_key: str = "manual_web"
     dry_run: bool = True
     external_url: str = ""
+    approval_request_ref: str = ""
 
 
 class LongFormMacroPlanRequest(BaseModel):

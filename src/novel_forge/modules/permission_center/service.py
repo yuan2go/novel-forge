@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -92,6 +95,7 @@ def create_approval_request(storage: LocalStorage, payload: dict[str, Any]) -> d
         "created_at": utc_now(),
         "updated_at": utc_now(),
     }
+    content["target"]["version_binding"] = _target_version_binding(storage, content["target"], target_refs=target_refs, payload=payload)
     asset = ApprovalRequest(
         id=request_id,
         title=str(payload.get("title") or f"Approval request {scope}:{action}"),
@@ -183,6 +187,87 @@ def resolve_approval_request(storage: LocalStorage, request_ref: str | Path, pay
         metadata={"previous_status": current, "scope": content.get("scope", ""), "risk_level": content.get("risk_level", "")},
     )
     return {"status": decision, "path": _display_path(storage.root, path), "asset": data, "audit_event_path": audit["path"]}
+
+
+def verify_approval_request(
+    storage: LocalStorage,
+    request_ref: str | Path,
+    *,
+    project_id: str = "",
+    scope: str = "",
+    action: str = "",
+    target_ref: str = "",
+    target_version: str = "",
+    consume: bool = False,
+    actor: str = "",
+) -> dict[str, Any]:
+    """Verify approved evidence at the server boundary before a side effect.
+
+    The caller supplies only a reference and expected scope/action/target.  The
+    server re-reads the immutable ApprovalRequest and the currently referenced
+    asset, then compares its version binding.  A consumed approval cannot be
+    replayed for a second side effect.
+    """
+    path = _resolve_asset(storage, request_ref, "approval_request")
+    data = storage.read_json(path)
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    reasons: list[str] = []
+    status = str(content.get("status") or "")
+    if status != "approved":
+        reasons.append(f"status_{status or 'missing'}")
+    expires_at = str(content.get("expires_at") or "")
+    if expires_at and _approval_expired(expires_at):
+        reasons.append("expired")
+    if project_id and str(metadata.get("project_id") or "") != str(project_id):
+        reasons.append("project_mismatch")
+    expected_scope = _scope(scope) if scope else ""
+    if expected_scope and str(content.get("scope") or "") != expected_scope:
+        reasons.append("scope_mismatch")
+    if action and str(content.get("action") or "") != str(action):
+        reasons.append("action_mismatch")
+    decision = content.get("decision", {}) if isinstance(content.get("decision", {}), dict) else {}
+    if decision.get("consumed_at"):
+        reasons.append("already_consumed")
+    binding = content.get("target", {}).get("version_binding", {}) if isinstance(content.get("target", {}), dict) else {}
+    binding = binding if isinstance(binding, dict) else {}
+    binding_target = str(binding.get("path") or content.get("target", {}).get("target_path") or "") if isinstance(content.get("target", {}), dict) else ""
+    resolved_target = str(target_ref or binding_target or "")
+    if binding.get("status") == "unresolved" and resolved_target:
+        reasons.append("target_binding_unresolved")
+    if binding.get("digest"):
+        current = _target_version_binding(storage, {"target_path": resolved_target, "target_id": str(content.get("target", {}).get("target_id") or "")}, target_refs=[resolved_target], payload={})
+        if str(current.get("digest") or "") != str(binding.get("digest") or ""):
+            reasons.append("target_version_mismatch")
+        if binding.get("asset_id") and current.get("asset_id") and str(binding.get("asset_id")) != str(current.get("asset_id")):
+            reasons.append("target_asset_mismatch")
+    expected_binding_version = str(target_version or "")
+    if expected_binding_version and str(binding.get("version") or "") != expected_binding_version:
+        reasons.append("target_version_label_mismatch")
+    verified = not reasons
+    if verified and consume:
+        decided = utc_now()
+        content["decision"] = {
+            **decision,
+            "consumed_at": decided,
+            "consumed_by": str(actor or "server"),
+            "consumed_for": {"scope": content.get("scope", ""), "action": content.get("action", ""), "target_ref": resolved_target},
+        }
+        content["updated_at"] = decided
+        data["content"] = content
+        metadata.update({"approval_consumed_at": decided, "approval_consumed_by": str(actor or "server")})
+        data["metadata"] = metadata
+        data["updated_at"] = decided
+        storage.write_json(path, data)
+    return {
+        "verified": verified,
+        "status": status,
+        "reasons": _dedupe(reasons),
+        "path": _display_path(storage.root, path),
+        "request_id": str(content.get("request_id") or data.get("id") or ""),
+        "binding": binding,
+        "consumed": bool(verified and consume),
+    }
 
 
 def expire_approval_requests(storage: LocalStorage, *, project_id: str | None = None, now: str | None = None, limit: int = 300) -> dict[str, Any]:
@@ -771,6 +856,53 @@ def _list_assets(storage: LocalStorage, asset_type: str, *, project_id: str | No
         if len(rows) >= max(1, int(limit or 300)):
             break
     return rows
+
+
+def _target_version_binding(storage: LocalStorage, target: dict[str, Any], *, target_refs: list[str], payload: dict[str, Any]) -> dict[str, Any]:
+    target_path = str(target.get("target_path") or "")
+    candidates = _dedupe([target_path, *target_refs, *_strings(payload.get("evidence_refs"))])
+    for reference in candidates:
+        candidate = resolve_path(storage.root, reference)
+        if not candidate.exists() or not candidate.is_file():
+            continue
+        data = _read_json_safe(storage, candidate)
+        if not isinstance(data, dict) or not data.get("type"):
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        version = str(
+            payload.get("target_version")
+            or content.get("release_version")
+            or content.get("version_key")
+            or content.get("version")
+            or data.get("version")
+            or data.get("updated_at")
+            or ""
+        )
+        relative = _display_path(storage.root, candidate)
+        digest = hashlib.sha256(json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+        return {
+            "status": "bound",
+            "path": relative,
+            "asset_id": str(data.get("id") or target.get("target_id") or ""),
+            "asset_type": str(data.get("type") or target.get("target_type") or ""),
+            "version": version,
+            "digest": digest,
+            "bound_at": utc_now(),
+        }
+    provided_version = str(payload.get("target_version") or "")
+    if provided_version:
+        return {"status": "declared", "path": target_path, "asset_id": str(target.get("target_id") or ""), "asset_type": str(target.get("target_type") or ""), "version": provided_version, "digest": "", "bound_at": utc_now()}
+    return {"status": "unresolved", "path": target_path, "asset_id": str(target.get("target_id") or ""), "asset_type": str(target.get("target_type") or ""), "version": "", "digest": "", "bound_at": utc_now()}
+
+
+def _approval_expired(value: str) -> bool:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed <= datetime.now(timezone.utc)
 
 
 def _resolve_asset(storage: LocalStorage, value: str | Path, asset_type: str) -> Path:

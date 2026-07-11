@@ -16,7 +16,9 @@ from novel_forge.modules.permission_center import (
     permission_center_snapshot,
     resolve_approval_request,
     resolve_human_approval_gate,
+    verify_approval_request,
 )
+from novel_forge.schemas import DraftChapter
 from novel_forge.storage.local import LocalStorage
 
 
@@ -179,6 +181,96 @@ class PermissionCenterTests(unittest.TestCase):
             self.assertEqual(snapshot["summary"]["approval_request_count"], 4)
             self.assertEqual(snapshot["summary"]["pending_approval_request_count"], 1)
             self.assertEqual(snapshot["summary"]["blocking_approval_request_count"], 0)
+
+    def test_approval_verifier_binds_scope_project_and_target_version(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            draft_path = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Versioned chapter",
+                    content={"chapter": 1, "text": "原始章节正文"},
+                    metadata={"project_id": "approval-version-p"},
+                ),
+            )
+            request = create_approval_request(
+                storage,
+                {
+                    "project_id": "approval-version-p",
+                    "scope": "publish",
+                    "action": "approve_platform_publish",
+                    "environment": "production",
+                    "target_type": "release_package",
+                    "target_id": "release-version-1",
+                    "target_path": str(draft_path.relative_to(storage.root)),
+                },
+            )
+            binding = request["asset"]["content"]["target"]["version_binding"]
+            self.assertTrue(binding["digest"])
+            self.assertEqual(binding["asset_id"], storage.read_asset(draft_path).id)
+
+            resolve_approval_request(storage, request["path"], {"decision": "approved", "actor": "chief-editor"})
+            verified = verify_approval_request(
+                storage,
+                request["path"],
+                project_id="approval-version-p",
+                scope="publish",
+                action="approve_platform_publish",
+                target_ref=str(draft_path.relative_to(storage.root)),
+            )
+            self.assertTrue(verified["verified"], verified)
+            self.assertEqual(verified["binding"]["digest"], binding["digest"])
+
+            wrong_scope = verify_approval_request(storage, request["path"], project_id="approval-version-p", scope="source", action="approve_platform_publish", target_ref=str(draft_path.relative_to(storage.root)))
+            self.assertFalse(wrong_scope["verified"])
+            self.assertIn("scope_mismatch", wrong_scope["reasons"])
+
+            mutated = storage.read_json(draft_path)
+            mutated["content"]["text"] = "版本已经改变，旧审批不能继续使用"
+            storage.write_json(draft_path, mutated)
+            stale = verify_approval_request(storage, request["path"], project_id="approval-version-p", scope="publish", action="approve_platform_publish", target_ref=str(draft_path.relative_to(storage.root)))
+            self.assertFalse(stale["verified"])
+            self.assertIn("target_version_mismatch", stale["reasons"])
+
+    def test_approval_verifier_rejects_expired_revoked_and_replayed_consumption(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            request = create_approval_request(
+                storage,
+                {
+                    "project_id": "approval-lifecycle-p",
+                    "scope": "publish",
+                    "action": "approve_platform_publish",
+                    "environment": "production",
+                    "expires_at": "2000-01-01T00:00:00Z",
+                },
+            )
+            resolve_approval_request(storage, request["path"], {"decision": "approved", "actor": "chief-editor"})
+            expired = verify_approval_request(storage, request["path"], project_id="approval-lifecycle-p", scope="publish", action="approve_platform_publish")
+            self.assertFalse(expired["verified"])
+            self.assertIn("expired", expired["reasons"])
+
+            replay_request = create_approval_request(
+                storage,
+                {"project_id": "approval-lifecycle-p", "scope": "publish", "action": "approve_platform_publish", "environment": "production"},
+            )
+            resolve_approval_request(storage, replay_request["path"], {"decision": "approved", "actor": "chief-editor"})
+            consumed = verify_approval_request(storage, replay_request["path"], project_id="approval-lifecycle-p", scope="publish", action="approve_platform_publish", consume=True, actor="publishing")
+            self.assertTrue(consumed["verified"], consumed)
+            replayed = verify_approval_request(storage, replay_request["path"], project_id="approval-lifecycle-p", scope="publish", action="approve_platform_publish", consume=True, actor="publishing")
+            self.assertFalse(replayed["verified"])
+            self.assertIn("already_consumed", replayed["reasons"])
+
+            revoked_request = create_approval_request(
+                storage,
+                {"project_id": "approval-lifecycle-p", "scope": "publish", "action": "approve_platform_publish", "environment": "production"},
+            )
+            resolve_approval_request(storage, revoked_request["path"], {"decision": "cancelled", "actor": "chief-editor", "reason": "revoke"})
+            revoked = verify_approval_request(storage, revoked_request["path"], project_id="approval-lifecycle-p", scope="publish", action="approve_platform_publish")
+            self.assertFalse(revoked["verified"])
+            self.assertIn("status_cancelled", revoked["reasons"])
 
     def test_approval_request_caller_readiness_reports_missing_dimensions_without_mutation(self):
         with tempfile.TemporaryDirectory() as tmp:

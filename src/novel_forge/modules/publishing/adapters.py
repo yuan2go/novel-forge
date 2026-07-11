@@ -11,6 +11,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.permission_center import verify_approval_request
 from novel_forge.schemas import PublishingLog, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -84,6 +85,7 @@ def prepare_platform_release(
     publishing_plan_path: str | Path | None = None,
     dry_run: bool = True,
     external_url: str = "",
+    approval_request_ref: str = "",
 ) -> dict[str, Any]:
     adapter = ADAPTERS.get(adapter_key)
     if not adapter:
@@ -103,12 +105,30 @@ def prepare_platform_release(
         release_package_path=_display_path(storage.root, package_file),
         publishing_plan_path=plan_ref,
         dry_run=dry_run,
+        release_package_id=package.id,
     ) if adapter.external else {}
     approval_summary = _approval_request_summary(approval_request, required=adapter.external)
     executed = False
     execution_result: dict[str, Any] = {"status": "dry_run", "message": "external execution disabled"}
-    if adapter.key == "external_webhook" and not dry_run:
-        execution_result = {"status": "approval_required", "message": "external webhook publish requires approved ApprovalRequest before execution"}
+    if adapter.external and not dry_run:
+        if not approval_request_ref:
+            execution_result = {"status": "approval_required", "message": "external platform publish requires an ApprovalRequest reference"}
+        else:
+            verification = verify_approval_request(
+                storage,
+                approval_request_ref,
+                project_id=str(project.get("project_id") or ""),
+                scope="publish",
+                action="approve_platform_publish",
+                target_ref=_display_path(storage.root, package_file),
+                consume=True,
+                actor="publishing-adapter",
+            )
+            execution_result = {
+                "status": "approval_verified" if verification["verified"] else "approval_blocked",
+                "message": "server verified approval and target version" if verification["verified"] else "server rejected approval evidence",
+                "approval_verification": verification,
+            }
     elif adapter.key == "local_file" and not dry_run:
         execution_result = {"status": "prepared", "message": "local payload prepared"}
         executed = True
@@ -177,6 +197,7 @@ def _create_platform_publish_approval_request(
     release_package_path: str,
     publishing_plan_path: str,
     dry_run: bool,
+    release_package_id: str,
 ) -> dict[str, Any]:
     from novel_forge.modules.permission_center import create_approval_request
 
@@ -190,7 +211,8 @@ def _create_platform_publish_approval_request(
             "environment": "local" if dry_run else "production",
             "blocking": True,
             "target_type": "platform_publish_adapter",
-            "target_id": adapter.key,
+            "target_id": release_package_id or adapter.key,
+            "target_path": release_package_path,
             "target_refs": _dedupe([release_package_path, publishing_plan_path]),
             "evidence_refs": _dedupe([release_package_path, publishing_plan_path]),
             "requested_by": "publishing-adapter",

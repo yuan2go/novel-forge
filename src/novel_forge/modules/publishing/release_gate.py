@@ -46,7 +46,7 @@ def release_package_gate_evidence(gate: dict[str, Any], *, production: bool) -> 
     for dimension in ["asset_integrity", "content_quality"]:
         payload = release_quality.get(dimension, {}) if isinstance(release_quality.get(dimension, {}), dict) else {}
         status = str(payload.get("status") or "missing")
-        path_value = str(payload.get("path") or "")
+        path_value = str(payload.get("gate_result_path") or payload.get("path") or "")
         blocking = bool(payload.get("blocking")) or status != "passed" or not path_value
         checks.append({"dimension": f"release_{dimension}", "status": status, "expected_status": "passed", "path_field": "path", "path": path_value, "blocking": blocking})
         if production and blocking:

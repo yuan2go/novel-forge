@@ -162,6 +162,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 adapter_key=request.adapter_key,
                 dry_run=request.dry_run,
                 external_url=request.external_url,
+                approval_request_ref=request.approval_request_ref,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
