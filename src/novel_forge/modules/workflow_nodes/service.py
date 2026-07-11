@@ -265,6 +265,9 @@ def create_workflow_definition(
     runtime_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     workflow_id = make_id("workflow", name)
+    policy = runtime_policy or {}
+    project_id = str(policy.get("project_id") or "local-system")
+    workspace_path = str(policy.get("workspace_path") or ("local-system" if project_id == "local-system" else ""))
     asset = WorkflowDefinition(
         title=name,
         tags=["workflow-definition", status],
@@ -275,9 +278,14 @@ def create_workflow_definition(
             "nodes": nodes,
             "entry_node_id": entry_node_id,
             "status": status,
-            "runtime_policy": runtime_policy or {},
+            "runtime_policy": policy,
         },
-        metadata={"created_by": "workflow_nodes"},
+        metadata={
+            "created_by": "workflow_nodes",
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "scope_kind": "system" if project_id == "local-system" else "project",
+        },
     )
     return _write(storage, asset)
 

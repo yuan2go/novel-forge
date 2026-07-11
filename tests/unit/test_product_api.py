@@ -66,7 +66,7 @@ from novel_forge.api.product import (
     void_batch_handoff,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.schemas import DecompositionReport, KnowledgeCard, SourceDocument, TaskStatus
+from novel_forge.schemas import BaseAsset, DecompositionReport, KnowledgeCard, SourceDocument, TaskStatus
 from novel_forge.storage.local import LocalStorage
 from novel_forge.workflows import pipeline
 from novel_forge.workflows.status import write_task_status
@@ -157,6 +157,52 @@ class ProductApiTests(unittest.TestCase):
             self.assertTrue(scope_errors)
             self.assertGreaterEqual(repaired["summary"]["repaired_count"], 1)
             self.assertEqual(scope_errors_after, [])
+
+    def test_project_scope_audit_repairs_legacy_system_runtime_assets_as_system_scope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            pipeline.init_workspace(tmp, "System Scope Project")
+            storage = LocalStorage(tmp)
+            workflow_path = storage.write_asset(
+                "runs",
+                BaseAsset(
+                    type="workflow_definition",
+                    title="Legacy system workflow",
+                    content={
+                        "workflow_id": "legacy-system-workflow",
+                        "name": "Legacy system workflow",
+                        "version": "0.1.0",
+                        "nodes": [],
+                        "entry_node_id": "noop",
+                        "status": "active",
+                        "runtime_policy": {},
+                    },
+                ),
+            )
+            lease_path = storage.write_asset(
+                "runs",
+                BaseAsset(
+                    type="scheduler_lease",
+                    title="Legacy scheduler lease",
+                    content={
+                        "lease_key": "agent_scheduler",
+                        "owner": "legacy-worker",
+                        "status": "released",
+                        "acquired_at": "2026-07-01T00:00:00+00:00",
+                        "expires_at": "2026-07-01T00:05:00+00:00",
+                    },
+                ),
+            )
+
+            before = project_scope_audit(storage, repair=False)
+            repaired = project_scope_audit(storage, repair=True)
+
+            self.assertGreaterEqual(before["summary"]["unscoped_count"], 2)
+            self.assertEqual(repaired["summary"]["unscoped_count"], 0)
+            for path in [workflow_path, lease_path]:
+                metadata = storage.read_json(path)["metadata"]
+                self.assertEqual(metadata["project_id"], "local-system")
+                self.assertEqual(metadata["workspace_path"], "local-system")
+                self.assertEqual(metadata["scope_kind"], "system")
 
     def test_cross_project_lineage_write_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:

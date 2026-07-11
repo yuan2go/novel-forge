@@ -13,6 +13,8 @@ from novel_forge.storage.local import LocalStorage
 LIFECYCLE_STATES = {"draft", "experimental", "active", "deprecated", "archived"}
 SCHEDULABLE_STATES = {"active"}
 EVALUATION_STATES = {"experimental", "active"}
+SYSTEM_PROJECT_ID = "local-system"
+SYSTEM_WORKSPACE_PATH = "local-system"
 
 
 def sync_runtime_profiles(storage: LocalStorage, *, default_state: str = "active") -> dict[str, Any]:
@@ -99,8 +101,8 @@ def upsert_agent_registry_entry(storage: LocalStorage, payload: dict[str, Any]) 
         title=content["display_name"],
         tags=["agent-registry", state, agent_id],
         content=content,
-        metadata={"agent_id": agent_id, "lifecycle_state": state, "scheduler_enabled": content["scheduler_enabled"]},
-        references=filter_project_safe_references(storage, "", _binding_refs(content)),
+        metadata=_system_metadata(agent_id=agent_id, lifecycle_state=state, scheduler_enabled=content["scheduler_enabled"]),
+        references=filter_project_safe_references(storage, SYSTEM_PROJECT_ID, _binding_refs(content)),
     )
     return _write(storage, asset, path=path)
 
@@ -127,7 +129,7 @@ def create_agent_version(
         title=f"{agent_id} {version}",
         tags=["agent-registry", "version", agent_id, status],
         content=content,
-        metadata={"agent_id": agent_id, "version": version, "status": status, "project_id": "local-system", "workspace_path": "local-system"},
+        metadata=_system_metadata(agent_id=agent_id, version=version, status=status),
     )
     return _write(storage, asset)
 
@@ -160,7 +162,7 @@ def record_agent_lifecycle_event(
         title=f"{agent_id}: {from_state} -> {to_state}",
         tags=["agent-registry", "lifecycle", agent_id, to_state],
         content=content,
-        metadata={"agent_id": agent_id, "from_state": from_state, "to_state": to_state},
+        metadata=_system_metadata(agent_id=agent_id, from_state=from_state, to_state=to_state),
         references=[updated["asset"]["id"], updated["path"]],
     )
     event = _write(storage, asset)
@@ -181,7 +183,7 @@ def create_agent_capability(storage: LocalStorage, *, agent_id: str, capability_
         title=f"{agent_id} capability {capability_id}",
         tags=["agent-registry", "capability", agent_id, capability_type, status],
         content=content,
-        metadata={"agent_id": agent_id, "capability_id": capability_id, "status": status},
+        metadata=_system_metadata(agent_id=agent_id, capability_id=capability_id, status=status),
     )
     return _write(storage, asset)
 
@@ -200,7 +202,7 @@ def create_agent_evaluation_binding(storage: LocalStorage, *, agent_id: str, eva
         title=f"{agent_id} evaluation binding",
         tags=["agent-registry", "evaluation-binding", agent_id, status],
         content=content,
-        metadata={"agent_id": agent_id, "evaluation_suite_id": evaluation_suite_id, "status": status},
+        metadata=_system_metadata(agent_id=agent_id, evaluation_suite_id=evaluation_suite_id, status=status),
     )
     result = _write(storage, asset)
     entry = get_agent_registry_entry(storage, agent_id)
@@ -273,9 +275,10 @@ def create_agent_registry_snapshot(storage: LocalStorage, *, project_id: str = "
         "operation_contract_count": len([row for row in operation_contracts if row.get("operation") != "*"]),
         "mkaos_required_operations": mkaos_coverage.get("summary", {}).get("required_count", 0),
     }
+    resolved_project_id = project_id or SYSTEM_PROJECT_ID
     content = {
         "snapshot_id": f"agent-registry-snapshot-{utc_now()}",
-        "project_id": project_id,
+        "project_id": resolved_project_id,
         "entries": entries,
         "coverage": coverage,
         "operation_contracts": operation_contracts,
@@ -287,7 +290,12 @@ def create_agent_registry_snapshot(storage: LocalStorage, *, project_id: str = "
         title="Agent Registry snapshot",
         tags=["agent-registry", "snapshot"],
         content=content,
-        metadata={"project_id": project_id, **coverage},
+        metadata={
+            "project_id": resolved_project_id,
+            "workspace_path": SYSTEM_WORKSPACE_PATH if not project_id else "",
+            "scope_kind": "project" if project_id else "system",
+            **coverage,
+        },
         references=[str(row.get("id", "")) for row in entries if row.get("id")],
     )
     return _write(storage, asset)
@@ -310,6 +318,15 @@ def agent_registry_coverage(storage: LocalStorage) -> dict[str, Any]:
 
 def _entry_id(agent_id: str) -> str:
     return f"agent-registry-entry-{agent_id.replace('_', '-')}"
+
+
+def _system_metadata(**values: Any) -> dict[str, Any]:
+    return {
+        "project_id": SYSTEM_PROJECT_ID,
+        "workspace_path": SYSTEM_WORKSPACE_PATH,
+        "scope_kind": "system",
+        **values,
+    }
 
 
 def _entry_path(storage: LocalStorage, agent_id: str) -> Path:

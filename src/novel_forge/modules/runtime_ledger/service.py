@@ -386,7 +386,12 @@ def acquire_scheduler_lease(
             "previous_status": status,
             "last_tick": str(current_content.get("last_tick", "")),
         },
-        metadata={"lease_key": lease_key},
+        metadata={
+            "lease_key": lease_key,
+            "project_id": "local-system",
+            "workspace_path": "local-system",
+            "scope_kind": "system",
+        },
     )
     data = lease.to_dict()
     _write_json_validated(storage, path, data)

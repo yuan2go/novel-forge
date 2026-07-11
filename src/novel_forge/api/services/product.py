@@ -566,7 +566,8 @@ def project_scope_audit(storage: LocalStorage, project_id: str | None = None, re
         data = record["data"]
         current_project_id, current_workspace_path = _record_project_scope(storage, record)
         inferred = _infer_record_project(record, by_id, by_path, project_by_id, project_by_workspace)
-        if not inferred and single_project and record["type"] != "project_workspace_state":
+        system_scoped = not inferred and _is_system_runtime_record(record)
+        if not inferred and not system_scoped and single_project and record["type"] != "project_workspace_state":
             inferred = single_project
         if selected_project and current_project_id and current_project_id != selected_project["project_id"]:
             continue
@@ -585,11 +586,16 @@ def project_scope_audit(storage: LocalStorage, project_id: str | None = None, re
                 "workspace_path": "",
                 "inferred_project_id": inferred["project_id"] if inferred else "",
                 "inferred_workspace_path": inferred["workspace_path"] if inferred else "",
-                "repairable": bool(inferred),
+                "repairable": bool(inferred or system_scoped),
                 "message": "asset has no project_id/workspace_path metadata",
             }
             issues.append(issue)
-            if repair and inferred:
+            if repair and system_scoped:
+                _attach_system_runtime_scope(storage, record)
+                repairs.append({"kind": "attach_system_runtime_scope", "path": record["path"], "project_id": "local-system"})
+                current_project_id = "local-system"
+                current_workspace_path = "local-system"
+            elif repair and inferred:
                 attached = attach_assets_to_project(storage, [record["path"]], inferred["workspace_path"], role=_project_role_for_asset(record))
                 if attached:
                     repairs.append({"kind": "attach_unscoped_asset", "path": record["path"], "project_id": inferred["project_id"]})
@@ -673,6 +679,36 @@ def project_scope_audit(storage: LocalStorage, project_id: str | None = None, re
         "issues": issues,
         "repairs": repairs,
     }
+
+
+def _is_system_runtime_record(record: dict[str, Any]) -> bool:
+    asset_type = str(record.get("type") or "")
+    if asset_type in {
+        "scheduler_lease",
+        "agent_registry_entry",
+        "agent_version",
+        "agent_lifecycle_event",
+        "agent_capability",
+        "agent_evaluation_binding",
+        "agent_registry_snapshot",
+    }:
+        return True
+    if asset_type != "workflow_definition":
+        return False
+    data = record.get("data", {}) if isinstance(record.get("data", {}), dict) else {}
+    content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+    runtime_policy = content.get("runtime_policy", {}) if isinstance(content.get("runtime_policy", {}), dict) else {}
+    return not str(runtime_policy.get("project_id") or runtime_policy.get("workspace_path") or "").strip()
+
+
+def _attach_system_runtime_scope(storage: LocalStorage, record: dict[str, Any]) -> None:
+    path = resolve_path(storage.root, str(record.get("path") or ""))
+    data = storage.read_json(path)
+    metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+    metadata.update({"project_id": "local-system", "workspace_path": "local-system", "scope_kind": "system"})
+    data["metadata"] = metadata
+    data["updated_at"] = utc_now()
+    storage.write_json(path, data)
 
 
 def _record_project_scope(storage: LocalStorage, record: dict[str, Any]) -> tuple[str, str]:

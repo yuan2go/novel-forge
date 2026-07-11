@@ -29,6 +29,9 @@ class AgentRegistryTests(unittest.TestCase):
 
             self.assertEqual(resolved["agent_id"], "draft")
             self.assertEqual([entry["content"]["agent_id"] for entry in entries], ["draft"])
+            self.assertEqual(entries[0]["metadata"]["project_id"], "local-system")
+            self.assertEqual(entries[0]["metadata"]["workspace_path"], "local-system")
+            self.assertEqual(entries[0]["metadata"]["scope_kind"], "system")
             self.assertEqual([version["content"]["agent_id"] for version in versions], ["draft"])
             self.assertEqual(snapshots, [])
 
@@ -42,6 +45,8 @@ class AgentRegistryTests(unittest.TestCase):
             coverage = agent_registry_coverage(storage)
 
             self.assertGreaterEqual(result["count"], 1)
+            self.assertEqual(result["snapshot"]["asset"]["content"]["project_id"], "local-system")
+            self.assertEqual(result["snapshot"]["asset"]["metadata"]["scope_kind"], "system")
             self.assertEqual(resolved["lifecycle_state"], "active")
             self.assertTrue(resolved["scheduler_enabled"])
             self.assertEqual(coverage["missing_runtime_profiles"], [])

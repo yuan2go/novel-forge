@@ -429,12 +429,18 @@ def run_pipeline(root: str | Path, sample: bool = False) -> Path:
     run_id = make_id("workflow_run", title)
     outputs: list[Path] = []
     status_paths: list[Path] = []
+    workspace_path: Path | None = None
 
     def run_step(step: str, input_paths: list[str | Path], action) -> Path:
         output, _ = execute_task(storage, run_id, step, input_paths, action, status_collector=status_paths)
+        if workspace_path is not None:
+            _attach_run_assets_to_workspace(storage, workspace_path, [output, *status_paths])
         return output
 
     try:
+        outputs.append(run_step("init-workspace", [sample_path], lambda: init_workspace(storage.root, "Sample Novel Workspace")))
+        workspace_path = outputs[-1]
+        _attach_run_assets_to_workspace(storage, workspace_path, [*outputs, *status_paths])
         outputs.append(
             run_step(
                 "ingest",
@@ -470,8 +476,6 @@ def run_pipeline(root: str | Path, sample: bool = False) -> Path:
         )
         outputs.append(run_step("draft", [outputs[-1]], lambda: draft(storage.root, str(outputs[-1]))))
         draft_path = outputs[-1]
-        outputs.append(run_step("init-workspace", [draft_path], lambda: init_workspace(storage.root, "Sample Novel Workspace")))
-        workspace_path = outputs[-1]
         outputs.append(
             run_step(
                 "update-workspace-draft",
@@ -871,6 +875,8 @@ def _attach_run_assets_to_workspace(storage: LocalStorage, workspace_path: Path,
         if not isinstance(data, dict) or data.get("type") == "project_workspace_state":
             continue
         metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        if metadata.get("scope_kind") == "system":
+            continue
         if _has_cross_project_intrinsic_reference(storage, data, project_id):
             continue
         if metadata.get("project_id") in {"", None, "local-system"}:

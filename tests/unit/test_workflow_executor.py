@@ -1374,6 +1374,9 @@ class WorkflowExecutorTests(unittest.TestCase):
             storage.ensure_layout()
             lease = acquire_scheduler_lease(storage, owner="worker-a", ttl_seconds=300)
             self.assertTrue(lease["acquired"])
+            lease_asset = storage.read_json(storage.root / lease["lease"]["path"])
+            self.assertEqual(lease_asset["metadata"]["project_id"], "local-system")
+            self.assertEqual(lease_asset["metadata"]["scope_kind"], "system")
 
             loop = run_workflow_scheduler_loop(storage, iterations=1, interval_seconds=0, lease_owner="worker-b")
 
@@ -1401,6 +1404,8 @@ class WorkflowExecutorTests(unittest.TestCase):
                     }
                 ],
             )
+            self.assertEqual(workflow["asset"]["metadata"]["project_id"], "local-system")
+            self.assertEqual(workflow["asset"]["metadata"]["scope_kind"], "system")
 
             result = execute_workflow(storage, workflow["path"])
 
