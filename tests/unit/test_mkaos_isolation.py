@@ -81,7 +81,14 @@ class MkaosIsolationTests(unittest.TestCase):
                 "drafts",
                 DraftChapter(
                     title="Chapter 1",
-                    content={"chapter": 1, "text": "原创章节文本，只使用抽象知识造成行动成本和章节钩子。"},
+                    content={
+                        "chapter": 1,
+                        "text": (
+                            "林乔必须在钟楼封门前拿到失踪账册。守门人当众扣下钥匙，逼她在保住证人身份和公开家族旧债之间选择。"
+                            "她主动承认越权，换得一次开柜机会，却因此失去档案官职位。铁柜开启后，账册夹层露出第二枚新鲜封印，证明对手昨夜仍在改写记录。"
+                            "追兵已经踏上楼梯，她烧掉自己的任职令拖住守门人，带着证据从维修井逃走。井底却传来本应死去的书记官声音：账册只是诱饵。"
+                        ),
+                    },
                     metadata={"project_id": project_id, "workspace_path": workspace_ref},
                     references=[workspace_ref, setup["knowledge_id"]],
                 ),

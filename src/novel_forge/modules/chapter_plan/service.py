@@ -237,6 +237,8 @@ def generate_chapter_plan(
                 or "chapter plan generated from project profiles and abstract references; no protected expression copied",
             },
             metadata={
+                "project_id": project_id,
+                "workspace_path": workspace,
                 "model": getattr(model, "name", "local"),
                 "provider": str(generated.get("provider", getattr(model, "name", "local"))),
                 "agent_run_path": run.path,

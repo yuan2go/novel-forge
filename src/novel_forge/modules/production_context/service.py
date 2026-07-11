@@ -188,6 +188,14 @@ def project_scope_from_asset(
             project = _workspace_path(storage, str(value or ""))
             if project:
                 return project
+        direct_project_id = str(metadata.get("project_id") or content.get("project_id") or "").strip()
+        if direct_project_id:
+            return {
+                "project_id": direct_project_id,
+                "workspace_path": str(metadata.get("workspace_path") or content.get("workspace_path") or ""),
+                "title": "",
+                "project_config": {},
+            }
         for reference in data.get("references", []) if isinstance(data.get("references", []), list) else []:
             project = _workspace_path(storage, str(reference or ""))
             if project:

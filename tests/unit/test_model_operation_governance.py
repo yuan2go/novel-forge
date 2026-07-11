@@ -16,6 +16,7 @@ from novel_forge.modules.style_os.service import build_style_profile, extract_st
 from novel_forge.modules.topics import service as topics_service
 from novel_forge.schemas import CharacterCard, MaterialCard, Outline
 from novel_forge.storage.local import LocalStorage
+from tests.unit.source_governance_fixtures import record_clean_source_governance_evidence
 
 
 class CountingTopicModel:
@@ -113,6 +114,7 @@ class ModelOperationGovernanceTests(unittest.TestCase):
                     metadata={"project_id": "plan-prod"},
                 ),
             )
+            record_clean_source_governance_evidence(storage, project_id="plan-prod")
 
             with self.assertRaisesRegex(RuntimeError, "content_intelligence"):
                 outline_service.generate_outline(

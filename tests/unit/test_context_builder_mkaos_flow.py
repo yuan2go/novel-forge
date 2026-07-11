@@ -23,6 +23,7 @@ from novel_forge.modules.mkaos import (
 from novel_forge.modules.permission_center import resolve_approval_request
 from novel_forge.schemas import CharacterCard, ChapterPlan
 from novel_forge.storage.local import LocalStorage
+from tests.unit.source_governance_fixtures import create_governed_knowledge, record_clean_source_governance_evidence
 
 
 class ContextBuilderMkaosFlowTests(unittest.TestCase):
@@ -228,15 +229,15 @@ class ContextBuilderMkaosFlowTests(unittest.TestCase):
                     current_goal="draft production chapter",
                     environment="production",
                 )
-            card = create_knowledge_card(
+            create_governed_knowledge(
                 storage,
-                {
-                    "project_id": "ctx-prod",
-                    "concept_name": "生产门禁",
-                    "core_explanation": "生产模式必须带可追溯知识包。",
-                },
+                project_id="ctx-prod",
+                flow="prose",
+                concept_name="生产门禁",
+                core_explanation="生产模式必须带可追溯知识包。",
+                input_role="optional",
             )
-            create_usage_binding(storage, card["asset"]["id"], {"flow": "prose", "usage_type": "optional", "input_role": "optional", "priority": 10})
+            record_clean_source_governance_evidence(storage, project_id="ctx-prod")
 
             result = build_flow_context_bundle(
                 storage,

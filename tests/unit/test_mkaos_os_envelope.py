@@ -14,6 +14,7 @@ from novel_forge.modules.mkaos import (
     query_knowledge,
 )
 from novel_forge.storage.local import LocalStorage
+from novel_forge.modules.source_intake import create_source_policy, create_source_risk_report
 
 
 class MkaosOsEnvelopeTests(unittest.TestCase):
@@ -70,6 +71,7 @@ class MkaosOsEnvelopeTests(unittest.TestCase):
             storage = LocalStorage(tmp)
             storage.ensure_layout()
             source = import_source_document(storage, {"title": "制度来源", "text": "制度压力造成行动成本。", "project_id": "p-query"})
+            _govern_source(storage, project_id="p-query", source_ref="制度来源")
             knowledge = create_knowledge_card(
                 storage,
                 {
@@ -113,11 +115,13 @@ class MkaosOsEnvelopeTests(unittest.TestCase):
             self.assertEqual(converted_rules["data"]["rule"]["asset"]["type"], "rule_card")
             self.assertEqual(converted_rules["data"]["template"]["asset"]["type"], "template_card")
 
+            conversion_source = import_source_document(storage, {"title": "新的抽象来源", "text": "新的抽象来源材料。", "project_id": "p-query"})
+            _govern_source(storage, project_id="p-query", source_ref="新的抽象来源")
             converted_assets = convert_assets(
                 storage,
                 {
                     "project_id": "p-query",
-                    "text": "新的抽象来源材料。",
+                    "source_id": conversion_source["asset"]["id"],
                     "concept_name": "新机制",
                     "core_explanation": "抽象机制只保留行动约束。",
                     "environment": "production",
@@ -157,6 +161,9 @@ class MkaosOsEnvelopeTests(unittest.TestCase):
                 },
             )
             self.assertEqual(source.status_code, 200, source.text)
+            governed_storage = LocalStorage(tmp)
+            governed_storage.ensure_layout()
+            _govern_source(governed_storage, project_id="p-api", source_ref="api source")
             knowledge = client.post(
                 "/product/mkaos/convert/assets",
                 json={
@@ -196,6 +203,14 @@ def _envelope(project_id: str, task_type: str, asset_type: str, *, trace_id: str
         "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
         "environment": "production",
     }
+
+
+def _govern_source(storage: LocalStorage, *, project_id: str, source_ref: str) -> None:
+    policy = create_source_policy(storage, {"project_id": project_id, "source_ref": source_ref, "risk_tier": "R0"})
+    create_source_risk_report(
+        storage,
+        {"project_id": project_id, "source_ref": source_ref, "source_policy_path": policy["path"], "risk_tier": "R0"},
+    )
 
 
 def _assets_by_type(storage: LocalStorage, asset_type: str) -> list[dict[str, object]]:
