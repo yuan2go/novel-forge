@@ -136,6 +136,7 @@ def create_context_build_plan(
     workspace_path: str | None = None,
     environment: str = "",
 ) -> dict[str, Any]:
+    storage.record_budget_metric("context_builds")
     target_file = resolve_path(storage.root, target_path)
     target_asset = storage.read_asset(target_file)
     project = project_scope_from_asset(storage, target_asset, input_path=target_file, workspace_path=workspace_path)

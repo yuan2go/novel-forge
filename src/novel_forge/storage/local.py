@@ -11,6 +11,7 @@ from novel_forge.core.exception_policy import require_recoverable_asset_scan_err
 from novel_forge.core.ids import utc_now
 from novel_forge.schemas import BaseAsset, asset_from_dict
 from novel_forge.storage.locks import StorageLock
+from novel_forge.storage.write_budget import active_write_budget, write_budget
 
 NOVEL_KG_SOURCE_TYPES = {
     "character_card",
@@ -96,6 +97,7 @@ class LocalStorage:
     def write_json(self, path: str | Path, data: Any) -> Path:
         resolved = self.root / path if not Path(path).is_absolute() else Path(path)
         self._enforce_project_scope_write(resolved, data)
+        self._record_budget_write(resolved, data, asset=False)
         with StorageLock(self.root, str(resolved.relative_to(self.root)) if resolved.is_relative_to(self.root) else resolved.name):
             self._write_json_atomic(resolved, data, backup_existing=True)
         self._sync_postgres_write_through(resolved)
@@ -111,6 +113,7 @@ class LocalStorage:
         path = self.data_dir(category) / f"{asset.id}.json"
         data = asset.to_dict()
         self._enforce_project_scope_write(path, data)
+        self._record_budget_write(path, data, asset=True, category=category)
         with StorageLock(self.root, f"{category}-{asset.id}"):
             self._write_json_atomic(path, data, backup_existing=True)
         self._sync_postgres_write_through(path)
@@ -124,10 +127,32 @@ class LocalStorage:
         return self.write_asset(category, asset)
 
     def list_json(self, category: str) -> list[Path]:
+        self.record_budget_metric("scan_calls")
         folder = self.data_dir(category)
         if not folder.exists():
             return []
         return sorted(folder.glob("*.json"), key=lambda path: path.stat().st_mtime)
+
+    @staticmethod
+    def record_budget_metric(metric: str, amount: int = 1) -> None:
+        budget = active_write_budget()
+        if budget is not None:
+            budget.record_metric(metric, amount)
+
+    @staticmethod
+    def write_budget(payload: dict[str, Any] | Any = None):
+        return write_budget(payload)
+
+    @staticmethod
+    def _record_budget_write(path: Path, data: Any, *, asset: bool, category: str = "") -> None:
+        budget = active_write_budget()
+        if budget is None:
+            return
+        try:
+            encoded = json.dumps(data, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        except (TypeError, ValueError):
+            encoded = b""
+        budget.record_write(path, byte_count=len(encoded), asset=asset, category=category)
 
     def latest(self, category: str) -> Path:
         files = self.list_json(category)
