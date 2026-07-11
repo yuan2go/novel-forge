@@ -579,6 +579,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
         "updated_at",
     ],
     "production_operation_reconciliation_report": ["report_id", "project_id", "rows", "summary", "created_at"],
+    "production_operation_runtime_coverage_report": ["report_id", "project_id", "rows", "summary", "created_at"],
     "rollback_plan": ["plan_id", "transaction_id", "strategy", "actions", "rollback_status", "created_at"],
     "rollback_result": ["result_id", "plan_id", "transaction_id", "status", "applied_actions", "created_at"],
     "scheduler_lease": ["lease_key", "owner", "status", "acquired_at", "expires_at"],
@@ -944,6 +945,8 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
     if asset_type == "production_operation" and isinstance(content, dict):
         errors.extend(_validate_production_operation_content(content))
     if asset_type == "production_operation_reconciliation_report" and isinstance(content, dict):
+        errors.extend(_validate_production_operation_reconciliation_report_content(content))
+    if asset_type == "production_operation_runtime_coverage_report" and isinstance(content, dict):
         errors.extend(_validate_production_operation_reconciliation_report_content(content))
     if asset_type == "state_event" and isinstance(content, dict):
         errors.extend(_validate_state_event_content(content))

@@ -7,8 +7,8 @@ from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.os_envelope import enforce_os_envelope
-from novel_forge.modules.production_kernel.entrypoints import require_production_entrypoint
-from novel_forge.schemas import ProductionOperation, ProductionOperationReconciliationReport, validate_common_fields
+from novel_forge.modules.production_kernel.entrypoints import production_entrypoint_audit, require_production_entrypoint
+from novel_forge.schemas import ProductionOperation, ProductionOperationReconciliationReport, ProductionOperationRuntimeCoverageReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.write_budget import WriteBudgetExceeded
 
@@ -334,6 +334,91 @@ def reconcile_production_operations(
         raise ValueError("invalid production operation reconciliation report: " + "; ".join(errors))
     path = storage.write_asset_auto(asset)
     return {**payload, "path": _display_path(storage, path), "asset": storage.read_json(path)}
+
+
+def production_operation_runtime_coverage(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    persist: bool = True,
+) -> dict[str, Any]:
+    """Report new child runs that are missing their required Kernel parent.
+
+    This is intentionally an observation boundary: it marks historical assets as
+    ``legacy_compatibility`` and never rewrites them. A production caller uses
+    the same facts to fail closed before accepting a new bypass.
+    """
+    child_types = {"chapter_production_run", "workflow_run", "agent_run", "loop_run"}
+    parents = list_production_operations(storage, project_id=project_id or None, limit=100_000)
+    parent_by_child = {
+        _normalized_reference_path(storage, str(row.get("child", {}).get("path") or "")): row
+        for row in parents
+        if isinstance(row.get("child"), dict) and str(row["child"].get("path") or "")
+    }
+    rows: list[dict[str, Any]] = []
+    for path in storage.list_json("runs"):
+        data = storage.read_json(path)
+        if not isinstance(data, dict) or data.get("type") not in child_types:
+            continue
+        content = _content(data)
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata"), dict) else {}
+        child_project_id = str(metadata.get("project_id") or content.get("project_id") or "")
+        if project_id and child_project_id != project_id:
+            continue
+        child_path = _normalized_reference_path(storage, path)
+        parent = parent_by_child.get(child_path)
+        has_envelope = bool(metadata.get("execution_envelope_id") or content.get("execution_envelope") or content.get("envelope"))
+        status = "covered"
+        repair = "none"
+        if not parent:
+            status = "missing_parent" if has_envelope else "legacy_compatibility"
+            repair = "dispatch a new run through Production Kernel; do not mutate this historical child run"
+        elif str(parent.get("project_id") or "") != child_project_id:
+            status = "project_scope_mismatch"
+            repair = "stop the operation and create a scoped recovery command"
+        elif not has_envelope:
+            status = "missing_envelope"
+            repair = "block production acceptance and repair the producing entrypoint"
+        rows.append({
+            "child_path": _display_path(storage, path),
+            "child_type": str(data.get("type") or ""),
+            "child_project_id": child_project_id,
+            "parent_operation_id": str(parent.get("operation_id") or "") if parent else "",
+            "status": status,
+            "repair_instruction": repair,
+        })
+    static_audit = production_entrypoint_audit()
+    summary = {
+        "run_count": len(rows),
+        "covered_count": sum(row["status"] == "covered" for row in rows),
+        "missing_parent_count": sum(row["status"] == "missing_parent" for row in rows),
+        "missing_envelope_count": sum(row["status"] == "missing_envelope" for row in rows),
+        "project_scope_mismatch_count": sum(row["status"] == "project_scope_mismatch" for row in rows),
+        "legacy_compatibility_count": sum(row["status"] == "legacy_compatibility" for row in rows),
+        "direct_child_control_count": int(static_audit["summary"]["review_required_count"]),
+    }
+    result = {
+        "status": "passed" if not any(summary[key] for key in ("missing_parent_count", "missing_envelope_count", "project_scope_mismatch_count", "direct_child_control_count")) else "needs_review",
+        "project_id": project_id or "system",
+        "rows": rows,
+        "summary": summary,
+        "static_audit": static_audit,
+    }
+    if not persist:
+        return {**result, "path": "", "asset": {}}
+    asset = ProductionOperationRuntimeCoverageReport(
+        title=f"Production operation runtime coverage: {result['project_id']}",
+        source="production_kernel.runtime_coverage",
+        tags=["production-operation", "runtime-coverage", result["status"]],
+        content={"report_id": make_id("production_operation_runtime_coverage", result["project_id"]), **result, "created_at": utc_now()},
+        metadata={"project_id": result["project_id"], "scope_kind": "system" if not project_id else "project"},
+        references=[],
+    )
+    errors = validate_common_fields(asset.to_dict())
+    if errors:
+        raise ValueError("invalid production operation runtime coverage report: " + "; ".join(errors))
+    path = storage.write_asset_auto(asset)
+    return {**result, "path": _display_path(storage, path), "asset": storage.read_json(path)}
 
 
 def control_production_operation(

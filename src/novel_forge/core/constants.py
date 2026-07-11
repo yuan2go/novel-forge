@@ -334,6 +334,7 @@ ASSET_DIR_BY_TYPE = {
     "operation_transaction": "runs",
     "production_operation": "runs",
     "production_operation_reconciliation_report": "runs",
+    "production_operation_runtime_coverage_report": "runs",
     "operation_raw_output_segment": "runs",
     "operation_raw_output_manifest": "runs",
     "rollback_plan": "runs",

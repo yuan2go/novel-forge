@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from unittest.mock import patch
 
-from novel_forge.modules.production_kernel import control_production_operation, dispatch_production_operation, find_production_operation_for_child, list_production_operations, production_entrypoint_audit, production_entrypoints, reconcile_production_operations, require_production_entrypoint
+from novel_forge.modules.production_kernel import control_production_operation, dispatch_production_operation, find_production_operation_for_child, list_production_operations, production_entrypoint_audit, production_entrypoints, production_operation_runtime_coverage, reconcile_production_operations, require_production_entrypoint
 from novel_forge.schemas import ProductionOperation, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -55,6 +55,8 @@ class ProductionEntrypointContractTests(unittest.TestCase):
             self.assertEqual(entry["parent_state_owner"], "production_operation")
             self.assertEqual(entry["envelope_policy"], "required_in_production")
             self.assertEqual(entry["kernel_route"], "dispatch_production_operation")
+            for key in ["environment_policy", "approval_policy", "required_evidence", "lifecycle_capabilities", "idempotency_scope", "retry_class", "compensation_class"]:
+                self.assertTrue(entry[key])
 
     def test_workflow_agent_and_loop_commands_use_one_kernel_dispatcher(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -198,6 +200,34 @@ class ProductionEntrypointContractTests(unittest.TestCase):
             audit = production_entrypoint_audit(repo_root=root)
             self.assertEqual(audit["summary"]["review_required_count"], 1)
             self.assertEqual(audit["findings"][0]["symbol"], "execute_workflow")
+
+    def test_production_entrypoint_audit_flags_alias_and_getattr_child_runner_calls(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            module = root / "src" / "novel_forge" / "modules" / "legacy.py"
+            module.parent.mkdir(parents=True)
+            module.write_text(
+                "from x import execute_workflow as execute\n"
+                "alias = execute\n"
+                "def run(storage, runner):\n"
+                "    alias(storage, 'workflow.json')\n"
+                "    getattr(runner, 'run_loop')(storage, {})\n",
+                encoding="utf-8",
+            )
+            audit = production_entrypoint_audit(repo_root=root)
+            self.assertEqual(audit["summary"]["review_required_count"], 2)
+            self.assertEqual({row["symbol"] for row in audit["findings"]}, {"execute_workflow", "run_loop"})
+
+    def test_runtime_coverage_marks_legacy_and_new_missing_parent_without_mutation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.write_json("data/runs/legacy.json", {"type": "loop_run", "metadata": {"project_id": "project-a"}, "content": {"status": "completed"}})
+            storage.write_json("data/runs/new-bypass.json", {"type": "loop_run", "metadata": {"project_id": "project-a", "execution_envelope_id": "env-1"}, "content": {"status": "completed"}})
+            report = production_operation_runtime_coverage(storage, project_id="project-a")
+            self.assertEqual(report["status"], "needs_review")
+            self.assertEqual(report["summary"]["legacy_compatibility_count"], 1)
+            self.assertEqual(report["summary"]["missing_parent_count"], 1)
+            self.assertEqual(report["asset"]["type"], "production_operation_runtime_coverage_report")
 
 
 if __name__ == "__main__":

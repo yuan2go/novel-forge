@@ -12,6 +12,7 @@
 - child 抛出异常时，父记录进入 `failed`，包含错误类型、错误消息和 recovery instruction。
 - production 环境仍由现有 `enforce_os_envelope` fail-closed；compat/local 请求明确归入 `system` scope，不伪装成小说项目。
 - `ProductionOperationReconciliationReport` 对账父 projection 与 child Run，标记 `aligned`、`asynchronous_child`、`diverged` 或 `missing_child`；报告不修改历史状态。
+- `ProductionOperationRuntimeCoverageReport` 区分已覆盖运行、历史 `legacy_compatibility` 运行、新的 `missing_parent` / `missing_envelope` 运行和项目 scope 错误；静态审计同时识别直接导入别名与 `getattr` 形式的 child-runner 调用。报告不迁移或重写历史资产。
 - 章节同步 resume/pause/cancel/recover API 现在先按 child path 查找 parent，并经 Kernel control 更新 parent；没有 parent 的历史 child 返回显式 `kernel_compatibility=legacy_child_without_production_operation`。
 
 ## 代码证据

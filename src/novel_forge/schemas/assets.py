@@ -896,6 +896,11 @@ class ProductionOperationReconciliationReport(BaseAsset):
 
 
 @dataclass
+class ProductionOperationRuntimeCoverageReport(BaseAsset):
+    type: str = "production_operation_runtime_coverage_report"
+
+
+@dataclass
 class RollbackPlan(BaseAsset):
     type: str = "rollback_plan"
 
@@ -1658,6 +1663,7 @@ SCHEMA_CLASSES = {
         OperationTransaction,
         ProductionOperation,
         ProductionOperationReconciliationReport,
+        ProductionOperationRuntimeCoverageReport,
         RollbackPlan,
         RollbackResult,
         SchedulerLease,
