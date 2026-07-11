@@ -412,6 +412,7 @@ git commit -m "docs: close trusted phase zero baseline"
 - [x] Calibration report记录人类共识、多人agreement、MAE和保守阈值建议。
 - [x] `create_calibrated_quality_rubric`只创建新Rubric版本，不修改旧版本，并绑定`calibration_ref`。
 - [x] Provider judge请求和结果记录Rubric版本、阈值来源和校准引用；生产调用可启用`require_calibrated_thresholds=True`。
+- [x] 生产模式拒绝只有单案例/单标注者的校准基线；生产证据至少需要两个人工标注案例、两名标注者和agreement≥0.8。
 
 ### Task 3A.3：进入真实Provider验收的前置条件
 
