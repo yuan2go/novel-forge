@@ -672,6 +672,7 @@ def _perform_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], s
     if step == "context_bundle":
         _require(outputs, "stability_preflight_path", step)
         _require(outputs, "chapter_plan_path", step)
+        quality_policy = _quality_loop_policy(data)
         context = build_flow_context_bundle(
             storage,
             outputs["chapter_plan_path"],
@@ -683,6 +684,9 @@ def _perform_step(storage: LocalStorage, run_file: Path, data: dict[str, Any], s
             query=_context_query(storage, outputs["chapter_plan_path"]),
             top_k=10,
             token_budget=6000,
+            environment=str(quality_policy.get("environment") or ""),
+            os_envelope=quality_policy.get("os_envelope") if isinstance(quality_policy.get("os_envelope"), dict) else None,
+            source_policy=quality_policy.get("source_policy") if isinstance(quality_policy.get("source_policy"), dict) else None,
             selector_governance_binding_application_report_path=str(outputs.get("selector_governance_binding_application_report_path") or "") or None,
         )
         context_plan_path = str(context.get("context_plan", {}).get("path") or "")
