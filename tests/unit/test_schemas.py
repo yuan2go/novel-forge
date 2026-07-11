@@ -62,7 +62,7 @@ from novel_forge.schemas import (
 
 class SchemaTests(unittest.TestCase):
     def test_required_schema_count(self):
-        self.assertEqual(len(SCHEMA_CLASSES), 290)
+        self.assertEqual(len(SCHEMA_CLASSES), 292)
         self.assertIn("source_document", SCHEMA_CLASSES)
         self.assertIn("source_policy", SCHEMA_CLASSES)
         self.assertIn("source_sync_job", SCHEMA_CLASSES)
