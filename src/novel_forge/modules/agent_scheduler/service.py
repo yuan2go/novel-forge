@@ -2524,6 +2524,16 @@ def _run_record_state_event(storage: LocalStorage, queue_item: dict[str, Any], a
         project_id=_project_id(agent_run),
         workspace_path=_workspace_path(agent_run),
         trace=evidence.get("trace", {}) if isinstance(evidence.get("trace", {}), dict) else {},
+        chapter_ref=str(evidence.get("chapter_ref") or ""),
+        scene_ref=str(evidence.get("scene_ref") or ""),
+        subject_ref=str(evidence.get("subject_ref") or ""),
+        evidence_span=evidence.get("evidence_span", {}) if isinstance(evidence.get("evidence_span", {}), dict) else {},
+        confidence=float(evidence["confidence"]) if evidence.get("confidence") is not None else None,
+        source=str(evidence.get("source") or "agent_scheduler"),
+        occurred_at=str(evidence.get("occurred_at") or ""),
+        causation_id=str(evidence.get("causation_id") or ""),
+        correlation_id=str(evidence.get("correlation_id") or ""),
+        idempotency_key=str(evidence.get("idempotency_key") or ""),
     )
 
 
@@ -2616,12 +2626,13 @@ def _run_check_canon_graph(storage: LocalStorage, queue_item: dict[str, Any], ag
 
 
 def _run_review_revision_publish_loop(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
-    from novel_forge.modules.loop_kernel import run_loop
+    from novel_forge.modules.production_kernel import dispatch_production_operation
 
     evidence = _evidence(agent_run)
-    return run_loop(
+    return dispatch_production_operation(
         storage,
-        {
+        "review_revision_publish",
+        **{
             **evidence,
             "loop_type": "review_revision_publish",
             "target_path": evidence.get("target_path") or _primary_input_path(agent_run),

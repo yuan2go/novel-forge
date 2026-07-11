@@ -7,7 +7,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.longform_stability import create_arc_plan, create_canon_database
-from novel_forge.modules.loop_kernel import run_loop
+from novel_forge.modules.production_kernel import dispatch_production_operation
 from novel_forge.modules.mkaos import record_review_feedback, record_usage_event
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.review_issue import create_review_issue, list_review_issues
@@ -147,9 +147,10 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
         os_envelope=payload.get("envelope") if isinstance(payload.get("envelope"), dict) else None,
     )
     knowledge_contract = knowledge_context_contract_from_result(context)
-    loop = run_loop(
+    loop = dispatch_production_operation(
         storage,
-        {
+        "loop.run",
+        **{
             "loop_type": "longform_recap",
             "target_path": latest_path,
             "project_id": project_id,

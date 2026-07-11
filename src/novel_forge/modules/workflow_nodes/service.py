@@ -5693,11 +5693,12 @@ def _execute_registered_service_processor_impl(
         )
         return _loop_service_success(storage, operation, result)
     if operation in {"review_revision_publish", "review_revision_publish_loop", "loop.review_revision_publish"}:
-        from novel_forge.modules.loop_kernel import run_loop
+        from novel_forge.modules.production_kernel import dispatch_production_operation
 
-        result = run_loop(
+        result = dispatch_production_operation(
             storage,
-            {
+            "review_revision_publish",
+            **{
                 "loop_type": "review_revision_publish",
                 "target_path": _processor_path(processor, input_assets, "draft_path", "target_path"),
                 "review_path": str(processor.get("review_path") or ""),

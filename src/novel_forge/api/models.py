@@ -728,6 +728,9 @@ class WorkflowExecuteRequest(BaseModel):
     execute_agents: bool = False
     apply_invalidation: bool = True
     workspace_path: str | None = None
+    project_id: str = ""
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
 
 
 class WorkflowResumeRequest(BaseModel):
@@ -877,6 +880,9 @@ class AgentDispatchRequest(BaseModel):
     cost_estimate: float = 0.0
     max_attempts: int = 3
     priority: int = 100
+    project_id: str = ""
+    environment: str = ""
+    envelope: dict[str, Any] = Field(default_factory=dict)
 
 
 class AgentDispatchRecoverRequest(BaseModel):

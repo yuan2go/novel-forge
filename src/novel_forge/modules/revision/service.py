@@ -386,11 +386,12 @@ def run_review_rework_loop(
     project = project_scope_from_asset(storage, draft_asset, input_path=draft_file, workspace_path=workspace_path)
     project_id = str(project.get("project_id") or draft_metadata.get("project_id") or review_metadata.get("project_id") or "")
     resolved_workspace_path = str(project.get("workspace_path") or workspace_path or draft_metadata.get("workspace_path") or review_metadata.get("workspace_path") or "")
-    from novel_forge.modules.loop_kernel import run_loop
+    from novel_forge.modules.production_kernel import dispatch_production_operation
 
-    result = run_loop(
+    result = dispatch_production_operation(
         storage,
-        {
+        "loop.run",
+        **{
             "loop_type": "review_revision_publish",
             "target_path": _display_path(storage.root, draft_file),
             "review_path": _display_path(storage.root, review_file),

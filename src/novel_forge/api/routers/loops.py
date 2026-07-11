@@ -5,7 +5,8 @@ from typing import Any
 from fastapi import APIRouter, Query, Request
 
 from novel_forge.api.routers.context import ProductRouterContext
-from novel_forge.modules.loop_kernel import cancel_loop_run, get_loop_run, list_loop_runs, run_loop
+from novel_forge.modules.loop_kernel import cancel_loop_run, get_loop_run, list_loop_runs
+from novel_forge.modules.production_kernel import dispatch_production_operation
 from novel_forge.storage.local import LocalStorage
 
 
@@ -28,7 +29,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
 
     @router.post("/product/loops/run")
     async def run_loop_endpoint(request: Request) -> dict[str, Any]:
-        return run_loop(LocalStorage(app_settings.root), await request.json())
+        return dispatch_production_operation(LocalStorage(app_settings.root), "loop.run", **(await request.json()))
 
     @router.post("/product/loops/cancel")
     async def cancel_loop_endpoint(request: Request) -> dict[str, Any]:

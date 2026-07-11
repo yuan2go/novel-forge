@@ -34,6 +34,7 @@ from novel_forge.modules.agent_scheduler import (
     run_agent_scheduler_tick,
     scheduler_status,
 )
+from novel_forge.modules.production_kernel import dispatch_production_operation
 from novel_forge.storage.local import LocalStorage
 
 
@@ -311,8 +312,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.post("/product/agents/dispatch")
     def agent_dispatch_endpoint(request: AgentDispatchRequest) -> dict[str, Any]:
         try:
-            return dispatch_agent_run(
+            return dispatch_production_operation(
                 LocalStorage(app_settings.root),
+                "agent.dispatch",
                 agent_run_path=request.agent_run_path,
                 workflow_run_id=request.workflow_run_id,
                 workflow_run_path=request.workflow_run_path,
@@ -322,6 +324,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 cost_estimate=request.cost_estimate,
                 max_attempts=request.max_attempts,
                 priority=request.priority,
+                project_id=request.project_id,
+                environment=request.environment,
+                envelope=request.envelope,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

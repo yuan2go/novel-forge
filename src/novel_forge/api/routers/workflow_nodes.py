@@ -28,6 +28,7 @@ from novel_forge.modules.workflow_nodes import (
     run_workflow_scheduler_loop,
     workflow_state_machine,
 )
+from novel_forge.modules.production_kernel import dispatch_production_operation
 from novel_forge.storage.local import LocalStorage
 
 
@@ -260,9 +261,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.post("/product/workflow/execute")
     def workflow_execute_endpoint(request: WorkflowExecuteRequest) -> dict[str, Any]:
         try:
-            return execute_workflow(
+            return dispatch_production_operation(
                 LocalStorage(app_settings.root),
-                request.workflow_path_or_id,
+                "workflow.execute",
+                workflow_path_or_id=request.workflow_path_or_id,
                 input_assets=request.input_assets,
                 run_id=request.run_id,
                 start_node_id=request.start_node_id,
@@ -271,6 +273,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 execute_agents=request.execute_agents,
                 apply_invalidation=request.apply_invalidation,
                 workspace_path=request.workspace_path,
+                project_id=request.project_id,
+                environment=request.environment,
+                envelope=request.envelope,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
