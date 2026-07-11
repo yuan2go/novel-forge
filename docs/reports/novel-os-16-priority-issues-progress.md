@@ -1,7 +1,7 @@
 # Novel OS 16 项优先问题执行进度
 
 > 更新日期：2026-07-11  
-> 当前阶段：Phase 2前置 — Kernel、质量Gate、预算与长篇状态首个垂直切片已完成，等待全量回归
+> 当前阶段：Phase 2前置 — Kernel、质量Gate、预算与长篇状态首个垂直切片已完成；确定性工程回归已关闭
 
 | Work Package | 状态 | 已完成 | 测试证据 | 剩余问题 | 下一步 |
 |---|---|---|---|---|---|
@@ -12,17 +12,17 @@
 | WP-00E Phase 0关闭 | completed | 修复生产上下文project scope传播；迁移剩余Source/质量夹具；完成两轮可重复全量验证 | Python两轮均781 pass/2 skip；validate两轮通过；lint/type/skills/web/diff通过 | Playwright和真实Provider仍属于非确定性/外部证据层 | 进入Phase 1 |
 | WP-01 Envelope v2与章节Kernel | completed | v2 canonical refs/legacy adapter/稳定幂等；章节、Workflow、Agent、Loop API和内部调用均经`dispatch_production_operation`统一路由；各自Run仍是状态权威 | Kernel/Entrypoint/API/Loop/Workflow/Scheduler聚焦测试通过 | Envelope工业authority和Postgres幂等持久化仍未完成 | 进入长篇状态与存储证据 |
 | WP-03 固定内容隔离 | completed | Topic、World、Character由上游项目资产驱动；删除固定钟楼/林乔输出 | 双目标+主链26 pass | Draft mock fallback仍须在后续Provider/fixture隔离工作包中核验 | 进入Context/质量工作包 |
-| WP-05 Release质量Gate | completed | 独立`release_asset_integrity`与`release_content_quality` GateResult；各自`gate_kind`/`gate_result_path`；生产Release evidence强制引用二者；human override必须服务端验证 | 发布/审批/质量聚焦套件通过 | Golden/Human Calibration和真实Provider趋势仍未完成 | 进入质量基准与真实Provider前置 |
+| WP-05 Release质量Gate | completed | 独立`release_asset_integrity`与`release_content_quality` GateResult；各自`gate_kind`/`gate_result_path`；生产Release evidence强制引用二者；human override必须服务端验证 | 发布/审批/质量聚焦套件通过；最新全量807 tests通过 | Golden/Human Calibration和真实Provider趋势仍未完成 | 进入质量基准与真实Provider前置 |
 | WP-06 跨章语义相似度 | completed | ChapterPatternReport增加项目隔离、前章窗口、embedding/lexical双证据和风险阈值；不把单一分数当作小说质量 | Longform单元/集成15项通过；精确重复可形成高风险问题，跨项目不串书 | 本地HashEmbedding是确定性回归信号，需由Golden/Provider校准阈值 | 与真实Provider验收联动 |
 | WP-07 审批版本绑定 | completed | ApprovalRequest保存目标asset digest/version/path；服务端检查状态、scope、action、project、expiry、撤销、消费和目标版本；发布Adapter/生产override均使用verifier | Permission Center/Publishing Center 9项通过，覆盖stale、错误scope、过期、撤销、replay | 多角色RBAC和审批人资格仍属安全硬化 | 纳入治理E2E |
 | WP-08 Kernel写预算 | completed | `LocalStorage.write_budget`统计文件/asset/字节/扫描/Context构建；超预算在下一次写入前失败并返回恢复提示 | WriteBudget/Kernel 8项通过 | 默认阈值需通过10章真实Provider校准；工业双写预算未完成 | 与长篇验收联动 |
-| WP-09 typed StateEvent与Outbox | completed | StateEvent支持领域引用、evidence/confidence/correlation/causation/schema；确定性reducer和state_hash Snapshot/Replay；新增幂等Outbox queued/claimed/acked/failed | StateBus/Schema/OS能力29项通过 | Postgres事务UoW、投影恢复和故障注入仍未完成 | 下一步Golden/Human Calibration |
+| WP-09 typed StateEvent与Outbox | completed | StateEvent支持领域引用、evidence/confidence/correlation/causation/schema；确定性reducer和state_hash Snapshot/Replay；新增幂等Outbox queued/claimed/acked/failed | StateBus/Schema/OS能力29项通过；最新全量807 tests通过 | Postgres事务UoW、投影恢复和故障注入仍未完成 | 下一步Golden/Human Calibration |
 | WP-01..15 | not-started | 已完成依赖排序和重基线 | `novel-os-priority-issues-rebaseline.md` | Phase 1需先重核验Envelope和执行入口 | 细化WP-01 |
 
 ## 当前基线
 
 ```text
-Python: PASSED twice — 781 tests, 0 failures, 0 errors, 2 skipped
+Python: PASSED — latest 807 tests, 0 failures, 0 errors, 2 skipped（此前一轮806 tests同样通过）
 Workspace validate: PASSED twice — 0 unscoped/cross-project runtime assets
 Python compile: PASSED
 Web TypeScript: PASSED
