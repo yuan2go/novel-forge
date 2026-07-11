@@ -1,7 +1,7 @@
 # Novel OS 16 项优先问题执行进度
 
 > 更新日期：2026-07-11  
-> 当前阶段：Phase 1 — 统一生产执行内核
+> 当前阶段：Phase 1 — 统一生产执行内核（WP-01 / WP-03进行中）
 
 | Work Package | 状态 | 已完成 | 测试证据 | 剩余问题 | 下一步 |
 |---|---|---|---|---|---|
@@ -10,6 +10,8 @@
 | WP-00C 项目隔离 | completed | Pipeline在创作前创建项目并逐步绑定资产；Registry/Workflow/Lease使用显式system scope；历史3资产经审计修复 | 8个scope/pipeline聚焦测试通过；`make validate`通过 | 无 | Task 0.5 |
 | WP-00D 质量门禁语义 | completed | strict workflow夹具补齐Source Gate证据；10章fake覆盖27项当前契约；12章正文具备真实主动选择和代价 | Acceptance/Sequence/Loop/Scheduler/12章共28 tests通过 | 无 | Task 0.6 |
 | WP-00E Phase 0关闭 | completed | 修复生产上下文project scope传播；迁移剩余Source/质量夹具；完成两轮可重复全量验证 | Python两轮均781 pass/2 skip；validate两轮通过；lint/type/skills/web/diff通过 | Playwright和真实Provider仍属于非确定性/外部证据层 | 进入Phase 1 |
+| WP-01 Envelope v2与章节Kernel | in-progress | v2 canonical refs/legacy adapter/稳定幂等；章节API、Scheduler、Workflow经同一facade；Bus在Run写入前fail-closed | Envelope/Loop/API 17 pass；Kernel/API/Scheduler/Workflow 101 pass | Envelope尚未持久化为工业authority；Workflow/Agent/Loop仍为compat_pending入口 | 扩大入口覆盖并核验状态权威 |
+| WP-03 固定内容隔离 | completed | Topic、World、Character由上游项目资产驱动；删除固定钟楼/林乔输出 | 双目标+主链26 pass | Draft mock fallback仍须在后续Provider/fixture隔离工作包中核验 | 进入Context/质量工作包 |
 | WP-01..15 | not-started | 已完成依赖排序和重基线 | `novel-os-priority-issues-rebaseline.md` | Phase 1需先重核验Envelope和执行入口 | 细化WP-01 |
 
 ## 当前基线
@@ -35,6 +37,16 @@ git diff --check: PASSED
 7. 已知风险：Playwright未安装；在线后端、真实Provider和长链pressure仍按设计需显式opt-in，不能解释为已验证。
 8. 阶段标准：Phase 0通过。
 9. 下一阶段条件：已满足；进入Phase 1并先建立Envelope/Kernel入口事实图。
+
+## Phase 1阶段记录（进行中）
+
+1. 已解决：ExecutionEnvelope从v0.1 metadata升级为v2 canonical contract，保留legacy shadow；章节生产在任何ChapterProductionRun写入前验证production Envelope。
+2. 新协议：`schema_version=2`、11类核心Ref、correlation/causation、stable idempotency key、`legacy_derived`。
+3. 状态权威：Kernel facade只校验/委派；ChapterProductionRun、WorkflowRun、AgentRun、LoopRun仍分别是权威状态，未创建第五套状态机。
+4. 入口迁移：章节生产API、Agent Scheduler和Workflow processor经`dispatch_chapter_production`；direct Bus保留防御性检查。
+5. 固定内容：Topic、World和Character不再写入钟楼/林乔样例；双目标测试覆盖题材、设定、外部目标与项目归属差异。
+6. 证据：17项Envelope兼容测试、101项Kernel路径测试、26项固定内容/生产治理测试均通过。
+7. 未完成：Envelope repository/工业幂等持久化、Workflow/Agent/Loop全面迁移、Context全入口manifest、Release质量分离、写放大预算仍未关闭。
 
 ## WP-00A 完成记录
 

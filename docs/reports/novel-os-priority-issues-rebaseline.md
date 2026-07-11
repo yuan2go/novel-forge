@@ -50,9 +50,9 @@ M tests/unit/test_v1_chapter_sequence_acceptance_script.py
 | Issue | 当前状态 | 代码证据 | 测试证据 | 剩余缺口 | 是否需要实施 |
 |---:|---|---|---|---|---|
 | 1. 绿色回归和清洁工作区 | **complete** | Scope审计已修复历史system runtime资产；Production Context和Chapter Plan保持直接project scope | Python两轮781 pass/2 skip；`make validate`两轮通过；lint/type/skills/web/diff通过 | Playwright、在线后端和真实Provider属于独立证据层，不计入确定性绿色 | 否；保持回归门禁 |
-| 2. ExecutionEnvelope 和核心引用 | **partial** | `modules/os_envelope/service.py` 有 v0.1 normalize/enforce；多模块已有 envelope metadata | `tests/unit/test_mkaos_os_envelope.py` 存在但当前有失败 | Envelope 不是一等持久对象；字段不足；生产入口覆盖未证明；ID/path/inline dict 仍混用 | 是 |
-| 3. 唯一 Production Kernel | **partial** | `workflow_nodes` 有 `WorkflowRunStateMachine`；`chapter_production_bus`、`agent_scheduler`、旧 `workflows/pipeline.py` 均存在 | Workflow、Loop、Scheduler 测试存在，但全量基线失败 | 旧 Pipeline、Workflow Runtime、Chapter Bus、Scheduler 仍是多执行平面；没有单一权威入口和状态图 | 是 |
-| 4. 移除固定 Topic/World/Character | **missing** | `modules/worldbuilding/service.py` 固定 Echo Clock City；`modules/characters/service.py` 固定 Lin Qiao | 相关测试主要验证资产形状，不验证双目标差异化 | fixture/production adapter 未隔离；缺两个创作目标的差异化验收 | 是 |
+| 2. ExecutionEnvelope 和核心引用 | **partial** | v2 canonical refs、legacy adapter、correlation/causation和stable idempotency位于`modules/os_envelope/service.py` | 17项Envelope/Loop/API兼容测试通过 | 未成为工业模式权威持久对象；Workflow/Agent/Loop入口覆盖仍不完整 | 是 |
+| 3. 唯一 Production Kernel | **partial** | `production_kernel.dispatch_chapter_production`委派既有ChapterProductionRun；API/Scheduler/Workflow章节入口已迁移 | 101项Kernel/API/Scheduler/Workflow回归通过 | Workflow、Agent、Loop仍有各自compat入口；需收敛command路由但不能复制状态机 | 是 |
+| 4. 移除固定 Topic/World/Character | **complete** | Topic/World/Character由Material/Topic/World项目资产派生并继承scope | 双目标差异化与生产治理共26项测试通过 | Draft fallback与demo/fixture全仓隔离留给后续专门工作包 | 否；保持防回归测试 |
 | 5. Context 和来源门禁迁移 | **partial** | `context_builder/service.py` fail-closed；合法fixture通过SourcePolicy/Risk/clean sweep进入生产链 | Context/Publish/Scheduler/Analysis及全量回归均通过，非法来源负例仍阻断 | 仍需在Phase 1证明所有生产入口唯一经过Context Builder，并建立绕过契约扫描 | 是，剩余为入口覆盖而非回归修复 |
 | 6. 资产完整性与内容质量分离 | **partial** | Chapter Bus 明示 `artifact_coverage`；ReviewIssue、quality eval、publish gate 已存在 | 10 章验收曾允许重复正文；当前质量规则会阻断部分旧验收 | 缺统一 Asset Integrity Gate 与 Content Quality Gate；body uniqueness/progression 未成为全局 Release blocker | 是 |
 | 7. 写放大和全目录扫描 | **partial** | `chapter_runtime_growth` 已有预算、热点、policy、repair 资产；多个服务仍使用 `list_json` 全扫描 | runtime-growth 聚焦测试存在；历史 10 章耗时显著增长 | 预算尚未成为所有章节运行硬约束；State Bus 等仍全目录扫描；缺稳定 10 章 p95 基线 | 是 |
