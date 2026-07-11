@@ -27,7 +27,7 @@
 
 - `tests/unit/test_production_entrypoint_contract.py`：13 tests，包括 schema、入口父级、重复请求、幂等冲突、child 异常恢复、write budget、bypass scan、父级查询、cancel control 和状态对账。
 - `tests/unit/test_os_envelope_v2.py`、`tests/unit/test_chapter_production_envelope_contract.py`：共 15 tests 通过。
-- Phase 0 基线：Python 812 pass / 0 fail / 0 error / 2 skipped；`make validate`、`make lint`、`make check-skills`、Web lint/test、`git diff --check` 均通过；Playwright 仍未安装，Web browser smoke 未执行。
+- Phase 0/Phase 01 回归：新增 schema 后首次全量回归发现并修复 schema registry count 期望；修复后连续两轮 Python 全量均为 820 pass / 0 fail / 0 error / 2 skipped（589.582 秒、599.251 秒）。`make validate`、`make lint`、`make check-skills`、Web lint/test、`git diff --check` 均通过；Web 为 11 pass / 1 skipped，Playwright 仍未安装。
 
 ## 真实 Provider / Fixture 边界
 

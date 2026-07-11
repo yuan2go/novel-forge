@@ -23,8 +23,8 @@
 ## 当前基线
 
 ```text
-Python: PASSED — Phase 0 full run 812 tests, 0 failures, 0 errors, 2 skipped；Kernel/Envelope/Chapter聚焦套件 15/15 通过
-Workspace validate: PASSED twice — 0 unscoped/cross-project runtime assets
+Python: PASSED — schema registry count regression修复后两轮全量均820 tests, 0 failures, 0 errors, 2 skipped（589.582s / 599.251s）；Kernel/Envelope/Chapter聚焦套件 19/19 通过
+Workspace validate: PASSED — 0 unscoped/cross-project runtime assets
 Python compile: PASSED
 Web TypeScript: PASSED
 Web Node tests: PASSED — 11 passed, 1 Playwright skipped
