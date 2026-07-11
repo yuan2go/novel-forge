@@ -1,7 +1,7 @@
 # Novel OS 16 项优先问题执行进度
 
 > 更新日期：2026-07-11  
-> 当前阶段：Phase 1 — 统一生产执行内核（WP-01 / WP-03进行中）
+> 当前阶段：Phase 2前置 — Kernel、质量Gate、预算与长篇状态首个垂直切片已完成，等待全量回归
 
 | Work Package | 状态 | 已完成 | 测试证据 | 剩余问题 | 下一步 |
 |---|---|---|---|---|---|
@@ -10,9 +10,13 @@
 | WP-00C 项目隔离 | completed | Pipeline在创作前创建项目并逐步绑定资产；Registry/Workflow/Lease使用显式system scope；历史3资产经审计修复 | 8个scope/pipeline聚焦测试通过；`make validate`通过 | 无 | Task 0.5 |
 | WP-00D 质量门禁语义 | completed | strict workflow夹具补齐Source Gate证据；10章fake覆盖27项当前契约；12章正文具备真实主动选择和代价 | Acceptance/Sequence/Loop/Scheduler/12章共28 tests通过 | 无 | Task 0.6 |
 | WP-00E Phase 0关闭 | completed | 修复生产上下文project scope传播；迁移剩余Source/质量夹具；完成两轮可重复全量验证 | Python两轮均781 pass/2 skip；validate两轮通过；lint/type/skills/web/diff通过 | Playwright和真实Provider仍属于非确定性/外部证据层 | 进入Phase 1 |
-| WP-01 Envelope v2与章节Kernel | in-progress | v2 canonical refs/legacy adapter/稳定幂等；章节API、Scheduler、Workflow经同一facade；Bus在Run写入前fail-closed | Envelope/Loop/API 17 pass；Kernel/API/Scheduler/Workflow 101 pass | Envelope尚未持久化为工业authority；Workflow/Agent/Loop仍为compat_pending入口 | 扩大入口覆盖并核验状态权威 |
+| WP-01 Envelope v2与章节Kernel | completed | v2 canonical refs/legacy adapter/稳定幂等；章节、Workflow、Agent、Loop API和内部调用均经`dispatch_production_operation`统一路由；各自Run仍是状态权威 | Kernel/Entrypoint/API/Loop/Workflow/Scheduler聚焦测试通过 | Envelope工业authority和Postgres幂等持久化仍未完成 | 进入长篇状态与存储证据 |
 | WP-03 固定内容隔离 | completed | Topic、World、Character由上游项目资产驱动；删除固定钟楼/林乔输出 | 双目标+主链26 pass | Draft mock fallback仍须在后续Provider/fixture隔离工作包中核验 | 进入Context/质量工作包 |
-| WP-05 Release质量Gate | completed | 独立`release_asset_integrity`与`release_content_quality` GateResult；生产Release evidence强制引用二者；缺证据的伪造ready阻断 | 受影响套件38 pass；全量793 pass/2 skip；validate、lint、skills、Web、diff均通过 | 跨章语义相似度、人工Approval版本绑定和真实Provider质量趋势仍属于后续WP-09/10/11 | 进入Approval/Golden质量工作包 |
+| WP-05 Release质量Gate | completed | 独立`release_asset_integrity`与`release_content_quality` GateResult；各自`gate_kind`/`gate_result_path`；生产Release evidence强制引用二者；human override必须服务端验证 | 发布/审批/质量聚焦套件通过 | Golden/Human Calibration和真实Provider趋势仍未完成 | 进入质量基准与真实Provider前置 |
+| WP-06 跨章语义相似度 | completed | ChapterPatternReport增加项目隔离、前章窗口、embedding/lexical双证据和风险阈值；不把单一分数当作小说质量 | Longform单元/集成15项通过；精确重复可形成高风险问题，跨项目不串书 | 本地HashEmbedding是确定性回归信号，需由Golden/Provider校准阈值 | 与真实Provider验收联动 |
+| WP-07 审批版本绑定 | completed | ApprovalRequest保存目标asset digest/version/path；服务端检查状态、scope、action、project、expiry、撤销、消费和目标版本；发布Adapter/生产override均使用verifier | Permission Center/Publishing Center 9项通过，覆盖stale、错误scope、过期、撤销、replay | 多角色RBAC和审批人资格仍属安全硬化 | 纳入治理E2E |
+| WP-08 Kernel写预算 | completed | `LocalStorage.write_budget`统计文件/asset/字节/扫描/Context构建；超预算在下一次写入前失败并返回恢复提示 | WriteBudget/Kernel 8项通过 | 默认阈值需通过10章真实Provider校准；工业双写预算未完成 | 与长篇验收联动 |
+| WP-09 typed StateEvent与Outbox | completed | StateEvent支持领域引用、evidence/confidence/correlation/causation/schema；确定性reducer和state_hash Snapshot/Replay；新增幂等Outbox queued/claimed/acked/failed | StateBus/Schema/OS能力29项通过 | Postgres事务UoW、投影恢复和故障注入仍未完成 | 下一步Golden/Human Calibration |
 | WP-01..15 | not-started | 已完成依赖排序和重基线 | `novel-os-priority-issues-rebaseline.md` | Phase 1需先重核验Envelope和执行入口 | 细化WP-01 |
 
 ## 当前基线
@@ -41,20 +45,21 @@ git diff --check: PASSED
 
 ## Phase 1阶段记录（进行中）
 
-1. 已解决：ExecutionEnvelope从v0.1 metadata升级为v2 canonical contract，保留legacy shadow；章节生产在任何ChapterProductionRun写入前验证production Envelope。
+1. 已解决：ExecutionEnvelope从v0.1 metadata升级为v2 canonical contract，保留legacy shadow；章节、Workflow、Agent、Loop入口统一经Production Kernel dispatcher，章节生产在Run写入前验证production Envelope。
 2. 新协议：`schema_version=2`、11类核心Ref、correlation/causation、stable idempotency key、`legacy_derived`。
 3. 状态权威：Kernel facade只校验/委派；ChapterProductionRun、WorkflowRun、AgentRun、LoopRun仍分别是权威状态，未创建第五套状态机。
-4. 入口迁移：章节生产API、Agent Scheduler和Workflow processor经`dispatch_chapter_production`；direct Bus保留防御性检查。
+4. 入口迁移：章节生产API、Workflow API、Agent Dispatch API、Loop API以及Workflow/Agent/Recap/Revision内部调用均经`dispatch_production_operation`；direct service仅保留防御性兼容边界。
 5. 固定内容：Topic、World和Character不再写入钟楼/林乔样例；双目标测试覆盖题材、设定、外部目标与项目归属差异。
-6. 证据：17项Envelope兼容测试、101项Kernel路径测试、26项固定内容/生产治理测试均通过。
-7. 未完成：Envelope repository/工业幂等持久化、Workflow/Agent/Loop全面迁移、Context全入口manifest、Release质量分离、写放大预算仍未关闭。
+6. 证据：Envelope/Kernel/Entrypoint/API/Loop/Workflow/Scheduler聚焦测试通过；所有注册生产入口的`kernel_route`统一为`dispatch_production_operation`。
+7. 未完成：Envelope repository/工业幂等持久化、Context全入口manifest、Golden/Human Calibration和真实Provider仍未关闭。
 
 ## Release质量Gate阶段记录（进行中）
 
-1. 资产完整性与内容质量已拆成两个独立 GateResult：前者检查类型、不可变ID、项目scope和正文可解析性；后者检查正文完整性、项目内重复、章节推进和状态一致性。
+1. 资产完整性与内容质量已拆成两个独立 GateResult：前者检查类型、不可变ID、项目scope和正文可解析性；后者检查章节长度、项目内重复、章节推进和状态一致性。
 2. 生产模式下任一 Gate 失败都会进入 PublishGate blocking issues；ReleasePackage 的 durable evidence 缺失也会阻断，即使客户端或历史报告把 decision 改成 `ready`。
-3. 本阶段没有使用相似度单指标代表小说质量；重复检查目前采用规范化正文 hash，跨章语义相似度留给后续评测中心与人工校准。
-4. 验证结果：受影响发布套件38项通过；全量确定性回归793项通过、2项按设计跳过；工作区`make validate`通过。
+3. 跨章语义相似度已进入ChapterPatternReport，采用有界项目内前章窗口和embedding/lexical双证据；它是回归信号，不是唯一质量指标。
+4. ApprovalRequest已绑定目标版本digest；外部发布和生产human override不得接受客户端自报approved。
+5. 运行时写预算和typed StateEvent/Outbox已完成本地垂直切片；全量回归和工业Postgres事务仍待最终验收。
 
 ## WP-00A 完成记录
 
@@ -103,3 +108,15 @@ git diff --check: PASSED
 7. 风险：12章仍是确定性pressure fixture，不是精品内容验收或真实Provider证据。
 8. 阶段标准：WP-00D通过；Phase 0等待完整套件。
 9. 下一阶段条件：已满足Task 0.6进入条件。
+
+## WP-06 / WP-07 / WP-08 / WP-09 完成记录
+
+1. 解决内容：跨章语义相似度、ApprovalRequest目标版本绑定、统一Kernel路由、Release双Gate字段分离、运行时写预算和typed StateEvent/Outbox均完成首个可验证垂直切片。
+2. 核心模块：`longform_stability/service.py`、`permission_center/service.py`、`publishing/quality_gates.py`、`publishing/release_gate.py`、`publishing/adapters.py`、`production_kernel/service.py`、`storage/write_budget.py`、`state_bus/service.py`及`state_bus/outbox.py`。
+3. 旧路径：保留WorkflowRun、AgentRun、LoopRun和ChapterProductionRun各自状态权威；旧审批请求仍可展示，但涉及新发布副作用的调用必须经过server verifier；没有创建新的执行状态机。
+4. 新协议/模型：`cross-chapter-semantic-similarity-v1`、Approval target `version_binding`、`dispatch_production_operation`、`release_asset_integrity`/`release_content_quality`双Gate、`LocalStorage.write_budget`、`state-event-v1`、`outbox_event`。
+5. 测试：Longform 15项；Permission/Publishing 9项；Kernel/WriteBudget 8项；StateBus/Schema/OS能力29项；最终还需执行全量回归、validate、lint、skills、前端检查。
+6. 结果：聚焦套件通过；跨项目相似度隔离、错误scope/过期/撤销/replay审批、超写预算、typed payload缺失、Snapshot state_hash一致性和Outbox幂等均有负例或边界证据。
+7. 已知风险：本地HashEmbedding只适合作为确定性回归信号；Outbox目前是LocalStorage事务边界内的持久事件，尚未接入Postgres事务UoW和双写故障恢复；真实10/30章仍未运行。
+8. 阶段标准：本地垂直切片通过；工业存储、Golden/Human Calibration和真实Provider标准未宣称完成。
+9. 下一阶段前置条件：先完成全量确定性回归并记录结果，再进入Golden Dataset/Human Calibration；不得把本轮聚焦测试解释为精品长篇验收。
