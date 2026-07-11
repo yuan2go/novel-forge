@@ -9,6 +9,7 @@ from novel_forge.modules.model_router import create_model_route
 from novel_forge.modules.evaluation_center import (
     build_golden_set,
     calibrate_provider_judge,
+    create_calibrated_quality_rubric,
     create_human_annotation_asset,
 )
 from novel_forge.modules.quality_eval import (
@@ -484,6 +485,68 @@ class QualityEvalV2Tests(unittest.TestCase):
             self.assertEqual(gate["summary"]["readiness_status"], "passed")
             self.assertEqual(gate["summary"]["external_provider_judge_count"], 1)
             self.assertEqual(gate["gate_result"]["asset"]["content"]["status"], "passed")
+
+    def test_human_calibration_produces_a_versioned_threshold_rubric(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            draft_path = _ready_draft(storage, project_id="p-calibrated")
+            first = create_human_annotation_asset(
+                storage,
+                target_asset_path=str(draft_path),
+                annotator="editor-a",
+                annotator_role="editor",
+                scores={"hook_strength": 0.92, "style_adherence": 0.88},
+                verdict="pass",
+                project_id="p-calibrated",
+            )
+            second = create_human_annotation_asset(
+                storage,
+                target_asset_path=str(draft_path),
+                annotator="editor-b",
+                annotator_role="editor",
+                scores={"hook_strength": 0.88, "style_adherence": 0.84},
+                verdict="pass",
+                project_id="p-calibrated",
+            )
+            golden = build_golden_set(
+                storage,
+                name="Calibrated Golden Set",
+                case_specs=[
+                    {
+                        "target_asset_path": str(draft_path),
+                        "annotation_paths": [first["path"], second["path"]],
+                        "expected_verdict": "pass",
+                    }
+                ],
+                project_id="p-calibrated",
+            )
+            calibration = calibrate_provider_judge(
+                storage,
+                golden_set_path=golden["path"],
+                provider_judge_results=[
+                    {
+                        "target_asset_path": str(draft_path),
+                        "scores": {"hook_strength": 0.90, "style_adherence": 0.86},
+                        "provider": "external-provider",
+                    }
+                ],
+                project_id="p-calibrated",
+            )
+
+            report = calibration["asset"]["content"]
+            self.assertEqual(report["calibration_status"], "passed")
+            self.assertEqual(report["human_calibration"]["annotated_case_count"], 1)
+            self.assertEqual(report["human_calibration"]["annotator_count_max"], 2)
+            self.assertGreaterEqual(report["human_calibration"]["mean_agreement_score"], 0.8)
+            self.assertEqual(report["threshold_recommendation"]["labelled_ready_case_count"], 1)
+
+            rubric = build_quality_rubric_pack(storage, genre_id="mystery", platform_id="local")
+            calibrated = create_calibrated_quality_rubric(storage, rubric_path=rubric["path"], calibration_report_path=calibration["path"], project_id="p-calibrated")
+            calibrated_content = calibrated["asset"]["content"]
+            self.assertEqual(calibrated_content["threshold_calibration"]["status"], "passed")
+            self.assertEqual(calibrated_content["calibration_ref"], calibration["path"])
+            self.assertEqual(calibrated_content["judge_policy"]["threshold_source"], "human_calibrated")
+            self.assertNotEqual(calibrated_content["rubric_version"], rubric["asset"]["content"].get("rubric_version", "v1"))
 
 
 def _production_rubric(storage: LocalStorage) -> dict:

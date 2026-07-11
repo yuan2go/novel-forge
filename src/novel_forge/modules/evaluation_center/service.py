@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import time
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ from novel_forge.schemas import (
     ModelRoutingPolicy,
     PromptRegressionReport,
     PromptVersion,
+    QualityRubricPack,
     validate_common_fields,
 )
 from novel_forge.storage.local import LocalStorage
@@ -681,6 +683,10 @@ def create_human_annotation_asset(
     verdict: str = "needs_review",
     comment: str = "",
     project_id: str = "",
+    rubric_id: str = "eval-center-human-annotation",
+    annotation_version: str = "human-calibration-v1",
+    annotator_role: str = "",
+    confidence: float | None = None,
 ) -> dict[str, Any]:
     path = resolve_path(storage.root, target_asset_path)
     target = storage.read_asset(path)
@@ -695,12 +701,15 @@ def create_human_annotation_asset(
         content={
             "annotation_id": make_id("human_annotation", f"{target.id}-{annotator}-{utc_now()}"),
             "target_asset_id": target.id,
-            "rubric_id": "eval-center-human-annotation",
+            "rubric_id": rubric_id,
+            "annotation_version": annotation_version,
             "target_asset_type": target.type,
             "target_asset_path": _display_path(storage.root, path),
             "annotator": annotator,
+            "annotator_role": annotator_role,
             "scores": normalized_scores,
             "overall_score": overall,
+            "confidence": _score_0_1(confidence) if confidence is not None else None,
             "verdict": verdict,
             "recommendation": verdict,
             "comment": comment[:1000],
@@ -719,6 +728,7 @@ def build_golden_set(
     case_specs: list[dict[str, Any]],
     project_id: str = "",
     status: str = "active",
+    calibration_version: str = "golden-human-calibration-v1",
 ) -> dict[str, Any]:
     if not case_specs:
         raise ValueError("case_specs must not be empty")
@@ -732,6 +742,8 @@ def build_golden_set(
         target = storage.read_asset(resolve_path(storage.root, target_path))
         expected_scores = {str(key): _score_0_1(value) for key, value in (spec.get("expected_scores", {}) if isinstance(spec.get("expected_scores", {}), dict) else {}).items()}
         annotation_path = str(spec.get("annotation_path") or "")
+        raw_annotation_paths = spec.get("annotation_paths", []) if isinstance(spec.get("annotation_paths", []), list) else []
+        annotation_paths = _dedupe([annotation_path, *[str(item) for item in raw_annotation_paths if str(item or "").strip()]])
         annotation_summary = _annotation_summary(storage, annotation_path)
         metrics.update(expected_scores.keys())
         case_rows.append(
@@ -742,7 +754,9 @@ def build_golden_set(
                 "target_asset_type": target.type,
                 "expected_scores": expected_scores,
                 "annotation_path": annotation_path,
+                "annotation_paths": annotation_paths,
                 "annotation_summary": annotation_summary,
+                "expected_verdict": str(spec.get("expected_verdict") or annotation_summary.get("verdict") or ""),
                 "acceptance_band": float(spec.get("acceptance_band", 0.08) or 0.08),
                 "status": str(spec.get("status") or "active"),
             }
@@ -760,6 +774,7 @@ def build_golden_set(
             "status": status,
             "golden_set": {
                 "enabled": True,
+                "calibration_version": calibration_version,
                 "case_count": len(case_rows),
                 "cases": case_rows,
                 "calibration_policy": {
@@ -783,6 +798,7 @@ def calibrate_provider_judge(
     provider_judge_results: list[dict[str, Any]],
     tolerance: float = 0.08,
     project_id: str = "",
+    calibration_version: str = "golden-human-calibration-v1",
 ) -> dict[str, Any]:
     golden_path = resolve_path(storage.root, golden_set_path)
     golden = storage.read_json(golden_path)
@@ -805,6 +821,13 @@ def calibrate_provider_judge(
         target_path = str(case.get("target_asset_path") or "")
         result = result_by_target.get(target_path) or result_by_target.get(str(case.get("target_asset_id") or "")) or {}
         expected_scores = case.get("expected_scores", {}) if isinstance(case.get("expected_scores", {}), dict) else {}
+        human_scores, human_meta = _human_consensus(storage, case)
+        reference_scores = {str(key): _score_0_1(value) for key, value in expected_scores.items()} or human_scores
+        # Explicit golden scores define the case contract.  Human consensus is
+        # retained as calibration evidence and is used when a case has no
+        # expected score map.
+        if not expected_scores and human_scores:
+            expected_scores = human_scores
         judge_scores = result.get("scores", {}) if isinstance(result.get("scores", {}), dict) else {}
         dimensions = sorted(set(expected_scores) | set(judge_scores))
         dimension_errors = {}
@@ -819,12 +842,17 @@ def calibrate_provider_judge(
                 "case_id": case.get("case_id", ""),
                 "target_asset_path": target_path,
                 "provider": str(result.get("provider") or ""),
+                "reference_scores": reference_scores,
+                "human_calibration": human_meta,
+                "expected_verdict": str(case.get("expected_verdict") or ""),
                 "dimension_errors": dimension_errors,
                 "status": "passed" if (sum(item["absolute_error"] for item in dimension_errors.values()) / max(1, len(dimension_errors))) <= tolerance else "needs_calibration",
             }
         )
     mean_absolute_error = round(sum(errors) / max(1, len(errors)), 4)
     status = "passed" if mean_absolute_error <= tolerance else "needs_calibration"
+    threshold_recommendation = _calibrated_threshold_recommendation(comparisons)
+    human_calibration = _human_calibration_summary(comparisons)
     asset = BaseAsset(
         type="evaluation_regression_report",
         title=f"Provider judge calibration {status}",
@@ -838,12 +866,74 @@ def calibrate_provider_judge(
             "calibration_status": status,
             "mean_absolute_error": mean_absolute_error,
             "tolerance": float(tolerance),
+            "calibration_version": calibration_version,
+            "threshold_recommendation": threshold_recommendation,
+            "human_calibration": human_calibration,
+            "threshold_source": "human_consensus_and_golden_labels",
             "comparisons": comparisons,
             "recommendation": "provider_judge_calibrated" if status == "passed" else "review rubric, prompt, or provider route before production use",
             "created_at": utc_now(),
         },
         metadata={"project_id": project_id or golden.get("metadata", {}).get("project_id", ""), "status": status, "mean_absolute_error": mean_absolute_error},
         references=filter_project_safe_references(storage, str(project_id or golden.get("metadata", {}).get("project_id", "")), [_display_path(storage.root, golden_path)]),
+    )
+    return _write(storage, asset)
+
+
+def create_calibrated_quality_rubric(
+    storage: LocalStorage,
+    *,
+    rubric_path: str | Path,
+    calibration_report_path: str | Path,
+    project_id: str = "",
+) -> dict[str, Any]:
+    """Create a new rubric version whose thresholds come from calibration evidence.
+
+    The source rubric is never mutated.  Production provider acceptance can
+    therefore point at an auditable, immutable rubric/calibration pair.
+    """
+
+    source_path = resolve_path(storage.root, rubric_path)
+    report_path = resolve_path(storage.root, calibration_report_path)
+    source = storage.read_json(source_path)
+    report = storage.read_json(report_path)
+    if source.get("type") != "quality_rubric_pack":
+        raise ValueError("rubric_path must point to a quality_rubric_pack")
+    if report.get("type") != "evaluation_regression_report":
+        raise ValueError("calibration_report_path must point to an evaluation_regression_report")
+    report_content = report.get("content", {}) if isinstance(report.get("content", {}), dict) else {}
+    if str(report_content.get("calibration_status") or "") != "passed":
+        raise ValueError("only passed provider calibration reports can create a production rubric")
+    recommendation = report_content.get("threshold_recommendation", {}) if isinstance(report_content.get("threshold_recommendation", {}), dict) else {}
+    thresholds = recommendation.get("thresholds", {}) if isinstance(recommendation.get("thresholds", {}), dict) else {}
+    if not thresholds or not {"ready", "needs_revision", "blocked"}.issubset(thresholds):
+        raise ValueError("calibration report has no complete threshold recommendation")
+    source_content = source.get("content", {}) if isinstance(source.get("content", {}), dict) else {}
+    content = deepcopy(source_content)
+    old_version = str(content.get("rubric_version") or "v1")
+    content["rubric_version"] = f"{old_version}-calibrated"
+    content["thresholds"] = {key: float(value) for key, value in thresholds.items()}
+    content["calibration_ref"] = _display_path(storage.root, report_path)
+    content["threshold_calibration"] = {
+        "status": "passed",
+        "calibration_version": report_content.get("calibration_version", ""),
+        "source": "human_consensus_and_golden_labels",
+        "mean_absolute_error": report_content.get("mean_absolute_error", 0),
+        "human_calibration": report_content.get("human_calibration", {}),
+    }
+    judge_policy = content.get("judge_policy", {}) if isinstance(content.get("judge_policy", {}), dict) else {}
+    judge_policy["threshold_source"] = "human_calibrated"
+    judge_policy["calibration_required_for_production_acceptance"] = True
+    content["judge_policy"] = judge_policy
+    metadata = deepcopy(source.get("metadata", {}) if isinstance(source.get("metadata", {}), dict) else {})
+    metadata.update({"project_id": project_id or metadata.get("project_id", ""), "calibration_report_path": _display_path(storage.root, report_path), "rubric_status": "calibrated"})
+    asset = QualityRubricPack(
+        title=f"{source.get('title', 'Quality rubric')} calibrated",
+        source=str(source.get("id") or ""),
+        tags=["quality-eval-v2", "rubric", "calibrated"],
+        content=content,
+        metadata=metadata,
+        references=_dedupe([_display_path(storage.root, source_path), _display_path(storage.root, report_path)]),
     )
     return _write(storage, asset)
 
@@ -1213,6 +1303,93 @@ def _annotation_summary(storage: LocalStorage, annotation_path: str) -> dict[str
         "annotator": content.get("annotator", ""),
         "overall_score": content.get("overall_score", 0),
         "verdict": content.get("verdict", ""),
+        "scores": content.get("scores", {}) if isinstance(content.get("scores", {}), dict) else {},
+        "confidence": content.get("confidence"),
+    }
+
+
+def _human_consensus(storage: LocalStorage, case: dict[str, Any]) -> tuple[dict[str, float], dict[str, Any]]:
+    """Aggregate linked annotations without persisting raw annotation text."""
+
+    raw_paths = case.get("annotation_paths", []) if isinstance(case.get("annotation_paths", []), list) else []
+    paths = _dedupe([str(case.get("annotation_path") or ""), *[str(item) for item in raw_paths if str(item or "").strip()]])
+    rows: list[dict[str, Any]] = []
+    for path in paths:
+        try:
+            data = storage.read_json(resolve_path(storage.root, path))
+        except (FileNotFoundError, ValueError):
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        scores = content.get("scores", {}) if isinstance(content.get("scores", {}), dict) else {}
+        if scores:
+            rows.append({
+                "annotator": str(content.get("annotator") or ""),
+                "verdict": str(content.get("verdict") or ""),
+                "scores": {str(key): _score_0_1(value) for key, value in scores.items()},
+            })
+    dimensions = sorted({dimension for row in rows for dimension in row["scores"]})
+    consensus = {
+        dimension: round(sum(row["scores"].get(dimension, 0.0) for row in rows) / max(1, len(rows)), 4)
+        for dimension in dimensions
+    }
+    pairwise_errors: list[float] = []
+    for index, left in enumerate(rows):
+        for right in rows[index + 1 :]:
+            shared = set(left["scores"]) & set(right["scores"])
+            pairwise_errors.extend(abs(left["scores"][dimension] - right["scores"][dimension]) for dimension in shared)
+    agreement = round(1.0 - (sum(pairwise_errors) / len(pairwise_errors) if pairwise_errors else 0.0), 4)
+    return consensus, {
+        "annotator_count": len(rows),
+        "annotators": sorted({row["annotator"] for row in rows if row["annotator"]}),
+        "verdicts": sorted({row["verdict"] for row in rows if row["verdict"]}),
+        "pairwise_mean_absolute_error": round(sum(pairwise_errors) / len(pairwise_errors), 4) if pairwise_errors else 0.0,
+        "agreement_score": agreement,
+        "agreement_status": "passed" if len(rows) <= 1 or agreement >= 0.8 else "needs_review",
+    }
+
+
+def _human_calibration_summary(comparisons: list[dict[str, Any]]) -> dict[str, Any]:
+    metas = [row.get("human_calibration", {}) for row in comparisons if isinstance(row.get("human_calibration", {}), dict)]
+    annotator_count = max((int(meta.get("annotator_count") or 0) for meta in metas), default=0)
+    agreement_scores = [float(meta.get("agreement_score") or 0.0) for meta in metas if int(meta.get("annotator_count") or 0) > 1]
+    return {
+        "case_count": len(comparisons),
+        "annotated_case_count": sum(1 for meta in metas if int(meta.get("annotator_count") or 0) > 0),
+        "annotator_count_max": annotator_count,
+        "mean_agreement_score": round(sum(agreement_scores) / len(agreement_scores), 4) if agreement_scores else None,
+        "agreement_boundary": "single_annotator_is_baseline_only; multi_annotator_agreement_should_be_at_least_0.8",
+    }
+
+
+def _calibrated_threshold_recommendation(comparisons: list[dict[str, Any]]) -> dict[str, Any]:
+    """Derive conservative 0-100 provider thresholds from labelled cases."""
+
+    ready_scores: list[float] = []
+    non_ready_scores: list[float] = []
+    for row in comparisons:
+        scores = row.get("dimension_errors", {}) if isinstance(row.get("dimension_errors", {}), dict) else {}
+        observed = [float(value.get("observed", 0.0)) for value in scores.values() if isinstance(value, dict)]
+        if not observed:
+            continue
+        overall = sum(observed) / len(observed) * 100.0
+        verdict = str(row.get("expected_verdict") or "").strip().lower()
+        if verdict in {"pass", "passed", "ready", "accept", "accepted"}:
+            ready_scores.append(overall)
+        elif verdict in {"block", "blocked", "needs_revision", "revise", "fail", "failed"}:
+            non_ready_scores.append(overall)
+    baseline = {"ready": 80.0, "needs_revision": 65.0, "blocked": 50.0}
+    if ready_scores:
+        baseline["ready"] = round(min(ready_scores), 2)
+    if ready_scores and non_ready_scores:
+        baseline["needs_revision"] = round((max(non_ready_scores) + min(ready_scores)) / 2.0, 2)
+        baseline["blocked"] = round(max(0.0, baseline["needs_revision"] - 15.0), 2)
+    baseline["ready"] = max(baseline["ready"], baseline["needs_revision"] + 1.0)
+    baseline["needs_revision"] = max(baseline["needs_revision"], baseline["blocked"] + 1.0)
+    return {
+        "thresholds": baseline,
+        "labelled_ready_case_count": len(ready_scores),
+        "labelled_non_ready_case_count": len(non_ready_scores),
+        "minimum_evidence": "thresholds are recommendations until a multi-case, human-labelled calibration set is reviewed",
     }
 
 

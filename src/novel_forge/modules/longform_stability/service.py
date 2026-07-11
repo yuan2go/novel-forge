@@ -17,7 +17,7 @@ from novel_forge.modules.production_governance import record_fallback_decision
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.reader_promise import build_reader_promise_ledger_for_draft
 from novel_forge.modules.runtime_ledger import record_gate_result
-from novel_forge.model_adapters.embeddings import HashEmbeddingAdapter, cosine_similarity
+from novel_forge.modules.longform_stability.semantic_similarity import resolve_similarity_provider, score_similarity
 from novel_forge.schemas import (
     ArcPlan,
     CanonDatabase,
@@ -565,6 +565,8 @@ def create_chapter_pattern_report(
     draft_path: str | Path,
     *,
     workspace_path: str | None = None,
+    semantic_adapter: Any | None = None,
+    semantic_environment: str = "",
 ) -> dict[str, Any]:
     path = resolve_path(storage.root, draft_path)
     draft = storage.read_asset(path)
@@ -579,6 +581,8 @@ def create_chapter_pattern_report(
         current_chapter=chapter_no,
         current_text=_asset_text(draft),
         limit=10,
+        semantic_adapter=semantic_adapter,
+        semantic_environment=semantic_environment,
     )
     checks = [*_pattern_checks(history, fingerprint), *_semantic_similarity_issues(semantic_checks)]
     recommendation = "block" if any(item.get("severity") == "high" for item in checks) else "revise" if checks else "pass"
@@ -916,10 +920,11 @@ def create_longform_artifacts_for_draft(
     draft_path: str | Path,
     *,
     workspace_path: str | None = None,
+    environment: str = "",
 ) -> dict[str, Any]:
     results = {
         "chapter_state_path": create_chapter_state_package(storage, draft_path, workspace_path=workspace_path)["path"],
-        "chapter_pattern_report_path": create_chapter_pattern_report(storage, draft_path, workspace_path=workspace_path)["path"],
+        "chapter_pattern_report_path": create_chapter_pattern_report(storage, draft_path, workspace_path=workspace_path, semantic_environment=environment)["path"],
         "fact_ledger_path": create_fact_ledger(storage, draft_path, workspace_path=workspace_path)["path"],
         "motif_budget_report_path": create_motif_budget_report(storage, draft_path, workspace_path=workspace_path)["path"],
         "foreshadowing_graph_path": create_foreshadowing_graph(storage, draft_path, workspace_path=workspace_path)["path"],
@@ -2238,6 +2243,8 @@ def _cross_chapter_semantic_checks(
     current_chapter: int,
     current_text: str,
     limit: int,
+    semantic_adapter: Any | None = None,
+    semantic_environment: str = "",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Compare a chapter only with bounded, earlier drafts in the same project.
 
@@ -2248,7 +2255,7 @@ def _cross_chapter_semantic_checks(
     """
     normalized_current = _semantic_normalize(current_text)
     if len(normalized_current) < 40 or not project_id:
-        return [], {"candidate_count": 0, "limit": max(1, int(limit)), "skipped": "short_or_unscoped", "method": "hash_embedding+lexical"}
+        return [], {"candidate_count": 0, "limit": max(1, int(limit)), "skipped": "short_or_unscoped", "method": "provider_embedding+lexical", "status": "not_evaluated"}
     candidates: list[dict[str, Any]] = []
     for path in storage.list_json("drafts"):
         try:
@@ -2278,17 +2285,13 @@ def _cross_chapter_semantic_checks(
             }
         )
     candidates = sorted(candidates, key=lambda row: (int(row["chapter_no"]), str(row["path"])), reverse=True)[: max(1, int(limit))]
-    adapter = HashEmbeddingAdapter(dimensions=128)
-    current_embedding = adapter.embed_text(normalized_current)
-    current_tokens = set(_semantic_tokens(normalized_current))
+    provider, provider_info = resolve_similarity_provider(
+        adapter=semantic_adapter,
+        environment=semantic_environment,
+    )
     checks: list[dict[str, Any]] = []
     for candidate in candidates:
-        previous_embedding = adapter.embed_text(candidate["text"])
-        previous_tokens = set(_semantic_tokens(candidate["text"]))
-        lexical = _jaccard(current_tokens, previous_tokens)
-        embedding = round(cosine_similarity(current_embedding, previous_embedding), 4)
-        score = round((embedding * 0.65) + (lexical * 0.35), 4)
-        risk = "high" if score >= 0.86 else "medium" if score >= 0.74 else "low"
+        scored = score_similarity(normalized_current, candidate["text"], provider=provider)
         checks.append(
             {
                 "dimension": "semantic_similarity",
@@ -2296,19 +2299,20 @@ def _cross_chapter_semantic_checks(
                 "previous_asset_id": candidate["asset_id"],
                 "previous_path": candidate["path"],
                 "project_id": project_id,
-                "semantic_similarity": score,
-                "embedding_similarity": embedding,
-                "lexical_similarity": round(lexical, 4),
-                "risk": risk,
-                "method": "hash_embedding+lexical",
-                "thresholds": {"medium": 0.74, "high": 0.86},
+                **scored,
+                "method": f"{provider_info['kind']}+lexical",
+                "provider": provider_info,
             }
         )
     return checks, {
         "candidate_count": len(candidates),
         "limit": max(1, int(limit)),
-        "method": "hash_embedding+lexical",
-        "embedding_dimensions": 128,
+        "method": f"{provider_info['kind']}+lexical",
+        "embedding_dimensions": provider_info["dimensions"],
+        "provider": provider_info,
+        "semantic_similarity_status": provider_info["status"],
+        "fallback_used": provider_info["fallback_used"],
+        "quality_claim_boundary": provider_info["quality_claim_boundary"],
         "project_scoped": True,
         "earlier_chapters_only": True,
     }
@@ -2336,17 +2340,6 @@ def _semantic_normalize(text: str) -> str:
     return re.sub(r"\s+", "", str(text or "")).strip().lower()
 
 
-def _semantic_tokens(text: str) -> list[str]:
-    tokens: list[str] = []
-    for match in re.finditer(r"[a-z0-9_]+|[\u4e00-\u9fff]", text.lower()):
-        token = match.group(0)
-        tokens.append(token)
-    return tokens
-
-
-def _jaccard(left: set[str], right: set[str]) -> float:
-    union = left | right
-    return len(left & right) / len(union) if union else 0.0
 
 
 def _recent_pattern_fingerprints(

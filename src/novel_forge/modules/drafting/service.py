@@ -321,6 +321,7 @@ def draft(
             storage,
             path,
             workspace_path=str(production_context["project"].get("workspace_path", "")) or workspace_path,
+            environment=environment,
         )
         agent_run.guard("write_draft_version", "draft_version")
         draft_version = create_draft_version(storage, path)

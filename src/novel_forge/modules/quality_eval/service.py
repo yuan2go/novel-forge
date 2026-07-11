@@ -98,6 +98,7 @@ def build_quality_rubric_pack(
         tags=["quality-eval-v2", "rubric", platform_id, genre_id or "general"],
         content={
             "rubric_id": make_id("quality_rubric_pack", f"{platform_id}-{genre_id}-{scope}"),
+            "rubric_version": "v1",
             "platform_id": platform_id,
             "genre_id": genre_id or "general",
             "scope": scope,
@@ -108,7 +109,10 @@ def build_quality_rubric_pack(
                 "mode": "local_heuristic_fallback",
                 "does_not_claim_premium_judgment": True,
                 "provider_judge_required_for_production_release": True,
+                "threshold_source": "default",
+                "calibration_required_for_production_acceptance": False,
             },
+            "calibration_ref": "",
             "style_profile_path": style_profile_path,
         },
         metadata={
@@ -219,6 +223,7 @@ def run_provider_quality_judge(
     provider_runtime_guard: dict[str, Any] | None = None,
     allow_mock_fixture: bool = False,
     require_external_provider_proof: bool = False,
+    require_calibrated_thresholds: bool = False,
     persist_issues: bool = True,
 ) -> dict[str, Any]:
     from novel_forge.modules.model_router import call_model_via_router, record_external_provider_proof
@@ -235,6 +240,15 @@ def run_provider_quality_judge(
     if adapter is None:
         raise ValueError("provider quality judge requires an adapter")
     rubric = _load_rubric(storage, rubric_path)
+    rubric_content = rubric.get("content", {}) if isinstance(rubric.get("content", {}), dict) else {}
+    calibration_ref = str(rubric_content.get("calibration_ref") or "")
+    if production and require_calibrated_thresholds:
+        if not calibration_ref:
+            raise ValueError("production provider quality judge requires a human-calibrated rubric")
+        calibration = storage.read_json(resolve_path(storage.root, calibration_ref))
+        calibration_content = calibration.get("content", {}) if isinstance(calibration.get("content", {}), dict) else {}
+        if calibration.get("type") != "evaluation_regression_report" or calibration_content.get("calibration_status") != "passed":
+            raise ValueError("rubric calibration_ref must point to a passed provider calibration report")
     env = enforce_os_envelope(
         storage,
         envelope_payload=envelope,
@@ -294,6 +308,7 @@ def run_provider_quality_judge(
         recommendation=recommendation,
         overall=overall,
     )
+    threshold_calibration_status = "calibrated" if calibration_ref else "uncalibrated"
     issue_paths: list[str] = []
     scores = [
         {
@@ -351,12 +366,20 @@ def run_provider_quality_judge(
             "model_judge_result_paths": judge_paths,
             "provider_runtime_evidence": provider_evidence,
             "provider_judge_run_report": provider_judge_run_report,
+            "threshold_calibration": {
+                "status": threshold_calibration_status,
+                "rubric_version": rubric_content.get("rubric_version", "v1"),
+                "calibration_ref": calibration_ref,
+                "threshold_source": (rubric_content.get("judge_policy", {}) or {}).get("threshold_source", "default") if isinstance(rubric_content.get("judge_policy", {}), dict) else "default",
+                "thresholds": rubric_content.get("thresholds", {}),
+            },
             "judge_policy": {
                 "mode": "provider_backed_judge",
-                "does_not_claim_premium_judgment": False,
+                "does_not_claim_premium_judgment": not bool(rubric.get("content", {}).get("calibration_ref")),
                 "provider_runtime_evidence_required": True,
                 "external_provider_proof_required": bool(require_external_provider_proof),
                 "provider_judge_required_for_production_release": True,
+                "threshold_calibration_required_for_production_acceptance": bool(is_production_environment(env.get("environment"))),
             },
         },
         metadata={"project_id": str(env.get("project_id") or ""), "suite_type": suite_type, **envelope_asset_metadata(env)},
@@ -777,9 +800,12 @@ def _provider_judge_payload(*, rubric: dict[str, Any], targets: list[dict[str, A
         "platform_id": platform_id,
         "rubric": {
             "rubric_id": rubric_content.get("rubric_id", ""),
+            "rubric_version": rubric_content.get("rubric_version", "v1"),
             "dimensions": rubric_content.get("dimensions", DEFAULT_DIMENSIONS),
             "weights": rubric_content.get("weights", {}),
             "thresholds": rubric_content.get("thresholds", {}),
+            "calibration_ref": rubric_content.get("calibration_ref", ""),
+            "threshold_source": (rubric_content.get("judge_policy", {}) or {}).get("threshold_source", "default") if isinstance(rubric_content.get("judge_policy", {}), dict) else "default",
         },
         "targets": [
             {
@@ -1075,6 +1101,9 @@ def _compact_calibration_report(row: dict[str, Any]) -> dict[str, Any]:
         "mean_absolute_error": content.get("mean_absolute_error", 0),
         "tolerance": content.get("tolerance", 0),
         "golden_set_path": str(content.get("golden_set_path") or ""),
+        "calibration_version": str(content.get("calibration_version") or ""),
+        "threshold_recommendation": content.get("threshold_recommendation", {}) if isinstance(content.get("threshold_recommendation", {}), dict) else {},
+        "human_calibration": content.get("human_calibration", {}) if isinstance(content.get("human_calibration", {}), dict) else {},
     }
 
 

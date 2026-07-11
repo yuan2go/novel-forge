@@ -1,7 +1,7 @@
 # Novel OS 16 项优先问题执行进度
 
 > 更新日期：2026-07-11  
-> 当前阶段：Phase 2前置 — Kernel、质量Gate、预算与长篇状态首个垂直切片已完成；确定性工程回归已关闭
+> 当前阶段：Phase 3前置 — Kernel、质量Gate、预算与长篇状态首个垂直切片已完成；Golden/Human Calibration 已进入可绑定阈值的实现阶段
 
 | Work Package | 状态 | 已完成 | 测试证据 | 剩余问题 | 下一步 |
 |---|---|---|---|---|---|
@@ -12,17 +12,18 @@
 | WP-00E Phase 0关闭 | completed | 修复生产上下文project scope传播；迁移剩余Source/质量夹具；完成两轮可重复全量验证 | Python两轮均781 pass/2 skip；validate两轮通过；lint/type/skills/web/diff通过 | Playwright和真实Provider仍属于非确定性/外部证据层 | 进入Phase 1 |
 | WP-01 Envelope v2与章节Kernel | completed | v2 canonical refs/legacy adapter/稳定幂等；章节、Workflow、Agent、Loop API和内部调用均经`dispatch_production_operation`统一路由；各自Run仍是状态权威 | Kernel/Entrypoint/API/Loop/Workflow/Scheduler聚焦测试通过 | Envelope工业authority和Postgres幂等持久化仍未完成 | 进入长篇状态与存储证据 |
 | WP-03 固定内容隔离 | completed | Topic、World、Character由上游项目资产驱动；删除固定钟楼/林乔输出 | 双目标+主链26 pass | Draft mock fallback仍须在后续Provider/fixture隔离工作包中核验 | 进入Context/质量工作包 |
-| WP-05 Release质量Gate | completed | 独立`release_asset_integrity`与`release_content_quality` GateResult；各自`gate_kind`/`gate_result_path`；生产Release evidence强制引用二者；human override必须服务端验证 | 发布/审批/质量聚焦套件通过；最新全量807 tests通过 | Golden/Human Calibration和真实Provider趋势仍未完成 | 进入质量基准与真实Provider前置 |
-| WP-06 跨章语义相似度 | completed | ChapterPatternReport增加项目隔离、前章窗口、embedding/lexical双证据和风险阈值；不把单一分数当作小说质量 | Longform单元/集成15项通过；精确重复可形成高风险问题，跨项目不串书 | 本地HashEmbedding是确定性回归信号，需由Golden/Provider校准阈值 | 与真实Provider验收联动 |
+| WP-05 Release质量Gate | completed | 独立`release_asset_integrity`与`release_content_quality` GateResult；各自`gate_kind`/`gate_result_path`；生产Release evidence强制引用二者；human override必须服务端验证 | 发布/审批/质量聚焦套件通过；最新全量810 tests通过 | Golden/Human Calibration和真实Provider趋势仍未完成 | 进入质量基准与真实Provider前置 |
+| WP-06 跨章语义相似度 | completed | ChapterPatternReport增加项目隔离、前章窗口、embedding/lexical双证据和风险阈值；新增可插拔语义Provider；HashEmbedding显式标记为`regression_only`，外部Provider标记为`verified` | Longform单元/集成16项通过；覆盖本地回归边界和注入语义Provider | 本地HashEmbedding仍不能单独证明精品质量；生产真实Provider需凭据和校准集 | 与Golden/真实Provider验收联动 |
 | WP-07 审批版本绑定 | completed | ApprovalRequest保存目标asset digest/version/path；服务端检查状态、scope、action、project、expiry、撤销、消费和目标版本；发布Adapter/生产override均使用verifier | Permission Center/Publishing Center 9项通过，覆盖stale、错误scope、过期、撤销、replay | 多角色RBAC和审批人资格仍属安全硬化 | 纳入治理E2E |
 | WP-08 Kernel写预算 | completed | `LocalStorage.write_budget`统计文件/asset/字节/扫描/Context构建；超预算在下一次写入前失败并返回恢复提示 | WriteBudget/Kernel 8项通过 | 默认阈值需通过10章真实Provider校准；工业双写预算未完成 | 与长篇验收联动 |
-| WP-09 typed StateEvent与Outbox | completed | StateEvent支持领域引用、evidence/confidence/correlation/causation/schema；确定性reducer和state_hash Snapshot/Replay；新增幂等Outbox queued/claimed/acked/failed | StateBus/Schema/OS能力29项通过；最新全量807 tests通过 | Postgres事务UoW、投影恢复和故障注入仍未完成 | 下一步Golden/Human Calibration |
+| WP-09 typed StateEvent与Outbox | completed | StateEvent支持领域引用、evidence/confidence/correlation/causation/schema；确定性reducer和state_hash Snapshot/Replay；新增幂等Outbox queued/claimed/acked/failed | StateBus/Schema/OS能力29项通过；最新全量810 tests通过 | Postgres事务UoW、投影恢复和故障注入仍未完成 | 进入真实Provider验收前置 |
+| WP-10 Golden/Human Calibration | completed（本地实现） | Human annotation支持版本、角色、置信度；Golden Set支持多标注者和预期 verdict；Provider calibration计算人类共识、多人一致性、MAE和保守阈值建议；可生成不可变 calibrated rubric 版本 | Quality Eval 14项通过；覆盖双标注者一致性、阈值推荐、rubric calibration ref和版本不变性 | 尚无真实 Provider 10/30 章数据；当前阈值是小样本建议，不能宣称生产质量已校准 | 运行外部Provider并提交人工校准证据 |
 | WP-01..15 | not-started | 已完成依赖排序和重基线 | `novel-os-priority-issues-rebaseline.md` | Phase 1需先重核验Envelope和执行入口 | 细化WP-01 |
 
 ## 当前基线
 
 ```text
-Python: PASSED — latest 807 tests, 0 failures, 0 errors, 2 skipped（此前一轮806 tests同样通过）
+Python: PASSED — latest 810 tests, 0 failures, 0 errors, 2 skipped
 Workspace validate: PASSED twice — 0 unscoped/cross-project runtime assets
 Python compile: PASSED
 Web TypeScript: PASSED
@@ -57,7 +58,7 @@ git diff --check: PASSED
 
 1. 资产完整性与内容质量已拆成两个独立 GateResult：前者检查类型、不可变ID、项目scope和正文可解析性；后者检查章节长度、项目内重复、章节推进和状态一致性。
 2. 生产模式下任一 Gate 失败都会进入 PublishGate blocking issues；ReleasePackage 的 durable evidence 缺失也会阻断，即使客户端或历史报告把 decision 改成 `ready`。
-3. 跨章语义相似度已进入ChapterPatternReport，采用有界项目内前章窗口和embedding/lexical双证据；它是回归信号，不是唯一质量指标。
+3. 跨章语义相似度已进入ChapterPatternReport，采用有界项目内前章窗口和embedding/lexical双证据；本地HashEmbedding明确为`regression_only`，注入真实语义Provider才可标记`verified`；它仍不是唯一质量指标。
 4. ApprovalRequest已绑定目标版本digest；外部发布和生产human override不得接受客户端自报approved。
 5. 运行时写预算和typed StateEvent/Outbox已完成本地垂直切片；全量回归和工业Postgres事务仍待最终验收。
 
@@ -117,6 +118,18 @@ git diff --check: PASSED
 4. 新协议/模型：`cross-chapter-semantic-similarity-v1`、Approval target `version_binding`、`dispatch_production_operation`、`release_asset_integrity`/`release_content_quality`双Gate、`LocalStorage.write_budget`、`state-event-v1`、`outbox_event`。
 5. 测试：Longform 15项；Permission/Publishing 9项；Kernel/WriteBudget 8项；StateBus/Schema/OS能力29项；最终还需执行全量回归、validate、lint、skills、前端检查。
 6. 结果：聚焦套件通过；跨项目相似度隔离、错误scope/过期/撤销/replay审批、超写预算、typed payload缺失、Snapshot state_hash一致性和Outbox幂等均有负例或边界证据。
-7. 已知风险：本地HashEmbedding只适合作为确定性回归信号；Outbox目前是LocalStorage事务边界内的持久事件，尚未接入Postgres事务UoW和双写故障恢复；真实10/30章仍未运行。
+7. 已知风险：本地HashEmbedding只适合作为确定性回归信号；Golden/Human Calibration可生成阈值建议但当前样本量小；Outbox目前是LocalStorage事务边界内的持久事件，尚未接入Postgres事务UoW和双写故障恢复；真实10/30章仍未运行。
 8. 阶段标准：本地垂直切片通过；工业存储、Golden/Human Calibration和真实Provider标准未宣称完成。
-9. 下一阶段前置条件：先完成全量确定性回归并记录结果，再进入Golden Dataset/Human Calibration；不得把本轮聚焦测试解释为精品长篇验收。
+9. 下一阶段前置条件：WP-10本地实现已满足，可进入真实Provider前置；必须使用`create_calibrated_quality_rubric`生成带`calibration_ref`的版本化Rubric，再运行10/30章验收；不得把本轮聚焦测试解释为精品长篇验收。
+
+## WP-10 Golden/Human Calibration完成记录
+
+1. 解决内容：把现有Evaluation Center first slice升级为可追溯的人工校准链，而不是仅比较一组内联分数。
+2. 核心模块：`evaluation_center/service.py`增加`human-calibration-v1`、多标注者共识、pairwise agreement、verdict标签和阈值推荐；`create_calibrated_quality_rubric`创建新版本而不修改旧Rubric；`quality_eval/service.py`在Provider请求和报告中记录Rubric版本、校准引用和阈值来源。
+3. 旧路径：旧的单标注/expected score调用仍兼容；没有把未校准Rubric自动伪装为生产校准。
+4. 新协议/模型：Golden Set的`calibration_version`、case `annotation_paths`/`expected_verdict`；Calibration Report的`human_calibration`、`threshold_recommendation`；Rubric的`rubric_version`、`calibration_ref`和`threshold_calibration`。
+5. 测试：Quality Eval 14项、Longform 16项通过；双标注者一致性、MAE、阈值推荐、校准Rubric版本绑定和本地Hash/外部Provider状态均有测试。
+6. 结果：本地校准实现通过；可以把人工/Golden证据转成真实Provider验收使用的明确阈值，但尚未有真实Provider内容运行证据。
+7. 已知风险：单个或少量样本只产生“建议阈值”；至少需要跨题材、多正负例、多人复核后才能把`calibration_status=passed`升级为生产信任。
+8. 阶段标准：WP-10本地实现通过；真实Provider标准未宣称完成。
+9. 下一阶段前置条件：准备真实Provider 10章运行、记录成本/延迟/失败和人工评分；运行时必须传入校准Rubric，并在生产模式启用`require_calibrated_thresholds=True`。

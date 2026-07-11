@@ -12,6 +12,7 @@ from novel_forge.modules.longform_stability import (
     check_canon_consistency,
     create_arc_plan,
     create_canon_database,
+    create_chapter_pattern_report,
     create_longform_artifacts_for_draft,
     evaluate_longform_stability_gate,
     longform_os_acceptance_report,
@@ -25,6 +26,64 @@ from novel_forge.storage.local import LocalStorage
 
 
 class LongformStabilityTests(unittest.TestCase):
+    def test_hash_similarity_is_explicitly_regression_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            for chapter in (1, 2):
+                draft = storage.write_asset(
+                    "drafts",
+                    DraftChapter(
+                        title=f"Chapter {chapter}",
+                        content={"chapter": chapter, "text": ("阿照在旧井边验灰，发现账册夹层的旧印，官署随即封存桥南档案。" * 8), "copyright_boundary": "test fixture original draft"},
+                        metadata={"project_id": "semantic-project"},
+                    ),
+                )
+                report = create_chapter_pattern_report(storage, draft)
+
+            content = storage.read_json(storage.root / report["path"])["content"]
+            self.assertEqual(content["semantic_scan"]["provider"]["kind"], "local_hash")
+            self.assertEqual(content["semantic_scan"]["semantic_similarity_status"], "regression_only")
+            self.assertIn("premium_quality_judgment", content["semantic_scan"]["quality_claim_boundary"])
+
+    def test_injected_semantic_provider_is_marked_verified(self):
+        class FakeSemanticProvider:
+            name = "fake-semantic-v1"
+            dimensions = 3
+
+            def embed_text(self, text):
+                return [1.0, 0.0, 0.0] if "相同" in text else [0.0, 1.0, 0.0]
+
+            def health_check(self):
+                return {"ok": True, "semantic_model": True, "external_api": True, "model": self.name}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            previous = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Previous",
+                    content={"chapter": 1, "text": "相同的冲突与行动推进。" * 12, "copyright_boundary": "test fixture original draft"},
+                    metadata={"project_id": "semantic-project"},
+                ),
+            )
+            current = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Current",
+                    content={"chapter": 2, "text": "相同的冲突与行动推进。" * 12, "copyright_boundary": "test fixture original draft"},
+                    metadata={"project_id": "semantic-project"},
+                ),
+            )
+
+            report = create_chapter_pattern_report(storage, current, semantic_adapter=FakeSemanticProvider())
+            content = storage.read_json(storage.root / report["path"])["content"]
+            self.assertEqual(content["semantic_scan"]["provider"]["kind"], "external_semantic")
+            self.assertEqual(content["semantic_scan"]["semantic_similarity_status"], "verified")
+            self.assertFalse(content["semantic_scan"]["fallback_used"])
+            self.assertEqual(len(content["semantic_similarity_checks"]), 1)
+
     def test_output_sanitizer_blocks_json_notes_and_extracts_text(self):
         result = sanitize_chapter_text('{"text":"第一章 正文。","notes":["策略"],"copyright_boundary":"meta"}')
 

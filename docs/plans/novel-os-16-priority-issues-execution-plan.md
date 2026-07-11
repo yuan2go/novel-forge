@@ -393,3 +393,28 @@ git commit -m "docs: close trusted phase zero baseline"
 - [ ] 聚焦 contract/workflow/scheduler/production-chain 测试通过。
 - [ ] 两轮完整确定性回归、validate、lint、skills、Web和diff通过。
 - [ ] 更新重基线与进度文档后进入WP-02。
+
+## Phase 3A：跨章证据与Golden/Human Calibration（当前已执行）
+
+### Task 3A.1：Provider-aware跨章相似度
+
+**Files:** `src/novel_forge/modules/longform_stability/semantic_similarity.py`、`src/novel_forge/modules/longform_stability/service.py`、`tests/unit/test_longform_stability.py`
+
+- [x] 保留HashEmbedding作为离线确定性回归信号，并在报告中标记`regression_only`。
+- [x] 支持注入或配置真实Embedding Provider；健康检查通过时标记`verified`，失败时显式记录fallback原因。
+- [x] 保留lexical/embedding/composite三类证据和质量声明边界；不把相似度单指标升级为精品质量结论。
+
+### Task 3A.2：Human/Golden校准与阈值发布
+
+**Files:** `src/novel_forge/modules/evaluation_center/service.py`、`src/novel_forge/modules/quality_eval/service.py`、`tests/unit/test_quality_eval_v2.py`
+
+- [x] Human annotation支持版本、角色、置信度；Golden case支持多标注路径和预期verdict。
+- [x] Calibration report记录人类共识、多人agreement、MAE和保守阈值建议。
+- [x] `create_calibrated_quality_rubric`只创建新Rubric版本，不修改旧版本，并绑定`calibration_ref`。
+- [x] Provider judge请求和结果记录Rubric版本、阈值来源和校准引用；生产调用可启用`require_calibrated_thresholds=True`。
+
+### Task 3A.3：进入真实Provider验收的前置条件
+
+- [ ] 以自有/公版/人工构造样本扩充跨题材正负Golden cases，并完成至少双人标注。
+- [ ] 运行外部Provider 10章和30章验收，使用校准Rubric；记录Token、成本、延迟、失败、状态漂移和人工评分。
+- [ ] 在真实Provider报告通过前，不得把本地HashEmbedding或单次人工标注描述为精品长篇质量证明。

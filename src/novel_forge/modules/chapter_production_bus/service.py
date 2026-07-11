@@ -1093,7 +1093,12 @@ def _create_canon_longform_update(storage: LocalStorage, data: dict[str, Any]) -
     workspace_path = str(data.get("metadata", {}).get("workspace_path", ""))
     project_id = str(data.get("metadata", {}).get("project_id", ""))
     chapter = _positive_chapter(content.get("chapter", 1))
-    artifact_paths = create_longform_artifacts_for_draft(storage, outputs["final_draft_path"], workspace_path=workspace_path)
+    artifact_paths = create_longform_artifacts_for_draft(
+        storage,
+        outputs["final_draft_path"],
+        workspace_path=workspace_path,
+        environment=str(data.get("metadata", {}).get("environment", "")),
+    )
     recap = run_longform_recap(
         storage,
         {
