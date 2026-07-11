@@ -2633,11 +2633,11 @@ def _run_review_revision_publish_loop(storage: LocalStorage, queue_item: dict[st
 
 
 def _run_start_chapter_production(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
-    from novel_forge.modules.chapter_production_bus import start_chapter_production
+    from novel_forge.modules.production_kernel import dispatch_chapter_production
 
     evidence = _evidence(agent_run)
     chapter_value = evidence.get("chapter")
-    result = start_chapter_production(
+    result = dispatch_chapter_production(
         storage,
         outline_path=str(evidence.get("outline_path") or _required_input_path(agent_run)),
         chapter_plan_path=str(evidence.get("chapter_plan_path") or "") or None,

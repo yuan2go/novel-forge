@@ -16,7 +16,7 @@ from novel_forge.modules.drafting import service as drafting_service
 from novel_forge.modules.editor import apply_editor_patch, create_editor_patch, execute_revision_plan
 from novel_forge.modules.longform_recap import run_longform_recap
 from novel_forge.modules.longform_stability import create_longform_artifacts_for_draft
-from novel_forge.modules.os_envelope import is_production_environment
+from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment
 from novel_forge.modules.production_chain.service import (
     create_chapter_plan_version,
     create_outline_version,
@@ -102,6 +102,26 @@ def start_chapter_production(
     workspace = str(project.get("workspace_path", "") or workspace_path or "")
     if not project_id or not workspace:
         raise ValueError("chapter production bus requires a project workspace; pass workspace_path or project-bound outline")
+    chapter_number = _positive_chapter(chapter or _chapter_from_plan(storage, str(chapter_plan_path or "")) or 1)
+    envelope_payload = dict(os_envelope) if isinstance(os_envelope, dict) and os_envelope else None
+    if envelope_payload is not None:
+        envelope_payload.setdefault("task_ref", f"chapter-{chapter_number}")
+        envelope_payload.setdefault("input_refs", [_display_path(storage.root, outline_file), *([str(chapter_plan_path)] if chapter_plan_path else [])])
+        envelope_payload.setdefault("expected_output_types", ["chapter_production_run", "draft_chapter", "review_report", "release_package"])
+    envelope = enforce_os_envelope(
+        storage,
+        envelope_payload=envelope_payload,
+        operation="chapter_production.start",
+        project_id=project_id,
+        task_type="chapter_production",
+        asset_type="chapter_production_run",
+        actor_type="production_kernel",
+        source="chapter_production_bus",
+        source_policy=source_policy,
+        environment=environment,
+        bypass_reason=str(envelope_payload.get("bypass_reason") or "") if envelope_payload is not None else "",
+        require_for_production=True,
+    )
     runtime_policy_resolution = _resolve_runtime_artifact_policy(
         storage,
         project_id=project_id,
@@ -122,7 +142,7 @@ def start_chapter_production(
         if plan.type != "chapter_plan":
             raise ValueError("chapter_plan_path must point to a chapter_plan asset")
         plan_ref = _display_path(storage.root, plan_file)
-    chapter_number = _positive_chapter(chapter or _chapter_from_plan(storage, plan_ref) or 1)
+    chapter_number = _positive_chapter(chapter or _chapter_from_plan(storage, plan_ref) or chapter_number)
     now = utc_now()
     run_id = make_id("chapter_production_run", f"{project_id}-chapter-{chapter_number}")
     asset = ChapterProductionRun(
@@ -209,7 +229,7 @@ def start_chapter_production(
             "production_context_preflight": production_context.get("preflight", {}),
             "quality_loop_policy": {
                 "environment": environment,
-                "os_envelope": os_envelope or {},
+                "os_envelope": envelope,
                 "source_policy": source_policy or {},
                 "require_external_provider_proof": bool(require_external_provider_proof),
                 "fail_closed_in_production": True,
@@ -240,6 +260,7 @@ def start_chapter_production(
             "project_id": project_id,
             "workspace_path": workspace,
             "chapter": chapter_number,
+            **envelope_asset_metadata(envelope),
             "run_metadata": run_metadata("chapter_production_bus", outline),
         },
         references=filter_project_safe_references(storage, project_id, [outline.id, _display_path(storage.root, outline_file), workspace, *production_context.get("profile_references", [])]),

@@ -15,8 +15,8 @@ from novel_forge.modules.chapter_production_bus import (
     pause_chapter_production,
     recover_chapter_production,
     resume_chapter_production,
-    start_chapter_production,
 )
+from novel_forge.modules.production_kernel import dispatch_chapter_production
 from novel_forge.modules.long_planning import create_long_form_macro_plan, list_long_form_macro_plans
 from novel_forge.modules.change_impact import mark_downstream_assets_stale
 from novel_forge.modules.production_chain import (
@@ -107,7 +107,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         try:
             if request.async_task:
                 storage = LocalStorage(app_settings.root)
-                run = start_chapter_production(
+                run = dispatch_chapter_production(
                     storage,
                     outline_path=request.outline_path,
                     chapter_plan_path=request.chapter_plan_path,
@@ -124,7 +124,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 task = _enqueue_chapter_production_task(app_settings, run["path"], run_to=request.run_to)
                 detail = mark_chapter_production_celery_task(storage, run["path"], task.id)
                 return {"mode": "async", "task_id": task.id, **detail}
-            return start_chapter_production(
+            return dispatch_chapter_production(
                 LocalStorage(app_settings.root),
                 outline_path=request.outline_path,
                 chapter_plan_path=request.chapter_plan_path,

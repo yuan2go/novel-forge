@@ -1029,6 +1029,17 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     chapter=1,
                     run_to="outline_checkpoint",
                     environment="production",
+                    os_envelope={
+                        "schema_version": 2,
+                        "project_ref": project_id,
+                        "task_ref": "chapter-1",
+                        "operation": "chapter_production.start",
+                        "actor_type": "unit_test",
+                        "source": "runtime-policy-test",
+                        "trace_id": "trace-runtime-policy-rollback",
+                        "source_policy": {"raw_source_text_allowed": False},
+                        "environment": "production",
+                    },
                 )
 
     def test_chapter_production_compact_mode_preserves_failure_node_run_and_trace(self):
