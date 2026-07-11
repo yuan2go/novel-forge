@@ -379,6 +379,7 @@ ASSET_DIR_BY_TYPE = {
     "state_snapshot": "runs",
     "state_replay": "runs",
     "state_conflict_report": "runs",
+    "outbox_event": "runs",
     "agent_message": "runs",
     "agent_inbox": "runs",
     "agent_outbox": "runs",

@@ -12,7 +12,14 @@ from novel_forge.modules.long_memory import create_memory_record, retrieve_memor
 from novel_forge.modules.model_router import call_model_via_router, create_model_route, execute_model_gateway_call, resolve_model_route
 from novel_forge.modules.pgvector_store import build_embedding_job, create_pgvector_schema_plan, hybrid_retrieve, migrate_pgvector_online, pgvector_capabilities, pgvector_operations_plan
 from novel_forge.modules.prompt_registry import bind_prompt_to_node, create_prompt_version_asset, release_prompt_version, resolve_prompt
-from novel_forge.modules.state_bus import create_state_snapshot, detect_state_conflicts, record_state_event, replay_state_events
+from novel_forge.modules.state_bus import (
+    ack_outbox_event,
+    claim_outbox_events,
+    create_state_snapshot,
+    detect_state_conflicts,
+    record_state_event,
+    replay_state_events,
+)
 from novel_forge.modules.tool_gateway import create_tool_permission_policy, invoke_tool, register_internal_tools, register_mcp_server
 from novel_forge.schemas import ChapterPlan
 from novel_forge.storage.local import LocalStorage
@@ -191,6 +198,72 @@ class NovelOSNewCapabilitiesTests(unittest.TestCase):
             self.assertEqual(ack["asset"]["content"]["status"], "acknowledged")
             self.assertEqual(replay_messages["message_count"], 1)
             self.assertEqual(trace["asset"]["type"], "agent_conversation_trace")
+
+    def test_typed_longform_state_event_reducer_and_outbox_are_replayable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            first = record_state_event(
+                storage,
+                stream="novel",
+                subject_id="book-typed",
+                event_type="CharacterStateChanged",
+                payload={"character_ref": "char-azhao", "changes": {"location": "旧井", "knowledge": ["旧印"]}},
+                expected_version=0,
+                project_id="book-typed",
+                chapter_ref="chapter-1",
+                scene_ref="scene-1",
+                evidence_span={"asset_ref": "data/drafts/chapter-1.json", "start": 1, "end": 8},
+                confidence=0.94,
+                source="chapter_state_extractor",
+                correlation_id="corr-state-1",
+                causation_id="cause-draft-1",
+            )
+            self.assertEqual(first["asset"]["content"]["schema_version"], "state-event-v1")
+            self.assertEqual(first["asset"]["content"]["event_type"], "CharacterStateChanged")
+            self.assertTrue(first["outbox_path"])
+            outbox = storage.read_json(storage.root / first["outbox_path"])
+            self.assertEqual(outbox["type"], "outbox_event")
+            self.assertEqual(outbox["content"]["status"], "queued")
+            self.assertEqual(outbox["content"]["event_ref"], first["path"])
+
+            second = record_state_event(
+                storage,
+                stream="novel",
+                subject_id="book-typed",
+                event_type="TimelineAdvanced",
+                payload={"timeline_ref": "timeline-book-typed", "changes": {"current_chapter": 1}},
+                expected_version=1,
+                project_id="book-typed",
+                correlation_id="corr-state-1",
+                causation_id=first["asset"]["content"]["event_id"],
+            )
+            snapshot = create_state_snapshot(storage, stream="novel", subject_id="book-typed", project_id="book-typed")
+            replay = replay_state_events(storage, stream="novel", subject_id="book-typed", project_id="book-typed")
+            self.assertEqual(snapshot["asset"]["content"]["state_hash"], replay["asset"]["content"]["state_hash"])
+            self.assertEqual(snapshot["asset"]["content"]["reducer_version"], "longform-state-reducer-v1")
+            self.assertEqual(replay["asset"]["content"]["replayed_state"]["characters"]["char-azhao"]["location"], "旧井")
+            self.assertEqual(replay["asset"]["content"]["replayed_state"]["timeline"]["current_chapter"], 1)
+
+            claimed = claim_outbox_events(storage, project_id="book-typed", limit=10)
+            self.assertEqual(claimed["claimed_count"], 2)
+            acked = ack_outbox_event(storage, claimed["events"][0]["path"], consumer="state-projector")
+            self.assertEqual(acked["status"], "acked")
+            self.assertEqual(ack_outbox_event(storage, claimed["events"][0]["path"], consumer="state-projector")["status"], "acked")
+
+    def test_typed_state_event_rejects_missing_domain_payload(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            with self.assertRaisesRegex(ValueError, "CharacterStateChanged requires character_ref"):
+                record_state_event(
+                    storage,
+                    stream="novel",
+                    subject_id="book-typed",
+                    event_type="CharacterStateChanged",
+                    payload={"changes": {"location": "旧井"}},
+                    project_id="book-typed",
+                )
 
     def test_tool_gateway_invokes_remote_mcp_http_jsonrpc_tools(self):
         with tempfile.TemporaryDirectory() as tmp:

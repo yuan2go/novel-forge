@@ -1104,6 +1104,11 @@ class StateConflictReport(BaseAsset):
 
 
 @dataclass
+class OutboxEvent(BaseAsset):
+    type: str = "outbox_event"
+
+
+@dataclass
 class AgentMessage(BaseAsset):
     type: str = "agent_message"
 
@@ -1679,6 +1684,7 @@ SCHEMA_CLASSES = {
         StateSnapshot,
         StateReplay,
         StateConflictReport,
+        OutboxEvent,
         AgentMessage,
         AgentInbox,
         AgentOutbox,

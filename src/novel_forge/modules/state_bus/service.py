@@ -1,15 +1,48 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.runtime_ledger import record_trace_span
+from novel_forge.modules.state_bus.outbox import enqueue_outbox_event
 from novel_forge.schemas import StateConflictReport, StateEvent, StateReplay, StateSnapshot, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
 STATE_ASSET_TYPES = {"state_event", "state_snapshot", "state_replay", "state_conflict_report"}
+TYPED_EVENT_REQUIRED_PAYLOAD = {
+    "CharacterStateChanged": "character_ref",
+    "CharacterRelationshipChanged": "character_ref",
+    "CharacterLocationChanged": "character_ref",
+    "CharacterKnowledgeChanged": "character_ref",
+    "CharacterGoalChanged": "character_ref",
+    "CharacterInjuryChanged": "character_ref",
+    "TimelineAdvanced": "timeline_ref",
+    "SceneOccurred": "scene_ref",
+    "CanonFactCreated": "fact_ref",
+    "CanonFactUpdated": "fact_ref",
+    "CanonFactInvalidated": "fact_ref",
+    "CanonConflictDetected": "fact_ref",
+    "CanonConflictResolved": "fact_ref",
+    "ForeshadowCreated": "foreshadow_ref",
+    "ForeshadowReinforced": "foreshadow_ref",
+    "ForeshadowPaidOff": "foreshadow_ref",
+    "ForeshadowAbandoned": "foreshadow_ref",
+    "ArcStarted": "arc_ref",
+    "ArcProgressed": "arc_ref",
+    "ArcReversed": "arc_ref",
+    "ArcCompleted": "arc_ref",
+    "WorldRuleIntroduced": "rule_ref",
+    "WorldRuleInvoked": "rule_ref",
+    "WorldRuleViolated": "rule_ref",
+    "PowerChanged": "subject_ref",
+    "ResourceChanged": "subject_ref",
+    "ItemTransferred": "item_ref",
+    "OrganizationChanged": "organization_ref",
+}
 
 
 def record_state_event(
@@ -23,7 +56,29 @@ def record_state_event(
     project_id: str = "",
     workspace_path: str = "",
     trace: dict[str, Any] | None = None,
+    chapter_ref: str = "",
+    scene_ref: str = "",
+    subject_ref: str = "",
+    evidence_span: dict[str, Any] | None = None,
+    confidence: float | None = None,
+    source: str = "",
+    occurred_at: str = "",
+    causation_id: str = "",
+    correlation_id: str = "",
+    idempotency_key: str = "",
+    schema_version: str = "state-event-v1",
 ) -> dict[str, Any]:
+    payload = payload or {}
+    required_key = TYPED_EVENT_REQUIRED_PAYLOAD.get(str(event_type))
+    if required_key and not str(payload.get(required_key) or "").strip():
+        raise ValueError(f"{event_type} requires {required_key}")
+    if confidence is not None and not 0 <= float(confidence) <= 1:
+        raise ValueError("state event confidence must be between 0 and 1")
+    stable_key = str(idempotency_key or "")
+    if stable_key:
+        existing = _find_event_by_idempotency(storage, stable_key, project_id=project_id)
+        if existing:
+            return {**existing, "idempotent": True}
     current_version = _current_version(storage, stream=stream, subject_id=subject_id, project_id=project_id)
     conflict = expected_version is not None and int(expected_version) != current_version
     content = {
@@ -31,23 +86,45 @@ def record_state_event(
         "stream": stream,
         "subject_id": subject_id,
         "event_type": event_type,
-        "payload": payload or {},
+        "payload": payload,
         "version": current_version + 1,
         "expected_version": expected_version,
         "conflict": conflict,
         "created_at": utc_now(),
         "trace": trace or {},
+        "schema_version": schema_version,
+        "chapter_ref": chapter_ref,
+        "scene_ref": scene_ref,
+        "subject_ref": subject_ref or str(payload.get("subject_ref") or ""),
+        "evidence_span": evidence_span or {},
+        "confidence": confidence,
+        "source": source,
+        "occurred_at": occurred_at or utc_now(),
+        "recorded_at": utc_now(),
+        "causation_id": causation_id,
+        "correlation_id": correlation_id,
+        "idempotency_key": stable_key,
     }
     asset = StateEvent(
         title=f"State event {stream}/{subject_id}: {event_type}",
         tags=["state-event", stream, event_type, "conflict" if conflict else "accepted"],
         content=content,
         metadata={"project_id": project_id, "workspace_path": workspace_path, "stream": stream, "subject_id": subject_id},
-        references=filter_project_safe_references(storage, project_id, _payload_paths(payload or {})),
+        references=filter_project_safe_references(storage, project_id, _payload_paths({**payload, "evidence_span": evidence_span or {}})),
     )
     written = _write(storage, asset)
+    outbox = enqueue_outbox_event(
+        storage,
+        event_ref=written["path"],
+        event_id=content["event_id"],
+        event_type=event_type,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        idempotency_key=stable_key or content["event_id"],
+        correlation_id=correlation_id,
+    )
     _record_state_span(storage, trace, "state_event", event_type, written["path"], project_id, workspace_path)
-    return {**written, "conflict": conflict, "version": content["version"]}
+    return {**written, "conflict": conflict, "version": content["version"], "outbox_path": outbox["path"], "outbox": outbox, "idempotent": False}
 
 
 def list_state_events(
@@ -96,6 +173,9 @@ def create_state_snapshot(
         "state": state,
         "event_count": len(events),
         "last_event_id": str(events[-1].get("content", {}).get("event_id", "")) if events else "",
+        "reducer_version": "longform-state-reducer-v1",
+        "state_hash": _state_hash(state),
+        "event_ids": [str(row.get("content", {}).get("event_id", "")) for row in events],
         "created_at": utc_now(),
         "trace": trace or {},
     }
@@ -131,8 +211,10 @@ def replay_state_events(
         "from_version": int(from_version or 0),
         "events": [_event_summary(row) for row in events],
         "replayed_state": _fold_events(events),
+        "reducer_version": "longform-state-reducer-v1",
         "created_at": utc_now(),
     }
+    content["state_hash"] = _state_hash(content["replayed_state"])
     asset = StateReplay(
         title=f"State replay {stream}/{subject_id}",
         tags=["state-replay", stream],
@@ -189,6 +271,11 @@ def _fold_events(events: list[dict[str, Any]]) -> dict[str, Any]:
         content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
         payload = content.get("payload", {}) if isinstance(content.get("payload", {}), dict) else {}
         action = str(content.get("event_type", ""))
+        if action in TYPED_EVENT_REQUIRED_PAYLOAD:
+            _reduce_typed_event(state, action, payload, content)
+            state["version"] = int(content.get("version", state.get("version", 0)) or 0)
+            state["updated_at"] = str(content.get("recorded_at") or content.get("created_at", ""))
+            continue
         if action.endswith(".deleted") or action == "deleted":
             state["deleted"] = True
         elif action.endswith(".patched") or action.endswith(".updated") or action in {"patch", "updated"}:
@@ -200,6 +287,69 @@ def _fold_events(events: list[dict[str, Any]]) -> dict[str, Any]:
         state["version"] = int(content.get("version", state.get("version", 0)) or 0)
         state["updated_at"] = str(content.get("created_at", ""))
     return state
+
+
+def _reduce_typed_event(state: dict[str, Any], event_type: str, payload: dict[str, Any], content: dict[str, Any]) -> None:
+    changes = payload.get("changes", {}) if isinstance(payload.get("changes", {}), dict) else {}
+    if event_type.startswith("Character"):
+        ref = str(payload.get("character_ref") or content.get("subject_ref") or "unknown")
+        bucket = state.setdefault("characters", {}).setdefault(ref, {})
+        bucket.update(changes or {key: value for key, value in payload.items() if key != "character_ref"})
+        return
+    if event_type in {"TimelineAdvanced", "SceneOccurred"}:
+        bucket_name = "timeline" if event_type == "TimelineAdvanced" else "scenes"
+        ref = str(payload.get("timeline_ref") or payload.get("scene_ref") or content.get("subject_ref") or "current")
+        if bucket_name == "timeline":
+            state.setdefault(bucket_name, {}).update(changes or {key: value for key, value in payload.items() if key != "timeline_ref"})
+        else:
+            state.setdefault(bucket_name, {})[ref] = changes or payload
+        return
+    if event_type.startswith("Canon"):
+        ref = str(payload.get("fact_ref") or content.get("subject_ref") or "unknown")
+        state.setdefault("canon_facts", {}).setdefault(ref, {}).update({"event_type": event_type, **(changes or payload)})
+        return
+    if event_type.startswith("Foreshadow"):
+        ref = str(payload.get("foreshadow_ref") or content.get("subject_ref") or "unknown")
+        state.setdefault("foreshadow", {}).setdefault(ref, {}).update({"lifecycle": event_type, **(changes or payload)})
+        return
+    if event_type.startswith("Arc"):
+        ref = str(payload.get("arc_ref") or content.get("subject_ref") or "unknown")
+        state.setdefault("arcs", {}).setdefault(ref, {}).update({"lifecycle": event_type, **(changes or payload)})
+        return
+    if event_type.startswith("WorldRule"):
+        ref = str(payload.get("rule_ref") or content.get("subject_ref") or "unknown")
+        state.setdefault("world_rules", {}).setdefault(ref, {}).update({"lifecycle": event_type, **(changes or payload)})
+        return
+    if event_type in {"PowerChanged", "ResourceChanged", "ItemTransferred", "OrganizationChanged"}:
+        key = {"PowerChanged": "power", "ResourceChanged": "resources", "ItemTransferred": "items", "OrganizationChanged": "organizations"}[event_type]
+        ref = str(payload.get("subject_ref") or payload.get("item_ref") or payload.get("organization_ref") or content.get("subject_ref") or "unknown")
+        state.setdefault(key, {}).setdefault(ref, {}).update(changes or payload)
+
+
+def _state_hash(state: dict[str, Any]) -> str:
+    encoded = json.dumps(state, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _find_event_by_idempotency(storage: LocalStorage, key: str, *, project_id: str) -> dict[str, Any] | None:
+    for row in list_state_events(storage, project_id=project_id or None, limit=5000):
+        content = row.get("content", {}) if isinstance(row.get("content", {}), dict) else {}
+        if str(content.get("idempotency_key") or "") != key:
+            continue
+        outbox_path = ""
+        for candidate in storage.list_json("runs"):
+            try:
+                data = storage.read_json(candidate)
+            except Exception:
+                continue
+            if data.get("type") != "outbox_event":
+                continue
+            outbox_content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+            if str(outbox_content.get("event_id") or "") == str(content.get("event_id") or ""):
+                outbox_path = _display_path(storage.root, candidate)
+                break
+        return {"path": row.get("path", ""), "id": row.get("id", ""), "asset": row, "conflict": bool(content.get("conflict")), "version": int(content.get("version", 0) or 0), "outbox_path": outbox_path}
+    return None
 
 
 def _event_summary(row: dict[str, Any]) -> dict[str, Any]:

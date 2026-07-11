@@ -761,6 +761,7 @@ CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
     "state_snapshot": ["snapshot_id", "stream", "subject_id", "state", "event_count", "created_at"],
     "state_replay": ["replay_id", "stream", "subject_id", "events", "replayed_state", "created_at"],
     "state_conflict_report": ["report_id", "stream", "subject_id", "conflicts", "status", "created_at"],
+    "outbox_event": ["outbox_id", "event_ref", "status", "attempt_count", "created_at"],
     "agent_message": ["message_id", "sender_agent", "recipient_agent", "topic", "payload", "status", "created_at"],
     "agent_inbox": ["inbox_id", "agent_type", "messages", "created_at"],
     "agent_outbox": ["outbox_id", "agent_type", "messages", "created_at"],
@@ -926,6 +927,10 @@ def validate_common_fields(data: dict[str, Any]) -> list[str]:
             errors.append(f"{asset_type} missing required field: {key}")
     if asset_type == "workflow_run" and isinstance(content, dict):
         errors.extend(_validate_workflow_run_content(content))
+    if asset_type == "state_event" and isinstance(content, dict):
+        errors.extend(_validate_state_event_content(content))
+    if asset_type == "outbox_event" and isinstance(content, dict):
+        errors.extend(_validate_outbox_event_content(content))
     if asset_type in {"workflow_definition", "workflow_node", "node_run"} and isinstance(content, dict):
         errors.extend(_validate_workflow_contract_content(asset_type, content))
     if asset_type == "claude_code_handoff" and isinstance(content, dict):
@@ -1237,6 +1242,50 @@ def _validate_claude_code_handoff_content(content: dict[str, Any]) -> list[str]:
             errors.append(f"claude_code_handoff {key} must be a list")
         elif not value:
             errors.append(f"claude_code_handoff {key} must not be empty")
+    return errors
+
+
+def _validate_state_event_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if content.get("schema_version") != "state-event-v1":
+        return errors
+    for key in ["event_id", "stream", "subject_id", "event_type", "payload", "recorded_at", "correlation_id", "causation_id"]:
+        if key not in content:
+            errors.append(f"state_event typed content missing required field: {key}")
+    if not isinstance(content.get("payload"), dict):
+        errors.append("state_event payload must be an object")
+    confidence = content.get("confidence")
+    if confidence is not None and (not isinstance(confidence, (int, float)) or confidence < 0 or confidence > 1):
+        errors.append("state_event confidence must be between 0 and 1")
+    required_by_type = {
+        "CharacterStateChanged": "character_ref",
+        "TimelineAdvanced": "timeline_ref",
+        "SceneOccurred": "scene_ref",
+        "CanonFactCreated": "fact_ref",
+        "ForeshadowCreated": "foreshadow_ref",
+        "ArcStarted": "arc_ref",
+        "WorldRuleIntroduced": "rule_ref",
+        "PowerChanged": "subject_ref",
+        "ResourceChanged": "subject_ref",
+        "ItemTransferred": "item_ref",
+        "OrganizationChanged": "organization_ref",
+    }
+    event_type = str(content.get("event_type") or "")
+    required = required_by_type.get(event_type)
+    payload = content.get("payload", {}) if isinstance(content.get("payload"), dict) else {}
+    if required and not str(payload.get(required) or "").strip():
+        errors.append(f"{event_type} requires {required}")
+    return errors
+
+
+def _validate_outbox_event_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if content.get("status") not in {"queued", "claimed", "acked", "failed"}:
+        errors.append("outbox_event status must be queued, claimed, acked, or failed")
+    if _is_missing(content.get("event_ref")):
+        errors.append("outbox_event event_ref must not be empty")
+    if not isinstance(content.get("attempt_count"), int) or int(content.get("attempt_count", 0)) < 0:
+        errors.append("outbox_event attempt_count must be a non-negative integer")
     return errors
 
 
