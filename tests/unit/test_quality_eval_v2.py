@@ -548,6 +548,82 @@ class QualityEvalV2Tests(unittest.TestCase):
             self.assertEqual(calibrated_content["judge_policy"]["threshold_source"], "human_calibrated")
             self.assertNotEqual(calibrated_content["rubric_version"], rubric["asset"]["content"].get("rubric_version", "v1"))
 
+    def test_production_provider_judge_can_require_calibrated_thresholds(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            create_model_route(
+                storage,
+                task_type="quality_judge",
+                provider="unit-provider",
+                model_name="premium-judge-v1",
+                project_id="p1",
+                environment="production",
+                approval_status="approved",
+                approval_id="approval-quality-calibrated",
+                approved_by="qa-lead",
+                production_provider_allowlist=["unit-provider"],
+                max_cost_per_run=1.0,
+            )
+            draft_path = _ready_draft(storage, project_id="p1")
+            annotation = create_human_annotation_asset(
+                storage,
+                target_asset_path=str(draft_path),
+                annotator="chief-editor",
+                scores={"hook_strength": 0.9, "style_adherence": 0.86},
+                verdict="pass",
+                project_id="p1",
+            )
+            golden = build_golden_set(
+                storage,
+                name="Production Threshold Golden Set",
+                case_specs=[
+                    {
+                        "target_asset_path": str(draft_path),
+                        "expected_scores": {"hook_strength": 0.9, "style_adherence": 0.86},
+                        "annotation_path": annotation["path"],
+                        "expected_verdict": "pass",
+                    }
+                ],
+                project_id="p1",
+            )
+            calibration = calibrate_provider_judge(
+                storage,
+                golden_set_path=golden["path"],
+                provider_judge_results=[
+                    {
+                        "target_asset_path": str(draft_path),
+                        "scores": {"hook_strength": 0.9, "style_adherence": 0.86},
+                        "provider": "unit-provider",
+                    }
+                ],
+                project_id="p1",
+            )
+            rubric = _production_rubric(storage)
+            calibrated = create_calibrated_quality_rubric(
+                storage,
+                rubric_path=rubric["path"],
+                calibration_report_path=calibration["path"],
+                project_id="p1",
+            )
+
+            report = run_provider_quality_judge(
+                storage,
+                suite_type="opening_3",
+                target_paths=[str(draft_path)],
+                rubric_path=calibrated["path"],
+                adapter=ProviderJudgeAdapter(),
+                environment="production",
+                envelope=_envelope("quality_judge", "opening_3_report", "trace-quality-calibrated"),
+                provider_runtime_guard={"max_total_tokens": 2000},
+                require_calibrated_thresholds=True,
+            )
+
+            calibration_meta = report["asset"]["content"]["threshold_calibration"]
+            self.assertEqual(calibration_meta["status"], "calibrated")
+            self.assertEqual(calibration_meta["threshold_source"], "human_calibrated")
+            self.assertTrue(calibration_meta["calibration_ref"])
+            self.assertTrue(report["asset"]["content"]["judge_policy"]["threshold_calibration_required_for_production_acceptance"])
+
 
 def _production_rubric(storage: LocalStorage) -> dict:
     return build_quality_rubric_pack(
