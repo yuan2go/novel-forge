@@ -146,6 +146,10 @@ class PublishingCenterTests(unittest.TestCase):
                 "provider_runtime_gate": {"status": "passed", "blocking": False},
                 "platform_strategy_gate": {"status": "passed", "platform_strategy_pack_path": "data/assets/platform.json"},
                 "context_governance_gate": {"status": "passed", "gate_result_path": "data/runs/context-gate.json"},
+                "release_quality": {
+                    "asset_integrity": {"status": "passed", "path": "data/runs/release-asset-integrity.json", "blocking": False},
+                    "content_quality": {"status": "passed", "path": "data/runs/release-content-quality.json", "blocking": False},
+                },
             },
         }
 

@@ -7,6 +7,9 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from tests.unit.source_governance_fixtures import create_governed_knowledge, record_clean_source_governance_evidence
+from novel_forge.modules.source_intake import create_source_policy, create_source_risk_report
+
 
 class ProductApiRouterTests(unittest.TestCase):
     def setUp(self):
@@ -598,6 +601,16 @@ class ProductApiRouterTests(unittest.TestCase):
             )
             self.assertEqual(context_governance_gate.status_code, 200, context_governance_gate.text)
             self.assertIn(context_governance_gate.json()["status"], {"passed", "warning"})
+            create_governed_knowledge(
+                storage,
+                project_id=project.json()["project_id"],
+                flow="prose",
+                concept_name="API production pressure",
+                core_explanation="A project-owned mechanism turns the chapter objective into an action cost.",
+                input_role="required",
+            )
+            record_clean_source_governance_evidence(storage, project_id=project.json()["project_id"], workspace_path=project.json()["path"])
+            _govern_source_derived_templates(storage, project.json()["project_id"])
             outline_version = client.post("/product/production/outline-version", json={"outline_path": str(outline_path.relative_to(storage.root))})
             self.assertEqual(outline_version.status_code, 200, outline_version.text)
             chapter_plan_version = client.post("/product/production/chapter-plan-version", json={"chapter_plan_path": chapter_plan_ref})
@@ -1878,7 +1891,26 @@ class ProductApiRouterTests(unittest.TestCase):
             self.assertEqual(workflow_governance["evidence_paths"], [])
             self.assertEqual(content["quality"]["workflow_governance_status"], "missing")
             self.assertEqual(content["cockpit"]["workflow_governance"]["status"], "missing")
-            self.assertEqual(content["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
+        self.assertEqual(content["production_control_console"]["gate_status_board"]["workflow_governance"], "missing")
+
+
+def _govern_source_derived_templates(storage, project_id: str) -> None:
+    for path in storage.list_json("templates"):
+        data = storage.read_json(path)
+        if not isinstance(data, dict):
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        if str(metadata.get("project_id") or project_id) not in {"", project_id}:
+            continue
+        source_ref = str(data.get("source") or data.get("id") or "")
+        policy = create_source_policy(storage, {"project_id": project_id, "source_ref": source_ref, "risk_tier": "R0"})
+        risk = create_source_risk_report(
+            storage,
+            {"project_id": project_id, "source_ref": source_ref, "source_policy_path": policy["path"], "risk_tier": "R0"},
+        )
+        metadata.update({"project_id": project_id, "source_policy_ref": policy["path"], "source_risk_report_ref": risk["path"], "source_eligibility_ref": risk["path"]})
+        data["metadata"] = metadata
+        storage.write_json(path, data)
 
 
 if __name__ == "__main__":
