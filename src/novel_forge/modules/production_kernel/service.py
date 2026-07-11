@@ -240,6 +240,28 @@ def list_production_operations(
     return rows
 
 
+def find_production_operation_for_child(storage: LocalStorage, child_path_or_id: str | Path) -> dict[str, Any] | None:
+    """Locate a parent operation by its authoritative child-run path."""
+
+    requested = _normalized_reference_path(storage, child_path_or_id)
+    for path in reversed(storage.list_json("runs")):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "production_operation":
+            continue
+        content = _content(data)
+        child = content.get("child", {}) if isinstance(content.get("child", {}), dict) else {}
+        if requested and _normalized_reference_path(storage, str(child.get("path") or "")) == requested:
+            return {
+                "path": _display_path(storage, path),
+                "operation_id": str(content.get("operation_id") or ""),
+                "project_id": str(content.get("project_id") or data.get("metadata", {}).get("project_id") or ""),
+            }
+    return None
+
+
 def reconcile_production_operations(
     storage: LocalStorage,
     *,
@@ -627,3 +649,16 @@ def _reconciliation_relation(parent_status: str, child_status: str, child_exists
 
 def _display_path(storage: LocalStorage, path: Path) -> str:
     return str(path.relative_to(storage.root)) if path.is_relative_to(storage.root) else str(path)
+
+
+def _normalized_reference_path(storage: LocalStorage, value: str | Path) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    path = Path(text)
+    if not path.is_absolute():
+        path = storage.root / path
+    try:
+        return _display_path(storage, path.resolve())
+    except OSError:
+        return text

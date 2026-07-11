@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from unittest.mock import patch
 
-from novel_forge.modules.production_kernel import control_production_operation, dispatch_production_operation, list_production_operations, production_entrypoint_audit, production_entrypoints, reconcile_production_operations, require_production_entrypoint
+from novel_forge.modules.production_kernel import control_production_operation, dispatch_production_operation, find_production_operation_for_child, list_production_operations, production_entrypoint_audit, production_entrypoints, reconcile_production_operations, require_production_entrypoint
 from novel_forge.schemas import ProductionOperation, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -75,7 +75,7 @@ class ProductionEntrypointContractTests(unittest.TestCase):
     def test_kernel_persists_parent_and_replays_duplicate_idempotency_request(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
-            with patch("novel_forge.modules.loop_kernel.run_loop", return_value={"status": "loop", "run_id": "loop-1"}) as loop:
+            with patch("novel_forge.modules.loop_kernel.run_loop", return_value={"status": "loop", "run_id": "loop-1", "loop_run_path": "data/runs/loop-child.json"}) as loop:
                 first = dispatch_production_operation(storage, "loop.run", project_id="project-a", loop_type="chapter_review")
                 second = dispatch_production_operation(storage, "loop.run", project_id="project-a", loop_type="chapter_review")
 
@@ -92,6 +92,8 @@ class ProductionEntrypointContractTests(unittest.TestCase):
             rows = list_production_operations(storage, project_id="project-a")
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0]["operation_id"], first["production_operation_id"])
+            located = find_production_operation_for_child(storage, "data/runs/loop-child.json")
+            self.assertEqual(located["operation_id"], first["production_operation_id"])
 
     def test_kernel_rejects_same_idempotency_key_for_different_request(self):
         with tempfile.TemporaryDirectory() as tmp:

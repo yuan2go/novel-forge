@@ -16,7 +16,7 @@ from novel_forge.modules.chapter_production_bus import (
     recover_chapter_production,
     resume_chapter_production,
 )
-from novel_forge.modules.production_kernel import dispatch_production_operation
+from novel_forge.modules.production_kernel import control_production_operation, dispatch_production_operation, find_production_operation_for_child
 from novel_forge.modules.long_planning import create_long_form_macro_plan, list_long_form_macro_plans
 from novel_forge.modules.change_impact import mark_downstream_assets_stale
 from novel_forge.modules.production_chain import (
@@ -148,6 +148,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.post("/product/production/chapter-run/resume")
     def resume_chapter_run_endpoint(request: ChapterProductionResumeRequest) -> dict[str, Any]:
         try:
+            storage = LocalStorage(app_settings.root)
             if request.async_task:
                 task = _enqueue_chapter_production_task(
                     app_settings,
@@ -157,15 +158,12 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     force=request.force,
                     clear_pause=True,
                 )
-                detail = mark_chapter_production_celery_task(LocalStorage(app_settings.root), request.run_path, task.id)
+                detail = mark_chapter_production_celery_task(storage, request.run_path, task.id)
                 return {"mode": "async", "task_id": task.id, **detail}
-            return resume_chapter_production(
-                LocalStorage(app_settings.root),
-                request.run_path,
-                from_step=request.from_step,
-                run_to=request.run_to,
-                force=request.force,
-            )
+            parent = find_production_operation_for_child(storage, request.run_path)
+            if parent:
+                return control_production_operation(storage, parent["operation_id"], action="resume", from_step=request.from_step, run_to=request.run_to, force=request.force)
+            return {**resume_chapter_production(storage, request.run_path, from_step=request.from_step, run_to=request.run_to, force=request.force), "kernel_compatibility": "legacy_child_without_production_operation"}
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except RuntimeError as exc:
@@ -176,7 +174,11 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.post("/product/production/chapter-run/pause")
     def pause_chapter_run_endpoint(request: ChapterProductionControlRequest) -> dict[str, Any]:
         try:
-            return pause_chapter_production(LocalStorage(app_settings.root), request.run_path, reason=request.reason)
+            storage = LocalStorage(app_settings.root)
+            parent = find_production_operation_for_child(storage, request.run_path)
+            if parent:
+                return control_production_operation(storage, parent["operation_id"], action="pause", reason=request.reason)
+            return {**pause_chapter_production(storage, request.run_path, reason=request.reason), "kernel_compatibility": "legacy_child_without_production_operation"}
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except RuntimeError as exc:
@@ -187,7 +189,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.post("/product/production/chapter-run/cancel")
     def cancel_chapter_run_endpoint(request: ChapterProductionControlRequest) -> dict[str, Any]:
         try:
-            detail = cancel_chapter_production(LocalStorage(app_settings.root), request.run_path, reason=request.reason)
+            storage = LocalStorage(app_settings.root)
+            parent = find_production_operation_for_child(storage, request.run_path)
+            detail = control_production_operation(storage, parent["operation_id"], action="cancel", reason=request.reason) if parent else {**cancel_chapter_production(storage, request.run_path, reason=request.reason), "kernel_compatibility": "legacy_child_without_production_operation"}
             task_id = str(detail.get("celery_task_id") or detail.get("control", {}).get("celery_task_id", ""))
             revoke = _revoke_celery_task(task_id, terminate=request.terminate, signal=request.signal) if task_id else {"attempted": False, "ok": True}
             return {**detail, "celery_revoke": revoke}
@@ -199,6 +203,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.post("/product/production/chapter-run/recover")
     def recover_chapter_run_endpoint(request: ChapterProductionRecoverRequest) -> dict[str, Any]:
         try:
+            storage = LocalStorage(app_settings.root)
             if request.async_task:
                 task = _enqueue_chapter_production_task(
                     app_settings,
@@ -207,14 +212,12 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     force=request.force,
                     recover_failed=True,
                 )
-                detail = mark_chapter_production_celery_task(LocalStorage(app_settings.root), request.run_path, task.id)
+                detail = mark_chapter_production_celery_task(storage, request.run_path, task.id)
                 return {"mode": "async", "task_id": task.id, **detail}
-            return recover_chapter_production(
-                LocalStorage(app_settings.root),
-                request.run_path,
-                run_to=request.run_to,
-                force=request.force,
-            )
+            parent = find_production_operation_for_child(storage, request.run_path)
+            if parent:
+                return control_production_operation(storage, parent["operation_id"], action="recover", run_to=request.run_to, force=request.force)
+            return {**recover_chapter_production(storage, request.run_path, run_to=request.run_to, force=request.force), "kernel_compatibility": "legacy_child_without_production_operation"}
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
