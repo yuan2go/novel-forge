@@ -1,6 +1,6 @@
 # Regression Tests
 
-Updated: 2026-07-08
+Updated: 2026-07-11
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
 
 Novel Forge keeps a dependency-light test core and optional industrial/browser checks. Run the smallest relevant verification for each change, then broaden when runtime, API, Agent, or publishing behavior changes.
@@ -32,7 +32,21 @@ npm --prefix web/admin run lint
 npm --prefix web/admin test
 ```
 
-Current verified result for the V7 foundation and risk closure pass: all commands above passed. `make test` passed with Python 527 tests OK, skipped=2, and Web Admin 10 passed, 1 optional browser-related skipped test.
+The historical V7 foundation result was Python 527 tests OK with two skips. It is not the current branch baseline. The 2026-07-11 rebaseline ran 779 Python tests and found 7 failures, 35 errors, and 2 skips; see `docs/reports/novel-os-priority-issues-rebaseline.md`.
+
+## Test Evidence Layers
+
+Do not collapse these layers into one "all tests passed" claim:
+
+| Layer | Default evidence | External dependency | What it proves |
+|---|---|---|---|
+| Deterministic local | Python `unittest`, Node tests, compile/type, workspace validation, Skill drift | None | Schema, service, workflow, gate, API and static UI contracts under local/mock inputs |
+| Sandbox integration | Docker services, fake Provider/platform servers, adapter failure injection | Local containers or sandbox endpoints | Storage/queue/adapter contracts, idempotency and recovery without production side effects |
+| Browser E2E | Playwright journeys against a running local stack | Browser binaries and local stack | Real operator interactions and backend state transitions; a skipped smoke is **not** a pass |
+| Real Provider | Explicit budgeted model run with ModelCallLog, CostLedger and ActualSentContext | Provider credentials and paid/approved route | Actual model behavior, cost, latency and content evidence for the selected Provider/model |
+| Real platform | Approved manual or API pilot with receipt and compensation evidence | Platform account/API and operator approval | External submission semantics; manual profiles and fake clients do not prove production publishing |
+
+The deterministic local baseline must be green before architecture migration. Real Provider and real platform checks do not run on every commit and must be reported separately as `passed`, `failed`, or `not executed`.
 
 ## Governance Dead-Letter Focused Regression
 

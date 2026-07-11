@@ -5,7 +5,7 @@
 
 | Work Package | 状态 | 已完成 | 测试证据 | 剩余问题 | 下一步 |
 |---|---|---|---|---|---|
-| WP-00A 基线分类 | in-progress | 已取得首次全量基线和16项重核验 | Python 779 tests / 7F / 35E / 2S；Web 11 pass / 1 skip；validate 3 unscoped | 写入测试分层并完成聚焦失败分类 | 执行Task 0.1 |
+| WP-00A 基线分类 | completed | 已取得首次全量基线、16项重核验和五层测试证据口径 | Python 779 tests / 7F / 35E / 2S；聚焦Source/Publish/Scheduler 79 tests / 1F / 21E；Web 11 pass / 1 skip；validate 3 unscoped | 无；失败已归入Source Gate、项目隔离、旧运行期望和质量门禁四组 | 执行Task 0.2 |
 | WP-00B Source Gate迁移 | not-started | 已确认大量失败共享3条blocking rows | Source/Publish/Scheduler失败堆栈 | readiness空project Schema、合法fixture治理证据 | Task 0.2-0.3 |
 | WP-00C 项目隔离 | not-started | 已确认当前workspace和sample pipeline均有隔离失败 | `make validate`；`test_pipeline` | system scope、跨项目lineage、历史资产处理 | Task 0.4 |
 | WP-00D 质量门禁语义 | not-started | 已确认agency rule阻断旧12章验收 | 12章、acceptance、loop、sequence失败 | 合格成功fixture和明确阻断期望 | Task 0.5 |
@@ -28,3 +28,14 @@ git diff --check: PASSED
 
 尚未完成。只有当两次确定性全量验证结果一致且为绿色时才填写完成结论。
 
+## WP-00A 完成记录
+
+1. 解决内容：建立当前分支而非历史报告的测试事实基线，并分开确定性、沙箱、浏览器、真实Provider和真实平台证据。
+2. 核心模块：仅文档；未修改业务行为。
+3. 旧路径：没有删除或兼容业务路径。
+4. 协议/模型：没有新增运行协议。
+5. 测试：Python全量、Source/Publish/Scheduler聚焦、Web Node、Web TypeScript、compile、Skill drift、workspace validate、diff check。
+6. 结果：确定性基线未通过；聚焦套件确认21个error共享Source Gate前置证据缺失，另有1个Scheduler旧状态期望失败。
+7. 风险：其他聚焦套件仍需在对应工作包复跑；浏览器E2E未执行。
+8. 阶段标准：WP-00A通过；Phase 0未通过。
+9. 下一阶段条件：已满足Task 0.2进入条件。
