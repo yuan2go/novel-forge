@@ -197,6 +197,7 @@ class ProductApiRouterTests(unittest.TestCase):
                 "/product/runtime/policy/legacy-entrypoint-audit",
                 "/product/runtime/production-entrypoint-audit",
                 "/product/runtime/production-operations",
+                "/product/runtime/production-operations/control",
                 "/product/runtime/policy/surface-coverage",
                 "/product/runtime/provider-hard-stop-evidence",
                 "/product/runtime/policy/check",

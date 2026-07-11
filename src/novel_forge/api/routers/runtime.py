@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.runtime_ledger import (
@@ -13,7 +13,7 @@ from novel_forge.modules.runtime_ledger import (
 from novel_forge.modules.operation_transactions import apply_rollback_plan, coordinate_runtime_rollback, preview_operation_rollback, verify_rollback_result
 from novel_forge.modules.runtime_policy import check_runtime_policy, runtime_policy_enforcement_report, runtime_policy_legacy_entrypoint_audit, runtime_policy_status
 from novel_forge.modules.runtime_policy import provider_hard_stop_evidence_report, runtime_policy_surface_coverage_report
-from novel_forge.modules.production_kernel import list_production_operations, production_entrypoint_audit
+from novel_forge.modules.production_kernel import control_production_operation, list_production_operations, production_entrypoint_audit
 from novel_forge.storage.local import LocalStorage
 
 
@@ -73,6 +73,24 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ) -> list[dict[str, Any]]:
         try:
             return list_production_operations(LocalStorage(app_settings.root), project_id=project_id, status=status, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/runtime/production-operations/control")
+    async def production_operations_control_endpoint(request: Request) -> dict[str, Any]:
+        try:
+            payload = await request.json()
+            return control_production_operation(
+                LocalStorage(app_settings.root),
+                payload.get("operation_path") or payload.get("operation_id") or "",
+                action=str(payload.get("action") or ""),
+                reason=str(payload.get("reason") or ""),
+                from_step=str(payload.get("from_step") or "") or None,
+                run_to=str(payload.get("run_to") or "") or None,
+                force=bool(payload.get("force", False)),
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

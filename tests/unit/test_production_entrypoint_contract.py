@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from unittest.mock import patch
 
-from novel_forge.modules.production_kernel import dispatch_production_operation, list_production_operations, production_entrypoint_audit, production_entrypoints, require_production_entrypoint
+from novel_forge.modules.production_kernel import control_production_operation, dispatch_production_operation, list_production_operations, production_entrypoint_audit, production_entrypoints, require_production_entrypoint
 from novel_forge.schemas import ProductionOperation, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -110,6 +110,20 @@ class ProductionEntrypointContractTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "idempotency conflict"):
                     dispatch_production_operation(storage, "loop.run", envelope=envelope, loop_type="different_request")
             loop.assert_called_once()
+
+    def test_kernel_control_updates_parent_after_child_cancel(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            with patch("novel_forge.modules.loop_kernel.run_loop", return_value={"status": "running", "loop_run_path": "data/runs/loop-child.json"}):
+                started = dispatch_production_operation(storage, "loop.run", project_id="project-a", loop_type="chapter_review")
+            with patch("novel_forge.modules.loop_kernel.cancel_loop_run", return_value={"status": "cancelled", "path": "data/runs/loop-child.json"}) as cancel:
+                controlled = control_production_operation(storage, started["production_operation_id"], action="cancel", reason="operator stop")
+
+            cancel.assert_called_once_with(storage, "data/runs/loop-child.json", reason="operator stop")
+            self.assertEqual(controlled["control_action"], "cancel")
+            parent = storage.read_json(storage.root / started["production_operation_path"])
+            self.assertEqual(parent["content"]["status"], "cancelled")
+            self.assertEqual(parent["content"]["control_history"][-1]["reason"], "operator stop")
 
     def test_kernel_persists_failed_parent_with_recovery_instruction_when_child_raises(self):
         with tempfile.TemporaryDirectory() as tmp:

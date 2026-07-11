@@ -240,6 +240,93 @@ def list_production_operations(
     return rows
 
 
+def control_production_operation(
+    storage: LocalStorage,
+    operation_path_or_id: str | Path,
+    *,
+    action: str,
+    reason: str = "",
+    from_step: str | None = None,
+    run_to: str | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Apply a bounded lifecycle command through the Kernel parent boundary."""
+
+    parent = _resolve_parent_operation(storage, operation_path_or_id)
+    parent_path = parent["path"]
+    data = parent["asset"]
+    content = _content(data)
+    normalized_action = str(action or "").strip().lower()
+    if normalized_action == "retry":
+        normalized_action = "recover" if str(content.get("status") or "") in {"failed", "needs_revision"} else "resume"
+    supported = {"pause", "resume", "cancel", "recover"}
+    if normalized_action not in supported:
+        raise ValueError(f"unsupported production operation control action: {normalized_action}")
+    child = content.get("child", {}) if isinstance(content.get("child", {}), dict) else {}
+    child_path = str(child.get("path") or "")
+    if not child_path:
+        raise ValueError("production operation has no child run to control")
+    state_owner = str(content.get("state_owner") or "")
+    try:
+        if state_owner == "chapter_production_run":
+            from novel_forge.modules.chapter_production_bus import (
+                cancel_chapter_production,
+                pause_chapter_production,
+                recover_chapter_production,
+                resume_chapter_production,
+            )
+
+            if normalized_action == "pause":
+                result = pause_chapter_production(storage, child_path, reason=reason)
+            elif normalized_action == "cancel":
+                result = cancel_chapter_production(storage, child_path, reason=reason)
+            elif normalized_action == "recover":
+                result = recover_chapter_production(storage, child_path, run_to=run_to, force=force)
+            else:
+                result = resume_chapter_production(storage, child_path, from_step=from_step, run_to=run_to, force=force)
+        elif state_owner == "workflow_run" and normalized_action in {"resume", "recover"}:
+            from novel_forge.modules.workflow_nodes import resume_workflow
+
+            result = resume_workflow(storage, child_path, workspace_path=str(data.get("metadata", {}).get("workspace_path") or "") or None)
+        elif state_owner == "loop_run" and normalized_action == "cancel":
+            from novel_forge.modules.loop_kernel import cancel_loop_run
+
+            result = cancel_loop_run(storage, child_path, reason=reason)
+        elif state_owner == "agent_run" and normalized_action in {"recover", "resume"}:
+            from novel_forge.modules.agent_scheduler import recover_agent_dispatch
+
+            result = recover_agent_dispatch(storage, queue_path=child_path, reason=reason)
+        else:
+            raise ValueError(f"control action {normalized_action} is not supported for state owner {state_owner}")
+    except Exception as exc:
+        _update_parent_operation(
+            storage,
+            parent_path,
+            status="failed",
+            child={**child, "status": "failed"},
+            result={},
+            error={"type": type(exc).__name__, "message": str(exc), "recovery_instruction": "repair the child run and issue a new lifecycle command"},
+        )
+        raise
+
+    result = result if isinstance(result, dict) else {"status": "completed", "value": result}
+    parent_status = _parent_status_from_result(result)
+    if normalized_action == "pause" and parent_status == "completed":
+        parent_status = "checkpointed"
+    control_history = content.get("control_history", []) if isinstance(content.get("control_history", []), list) else []
+    control_history.append({"action": normalized_action, "reason": reason, "status": parent_status, "at": utc_now()})
+    _update_parent_operation(
+        storage,
+        parent_path,
+        status=parent_status,
+        child={**child, "status": str(result.get("status") or parent_status), "path": _child_path(result) or child_path},
+        result=result,
+        error={},
+        extra_content={"control_history": control_history[-50:]},
+    )
+    return {**result, "production_operation_path": parent_path, "production_operation_id": str(content.get("operation_id") or ""), "control_action": normalized_action}
+
+
 def _create_parent_operation(
     storage: LocalStorage,
     *,
@@ -302,11 +389,14 @@ def _update_parent_operation(
     child: dict[str, Any],
     result: dict[str, Any],
     error: dict[str, Any],
+    extra_content: dict[str, Any] | None = None,
 ) -> None:
     resolved = storage.root / path if not Path(path).is_absolute() else Path(path)
     data = storage.read_json(resolved)
     content = _content(data)
     content.update({"status": status, "child": child, "result": result, "error": error, "updated_at": utc_now()})
+    if isinstance(extra_content, dict):
+        content.update(extra_content)
     data["content"] = content
     data["updated_at"] = content["updated_at"]
     data["tags"] = list(dict.fromkeys([*data.get("tags", []), status]))
@@ -332,6 +422,28 @@ def _find_existing_operation(storage: LocalStorage, project_id: str, idempotency
         if stored_project == project_id and str(content.get("idempotency_key") or "") == idempotency_key:
             return {"path": _display_path(storage, path), "asset": data}
     return None
+
+
+def _resolve_parent_operation(storage: LocalStorage, operation_path_or_id: str | Path) -> dict[str, Any]:
+    candidate = Path(operation_path_or_id)
+    if not candidate.is_absolute():
+        candidate = storage.root / candidate
+    if candidate.exists() and candidate.is_file():
+        data = storage.read_json(candidate)
+        if isinstance(data, dict) and data.get("type") == "production_operation":
+            return {"path": _display_path(storage, candidate), "asset": data}
+    target = str(operation_path_or_id)
+    for path in storage.list_json("runs"):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "production_operation":
+            continue
+        content = _content(data)
+        if target in {str(data.get("id") or ""), str(content.get("operation_id") or "")}:
+            return {"path": _display_path(storage, path), "asset": data}
+    raise FileNotFoundError(f"production operation not found: {operation_path_or_id}")
 
 
 def _parent_response(existing: dict[str, Any], *, replayed: bool) -> dict[str, Any]:
@@ -412,6 +524,8 @@ def _parent_status_from_result(result: dict[str, Any]) -> str:
         return "needs_review" if raw in {"waiting_human", "blocked", "needs_review"} else "needs_revision"
     if raw in {"accepted"}:
         return "accepted"
+    if raw == "paused":
+        return "checkpointed"
     if raw in {"running", "planned", "checkpointed", "recovering"}:
         return raw
     return "completed"
