@@ -567,6 +567,18 @@ class SourceIntakeTests(unittest.TestCase):
             self.assertFalse(content["quality"]["connector_execution_performed"])
             self.assertFalse(content["quality"]["dispatch_applied"])
 
+    def test_guarded_apply_readiness_supports_workspace_scope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+
+            report = build_source_guarded_apply_readiness_report(storage, project_id="", persist=False)
+
+            self.assertEqual(report["status"], "missing")
+            self.assertEqual(report["asset"]["content"]["project_id"], "system:workspace")
+            self.assertEqual(report["asset"]["metadata"]["project_id"], "system:workspace")
+            self.assertEqual(report["asset"]["metadata"]["scope_kind"], "workspace")
+
     def test_source_guarded_apply_readiness_surfaces_reviewable_diff_plan(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

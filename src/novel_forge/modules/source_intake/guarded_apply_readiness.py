@@ -23,6 +23,8 @@ def build_source_guarded_apply_readiness_report(
 ) -> dict[str, Any]:
     """Build a read-only readiness report for source repair/invalidation apply evidence."""
     storage.ensure_layout()
+    scope_project_id = project_id or "system:workspace"
+    scope_kind = "project" if project_id else "workspace"
     rows = _source_rows(storage, project_id=project_id, limit=max(1, int(limit or 1000)))
     repair_plans = [_repair_plan_row(path, row) for path, row in rows if _is_source_guarded_repair_plan(row)]
     approvals = [_approval_row(path, row) for path, row in rows if row.get("type") == "approval_request" and _is_source_approval(row)]
@@ -58,7 +60,7 @@ def build_source_guarded_apply_readiness_report(
         "snapshot_kind": SOURCE_GUARDED_APPLY_SNAPSHOT_KIND,
         "contract": "source-guarded-apply-readiness-v1",
         "status": status,
-        "project_id": project_id,
+        "project_id": scope_project_id,
         "snapshot_at": utc_now(),
         "throughput": {
             "repair_plan_count": len(repair_plans),
@@ -122,12 +124,13 @@ def build_source_guarded_apply_readiness_report(
         tags=["source-governance", "guarded-apply-readiness", status],
         content=content,
         metadata={
-            "project_id": project_id,
+            "project_id": scope_project_id,
+            "scope_kind": scope_kind,
             "snapshot_kind": SOURCE_GUARDED_APPLY_SNAPSHOT_KIND,
             "asset_status": status,
             "use_in_generation_rag": False,
         },
-        references=filter_project_safe_references(storage, project_id, evidence_paths),
+        references=filter_project_safe_references(storage, scope_project_id, evidence_paths),
     )
     data = asset.to_dict()
     errors = validate_common_fields(data)
