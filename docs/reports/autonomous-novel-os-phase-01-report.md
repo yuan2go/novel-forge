@@ -18,11 +18,12 @@
 - `src/novel_forge/schemas/base.py`：required fields 和状态/envelope/child 校验
 - `src/novel_forge/core/constants.py`：`production_operation -> runs`
 - `src/novel_forge/modules/production_kernel/entrypoints.py`：注册入口和 `parent_state_owner`
-- `src/novel_forge/modules/production_kernel/service.py`：父记录创建、回放、冲突、失败更新和 child projection
+- `src/novel_forge/modules/production_kernel/service.py`：父记录创建、回放、冲突、失败更新、child projection 和 bounded lifecycle control
+- `src/novel_forge/api/routers/runtime.py`：生产入口审计、父运行查询和 control API
 
 ## 测试证据
 
-- `tests/unit/test_production_entrypoint_contract.py`：9 tests，包括 schema、入口父级、重复请求、幂等冲突、child 异常恢复和 write budget。
+- `tests/unit/test_production_entrypoint_contract.py`：12 tests，包括 schema、入口父级、重复请求、幂等冲突、child 异常恢复、write budget、bypass scan、父级查询和 cancel control。
 - `tests/unit/test_os_envelope_v2.py`、`tests/unit/test_chapter_production_envelope_contract.py`：共 15 tests 通过。
 - Phase 0 基线：Python 812 pass / 0 fail / 0 error / 2 skipped；`make validate`、`make lint`、`make check-skills`、Web lint/test、`git diff --check` 均通过；Playwright 仍未安装，Web browser smoke 未执行。
 
@@ -32,8 +33,8 @@
 
 ## 没有解决什么
 
-- 仍未证明 CLI、所有 API/Worker、Revision、Recap、Publish 等历史直接调用全部经过 Kernel；当前只覆盖注册表中的五类 dispatch operation。
-- `start/resume/retry/cancel/timeout/compensate` 尚未形成统一 parent command API；子 Run 的状态机仍分散。
+- 仍未证明 CLI、所有 API/Worker、Revision、Recap、Publish 等历史 control 调用全部经过 Kernel；启动 child-runner 的当前静态扫描为零 bypass，但部分旧 control API 仍直接操作 child。
+- parent boundary 当前支持有限的 pause/resume/cancel/recover；统一 retry/timeout/compensate/fail/complete command API 尚未完成，子 Run 的领域状态机仍分散。
 - Envelope 尚未由 PostgreSQL 工业事务库权威保存，当前持久化是 LocalStorage JSON；没有 Asset + StateEvent + Outbox 原子 UoW 或双写故障注入证据。
 - Kernel 尚未强制每个 child 写入完整 ContextManifest/ContextBundle、Provider Runtime Gate、model call log 和 cost ledger；这些仍由下游路径分别治理。
 
@@ -43,4 +44,4 @@
 
 ## 下一阶段条件
 
-继续 Phase 1：建立 direct-entrypoint bypass scan、parent lifecycle command contract、状态对账报告，并将剩余生产入口逐一迁移到 Kernel；完成后再进入 Context Builder 全入口收敛。当前阶段不得标记为 complete，也不得作为 10/30 章生产验收证据。
+继续 Phase 1：把旧 chapter/workflow/loop/agent control API 迁移到 parent control boundary，补状态对账和 timeout/compensation contract；完成后再进入 Context Builder 全入口收敛。当前阶段不得标记为 complete，也不得作为 10/30 章生产验收证据。

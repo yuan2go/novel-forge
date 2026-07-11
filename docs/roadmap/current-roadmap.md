@@ -1,7 +1,7 @@
 # Current Roadmap
 
 Updated: 2026-07-11
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `d0c9972`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `6f8f578`
 
 This roadmap reflects current code evidence, not historical v5 plans. See `docs/08-roadmap/v5-*` only for history.
 
@@ -11,7 +11,7 @@ Product target note: the repository/package/CLI remain `novel-forge`, but the ac
 
 Status: `partial`.
 
-`ProductionOperation` is now a schema-backed LocalStorage parent for registered `dispatch_production_operation` routes. It records the normalized Execution Envelope, request digest, idempotency key, child state-owner projection, result, and failure recovery instruction. Identical requests replay the stored parent; digest conflicts fail closed. This does not yet prove universal CLI/API/Worker/Revision/Recap/Publish migration, a unified parent lifecycle command API, PostgreSQL transaction authority, or real 10/30 chapter production.
+`ProductionOperation` is now a schema-backed LocalStorage parent for registered `dispatch_production_operation` routes. It records the normalized Execution Envelope, request digest, idempotency key, child state-owner projection, result, and failure recovery instruction. Identical requests replay the stored parent; digest conflicts fail closed. A bounded runtime control API and static child-runner bypass scan now exist. This does not yet prove universal CLI/API/Worker/Revision/Recap/Publish control migration, complete retry/timeout/compensation lifecycle semantics, PostgreSQL transaction authority, or real 10/30 chapter production.
 
 Next runtime slice: scan direct production callers, add parent lifecycle/status reconciliation contracts, then converge every approved production entrypoint before expanding creative or portfolio scope.
 
