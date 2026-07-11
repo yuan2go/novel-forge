@@ -565,11 +565,28 @@ class QualityEvalV2Tests(unittest.TestCase):
                 max_cost_per_run=1.0,
             )
             draft_path = _ready_draft(storage, project_id="p1")
+            second_draft_path = _ready_draft(storage, project_id="p1")
             annotation = create_human_annotation_asset(
                 storage,
                 target_asset_path=str(draft_path),
                 annotator="chief-editor",
                 scores={"hook_strength": 0.9, "style_adherence": 0.86},
+                verdict="pass",
+                project_id="p1",
+            )
+            second_same_annotation = create_human_annotation_asset(
+                storage,
+                target_asset_path=str(draft_path),
+                annotator="review-editor",
+                scores={"hook_strength": 0.88, "style_adherence": 0.84},
+                verdict="pass",
+                project_id="p1",
+            )
+            second_annotation = create_human_annotation_asset(
+                storage,
+                target_asset_path=str(second_draft_path),
+                annotator="review-editor",
+                scores={"hook_strength": 0.88, "style_adherence": 0.84},
                 verdict="pass",
                 project_id="p1",
             )
@@ -580,9 +597,15 @@ class QualityEvalV2Tests(unittest.TestCase):
                     {
                         "target_asset_path": str(draft_path),
                         "expected_scores": {"hook_strength": 0.9, "style_adherence": 0.86},
-                        "annotation_path": annotation["path"],
+                        "annotation_paths": [annotation["path"], second_same_annotation["path"]],
                         "expected_verdict": "pass",
-                    }
+                    },
+                    {
+                        "target_asset_path": str(second_draft_path),
+                        "expected_scores": {"hook_strength": 0.88, "style_adherence": 0.84},
+                        "annotation_path": second_annotation["path"],
+                        "expected_verdict": "pass",
+                    },
                 ],
                 project_id="p1",
             )
@@ -594,7 +617,12 @@ class QualityEvalV2Tests(unittest.TestCase):
                         "target_asset_path": str(draft_path),
                         "scores": {"hook_strength": 0.9, "style_adherence": 0.86},
                         "provider": "unit-provider",
-                    }
+                    },
+                    {
+                        "target_asset_path": str(second_draft_path),
+                        "scores": {"hook_strength": 0.88, "style_adherence": 0.84},
+                        "provider": "unit-provider",
+                    },
                 ],
                 project_id="p1",
             )
@@ -609,7 +637,7 @@ class QualityEvalV2Tests(unittest.TestCase):
             report = run_provider_quality_judge(
                 storage,
                 suite_type="opening_3",
-                target_paths=[str(draft_path)],
+                target_paths=[str(draft_path), str(second_draft_path)],
                 rubric_path=calibrated["path"],
                 adapter=ProviderJudgeAdapter(),
                 environment="production",

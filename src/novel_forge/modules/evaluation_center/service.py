@@ -916,6 +916,7 @@ def create_calibrated_quality_rubric(
     content["calibration_ref"] = _display_path(storage.root, report_path)
     content["threshold_calibration"] = {
         "status": "passed",
+        "production_ready": bool((report_content.get("human_calibration", {}) or {}).get("production_ready")) if isinstance(report_content.get("human_calibration", {}), dict) else False,
         "calibration_version": report_content.get("calibration_version", ""),
         "source": "human_consensus_and_golden_labels",
         "mean_absolute_error": report_content.get("mean_absolute_error", 0),
@@ -1350,14 +1351,21 @@ def _human_consensus(storage: LocalStorage, case: dict[str, Any]) -> tuple[dict[
 
 def _human_calibration_summary(comparisons: list[dict[str, Any]]) -> dict[str, Any]:
     metas = [row.get("human_calibration", {}) for row in comparisons if isinstance(row.get("human_calibration", {}), dict)]
-    annotator_count = max((int(meta.get("annotator_count") or 0) for meta in metas), default=0)
+    annotators = {str(annotator) for meta in metas for annotator in meta.get("annotators", []) if str(annotator or "").strip()}
+    annotator_count = max(max((int(meta.get("annotator_count") or 0) for meta in metas), default=0), len(annotators))
     agreement_scores = [float(meta.get("agreement_score") or 0.0) for meta in metas if int(meta.get("annotator_count") or 0) > 1]
+    annotated_case_count = sum(1 for meta in metas if int(meta.get("annotator_count") or 0) > 0)
+    mean_agreement = round(sum(agreement_scores) / len(agreement_scores), 4) if agreement_scores else None
+    production_ready = bool(annotated_case_count >= 2 and len(annotators) >= 2 and mean_agreement is not None and mean_agreement >= 0.8)
     return {
         "case_count": len(comparisons),
-        "annotated_case_count": sum(1 for meta in metas if int(meta.get("annotator_count") or 0) > 0),
+        "annotated_case_count": annotated_case_count,
         "annotator_count_max": annotator_count,
-        "mean_agreement_score": round(sum(agreement_scores) / len(agreement_scores), 4) if agreement_scores else None,
+        "unique_annotator_count": len(annotators),
+        "mean_agreement_score": mean_agreement,
+        "production_ready": production_ready,
         "agreement_boundary": "single_annotator_is_baseline_only; multi_annotator_agreement_should_be_at_least_0.8",
+        "production_boundary": "requires_at_least_two_annotated_cases_two_annotators_and_agreement_at_least_0.8",
     }
 
 

@@ -249,6 +249,9 @@ def run_provider_quality_judge(
         calibration_content = calibration.get("content", {}) if isinstance(calibration.get("content", {}), dict) else {}
         if calibration.get("type") != "evaluation_regression_report" or calibration_content.get("calibration_status") != "passed":
             raise ValueError("rubric calibration_ref must point to a passed provider calibration report")
+        human_calibration = calibration_content.get("human_calibration", {}) if isinstance(calibration_content.get("human_calibration", {}), dict) else {}
+        if not human_calibration.get("production_ready"):
+            raise ValueError("provider acceptance requires multi-case, multi-annotator human calibration")
     env = enforce_os_envelope(
         storage,
         envelope_payload=envelope,
