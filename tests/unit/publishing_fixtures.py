@@ -8,7 +8,6 @@ from novel_forge.model_adapters.runtime import ProviderRuntimeGuard, evaluate_pr
 from novel_forge.modules.evaluation_center import create_evaluation_gate
 from novel_forge.modules.canon_graph import run_canon_graph_plugin
 from novel_forge.modules.longform_stability import create_arc_plan, create_canon_database, create_chapter_state_package, model_assisted_longform_extraction
-from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding
 from novel_forge.modules.genre_os import build_genre_strategy_pack, run_genre_risk_gate
 from novel_forge.modules.platform_strategy import build_platform_strategy_pack
 from novel_forge.modules.publishing import create_publish_gate_report
@@ -18,6 +17,7 @@ from novel_forge.modules.runtime_ledger import record_gate_result, record_model_
 from novel_forge.modules.style_os import build_style_profile, extract_style_fingerprint, ingest_style_sample, run_style_drift_gate
 from novel_forge.schemas import BaseAsset, DraftChapter, ReviewReport
 from novel_forge.storage.local import LocalStorage
+from tests.unit.source_governance_fixtures import create_governed_knowledge, record_clean_source_governance_evidence
 
 
 class ProviderJudgeAdapter:
@@ -55,7 +55,7 @@ def create_production_ready_release_inputs(storage: LocalStorage, *, title: str 
     }
     draft_path = _ready_draft(storage, project_id=project_id, workspace_path=workspace_path)
     _longform_evidence(storage, draft_path, project_id=project_id, workspace_path=workspace_path)
-    _publish_knowledge(storage, project_id)
+    record_governed_publish_knowledge(storage, project_id)
     record_provider_runtime_evidence(storage, project_id, workspace_path=workspace_path)
     if include_v7:
         _v7_content_intelligence_evidence(storage, draft_path, project_id=project_id, workspace_path=workspace_path, source_policy=source_policy)
@@ -77,6 +77,7 @@ def create_production_ready_release_inputs(storage: LocalStorage, *, title: str 
             "genre": "悬疑",
         },
     )
+    record_clean_source_governance_evidence(storage, project_id=project_id, workspace_path=workspace_path)
     gate_path = create_publish_gate_report(
         storage,
         draft_path,
@@ -353,15 +354,12 @@ def _review_report(storage: LocalStorage, draft_path: Path, *, project_id: str, 
     )
 
 
-def _publish_knowledge(storage: LocalStorage, project_id: str) -> None:
-    card = create_knowledge_card(
+def record_governed_publish_knowledge(storage: LocalStorage, project_id: str) -> None:
+    create_governed_knowledge(
         storage,
-        {
-            "concept_name": "Publish governance",
-            "core_explanation": "production publish must carry a MKAOS pack",
-            "project_id": project_id,
-            "weight": 1.0,
-            "risk_level": "low",
-        },
+        project_id=project_id,
+        flow="publish",
+        concept_name="Publish governance",
+        core_explanation="production publish must carry a MKAOS pack",
+        input_role="publish_gate",
     )
-    create_usage_binding(storage, card["asset"]["id"], {"flow": "publish", "usage_type": "required", "input_role": "publish_gate", "priority": 10})

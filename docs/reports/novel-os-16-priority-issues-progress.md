@@ -6,7 +6,7 @@
 | Work Package | 状态 | 已完成 | 测试证据 | 剩余问题 | 下一步 |
 |---|---|---|---|---|---|
 | WP-00A 基线分类 | completed | 已取得首次全量基线、16项重核验和五层测试证据口径 | Python 779 tests / 7F / 35E / 2S；聚焦Source/Publish/Scheduler 79 tests / 1F / 21E；Web 11 pass / 1 skip；validate 3 unscoped | 无；失败已归入Source Gate、项目隔离、旧运行期望和质量门禁四组 | 执行Task 0.2 |
-| WP-00B Source Gate迁移 | not-started | 已确认大量失败共享3条blocking rows | Source/Publish/Scheduler失败堆栈 | readiness空project Schema、合法fixture治理证据 | Task 0.2-0.3 |
+| WP-00B Source Gate迁移 | completed | 修复workspace readiness Schema；建立可复用的自有来源、Policy、Risk、eligibility和clean sweep fixture | Source/Review 37 pass；Publish/Editor/Analysis 29 pass；Platform/Registry 21 pass | 无；Scheduler仍有1个独立旧状态期望，归入WP-00D | Task 0.4 |
 | WP-00C 项目隔离 | not-started | 已确认当前workspace和sample pipeline均有隔离失败 | `make validate`；`test_pipeline` | system scope、跨项目lineage、历史资产处理 | Task 0.4 |
 | WP-00D 质量门禁语义 | not-started | 已确认agency rule阻断旧12章验收 | 12章、acceptance、loop、sequence失败 | 合格成功fixture和明确阻断期望 | Task 0.5 |
 | WP-00E Phase 0关闭 | not-started | 轻量lint/type/skills/diff已通过 | 尚无两次完整绿色 | 全量回归与文档同步 | Task 0.6 |
@@ -39,3 +39,15 @@ git diff --check: PASSED
 7. 风险：其他聚焦套件仍需在对应工作包复跑；浏览器E2E未执行。
 8. 阶段标准：WP-00A通过；Phase 0未通过。
 9. 下一阶段条件：已满足Task 0.2进入条件。
+
+## WP-00B 完成记录
+
+1. 解决内容：workspace级readiness不再违反Schema；合法production fixture不再因缺stale/retention/eligibility证据被Source Runtime Gate误阻断。
+2. 核心模块：`source_intake/guarded_apply_readiness.py`；测试侧新增`source_governance_fixtures.py`。
+3. 旧路径：没有增加bypass；未治理知识卡仍被生产Gate拒绝。
+4. 协议/模型：workspace聚合报告使用`system:workspace`和`scope_kind=workspace`；项目报告保持真实project scope。
+5. 测试：Source/Review、Publish、Agent Editor、Analysis、Publishing Adapter、Registry/Scheduler Integration聚焦套件。
+6. 结果：87个聚焦测试通过；Agent Scheduler另有1个非Source Gate状态期望失败，留给WP-00D。
+7. 风险：完整Python套件需在后续工作包后重跑；fixture helper只用于测试，不是生产信任捷径。
+8. 阶段标准：WP-00B通过；Phase 0未通过。
+9. 下一阶段条件：已满足Task 0.4进入条件。

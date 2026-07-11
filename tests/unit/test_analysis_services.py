@@ -6,11 +6,11 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.api.product import create_project_with_defaults
-from novel_forge.modules import mkaos
 from novel_forge.modules.analysis import convert_analysis_report, create_analysis_handoff, list_analysis_reports, run_analysis
 from novel_forge.modules.source_intake import create_source_policy, create_source_risk_report
 from novel_forge.schemas import SourceDocument, validate_common_fields
 from novel_forge.storage.local import LocalStorage
+from tests.unit.source_governance_fixtures import create_governed_knowledge, record_clean_source_governance_evidence
 
 
 class AnalysisServiceTests(unittest.TestCase):
@@ -96,6 +96,7 @@ class AnalysisServiceTests(unittest.TestCase):
             source_path = self._write_source(storage, project)
             report = run_analysis(storage, source_path, "web_fiction_business", workspace_path=project["path"])
             _seed_review_mkaos_fixture(storage, project["project_id"])
+            record_clean_source_governance_evidence(storage, project_id=project["project_id"], workspace_path=project["path"])
 
             with self.assertRaisesRegex(ValueError, "Analysis source eligibility blocks production conversion"):
                 convert_analysis_report(
@@ -189,19 +190,13 @@ def _production_envelope(project_id: str) -> dict:
 
 
 def _seed_review_mkaos_fixture(storage: LocalStorage, project_id: str) -> None:
-    card = mkaos.create_knowledge_card(
+    create_governed_knowledge(
         storage,
-        {
-            "project_id": project_id,
-            "concept_name": "analysis conversion review boundary",
-            "discipline": "source governance",
-            "core_explanation": "Converted analysis assets must remain abstract and source-isolated.",
-        },
-    )
-    mkaos.create_usage_binding(
-        storage,
-        card["asset"]["id"],
-        {"flow": "review", "usage_type": "review_rule", "input_role": "review_rule", "priority": 10},
+        project_id=project_id,
+        flow="review",
+        concept_name="analysis conversion review boundary",
+        core_explanation="Converted analysis assets must remain abstract and source-isolated.",
+        input_role="review_rule",
     )
 
 

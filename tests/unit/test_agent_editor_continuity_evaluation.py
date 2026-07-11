@@ -24,7 +24,6 @@ from novel_forge.modules.continuity_graph import (
     create_continuity_graph_snapshot,
 )
 from novel_forge.modules.editor import apply_editor_patch, create_draft_diff_report, create_editor_patch
-from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding
 from novel_forge.modules.evaluation_center import (
     compare_model_runs,
     create_benchmark_task_from_generation_run,
@@ -39,6 +38,7 @@ from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.modules.production_chain import create_generation_run
 from novel_forge.schemas import ChapterPlan, CharacterCard, ContextBundle, ContinuityBible, DraftChapter, EditorPatch, ForeshadowingThread, WorldBible
 from novel_forge.storage.local import LocalStorage
+from tests.unit.source_governance_fixtures import create_governed_knowledge, record_clean_source_governance_evidence
 
 
 class AgentEditorContinuityEvaluationTests(unittest.TestCase):
@@ -172,6 +172,7 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
             storage.ensure_layout()
             project_id = "local-system"
             _revision_knowledge(storage, project_id)
+            record_clean_source_governance_evidence(storage, project_id=project_id)
             draft_path = storage.write_asset(
                 "drafts",
                 DraftChapter(title="Draft", content={"chapter": 1, "text": "旧文本", "copyright_boundary": "fixture"}, metadata={"project_id": project_id}),
@@ -453,15 +454,14 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
 
 
 def _revision_knowledge(storage: LocalStorage, project_id: str) -> None:
-    card = create_knowledge_card(
+    create_governed_knowledge(
         storage,
-        {
-            "project_id": project_id,
-            "concept_name": "Revision contract",
-            "core_explanation": "editor patch production apply must inherit the upstream MKAOS context",
-        },
+        project_id=project_id,
+        flow="revision",
+        concept_name="Revision contract",
+        core_explanation="editor patch production apply must inherit the upstream MKAOS context",
+        input_role="editor_patch",
     )
-    create_usage_binding(storage, card["asset"]["id"], {"flow": "revision", "usage_type": "required", "input_role": "editor_patch", "priority": 10})
 
 
 def _editor_envelope(project_id: str, asset_type: str, *, trace_id: str) -> dict:

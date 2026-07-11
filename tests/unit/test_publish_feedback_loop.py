@@ -13,9 +13,15 @@ from novel_forge.modules.feedback import create_reader_simulation_report, proces
 from novel_forge.modules.mkaos import create_knowledge_card, create_usage_binding, record_usage_event
 from novel_forge.modules.platform_strategy import build_platform_strategy_pack
 from novel_forge.modules.runtime_ledger import record_gate_result, record_model_call_log
+from novel_forge.modules.source_intake import run_source_governance_runtime_gate
 from novel_forge.schemas import ContextBundle, DraftChapter, MKAOSSelectorGovernanceReport, ProjectWorkspaceState, ReaderFeedback, SourceChunk
 from novel_forge.storage.local import LocalStorage
-from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
+from tests.unit.publishing_fixtures import (
+    create_production_ready_release_inputs,
+    production_envelope,
+    record_clean_source_governance_evidence,
+    record_governed_publish_knowledge,
+)
 
 
 class PublishFeedbackLoopTests(unittest.TestCase):
@@ -68,7 +74,8 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             storage.ensure_layout()
             workspace = _workspace(storage, "publish-env-envelope-p")
             draft_path = _draft(storage, workspace, project_id="publish-env-envelope-p")
-            _publish_knowledge(storage, "publish-env-envelope-p")
+            record_governed_publish_knowledge(storage, "publish-env-envelope-p")
+            record_clean_source_governance_evidence(storage, project_id="publish-env-envelope-p", workspace_path=str(workspace.relative_to(storage.root)))
 
             gate_path = create_publish_gate_report(
                 storage,
@@ -131,7 +138,7 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             project_id = "provider-success-p"
             workspace = _workspace(storage, project_id)
             draft_path = _draft(storage, workspace, project_id=project_id)
-            _publish_knowledge(storage, project_id)
+            record_governed_publish_knowledge(storage, project_id)
             workspace_rel = str(workspace.relative_to(storage.root))
             _record_provider_runtime_evidence(storage, project_id, workspace_path=workspace_rel)
             build_platform_strategy_pack(
@@ -151,6 +158,7 @@ class PublishFeedbackLoopTests(unittest.TestCase):
                 project_id=project_id,
                 require_provider_runtime=True,
             )
+            record_clean_source_governance_evidence(storage, project_id=project_id, workspace_path=workspace_rel)
 
             gate_path = create_publish_gate_report(
                 storage,
@@ -170,7 +178,10 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             storage.ensure_layout()
             fixture = create_production_ready_release_inputs(storage)
             gate = storage.read_asset(fixture["publish_gate_path"])
+            source_gate = run_source_governance_runtime_gate(storage, project_id=fixture["project_id"], environment="production")
 
+            self.assertEqual(source_gate["status"], "passed", source_gate["blocking_rows"])
+            self.assertEqual(source_gate["summary"]["blocking_count"], 0)
             self.assertEqual(gate.content["decision"], "ready", gate.content["blocking_issues"])
             self.assertEqual(gate.content["production_governance"]["status"], "passed")
             self.assertTrue(gate.content["production_governance"]["path"])
@@ -227,8 +238,9 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             project_id = "context-governance-publish-block-p"
             workspace = _workspace(storage, project_id)
             draft_path = _draft(storage, workspace, project_id=project_id)
-            _publish_knowledge(storage, project_id)
+            record_governed_publish_knowledge(storage, project_id)
             _unbound_selector_governance_context(storage, project_id)
+            record_clean_source_governance_evidence(storage, project_id=project_id, workspace_path=str(workspace.relative_to(storage.root)))
 
             gate_path = create_publish_gate_report(
                 storage,
@@ -270,7 +282,8 @@ class PublishFeedbackLoopTests(unittest.TestCase):
             project_id = "provider-governance-block-p"
             workspace = _workspace(storage, project_id)
             draft_path = _draft(storage, workspace, project_id=project_id)
-            _publish_knowledge(storage, project_id)
+            record_governed_publish_knowledge(storage, project_id)
+            record_clean_source_governance_evidence(storage, project_id=project_id, workspace_path=str(workspace.relative_to(storage.root)))
 
             gate_path = create_publish_gate_report(
                 storage,
