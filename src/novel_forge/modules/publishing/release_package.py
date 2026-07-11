@@ -172,6 +172,7 @@ def create_release_package(
             "source_governance_gate": source_governance_gate,
             "release_gate_evidence": release_gate_evidence,
             "content_intelligence_gate": content_intelligence_gate,
+            "release_quality": gate_content.get("release_quality", {}),
             "platform_upload_checklist": upload_checklist,
             "source_isolation": {
                 "source_chunk_raw_text_allowed": False,

@@ -38,6 +38,7 @@ def create_publish_gate_report(
     source_policy: dict[str, Any] | None = None,
 ) -> Path:
     from novel_forge.modules.audit import create_chapter_audit_report
+    from novel_forge.modules.publishing.quality_gates import record_release_quality_gates
 
     path = resolve_path(storage.root, draft_path)
     target = storage.read_asset(path)
@@ -95,6 +96,20 @@ def create_publish_gate_report(
     audit_path = resolve_path(storage.root, chapter_audit_path) if chapter_audit_path else create_chapter_audit_report(storage, path, workspace_path=workspace_path)
     audit = read_asset_dict(storage, audit_path)
     gate_data = publish_gate_data(audit, context)
+    release_quality = record_release_quality_gates(
+        storage,
+        target=target,
+        target_path=path,
+        chapter_audit=audit,
+        project_id=str(project.get("project_id", "")),
+        workspace_path=str(project.get("workspace_path", "")),
+        production=is_production_environment(environment),
+        trace={"trace_id": str(envelope.get("trace_id", "")) if isinstance(envelope, dict) else ""},
+    )
+    for gate_name, gate_value in release_quality.items():
+        gate_data["gates"][f"{gate_name}_passed"] = not bool(gate_value["blocking"])
+        if gate_value["blocking"]:
+            gate_data["blocking_issues"].extend(gate_value["issues"])
     mkaos_risk = mkaos_risk_summary(storage, str(project.get("project_id", "")))
     gate_data["gates"]["mkaos_risk_clear"] = not mkaos_risk["blocking"]
     gate_data["blocking_issues"].extend(mkaos_risk["blocking_issues"])
@@ -261,6 +276,7 @@ def create_publish_gate_report(
             "provider_runtime_gate": provider_runtime_gate,
             "platform_strategy_gate": platform_strategy_gate,
             "content_intelligence_gate": content_intelligence_gate,
+            "release_quality": release_quality,
             "context_governance_gate": {
                 "dimension": "context_governance_gate",
                 "status": context_governance_gate["status"],

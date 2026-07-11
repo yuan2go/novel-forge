@@ -131,6 +131,27 @@ class PublishFeedbackLoopTests(unittest.TestCase):
                     envelope=_production_envelope("release-evidence-block-p", "release_package", trace_id="trace-release-evidence-block"),
                 )
 
+    def test_production_release_package_blocks_ready_gate_without_release_quality_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = create_production_ready_release_inputs(storage)
+            gate_data = storage.read_json(storage.root / fixture["publish_gate_path"])
+            gate_data["content"]["decision"] = "ready"
+            gate_data["content"].pop("release_quality", None)
+            storage.write_json(storage.root / fixture["publish_gate_path"], gate_data)
+
+            with self.assertRaisesRegex(ValueError, "release_asset_integrity"):
+                create_release_package(
+                    storage,
+                    fixture["draft_path"],
+                    workspace_path=fixture["workspace_path"],
+                    publish_gate_path=fixture["publish_gate_path"],
+                    envelope=production_envelope(fixture["project_id"], "release_package", trace_id="trace-release-missing-quality"),
+                    environment="production",
+                    source_policy=fixture["source_policy"],
+                )
+
     def test_publish_gate_accepts_provider_guard_success_fixture(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

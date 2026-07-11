@@ -42,6 +42,15 @@ def release_package_gate_evidence(gate: dict[str, Any], *, production: bool) -> 
                     "recommendation": f"rerun or repair {dimension} before creating the release package",
                 }
             )
+    release_quality = content.get("release_quality", {}) if isinstance(content.get("release_quality", {}), dict) else {}
+    for dimension in ["asset_integrity", "content_quality"]:
+        payload = release_quality.get(dimension, {}) if isinstance(release_quality.get(dimension, {}), dict) else {}
+        status = str(payload.get("status") or "missing")
+        path_value = str(payload.get("path") or "")
+        blocking = bool(payload.get("blocking")) or status != "passed" or not path_value
+        checks.append({"dimension": f"release_{dimension}", "status": status, "expected_status": "passed", "path_field": "path", "path": path_value, "blocking": blocking})
+        if production and blocking:
+            issues.append({"dimension": f"release_{dimension}", "severity": "high", "message": f"production release requires passed {dimension} evidence", "current_status": status, "path": path_value, "recommendation": "repair the candidate and rerun release quality gates"})
     return {
         "publish_gate_report_id": _asset_id(gate),
         "publish_gate_decision": content.get("decision", "blocked"),
