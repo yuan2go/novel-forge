@@ -891,6 +891,11 @@ class ProductionOperation(BaseAsset):
 
 
 @dataclass
+class ProductionOperationReconciliationReport(BaseAsset):
+    type: str = "production_operation_reconciliation_report"
+
+
+@dataclass
 class RollbackPlan(BaseAsset):
     type: str = "rollback_plan"
 
@@ -1652,6 +1657,7 @@ SCHEMA_CLASSES = {
         AgentRegistrySnapshot,
         OperationTransaction,
         ProductionOperation,
+        ProductionOperationReconciliationReport,
         RollbackPlan,
         RollbackResult,
         SchedulerLease,

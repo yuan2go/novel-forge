@@ -13,7 +13,7 @@ from novel_forge.modules.runtime_ledger import (
 from novel_forge.modules.operation_transactions import apply_rollback_plan, coordinate_runtime_rollback, preview_operation_rollback, verify_rollback_result
 from novel_forge.modules.runtime_policy import check_runtime_policy, runtime_policy_enforcement_report, runtime_policy_legacy_entrypoint_audit, runtime_policy_status
 from novel_forge.modules.runtime_policy import provider_hard_stop_evidence_report, runtime_policy_surface_coverage_report
-from novel_forge.modules.production_kernel import control_production_operation, list_production_operations, production_entrypoint_audit
+from novel_forge.modules.production_kernel import control_production_operation, list_production_operations, production_entrypoint_audit, reconcile_production_operations
 from novel_forge.storage.local import LocalStorage
 
 
@@ -73,6 +73,19 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ) -> list[dict[str, Any]]:
         try:
             return list_production_operations(LocalStorage(app_settings.root), project_id=project_id, status=status, limit=limit)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/product/runtime/production-operations/reconcile")
+    async def production_operations_reconcile_endpoint(request: Request) -> dict[str, Any]:
+        try:
+            payload = await request.json()
+            return reconcile_production_operations(
+                LocalStorage(app_settings.root),
+                project_id=str(payload.get("project_id") or ""),
+                limit=int(payload.get("limit", 100) or 100),
+                persist=bool(payload.get("persist", True)),
+            )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

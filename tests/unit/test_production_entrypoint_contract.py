@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from unittest.mock import patch
 
-from novel_forge.modules.production_kernel import control_production_operation, dispatch_production_operation, list_production_operations, production_entrypoint_audit, production_entrypoints, require_production_entrypoint
+from novel_forge.modules.production_kernel import control_production_operation, dispatch_production_operation, list_production_operations, production_entrypoint_audit, production_entrypoints, reconcile_production_operations, require_production_entrypoint
 from novel_forge.schemas import ProductionOperation, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -124,6 +124,18 @@ class ProductionEntrypointContractTests(unittest.TestCase):
             parent = storage.read_json(storage.root / started["production_operation_path"])
             self.assertEqual(parent["content"]["status"], "cancelled")
             self.assertEqual(parent["content"]["control_history"][-1]["reason"], "operator stop")
+
+    def test_reconciliation_reports_missing_and_aligned_child_state_without_mutation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.write_json("data/runs/loop-child.json", {"type": "loop_run", "content": {"status": "cancelled"}})
+            with patch("novel_forge.modules.loop_kernel.run_loop", return_value={"status": "cancelled", "loop_run_path": "data/runs/loop-child.json"}):
+                dispatch_production_operation(storage, "loop.run", project_id="project-a", loop_type="chapter_review")
+            report = reconcile_production_operations(storage, project_id="project-a")
+
+            self.assertEqual(report["status"], "passed")
+            self.assertEqual(report["summary"]["aligned_count"], 1)
+            self.assertEqual(report["asset"]["type"], "production_operation_reconciliation_report")
 
     def test_kernel_persists_failed_parent_with_recovery_instruction_when_child_raises(self):
         with tempfile.TemporaryDirectory() as tmp:

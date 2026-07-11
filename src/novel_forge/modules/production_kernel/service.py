@@ -8,7 +8,7 @@ from typing import Any
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.os_envelope import enforce_os_envelope
 from novel_forge.modules.production_kernel.entrypoints import require_production_entrypoint
-from novel_forge.schemas import ProductionOperation, validate_common_fields
+from novel_forge.schemas import ProductionOperation, ProductionOperationReconciliationReport, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.write_budget import WriteBudgetExceeded
 
@@ -238,6 +238,80 @@ def list_production_operations(
         if len(rows) >= max(1, int(limit or 100)):
             break
     return rows
+
+
+def reconcile_production_operations(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    limit: int = 100,
+    persist: bool = True,
+) -> dict[str, Any]:
+    """Compare persisted parent projections with their authoritative child Run.
+
+    The report never changes a child or parent state; operators use divergent
+    rows to decide whether a bounded lifecycle command or a new rerun is safe.
+    """
+
+    rows: list[dict[str, Any]] = []
+    for parent_row in list_production_operations(storage, project_id=project_id or None, limit=limit):
+        parent = _resolve_parent_operation(storage, parent_row["path"])
+        content = _content(parent["asset"])
+        child = content.get("child", {}) if isinstance(content.get("child", {}), dict) else {}
+        child_path = str(child.get("path") or "")
+        child_data: dict[str, Any] = {}
+        if child_path:
+            try:
+                candidate = storage.root / child_path if not Path(child_path).is_absolute() else Path(child_path)
+                loaded = storage.read_json(candidate)
+                child_data = loaded if isinstance(loaded, dict) else {}
+            except (FileNotFoundError, ValueError):
+                child_data = {}
+        child_content = _content(child_data)
+        child_status = str(child_content.get("status") or child.get("status") or "")
+        parent_status = str(content.get("status") or "")
+        relation = _reconciliation_relation(parent_status, child_status, bool(child_data))
+        rows.append(
+            {
+                "operation_id": str(content.get("operation_id") or ""),
+                "operation_path": parent["path"],
+                "operation": str(content.get("operation") or ""),
+                "state_owner": str(content.get("state_owner") or ""),
+                "parent_status": parent_status,
+                "child_path": child_path,
+                "child_type": str(child_data.get("type") or ""),
+                "child_status": child_status,
+                "relation": relation,
+            }
+        )
+    summary = {
+        "operation_count": len(rows),
+        "aligned_count": sum(1 for row in rows if row["relation"] == "aligned"),
+        "async_child_count": sum(1 for row in rows if row["relation"] == "asynchronous_child"),
+        "diverged_count": sum(1 for row in rows if row["relation"] == "diverged"),
+        "missing_child_count": sum(1 for row in rows if row["relation"] == "missing_child"),
+    }
+    report_project_id = project_id or "system"
+    payload = {"status": "passed" if not summary["diverged_count"] and not summary["missing_child_count"] else "needs_review", "project_id": report_project_id, "rows": rows, "summary": summary}
+    if not persist:
+        return {**payload, "path": "", "asset": {}}
+    asset = ProductionOperationReconciliationReport(
+        title=f"Production operation reconciliation: {report_project_id}",
+        source=report_project_id,
+        tags=["production-operation", "reconciliation", payload["status"]],
+        content={
+            "report_id": make_id("production_operation_reconciliation", report_project_id),
+            **payload,
+            "created_at": utc_now(),
+        },
+        metadata={"project_id": report_project_id, "scope_kind": "system" if report_project_id == "system" else "project"},
+        references=_safe_references(storage, report_project_id, [str(row["operation_path"]) for row in rows]) if project_id else [],
+    )
+    errors = validate_common_fields(asset.to_dict())
+    if errors:
+        raise ValueError("invalid production operation reconciliation report: " + "; ".join(errors))
+    path = storage.write_asset_auto(asset)
+    return {**payload, "path": _display_path(storage, path), "asset": storage.read_json(path)}
 
 
 def control_production_operation(
@@ -529,6 +603,26 @@ def _parent_status_from_result(result: dict[str, Any]) -> str:
     if raw in {"running", "planned", "checkpointed", "recovering"}:
         return raw
     return "completed"
+
+
+def _reconciliation_relation(parent_status: str, child_status: str, child_exists: bool) -> str:
+    if not child_exists:
+        return "missing_child"
+    if parent_status == child_status:
+        return "aligned"
+    if parent_status == "completed" and child_status in {"queued", "prepared", "planned", "running", "leased", "checkpointed"}:
+        return "asynchronous_child"
+    if parent_status == "accepted" and child_status in {"succeeded", "completed", "accepted"}:
+        return "aligned"
+    if parent_status == "completed" and child_status in {"succeeded", "completed"}:
+        return "aligned"
+    if parent_status == "failed" and child_status in {"failed", "dead_letter"}:
+        return "aligned"
+    if parent_status == "cancelled" and child_status == "cancelled":
+        return "aligned"
+    if parent_status == "checkpointed" and child_status in {"paused", "checkpointed"}:
+        return "aligned"
+    return "diverged"
 
 
 def _display_path(storage: LocalStorage, path: Path) -> str:
