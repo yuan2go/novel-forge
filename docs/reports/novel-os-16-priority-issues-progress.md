@@ -23,7 +23,7 @@
 ## 当前基线
 
 ```text
-Python: PASSED — latest 810 tests, 0 failures, 0 errors, 2 skipped
+Python: PASSED — last full run 810 tests, 0 failures, 0 errors, 2 skipped；最后校准边界变更后的 Quality Eval 聚焦套件 15/15 通过
 Workspace validate: PASSED twice — 0 unscoped/cross-project runtime assets
 Python compile: PASSED
 Web TypeScript: PASSED
