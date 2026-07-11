@@ -49,11 +49,11 @@ M tests/unit/test_v1_chapter_sequence_acceptance_script.py
 
 | Issue | 当前状态 | 代码证据 | 测试证据 | 剩余缺口 | 是否需要实施 |
 |---:|---|---|---|---|---|
-| 1. 绿色回归和清洁工作区 | **regressed** | `storage/local.py` 项目守卫；当前 `.local/workspace/data/runs/` 有 3 个无归属资产 | Python 7F/35E；`make validate` 失败；轻量检查通过 | 修复来源 Gate 迁移、项目隔离、质量规则期望和工作区历史运行资产；恢复可重复绿色基线 | 是，Phase 0 首要工作 |
+| 1. 绿色回归和清洁工作区 | **complete** | Scope审计已修复历史system runtime资产；Production Context和Chapter Plan保持直接project scope | Python两轮781 pass/2 skip；`make validate`两轮通过；lint/type/skills/web/diff通过 | Playwright、在线后端和真实Provider属于独立证据层，不计入确定性绿色 | 否；保持回归门禁 |
 | 2. ExecutionEnvelope 和核心引用 | **partial** | `modules/os_envelope/service.py` 有 v0.1 normalize/enforce；多模块已有 envelope metadata | `tests/unit/test_mkaos_os_envelope.py` 存在但当前有失败 | Envelope 不是一等持久对象；字段不足；生产入口覆盖未证明；ID/path/inline dict 仍混用 | 是 |
 | 3. 唯一 Production Kernel | **partial** | `workflow_nodes` 有 `WorkflowRunStateMachine`；`chapter_production_bus`、`agent_scheduler`、旧 `workflows/pipeline.py` 均存在 | Workflow、Loop、Scheduler 测试存在，但全量基线失败 | 旧 Pipeline、Workflow Runtime、Chapter Bus、Scheduler 仍是多执行平面；没有单一权威入口和状态图 | 是 |
 | 4. 移除固定 Topic/World/Character | **missing** | `modules/worldbuilding/service.py` 固定 Echo Clock City；`modules/characters/service.py` 固定 Lin Qiao | 相关测试主要验证资产形状，不验证双目标差异化 | fixture/production adapter 未隔离；缺两个创作目标的差异化验收 | 是 |
-| 5. Context 和来源门禁迁移 | **regressed** | `context_builder/service.py` 已调用 `run_source_governance_runtime_gate` 并 fail-closed | 大量 Context/Publish/Scheduler 测试因 3 条 blocking rows 失败 | Gate 本体存在，但旧夹具、合法来源证据和调用方迁移未完成；错误聚合需更可诊断 | 是 |
+| 5. Context 和来源门禁迁移 | **partial** | `context_builder/service.py` fail-closed；合法fixture通过SourcePolicy/Risk/clean sweep进入生产链 | Context/Publish/Scheduler/Analysis及全量回归均通过，非法来源负例仍阻断 | 仍需在Phase 1证明所有生产入口唯一经过Context Builder，并建立绕过契约扫描 | 是，剩余为入口覆盖而非回归修复 |
 | 6. 资产完整性与内容质量分离 | **partial** | Chapter Bus 明示 `artifact_coverage`；ReviewIssue、quality eval、publish gate 已存在 | 10 章验收曾允许重复正文；当前质量规则会阻断部分旧验收 | 缺统一 Asset Integrity Gate 与 Content Quality Gate；body uniqueness/progression 未成为全局 Release blocker | 是 |
 | 7. 写放大和全目录扫描 | **partial** | `chapter_runtime_growth` 已有预算、热点、policy、repair 资产；多个服务仍使用 `list_json` 全扫描 | runtime-growth 聚焦测试存在；历史 10 章耗时显著增长 | 预算尚未成为所有章节运行硬约束；State Bus 等仍全目录扫描；缺稳定 10 章 p95 基线 | 是 |
 | 8. typed StateEvent/Snapshot/reducer | **skeleton** | `modules/state_bus/service.py` 有通用事件、Snapshot、Replay；`canon_graph` 和 `longform_stability` 有 typed reducer 局部实现 | `test_os_new_capabilities.py`、`test_canon_graph_plugins.py`、`test_longform_stability.py` | 通用 `stream/subject/payload` 不是小说领域强类型事件；缺 evidence/confidence/causation/correlation/schema migration；未形成 accepted-chapter 后的唯一状态权威 | 是，但应整合现有实现而非重做 |
@@ -106,5 +106,4 @@ Issue 15 必须在真实长篇自治恢复之前完成，但不应在 Local 模�
 
 ## 6. 是否可进入实施
 
-当前可以进入 **Phase 0 严格止血**，但不能进入 Envelope、Kernel、真实 Provider 或自治开发。Phase 0 的业务实现需先通过设计审批；不得在红色基线上同时改变执行协议。
-
+Phase 0已经以两轮确定性全量绿色关闭，可以进入 **Phase 1 Envelope与Production Kernel收敛**。真实Provider、自治和工业存储仍不得提前，必须先取得生产入口覆盖、单一状态权威与绕过测试证据。

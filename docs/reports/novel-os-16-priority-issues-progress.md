@@ -1,7 +1,7 @@
 # Novel OS 16 项优先问题执行进度
 
 > 更新日期：2026-07-11  
-> 当前阶段：Phase 0 — 可信工程基线
+> 当前阶段：Phase 1 — 统一生产执行内核
 
 | Work Package | 状态 | 已完成 | 测试证据 | 剩余问题 | 下一步 |
 |---|---|---|---|---|---|
@@ -9,14 +9,14 @@
 | WP-00B Source Gate迁移 | completed | 修复workspace readiness Schema；建立可复用的自有来源、Policy、Risk、eligibility和clean sweep fixture | Source/Review 37 pass；Publish/Editor/Analysis 29 pass；Platform/Registry 21 pass | 无；Scheduler仍有1个独立旧状态期望，归入WP-00D | Task 0.4 |
 | WP-00C 项目隔离 | completed | Pipeline在创作前创建项目并逐步绑定资产；Registry/Workflow/Lease使用显式system scope；历史3资产经审计修复 | 8个scope/pipeline聚焦测试通过；`make validate`通过 | 无 | Task 0.5 |
 | WP-00D 质量门禁语义 | completed | strict workflow夹具补齐Source Gate证据；10章fake覆盖27项当前契约；12章正文具备真实主动选择和代价 | Acceptance/Sequence/Loop/Scheduler/12章共28 tests通过 | 无 | Task 0.6 |
-| WP-00E Phase 0关闭 | not-started | 轻量lint/type/skills/diff已通过 | 尚无两次完整绿色 | 全量回归与文档同步 | Task 0.6 |
-| WP-01..15 | not-started | 已完成依赖排序和重基线 | `novel-os-priority-issues-rebaseline.md` | 等待Phase 0绿色 | 按依赖逐阶段细化 |
+| WP-00E Phase 0关闭 | completed | 修复生产上下文project scope传播；迁移剩余Source/质量夹具；完成两轮可重复全量验证 | Python两轮均781 pass/2 skip；validate两轮通过；lint/type/skills/web/diff通过 | Playwright和真实Provider仍属于非确定性/外部证据层 | 进入Phase 1 |
+| WP-01..15 | not-started | 已完成依赖排序和重基线 | `novel-os-priority-issues-rebaseline.md` | Phase 1需先重核验Envelope和执行入口 | 细化WP-01 |
 
 ## 当前基线
 
 ```text
-Python: FAILED — 779 tests, 7 failures, 35 errors, 2 skipped
-Workspace validate: FAILED — 3 unscoped runtime assets
+Python: PASSED twice — 781 tests, 0 failures, 0 errors, 2 skipped
+Workspace validate: PASSED twice — 0 unscoped/cross-project runtime assets
 Python compile: PASSED
 Web TypeScript: PASSED
 Web Node tests: PASSED — 11 passed, 1 Playwright skipped
@@ -26,7 +26,15 @@ git diff --check: PASSED
 
 ## Phase 0完成报告
 
-尚未完成。只有当两次确定性全量验证结果一致且为绿色时才填写完成结论。
+1. 解决内容：Source Gate迁移、项目/系统运行资产归属、质量夹具语义和生产上下文作用域传播均已恢复；没有关闭或放宽任何Gate。
+2. 核心模块：Source readiness、Pipeline、Agent Registry、Workflow Definition、Runtime Ledger、Production Context、Chapter Plan，以及相应测试治理夹具。
+3. 旧路径：sample Pipeline改为先创建项目再逐步生产；legacy system runtime资产通过scope audit修复；旧缺治理证据fixture被替换。
+4. 协议/模型：workspace/system/project三类scope明确；Chapter Plan显式携带project/workspace；无新执行平面。
+5. 测试：两轮`python3 -m unittest discover -s tests`；两轮`make validate`；`make lint`、`make check-skills`、前端TypeScript/Node、`git diff --check`。
+6. 结果：第一轮781 tests in 634.854s，第二轮781 tests in 559.205s，均OK且仅2项显式外部测试跳过；辅助验证全通过。
+7. 已知风险：Playwright未安装；在线后端、真实Provider和长链pressure仍按设计需显式opt-in，不能解释为已验证。
+8. 阶段标准：Phase 0通过。
+9. 下一阶段条件：已满足；进入Phase 1并先建立Envelope/Kernel入口事实图。
 
 ## WP-00A 完成记录
 
