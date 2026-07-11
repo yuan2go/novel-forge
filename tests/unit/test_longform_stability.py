@@ -83,6 +83,94 @@ class LongformStabilityTests(unittest.TestCase):
             self.assertTrue(any(issue["severity"] == "high" for issue in issues))
             self.assertTrue(any("investigation_method" in issue["message"] for issue in issues))
 
+    def test_pattern_report_records_cross_chapter_semantic_similarity_with_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            bodies = [
+                "阿照沿着旧井边缘检查灰痕，发现账册夹层藏着一枚旧印。官署封存了桥南档案，"
+                "他只能先把证物带回夜档司。为了保住街坊的生计，他当众承下这一笔旧债，"
+                "并约定明夜再查封桥后的暗门。",
+                "阿照顺着旧井的边缘重新验看灰痕，从账册夹层找出同样的旧印。官署仍在封存桥南档案，"
+                "他把证物送回夜档司，暂时保住街坊生计，却再次承下旧债，"
+                "只好约定明夜继续调查封桥后的暗门。",
+            ]
+            reports = []
+            for chapter, text in enumerate(bodies, start=1):
+                draft = storage.write_asset(
+                    "drafts",
+                    DraftChapter(
+                        title=f"Chapter {chapter}",
+                        content={"chapter": chapter, "text": text, "copyright_boundary": "test fixture original draft"},
+                        metadata={"project_id": "semantic-project"},
+                    ),
+                )
+                reports.append(create_longform_artifacts_for_draft(storage, draft)["chapter_pattern_report_path"])
+
+            report = storage.read_json(storage.root / reports[-1])
+            content = report["content"]
+            checks = content["semantic_similarity_checks"]
+
+            self.assertEqual(content["semantic_similarity_contract"], "cross-chapter-semantic-similarity-v1")
+            self.assertEqual(content["semantic_scan"]["candidate_count"], 1)
+            self.assertTrue(checks)
+            self.assertEqual(checks[0]["previous_chapter_no"], 1)
+            self.assertIn("semantic_similarity", checks[0])
+            self.assertIn(checks[0]["risk"], {"low", "medium", "high"})
+            if checks[0]["risk"] in {"medium", "high"}:
+                self.assertTrue(any(issue["dimension"] == "semantic_similarity" for issue in content["similarity_checks"]))
+
+    def test_exact_cross_chapter_similarity_emits_blocking_pattern_issue(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            text = "阿照在旧井边验灰，发现账册夹层的旧印，官署随即封存桥南档案。" * 12
+            for chapter in (1, 2):
+                draft = storage.write_asset(
+                    "drafts",
+                    DraftChapter(
+                        title=f"Chapter {chapter}",
+                        content={"chapter": chapter, "text": text, "copyright_boundary": "test fixture original draft"},
+                        metadata={"project_id": "semantic-project"},
+                    ),
+                )
+                result = create_longform_artifacts_for_draft(storage, draft)
+            content = storage.read_json(storage.root / result["chapter_pattern_report_path"])["content"]
+
+            self.assertEqual(content["semantic_similarity_checks"][0]["risk"], "high")
+            self.assertTrue(any(issue["dimension"] == "semantic_similarity" and issue["severity"] == "high" for issue in content["similarity_checks"]))
+
+    def test_cross_chapter_semantic_similarity_is_project_scoped_and_bounded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            for project_id, text in [
+                ("semantic-project", "阿照在旧井边验灰，发现账册夹层的旧印，官署随即封存桥南档案。" * 8),
+                ("other-project", "阿照在旧井边验灰，发现账册夹层的旧印，官署随即封存桥南档案。" * 8),
+            ]:
+                storage.write_asset(
+                    "drafts",
+                    DraftChapter(
+                        title=f"Previous {project_id}",
+                        content={"chapter": 1, "text": text, "copyright_boundary": "test fixture original draft"},
+                        metadata={"project_id": project_id},
+                    ),
+                )
+            current = storage.write_asset(
+                "drafts",
+                DraftChapter(
+                    title="Current",
+                    content={"chapter": 2, "text": "阿照在旧井边验灰，发现账册夹层的旧印，官署随即封存桥南档案。" * 8, "copyright_boundary": "test fixture original draft"},
+                    metadata={"project_id": "semantic-project"},
+                ),
+            )
+
+            report = create_longform_artifacts_for_draft(storage, current)
+            content = storage.read_json(storage.root / report["chapter_pattern_report_path"])["content"]
+
+            self.assertEqual(content["semantic_scan"]["candidate_count"], 1)
+            self.assertEqual(content["semantic_similarity_checks"][0]["project_id"], "semantic-project")
+
     def test_longform_artifacts_reduce_to_canon_state_machine_snapshot_and_diff(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

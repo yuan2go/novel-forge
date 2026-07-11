@@ -17,6 +17,7 @@ from novel_forge.modules.production_governance import record_fallback_decision
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.reader_promise import build_reader_promise_ledger_for_draft
 from novel_forge.modules.runtime_ledger import record_gate_result
+from novel_forge.model_adapters.embeddings import HashEmbeddingAdapter, cosine_similarity
 from novel_forge.schemas import (
     ArcPlan,
     CanonDatabase,
@@ -571,7 +572,15 @@ def create_chapter_pattern_report(
     chapter_no = _chapter_no(draft.to_dict())
     fingerprint = extract_pattern_fingerprint(_asset_text(draft), chapter_no=chapter_no)
     history = _recent_pattern_fingerprints(storage, project_id=str(project.get("project_id", "")) or None, workspace_path=str(project.get("workspace_path", "")) or workspace_path, before_chapter=chapter_no, limit=10)
-    checks = _pattern_checks(history, fingerprint)
+    semantic_checks, semantic_scan = _cross_chapter_semantic_checks(
+        storage,
+        project_id=str(project.get("project_id", "")),
+        current_draft_id=draft.id,
+        current_chapter=chapter_no,
+        current_text=_asset_text(draft),
+        limit=10,
+    )
+    checks = [*_pattern_checks(history, fingerprint), *_semantic_similarity_issues(semantic_checks)]
     recommendation = "block" if any(item.get("severity") == "high" for item in checks) else "revise" if checks else "pass"
     asset = ChapterPatternReport(
         title=f"Chapter {chapter_no} pattern report",
@@ -582,6 +591,9 @@ def create_chapter_pattern_report(
             "chapter_no": chapter_no,
             "fingerprint": fingerprint,
             "similarity_checks": checks,
+            "semantic_similarity_checks": semantic_checks,
+            "semantic_similarity_contract": "cross-chapter-semantic-similarity-v1",
+            "semantic_scan": semantic_scan,
             "history_window": history[-10:],
             "recommendation": recommendation,
             "created_at": utc_now(),
@@ -2216,6 +2228,125 @@ def _ending_hook(text: str) -> str:
     if re.search("门开|响|醒", tail):
         return "异动升级钩子"
     return ""
+
+
+def _cross_chapter_semantic_checks(
+    storage: LocalStorage,
+    *,
+    project_id: str,
+    current_draft_id: str,
+    current_chapter: int,
+    current_text: str,
+    limit: int,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Compare a chapter only with bounded, earlier drafts in the same project.
+
+    The local hash embedding is deterministic and explainable; it is an early
+    regression signal, not a claim that a single similarity number proves
+    prose quality.  The report keeps lexical and embedding components separate
+    so later Eval providers can replace the adapter without changing the gate.
+    """
+    normalized_current = _semantic_normalize(current_text)
+    if len(normalized_current) < 40 or not project_id:
+        return [], {"candidate_count": 0, "limit": max(1, int(limit)), "skipped": "short_or_unscoped", "method": "hash_embedding+lexical"}
+    candidates: list[dict[str, Any]] = []
+    for path in storage.list_json("drafts"):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "draft_chapter" or str(data.get("id") or "") == current_draft_id:
+            continue
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        if str(metadata.get("project_id") or "") != project_id:
+            continue
+        content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
+        previous_chapter = int(content.get("chapter", 0) or 0)
+        if previous_chapter <= 0 or previous_chapter >= current_chapter:
+            continue
+        previous_text = _asset_text(data)
+        normalized_previous = _semantic_normalize(previous_text)
+        if len(normalized_previous) < 40:
+            continue
+        candidates.append(
+            {
+                "path": _display_path(storage.root, path),
+                "asset_id": str(data.get("id") or ""),
+                "chapter_no": previous_chapter,
+                "project_id": project_id,
+                "text": normalized_previous,
+            }
+        )
+    candidates = sorted(candidates, key=lambda row: (int(row["chapter_no"]), str(row["path"])), reverse=True)[: max(1, int(limit))]
+    adapter = HashEmbeddingAdapter(dimensions=128)
+    current_embedding = adapter.embed_text(normalized_current)
+    current_tokens = set(_semantic_tokens(normalized_current))
+    checks: list[dict[str, Any]] = []
+    for candidate in candidates:
+        previous_embedding = adapter.embed_text(candidate["text"])
+        previous_tokens = set(_semantic_tokens(candidate["text"]))
+        lexical = _jaccard(current_tokens, previous_tokens)
+        embedding = round(cosine_similarity(current_embedding, previous_embedding), 4)
+        score = round((embedding * 0.65) + (lexical * 0.35), 4)
+        risk = "high" if score >= 0.86 else "medium" if score >= 0.74 else "low"
+        checks.append(
+            {
+                "dimension": "semantic_similarity",
+                "previous_chapter_no": candidate["chapter_no"],
+                "previous_asset_id": candidate["asset_id"],
+                "previous_path": candidate["path"],
+                "project_id": project_id,
+                "semantic_similarity": score,
+                "embedding_similarity": embedding,
+                "lexical_similarity": round(lexical, 4),
+                "risk": risk,
+                "method": "hash_embedding+lexical",
+                "thresholds": {"medium": 0.74, "high": 0.86},
+            }
+        )
+    return checks, {
+        "candidate_count": len(candidates),
+        "limit": max(1, int(limit)),
+        "method": "hash_embedding+lexical",
+        "embedding_dimensions": 128,
+        "project_scoped": True,
+        "earlier_chapters_only": True,
+    }
+
+
+def _semantic_similarity_issues(checks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    for check in checks:
+        risk = str(check.get("risk") or "low")
+        if risk not in {"medium", "high"}:
+            continue
+        severity = "high" if risk == "high" else "medium"
+        issues.append(
+            _issue(
+                "semantic_similarity",
+                severity,
+                f"chapter is semantically similar to chapter {check.get('previous_chapter_no')}: score={check.get('semantic_similarity')}",
+                "change the chapter function, conflict progression, or scene order and rerun cross-chapter similarity",
+            )
+        )
+    return issues
+
+
+def _semantic_normalize(text: str) -> str:
+    return re.sub(r"\s+", "", str(text or "")).strip().lower()
+
+
+def _semantic_tokens(text: str) -> list[str]:
+    tokens: list[str] = []
+    for match in re.finditer(r"[a-z0-9_]+|[\u4e00-\u9fff]", text.lower()):
+        token = match.group(0)
+        tokens.append(token)
+    return tokens
+
+
+def _jaccard(left: set[str], right: set[str]) -> float:
+    union = left | right
+    return len(left & right) / len(union) if union else 0.0
 
 
 def _recent_pattern_fingerprints(
