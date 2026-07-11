@@ -1,7 +1,7 @@
 # Current Roadmap
 
 Updated: 2026-07-11
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `80b1d75`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `6f3ba61`
 
 This roadmap reflects current code evidence, not historical v5 plans. See `docs/08-roadmap/v5-*` only for history.
 

@@ -1,7 +1,7 @@
 # Project Current State
 
 Updated: 2026-07-11
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `80b1d75`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `6f3ba61`
 
 Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
 

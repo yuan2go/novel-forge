@@ -12,6 +12,7 @@
 - child 抛出异常时，父记录进入 `failed`，包含错误类型、错误消息和 recovery instruction。
 - production 环境仍由现有 `enforce_os_envelope` fail-closed；compat/local 请求明确归入 `system` scope，不伪装成小说项目。
 - `ProductionOperationReconciliationReport` 对账父 projection 与 child Run，标记 `aligned`、`asynchronous_child`、`diverged` 或 `missing_child`；报告不修改历史状态。
+- 章节同步 resume/pause/cancel/recover API 现在先按 child path 查找 parent，并经 Kernel control 更新 parent；没有 parent 的历史 child 返回显式 `kernel_compatibility=legacy_child_without_production_operation`。
 
 ## 代码证据
 
@@ -35,7 +36,7 @@
 
 ## 没有解决什么
 
-- 仍未证明 CLI、所有 API/Worker、Revision、Recap、Publish 等历史 control 调用全部经过 Kernel；启动 child-runner 的当前静态扫描为零 bypass，但部分旧 control API 仍直接操作 child。
+- 仍未证明 CLI、所有 API/Worker、Revision、Recap、Publish 等历史 control 调用全部经过 Kernel；章节同步 control 已迁移，异步 Celery control 与其他旧 control API 仍有 direct-child compatibility path。
 - parent boundary 当前支持有限的 pause/resume/cancel/recover，并能生成只读状态对账；统一 retry/timeout/compensate/fail/complete command API 尚未完成，子 Run 的领域状态机仍分散。
 - Envelope 尚未由 PostgreSQL 工业事务库权威保存，当前持久化是 LocalStorage JSON；没有 Asset + StateEvent + Outbox 原子 UoW 或双写故障注入证据。
 - Kernel 尚未强制每个 child 写入完整 ContextManifest/ContextBundle、Provider Runtime Gate、model call log 和 cost ledger；这些仍由下游路径分别治理。
