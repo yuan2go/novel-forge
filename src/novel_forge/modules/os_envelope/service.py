@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import os
+import hashlib
+import json
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.runtime_ledger import record_trace_span
 from novel_forge.storage.local import LocalStorage
 
-OS_ENVELOPE_VERSION = "0.1.0"
+OS_ENVELOPE_VERSION = "2.0.0"
+LEGACY_OS_ENVELOPE_VERSION = "0.1.0"
 PRODUCTION_ENVIRONMENTS = {"production", "prod", "operating_system", "strict"}
 COMPAT_ENVIRONMENTS = {"", "dev", "development", "test", "sample", "fixture", "compat", "local"}
 REQUIRED_PRODUCTION_FIELDS = ("project_id", "task_type", "asset_type", "actor_type", "source", "trace_id", "source_policy", "environment")
@@ -35,17 +38,45 @@ def normalize_os_envelope(
     bypass_reason: str = "",
 ) -> dict[str, Any]:
     raw = payload if isinstance(payload, dict) else {}
+    _reject_ref_conflicts(raw)
     resolved_environment = _environment(raw.get("environment") or environment)
-    resolved_project_id = str(raw.get("project_id") or project_id or "").strip()
+    resolved_project_id = str(raw.get("project_ref") or raw.get("project_id") or project_id or "").strip()
     resolved_task_type = str(raw.get("task_type") or task_type or operation or "").strip()
     resolved_asset_type = str(raw.get("asset_type") or asset_type or "").strip()
     resolved_trace_id = str(raw.get("trace_id") or trace_id or "").strip()
+    resolved_operation = str(raw.get("operation") or operation or "").strip()
+    canonical_refs = _canonical_refs(raw, project_ref=resolved_project_id, context_bundle_id=context_bundle_id, provider=provider)
+    correlation_id = str(raw.get("correlation_id") or resolved_trace_id or "").strip()
     envelope_seed = f"{resolved_project_id}:{resolved_task_type}:{resolved_asset_type}:{operation}:{resolved_trace_id}:{utc_now()}"
     resolved_source_policy = raw.get("source_policy") if isinstance(raw.get("source_policy"), dict) else (source_policy or {})
     if not resolved_source_policy:
         resolved_source_policy = {"raw_source_text_allowed": False, "generation_rag_allowed": False}
+    trace_value = resolved_trace_id or make_id("trace", envelope_seed)
+    correlation_value = correlation_id or trace_value
+    input_refs = _strings(raw.get("input_refs"))
+    expected_output_types = _strings(raw.get("expected_output_types"))
+    idempotency_key = str(raw.get("idempotency_key") or _stable_idempotency_key(
+        project_ref=resolved_project_id,
+        operation=resolved_operation,
+        task_ref=canonical_refs["task_ref"],
+        input_refs=input_refs,
+        expected_output_types=expected_output_types,
+    ))
+    native_v2 = _native_v2(raw)
     return {
+        "schema_version": 2,
         "envelope_id": str(raw.get("envelope_id") or make_id("os_envelope", envelope_seed)),
+        **canonical_refs,
+        "correlation_id": correlation_value,
+        "causation_id": str(raw.get("causation_id") or raw.get("parent_span_id") or ""),
+        "idempotency_key": idempotency_key,
+        "input_refs": input_refs,
+        "expected_output_types": expected_output_types,
+        "budget": raw.get("budget") if isinstance(raw.get("budget"), dict) else (
+            raw.get("token_budget") if isinstance(raw.get("token_budget"), dict) else (token_budget or {})
+        ),
+        "legacy_derived": not native_v2,
+        "legacy_schema_version": "" if native_v2 else str(raw.get("version") or LEGACY_OS_ENVELOPE_VERSION),
         "project_id": resolved_project_id,
         "task_type": resolved_task_type,
         "asset_type": resolved_asset_type,
@@ -54,7 +85,7 @@ def normalize_os_envelope(
         "source": str(raw.get("source") or source or "novel_os"),
         "version": str(raw.get("version") or version or OS_ENVELOPE_VERSION),
         "context_bundle_id": str(raw.get("context_bundle_id") or context_bundle_id or ""),
-        "trace_id": resolved_trace_id or make_id("trace", envelope_seed),
+        "trace_id": trace_value,
         "provider": str(raw.get("provider") or provider or ""),
         "model": str(raw.get("model") or model or ""),
         "cost_ledger": raw.get("cost_ledger") if isinstance(raw.get("cost_ledger"), dict) else (cost_ledger or {}),
@@ -62,9 +93,71 @@ def normalize_os_envelope(
         "source_policy": resolved_source_policy,
         "environment": resolved_environment,
         "bypass_reason": str(raw.get("bypass_reason") or bypass_reason or ""),
-        "operation": str(raw.get("operation") or operation or ""),
+        "operation": resolved_operation,
         "created_at": str(raw.get("created_at") or utc_now()),
     }
+
+
+def _native_v2(raw: dict[str, Any]) -> bool:
+    try:
+        return int(raw.get("schema_version") or 0) >= 2
+    except (TypeError, ValueError):
+        return False
+
+
+def _reject_ref_conflicts(raw: dict[str, Any]) -> None:
+    canonical = str(raw.get("project_ref") or "").strip()
+    legacy = str(raw.get("project_id") or "").strip()
+    if canonical and legacy and canonical != legacy:
+        raise ValueError("OS envelope project_ref conflicts with project_id")
+
+
+def _canonical_refs(
+    raw: dict[str, Any],
+    *,
+    project_ref: str,
+    context_bundle_id: str,
+    provider: str,
+) -> dict[str, str]:
+    approval_refs = _strings(raw.get("approval_refs"))
+    return {
+        "project_ref": project_ref,
+        "novel_ref": str(raw.get("novel_ref") or raw.get("novel_id") or ""),
+        "workflow_ref": str(raw.get("workflow_ref") or raw.get("workflow_id") or ""),
+        "run_ref": str(raw.get("run_ref") or raw.get("workflow_run_ref") or ""),
+        "task_ref": str(raw.get("task_ref") or raw.get("task_id") or ""),
+        "agent_ref": str(raw.get("agent_ref") or raw.get("agent_id") or ""),
+        "artifact_ref": str(raw.get("artifact_ref") or ""),
+        "asset_ref": str(raw.get("asset_ref") or ""),
+        "context_ref": str(raw.get("context_ref") or raw.get("context_bundle_id") or context_bundle_id or ""),
+        "approval_ref": str(raw.get("approval_ref") or (approval_refs[0] if approval_refs else "")),
+        "provider_ref": str(raw.get("provider_ref") or raw.get("provider") or provider or ""),
+    }
+
+
+def _stable_idempotency_key(
+    *,
+    project_ref: str,
+    operation: str,
+    task_ref: str,
+    input_refs: list[str],
+    expected_output_types: list[str],
+) -> str:
+    payload = {
+        "project_ref": project_ref,
+        "operation": operation,
+        "task_ref": task_ref,
+        "input_refs": input_refs,
+        "expected_output_types": expected_output_types,
+    }
+    digest = hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    return f"idem-{digest[:32]}"
+
+
+def _strings(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
 
 
 def enforce_os_envelope(
@@ -152,6 +245,10 @@ def envelope_asset_metadata(envelope: dict[str, Any] | None) -> dict[str, Any]:
     return {
         "os_envelope": envelope,
         "os_envelope_id": envelope.get("envelope_id", ""),
+        "os_envelope_schema_version": envelope.get("schema_version", 0),
+        "correlation_id": envelope.get("correlation_id", ""),
+        "causation_id": envelope.get("causation_id", ""),
+        "idempotency_key": envelope.get("idempotency_key", ""),
         "trace_id": envelope.get("trace_id", ""),
         "source_policy": envelope.get("source_policy", {}),
         "environment": envelope.get("environment", ""),
