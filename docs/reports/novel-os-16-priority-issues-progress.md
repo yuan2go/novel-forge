@@ -10,7 +10,7 @@
 | WP-00C 项目隔离 | completed | Pipeline在创作前创建项目并逐步绑定资产；Registry/Workflow/Lease使用显式system scope；历史3资产经审计修复 | 8个scope/pipeline聚焦测试通过；`make validate`通过 | 无 | Task 0.5 |
 | WP-00D 质量门禁语义 | completed | strict workflow夹具补齐Source Gate证据；10章fake覆盖27项当前契约；12章正文具备真实主动选择和代价 | Acceptance/Sequence/Loop/Scheduler/12章共28 tests通过 | 无 | Task 0.6 |
 | WP-00E Phase 0关闭 | completed | 修复生产上下文project scope传播；迁移剩余Source/质量夹具；完成两轮可重复全量验证 | Python两轮均781 pass/2 skip；validate两轮通过；lint/type/skills/web/diff通过 | Playwright和真实Provider仍属于非确定性/外部证据层 | 进入Phase 1 |
-| WP-01 Envelope v2与章节Kernel | completed | v2 canonical refs/legacy adapter/稳定幂等；章节、Workflow、Agent、Loop API和内部调用均经`dispatch_production_operation`统一路由；各自Run仍是状态权威 | Kernel/Entrypoint/API/Loop/Workflow/Scheduler聚焦测试通过 | Envelope工业authority和Postgres幂等持久化仍未完成 | 进入长篇状态与存储证据 |
+| WP-01 Envelope v2与章节Kernel | partial | v2 canonical refs/legacy adapter/稳定幂等；新增schema-backed `ProductionOperation`父资产；注册的章节、Workflow、Agent、Loop dispatch经`dispatch_production_operation`统一路由；各自Run仍是状态权威；同幂等请求回放既有父记录，冲突请求 fail-closed | Kernel/Entrypoint/Envelope/Chapter聚焦15 tests通过；Phase 0全量Python 812 pass / 2 skip | CLI/API/Worker/Revision/Recap/Publish全部直连迁移、统一生命周期command、Postgres事务authority和全入口bypass scan未完成 | 继续Phase 1入口收敛与状态对账 |
 | WP-03 固定内容隔离 | completed | Topic、World、Character由上游项目资产驱动；删除固定钟楼/林乔输出 | 双目标+主链26 pass | Draft mock fallback仍须在后续Provider/fixture隔离工作包中核验 | 进入Context/质量工作包 |
 | WP-05 Release质量Gate | completed | 独立`release_asset_integrity`与`release_content_quality` GateResult；各自`gate_kind`/`gate_result_path`；生产Release evidence强制引用二者；human override必须服务端验证 | 发布/审批/质量聚焦套件通过；最新全量810 tests通过 | Golden/Human Calibration和真实Provider趋势仍未完成 | 进入质量基准与真实Provider前置 |
 | WP-06 跨章语义相似度 | completed | ChapterPatternReport增加项目隔离、前章窗口、embedding/lexical双证据和风险阈值；新增可插拔语义Provider；HashEmbedding显式标记为`regression_only`，外部Provider标记为`verified` | Longform单元/集成16项通过；覆盖本地回归边界和注入语义Provider | 本地HashEmbedding仍不能单独证明精品质量；生产真实Provider需凭据和校准集 | 与Golden/真实Provider验收联动 |
@@ -23,7 +23,7 @@
 ## 当前基线
 
 ```text
-Python: PASSED — last full run 810 tests, 0 failures, 0 errors, 2 skipped；最后校准边界变更后的 Quality Eval 聚焦套件 15/15 通过
+Python: PASSED — Phase 0 full run 812 tests, 0 failures, 0 errors, 2 skipped；Kernel/Envelope/Chapter聚焦套件 15/15 通过
 Workspace validate: PASSED twice — 0 unscoped/cross-project runtime assets
 Python compile: PASSED
 Web TypeScript: PASSED
@@ -46,13 +46,17 @@ git diff --check: PASSED
 
 ## Phase 1阶段记录（进行中）
 
-1. 已解决：ExecutionEnvelope从v0.1 metadata升级为v2 canonical contract，保留legacy shadow；章节、Workflow、Agent、Loop入口统一经Production Kernel dispatcher，章节生产在Run写入前验证production Envelope。
+1. 已解决：ExecutionEnvelope从v0.1 metadata升级为v2 canonical contract，保留legacy shadow；新增`ProductionOperation`父资产，章节、Workflow、Agent、Loop注册入口在child写入前持久化父记录，章节生产在Run写入前验证production Envelope。
 2. 新协议：`schema_version=2`、11类核心Ref、correlation/causation、stable idempotency key、`legacy_derived`。
 3. 状态权威：Kernel facade只校验/委派；ChapterProductionRun、WorkflowRun、AgentRun、LoopRun仍分别是权威状态，未创建第五套状态机。
 4. 入口迁移：章节生产API、Workflow API、Agent Dispatch API、Loop API以及Workflow/Agent/Recap/Revision内部调用均经`dispatch_production_operation`；direct service仅保留防御性兼容边界。
 5. 固定内容：Topic、World和Character不再写入钟楼/林乔样例；双目标测试覆盖题材、设定、外部目标与项目归属差异。
-6. 证据：Envelope/Kernel/Entrypoint/API/Loop/Workflow/Scheduler聚焦测试通过；所有注册生产入口的`kernel_route`统一为`dispatch_production_operation`。
-7. 未完成：Envelope repository/工业幂等持久化、Context全入口manifest、Golden/Human Calibration和真实Provider仍未关闭。
+6. 证据：Kernel/Entrypoint/Envelope/Chapter 15项聚焦测试通过；父记录保存request digest、child projection、replay和failure recovery；所有注册生产入口的`kernel_route`统一为`dispatch_production_operation`。
+7. 未完成：未注册的历史直连入口、统一parent lifecycle commands、状态对账、Envelope工业幂等持久化、Context全入口manifest、Golden/Human Calibration和真实Provider仍未关闭。
+
+## Phase 01报告索引（2026-07-11）
+
+详见：[autonomous-novel-os-phase-01-report.md](autonomous-novel-os-phase-01-report.md)。本阶段状态为`partial`：完成LocalStorage父级Operation和幂等边界，未宣称全入口Kernel覆盖或工业事务闭环。
 
 ## Release质量Gate阶段记录（进行中）
 

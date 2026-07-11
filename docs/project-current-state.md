@@ -1,7 +1,7 @@
 # Project Current State
 
-Updated: 2026-07-07
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `75bb3e3`
+Updated: 2026-07-11
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `d0c9972`
 
 Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
 
@@ -68,8 +68,8 @@ The current branch has implemented the first V7 content intelligence foundation 
 | Character / villain | Partially implemented with character-pressure gate foundation | `modules/characters/service.py`, `modules/character_pressure/service.py`, schemas `CharacterCard`, `VillainOperationPlan`, `ProtagonistCharmReport`, `AntagonistPressureReport`, UI `character-console`, `tests/unit/test_character_pressure.py` | Character pressure scoring is deterministic and needs calibration plus guided repair UI depth | Yes | Medium |
 | Context Builder | Partially implemented with stage profile contract | `modules/context_builder/service.py`, `api/routers/context_builder.py`, `web/admin/app/context/page.tsx`, `tests/unit/test_context_builder_stage_profiles.py` | Selected/rejected/compressed summaries now carry source eligibility in production; manual controls, KG-backed context, invalidation warnings, and final full-loop profile assertions still need depth | Yes | High |
 | RAG / memory | Partially implemented | `storage/retrieval_index.py`, `modules/pgvector_store/service.py`, `modules/long_memory/service.py`, Qdrant commands | Production-scale retrieval quality and external service coverage are partial | Yes | High |
-| OS Envelope | Partially implemented | `modules/os_envelope/service.py`, MKAOS envelope tests | Universal enforcement across all paths is incomplete | Yes | High |
-| Agent Center | Partially implemented | `modules/agent_registry/`, `modules/agent_scheduler/`, `web/admin/app/agent-*`, tests | Operation coverage and production UI depth remain partial | Yes | High |
+| OS Envelope | Partially implemented | `modules/os_envelope/service.py`, `modules/production_kernel/`, `schemas/assets.py`, `tests/unit/test_production_entrypoint_contract.py` | v2 canonical envelope is now persisted inside `ProductionOperation` parent records for registered Kernel dispatches with idempotency replay/conflict and child failure evidence; universal enforcement and industrial transaction authority remain incomplete | Yes | High |
+| Agent Center | Partially implemented | `modules/agent_registry/`, `modules/agent_scheduler/`, `modules/production_kernel/`, `web/admin/app/agent-*`, tests | Registered Agent dispatch can be parented by `ProductionOperation`; operation coverage, direct-caller migration, lifecycle commands, production UI depth and industrial recovery remain partial | Yes | High |
 | Approval / permission gates | Implemented foundation | `modules/permission_center/service.py`, `/product/permission-center/*`, `tests/unit/test_permission_center.py` | High-risk callers still need staged migration to `approval_request` refs | Yes | High |
 | Feedback loop | Partially implemented | `modules/feedback/`, `modules/feedback_backflow/`, `web/admin/app/feedback*`, tests | Real reader cohort analytics and plan mutation governance need depth | Yes | Medium |
 | Publishing/feedback adapters | Implemented manual plus generic HTTP adapter, Fanqie/Qidian parser/status/gate/rule-snapshot slices, and feedback mutation apply chain | `modules/publishing_feedback_adapters/service.py`, API router, `tests/unit/test_publishing_feedback_adapters.py` | Specific platform SDKs, callbacks, real platform rate limits, and automatic feedback-task dispatch are not integrated | Yes | Medium |
@@ -99,4 +99,4 @@ The current branch has implemented the first V7 content intelligence foundation 
 
 ## Next Priorities
 
-See [reports/v1-v7-roadmap.md](reports/v1-v7-roadmap.md) and [reports/next-production-slices.md](reports/next-production-slices.md). The most important next work is to close the v1 single-book production loop, then continue runtime hardening: source diff repair/invalidation workflow, provider evidence, release/publish gates, scheduler operation coverage, context/KG consistency, calibrated reader-promise/chapter-economy/character-pressure/mobile-reading detection, and productized UI verification.
+See [reports/v1-v7-roadmap.md](reports/v1-v7-roadmap.md), [reports/next-production-slices.md](reports/next-production-slices.md), and [reports/autonomous-novel-os-phase-01-report.md](reports/autonomous-novel-os-phase-01-report.md). The most important next work is to close the v1 single-book production loop, continue Kernel direct-entrypoint migration and lifecycle/status reconciliation, then harden context/KG consistency, provider evidence, release/publish gates, calibrated reader-promise/chapter-economy/character-pressure/mobile-reading detection, and productized UI verification.
