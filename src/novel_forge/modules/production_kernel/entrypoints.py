@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import ast
+from pathlib import Path
 from typing import Any
 
 
@@ -23,3 +25,44 @@ def require_production_entrypoint(operation: str) -> dict[str, str]:
         if entrypoint["operation"] == normalized:
             return dict(entrypoint)
     raise ValueError(f"unregistered production operation: {normalized}")
+
+
+def production_entrypoint_audit(*, repo_root: str | Path | None = None) -> dict[str, Any]:
+    """Find direct calls to registered production child runners outside Kernel.
+
+    This is a conservative static scan. It is a bypass detector, not a proof
+    that every dynamic or reflective call is safe; production callers must use
+    the Kernel dispatcher and any finding is review-required until migrated.
+    """
+
+    root = Path(repo_root).resolve() if repo_root else Path(__file__).resolve().parents[4]
+    source_root = root / "src" / "novel_forge"
+    targets = {"dispatch_chapter_production", "execute_workflow", "dispatch_agent_run", "run_loop"}
+    rows: list[dict[str, Any]] = []
+    if not source_root.exists():
+        return {"repo_root": str(root), "summary": {"candidate_count": 0, "review_required_count": 0, "kernel_internal_count": 0}, "findings": []}
+    for path in sorted(source_root.rglob("*.py")):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        except (OSError, SyntaxError):
+            continue
+        relative = str(path.relative_to(root))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            called = node.func.id if isinstance(node.func, ast.Name) else node.func.attr if isinstance(node.func, ast.Attribute) else ""
+            if called not in targets:
+                continue
+            status = "kernel_internal" if relative == "src/novel_forge/modules/production_kernel/service.py" else "review_required"
+            rows.append({"path": relative, "line": int(getattr(node, "lineno", 0)), "symbol": called, "status": status})
+    review_required = [row for row in rows if row["status"] == "review_required"]
+    return {
+        "repo_root": str(root),
+        "summary": {
+            "candidate_count": len(rows),
+            "review_required_count": len(review_required),
+            "kernel_internal_count": len(rows) - len(review_required),
+        },
+        "findings": rows,
+        "recommendation": "route every review_required call through dispatch_production_operation" if review_required else "no direct child-runner calls outside Production Kernel were found",
+    }

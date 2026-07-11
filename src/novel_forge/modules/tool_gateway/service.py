@@ -303,9 +303,18 @@ def _dispatch_internal_tool(storage: LocalStorage, tool_name: str, payload: dict
 
         return run_agent_scheduler_tick(storage, owner=str(payload.get("owner", "tool-gateway")), max_items=int(payload.get("max_items", 5) or 5))
     if tool_name == "workflow.execute":
-        from novel_forge.modules.workflow_nodes import execute_workflow
+        from novel_forge.modules.production_kernel import dispatch_production_operation
 
-        return execute_workflow(storage, workflow_definition_path=str(payload.get("workflow_definition_path", "")), input_assets=payload.get("input_assets", []))
+        return dispatch_production_operation(
+            storage,
+            "workflow.execute",
+            workflow_path_or_id=str(payload.get("workflow_definition_path", "")),
+            input_assets=payload.get("input_assets", []),
+            project_id=payload.get("project_id") or project_id,
+            workspace_path=payload.get("workspace_path") or workspace_path,
+            environment=payload.get("environment") or "",
+            envelope=payload.get("envelope") if isinstance(payload.get("envelope"), dict) else None,
+        )
     if tool_name == "workflow.resume":
         from novel_forge.modules.workflow_nodes import resume_workflow
 

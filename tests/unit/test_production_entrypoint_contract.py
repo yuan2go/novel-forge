@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from unittest.mock import patch
 
-from novel_forge.modules.production_kernel import dispatch_production_operation, production_entrypoints, require_production_entrypoint
+from novel_forge.modules.production_kernel import dispatch_production_operation, list_production_operations, production_entrypoint_audit, production_entrypoints, require_production_entrypoint
 from novel_forge.schemas import ProductionOperation, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -89,6 +89,9 @@ class ProductionEntrypointContractTests(unittest.TestCase):
             self.assertEqual(parent["content"]["status"], "completed")
             self.assertEqual(parent["content"]["child"]["state_owner"], "loop_run")
             self.assertEqual(parent["content"]["execution_envelope"]["project_id"], "project-a")
+            rows = list_production_operations(storage, project_id="project-a")
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["operation_id"], first["production_operation_id"])
 
     def test_kernel_rejects_same_idempotency_key_for_different_request(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -152,6 +155,21 @@ class ProductionEntrypointContractTests(unittest.TestCase):
     def test_unknown_production_operation_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "unregistered production operation"):
             require_production_entrypoint("unbounded.side.effect")
+
+    def test_production_entrypoint_audit_has_no_direct_child_runner_bypass(self):
+        audit = production_entrypoint_audit(repo_root=Path(__file__).resolve().parents[2])
+        self.assertEqual(audit["summary"]["review_required_count"], 0)
+        self.assertGreaterEqual(audit["summary"]["kernel_internal_count"], 1)
+
+    def test_production_entrypoint_audit_flags_new_direct_child_runner_call(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            module = root / "src" / "novel_forge" / "modules" / "legacy.py"
+            module.parent.mkdir(parents=True)
+            module.write_text("def run(storage):\n    return execute_workflow(storage, 'workflow.json')\n", encoding="utf-8")
+            audit = production_entrypoint_audit(repo_root=root)
+            self.assertEqual(audit["summary"]["review_required_count"], 1)
+            self.assertEqual(audit["findings"][0]["symbol"], "execute_workflow")
 
 
 if __name__ == "__main__":

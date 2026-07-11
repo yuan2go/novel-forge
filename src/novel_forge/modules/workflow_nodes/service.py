@@ -5641,11 +5641,12 @@ def _execute_registered_service_processor_impl(
         result = create_draft_version(storage, _processor_path(processor, input_assets, "draft_path", "target_path"), change_summary=str(processor.get("change_summary") or "workflow service processor"), status=str(processor.get("status") or "active"))
         return _service_success(storage, operation, result)
     if operation in {"chapter_production_start", "start-chapter-production", "start_chapter_production", "chapter-production-start", "start-chapter-run"}:
-        from novel_forge.modules.production_kernel import dispatch_chapter_production
+        from novel_forge.modules.production_kernel import dispatch_production_operation
 
         _enforce_workflow_chapter_production_governance(processor, operation=operation)
-        result = dispatch_chapter_production(
+        result = dispatch_production_operation(
             storage,
+            "chapter_production.start",
             outline_path=_processor_path(processor, input_assets, "outline_path", "target_path"),
             chapter_plan_path=str(processor.get("chapter_plan_path") or "") or None,
             workspace_path=str(processor.get("workspace_path") or workspace_path or "") or None,

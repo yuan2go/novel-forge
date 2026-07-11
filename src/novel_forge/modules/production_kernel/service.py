@@ -125,7 +125,11 @@ def dispatch_production_operation(storage: LocalStorage, operation: str, **comma
                 storage,
                 **{
                     **payload,
-                    "environment": str(kernel_envelope.get("environment") or environment or ""),
+                    # Keep the caller-facing mode for child policy reports
+                    # (for example, ``operating_system``), while the Kernel
+                    # continues to use the normalized Envelope value for
+                    # fail-closed admission.
+                    "environment": str(environment or (envelope_payload or {}).get("environment") or ""),
                     "os_envelope": kernel_envelope,
                 },
             )
@@ -139,6 +143,7 @@ def dispatch_production_operation(storage: LocalStorage, operation: str, **comma
 
             agent_run_path = payload.pop("agent_run_path", None)
             payload.pop("project_id", None)
+            payload.pop("workspace_path", None)
             if not agent_run_path:
                 raise ValueError("agent.dispatch requires agent_run_path")
             result = dispatch_agent_run(storage, agent_run_path=agent_run_path, **payload)
@@ -192,6 +197,49 @@ def dispatch_production_operation(storage: LocalStorage, operation: str, **comma
     return result
 
 
+def list_production_operations(
+    storage: LocalStorage,
+    *,
+    project_id: str | None = None,
+    status: str | None = None,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    """Return parent operation records for the runtime/API workbench."""
+
+    rows: list[dict[str, Any]] = []
+    for path in reversed(storage.list_json("runs")):
+        try:
+            data = storage.read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict) or data.get("type") != "production_operation":
+            continue
+        content = _content(data)
+        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
+        stored_project = str(metadata.get("project_id") or content.get("project_id") or "")
+        stored_status = str(content.get("status") or "")
+        if project_id and stored_project != project_id:
+            continue
+        if status and stored_status != status:
+            continue
+        rows.append(
+            {
+                "path": _display_path(storage, path),
+                "operation_id": str(content.get("operation_id") or ""),
+                "operation": str(content.get("operation") or ""),
+                "status": stored_status,
+                "project_id": stored_project,
+                "state_owner": str(content.get("state_owner") or ""),
+                "idempotency_key": str(content.get("idempotency_key") or ""),
+                "child": content.get("child", {}) if isinstance(content.get("child", {}), dict) else {},
+                "updated_at": str(content.get("updated_at") or data.get("updated_at") or ""),
+            }
+        )
+        if len(rows) >= max(1, int(limit or 100)):
+            break
+    return rows
+
+
 def _create_parent_operation(
     storage: LocalStorage,
     *,
@@ -232,6 +280,7 @@ def _create_parent_operation(
         },
         metadata={
             "project_id": project_id,
+            "workspace_path": str(command.get("workspace_path") or ""),
             "scope_kind": "system" if project_id == "system" else "project",
             "execution_envelope_id": str(envelope.get("envelope_id") or ""),
             "trace_id": str(envelope.get("trace_id") or ""),

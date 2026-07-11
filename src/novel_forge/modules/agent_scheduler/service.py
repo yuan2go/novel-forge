@@ -848,7 +848,17 @@ def dispatch_revision_task_from_issue(
             "expected_output_assets": [],
         },
     )
-    queue = dispatch_agent_run(storage, agent_run_path=run["path"], expected_output_assets=[], priority=priority)
+    from novel_forge.modules.production_kernel import dispatch_production_operation
+
+    queue = dispatch_production_operation(
+        storage,
+        "agent.dispatch",
+        agent_run_path=run["path"],
+        expected_output_assets=[],
+        priority=priority,
+        project_id=project_id,
+        workspace_path=workspace_path,
+    )
     _update_agent_task_links(storage, task["path"], status="queued", agent_run_path=run["path"], dispatch_queue_path=queue["path"])
     return {
         "status": "queued",
@@ -2644,12 +2654,13 @@ def _run_review_revision_publish_loop(storage: LocalStorage, queue_item: dict[st
 
 
 def _run_start_chapter_production(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
-    from novel_forge.modules.production_kernel import dispatch_chapter_production
+    from novel_forge.modules.production_kernel import dispatch_production_operation
 
     evidence = _evidence(agent_run)
     chapter_value = evidence.get("chapter")
-    result = dispatch_chapter_production(
+    result = dispatch_production_operation(
         storage,
+        "chapter_production.start",
         outline_path=str(evidence.get("outline_path") or _required_input_path(agent_run)),
         chapter_plan_path=str(evidence.get("chapter_plan_path") or "") or None,
         workspace_path=_workspace_path(agent_run) or str(evidence.get("workspace_path") or "") or None,
