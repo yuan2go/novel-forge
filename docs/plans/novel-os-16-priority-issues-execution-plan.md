@@ -361,3 +361,35 @@ git commit -m "docs: close trusted phase zero baseline"
 | WP-14 | 深度治理控制台 | 后端能力就绪 | Source/Canon/Eval/Portfolio typed UI与Playwright E2E |
 | WP-15 | 三书、CI、安全、DR | 单书30章通过 | 隔离、分层CI、安全套件、restore rehearsal |
 
+## Phase 1A：ExecutionEnvelope v2（当前工作包）
+
+### Task 1.1：契约与兼容适配
+
+**Files:** `modules/os_envelope/service.py`、`tests/unit/test_os_envelope_v2.py`
+
+- [ ] 增加 canonical refs、`schema_version`、correlation/causation 和稳定 idempotency key。
+- [ ] 保留 v0.1 legacy shadow，旧请求标记 `legacy_derived`，字段冲突 fail-closed。
+- [ ] 增加 native v2、legacy、缺字段、冲突、稳定幂等和父子因果测试。
+
+### Task 1.2：入口 Manifest 与旁路契约
+
+**Files:** `modules/production_kernel/entrypoints.py`、`tests/unit/test_production_entrypoint_contract.py`
+
+- [ ] 登记章节生产、Workflow、Agent dispatch、Loop、Review/Revision/Release等生产入口。
+- [ ] Contract test 验证每个登记入口的 envelope policy、状态 owner 和 Kernel route。
+- [ ] 未登记生产入口和 direct bypass 必须失败；普通治理 CRUD 不纳入执行入口。
+
+### Task 1.3：Chapter Production Kernel tracer bullet
+
+**Files:** `modules/production_kernel/`、`modules/chapter_production_bus/service.py`、API/Worker调用方及测试。
+
+- [ ] Chapter Bus 在任何业务写入前 enforce v2 Envelope。
+- [ ] Kernel facade 复用 ChapterProductionRun，不创建新状态机。
+- [ ] API、Worker、Workflow processor通过同一 Kernel command dispatch。
+- [ ] 增加缺Envelope零副作用、幂等重放、scope冲突和恢复测试。
+
+### Task 1.4：Phase 1A验证
+
+- [ ] 聚焦 contract/workflow/scheduler/production-chain 测试通过。
+- [ ] 两轮完整确定性回归、validate、lint、skills、Web和diff通过。
+- [ ] 更新重基线与进度文档后进入WP-02。
