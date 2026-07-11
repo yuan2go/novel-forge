@@ -152,6 +152,24 @@ class PublishFeedbackLoopTests(unittest.TestCase):
                     source_policy=fixture["source_policy"],
                 )
 
+    def test_production_release_package_does_not_trust_human_override_without_version_bound_approval(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            fixture = create_production_ready_release_inputs(storage)
+
+            with self.assertRaisesRegex(ValueError, "human override requires approval_request_ref"):
+                create_release_package(
+                    storage,
+                    fixture["draft_path"],
+                    workspace_path=fixture["workspace_path"],
+                    publish_gate_path=fixture["publish_gate_path"],
+                    human_override=True,
+                    envelope=production_envelope(fixture["project_id"], "release_package", trace_id="trace-release-override-without-approval"),
+                    environment="production",
+                    source_policy=fixture["source_policy"],
+                )
+
     def test_publish_gate_accepts_provider_guard_success_fixture(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)

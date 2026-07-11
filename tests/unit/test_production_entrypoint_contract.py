@@ -59,6 +59,7 @@ class ProductionEntrypointContractTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["failure_type"], "write_budget_exceeded")
         self.assertEqual(result["write_budget"]["metrics"]["file_writes"], 2)
+        self.assertEqual(result["write_budget"]["status"], "failed")
 
     def test_unknown_production_operation_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "unregistered production operation"):

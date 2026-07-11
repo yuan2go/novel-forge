@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.core.constants import DATA_DIRS
 from novel_forge.modules.audit_log import record_audit_event
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import is_production_environment
@@ -241,6 +242,8 @@ def verify_approval_request(
             reasons.append("target_version_mismatch")
         if binding.get("asset_id") and current.get("asset_id") and str(binding.get("asset_id")) != str(current.get("asset_id")):
             reasons.append("target_asset_mismatch")
+    elif str(content.get("scope") or "") in {"publish", "context", "story_mutation", "feedback", "canon", "provider", "fallback", "budget"}:
+        reasons.append("target_version_binding_missing")
     expected_binding_version = str(target_version or "")
     if expected_binding_version and str(binding.get("version") or "") != expected_binding_version:
         reasons.append("target_version_label_mismatch")
@@ -863,6 +866,8 @@ def _target_version_binding(storage: LocalStorage, target: dict[str, Any], *, ta
     candidates = _dedupe([target_path, *target_refs, *_strings(payload.get("evidence_refs"))])
     for reference in candidates:
         candidate = resolve_path(storage.root, reference)
+        if not candidate.exists() and reference and "/" not in reference and not reference.endswith(".json"):
+            candidate = _find_asset_path_by_id(storage, reference)
         if not candidate.exists() or not candidate.is_file():
             continue
         data = _read_json_safe(storage, candidate)
@@ -893,6 +898,15 @@ def _target_version_binding(storage: LocalStorage, target: dict[str, Any], *, ta
     if provided_version:
         return {"status": "declared", "path": target_path, "asset_id": str(target.get("target_id") or ""), "asset_type": str(target.get("target_type") or ""), "version": provided_version, "digest": "", "bound_at": utc_now()}
     return {"status": "unresolved", "path": target_path, "asset_id": str(target.get("target_id") or ""), "asset_type": str(target.get("target_type") or ""), "version": "", "digest": "", "bound_at": utc_now()}
+
+
+def _find_asset_path_by_id(storage: LocalStorage, asset_id: str) -> Path:
+    for category in DATA_DIRS:
+        for path in storage.list_json(category):
+            data = _read_json_safe(storage, path)
+            if str(data.get("id") or "") == str(asset_id):
+                return path
+    return Path("")
 
 
 def _approval_expired(value: str) -> bool:

@@ -31,6 +31,7 @@ class WriteBudget:
     limits: dict[str, int] = field(default_factory=lambda: dict(DEFAULT_WRITE_BUDGET))
     metrics: dict[str, int] = field(default_factory=lambda: {key.removeprefix("max_"): 0 for key in DEFAULT_WRITE_BUDGET})
     writes_by_category: dict[str, int] = field(default_factory=dict)
+    status: str = "active"
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any] | None) -> "WriteBudget":
@@ -61,13 +62,14 @@ class WriteBudget:
         self._increment(normalized, amount, limit_key)
 
     def snapshot(self) -> dict[str, Any]:
-        return {"limits": dict(self.limits), "metrics": dict(self.metrics), "writes_by_category": dict(self.writes_by_category), "status": "passed"}
+        return {"limits": dict(self.limits), "metrics": dict(self.metrics), "writes_by_category": dict(self.writes_by_category), "status": self.status if self.status != "active" else "passed"}
 
     def _increment(self, metric: str, amount: int, limit_key: str) -> None:
         value = int(self.metrics.get(metric, 0)) + int(amount)
         self.metrics[metric] = value
         limit = self.limits.get(limit_key)
         if limit is not None and value > int(limit):
+            self.status = "failed"
             raise WriteBudgetExceeded(metric, value, int(limit))
 
 

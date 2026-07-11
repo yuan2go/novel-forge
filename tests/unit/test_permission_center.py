@@ -252,14 +252,18 @@ class PermissionCenterTests(unittest.TestCase):
             self.assertFalse(expired["verified"])
             self.assertIn("expired", expired["reasons"])
 
+            target_path = storage.write_asset(
+                "drafts",
+                DraftChapter(title="Approval target", content={"chapter": 1, "text": "target"}, metadata={"project_id": "approval-lifecycle-p"}),
+            )
             replay_request = create_approval_request(
                 storage,
-                {"project_id": "approval-lifecycle-p", "scope": "publish", "action": "approve_platform_publish", "environment": "production"},
+                {"project_id": "approval-lifecycle-p", "scope": "publish", "action": "approve_platform_publish", "environment": "production", "target_path": str(target_path.relative_to(storage.root))},
             )
             resolve_approval_request(storage, replay_request["path"], {"decision": "approved", "actor": "chief-editor"})
-            consumed = verify_approval_request(storage, replay_request["path"], project_id="approval-lifecycle-p", scope="publish", action="approve_platform_publish", consume=True, actor="publishing")
+            consumed = verify_approval_request(storage, replay_request["path"], project_id="approval-lifecycle-p", scope="publish", action="approve_platform_publish", target_ref=str(target_path.relative_to(storage.root)), consume=True, actor="publishing")
             self.assertTrue(consumed["verified"], consumed)
-            replayed = verify_approval_request(storage, replay_request["path"], project_id="approval-lifecycle-p", scope="publish", action="approve_platform_publish", consume=True, actor="publishing")
+            replayed = verify_approval_request(storage, replay_request["path"], project_id="approval-lifecycle-p", scope="publish", action="approve_platform_publish", target_ref=str(target_path.relative_to(storage.root)), consume=True, actor="publishing")
             self.assertFalse(replayed["verified"])
             self.assertIn("already_consumed", replayed["reasons"])
 

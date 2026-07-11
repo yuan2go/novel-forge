@@ -75,7 +75,10 @@ def dispatch_production_operation(storage: LocalStorage, operation: str, **comma
     envelope_payload = payload.get("envelope") if isinstance(payload.get("envelope"), dict) else payload.get("os_envelope") if isinstance(payload.get("os_envelope"), dict) else None
     project_id = str(payload.get("project_id") or (envelope_payload or {}).get("project_ref") or (envelope_payload or {}).get("project_id") or "")
     if operation == "chapter_production.start":
-        return dispatch_chapter_production(storage, **payload)
+        result = dispatch_chapter_production(storage, **payload)
+        if isinstance(result, dict):
+            result.setdefault("kernel_route", {"operation": operation, "route": entrypoint["kernel_route"], "state_owner": entrypoint["state_owner"]})
+        return result
 
     kernel_envelope = enforce_os_envelope(
         storage,
@@ -97,11 +100,13 @@ def dispatch_production_operation(storage: LocalStorage, operation: str, **comma
     if operation == "workflow.execute":
         from novel_forge.modules.workflow_nodes import execute_workflow
 
+        payload.pop("project_id", None)
         result = execute_workflow(storage, **payload)
     elif operation == "agent.dispatch":
         from novel_forge.modules.agent_scheduler import dispatch_agent_run
 
         agent_run_path = payload.pop("agent_run_path", None)
+        payload.pop("project_id", None)
         if not agent_run_path:
             raise ValueError("agent.dispatch requires agent_run_path")
         result = dispatch_agent_run(storage, agent_run_path=agent_run_path, **payload)
