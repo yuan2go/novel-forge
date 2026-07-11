@@ -12,7 +12,7 @@
 | WP-00E Phase 0关闭 | completed | 修复生产上下文project scope传播；迁移剩余Source/质量夹具；完成两轮可重复全量验证 | Python两轮均781 pass/2 skip；validate两轮通过；lint/type/skills/web/diff通过 | Playwright和真实Provider仍属于非确定性/外部证据层 | 进入Phase 1 |
 | WP-01 Envelope v2与章节Kernel | in-progress | v2 canonical refs/legacy adapter/稳定幂等；章节API、Scheduler、Workflow经同一facade；Bus在Run写入前fail-closed | Envelope/Loop/API 17 pass；Kernel/API/Scheduler/Workflow 101 pass | Envelope尚未持久化为工业authority；Workflow/Agent/Loop仍为compat_pending入口 | 扩大入口覆盖并核验状态权威 |
 | WP-03 固定内容隔离 | completed | Topic、World、Character由上游项目资产驱动；删除固定钟楼/林乔输出 | 双目标+主链26 pass | Draft mock fallback仍须在后续Provider/fixture隔离工作包中核验 | 进入Context/质量工作包 |
-| WP-05 Release质量Gate | in-progress | 独立`release_asset_integrity`与`release_content_quality` GateResult；生产Release evidence强制引用二者 | 发布/隔离/自动Gate 22 pass；重复正文、空正文和伪造ready绕过均阻断 | 尚未覆盖跨章相似度、人工Approval版本绑定和真实Provider质量趋势 | 继续补齐ReviewIssue与人工审批契约 |
+| WP-05 Release质量Gate | completed | 独立`release_asset_integrity`与`release_content_quality` GateResult；生产Release evidence强制引用二者；缺证据的伪造ready阻断 | 受影响套件38 pass；全量793 pass/2 skip；validate、lint、skills、Web、diff均通过 | 跨章语义相似度、人工Approval版本绑定和真实Provider质量趋势仍属于后续WP-09/10/11 | 进入Approval/Golden质量工作包 |
 | WP-01..15 | not-started | 已完成依赖排序和重基线 | `novel-os-priority-issues-rebaseline.md` | Phase 1需先重核验Envelope和执行入口 | 细化WP-01 |
 
 ## 当前基线
@@ -54,6 +54,7 @@ git diff --check: PASSED
 1. 资产完整性与内容质量已拆成两个独立 GateResult：前者检查类型、不可变ID、项目scope和正文可解析性；后者检查正文完整性、项目内重复、章节推进和状态一致性。
 2. 生产模式下任一 Gate 失败都会进入 PublishGate blocking issues；ReleasePackage 的 durable evidence 缺失也会阻断，即使客户端或历史报告把 decision 改成 `ready`。
 3. 本阶段没有使用相似度单指标代表小说质量；重复检查目前采用规范化正文 hash，跨章语义相似度留给后续评测中心与人工校准。
+4. 验证结果：受影响发布套件38项通过；全量确定性回归793项通过、2项按设计跳过；工作区`make validate`通过。
 
 ## WP-00A 完成记录
 
