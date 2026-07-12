@@ -113,11 +113,10 @@ production calibration reference.
 
 Focused suites passed: Kernel contract, sequence contract, Codex adapter and
 provider hard-stop suites (53 focused tests before the later input-limit test;
-the two new/fake-Codex tests passed). `make lint` completed. The chained
-`make validate && make check-skills` command did not return final output through
-the execution channel, so those checks are recorded as incomplete rather than
-passed. Full Python, web test, and web build have not reached a reliable final
-completion result in this audit run and must not be claimed as passed.
+the two new/fake-Codex tests passed). `make lint`, `make validate`,
+`make check-skills`, and `git diff --check` passed. Full Python, web test, and
+web build have not reached a reliable final completion result in this audit run
+and must not be claimed as passed.
 
 ## P0/P1 remaining work and 100-chapter decision
 
