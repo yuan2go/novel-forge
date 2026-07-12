@@ -27,7 +27,7 @@ from novel_forge.model_adapters import (
     validate_model_output,
 )
 from novel_forge.modules.agent_runs import list_agent_runs, start_agent_run
-from novel_forge.model_adapters.providers import _codex_output_schema
+from novel_forge.model_adapters.providers import _codex_output_schema, _enforce_codex_input_limit
 from novel_forge.storage.local import LocalStorage
 
 
@@ -214,6 +214,14 @@ class MockModelTests(unittest.TestCase):
                 if isinstance(value, dict) and isinstance(value.get("items"), dict) and value["items"].get("type") == "object":
                     self.assertIs(value["items"].get("additionalProperties"), False)
                     self.assertEqual(set(value["items"].get("required", [])), set(value["items"].get("properties", {})))
+
+    def test_codex_input_limit_fails_before_provider_process(self):
+        with patch.dict("os.environ", {"NOVEL_FORGE_CODEX_MAX_INPUT_CHARS": "10"}, clear=False):
+            with self.assertRaisesRegex(ValueError, "compact the ContextBundle"):
+                _enforce_codex_input_limit("x" * 11)
+        with patch.dict("os.environ", {"NOVEL_FORGE_CODEX_MAX_INPUT_CHARS": "not-a-number"}, clear=False):
+            with self.assertRaisesRegex(ValueError, "must be an integer"):
+                _enforce_codex_input_limit("x")
 
     def test_model_output_contract_validation(self):
         parsed = parse_json_object('```json\n{"text":"usable generated prose"}\n```')

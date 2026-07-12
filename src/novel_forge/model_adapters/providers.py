@@ -129,6 +129,7 @@ class LocalCodexCliWorkerMixin:
             output_path = tmpdir / "last-message.json"
             schema_path.write_text(json.dumps(_codex_output_schema(canonical), ensure_ascii=False, indent=2), encoding="utf-8")
             prompt = _codex_prompt(canonical, payload, context_payload)
+            _enforce_codex_input_limit(prompt)
             command = self._codex_command(schema_path=schema_path, output_path=output_path, context=context_payload)
             env = self._codex_env()
             timeout = max(1, int(guard.timeout_ms / 1000)) if guard.timeout_ms > 0 else self._codex_timeout_seconds()
@@ -567,6 +568,25 @@ def _canonical_local_operation(operation: str) -> str:
 def _codex_prompt(operation: str, payload: str, context: dict[str, Any]) -> str:
     messages = build_messages(operation, payload, context)
     return "\n\n".join(f"{message['role'].upper()}:\n{message['content']}" for message in messages)
+
+
+def _enforce_codex_input_limit(prompt: str) -> None:
+    """Fail before spawning Codex when a bounded context exceeds its CLI limit."""
+
+    configured = os.environ.get("NOVEL_FORGE_CODEX_MAX_INPUT_CHARS", "950000").strip()
+    try:
+        requested = int(configured)
+    except ValueError as exc:
+        raise ValueError("NOVEL_FORGE_CODEX_MAX_INPUT_CHARS must be an integer") from exc
+    # Codex rejects a turn larger than 1 MiB.  Retain framing headroom and do
+    # not allow this adapter to turn an operator override into an invalid call.
+    limit = min(max(1, requested), 1_048_576)
+    actual = len(prompt)
+    if actual > limit:
+        raise ValueError(
+            "Codex input exceeds the configured safe limit "
+            f"({actual} characters > {limit}); compact the ContextBundle or lower its token budget before retrying"
+        )
 
 
 def _codex_output_schema(operation: str) -> dict[str, Any]:
