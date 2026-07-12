@@ -819,7 +819,7 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     "outputs": outputs,
                 }
 
-            with patch("novel_forge.modules.chapter_production_bus.service.start_chapter_production", side_effect=fake_start_chapter_production):
+            with patch("novel_forge.modules.production_kernel.dispatch_production_operation", side_effect=lambda storage_arg, operation, **kwargs: fake_start_chapter_production(storage_arg, **kwargs)) as dispatch:
                 result = run_chapter_production_sequence(
                     storage,
                     outline_path=str(outline.relative_to(storage.root)),
@@ -827,6 +827,9 @@ class ContextAndProductionChainTests(unittest.TestCase):
                     chapter_count=10,
                     progress_callback=progress.append,
                 )
+
+            self.assertEqual(dispatch.call_count, 10)
+            self.assertTrue(all(call.args[1] == "chapter_production.start" for call in dispatch.call_args_list))
 
             self.assertEqual(result["status"], "succeeded", result)
             self.assertEqual(result["completed_chapters"], 10)

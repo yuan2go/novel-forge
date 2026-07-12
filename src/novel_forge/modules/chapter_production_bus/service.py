@@ -326,8 +326,15 @@ def run_chapter_production_sequence(
             {"event": "chapter_started", "chapter": chapter, "index": offset + 1, "total": total, "started_at": chapter_started_at},
         )
         try:
-            run = start_chapter_production(
+            # A sequence is a production entrypoint in its own right.  Do not
+            # create its chapter children directly: that bypasses the parent
+            # ProductionOperation and makes a multi-chapter acceptance run
+            # indistinguishable from legacy standalone child runs.
+            from novel_forge.modules.production_kernel import dispatch_production_operation
+
+            run = dispatch_production_operation(
                 storage,
+                "chapter_production.start",
                 outline_path=_display_path(storage.root, outline_file),
                 chapter_plan_path=current_plan or None,
                 workspace_path=workspace,
