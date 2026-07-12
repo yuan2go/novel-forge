@@ -1,8 +1,8 @@
 {
-  "artifact_hash": "sha256:fba3cf6fc2105ad3ec41572f8017cd951dcb1d6f1b0489f3a567f79674772718",
-  "commit_sha": "6bdaf5a4a4f0cb55166a67d7d6d2554e4c59c8d0",
-  "coverage_hash": "sha256:1af3b32e1353521a68bbd7b0b98b00731d947fbe32fe2f53a1d8cdb51965717c",
-  "file_count": 397,
+  "artifact_hash": "sha256:adb6d138b9c6c175ce3500a6218a8cf82cff912ea9b0cff2ac46568ea8687f1e",
+  "commit_sha": "35d5a2f916c5999776a53fb799f6218569fccc34",
+  "coverage_hash": "sha256:af777dce43088ad03668825fd44ae4e118f11adeac3bace6bb2b920737f86c22",
+  "file_count": 398,
   "finding_count": 2124,
   "findings": [
     {
@@ -59478,7 +59478,7 @@
       "usage_type": "authority_read"
     }
   ],
-  "generated_at": "2026-07-12T14:39:51+00:00",
+  "generated_at": "2026-07-12T17:09:29+00:00",
   "generator_version": "2.0.0",
   "quality_metrics": {
     "false_positive_sample_count": 0,
@@ -59497,7 +59497,7 @@
     "direct_runner"
   ],
   "schema_version": "2.0.0",
-  "source_tree_sha": "c44204b71160be36e98191a403bceefd3a23a992",
+  "source_tree_sha": "ed400843a274c3750eeae087771890360d3bf052",
   "summary": {
     "authority_read": 1642,
     "authority_write": 380,
