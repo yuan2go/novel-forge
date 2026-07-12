@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 
 class ConcurrentUpdateError(RuntimeError):
     pass
@@ -11,7 +13,7 @@ class ConcurrentUpdateError(RuntimeError):
 class ProductionOperationRepository:
     def __init__(self, cursor: Any): self.cursor = cursor
     def create(self, row: dict[str, Any]) -> None:
-        self.cursor.execute("""INSERT INTO production_operation(operation_id,operation_type,project_id,parent_operation_id,status,idempotency_key,request_digest,environment,metadata,started_at) VALUES (%(operation_id)s,%(operation_type)s,%(project_id)s,%(parent_operation_id)s,%(status)s,%(idempotency_key)s,%(request_digest)s,%(environment)s,%(metadata)s,NOW())""", row)
+        self.cursor.execute("""INSERT INTO production_operation(operation_id,operation_type,project_id,parent_operation_id,status,idempotency_key,request_digest,environment,metadata,started_at) VALUES (%(operation_id)s,%(operation_type)s,%(project_id)s,%(parent_operation_id)s,%(status)s,%(idempotency_key)s,%(request_digest)s,%(environment)s,%(metadata)s,NOW())""", {**row, "metadata": Jsonb(row.get("metadata", {}))})
     def get_by_id(self, operation_id: str, project_id: str) -> dict[str, Any] | None:
         self.cursor.execute("SELECT operation_id,operation_type,project_id,status,version,idempotency_key,request_digest,environment,current_attempt,metadata FROM production_operation WHERE operation_id=%s AND project_id=%s", [operation_id, project_id]); return _one(self.cursor)
     def compare_and_set_status(self, operation_id: str, project_id: str, expected_version: int, expected_status: str, status: str) -> int:
