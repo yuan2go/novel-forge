@@ -1,6 +1,6 @@
 {
-  "artifact_hash": "sha256:04666a0942f696b84d59a1473a620c75d1eea6cfa5e00eaafdc5151167a32e9b",
-  "file_count": 391,
+  "artifact_hash": "sha256:8b6035041fc686eac9cf529cc0777c9ddeeb8620a6ea85d99e60f20bb64ee449",
+  "file_count": 397,
   "finding_count": 2618,
   "findings": [
     {
@@ -49746,9 +49746,9 @@
       "usage_type": "authority_read"
     }
   ],
-  "generated_at": "2026-07-12T12:16:07+00:00",
+  "generated_at": "2026-07-12T13:16:00+00:00",
   "generator_version": "1.0.0",
-  "git_sha": "ce2b06187fde4989875761578ae9ddb65891641b",
+  "git_sha": "9dd4c8cd3b96c6cd46bbbbe696cdb73f3751764b",
   "scan_rules": [
     "localstorage_import",
     "localstorage_constructor",
