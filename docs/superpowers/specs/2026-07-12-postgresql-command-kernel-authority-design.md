@@ -4,6 +4,10 @@
 
 Approved technical baseline for implementation planning. This design replaces
 all production LocalStorage/JSON authority with a PostgreSQL Command Kernel.
+It is the authority-boundary clarification for
+`2026-07-12-production-foundation-and-provider-domain-design.md`; the two
+documents are read together, and this document wins on storage and execution
+authority where they would otherwise differ.
 
 ## Goal
 

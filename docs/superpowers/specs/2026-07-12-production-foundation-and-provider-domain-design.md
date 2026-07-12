@@ -1,5 +1,12 @@
 # Production Foundation and Provider-Domain Design
 
+> **Authority clarification:** This document's production-foundation work is
+> governed by [PostgreSQL Command Kernel Authority Design](2026-07-12-postgresql-command-kernel-authority-design.md).
+> PostgreSQL is the sole production authority for both control state and
+> domain assets/versions. Local JSON is only a pre-refactor, read-only frozen
+> snapshot and optional migration evidence; it is not a production artifact
+> store, projection, compatibility reader, or fallback.
+
 ## Goal
 
 Build a Head-bound, fail-closed production foundation for Novel Forge, then use
@@ -26,8 +33,8 @@ that foundation for real Codex-driven Topic, World, and Character outputs.
 4. **Universal production evidence.** All production entrypoints require an
    Envelope, bounded ContextManifest/Bundle, source eligibility, ReviewIssue
    handling, route approval, and completion evidence. Missing evidence blocks
-   production completion; compatibility paths may read legacy data but may not
-   create or control new production work.
+   production completion. Legacy JSON is accessible only to the explicit,
+   offline migration tool and never to a production runtime path.
 5. **Real Provider domain outputs.** Topic, World, and Character operations
    use the unified Model Gateway and the logged-in Codex CLI adapter in
    production. Deterministic fixtures remain explicitly test-only and cannot
@@ -36,8 +43,10 @@ that foundation for real Codex-driven Topic, World, and Character outputs.
 ## Architectural decisions
 
 - PostgreSQL is the production authority for operation command/event/outbox
-  transactions. Local JSON remains a local artifact store and may be a
-  projection, never a silent production fallback.
+  transactions and all domain assets, versions, qualifications, lineage and
+  object references. PostgreSQL Read Models are rebuildable projections only.
+  Object storage contains immutable bytes referenced and qualified by
+  PostgreSQL; Local JSON has no production-runtime role.
 - `StoryStateEvent` is append-only and project-scoped. The reducer is pure,
   idempotent, and deterministic; snapshots carry stream version and state hash.
 - The ContextManifest is the model-call input contract. It records selected
