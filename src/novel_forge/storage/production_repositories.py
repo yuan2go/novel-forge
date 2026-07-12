@@ -33,20 +33,20 @@ class IdempotencyRepository:
 class StateEventRepository:
     def __init__(self,cursor: Any): self.cursor=cursor
     def append(self,row: dict[str,Any]) -> None:
-        self.cursor.execute("INSERT INTO state_event(event_id,aggregate_type,aggregate_id,project_id,event_type,event_version,sequence_number,correlation_id,causation_id,payload) VALUES (%(event_id)s,%(aggregate_type)s,%(aggregate_id)s,%(project_id)s,%(event_type)s,%(event_version)s,%(sequence_number)s,%(correlation_id)s,%(causation_id)s,%(payload)s)",row)
+        self.cursor.execute("INSERT INTO state_event(event_id,aggregate_type,aggregate_id,project_id,event_type,event_version,sequence_number,correlation_id,causation_id,payload) VALUES (%(event_id)s,%(aggregate_type)s,%(aggregate_id)s,%(project_id)s,%(event_type)s,%(event_version)s,%(sequence_number)s,%(correlation_id)s,%(causation_id)s,%(payload)s)",{**row,"payload":Jsonb(row.get("payload",{}))})
 
 
 class OutboxRepository:
     def __init__(self,cursor: Any): self.cursor=cursor
     def enqueue(self,row: dict[str,Any]) -> None:
-        self.cursor.execute("INSERT INTO outbox_event(outbox_id,event_id,project_id,topic,status,payload) VALUES (%(outbox_id)s,%(event_id)s,%(project_id)s,%(topic)s,'queued',%(payload)s)",row)
+        self.cursor.execute("INSERT INTO outbox_event(outbox_id,event_id,project_id,topic,status,payload) VALUES (%(outbox_id)s,%(event_id)s,%(project_id)s,%(topic)s,'queued',%(payload)s)",{**row,"payload":Jsonb(row.get("payload",{}))})
     def claim(self, consumer: str, limit: int, lease_seconds: int) -> list[dict[str,Any]]:
         self.cursor.execute("""WITH selected AS (SELECT outbox_id FROM outbox_event WHERE status IN ('queued','failed') AND available_at<=NOW() AND (lease_expires_at IS NULL OR lease_expires_at<NOW()) ORDER BY available_at,created_at FOR UPDATE SKIP LOCKED LIMIT %s) UPDATE outbox_event o SET status='claimed',claimed_by=%s,claimed_at=NOW(),lease_expires_at=NOW()+(%s * INTERVAL '1 second'),attempt_count=o.attempt_count+1,updated_at=NOW() FROM selected WHERE o.outbox_id=selected.outbox_id RETURNING o.outbox_id,o.event_id,o.project_id,o.topic,o.payload,o.attempt_count""",[limit,consumer,lease_seconds]); return [_row(self.cursor,r) for r in self.cursor.fetchall()]
 
 
 class AuditLogRepository:
     def __init__(self,cursor: Any): self.cursor=cursor
-    def append(self,row:dict[str,Any])->None: self.cursor.execute("INSERT INTO audit_log(audit_id,project_id,operation_id,action,payload) VALUES (%(audit_id)s,%(project_id)s,%(operation_id)s,%(action)s,%(payload)s)",row)
+    def append(self,row:dict[str,Any])->None: self.cursor.execute("INSERT INTO audit_log(audit_id,project_id,operation_id,action,payload) VALUES (%(audit_id)s,%(project_id)s,%(operation_id)s,%(action)s,%(payload)s)",{**row,"payload":Jsonb(row.get("payload",{}))})
 
 LifecycleCommandRepository = OperationAttemptRepository = OperationLeaseRepository = StateSnapshotRepository = AuditLogRepository
 
