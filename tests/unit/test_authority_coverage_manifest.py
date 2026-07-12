@@ -19,7 +19,10 @@ class AuthorityCoverageManifestTests(unittest.TestCase):
             second = build_manifest(root, generated_at="2026-07-12T00:00:00+00:00")
             self.assertEqual(first, second)
             self.assertEqual(first["summary"]["authority_write"], 1)
-            self.assertEqual(first["findings"][-1]["dependency"], "LocalStorage.write_json")
+            self.assertEqual(
+                first["findings"][-1]["dependency"],
+                "novel_forge.storage.local.LocalStorage.write_json",
+            )
 
     def test_writer_emits_canonical_json_and_hash(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

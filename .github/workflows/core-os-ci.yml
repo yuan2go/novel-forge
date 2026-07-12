@@ -43,6 +43,19 @@ jobs:
           python-version: "3.12"
       - name: Install Python dependencies
         run: python -m pip install -e ".[api]"
+      - name: Generate head-bound authority coverage evidence
+        run: |
+          python -m novel_forge.tools.authority_coverage_manifest \
+            --repo-root . \
+            --output /tmp/postgresql-authority-coverage-${GITHUB_SHA}.json \
+            --check-head
+          python -m unittest tests.architecture.test_authority_coverage_baseline -v
+      - name: Upload authority coverage evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgresql-authority-coverage-${{ github.sha }}
+          path: /tmp/postgresql-authority-coverage-${{ github.sha }}.json
+          if-no-files-found: error
       - name: Python regression
         run: python -m unittest discover -s tests -p 'test_*.py'
       - name: PostgreSQL migrations and integration
