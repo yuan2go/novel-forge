@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from novel_forge.storage.production_repositories import (AuditLogRepository, IdempotencyRepository, OutboxRepository, ProductionOperationRepository, StateEventRepository)
+from novel_forge.storage.production_repositories import (AuditLogRepository, ConsumerDeliveryRepository, IdempotencyRepository, LifecycleCommandRepository, OperationLeaseRepository, OutboxRepository, ProductionOperationRepository, StateEventRepository)
 
 
 class ProductionUnitOfWork:
@@ -23,6 +23,9 @@ class ProductionUnitOfWork:
         self.events = StateEventRepository(self.cursor)
         self.outbox = OutboxRepository(self.cursor)
         self.audit = AuditLogRepository(self.cursor)
+        self.consumer_deliveries = ConsumerDeliveryRepository(self.cursor)
+        self.leases = OperationLeaseRepository(self.cursor)
+        self.commands = LifecycleCommandRepository(self.cursor)
         return self
 
     def commit(self) -> None:
@@ -42,6 +45,13 @@ class ProductionUnitOfWork:
         self.outbox.enqueue(outbox)
         self.audit.append(audit)
         return {"operation_id": operation["operation_id"], "idempotent_replay": False}
+
+    def transition(self, *, command: dict[str, Any], new_status: str, event: dict[str, Any], outbox: dict[str, Any], audit: dict[str, Any]) -> int:
+        self.commands.record(command)
+        version=self.operations.compare_and_set_status(command["operation_id"],command["project_id"],int(command["expected_version"]),command["expected_status"],new_status)
+        self.events.append(event);self.outbox.enqueue(outbox);self.audit.append(audit)
+        self.commands.mark_applied(command["command_id"],{"status":new_status,"version":version})
+        return version
 
     def __exit__(self, exc_type: Any, _exc: Any, _tb: Any) -> bool:
         if self.connection:
