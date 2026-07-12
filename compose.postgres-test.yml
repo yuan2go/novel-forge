@@ -1,0 +1,16 @@
+services:
+  authority-postgres-test:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: novel_forge_authority_test
+      POSTGRES_USER: novel_forge
+      POSTGRES_PASSWORD: novel_forge
+    ports:
+      - "55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novel_forge -d novel_forge_authority_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
