@@ -2,6 +2,11 @@
 
 Date: 2026-07-12
 
+The complete file-and-symbol action inventory is generated in
+[`postgresql-authority-legacy-actions.json`](postgresql-authority-legacy-actions.json).
+It is derived from the same canonical baseline as coverage and is the source
+for deletion/replacement work; this page is only the human summary.
+
 These are final-cutover deletions or production exclusions, not early cleanup.
 
 | Target | Reason | Replacement / proof |

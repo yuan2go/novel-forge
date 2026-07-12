@@ -97,6 +97,19 @@ state machine.
 
 ## Authority data model
 
+### StoryState authority decision
+
+Novel Forge adopts **B: current StoryState tables are authoritative** for this
+reconstruction. `StoryStateEvent` is an append-only fact stream for audit,
+projection and deterministic replay verification; it is not a second write
+authority. This matches the existing project-wide asset model and avoids an
+unsafe full Event Sourcing conversion while preserving a bounded future path.
+StoryState repositories atomically update the project-scoped current state and
+append the corresponding event. Snapshots are derived checkpoints whose replay
+hash is verified against the authoritative current table; neither events nor
+snapshots may independently decide current Canon, CharacterState, or
+ForeshadowState.
+
 ### Asset versions and qualifications
 
 AssetVersion has three independent, immutable-history dimensions:
@@ -167,15 +180,17 @@ Operations and Saga orchestration.
 
 | Entity | States |
 |---|---|
-| `Operation` | `ADMITTED`, `WAITING_APPROVAL`, `READY`, `WAITING_CHILDREN`, `EXECUTING`, `WAITING_EXTERNAL_RESULT`, `WAITING_GATE`, `CANCELLATION_REQUESTED`, `COMPENSATION_REQUIRED`, `RECONCILIATION_REQUIRED`, `COMPLETED`, `CANCELLED`, `FAILED_RETRYABLE`, `FAILED_FINAL`, `DEAD_LETTER` |
+| `Operation` | `ADMITTED`, `WAITING_APPROVAL`, `READY`, `EXECUTING`, `WAITING_CHILDREN`, `WAITING_EXTERNAL_RESULT`, `WAITING_GATE`, `FAILED_RETRYABLE`, `FAILED_FINAL`, `CANCELLATION_REQUESTED`, `RECONCILIATION_REQUIRED`, `COMPENSATION_REQUIRED`, `COMPENSATING`, `COMPENSATED`, `COMPENSATION_FAILED`, `SUCCEEDED`, `CANCELLED`, `DEAD_LETTER` |
 | `Attempt` | `CREATED`, `QUEUED`, `LEASED`, `RUNNING`, `CHECKPOINTED`, `RESULT_SUBMITTED`, `SUCCEEDED`, `FAILED_RETRYABLE`, `FAILED_FINAL`, `TIMED_OUT`, `LEASE_LOST`, `CANCELLED`, `SUPERSEDED`, `LATE_RESULT_REJECTED` |
-| `Lease` | `AVAILABLE`, `HELD`, `RELEASED`, `EXPIRED` |
+| `LeaseAcquisition` | `HELD`, `RELEASED`, `EXPIRED` |
 
 An Attempt only records one Worker execution. It never represents domain
 reconciliation. A retry creates a new Attempt; an Operation has at most one
-effective (nonterminal) Attempt at any time. Acquiring a Lease atomically
-increments the fencing token. Worker checkpoints and results must carry the
-current token. Stale writes are rejected and recorded as `LATE_RESULT_REJECTED`.
+effective (nonterminal) Attempt at any time. `Attempt 1 -> * LeaseAcquisition`:
+every acquisition records owner, fencing token, acquired/expires/heartbeat/
+released timestamps and release reason. Acquiring atomically increments the
+fencing token. Worker checkpoints and results must carry the current token.
+Stale writes are rejected and recorded as `LATE_RESULT_REJECTED`.
 External callbacks do not use Worker fencing; they validate effect ID,
 generation, stable external idempotency key, and external receipt ID.
 
@@ -197,22 +212,22 @@ state is only written after evidence resolves the external state.
 | Operation | `ADMITTED` | `WAITING_APPROVAL`, `READY`, `FAILED_FINAL` | admission snapshot and validation persisted |
 | Operation | `WAITING_APPROVAL` | `READY`, `CANCELLED`, `FAILED_FINAL` | approval accepted, cancelled, or rejected |
 | Operation | `READY` | `EXECUTING`, `WAITING_CHILDREN`, `CANCELLATION_REQUESTED` | leaseable Attempt, dependency wait, or versioned cancel |
-| Operation | `EXECUTING` | `WAITING_EXTERNAL_RESULT`, `WAITING_GATE`, `WAITING_CHILDREN`, `COMPLETED`, `FAILED_RETRYABLE`, `FAILED_FINAL`, `CANCELLATION_REQUESTED` | handler result and frozen Completion Contract |
-| Operation | `WAITING_CHILDREN` | `EXECUTING`, `WAITING_GATE`, `COMPLETED`, `FAILED_FINAL`, `CANCELLATION_REQUESTED` | child/Saga dependency outcome |
-| Operation | `WAITING_EXTERNAL_RESULT` | `EXECUTING`, `COMPLETED`, `FAILED_RETRYABLE`, `RECONCILIATION_REQUIRED`, `CANCELLATION_REQUESTED` | validated Effect/Dispatch result |
-| Operation | `WAITING_GATE` | `COMPLETED`, `FAILED_FINAL`, `CANCELLATION_REQUESTED` | required gate/approval evidence |
+| Operation | `EXECUTING` | `WAITING_EXTERNAL_RESULT`, `WAITING_GATE`, `WAITING_CHILDREN`, `SUCCEEDED`, `FAILED_RETRYABLE`, `FAILED_FINAL`, `CANCELLATION_REQUESTED` | handler result and frozen Completion Contract |
+| Operation | `WAITING_CHILDREN` | `EXECUTING`, `WAITING_GATE`, `SUCCEEDED`, `FAILED_FINAL`, `CANCELLATION_REQUESTED`, `COMPENSATING` | child/Saga dependency outcome |
+| Operation | `WAITING_EXTERNAL_RESULT` | `EXECUTING`, `SUCCEEDED`, `FAILED_RETRYABLE`, `RECONCILIATION_REQUIRED`, `CANCELLATION_REQUESTED` | validated Effect/Dispatch result |
+| Operation | `WAITING_GATE` | `SUCCEEDED`, `FAILED_FINAL`, `CANCELLATION_REQUESTED` | required gate/approval evidence |
 | Operation | `FAILED_RETRYABLE` | `READY`, `FAILED_FINAL`, `DEAD_LETTER`, `CANCELLATION_REQUESTED` | new Attempt, retry exhaustion, or cancel |
 | Operation | `CANCELLATION_REQUESTED` | `CANCELLED`, `RECONCILIATION_REQUIRED`, `COMPENSATION_REQUIRED` | all effects absent/cancelled, unknown, or compensator required |
-| Operation | `RECONCILIATION_REQUIRED` | `EXECUTING`, `COMPLETED`, `FAILED_FINAL`, `COMPENSATION_REQUIRED`, `CANCELLED` | reconciliation evidence resolves all effects |
-| Operation | `COMPENSATION_REQUIRED` | `WAITING_CHILDREN`, `COMPLETED`, `FAILED_FINAL`, `RECONCILIATION_REQUIRED` | compensating child outcome |
+| Operation | `RECONCILIATION_REQUIRED` | `EXECUTING`, `SUCCEEDED`, `FAILED_FINAL`, `COMPENSATION_REQUIRED`, `CANCELLED` | reconciliation evidence resolves all effects |
+| Operation | `COMPENSATION_REQUIRED` | `COMPENSATING`, `FAILED_FINAL`, `RECONCILIATION_REQUIRED` | compensating child admitted |
+| Operation | `COMPENSATING` | `COMPENSATED`, `COMPENSATION_FAILED`, `RECONCILIATION_REQUIRED` | compensating child outcome |
 | Attempt | `CREATED` | `QUEUED`, `CANCELLED`, `SUPERSEDED` | scheduler acceptance |
 | Attempt | `QUEUED` | `LEASED`, `CANCELLED`, `SUPERSEDED`, `TIMED_OUT` | worker claim / cancellation / deadline |
 | Attempt | `LEASED` | `RUNNING`, `LEASE_LOST`, `CANCELLED`, `TIMED_OUT` | current fencing holder starts / lease expiry |
 | Attempt | `RUNNING` | `CHECKPOINTED`, `RESULT_SUBMITTED`, `FAILED_RETRYABLE`, `FAILED_FINAL`, `TIMED_OUT`, `LEASE_LOST`, `CANCELLED` | current fencing token required |
 | Attempt | `CHECKPOINTED` | `RUNNING`, `RESULT_SUBMITTED`, `LEASE_LOST`, `TIMED_OUT`, `CANCELLED` | checkpoint belongs to active fencing token |
 | Attempt | `RESULT_SUBMITTED` | `SUCCEEDED`, `FAILED_RETRYABLE`, `FAILED_FINAL`, `LATE_RESULT_REJECTED` | Kernel validates result and Completion Contract |
-| Lease | `AVAILABLE` | `HELD` | atomic acquisition increments fencing token |
-| Lease | `HELD` | `RELEASED`, `EXPIRED` | owner release or deadline |
+| LeaseAcquisition | `HELD` | `RELEASED`, `EXPIRED` | owner release or PostgreSQL deadline |
 | ExternalEffect | `REQUESTED` | `DISPATCHABLE`, `CANCELLATION_REQUESTED` | intent persisted |
 | ExternalEffect | `DISPATCHABLE` | `IN_FLIGHT`, `CANCELLATION_REQUESTED` | eligible Dispatch created |
 | ExternalEffect | `IN_FLIGHT` | `SUCCEEDED`, `FAILED`, `RECONCILIATION_REQUIRED`, `CANCELLATION_REQUESTED`, `COMPENSATION_REQUIRED` | validated Dispatch/reconciliation result |

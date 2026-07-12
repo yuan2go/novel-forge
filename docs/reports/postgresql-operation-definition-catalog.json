@@ -1,0 +1,1648 @@
+{
+  "definitions": [
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "production.topic.generate.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "production",
+      "handler": "novel_forge.modules.command_kernel.handlers.production",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "production.topic.generate",
+      "permissions": [
+        "production.topic.generate"
+      ],
+      "result_schema": "production.topic.generate.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "production.world.generate.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "production",
+      "handler": "novel_forge.modules.command_kernel.handlers.production",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "production.world.generate",
+      "permissions": [
+        "production.world.generate"
+      ],
+      "result_schema": "production.world.generate.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "production.character.generate.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "production",
+      "handler": "novel_forge.modules.command_kernel.handlers.production",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "production.character.generate",
+      "permissions": [
+        "production.character.generate"
+      ],
+      "result_schema": "production.character.generate.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "production.outline.generate.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "production",
+      "handler": "novel_forge.modules.command_kernel.handlers.production",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "production.outline.generate",
+      "permissions": [
+        "production.outline.generate"
+      ],
+      "result_schema": "production.outline.generate.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "production.chapter_plan.generate.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "production",
+      "handler": "novel_forge.modules.command_kernel.handlers.production",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "production.chapter_plan.generate",
+      "permissions": [
+        "production.chapter_plan.generate"
+      ],
+      "result_schema": "production.chapter_plan.generate.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "production.draft.generate.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "production",
+      "handler": "novel_forge.modules.command_kernel.handlers.production",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "legacy_characterization": "chapter_production.start",
+      "migration_status": "planned",
+      "name": "production.draft.generate",
+      "permissions": [
+        "production.draft.generate"
+      ],
+      "result_schema": "production.draft.generate.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "production.chapter.export.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "production",
+      "handler": "novel_forge.modules.command_kernel.handlers.production",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "production.chapter.export",
+      "permissions": [
+        "production.chapter.export"
+      ],
+      "result_schema": "production.chapter.export.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "workflow.start.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "workflow",
+      "handler": "novel_forge.modules.command_kernel.handlers.workflow",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "legacy_characterization": "workflow.execute",
+      "migration_status": "planned",
+      "name": "workflow.start",
+      "permissions": [
+        "workflow.start"
+      ],
+      "result_schema": "workflow.start.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "workflow.resume.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "workflow",
+      "handler": "novel_forge.modules.command_kernel.handlers.workflow",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "workflow.resume",
+      "permissions": [
+        "workflow.resume"
+      ],
+      "result_schema": "workflow.resume.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "workflow.pause.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "workflow",
+      "handler": "novel_forge.modules.command_kernel.handlers.workflow",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "workflow.pause",
+      "permissions": [
+        "workflow.pause"
+      ],
+      "result_schema": "workflow.pause.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "workflow.cancel.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "workflow",
+      "handler": "novel_forge.modules.command_kernel.handlers.workflow",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "workflow.cancel",
+      "permissions": [
+        "workflow.cancel"
+      ],
+      "result_schema": "workflow.cancel.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "workflow.recover.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "workflow",
+      "handler": "novel_forge.modules.command_kernel.handlers.workflow",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "workflow.recover",
+      "permissions": [
+        "workflow.recover"
+      ],
+      "result_schema": "workflow.recover.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "agent.dispatch.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "agent",
+      "handler": "novel_forge.modules.command_kernel.handlers.agent",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "legacy_characterization": "agent.dispatch",
+      "migration_status": "planned",
+      "name": "agent.dispatch",
+      "permissions": [
+        "agent.dispatch"
+      ],
+      "result_schema": "agent.dispatch.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "agent.retry.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "agent",
+      "handler": "novel_forge.modules.command_kernel.handlers.agent",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "agent.retry",
+      "permissions": [
+        "agent.retry"
+      ],
+      "result_schema": "agent.retry.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "agent.recover.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "agent",
+      "handler": "novel_forge.modules.command_kernel.handlers.agent",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "agent.recover",
+      "permissions": [
+        "agent.recover"
+      ],
+      "result_schema": "agent.recover.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "agent.dead_letter.replay.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "agent",
+      "handler": "novel_forge.modules.command_kernel.handlers.agent",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "agent.dead_letter.replay",
+      "permissions": [
+        "agent.dead_letter.replay"
+      ],
+      "result_schema": "agent.dead_letter.replay.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "review.run.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "review",
+      "handler": "novel_forge.modules.command_kernel.handlers.review",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "legacy_characterization": "loop.run",
+      "migration_status": "planned",
+      "name": "review.run",
+      "permissions": [
+        "review.run"
+      ],
+      "result_schema": "review.run.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "review.resolve_issue.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "review",
+      "handler": "novel_forge.modules.command_kernel.handlers.review",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "review.resolve_issue",
+      "permissions": [
+        "review.resolve_issue"
+      ],
+      "result_schema": "review.resolve_issue.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "revision.apply.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "revision",
+      "handler": "novel_forge.modules.command_kernel.handlers.revision",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "revision.apply",
+      "permissions": [
+        "revision.apply"
+      ],
+      "result_schema": "revision.apply.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "publishing.prepare_release.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "publishing",
+      "handler": "novel_forge.modules.command_kernel.handlers.publishing",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "publishing.prepare_release",
+      "permissions": [
+        "publishing.prepare_release"
+      ],
+      "result_schema": "publishing.prepare_release.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "publishing.submit.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "publishing",
+      "handler": "novel_forge.modules.command_kernel.handlers.publishing",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "publishing.submit",
+      "permissions": [
+        "publishing.submit"
+      ],
+      "result_schema": "publishing.submit.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "publishing.receipt.record.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "publishing",
+      "handler": "novel_forge.modules.command_kernel.handlers.publishing",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "publishing.receipt.record",
+      "permissions": [
+        "publishing.receipt.record"
+      ],
+      "result_schema": "publishing.receipt.record.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "publishing.retract.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "publishing",
+      "handler": "novel_forge.modules.command_kernel.handlers.publishing",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "publishing.retract",
+      "permissions": [
+        "publishing.retract"
+      ],
+      "result_schema": "publishing.retract.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "canon.update.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "canon",
+      "handler": "novel_forge.modules.command_kernel.handlers.canon",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "canon.update",
+      "permissions": [
+        "canon.update"
+      ],
+      "result_schema": "canon.update.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "canon.character_state.update.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "canon",
+      "handler": "novel_forge.modules.command_kernel.handlers.canon",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "canon.character_state.update",
+      "permissions": [
+        "canon.character_state.update"
+      ],
+      "result_schema": "canon.character_state.update.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "canon.foreshadow_state.update.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "canon",
+      "handler": "novel_forge.modules.command_kernel.handlers.canon",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "canon.foreshadow_state.update",
+      "permissions": [
+        "canon.foreshadow_state.update"
+      ],
+      "result_schema": "canon.foreshadow_state.update.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "canon.recap.writeback.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "canon",
+      "handler": "novel_forge.modules.command_kernel.handlers.canon",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "canon.recap.writeback",
+      "permissions": [
+        "canon.recap.writeback"
+      ],
+      "result_schema": "canon.recap.writeback.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "context.build.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "context",
+      "handler": "novel_forge.modules.command_kernel.handlers.context",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "context.build",
+      "permissions": [
+        "context.build"
+      ],
+      "result_schema": "context.build.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "context.compress.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "context",
+      "handler": "novel_forge.modules.command_kernel.handlers.context",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "context.compress",
+      "permissions": [
+        "context.compress"
+      ],
+      "result_schema": "context.compress.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "context.approve.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "context",
+      "handler": "novel_forge.modules.command_kernel.handlers.context",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "context.approve",
+      "permissions": [
+        "context.approve"
+      ],
+      "result_schema": "context.approve.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "context.invalidate.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "context",
+      "handler": "novel_forge.modules.command_kernel.handlers.context",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "context.invalidate",
+      "permissions": [
+        "context.invalidate"
+      ],
+      "result_schema": "context.invalidate.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "quality.evaluate.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "quality",
+      "handler": "novel_forge.modules.command_kernel.handlers.quality",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "quality.evaluate",
+      "permissions": [
+        "quality.evaluate"
+      ],
+      "result_schema": "quality.evaluate.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "quality.run_completion_gate.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "quality",
+      "handler": "novel_forge.modules.command_kernel.handlers.quality",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "quality.run_completion_gate",
+      "permissions": [
+        "quality.run_completion_gate"
+      ],
+      "result_schema": "quality.run_completion_gate.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "quality.gate.resolve.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "quality",
+      "handler": "novel_forge.modules.command_kernel.handlers.quality",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "quality.gate.resolve",
+      "permissions": [
+        "quality.gate.resolve"
+      ],
+      "result_schema": "quality.gate.resolve.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "source.import.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "source",
+      "handler": "novel_forge.modules.command_kernel.handlers.source",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "source.import",
+      "permissions": [
+        "source.import"
+      ],
+      "result_schema": "source.import.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "source.refresh.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "source",
+      "handler": "novel_forge.modules.command_kernel.handlers.source",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "source.refresh",
+      "permissions": [
+        "source.refresh"
+      ],
+      "result_schema": "source.refresh.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "source.quarantine.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "source",
+      "handler": "novel_forge.modules.command_kernel.handlers.source",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "source.quarantine",
+      "permissions": [
+        "source.quarantine"
+      ],
+      "result_schema": "source.quarantine.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "source.release_quarantine.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "external",
+      "external_capabilities": [],
+      "family": "source",
+      "handler": "novel_forge.modules.command_kernel.handlers.source",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "source.release_quarantine",
+      "permissions": [
+        "source.release_quarantine"
+      ],
+      "result_schema": "source.release_quarantine.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "knowledge.card.create.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "knowledge",
+      "handler": "novel_forge.modules.command_kernel.handlers.knowledge",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "knowledge.card.create",
+      "permissions": [
+        "knowledge.card.create"
+      ],
+      "result_schema": "knowledge.card.create.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "knowledge.rule.create.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "knowledge",
+      "handler": "novel_forge.modules.command_kernel.handlers.knowledge",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "knowledge.rule.create",
+      "permissions": [
+        "knowledge.rule.create"
+      ],
+      "result_schema": "knowledge.rule.create.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "knowledge.template.create.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "knowledge",
+      "handler": "novel_forge.modules.command_kernel.handlers.knowledge",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "knowledge.template.create",
+      "permissions": [
+        "knowledge.template.create"
+      ],
+      "result_schema": "knowledge.template.create.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "knowledge.pack.build.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "knowledge",
+      "handler": "novel_forge.modules.command_kernel.handlers.knowledge",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "knowledge.pack.build",
+      "permissions": [
+        "knowledge.pack.build"
+      ],
+      "result_schema": "knowledge.pack.build.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "knowledge.weight.apply.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "knowledge",
+      "handler": "novel_forge.modules.command_kernel.handlers.knowledge",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "knowledge.weight.apply",
+      "permissions": [
+        "knowledge.weight.apply"
+      ],
+      "result_schema": "knowledge.weight.apply.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "knowledge.rebuild.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "knowledge",
+      "handler": "novel_forge.modules.command_kernel.handlers.knowledge",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "knowledge.rebuild",
+      "permissions": [
+        "knowledge.rebuild"
+      ],
+      "result_schema": "knowledge.rebuild.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "feedback.import.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "feedback",
+      "handler": "novel_forge.modules.command_kernel.handlers.feedback",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "feedback.import",
+      "permissions": [
+        "feedback.import"
+      ],
+      "result_schema": "feedback.import.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "feedback.cluster.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "feedback",
+      "handler": "novel_forge.modules.command_kernel.handlers.feedback",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "feedback.cluster",
+      "permissions": [
+        "feedback.cluster"
+      ],
+      "result_schema": "feedback.cluster.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "feedback.patch.approve.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "feedback",
+      "handler": "novel_forge.modules.command_kernel.handlers.feedback",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "feedback.patch.approve",
+      "permissions": [
+        "feedback.patch.approve"
+      ],
+      "result_schema": "feedback.patch.approve.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "feedback.patch.apply.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "feedback",
+      "handler": "novel_forge.modules.command_kernel.handlers.feedback",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "feedback.patch.apply",
+      "permissions": [
+        "feedback.patch.apply"
+      ],
+      "result_schema": "feedback.patch.apply.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "project_lifecycle.create.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "project_lifecycle",
+      "handler": "novel_forge.modules.command_kernel.handlers.project_lifecycle",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "project_lifecycle.create",
+      "permissions": [
+        "project_lifecycle.create"
+      ],
+      "result_schema": "project_lifecycle.create.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "project_lifecycle.clone.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "project_lifecycle",
+      "handler": "novel_forge.modules.command_kernel.handlers.project_lifecycle",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "project_lifecycle.clone",
+      "permissions": [
+        "project_lifecycle.clone"
+      ],
+      "result_schema": "project_lifecycle.clone.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "project_lifecycle.pause.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "project_lifecycle",
+      "handler": "novel_forge.modules.command_kernel.handlers.project_lifecycle",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "project_lifecycle.pause",
+      "permissions": [
+        "project_lifecycle.pause"
+      ],
+      "result_schema": "project_lifecycle.pause.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "project_lifecycle.resume.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "project_lifecycle",
+      "handler": "novel_forge.modules.command_kernel.handlers.project_lifecycle",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "project_lifecycle.resume",
+      "permissions": [
+        "project_lifecycle.resume"
+      ],
+      "result_schema": "project_lifecycle.resume.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "project_lifecycle.archive.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "project_lifecycle",
+      "handler": "novel_forge.modules.command_kernel.handlers.project_lifecycle",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "project_lifecycle.archive",
+      "permissions": [
+        "project_lifecycle.archive"
+      ],
+      "result_schema": "project_lifecycle.archive.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "project_lifecycle.delete.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "project_lifecycle",
+      "handler": "novel_forge.modules.command_kernel.handlers.project_lifecycle",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "project_lifecycle.delete",
+      "permissions": [
+        "project_lifecycle.delete"
+      ],
+      "result_schema": "project_lifecycle.delete.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "policy.bundle.apply.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "policy",
+      "handler": "novel_forge.modules.command_kernel.handlers.policy",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "policy.bundle.apply",
+      "permissions": [
+        "policy.bundle.apply"
+      ],
+      "result_schema": "policy.bundle.apply.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "policy.provider.update.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "policy",
+      "handler": "novel_forge.modules.command_kernel.handlers.policy",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "policy.provider.update",
+      "permissions": [
+        "policy.provider.update"
+      ],
+      "result_schema": "policy.provider.update.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "policy.budget.update.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "policy",
+      "handler": "novel_forge.modules.command_kernel.handlers.policy",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "policy.budget.update",
+      "permissions": [
+        "policy.budget.update"
+      ],
+      "result_schema": "policy.budget.update.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "portfolio.priority.apply.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "portfolio",
+      "handler": "novel_forge.modules.command_kernel.handlers.portfolio",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "portfolio.priority.apply",
+      "permissions": [
+        "portfolio.priority.apply"
+      ],
+      "result_schema": "portfolio.priority.apply.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "portfolio.allocation.apply.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "portfolio",
+      "handler": "novel_forge.modules.command_kernel.handlers.portfolio",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "portfolio.allocation.apply",
+      "permissions": [
+        "portfolio.allocation.apply"
+      ],
+      "result_schema": "portfolio.allocation.apply.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "ops.reindex.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "ops",
+      "handler": "novel_forge.modules.command_kernel.handlers.ops",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "ops.reindex",
+      "permissions": [
+        "ops.reindex"
+      ],
+      "result_schema": "ops.reindex.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "ops.reconcile.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "ops",
+      "handler": "novel_forge.modules.command_kernel.handlers.ops",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "ops.reconcile",
+      "permissions": [
+        "ops.reconcile"
+      ],
+      "result_schema": "ops.reconcile.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "ops.migration.validate.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "ops",
+      "handler": "novel_forge.modules.command_kernel.handlers.ops",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "ops.migration.validate",
+      "permissions": [
+        "ops.migration.validate"
+      ],
+      "result_schema": "ops.migration.validate.result.v1"
+    },
+    {
+      "approval_policy": "definition_policy",
+      "attempt_retry_timeout_policy": "definition_default_v1",
+      "cancellation_policy": "controlled",
+      "command_schema": "ops.repair.apply.command.v1",
+      "compensation_policy": "definition_default",
+      "completion_contract": "completion_contract.v1",
+      "concurrency_key": "project:{project_id}:{operation}",
+      "current_entrypoints": [],
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "ops",
+      "handler": "novel_forge.modules.command_kernel.handlers.ops",
+      "idempotency_scope": "project:operation",
+      "input_output_evidence": [
+        "trace",
+        "audit",
+        "outbox"
+      ],
+      "migration_status": "planned",
+      "name": "ops.repair.apply",
+      "permissions": [
+        "ops.repair.apply"
+      ],
+      "result_schema": "ops.repair.apply.result.v1"
+    }
+  ],
+  "git_sha": "ce2b06187fde4989875761578ae9ddb65891641b",
+  "schema_version": "1.0.0"
+}

@@ -21,3 +21,30 @@ Date: 2026-07-12
 used as migration inputs only until replacement repositories/read models are
 complete. They must not remain the production source of truth after the final
 release gate.
+
+## Domain-level target matrix
+
+| Domain | Current code/table | Target table | Action | Authority/repository/query/tests |
+|---|---|---|---|---|
+| Project / Workspace | `nf_projects`, `workspace/service.py` | `project`, `workspace` | recreate | Write Model / ProjectRepository / project current query / integration |
+| Asset / Version / Qualification | `nf_assets`, JSON assets | `asset`, `asset_version`, `asset_qualification` | recreate | Write Model / AssetRepository / active-version query / integration |
+| Blob / Reference | object-store helpers | `blob`, `asset_version_blob_reference` | new | Write Model / BlobRepository / verified-blob query / integration |
+| Source / Material / License / Lineage | source modules, MKAOS tables | `source_document`, `source_lineage` | alter | Write Model / SourceRepository / scoped query / integration |
+| MKAOS cards/packs | migration `v20260702_0003` | versioned knowledge tables | alter | Write Model / KnowledgeRepository / pack projection / integration |
+| Context | JSON context assets | `context_manifest`, `context_item`, `compression_manifest` | new | Write Model / ContextRepository / manifest query / integration |
+| Provider execution | adapter logs | `provider_input_projection`, `provider_execution_manifest` | new | Write Model / ProviderRepository / audit query / integration |
+| Topic/World/Character/Outline | JSON module assets | versioned `asset_version` payloads | migrate | AssetRepository / strong current query / integration |
+| Chapter / Draft / Review / Revision | JSON assets, `review_issues` | domain tables plus AssetVersion | alter | domain repositories / strong current query / integration |
+| Canon / StoryState | JSON graph assets | `story_state`, `story_state_event` | new | State table authority / StoryStateRepository / replay verification |
+| Quality / Gate | JSON reports | `quality_evaluation`, `gate_decision` | new | GateRepository / strong gate query / integration |
+| Model usage / Cost | runtime ledger assets | `model_call`, `usage_ledger`, `cost_ledger` | new | LedgerRepository / audit query / integration |
+| Operation / Attempt / Lease | `v20260712_0005` | authority operation tables | recreate | KernelRepository / CAS query / concurrency integration |
+| External effect / Dispatch | none | `external_effect`, `external_effect_dispatch` | new | EffectRepository / reconciliation query / integration |
+| Inbox / Outbox | outbox + delivery table | `inbox_message`, `outbox_event` | alter | Inbox/OutboxRepository / consumer query / integration |
+| Approval / Audit / Trace | `audit_log`, JSON approvals | snapshots/evidence tables | alter | EvidenceRepository / authority query / integration |
+| Release / Receipt | JSON release package | `release`, `publish_receipt` | new | PublishingRepository / release query / integration |
+| Feedback / Patch | JSON feedback | `feedback`, `feedback_patch` | new | FeedbackRepository / projection query / integration |
+| Policy / Portfolio | JSON settings | `policy_bundle`, `portfolio_decision` | new | PolicyRepository / strong policy query / integration |
+| Read Model / Watermark | `nf_assets` indexes | `read_model_*`, `projection_watermark` | recreate | ProjectionRepository / eventual query / rebuild test |
+| Migration / Quarantine | `sync_from_local` | `migration_run`, `data_quarantine` | new | MigrationRepository / audit query / import integration |
+| Release evidence | none | `release_evidence` | new | ReleaseEvidenceRepository / release query / architecture test |
