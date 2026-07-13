@@ -190,6 +190,7 @@ def acknowledge_worker_cancellation(
             )
             uow.repositories.cancellations.acknowledge_worker_cancel(
                 command.attempt_id,
+                command.worker_id,
                 command.fencing_token,
             )
             result = _cas_operation(
@@ -209,6 +210,9 @@ def acknowledge_worker_cancellation(
                 command.worker_id,
                 command.fencing_token,
                 "cancel_acknowledged",
+            )
+            uow.repositories.attempt_runtime.assert_lease_consistency(
+                command.attempt_id,
             )
         uow.commit()
     if stale_error is not None:

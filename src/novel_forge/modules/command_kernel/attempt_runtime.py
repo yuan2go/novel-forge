@@ -179,6 +179,23 @@ def acquire_attempt_lease(
                     trace_id=trace_id,
                     correlation_id=correlation_id,
                 )
+            else:
+                uow.repositories.attempt_runtime.assign_worker(
+                    attempt_id,
+                    attempt["status"],
+                    worker_id,
+                )
+                _record_attempt_runtime_event(
+                    uow,
+                    attempt=attempt,
+                    event_type="authority.attempt.lease_taken_over",
+                    worker_id=worker_id,
+                    fencing_token=lease["fencing_token"],
+                    trace_id=trace_id,
+                    correlation_id=correlation_id,
+                    payload={"previous_worker_id": attempt.get("worker_id", "")},
+                )
+            uow.repositories.attempt_runtime.assert_lease_consistency(attempt_id)
             uow.commit()
             return lease
     except psycopg.errors.CheckViolation as exc:
@@ -280,6 +297,9 @@ def submit_attempt_result(
                 command.worker_id,
                 command.fencing_token,
                 f"result_{outcome}",
+            )
+            uow.repositories.attempt_runtime.assert_lease_consistency(
+                command.attempt_id,
             )
         uow.commit()
     if stale_error is not None:
@@ -439,6 +459,17 @@ def _run_fenced_transition(
                 "ATTEMPT_FENCING_TOKEN_STALE",
                 f"worker {command_type} does not carry the current fencing token",
             )
+        elif command_type == "start" and attempt["status"] == "RUNNING":
+            _record_attempt_runtime_event(
+                uow,
+                attempt=attempt,
+                event_type="authority.attempt.resumed",
+                worker_id=command.worker_id,
+                fencing_token=command.fencing_token,
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+                payload={},
+            )
         else:
             _transition_attempt(
                 uow,
@@ -450,6 +481,7 @@ def _run_fenced_transition(
                 correlation_id=command.correlation_id,
                 checkpoint=checkpoint,
             )
+        uow.repositories.attempt_runtime.assert_lease_consistency(command.attempt_id)
         uow.commit()
     if stale_error is not None:
         raise stale_error
@@ -498,6 +530,7 @@ def _reject_stale(
     command_type: str,
     payload: dict[str, Any],
 ) -> None:
+    current_lease = uow.repositories.attempt_runtime.current_lease(command.attempt_id)
     uow.repositories.attempt_runtime.reject_stale(
         {
             "evidence_id": str(uuid4()),
@@ -509,19 +542,62 @@ def _reject_stale(
             "presented_fencing_token": command.fencing_token,
             "current_fencing_token": current_token,
             "payload": payload,
+            "authoritative_attempt_status": attempt["status"],
+            "current_worker_id": (current_lease or {}).get("worker_id", ""),
+            "current_lease_id": (current_lease or {}).get("lease_id", ""),
+            "trace_id": command.trace_id,
+            "correlation_id": command.correlation_id,
+            "causation_id": command.causation_id,
         }
     )
-    _record_attempt_transition(
+    _record_attempt_runtime_event(
         uow,
-        attempt_id=command.attempt_id,
-        operation_id=attempt["operation_id"],
-        project_id=command.project_id,
-        expected_status=attempt["status"],
-        target_status="LATE_RESULT_REJECTED",
+        attempt=attempt,
+        event_type="authority.attempt.command_rejected",
         worker_id=command.worker_id,
         fencing_token=command.fencing_token,
         trace_id=command.trace_id,
         correlation_id=command.correlation_id,
+        payload={
+            "command_type": command_type,
+            "presented_fencing_token": command.fencing_token,
+            "current_fencing_token": current_token,
+            "authoritative_attempt_status": attempt["status"],
+        },
+    )
+    uow.repositories.attempt_runtime.assert_lease_consistency(command.attempt_id)
+
+
+def _record_attempt_runtime_event(
+    uow: AuthorityUnitOfWork,
+    *,
+    attempt: dict[str, Any],
+    event_type: str,
+    worker_id: str,
+    fencing_token: int,
+    trace_id: str,
+    correlation_id: str,
+    payload: dict[str, Any],
+) -> None:
+    uow.repositories.runtime_evidence.record_attempt_runtime_event(
+        {
+            "attempt_id": attempt["attempt_id"],
+            "operation_id": attempt["operation_id"],
+            "project_id": attempt["project_id"],
+            "event_type": event_type,
+            "correlation_id": correlation_id,
+            "causation_id": "",
+            "event_id": str(uuid4()),
+            "audit_id": str(uuid4()),
+            "outbox_id": str(uuid4()),
+            "payload": {
+                **payload,
+                "worker_id": worker_id,
+                "fencing_token": fencing_token,
+                "attempt_status": attempt["status"],
+                "trace_id": trace_id,
+            },
+        }
     )
 
 

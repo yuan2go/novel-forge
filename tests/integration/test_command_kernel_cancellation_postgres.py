@@ -305,6 +305,123 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
                 ("CANCELLED", "ACKNOWLEDGED", "RELEASED"),
             )
 
+    def test_stale_cancel_acknowledgement_preserves_takeover_worker(self) -> None:
+        project_id, operation_id = self._operation("READY")
+        created = create_attempt(
+            DATABASE_URL,
+            operation_id=operation_id,
+            project_id=project_id,
+            max_attempts=1,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        attempt_id = created["attempt_id"]
+        queue_attempt(
+            DATABASE_URL,
+            attempt_id=attempt_id,
+            project_id=project_id,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        first = acquire_attempt_lease(
+            DATABASE_URL,
+            attempt_id=attempt_id,
+            project_id=project_id,
+            worker_id="worker-cancel-old",
+            lease_seconds=30,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        old_worker = WorkerLeaseCommand(
+            attempt_id=attempt_id,
+            project_id=project_id,
+            worker_id="worker-cancel-old",
+            fencing_token=first["fencing_token"],
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        start_attempt(DATABASE_URL, old_worker)
+        request_cancellation(
+            DATABASE_URL,
+            self._cancel(operation_id, project_id, expected_version=1),
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE authority_lease_acquisition
+                SET acquired_at = NOW() - INTERVAL '2 seconds',
+                    heartbeat_at = NOW() - INTERVAL '2 seconds',
+                    expires_at = NOW() - INTERVAL '1 second'
+                WHERE attempt_id = %s AND status = 'HELD'
+                """,
+                [attempt_id],
+            )
+        second = acquire_attempt_lease(
+            DATABASE_URL,
+            attempt_id=attempt_id,
+            project_id=project_id,
+            worker_id="worker-cancel-current",
+            lease_seconds=30,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        current_worker = WorkerLeaseCommand(
+            attempt_id=attempt_id,
+            project_id=project_id,
+            worker_id="worker-cancel-current",
+            fencing_token=second["fencing_token"],
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        start_attempt(DATABASE_URL, current_worker)
+
+        with self.assertRaises(KernelError) as caught:
+            acknowledge_worker_cancellation(
+                DATABASE_URL,
+                old_worker,
+                expected_operation_version=2,
+            )
+
+        self.assertEqual(caught.exception.code, "ATTEMPT_FENCING_TOKEN_STALE")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT attempt.status, attempt.worker_id,
+                       operation.status, operation.version,
+                       signal.status,
+                       (SELECT status FROM authority_lease_acquisition
+                        WHERE attempt_id = %s AND fencing_token = 2),
+                       (SELECT COUNT(*) FROM authority_late_result_evidence
+                        WHERE attempt_id = %s AND command_type = 'cancel_acknowledgement')
+                FROM authority_attempt AS attempt
+                JOIN authority_operation AS operation
+                  ON operation.operation_id = attempt.operation_id
+                JOIN authority_worker_cancel_signal AS signal
+                  ON signal.attempt_id = attempt.attempt_id
+                WHERE attempt.attempt_id = %s
+                """,
+                [attempt_id, attempt_id, attempt_id],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (
+                    "RUNNING",
+                    "worker-cancel-current",
+                    "CANCELLATION_REQUESTED",
+                    2,
+                    "REQUESTED",
+                    "HELD",
+                    1,
+                ),
+            )
+
+        result = acknowledge_worker_cancellation(
+            DATABASE_URL,
+            current_worker,
+            expected_operation_version=2,
+        )
+        self.assertEqual(result["status"], "CANCELLED")
+
     def _operation(self, status: str) -> tuple[str, str]:
         project_id = identifier("project")
         operation_id = identifier("operation")

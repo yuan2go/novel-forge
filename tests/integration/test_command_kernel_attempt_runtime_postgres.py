@@ -122,7 +122,7 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
         self.assertIn(("acquired", 1), results)
         self.assertIn(("rejected", "LEASE_NOT_AVAILABLE"), results)
 
-    def test_expired_lease_takeover_rejects_old_worker_checkpoint(self) -> None:
+    def test_stale_checkpoint_does_not_stop_takeover_worker(self) -> None:
         project_id, operation_id = self._operation("READY")
         attempt = self._create_and_queue(project_id, operation_id)
         first = acquire_attempt_lease(
@@ -134,7 +134,14 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
             trace_id=identifier("trace"),
             correlation_id=identifier("correlation"),
         )
-        time.sleep(1.05)
+        old_worker = self._worker(
+            attempt,
+            project_id,
+            "worker-old",
+            first["fencing_token"],
+        )
+        start_attempt(DATABASE_URL, old_worker)
+        self._expire_lease(attempt)
         second = acquire_attempt_lease(
             DATABASE_URL,
             attempt_id=attempt,
@@ -144,12 +151,13 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
             trace_id=identifier("trace"),
             correlation_id=identifier("correlation"),
         )
-        old_worker = self._worker(
+        new_worker = self._worker(
             attempt,
             project_id,
-            "worker-old",
-            first["fencing_token"],
+            "worker-new",
+            second["fencing_token"],
         )
+        start_attempt(DATABASE_URL, new_worker)
 
         with self.assertRaises(KernelError) as caught:
             checkpoint_attempt(DATABASE_URL, old_worker, {"cursor": "late"})
@@ -159,19 +167,35 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT attempt.status, operation.status, operation.version,
-                       (SELECT COUNT(*) FROM authority_late_result_evidence WHERE attempt_id = %s)
+                SELECT attempt.status, attempt.worker_id,
+                       operation.status, operation.version,
+                       (SELECT COUNT(*) FROM authority_late_result_evidence WHERE attempt_id = %s),
+                       (SELECT status FROM authority_lease_acquisition
+                        WHERE attempt_id = %s AND fencing_token = 2)
                 FROM authority_attempt AS attempt
                 JOIN authority_operation AS operation
                   ON operation.operation_id = attempt.operation_id
                 WHERE attempt.attempt_id = %s AND operation.project_id = %s
                 """,
-                [attempt, attempt, project_id],
+                [attempt, attempt, attempt, project_id],
             )
             self.assertEqual(
                 cursor.fetchone(),
-                ("LATE_RESULT_REJECTED", "EXECUTING", 1, 1),
+                ("RUNNING", "worker-new", "EXECUTING", 1, 1, "HELD"),
             )
+
+        checkpoint_attempt(DATABASE_URL, new_worker, {"cursor": "current"})
+        submit_attempt_result(
+            DATABASE_URL,
+            WorkerResultCommand(
+                **new_worker.__dict__,
+                expected_operation_version=1,
+                expected_operation_status="EXECUTING",
+            ),
+            outcome="success",
+            result={"value": "accepted-after-takeover"},
+        )
+        self._assert_succeeded_after_takeover(attempt, operation_id, project_id)
 
     def test_heartbeat_loss_marks_attempt_lease_lost(self) -> None:
         project_id, operation_id = self._operation("READY")
@@ -203,7 +227,7 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone()[0], "LEASE_LOST")
 
-    def test_old_worker_success_cannot_modify_operation_after_takeover(self) -> None:
+    def test_stale_result_does_not_stop_takeover_worker(self) -> None:
         project_id, operation_id = self._operation("READY")
         attempt = self._create_and_queue(project_id, operation_id)
         first = acquire_attempt_lease(
@@ -215,8 +239,15 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
             trace_id=identifier("trace"),
             correlation_id=identifier("correlation"),
         )
-        time.sleep(1.05)
-        acquire_attempt_lease(
+        old_worker = self._worker(
+            attempt,
+            project_id,
+            "worker-old-result",
+            first["fencing_token"],
+        )
+        start_attempt(DATABASE_URL, old_worker)
+        self._expire_lease(attempt)
+        second = acquire_attempt_lease(
             DATABASE_URL,
             attempt_id=attempt,
             project_id=project_id,
@@ -225,13 +256,15 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
             trace_id=identifier("trace"),
             correlation_id=identifier("correlation"),
         )
+        new_worker = self._worker(
+            attempt,
+            project_id,
+            "worker-new-result",
+            second["fencing_token"],
+        )
+        start_attempt(DATABASE_URL, new_worker)
         old_result = WorkerResultCommand(
-            **self._worker(
-                attempt,
-                project_id,
-                "worker-old-result",
-                first["fencing_token"],
-            ).__dict__,
+            **old_worker.__dict__,
             expected_operation_version=1,
             expected_operation_status="EXECUTING",
         )
@@ -255,6 +288,93 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
                 [operation_id, project_id],
             )
             self.assertEqual(cursor.fetchone(), ("EXECUTING", 1))
+
+        submit_attempt_result(
+            DATABASE_URL,
+            WorkerResultCommand(
+                **new_worker.__dict__,
+                expected_operation_version=1,
+                expected_operation_status="EXECUTING",
+            ),
+            outcome="success",
+            result={"value": "current-worker-wins"},
+        )
+        self._assert_succeeded_after_takeover(attempt, operation_id, project_id)
+
+    def test_concurrent_stale_and_current_results_accept_only_current_fence(self) -> None:
+        project_id, operation_id = self._operation("READY")
+        attempt = self._create_and_queue(project_id, operation_id)
+        first = acquire_attempt_lease(
+            DATABASE_URL,
+            attempt_id=attempt,
+            project_id=project_id,
+            worker_id="worker-race-old",
+            lease_seconds=30,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        old_worker = self._worker(
+            attempt,
+            project_id,
+            "worker-race-old",
+            first["fencing_token"],
+        )
+        start_attempt(DATABASE_URL, old_worker)
+        self._expire_lease(attempt)
+        second = acquire_attempt_lease(
+            DATABASE_URL,
+            attempt_id=attempt,
+            project_id=project_id,
+            worker_id="worker-race-current",
+            lease_seconds=30,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        current_worker = self._worker(
+            attempt,
+            project_id,
+            "worker-race-current",
+            second["fencing_token"],
+        )
+        start_attempt(DATABASE_URL, current_worker)
+        barrier = Barrier(2)
+
+        def submit(worker: WorkerLeaseCommand, value: str) -> tuple[str, str]:
+            barrier.wait(timeout=5)
+            try:
+                submit_attempt_result(
+                    DATABASE_URL,
+                    WorkerResultCommand(
+                        **worker.__dict__,
+                        expected_operation_version=1,
+                        expected_operation_status="EXECUTING",
+                    ),
+                    outcome="success",
+                    result={"value": value},
+                )
+                return value, "accepted"
+            except KernelError as exc:
+                return value, exc.code
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            old_future = executor.submit(submit, old_worker, "stale")
+            current_future = executor.submit(submit, current_worker, "current")
+            outcomes = {old_future.result(), current_future.result()}
+
+        self.assertEqual(
+            outcomes,
+            {
+                ("stale", "ATTEMPT_FENCING_TOKEN_STALE"),
+                ("current", "accepted"),
+            },
+        )
+        self._assert_succeeded_after_takeover(attempt, operation_id, project_id)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_late_result_evidence WHERE attempt_id = %s",
+                [attempt],
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
 
     def test_retry_exhaustion_dead_letters_operation_without_new_attempt(self) -> None:
         project_id, operation_id = self._operation("FAILED_RETRYABLE")
@@ -413,6 +533,43 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
             correlation_id=identifier("correlation"),
         )
         return created["attempt_id"]
+
+    @staticmethod
+    def _expire_lease(attempt_id: str) -> None:
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE authority_lease_acquisition
+                SET acquired_at = NOW() - INTERVAL '2 seconds',
+                    heartbeat_at = NOW() - INTERVAL '2 seconds',
+                    expires_at = NOW() - INTERVAL '1 second'
+                WHERE attempt_id = %s AND status = 'HELD'
+                """,
+                [attempt_id],
+            )
+
+    def _assert_succeeded_after_takeover(
+        self,
+        attempt_id: str,
+        operation_id: str,
+        project_id: str,
+    ) -> None:
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT attempt.status, operation.status, operation.version,
+                       (SELECT COUNT(*) FROM authority_lease_acquisition
+                        WHERE attempt_id = %s AND status = 'HELD')
+                FROM authority_attempt AS attempt
+                JOIN authority_operation AS operation
+                  ON operation.operation_id = attempt.operation_id
+                WHERE attempt.attempt_id = %s
+                  AND operation.operation_id = %s
+                  AND operation.project_id = %s
+                """,
+                [attempt_id, attempt_id, operation_id, project_id],
+            )
+            self.assertEqual(cursor.fetchone(), ("SUCCEEDED", "SUCCEEDED", 2, 0))
 
     @staticmethod
     def _worker(

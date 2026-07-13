@@ -188,7 +188,6 @@ ATTEMPT_TRANSITIONS: dict[AttemptStatus, frozenset[AttemptStatus]] = {
             AttemptStatus.SUCCEEDED,
             AttemptStatus.FAILED_RETRYABLE,
             AttemptStatus.FAILED_FINAL,
-            AttemptStatus.LATE_RESULT_REJECTED,
         }
     ),
 }

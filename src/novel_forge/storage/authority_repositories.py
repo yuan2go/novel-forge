@@ -614,6 +614,35 @@ class AttemptRuntimeRepository:
             "expires_at": row[3],
         }
 
+    def assign_worker(self, attempt_id: str, expected_status: str, worker_id: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_attempt
+            SET worker_id = %s
+            WHERE attempt_id = %s AND status = %s
+            """,
+            [worker_id, attempt_id, expected_status],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "ATTEMPT_STATUS_CONFLICT",
+                f"attempt is no longer {expected_status}",
+            )
+
+    def current_lease(self, attempt_id: str) -> dict[str, Any] | None:
+        self.cursor.execute(
+            """
+            SELECT lease_id, owner, fencing_token
+            FROM authority_lease_acquisition
+            WHERE attempt_id = %s AND status = 'HELD' AND expires_at > NOW()
+            """,
+            [attempt_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            return None
+        return {"lease_id": row[0], "worker_id": row[1], "fencing_token": row[2]}
+
     def current_fence(
         self,
         attempt_id: str,
@@ -700,7 +729,13 @@ class AttemptRuntimeRepository:
                 worker_id,
                 presented_fencing_token,
                 current_fencing_token,
-                payload
+                payload,
+                authoritative_attempt_status,
+                current_worker_id,
+                current_lease_id,
+                trace_id,
+                correlation_id,
+                causation_id
             )
             VALUES (
                 %(evidence_id)s,
@@ -711,23 +746,53 @@ class AttemptRuntimeRepository:
                 %(worker_id)s,
                 %(presented_fencing_token)s,
                 %(current_fencing_token)s,
-                %(payload)s
+                %(payload)s,
+                %(authoritative_attempt_status)s,
+                %(current_worker_id)s,
+                %(current_lease_id)s,
+                %(trace_id)s,
+                %(correlation_id)s,
+                %(causation_id)s
             )
             """,
             {**row, "payload": Jsonb(row["payload"])},
         )
+
+    def assert_lease_consistency(self, attempt_id: str) -> None:
         self.cursor.execute(
             """
-            UPDATE authority_attempt
-            SET status = 'LATE_RESULT_REJECTED', finished_at = NOW()
-            WHERE attempt_id = %s
-              AND status NOT IN (
-                  'SUCCEEDED', 'FAILED_RETRYABLE', 'FAILED_FINAL', 'TIMED_OUT',
-                  'LEASE_LOST', 'SUPERSEDED', 'LATE_RESULT_REJECTED', 'CANCELLED'
-              )
+            SELECT attempt.status, COUNT(lease.lease_id) FILTER (WHERE lease.status = 'HELD')
+            FROM authority_attempt AS attempt
+            LEFT JOIN authority_lease_acquisition AS lease
+              ON lease.attempt_id = attempt.attempt_id
+            WHERE attempt.attempt_id = %s
+            GROUP BY attempt.status
             """,
-            [row["attempt_id"]],
+            [attempt_id],
         )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError("ATTEMPT_NOT_FOUND", "attempt does not exist")
+        terminal = {
+            "SUCCEEDED",
+            "FAILED_RETRYABLE",
+            "FAILED_FINAL",
+            "TIMED_OUT",
+            "LEASE_LOST",
+            "SUPERSEDED",
+            "LATE_RESULT_REJECTED",
+            "CANCELLED",
+        }
+        if row[0] in terminal and row[1] != 0:
+            raise KernelError(
+                "ATTEMPT_LEASE_INVARIANT_VIOLATION",
+                "terminal attempt cannot retain a held lease",
+            )
+        if row[1] > 1:
+            raise KernelError(
+                "ATTEMPT_LEASE_INVARIANT_VIOLATION",
+                "attempt cannot have more than one held lease",
+            )
 
 
 class CancellationRepository:
@@ -811,16 +876,23 @@ class CancellationRepository:
             [signal_id, operation_id, attempt_id, fencing_token, Jsonb(payload)],
         )
 
-    def acknowledge_worker_cancel(self, attempt_id: str, fencing_token: int) -> None:
+    def acknowledge_worker_cancel(
+        self,
+        attempt_id: str,
+        worker_id: str,
+        fencing_token: int,
+    ) -> None:
         self.cursor.execute(
             """
             UPDATE authority_worker_cancel_signal
-            SET status = 'ACKNOWLEDGED', acknowledged_at = NOW()
+            SET status = 'ACKNOWLEDGED',
+                acknowledged_at = NOW(),
+                acknowledged_worker_id = %s,
+                acknowledged_fencing_token = %s
             WHERE attempt_id = %s
-              AND fencing_token = %s
               AND status = 'REQUESTED'
             """,
-            [attempt_id, fencing_token],
+            [worker_id, fencing_token, attempt_id],
         )
         if self.cursor.rowcount != 1:
             raise KernelError(
@@ -1037,6 +1109,49 @@ class RuntimeEvidenceRepository:
             VALUES (
                 %(outbox_id)s, %(event_id)s, %(project_id)s,
                 'authority.attempt.status_changed', 'PENDING', %(payload)s
+            )
+            """,
+            {**row, "payload": payload},
+        )
+
+    def record_attempt_runtime_event(self, row: dict[str, Any]) -> None:
+        self.cursor.execute(
+            """
+            SELECT COALESCE(MAX(sequence_number), 0) + 1
+            FROM state_event
+            WHERE aggregate_type = 'authority_attempt' AND aggregate_id = %s
+            """,
+            [row["attempt_id"]],
+        )
+        sequence_number = self.cursor.fetchone()[0]
+        payload = Jsonb(row["payload"])
+        self.cursor.execute(
+            """
+            INSERT INTO state_event (
+                event_id, aggregate_type, aggregate_id, project_id, event_type,
+                event_version, sequence_number, correlation_id, causation_id, payload
+            )
+            VALUES (
+                %(event_id)s, 'authority_attempt', %(attempt_id)s, %(project_id)s,
+                %(event_type)s, 1, %(sequence_number)s,
+                %(correlation_id)s, %(causation_id)s, %(payload)s
+            )
+            """,
+            {**row, "sequence_number": sequence_number, "payload": payload},
+        )
+        self.cursor.execute(
+            """
+            INSERT INTO audit_log (audit_id, project_id, operation_id, action, payload)
+            VALUES (%(audit_id)s, %(project_id)s, %(operation_id)s, %(event_type)s, %(payload)s)
+            """,
+            {**row, "payload": payload},
+        )
+        self.cursor.execute(
+            """
+            INSERT INTO outbox_event (outbox_id, event_id, project_id, topic, status, payload)
+            VALUES (
+                %(outbox_id)s, %(event_id)s, %(project_id)s,
+                %(event_type)s, 'PENDING', %(payload)s
             )
             """,
             {**row, "payload": payload},

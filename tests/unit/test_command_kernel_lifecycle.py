@@ -49,7 +49,9 @@ class CommandKernelLifecycleTests(unittest.TestCase):
             },
         )
         require_attempt_transition("CHECKPOINTED", "RUNNING")
-        require_attempt_transition("RESULT_SUBMITTED", "LATE_RESULT_REJECTED")
+        with self.assertRaises(KernelError) as stale_status:
+            require_attempt_transition("RESULT_SUBMITTED", "LATE_RESULT_REJECTED")
+        self.assertEqual(stale_status.exception.code, "ATTEMPT_TRANSITION_INVALID")
 
     def test_cancel_requires_reconciliation_or_compensation_before_terminal_state(self) -> None:
         require_transition("CANCELLATION_REQUESTED", "RECONCILIATION_REQUIRED")
