@@ -228,7 +228,7 @@ class OperationRepository:
         )
         return self.cursor.fetchone()
 
-    def create(self, row: dict[str, Any]) -> None:
+    def try_create(self, row: dict[str, Any]) -> bool:
         self.cursor.execute(
             """
             INSERT INTO authority_operation (
@@ -244,6 +244,16 @@ class OperationRepository:
                 definition_snapshot,
                 completion_contract_snapshot,
                 policy_snapshot,
+                actor_id,
+                workspace_id,
+                concurrency_key,
+                trace_id,
+                span_id,
+                correlation_id,
+                causation_id,
+                command_payload,
+                approval_requirement_snapshot,
+                input_asset_snapshot,
                 metadata
             )
             VALUES (
@@ -259,8 +269,20 @@ class OperationRepository:
                 %(definition_snapshot)s,
                 %(completion_contract_snapshot)s,
                 %(policy_snapshot)s,
+                %(actor_id)s,
+                %(workspace_id)s,
+                %(concurrency_key)s,
+                %(trace_id)s,
+                %(span_id)s,
+                %(correlation_id)s,
+                %(causation_id)s,
+                %(command_payload)s,
+                %(approval_requirement_snapshot)s,
+                %(input_asset_snapshot)s,
                 %(metadata)s
             )
+            ON CONFLICT (idempotency_scope, idempotency_key) DO NOTHING
+            RETURNING operation_id
             """,
             {
                 **row,
@@ -269,12 +291,165 @@ class OperationRepository:
                     row["completion_contract_snapshot"]
                 ),
                 "policy_snapshot": Jsonb(row["policy_snapshot"]),
+                "command_payload": Jsonb(row["command_payload"]),
+                "approval_requirement_snapshot": Jsonb(
+                    row["approval_requirement_snapshot"]
+                ),
+                "input_asset_snapshot": Jsonb(row["input_asset_snapshot"]),
                 "metadata": Jsonb(row.get("metadata", {})),
             },
         )
+        return self.cursor.fetchone() is not None
+
+
+class AdmissionEvidenceRepository:
+    def __init__(self, cursor: Any) -> None:
+        self.cursor = cursor
+
+    def record(self, row: dict[str, Any]) -> None:
+        self.cursor.execute(
+            """
+            INSERT INTO authority_idempotency_record (
+                idempotency_scope,
+                idempotency_key,
+                request_digest,
+                operation_id
+            )
+            VALUES (
+                %(idempotency_scope)s,
+                %(idempotency_key)s,
+                %(request_digest)s,
+                %(operation_id)s
+            )
+            """,
+            row,
+        )
+        self.cursor.execute(
+            """
+            INSERT INTO state_event (
+                event_id,
+                aggregate_type,
+                aggregate_id,
+                project_id,
+                event_type,
+                event_version,
+                sequence_number,
+                correlation_id,
+                causation_id,
+                payload
+            )
+            VALUES (
+                %(event_id)s,
+                'authority_operation',
+                %(operation_id)s,
+                %(project_id)s,
+                'authority.operation.admitted',
+                1,
+                1,
+                %(correlation_id)s,
+                %(causation_id)s,
+                %(event_payload)s
+            )
+            """,
+            {**row, "event_payload": Jsonb(row["event_payload"])},
+        )
+        self.cursor.execute(
+            """
+            INSERT INTO audit_log (
+                audit_id,
+                project_id,
+                operation_id,
+                action,
+                payload
+            )
+            VALUES (
+                %(audit_id)s,
+                %(project_id)s,
+                %(operation_id)s,
+                'authority.operation.admitted',
+                %(audit_payload)s
+            )
+            """,
+            {**row, "audit_payload": Jsonb(row["audit_payload"])},
+        )
+        self.cursor.execute(
+            """
+            INSERT INTO outbox_event (
+                outbox_id,
+                event_id,
+                project_id,
+                topic,
+                status,
+                payload
+            )
+            VALUES (
+                %(outbox_id)s,
+                %(event_id)s,
+                %(project_id)s,
+                'authority.operation.admitted',
+                'PENDING',
+                %(outbox_payload)s
+            )
+            """,
+            {**row, "outbox_payload": Jsonb(row["outbox_payload"])},
+        )
+
+
+class AssetReferenceRepository:
+    def __init__(self, cursor: Any) -> None:
+        self.cursor = cursor
+
+    def resolve_for_admission(
+        self,
+        project_id: str,
+        references: list[dict[str, Any]],
+    ) -> list[dict[str, str]]:
+        resolved: list[dict[str, str]] = []
+        for reference in references:
+            asset_version_id = str(reference.get("asset_version_id") or "")
+            self.cursor.execute(
+                """
+                SELECT
+                    version.asset_version_id,
+                    version.content_hash,
+                    asset.project_id,
+                    asset.project_id = %s AS same_project
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id = version.asset_id
+                WHERE version.asset_version_id = %s
+                """,
+                [project_id, asset_version_id],
+            )
+            row = self.cursor.fetchone()
+            if row is None:
+                raise KernelError(
+                    "INPUT_ASSET_NOT_FOUND",
+                    f"input asset version does not exist: {asset_version_id}",
+                )
+            if not row[3]:
+                raise KernelError(
+                    "CROSS_PROJECT_REFERENCE",
+                    f"input asset version belongs to another project: {asset_version_id}",
+                )
+            expected_hash = str(reference.get("content_hash") or "")
+            if row[1] != expected_hash:
+                raise KernelError(
+                    "INPUT_ASSET_HASH_MISMATCH",
+                    f"input asset hash mismatch: {asset_version_id}",
+                )
+            resolved.append(
+                {
+                    "asset_version_id": row[0],
+                    "content_hash": row[1],
+                    "project_id": row[2],
+                }
+            )
+        return resolved
 
 
 class AuthorityRepositories:
     def __init__(self, cursor: Any) -> None:
         self.definitions = OperationDefinitionRepository(cursor)
         self.operations = OperationRepository(cursor)
+        self.admission_evidence = AdmissionEvidenceRepository(cursor)
+        self.asset_references = AssetReferenceRepository(cursor)
