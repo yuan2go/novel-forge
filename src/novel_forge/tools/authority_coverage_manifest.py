@@ -39,6 +39,8 @@ FAMILIES = (
     "policy",
     "portfolio",
     "ops",
+    "asset",
+    "blob",
 )
 
 LOCAL_METHODS = {
@@ -129,6 +131,18 @@ _CATALOG_NAMES: dict[str, tuple[str, ...]] = {
     "policy": ("bundle.apply", "provider.update", "budget.update"),
     "portfolio": ("priority.apply", "allocation.apply"),
     "ops": ("reindex", "reconcile", "migration.validate", "repair.apply"),
+    "asset": ("create", "version.create", "version.activate", "version.qualify"),
+    "blob": (
+        "reserve",
+        "upload.request",
+        "upload.receipt",
+        "verify",
+        "fail",
+        "bind_to_asset_version",
+        "release",
+        "legal_hold.apply",
+        "legal_hold.release",
+    ),
 }
 
 
@@ -157,6 +171,8 @@ def operation_catalog(entrypoints: Iterable[dict[str, Any]] = ()) -> list[dict[s
                     "family": family,
                     "command_schema_version": f"{name}.command.v1",
                     "result_schema_version": f"{name}.result.v1",
+                    "command_schema": _command_schema(name),
+                    "result_schema": _result_schema(name),
                     "handler_key": f"novel_forge.command_handlers.{name}",
                     "handler_contract_version": "1.0.0",
                     "execution_mode": mode,
@@ -686,6 +702,8 @@ def _external_effect_type(called: str) -> str:
 
 
 def _execution_mode(name: str, family: str) -> str:
+    if name in {"blob.upload.request", "blob.release"}:
+        return "external"
     if name.startswith("publishing.submit") or name.startswith("publishing.retract") or family == "source":
         return "external"
     if family in {"workflow", "agent"} or name.endswith(".recover"):
@@ -696,6 +714,10 @@ def _execution_mode(name: str, family: str) -> str:
 
 
 def _external_capabilities(name: str, family: str) -> list[str]:
+    if name == "blob.upload.request":
+        return ["object_store.put"]
+    if name == "blob.release":
+        return ["object_store.delete"]
     if name == "publishing.submit":
         return ["publisher.submit"]
     if name == "publishing.retract":
@@ -718,10 +740,16 @@ def _approval_required(name: str, family: str) -> bool:
         "source.release_quarantine",
         "context.approve",
         "feedback.patch.approve",
+        "blob.legal_hold.apply",
+        "blob.legal_hold.release",
     }
 
 
 def _concurrency_key(name: str, family: str) -> str:
+    if family == "asset":
+        return f"project:{{project_id}}:asset:{{asset_id}}:{name}"
+    if family == "blob":
+        return f"project:{{project_id}}:blob:{{blob_id}}:{name}"
     resource = "release" if family == "publishing" else "project"
     return f"project:{{project_id}}:{resource}:{{{resource}_id}}:{name}"
 
@@ -765,6 +793,62 @@ def _completion_contract(name: str, family: str, capabilities: list[str]) -> dic
         ],
         "required_evidence": ["trace", "audit", "cost_when_provider_used"],
         "required_outbox_events": [f"{name}.completed"],
+    }
+
+
+def _command_schema(name: str) -> dict[str, Any]:
+    properties: dict[str, dict[str, Any]] = {}
+    required: list[str] = []
+    if name == "asset.create":
+        properties = {"asset_type": {"type": "string"}}
+        required = ["asset_type"]
+    elif name == "asset.version.create":
+        properties = {
+            "asset_id": {"type": "string"},
+            "content": {"type": "object"},
+            "content_hash": {"type": "string"},
+        }
+        required = ["asset_id", "content", "content_hash"]
+    elif name in {"asset.version.activate", "asset.version.qualify"}:
+        properties = {"asset_version_id": {"type": "string"}}
+        required = ["asset_version_id"]
+        if name.endswith("qualify"):
+            properties.update(
+                {
+                    "decision": {"type": "string"},
+                    "policy_version": {"type": "string"},
+                    "evidence": {"type": "object"},
+                }
+            )
+            required.extend(["decision", "policy_version", "evidence"])
+    elif name == "blob.reserve":
+        properties = {
+            "provider": {"type": "string"},
+            "object_key": {"type": "string"},
+            "expected_hash": {"type": "string"},
+            "expected_size": {"type": "integer"},
+            "media_type": {"type": "string"},
+        }
+        required = list(properties)
+    elif name.startswith("blob."):
+        properties = {"blob_id": {"type": "string"}}
+        required = ["blob_id"]
+    return {
+        "$id": f"{name}.command.v1",
+        "type": "object",
+        "properties": properties,
+        "required": required,
+        "additionalProperties": False,
+    }
+
+
+def _result_schema(name: str) -> dict[str, Any]:
+    identifier = "asset_id" if name == "asset.create" else "blob_id" if name.startswith("blob.") else "asset_version_id"
+    return {
+        "$id": f"{name}.result.v1",
+        "type": "object",
+        "properties": {identifier: {"type": "string"}, "status": {"type": "string"}},
+        "additionalProperties": True,
     }
 
 

@@ -10,6 +10,7 @@ def main() -> int:
     suite = unittest.TestSuite()
     for pattern in (
         "test_authority_*_postgres.py",
+        "test_asset_blob_*_postgres.py",
         "test_command_kernel_*_postgres.py",
     ):
         suite.addTests(

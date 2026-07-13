@@ -8,6 +8,32 @@ from novel_forge.tools.authority_coverage_manifest import build_manifest, operat
 
 
 class AuthorityCoverageOperationMappingTests(unittest.TestCase):
+    def test_asset_and_blob_protocol_definitions_have_typed_contracts(self) -> None:
+        definitions = {item["name"]: item for item in operation_catalog([])}
+        required = {
+            "asset.create",
+            "asset.version.create",
+            "asset.version.activate",
+            "asset.version.qualify",
+            "blob.reserve",
+            "blob.upload.request",
+            "blob.upload.receipt",
+            "blob.verify",
+            "blob.fail",
+            "blob.bind_to_asset_version",
+            "blob.release",
+            "blob.legal_hold.apply",
+            "blob.legal_hold.release",
+        }
+        self.assertFalse(required - definitions.keys())
+        for name in required:
+            definition = definitions[name]
+            self.assertEqual(definition["command_schema"]["$id"], f"{name}.command.v1")
+            self.assertTrue(definition["handler_key"].endswith(name))
+        self.assertEqual(
+            definitions["blob.upload.request"]["external_capabilities"],
+            ["object_store.put"],
+        )
     def test_production_localstorage_and_side_effects_have_explicit_actions_and_targets(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

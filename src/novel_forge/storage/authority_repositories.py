@@ -1224,6 +1224,8 @@ class AssetReferenceRepository:
 
 class AuthorityRepositories:
     def __init__(self, cursor: Any) -> None:
+        from novel_forge.storage.asset_blob_repositories import AssetBlobRepository
+
         self.definitions = OperationDefinitionRepository(cursor)
         self.operations = OperationRepository(cursor)
         self.admission_evidence = AdmissionEvidenceRepository(cursor)
@@ -1232,3 +1234,4 @@ class AuthorityRepositories:
         self.cancellations = CancellationRepository(cursor)
         self.runtime_evidence = RuntimeEvidenceRepository(cursor)
         self.asset_references = AssetReferenceRepository(cursor)
+        self.asset_blobs = AssetBlobRepository(cursor)
