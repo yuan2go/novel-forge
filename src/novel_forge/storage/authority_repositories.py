@@ -443,6 +443,280 @@ class OperationLifecycleRepository:
         )
 
 
+class AttemptRuntimeRepository:
+    def __init__(self, cursor: Any) -> None:
+        self.cursor = cursor
+
+    def operation_state(self, operation_id: str, project_id: str) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT status, version
+            FROM authority_operation
+            WHERE operation_id = %s AND project_id = %s
+            FOR UPDATE
+            """,
+            [operation_id, project_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError("OPERATION_NOT_FOUND", "operation does not exist")
+        return {"status": row[0], "version": row[1]}
+
+    def next_attempt_number(self, operation_id: str) -> int:
+        self.cursor.execute(
+            "SELECT COALESCE(MAX(attempt_number), 0) + 1 FROM authority_attempt WHERE operation_id = %s",
+            [operation_id],
+        )
+        return int(self.cursor.fetchone()[0])
+
+    def create(self, row: dict[str, Any]) -> None:
+        self.cursor.execute(
+            """
+            INSERT INTO authority_attempt (
+                attempt_id,
+                operation_id,
+                attempt_number,
+                max_attempts,
+                status
+            )
+            VALUES (
+                %(attempt_id)s,
+                %(operation_id)s,
+                %(attempt_number)s,
+                %(max_attempts)s,
+                'CREATED'
+            )
+            """,
+            row,
+        )
+
+    def get_for_update(self, attempt_id: str, project_id: str) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT
+                attempt.attempt_id,
+                attempt.operation_id,
+                attempt.status,
+                attempt.attempt_number,
+                attempt.max_attempts,
+                operation.project_id,
+                operation.status,
+                operation.version
+            FROM authority_attempt AS attempt
+            JOIN authority_operation AS operation
+              ON operation.operation_id = attempt.operation_id
+            WHERE attempt.attempt_id = %s AND operation.project_id = %s
+            FOR UPDATE OF attempt, operation
+            """,
+            [attempt_id, project_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "ATTEMPT_NOT_FOUND",
+                "attempt does not exist in the requested project",
+            )
+        fields = (
+            "attempt_id",
+            "operation_id",
+            "status",
+            "attempt_number",
+            "max_attempts",
+            "project_id",
+            "operation_status",
+            "operation_version",
+        )
+        return dict(zip(fields, row, strict=True))
+
+    def transition(
+        self,
+        attempt_id: str,
+        expected_status: str,
+        target_status: str,
+        *,
+        worker_id: str = "",
+        checkpoint: dict[str, Any] | None = None,
+        result: dict[str, Any] | None = None,
+        error: dict[str, Any] | None = None,
+    ) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_attempt
+            SET status = %s,
+                worker_id = CASE WHEN %s = '' THEN worker_id ELSE %s END,
+                queued_at = CASE WHEN %s = 'QUEUED' THEN NOW() ELSE queued_at END,
+                started_at = CASE WHEN %s = 'RUNNING' AND started_at IS NULL THEN NOW() ELSE started_at END,
+                checkpoint = CASE WHEN %s THEN %s ELSE checkpoint END,
+                checkpointed_at = CASE WHEN %s = 'CHECKPOINTED' THEN NOW() ELSE checkpointed_at END,
+                result_submitted_at = CASE WHEN %s = 'RESULT_SUBMITTED' THEN NOW() ELSE result_submitted_at END,
+                finished_at = CASE WHEN %s IN ('SUCCEEDED', 'FAILED_RETRYABLE', 'FAILED_FINAL', 'TIMED_OUT', 'LEASE_LOST', 'SUPERSEDED', 'LATE_RESULT_REJECTED', 'CANCELLED') THEN NOW() ELSE finished_at END,
+                result = CASE WHEN %s THEN %s ELSE result END,
+                error = CASE WHEN %s THEN %s ELSE error END
+            WHERE attempt_id = %s AND status = %s
+            """,
+            [
+                target_status,
+                worker_id,
+                worker_id,
+                target_status,
+                target_status,
+                checkpoint is not None,
+                Jsonb(checkpoint or {}),
+                target_status,
+                target_status,
+                target_status,
+                result is not None,
+                Jsonb(result or {}),
+                error is not None,
+                Jsonb(error or {}),
+                attempt_id,
+                expected_status,
+            ],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "ATTEMPT_STATUS_CONFLICT",
+                f"attempt is no longer {expected_status}",
+            )
+
+    def acquire_lease(
+        self,
+        lease_id: str,
+        attempt_id: str,
+        worker_id: str,
+        lease_seconds: int,
+    ) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT lease_id, fencing_token, acquired_at, expires_at
+            FROM authority_acquire_attempt_lease(%s, %s, %s, %s)
+            """,
+            [lease_id, attempt_id, worker_id, lease_seconds],
+        )
+        row = self.cursor.fetchone()
+        return {
+            "lease_id": row[0],
+            "fencing_token": row[1],
+            "acquired_at": row[2],
+            "expires_at": row[3],
+        }
+
+    def current_fence(
+        self,
+        attempt_id: str,
+        worker_id: str,
+        fencing_token: int,
+    ) -> tuple[bool, int | None]:
+        self.cursor.execute(
+            """
+            UPDATE authority_lease_acquisition
+            SET status = 'EXPIRED',
+                released_at = NOW(),
+                release_reason = 'lease_expired'
+            WHERE attempt_id = %s
+              AND status = 'HELD'
+              AND expires_at <= NOW()
+            """,
+            [attempt_id],
+        )
+        self.cursor.execute(
+            """
+            SELECT
+                COALESCE(MAX(fencing_token), 0),
+                BOOL_OR(
+                    status = 'HELD'
+                    AND owner = %s
+                    AND fencing_token = %s
+                    AND expires_at > NOW()
+                )
+            FROM authority_lease_acquisition
+            WHERE attempt_id = %s
+            """,
+            [worker_id, fencing_token, attempt_id],
+        )
+        row = self.cursor.fetchone()
+        return bool(row[1]), int(row[0]) if row[0] else None
+
+    def heartbeat(
+        self,
+        attempt_id: str,
+        worker_id: str,
+        fencing_token: int,
+        lease_seconds: int,
+    ) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_lease_acquisition
+            SET heartbeat_at = NOW(),
+                expires_at = NOW() + make_interval(secs => %s)
+            WHERE attempt_id = %s
+              AND owner = %s
+              AND fencing_token = %s
+              AND status = 'HELD'
+              AND expires_at > NOW()
+            """,
+            [lease_seconds, attempt_id, worker_id, fencing_token],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError("ATTEMPT_LEASE_LOST", "attempt lease is no longer held")
+
+    def release(self, attempt_id: str, worker_id: str, fencing_token: int, reason: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_lease_acquisition
+            SET status = 'RELEASED',
+                released_at = NOW(),
+                release_reason = %s
+            WHERE attempt_id = %s
+              AND owner = %s
+              AND fencing_token = %s
+              AND status = 'HELD'
+            """,
+            [reason, attempt_id, worker_id, fencing_token],
+        )
+
+    def reject_stale(self, row: dict[str, Any]) -> None:
+        self.cursor.execute(
+            """
+            INSERT INTO authority_late_result_evidence (
+                evidence_id,
+                attempt_id,
+                operation_id,
+                project_id,
+                command_type,
+                worker_id,
+                presented_fencing_token,
+                current_fencing_token,
+                payload
+            )
+            VALUES (
+                %(evidence_id)s,
+                %(attempt_id)s,
+                %(operation_id)s,
+                %(project_id)s,
+                %(command_type)s,
+                %(worker_id)s,
+                %(presented_fencing_token)s,
+                %(current_fencing_token)s,
+                %(payload)s
+            )
+            """,
+            {**row, "payload": Jsonb(row["payload"])},
+        )
+        self.cursor.execute(
+            """
+            UPDATE authority_attempt
+            SET status = 'LATE_RESULT_REJECTED', finished_at = NOW()
+            WHERE attempt_id = %s
+              AND status NOT IN (
+                  'SUCCEEDED', 'FAILED_RETRYABLE', 'FAILED_FINAL', 'TIMED_OUT',
+                  'LEASE_LOST', 'SUPERSEDED', 'LATE_RESULT_REJECTED', 'CANCELLED'
+              )
+            """,
+            [row["attempt_id"]],
+        )
+
+
 class RuntimeEvidenceRepository:
     def __init__(self, cursor: Any) -> None:
         self.cursor = cursor
@@ -537,6 +811,59 @@ class RuntimeEvidenceRepository:
             {**row, "payload": event_payload},
         )
 
+    def record_attempt_transition(self, row: dict[str, Any]) -> None:
+        self.cursor.execute(
+            """
+            SELECT COALESCE(MAX(sequence_number), 0) + 1
+            FROM state_event
+            WHERE aggregate_type = 'authority_attempt' AND aggregate_id = %s
+            """,
+            [row["attempt_id"]],
+        )
+        sequence_number = self.cursor.fetchone()[0]
+        payload = Jsonb(
+            {
+                "expected_status": row["expected_status"],
+                "target_status": row["target_status"],
+                "worker_id": row.get("worker_id", ""),
+                "fencing_token": row.get("fencing_token"),
+            }
+        )
+        self.cursor.execute(
+            """
+            INSERT INTO state_event (
+                event_id, aggregate_type, aggregate_id, project_id, event_type,
+                event_version, sequence_number, correlation_id, causation_id, payload
+            )
+            VALUES (
+                %(event_id)s, 'authority_attempt', %(attempt_id)s, %(project_id)s,
+                'authority.attempt.status_changed', 1, %(sequence_number)s,
+                %(correlation_id)s, %(causation_id)s, %(payload)s
+            )
+            """,
+            {**row, "sequence_number": sequence_number, "payload": payload},
+        )
+        self.cursor.execute(
+            """
+            INSERT INTO audit_log (audit_id, project_id, operation_id, action, payload)
+            VALUES (
+                %(audit_id)s, %(project_id)s, %(operation_id)s,
+                'authority.attempt.status_changed', %(payload)s
+            )
+            """,
+            {**row, "payload": payload},
+        )
+        self.cursor.execute(
+            """
+            INSERT INTO outbox_event (outbox_id, event_id, project_id, topic, status, payload)
+            VALUES (
+                %(outbox_id)s, %(event_id)s, %(project_id)s,
+                'authority.attempt.status_changed', 'PENDING', %(payload)s
+            )
+            """,
+            {**row, "payload": payload},
+        )
+
 
 class AssetReferenceRepository:
     def __init__(self, cursor: Any) -> None:
@@ -596,5 +923,6 @@ class AuthorityRepositories:
         self.operations = OperationRepository(cursor)
         self.admission_evidence = AdmissionEvidenceRepository(cursor)
         self.operation_lifecycle = OperationLifecycleRepository(cursor)
+        self.attempt_runtime = AttemptRuntimeRepository(cursor)
         self.runtime_evidence = RuntimeEvidenceRepository(cursor)
         self.asset_references = AssetReferenceRepository(cursor)
