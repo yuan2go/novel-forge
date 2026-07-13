@@ -17,6 +17,7 @@ from . import (
     v20260713_0014_cancellation_compensation,
     v20260713_0015_stale_command_evidence,
     v20260713_0016_asset_blob_protocol,
+    v20260713_0017_external_effect_runtime,
 )
 
 VERSION_MODULES = [
@@ -36,6 +37,7 @@ VERSION_MODULES = [
     v20260713_0014_cancellation_compensation,
     v20260713_0015_stale_command_evidence,
     v20260713_0016_asset_blob_protocol,
+    v20260713_0017_external_effect_runtime,
 ]
 
 __all__ = ["VERSION_MODULES"]

@@ -34,6 +34,31 @@ class AuthorityCoverageOperationMappingTests(unittest.TestCase):
             definitions["blob.upload.request"]["external_capabilities"],
             ["object_store.put"],
         )
+
+    def test_external_effect_definitions_have_typed_runtime_contracts(self) -> None:
+        definitions = {item["name"]: item for item in operation_catalog([])}
+        required = {
+            "external_effect.plan",
+            "external_effect.dispatch",
+            "external_effect.receipt.accept",
+            "external_effect.receipt.reject",
+            "external_effect.mark_unknown",
+            "external_effect.reconcile",
+            "external_effect.compensate",
+            "external_effect.cancel",
+        }
+        self.assertFalse(required - definitions.keys())
+        for name in required:
+            definition = definitions[name]
+            self.assertEqual(definition["command_schema"]["$id"], f"{name}.command.v1")
+            self.assertTrue(definition["command_schema"]["required"])
+            self.assertEqual(definition["idempotency_scope"], "project:external_effect")
+        self.assertEqual(definitions["external_effect.dispatch"]["execution_mode"], "external")
+        self.assertEqual(
+            definitions["external_effect.reconcile"]["external_capabilities"],
+            ["provider.query_by_idempotency_key"],
+        )
+
     def test_production_localstorage_and_side_effects_have_explicit_actions_and_targets(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

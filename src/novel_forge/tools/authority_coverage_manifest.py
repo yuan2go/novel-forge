@@ -41,6 +41,7 @@ FAMILIES = (
     "ops",
     "asset",
     "blob",
+    "external_effect",
 )
 
 LOCAL_METHODS = {
@@ -143,6 +144,16 @@ _CATALOG_NAMES: dict[str, tuple[str, ...]] = {
         "legal_hold.apply",
         "legal_hold.release",
     ),
+    "external_effect": (
+        "plan",
+        "dispatch",
+        "receipt.accept",
+        "receipt.reject",
+        "mark_unknown",
+        "reconcile",
+        "compensate",
+        "cancel",
+    ),
 }
 
 
@@ -181,7 +192,7 @@ def operation_catalog(entrypoints: Iterable[dict[str, Any]] = ()) -> list[dict[s
                         "required": approval_required,
                         "policy_key": f"{family}.approval.v1" if approval_required else "none",
                     },
-                    "idempotency_scope": "project:operation",
+                    "idempotency_scope": _idempotency_scope(family),
                     "concurrency_key_template": _concurrency_key(name, family),
                     "retry_policy": _retry_policy(mode),
                     "timeout_policy": _timeout_policy(mode),
@@ -702,6 +713,8 @@ def _external_effect_type(called: str) -> str:
 
 
 def _execution_mode(name: str, family: str) -> str:
+    if name in {"external_effect.dispatch", "external_effect.reconcile", "external_effect.compensate"}:
+        return "external"
     if name in {"blob.upload.request", "blob.release"}:
         return "external"
     if name.startswith("publishing.submit") or name.startswith("publishing.retract") or family == "source":
@@ -714,6 +727,12 @@ def _execution_mode(name: str, family: str) -> str:
 
 
 def _external_capabilities(name: str, family: str) -> list[str]:
+    if name == "external_effect.dispatch":
+        return ["provider.execute_idempotently"]
+    if name == "external_effect.reconcile":
+        return ["provider.query_by_idempotency_key"]
+    if name == "external_effect.compensate":
+        return ["provider.compensate_idempotently"]
     if name == "blob.upload.request":
         return ["object_store.put"]
     if name == "blob.release":
@@ -750,8 +769,16 @@ def _concurrency_key(name: str, family: str) -> str:
         return f"project:{{project_id}}:asset:{{asset_id}}:{name}"
     if family == "blob":
         return f"project:{{project_id}}:blob:{{blob_id}}:{name}"
+    if family == "external_effect":
+        return "project:{project_id}:effect:{external_effect_id}:" + name
     resource = "release" if family == "publishing" else "project"
     return f"project:{{project_id}}:{resource}:{{{resource}_id}}:{name}"
+
+
+def _idempotency_scope(family: str) -> str:
+    if family == "external_effect":
+        return "project:external_effect"
+    return "project:operation"
 
 
 def _retry_policy(mode: str) -> dict[str, Any]:
@@ -833,6 +860,34 @@ def _command_schema(name: str) -> dict[str, Any]:
     elif name.startswith("blob."):
         properties = {"blob_id": {"type": "string"}}
         required = ["blob_id"]
+    elif name == "external_effect.plan":
+        properties = {
+            "effect_type": {"type": "string"},
+            "provider": {"type": "string"},
+            "capability": {"type": "string"},
+            "stable_idempotency_key": {"type": "string"},
+            "request_payload": {"type": "object"},
+        }
+        required = list(properties)
+    elif name == "external_effect.dispatch":
+        properties = {
+            "external_effect_id": {"type": "string"},
+            "worker_id": {"type": "string"},
+        }
+        required = list(properties)
+    elif name.startswith("external_effect.receipt."):
+        properties = {
+            "external_effect_id": {"type": "string"},
+            "dispatch_id": {"type": "string"},
+            "message_id": {"type": "string"},
+            "payload_hash": {"type": "string"},
+            "generation": {"type": "integer"},
+            "evidence": {"type": "object"},
+        }
+        required = list(properties)
+    elif name.startswith("external_effect."):
+        properties = {"external_effect_id": {"type": "string"}}
+        required = ["external_effect_id"]
     return {
         "$id": f"{name}.command.v1",
         "type": "object",
@@ -843,7 +898,15 @@ def _command_schema(name: str) -> dict[str, Any]:
 
 
 def _result_schema(name: str) -> dict[str, Any]:
-    identifier = "asset_id" if name == "asset.create" else "blob_id" if name.startswith("blob.") else "asset_version_id"
+    identifier = (
+        "asset_id"
+        if name == "asset.create"
+        else "blob_id"
+        if name.startswith("blob.")
+        else "external_effect_id"
+        if name.startswith("external_effect.")
+        else "asset_version_id"
+    )
     return {
         "$id": f"{name}.result.v1",
         "type": "object",
