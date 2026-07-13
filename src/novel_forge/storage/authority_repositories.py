@@ -493,6 +493,22 @@ class AttemptRuntimeRepository:
     def get_for_update(self, attempt_id: str, project_id: str) -> dict[str, Any]:
         self.cursor.execute(
             """
+            SELECT operation.operation_id
+            FROM authority_operation AS operation
+            JOIN authority_attempt AS attempt
+              ON attempt.operation_id = operation.operation_id
+            WHERE attempt.attempt_id = %s AND operation.project_id = %s
+            FOR UPDATE OF operation
+            """,
+            [attempt_id, project_id],
+        )
+        if self.cursor.fetchone() is None:
+            raise KernelError(
+                "ATTEMPT_NOT_FOUND",
+                "attempt does not exist in the requested project",
+            )
+        self.cursor.execute(
+            """
             SELECT
                 attempt.attempt_id,
                 attempt.operation_id,
@@ -506,16 +522,13 @@ class AttemptRuntimeRepository:
             JOIN authority_operation AS operation
               ON operation.operation_id = attempt.operation_id
             WHERE attempt.attempt_id = %s AND operation.project_id = %s
-            FOR UPDATE OF attempt, operation
+            FOR UPDATE OF attempt
             """,
             [attempt_id, project_id],
         )
         row = self.cursor.fetchone()
         if row is None:
-            raise KernelError(
-                "ATTEMPT_NOT_FOUND",
-                "attempt does not exist in the requested project",
-            )
+            raise KernelError("ATTEMPT_NOT_FOUND", "attempt disappeared while locked")
         fields = (
             "attempt_id",
             "operation_id",
@@ -715,6 +728,171 @@ class AttemptRuntimeRepository:
             """,
             [row["attempt_id"]],
         )
+
+
+class CancellationRepository:
+    def __init__(self, cursor: Any) -> None:
+        self.cursor = cursor
+
+    def try_record(self, row: dict[str, Any]) -> bool:
+        self.cursor.execute(
+            """
+            INSERT INTO authority_cancellation_command (
+                cancel_command_id, operation_id, project_id, command_version,
+                actor_id, reason, expected_operation_version, idempotency_key,
+                request_digest, trace_id, correlation_id, causation_id
+            )
+            VALUES (
+                %(cancel_command_id)s, %(operation_id)s, %(project_id)s, 1,
+                %(actor_id)s, %(reason)s, %(expected_operation_version)s,
+                %(idempotency_key)s, %(request_digest)s, %(trace_id)s,
+                %(correlation_id)s, %(causation_id)s
+            )
+            ON CONFLICT (operation_id, idempotency_key) DO NOTHING
+            RETURNING cancel_command_id
+            """,
+            row,
+        )
+        return self.cursor.fetchone() is not None
+
+    def existing(self, operation_id: str, idempotency_key: str) -> tuple[str, str]:
+        self.cursor.execute(
+            """
+            SELECT cancel_command_id, request_digest
+            FROM authority_cancellation_command
+            WHERE operation_id = %s AND idempotency_key = %s
+            """,
+            [operation_id, idempotency_key],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError("CANCEL_COMMAND_NOT_FOUND", "cancel command was not recorded")
+        return row
+
+    def active_attempt(self, operation_id: str) -> tuple[str, int | None] | None:
+        self.cursor.execute(
+            """
+            SELECT attempt.attempt_id, lease.fencing_token
+            FROM authority_attempt AS attempt
+            LEFT JOIN LATERAL (
+                SELECT fencing_token
+                FROM authority_lease_acquisition
+                WHERE attempt_id = attempt.attempt_id AND status = 'HELD'
+                ORDER BY fencing_token DESC
+                LIMIT 1
+            ) AS lease ON TRUE
+            WHERE attempt.operation_id = %s
+              AND attempt.status IN (
+                  'CREATED', 'QUEUED', 'LEASED', 'RUNNING',
+                  'CHECKPOINTED', 'RESULT_SUBMITTED'
+              )
+            FOR UPDATE OF attempt
+            """,
+            [operation_id],
+        )
+        return self.cursor.fetchone()
+
+    def signal_worker_cancel(
+        self,
+        signal_id: str,
+        operation_id: str,
+        attempt_id: str,
+        fencing_token: int | None,
+        payload: dict[str, Any],
+    ) -> None:
+        self.cursor.execute(
+            """
+            INSERT INTO authority_worker_cancel_signal (
+                signal_id, operation_id, attempt_id, fencing_token, status, payload
+            )
+            VALUES (%s, %s, %s, %s, 'REQUESTED', %s)
+            ON CONFLICT (attempt_id) DO NOTHING
+            """,
+            [signal_id, operation_id, attempt_id, fencing_token, Jsonb(payload)],
+        )
+
+    def acknowledge_worker_cancel(self, attempt_id: str, fencing_token: int) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_worker_cancel_signal
+            SET status = 'ACKNOWLEDGED', acknowledged_at = NOW()
+            WHERE attempt_id = %s
+              AND fencing_token = %s
+              AND status = 'REQUESTED'
+            """,
+            [attempt_id, fencing_token],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "CANCEL_SIGNAL_NOT_FOUND",
+                "worker cancel signal is unavailable for this fencing token",
+            )
+
+    def create_compensation_child(self, row: dict[str, Any]) -> None:
+        self.cursor.execute(
+            """
+            INSERT INTO authority_operation (
+                operation_id, definition_name, definition_version, project_id,
+                status, parent_operation_id, root_operation_id,
+                causation_operation_id, idempotency_scope, idempotency_key,
+                request_digest, definition_snapshot,
+                completion_contract_snapshot, policy_snapshot, actor_id,
+                workspace_id, concurrency_key, trace_id, span_id,
+                correlation_id, causation_id, command_payload, metadata
+            )
+            SELECT
+                %(child_operation_id)s, definition.name,
+                definition.definition_version, parent.project_id, 'ADMITTED',
+                parent.operation_id, parent.root_operation_id,
+                parent.operation_id, %(idempotency_scope)s, %(idempotency_key)s,
+                %(request_digest)s, to_jsonb(definition),
+                definition.completion_contract, definition.policy, %(actor_id)s,
+                parent.workspace_id, %(concurrency_key)s, %(trace_id)s,
+                %(span_id)s, %(correlation_id)s, %(causation_id)s,
+                %(command_payload)s, %(metadata)s
+            FROM authority_operation AS parent
+            JOIN authority_operation_definition AS definition
+              ON definition.name = %(definition_name)s
+             AND definition.definition_version = %(definition_version)s
+             AND definition.enabled = TRUE
+            WHERE parent.operation_id = %(parent_operation_id)s
+              AND parent.project_id = %(project_id)s
+            """,
+            {
+                **row,
+                "command_payload": Jsonb(row["command_payload"]),
+                "metadata": Jsonb(row["metadata"]),
+            },
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "COMPENSATION_DEFINITION_NOT_AVAILABLE",
+                "compensation definition or parent operation is unavailable",
+            )
+
+    def compensation_parent(self, child_operation_id: str, project_id: str) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT parent.operation_id, parent.status, parent.version, child.status
+            FROM authority_operation AS child
+            JOIN authority_operation AS parent
+              ON parent.operation_id = child.parent_operation_id
+            WHERE child.operation_id = %s AND child.project_id = %s
+              AND parent.project_id = %s
+              AND child.metadata->>'operation_role' = 'compensation'
+            FOR UPDATE OF parent, child
+            """,
+            [child_operation_id, project_id, project_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError("COMPENSATION_CHILD_NOT_FOUND", "compensation child is invalid")
+        return {
+            "parent_operation_id": row[0],
+            "parent_status": row[1],
+            "parent_version": row[2],
+            "child_status": row[3],
+        }
 
 
 class RuntimeEvidenceRepository:
@@ -924,5 +1102,6 @@ class AuthorityRepositories:
         self.admission_evidence = AdmissionEvidenceRepository(cursor)
         self.operation_lifecycle = OperationLifecycleRepository(cursor)
         self.attempt_runtime = AttemptRuntimeRepository(cursor)
+        self.cancellations = CancellationRepository(cursor)
         self.runtime_evidence = RuntimeEvidenceRepository(cursor)
         self.asset_references = AssetReferenceRepository(cursor)
