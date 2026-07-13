@@ -9,6 +9,7 @@ from . import (
     v20260712_0006_core_os_outbox_delivery,
     v20260712_0007_postgres_command_kernel_authority,
     v20260713_0008_authority_schema_recovery,
+    v20260713_0009_attempt_lease_invariants,
 )
 
 VERSION_MODULES = [
@@ -20,6 +21,7 @@ VERSION_MODULES = [
     v20260712_0006_core_os_outbox_delivery,
     v20260712_0007_postgres_command_kernel_authority,
     v20260713_0008_authority_schema_recovery,
+    v20260713_0009_attempt_lease_invariants,
 ]
 
 __all__ = ["VERSION_MODULES"]
