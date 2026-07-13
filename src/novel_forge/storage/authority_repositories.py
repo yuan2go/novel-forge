@@ -395,6 +395,149 @@ class AdmissionEvidenceRepository:
         )
 
 
+class OperationLifecycleRepository:
+    def __init__(self, cursor: Any) -> None:
+        self.cursor = cursor
+
+    def compare_and_set(self, row: dict[str, Any]) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            UPDATE authority_operation
+            SET status = %(target_status)s,
+                version = version + 1,
+                updated_at = NOW()
+            WHERE operation_id = %(operation_id)s
+              AND project_id = %(project_id)s
+              AND version = %(expected_version)s
+              AND status = %(expected_status)s
+            RETURNING status, version
+            """,
+            row,
+        )
+        updated = self.cursor.fetchone()
+        if updated is not None:
+            return {"status": updated[0], "version": updated[1]}
+
+        self.cursor.execute(
+            """
+            SELECT status, version
+            FROM authority_operation
+            WHERE operation_id = %s AND project_id = %s
+            """,
+            [row["operation_id"], row["project_id"]],
+        )
+        current = self.cursor.fetchone()
+        if current is None:
+            raise KernelError(
+                "OPERATION_NOT_FOUND",
+                "operation does not exist in the requested project",
+            )
+        if current[1] != row["expected_version"]:
+            raise KernelError(
+                "OPERATION_VERSION_CONFLICT",
+                f"expected version {row['expected_version']}, current version {current[1]}",
+            )
+        raise KernelError(
+            "OPERATION_STATUS_CONFLICT",
+            f"expected status {row['expected_status']}, current status {current[0]}",
+        )
+
+
+class RuntimeEvidenceRepository:
+    def __init__(self, cursor: Any) -> None:
+        self.cursor = cursor
+
+    def record_operation_transition(self, row: dict[str, Any]) -> None:
+        self.cursor.execute(
+            """
+            SELECT COALESCE(MAX(sequence_number), 0) + 1
+            FROM state_event
+            WHERE aggregate_type = 'authority_operation'
+              AND aggregate_id = %s
+            """,
+            [row["operation_id"]],
+        )
+        sequence_number = self.cursor.fetchone()[0]
+        event_payload = Jsonb(
+            {
+                "expected_status": row["expected_status"],
+                "target_status": row["target_status"],
+                "version": row["version"],
+                "reason": row["reason"],
+                "trace_id": row["trace_id"],
+            }
+        )
+        self.cursor.execute(
+            """
+            INSERT INTO state_event (
+                event_id,
+                aggregate_type,
+                aggregate_id,
+                project_id,
+                event_type,
+                event_version,
+                sequence_number,
+                correlation_id,
+                causation_id,
+                payload
+            )
+            VALUES (
+                %(event_id)s,
+                'authority_operation',
+                %(operation_id)s,
+                %(project_id)s,
+                'authority.operation.status_changed',
+                1,
+                %(sequence_number)s,
+                %(correlation_id)s,
+                %(causation_id)s,
+                %(payload)s
+            )
+            """,
+            {**row, "sequence_number": sequence_number, "payload": event_payload},
+        )
+        self.cursor.execute(
+            """
+            INSERT INTO audit_log (
+                audit_id,
+                project_id,
+                operation_id,
+                action,
+                payload
+            )
+            VALUES (
+                %(audit_id)s,
+                %(project_id)s,
+                %(operation_id)s,
+                'authority.operation.status_changed',
+                %(payload)s
+            )
+            """,
+            {**row, "payload": event_payload},
+        )
+        self.cursor.execute(
+            """
+            INSERT INTO outbox_event (
+                outbox_id,
+                event_id,
+                project_id,
+                topic,
+                status,
+                payload
+            )
+            VALUES (
+                %(outbox_id)s,
+                %(event_id)s,
+                %(project_id)s,
+                'authority.operation.status_changed',
+                'PENDING',
+                %(payload)s
+            )
+            """,
+            {**row, "payload": event_payload},
+        )
+
+
 class AssetReferenceRepository:
     def __init__(self, cursor: Any) -> None:
         self.cursor = cursor
@@ -452,4 +595,6 @@ class AuthorityRepositories:
         self.definitions = OperationDefinitionRepository(cursor)
         self.operations = OperationRepository(cursor)
         self.admission_evidence = AdmissionEvidenceRepository(cursor)
+        self.operation_lifecycle = OperationLifecycleRepository(cursor)
+        self.runtime_evidence = RuntimeEvidenceRepository(cursor)
         self.asset_references = AssetReferenceRepository(cursor)
