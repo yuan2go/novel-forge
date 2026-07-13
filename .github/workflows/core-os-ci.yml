@@ -42,7 +42,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install Python dependencies
-        run: python -m pip install -e ".[api]"
+        run: python -m pip install -e ".[api,postgres]"
       - name: Generate head-bound authority coverage evidence
         run: |
           python -m novel_forge.tools.authority_coverage_manifest \
@@ -61,6 +61,7 @@ jobs:
       - name: PostgreSQL migrations and integration
         run: |
           python -m novel_forge.cli postgres-init --root .local/ci-workspace
+          python scripts/run_authority_postgres_tests.py
           python -m unittest discover -s tests/integration -p 'test_*postgres*.py'
       - name: Static and workspace validation
         run: |

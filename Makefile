@@ -4,7 +4,7 @@ WEB_DIR ?= web/admin
 LOCAL_WORKSPACE ?= .local/workspace
 DEMO_WORKSPACE ?= .local/demo-workspace
 
-.PHONY: test lint validate demo local-workspace infra-up infra-down online-backends-up online-backends-smoke local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression source-governance-regression api worker web-dev sync-skills sync-skills-dry-run check-skills help
+.PHONY: test lint validate demo local-workspace infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test online-backends-up online-backends-smoke local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression source-governance-regression api worker web-dev sync-skills sync-skills-dry-run check-skills help
 
 help:
 	@echo "make test      - run stdlib unittest suite"
@@ -13,6 +13,8 @@ help:
 	@echo "make demo      - run sample end-to-end pipeline"
 	@echo "make local-workspace - create ignored local runtime workspace"
 	@echo "make infra-up  - start PostgreSQL, Redis, Qdrant, and MinIO"
+	@echo "make postgres-authority-test-up - start isolated PostgreSQL authority test service"
+	@echo "make postgres-authority-test - run non-skippable authority PostgreSQL tests"
 	@echo "make online-backends-up - start pgvector-capable PostgreSQL and ClickHouse"
 	@echo "make online-backends-smoke - verify opt-in pgvector and ClickHouse online backends"
 	@echo "make local-up  - start full local production stack with Docker"
@@ -53,6 +55,16 @@ infra-up:
 
 infra-down:
 	docker compose down
+
+postgres-authority-test-up:
+	docker compose -f compose.postgres-test.yml up -d --wait authority-postgres-test
+
+postgres-authority-test-down:
+	docker compose -f compose.postgres-test.yml down
+
+postgres-authority-test:
+	NOVEL_FORGE_DATABASE_URL=$${NOVEL_FORGE_DATABASE_URL:-postgresql://novel_forge:novel_forge@localhost:55432/novel_forge_authority_test} \
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_authority_postgres_tests.py
 
 online-backends-up:
 	docker compose --profile analytics up -d postgres clickhouse
