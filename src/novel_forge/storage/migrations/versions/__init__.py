@@ -12,6 +12,7 @@ from . import (
     v20260713_0009_attempt_lease_invariants,
     v20260713_0010_asset_blob_invariants,
     v20260713_0011_effect_inbox_invariants,
+    v20260713_0012_admission_contract,
 )
 
 VERSION_MODULES = [
@@ -26,6 +27,7 @@ VERSION_MODULES = [
     v20260713_0009_attempt_lease_invariants,
     v20260713_0010_asset_blob_invariants,
     v20260713_0011_effect_inbox_invariants,
+    v20260713_0012_admission_contract,
 ]
 
 __all__ = ["VERSION_MODULES"]
