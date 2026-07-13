@@ -13,6 +13,10 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     _transition_attempt,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.service import (
+    AdmissionContext,
+    admit_command_in_uow,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -228,59 +232,73 @@ def create_compensation_child(
     expected_parent_version: int,
     definition_name: str,
     definition_version: str,
+    compensation_generation: int,
     actor_id: str,
     reason: str,
     trace_id: str,
     correlation_id: str,
-) -> str:
-    child_operation_id = str(uuid4())
-    idempotency_key = f"compensate:{parent_operation_id}:{expected_parent_version}"
-    digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
+    context: AdmissionContext,
+) -> dict[str, Any]:
+    if compensation_generation <= 0:
+        raise KernelError(
+            "COMMAND_SCHEMA_INVALID",
+            "compensation generation must be positive",
+        )
+    idempotency_key = (
+        f"compensate:{parent_operation_id}:{definition_name}:"
+        f"{definition_version}:{compensation_generation}"
+    )
     with AuthorityUnitOfWork(database_url) as uow:
-        uow.repositories.attempt_runtime.operation_state(parent_operation_id, project_id)
-        uow.repositories.cancellations.create_compensation_child(
-            {
-                "child_operation_id": child_operation_id,
+        parent = uow.repositories.cancellations.compensation_parent_for_update(
+            parent_operation_id,
+            project_id,
+        )
+        command = {
+            "definition_name": definition_name,
+            "definition_version": definition_version,
+            "project_id": project_id,
+            "workspace_id": parent["workspace_id"] or f"workspace:{project_id}",
+            "actor_id": actor_id,
+            "idempotency_scope": "operation:compensation",
+            "idempotency_key": idempotency_key,
+            "trace_id": trace_id,
+            "span_id": str(uuid4()),
+            "correlation_id": correlation_id,
+            "causation_id": parent_operation_id,
+            "parent_operation_id": parent_operation_id,
+            "root_operation_id": parent["root_operation_id"] or parent_operation_id,
+            "causation_operation_id": parent_operation_id,
+            "input": {
                 "parent_operation_id": parent_operation_id,
-                "project_id": project_id,
-                "definition_name": definition_name,
-                "definition_version": definition_version,
-                "idempotency_scope": "operation:compensation",
-                "idempotency_key": idempotency_key,
-                "request_digest": digest,
-                "actor_id": actor_id,
-                "concurrency_key": f"operation:{parent_operation_id}:compensation",
-                "trace_id": trace_id,
-                "span_id": str(uuid4()),
-                "correlation_id": correlation_id,
-                "causation_id": parent_operation_id,
-                "command_payload": {
-                    "parent_operation_id": parent_operation_id,
-                    "reason": reason,
-                },
-                "metadata": {
-                    "operation_role": "compensation",
-                    "parent_operation_id": parent_operation_id,
-                },
-            }
-        )
-        uow.repositories.runtime_evidence.record_operation_transition(
-            {
-                "operation_id": child_operation_id,
-                "project_id": project_id,
-                "expected_status": "NONE",
-                "target_status": "ADMITTED",
-                "version": 0,
-                "actor_id": actor_id,
+                "compensation_generation": compensation_generation,
                 "reason": reason,
-                "trace_id": trace_id,
-                "correlation_id": correlation_id,
-                "causation_id": parent_operation_id,
-                "event_id": str(uuid4()),
-                "audit_id": str(uuid4()),
-                "outbox_id": str(uuid4()),
-            }
+            },
+            "input_assets": [],
+            "metadata": {
+                "operation_role": "compensation",
+                "parent_operation_id": parent_operation_id,
+                "compensation_generation": compensation_generation,
+            },
+        }
+        admitted = admit_command_in_uow(uow, command, context=context)
+        uow.repositories.cancellations.require_compensation_child(
+            admitted["operation_id"],
+            parent_operation_id,
+            project_id,
         )
+        if admitted["replayed"]:
+            uow.commit()
+            return admitted
+        if parent["version"] != expected_parent_version:
+            raise KernelError(
+                "OPERATION_VERSION_CONFLICT",
+                f"expected version {expected_parent_version}, current version {parent['version']}",
+            )
+        if parent["status"] != "COMPENSATION_REQUIRED":
+            raise KernelError(
+                "OPERATION_STATUS_CONFLICT",
+                f"expected COMPENSATION_REQUIRED, current status {parent['status']}",
+            )
         _cas_operation(
             uow,
             operation_id=parent_operation_id,
@@ -292,10 +310,10 @@ def create_compensation_child(
             reason="compensation child admitted",
             trace_id=trace_id,
             correlation_id=correlation_id,
-            causation_id=child_operation_id,
+            causation_id=admitted["operation_id"],
         )
         uow.commit()
-    return child_operation_id
+    return admitted
 
 
 def complete_compensation_from_child(
@@ -322,6 +340,12 @@ def complete_compensation_from_child(
                 "COMPENSATION_CHILD_NOT_TERMINAL",
                 "compensation child has no accepted terminal outcome",
             )
+        if state["parent_status"] == target:
+            return {
+                "status": target,
+                "version": state["parent_version"],
+                "replayed": True,
+            }
         result = _cas_operation(
             uow,
             operation_id=state["parent_operation_id"],
@@ -336,7 +360,7 @@ def complete_compensation_from_child(
             causation_id=child_operation_id,
         )
         uow.commit()
-    return result
+    return {**result, "replayed": False}
 
 
 def _validate_cancel(command: CancelCommand) -> None:

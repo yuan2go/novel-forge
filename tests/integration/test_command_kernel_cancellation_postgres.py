@@ -26,6 +26,8 @@ from novel_forge.modules.command_kernel.runtime import (
     OperationTransitionCommand,
     transition_operation,
 )
+from novel_forge.modules.command_kernel.service import AdmissionContext
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -35,6 +37,7 @@ from tests.integration.authority_postgres_support import (
     transaction,
 )
 from tests.integration.test_authority_attempt_lease_schema_postgres import insert_attempt
+from tests.integration.test_command_kernel_definition_postgres import definition_payload
 
 
 class CommandKernelCancellationPostgresTests(unittest.TestCase):
@@ -108,9 +111,7 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
         ):
             with self.subTest(child_target=child_target):
                 project_id, parent_id = self._operation("EXECUTING")
-                compensation_definition = identifier("compensation-definition")
-                with transaction() as connection, connection.cursor() as cursor:
-                    insert_definition(cursor, compensation_definition)
+                definition = self._compensation_definition()
                 request_cancellation(
                     DATABASE_URL,
                     self._cancel(parent_id, project_id, expected_version=0),
@@ -126,18 +127,22 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
                     trace_id=identifier("trace"),
                     correlation_id=identifier("correlation"),
                 )
-                child_id = create_compensation_child(
+                admitted = create_compensation_child(
                     DATABASE_URL,
                     parent_operation_id=parent_id,
                     project_id=project_id,
                     expected_parent_version=2,
-                    definition_name=compensation_definition,
+                    definition_name=definition["name"],
                     definition_version="1.0.0",
+                    compensation_generation=1,
                     actor_id="kernel.compensator",
                     reason="reverse external effect",
                     trace_id=identifier("trace"),
                     correlation_id=identifier("correlation"),
+                    context=self._compensation_context(definition),
                 )
+                child_id = admitted["operation_id"]
+                self.assertFalse(admitted["replayed"])
                 if child_target == "SUCCEEDED":
                     self._transition(child_id, project_id, 0, "ADMITTED", "READY")
                     self._transition(child_id, project_id, 1, "READY", "EXECUTING")
@@ -155,6 +160,193 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
                 )
 
                 self.assertEqual(result["status"], parent_target)
+                self.assertFalse(result["replayed"])
+
+                replay = complete_compensation_from_child(
+                    DATABASE_URL,
+                    child_operation_id=child_id,
+                    project_id=project_id,
+                    actor_id="kernel.compensator",
+                    trace_id=identifier("trace"),
+                    correlation_id=identifier("correlation"),
+                )
+                self.assertEqual(replay["status"], parent_target)
+                self.assertTrue(replay["replayed"])
+
+    def test_compensation_child_uses_standard_admission_and_replays(self) -> None:
+        project_id, parent_id = self._operation("COMPENSATION_REQUIRED")
+        definition = self._compensation_definition()
+        context = self._compensation_context(definition)
+        command = self._create_compensation(
+            parent_id,
+            project_id,
+            definition,
+            context,
+            reason="reverse provider charge",
+        )
+
+        first = create_compensation_child(DATABASE_URL, **command)
+        second = create_compensation_child(DATABASE_URL, **command)
+
+        self.assertFalse(first["replayed"])
+        self.assertTrue(second["replayed"])
+        self.assertEqual(first["operation_id"], second["operation_id"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT child.parent_operation_id, child.root_operation_id,
+                       child.causation_operation_id, child.status,
+                       parent.status, parent.version,
+                       (SELECT COUNT(*) FROM authority_idempotency_record
+                        WHERE operation_id = child.operation_id),
+                       (SELECT COUNT(*) FROM state_event
+                        WHERE aggregate_type = 'authority_operation'
+                          AND aggregate_id = child.operation_id
+                          AND event_type = 'authority.operation.admitted'),
+                       (SELECT COUNT(*) FROM audit_log
+                        WHERE operation_id = child.operation_id
+                          AND action = 'authority.operation.admitted'),
+                       (SELECT COUNT(*) FROM outbox_event AS outbox
+                        JOIN state_event AS event ON event.event_id = outbox.event_id
+                        WHERE event.aggregate_id = child.operation_id
+                          AND outbox.topic = 'authority.operation.admitted')
+                FROM authority_operation AS child
+                JOIN authority_operation AS parent
+                  ON parent.operation_id = child.parent_operation_id
+                WHERE child.operation_id = %s AND child.project_id = %s
+                """,
+                [first["operation_id"], project_id],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (
+                    parent_id,
+                    parent_id,
+                    parent_id,
+                    "ADMITTED",
+                    "COMPENSATING",
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                ),
+            )
+
+    def test_concurrent_compensation_creation_has_one_child(self) -> None:
+        project_id, parent_id = self._operation("COMPENSATION_REQUIRED")
+        definition = self._compensation_definition()
+        context = self._compensation_context(definition)
+        command = self._create_compensation(
+            parent_id,
+            project_id,
+            definition,
+            context,
+            reason="concurrent reverse",
+        )
+        barrier = Barrier(2)
+
+        def create() -> dict:
+            barrier.wait(timeout=5)
+            return create_compensation_child(DATABASE_URL, **command)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(lambda _: create(), range(2)))
+
+        self.assertEqual(sorted(result["replayed"] for result in results), [False, True])
+        self.assertEqual(len({result["operation_id"] for result in results}), 1)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_operation WHERE parent_operation_id = %s",
+                [parent_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+
+    def test_compensation_definition_and_parent_cas_fail_closed(self) -> None:
+        project_id, parent_id = self._operation("COMPENSATION_REQUIRED")
+        missing = self._compensation_definition(register=False)
+        with self.assertRaises(KernelError) as missing_error:
+            create_compensation_child(
+                DATABASE_URL,
+                **self._create_compensation(
+                    parent_id,
+                    project_id,
+                    missing,
+                    self._compensation_context(missing),
+                    reason="missing definition",
+                ),
+            )
+        self.assertEqual(missing_error.exception.code, "OPERATION_DEFINITION_NOT_FOUND")
+
+        disabled = self._compensation_definition(enabled=False)
+        with self.assertRaises(KernelError) as disabled_error:
+            create_compensation_child(
+                DATABASE_URL,
+                **self._create_compensation(
+                    parent_id,
+                    project_id,
+                    disabled,
+                    self._compensation_context(disabled),
+                    reason="disabled definition",
+                ),
+            )
+        self.assertEqual(disabled_error.exception.code, "OPERATION_DEFINITION_DISABLED")
+
+        enabled = self._compensation_definition()
+        for expected_version, expected_code in (
+            (9, "OPERATION_VERSION_CONFLICT"),
+            (0, "OPERATION_STATUS_CONFLICT"),
+        ):
+            if expected_code == "OPERATION_STATUS_CONFLICT":
+                wrong_project, wrong_parent = self._operation("READY")
+            else:
+                wrong_project, wrong_parent = project_id, parent_id
+            with self.subTest(expected_code=expected_code):
+                command = self._create_compensation(
+                    wrong_parent,
+                    wrong_project,
+                    enabled,
+                    self._compensation_context(enabled),
+                    reason=expected_code,
+                )
+                command["expected_parent_version"] = expected_version
+                with self.assertRaises(KernelError) as caught:
+                    create_compensation_child(DATABASE_URL, **command)
+                self.assertEqual(caught.exception.code, expected_code)
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT COUNT(*),
+                               (SELECT COUNT(*)
+                                FROM authority_idempotency_record AS record
+                                JOIN authority_operation AS operation
+                                  ON operation.operation_id = record.operation_id
+                                WHERE operation.parent_operation_id = %s)
+                        FROM authority_operation
+                        WHERE parent_operation_id = %s
+                        """,
+                        [wrong_parent, wrong_parent],
+                    )
+                    self.assertEqual(cursor.fetchone(), (0, 0))
+
+    def test_compensation_idempotency_key_rejects_different_content(self) -> None:
+        project_id, parent_id = self._operation("COMPENSATION_REQUIRED")
+        definition = self._compensation_definition()
+        context = self._compensation_context(definition)
+        command = self._create_compensation(
+            parent_id,
+            project_id,
+            definition,
+            context,
+            reason="original reason",
+        )
+        create_compensation_child(DATABASE_URL, **command)
+        command["reason"] = "different reason"
+
+        with self.assertRaises(KernelError) as caught:
+            create_compensation_child(DATABASE_URL, **command)
+
+        self.assertEqual(caught.exception.code, "IDEMPOTENCY_CONFLICT")
 
     def test_worker_result_and_cancel_use_the_same_operation_cas(self) -> None:
         project_id, operation_id = self._operation("READY")
@@ -436,6 +628,74 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
                 status=status,
             )
         return project_id, operation_id
+
+    def _compensation_definition(
+        self,
+        *,
+        enabled: bool = True,
+        register: bool = True,
+    ) -> dict:
+        definition = {
+            **definition_payload(identifier("compensation-definition")),
+            "enabled": enabled,
+            "family": "compensation",
+            "handler_key": "novel_forge.command_handlers.compensation.reverse_effect",
+            "permissions": ["operation.compensate"],
+            "idempotency_scope": "operation:compensation",
+            "concurrency_key_template": "operation:{parent_operation_id}:compensation",
+            "command_schema": {
+                "type": "object",
+                "required": [
+                    "parent_operation_id",
+                    "compensation_generation",
+                    "reason",
+                ],
+                "properties": {
+                    "parent_operation_id": {"type": "string"},
+                    "compensation_generation": {"type": "integer"},
+                    "reason": {"type": "string"},
+                },
+                "additionalProperties": False,
+            },
+        }
+        if register:
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.repositories.definitions.register(definition)
+                uow.commit()
+        return definition
+
+    @staticmethod
+    def _compensation_context(definition: dict) -> AdmissionContext:
+        return AdmissionContext(
+            actor_id="kernel.compensator",
+            permissions=frozenset(definition["permissions"]),
+            available_handlers=frozenset({definition["handler_key"]}),
+            application_build_id="compensation-test-build",
+            commit_sha="e" * 40,
+        )
+
+    @staticmethod
+    def _create_compensation(
+        parent_operation_id: str,
+        project_id: str,
+        definition: dict,
+        context: AdmissionContext,
+        *,
+        reason: str,
+    ) -> dict:
+        return {
+            "parent_operation_id": parent_operation_id,
+            "project_id": project_id,
+            "expected_parent_version": 0,
+            "definition_name": definition["name"],
+            "definition_version": definition["definition_version"],
+            "compensation_generation": 1,
+            "actor_id": "kernel.compensator",
+            "reason": reason,
+            "trace_id": identifier("trace"),
+            "correlation_id": identifier("correlation"),
+            "context": context,
+        }
 
     @staticmethod
     def _cancel(operation_id: str, project_id: str, expected_version: int) -> CancelCommand:

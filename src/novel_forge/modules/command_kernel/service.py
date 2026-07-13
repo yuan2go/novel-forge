@@ -26,7 +26,6 @@ def admit_command(
     *,
     context: AdmissionContext | None = None,
 ) -> dict[str, Any]:
-    _validate_command_identity(command)
     if context is None:
         raise KernelError(
             "ADMISSION_CONTEXT_REQUIRED",
@@ -34,85 +33,99 @@ def admit_command(
         )
 
     with AuthorityUnitOfWork(database_url) as uow:
-        definition = uow.repositories.definitions.get(
-            str(command["definition_name"]),
-            str(command["definition_version"]),
-        )
-        if definition is None:
-            raise KernelError(
-                "OPERATION_DEFINITION_NOT_FOUND",
-                "operation definition was not registered",
-            )
-        _validate_definition_and_command(definition, command, context)
-        input_asset_snapshot = uow.repositories.asset_references.resolve_for_admission(
-            str(command["project_id"]),
-            list(command.get("input_assets") or []),
-        )
-        concurrency_key = _resolve_concurrency_key(definition, command)
-        digest = _request_digest(command, input_asset_snapshot)
-        operation_id = str(uuid4())
-        created = uow.repositories.operations.try_create(
-            {
-                **command,
-                "operation_id": operation_id,
-                "root_operation_id": command.get("root_operation_id") or operation_id,
-                "request_digest": digest,
-                "definition_snapshot": {
-                    **definition,
-                    "application_build_id": context.application_build_id,
-                    "commit_sha": context.commit_sha,
-                },
-                "completion_contract_snapshot": definition["completion_contract"],
-                "policy_snapshot": definition["policy"],
-                "approval_requirement_snapshot": {
-                    "policy": definition["approval_policy"],
-                    "evidence": command.get("approval") or {},
-                },
-                "input_asset_snapshot": input_asset_snapshot,
-                "concurrency_key": concurrency_key,
-                "command_payload": command.get("input", {}),
-                "causation_id": command.get("causation_id") or "",
-            }
-        )
-        if not created:
-            existing = uow.repositories.operations.get_idempotency(
-                str(command["idempotency_scope"]),
-                str(command["idempotency_key"]),
-            )
-            if existing is None or existing[1] != digest:
-                raise IdempotencyConflictError(
-                    "idempotency key belongs to a different request digest"
-                )
-            return {"operation_id": existing[0], "replayed": True}
+        result = admit_command_in_uow(uow, command, context=context)
+        if not result["replayed"]:
+            uow.commit()
+    return result
 
-        event_id = str(uuid4())
-        evidence_payload = {
-            "operation_id": operation_id,
-            "definition_name": command["definition_name"],
-            "definition_version": command["definition_version"],
-            "request_digest": digest,
-            "trace_id": command["trace_id"],
-            "span_id": command["span_id"],
-        }
-        uow.repositories.admission_evidence.record(
-            {
-                **command,
-                "operation_id": operation_id,
-                "request_digest": digest,
-                "event_id": event_id,
-                "audit_id": str(uuid4()),
-                "outbox_id": str(uuid4()),
-                "causation_id": command.get("causation_id") or "",
-                "event_payload": evidence_payload,
-                "audit_payload": {
-                    **evidence_payload,
-                    "actor_id": context.actor_id,
-                    "approval": command.get("approval") or {},
-                },
-                "outbox_payload": evidence_payload,
-            }
+
+def admit_command_in_uow(
+    uow: AuthorityUnitOfWork,
+    command: dict[str, Any],
+    *,
+    context: AdmissionContext,
+) -> dict[str, Any]:
+    _validate_command_identity(command)
+    definition = uow.repositories.definitions.get(
+        str(command["definition_name"]),
+        str(command["definition_version"]),
+    )
+    if definition is None:
+        raise KernelError(
+            "OPERATION_DEFINITION_NOT_FOUND",
+            "operation definition was not registered",
         )
-        uow.commit()
+    _validate_definition_and_command(definition, command, context)
+    input_asset_snapshot = uow.repositories.asset_references.resolve_for_admission(
+        str(command["project_id"]),
+        list(command.get("input_assets") or []),
+    )
+    concurrency_key = _resolve_concurrency_key(definition, command)
+    digest = _request_digest(command, input_asset_snapshot)
+    operation_id = str(uuid4())
+    created = uow.repositories.operations.try_create(
+        {
+            **command,
+            "operation_id": operation_id,
+            "root_operation_id": command.get("root_operation_id") or operation_id,
+            "parent_operation_id": command.get("parent_operation_id"),
+            "causation_operation_id": command.get("causation_operation_id"),
+            "request_digest": digest,
+            "definition_snapshot": {
+                **definition,
+                "application_build_id": context.application_build_id,
+                "commit_sha": context.commit_sha,
+            },
+            "completion_contract_snapshot": definition["completion_contract"],
+            "policy_snapshot": definition["policy"],
+            "approval_requirement_snapshot": {
+                "policy": definition["approval_policy"],
+                "evidence": command.get("approval") or {},
+            },
+            "input_asset_snapshot": input_asset_snapshot,
+            "concurrency_key": concurrency_key,
+            "command_payload": command.get("input", {}),
+            "causation_id": command.get("causation_id") or "",
+        }
+    )
+    if not created:
+        existing = uow.repositories.operations.get_idempotency(
+            str(command["idempotency_scope"]),
+            str(command["idempotency_key"]),
+        )
+        if existing is None or existing[1] != digest:
+            raise IdempotencyConflictError(
+                "idempotency key belongs to a different request digest"
+            )
+        return {"operation_id": existing[0], "replayed": True}
+
+    event_id = str(uuid4())
+    evidence_payload = {
+        "operation_id": operation_id,
+        "definition_name": command["definition_name"],
+        "definition_version": command["definition_version"],
+        "request_digest": digest,
+        "trace_id": command["trace_id"],
+        "span_id": command["span_id"],
+    }
+    uow.repositories.admission_evidence.record(
+        {
+            **command,
+            "operation_id": operation_id,
+            "request_digest": digest,
+            "event_id": event_id,
+            "audit_id": str(uuid4()),
+            "outbox_id": str(uuid4()),
+            "causation_id": command.get("causation_id") or "",
+            "event_payload": evidence_payload,
+            "audit_payload": {
+                **evidence_payload,
+                "actor_id": context.actor_id,
+                "approval": command.get("approval") or {},
+            },
+            "outbox_payload": evidence_payload,
+        }
+    )
     return {"operation_id": operation_id, "replayed": False}
 
 

@@ -237,7 +237,9 @@ class OperationRepository:
                 definition_version,
                 project_id,
                 status,
+                parent_operation_id,
                 root_operation_id,
+                causation_operation_id,
                 idempotency_scope,
                 idempotency_key,
                 request_digest,
@@ -262,7 +264,9 @@ class OperationRepository:
                 %(definition_version)s,
                 %(project_id)s,
                 'ADMITTED',
+                %(parent_operation_id)s,
                 %(root_operation_id)s,
+                %(causation_operation_id)s,
                 %(idempotency_scope)s,
                 %(idempotency_key)s,
                 %(request_digest)s,
@@ -900,46 +904,54 @@ class CancellationRepository:
                 "worker cancel signal is unavailable for this fencing token",
             )
 
-    def create_compensation_child(self, row: dict[str, Any]) -> None:
+    def compensation_parent_for_update(
+        self,
+        parent_operation_id: str,
+        project_id: str,
+    ) -> dict[str, Any]:
         self.cursor.execute(
             """
-            INSERT INTO authority_operation (
-                operation_id, definition_name, definition_version, project_id,
-                status, parent_operation_id, root_operation_id,
-                causation_operation_id, idempotency_scope, idempotency_key,
-                request_digest, definition_snapshot,
-                completion_contract_snapshot, policy_snapshot, actor_id,
-                workspace_id, concurrency_key, trace_id, span_id,
-                correlation_id, causation_id, command_payload, metadata
-            )
-            SELECT
-                %(child_operation_id)s, definition.name,
-                definition.definition_version, parent.project_id, 'ADMITTED',
-                parent.operation_id, parent.root_operation_id,
-                parent.operation_id, %(idempotency_scope)s, %(idempotency_key)s,
-                %(request_digest)s, to_jsonb(definition),
-                definition.completion_contract, definition.policy, %(actor_id)s,
-                parent.workspace_id, %(concurrency_key)s, %(trace_id)s,
-                %(span_id)s, %(correlation_id)s, %(causation_id)s,
-                %(command_payload)s, %(metadata)s
-            FROM authority_operation AS parent
-            JOIN authority_operation_definition AS definition
-              ON definition.name = %(definition_name)s
-             AND definition.definition_version = %(definition_version)s
-             AND definition.enabled = TRUE
-            WHERE parent.operation_id = %(parent_operation_id)s
-              AND parent.project_id = %(project_id)s
+            SELECT status, version, root_operation_id, workspace_id
+            FROM authority_operation
+            WHERE operation_id = %s AND project_id = %s
+            FOR UPDATE
             """,
-            {
-                **row,
-                "command_payload": Jsonb(row["command_payload"]),
-                "metadata": Jsonb(row["metadata"]),
-            },
+            [parent_operation_id, project_id],
         )
-        if self.cursor.rowcount != 1:
+        row = self.cursor.fetchone()
+        if row is None:
             raise KernelError(
-                "COMPENSATION_DEFINITION_NOT_AVAILABLE",
-                "compensation definition or parent operation is unavailable",
+                "OPERATION_NOT_FOUND",
+                "compensation parent does not exist in the requested project",
+            )
+        return {
+            "status": row[0],
+            "version": row[1],
+            "root_operation_id": row[2],
+            "workspace_id": row[3],
+        }
+
+    def require_compensation_child(
+        self,
+        child_operation_id: str,
+        parent_operation_id: str,
+        project_id: str,
+    ) -> None:
+        self.cursor.execute(
+            """
+            SELECT 1
+            FROM authority_operation
+            WHERE operation_id = %s
+              AND parent_operation_id = %s
+              AND project_id = %s
+              AND metadata->>'operation_role' = 'compensation'
+            """,
+            [child_operation_id, parent_operation_id, project_id],
+        )
+        if self.cursor.fetchone() is None:
+            raise KernelError(
+                "COMPENSATION_CHILD_CONFLICT",
+                "idempotency record does not identify this compensation child",
             )
 
     def compensation_parent(self, child_operation_id: str, project_id: str) -> dict[str, Any]:
