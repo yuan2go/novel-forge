@@ -1226,6 +1226,10 @@ class AuthorityRepositories:
     def __init__(self, cursor: Any) -> None:
         from novel_forge.storage.asset_blob_repositories import AssetBlobRepository
         from novel_forge.storage.external_effect_repositories import ExternalEffectRepository
+        from novel_forge.storage.operation_graph_repositories import (
+            CompletionContractRepository,
+            OperationGraphRepository,
+        )
 
         self.definitions = OperationDefinitionRepository(cursor)
         self.operations = OperationRepository(cursor)
@@ -1237,3 +1241,5 @@ class AuthorityRepositories:
         self.asset_references = AssetReferenceRepository(cursor)
         self.asset_blobs = AssetBlobRepository(cursor)
         self.external_effects = ExternalEffectRepository(cursor)
+        self.operation_graph = OperationGraphRepository(cursor)
+        self.completion_contracts = CompletionContractRepository(cursor)

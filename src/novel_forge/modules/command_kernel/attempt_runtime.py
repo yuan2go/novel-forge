@@ -279,6 +279,18 @@ def submit_attempt_result(
                 correlation_id=command.correlation_id,
                 result=result,
             )
+            if outcome == "success":
+                from novel_forge.modules.command_kernel.completion import (
+                    evaluate_completion_in_uow,
+                )
+
+                operation = uow.repositories.completion_contracts.operation(
+                    attempt["operation_id"],
+                    command.project_id,
+                    lock=True,
+                )
+                completion = evaluate_completion_in_uow(uow, operation)
+                operation_target = completion["target_status"]
             _cas_operation(
                 uow,
                 operation_id=attempt["operation_id"],

@@ -54,6 +54,11 @@ OPERATION_TRANSITIONS: dict[OperationStatus, frozenset[OperationStatus]] = {
     OperationStatus.WAITING_APPROVAL: frozenset(
         {
             OperationStatus.READY,
+            OperationStatus.EXECUTING,
+            OperationStatus.WAITING_CHILDREN,
+            OperationStatus.WAITING_EXTERNAL_RESULT,
+            OperationStatus.WAITING_GATE,
+            OperationStatus.SUCCEEDED,
             OperationStatus.CANCELLED,
             OperationStatus.FAILED_FINAL,
         }
@@ -62,6 +67,7 @@ OPERATION_TRANSITIONS: dict[OperationStatus, frozenset[OperationStatus]] = {
         {
             OperationStatus.EXECUTING,
             OperationStatus.WAITING_CHILDREN,
+            OperationStatus.WAITING_APPROVAL,
             OperationStatus.CANCELLATION_REQUESTED,
         }
     ),
@@ -69,6 +75,7 @@ OPERATION_TRANSITIONS: dict[OperationStatus, frozenset[OperationStatus]] = {
         {
             OperationStatus.WAITING_EXTERNAL_RESULT,
             OperationStatus.WAITING_GATE,
+            OperationStatus.WAITING_APPROVAL,
             OperationStatus.WAITING_CHILDREN,
             OperationStatus.SUCCEEDED,
             OperationStatus.FAILED_RETRYABLE,
@@ -80,6 +87,8 @@ OPERATION_TRANSITIONS: dict[OperationStatus, frozenset[OperationStatus]] = {
         {
             OperationStatus.EXECUTING,
             OperationStatus.WAITING_GATE,
+            OperationStatus.WAITING_APPROVAL,
+            OperationStatus.WAITING_EXTERNAL_RESULT,
             OperationStatus.SUCCEEDED,
             OperationStatus.FAILED_FINAL,
             OperationStatus.CANCELLATION_REQUESTED,
@@ -89,6 +98,9 @@ OPERATION_TRANSITIONS: dict[OperationStatus, frozenset[OperationStatus]] = {
     OperationStatus.WAITING_EXTERNAL_RESULT: frozenset(
         {
             OperationStatus.EXECUTING,
+            OperationStatus.WAITING_CHILDREN,
+            OperationStatus.WAITING_GATE,
+            OperationStatus.WAITING_APPROVAL,
             OperationStatus.SUCCEEDED,
             OperationStatus.FAILED_RETRYABLE,
             OperationStatus.RECONCILIATION_REQUIRED,
@@ -97,6 +109,10 @@ OPERATION_TRANSITIONS: dict[OperationStatus, frozenset[OperationStatus]] = {
     ),
     OperationStatus.WAITING_GATE: frozenset(
         {
+            OperationStatus.EXECUTING,
+            OperationStatus.WAITING_CHILDREN,
+            OperationStatus.WAITING_EXTERNAL_RESULT,
+            OperationStatus.WAITING_APPROVAL,
             OperationStatus.SUCCEEDED,
             OperationStatus.FAILED_FINAL,
             OperationStatus.CANCELLATION_REQUESTED,

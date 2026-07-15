@@ -18,6 +18,7 @@ from . import (
     v20260713_0015_stale_command_evidence,
     v20260713_0016_asset_blob_protocol,
     v20260713_0017_external_effect_runtime,
+    v20260713_0018_operation_graph_completion,
 )
 
 VERSION_MODULES = [
@@ -38,6 +39,7 @@ VERSION_MODULES = [
     v20260713_0015_stale_command_evidence,
     v20260713_0016_asset_blob_protocol,
     v20260713_0017_external_effect_runtime,
+    v20260713_0018_operation_graph_completion,
 ]
 
 __all__ = ["VERSION_MODULES"]
