@@ -151,7 +151,7 @@ Final successful commands:
 | Saga PostgreSQL suite | 7 | 0 | 0 |
 | `python scripts/run_authority_postgres_tests.py` equivalent using `.venv` | 85 | 0 | 0 |
 | PostgreSQL integration discovery | 104 | 0 | 0 |
-| full unittest discovery | 939 | 0 | none reported |
+| full unittest discovery | 940 | 0 | none reported |
 | authority/architecture guardrails | 12 | 0 | 0 |
 | `make lint` | passed | 0 | n/a |
 | `make validate` | passed | 0 | n/a |
