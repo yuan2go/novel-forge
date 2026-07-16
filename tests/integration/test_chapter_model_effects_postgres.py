@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import unittest
 
+from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
-from novel_forge.modules.chapter_authority.handlers import build_chapter_handler_registry
 from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelExternalEffectAdapter,
     ChapterModelRoute,
@@ -12,7 +12,6 @@ from novel_forge.modules.chapter_authority.model_effects import (
 )
 from novel_forge.modules.chapter_authority.orchestrator import (
     SingleChapterRequest,
-    run_single_chapter_slice,
 )
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapterError,
@@ -217,14 +216,14 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 for stage in ("draft", "review", "revision")
             }
         )
-        model_port = ExternalEffectChapterModelPort(
+        application = ChapterAuthorityApplication(
             DATABASE_URL,
-            adapter=adapter,
+            model_adapter=adapter,
+            object_store_adapter=FakeDeterministicProvider("success"),
             worker_id="model-worker",
         )
-        result = run_single_chapter_slice(
-            DATABASE_URL,
-            request=SingleChapterRequest(
+        result = application.run(
+            SingleChapterRequest(
                 project_id=project_id,
                 workspace_id=f"workspace:{project_id}",
                 actor_id="chapter-slice-worker",
@@ -236,12 +235,28 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 application_build_id="chapter-model-effect-test",
                 commit_sha="d" * 40,
             ),
-            registry=build_chapter_handler_registry(model_port),
-            object_store_adapter=FakeDeterministicProvider("success"),
         )
 
         self.assertEqual(result.root_status, "SUCCEEDED")
         self.assertEqual(stage_model.calls, 3)
+        query = application.query
+        listed = query.list_runs(project_id=project_id)
+        detail = query.require_run(
+            project_id=project_id,
+            root_operation_id=result.root_operation_id,
+        )
+        self.assertEqual(listed[0]["root_operation_id"], result.root_operation_id)
+        self.assertEqual(listed[0]["status"], "SUCCEEDED")
+        self.assertEqual(detail["saga"]["status"], "SUCCEEDED")
+        self.assertEqual(len(detail["operations"]), 9)
+        self.assertEqual(len(detail["primary_outputs"]), 8)
+        self.assertEqual(len(detail["model_effects"]), 3)
+        self.assertEqual(query.list_runs(project_id=identifier("other-project")), [])
+        with self.assertRaisesRegex(KernelError, "CHAPTER_RUN_NOT_FOUND"):
+            query.require_run(
+                project_id=identifier("other-project"),
+                root_operation_id=result.root_operation_id,
+            )
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """

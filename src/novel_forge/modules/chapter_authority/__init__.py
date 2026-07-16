@@ -1,5 +1,7 @@
 """PostgreSQL-authoritative single-chapter application slice."""
 
+from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
+
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerOutput,
     ChapterHandlerRegistry,
@@ -35,6 +37,7 @@ from novel_forge.modules.chapter_authority.orchestrator import (
     SingleChapterRequest,
     run_single_chapter_slice,
 )
+from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 
 __all__ = [
     "CHAPTER_SLICE_DEFINITION_VERSION",
@@ -48,6 +51,8 @@ __all__ = [
     "ChapterModelExternalEffectAdapter",
     "ChapterModelRoute",
     "ChapterSliceResult",
+    "ChapterAuthorityQuery",
+    "ChapterAuthorityApplication",
     "DeterministicFixtureChapterProvider",
     "ExportDeliveryEvidence",
     "ExternalEffectChapterModelPort",
