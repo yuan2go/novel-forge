@@ -63751,11 +63751,11 @@
       "usage_type": "authority_read"
     }
   ],
-  "artifact_hash": "sha256:9f6e7f96d681e4a71500e9491c56d47964e83fa07038f9fdb1fe8ea89aa091ab",
-  "baseline_hash": "sha256:ad57183966c50865110efbed03104e2c668ca2b3c05f023e82203a826ab185be",
+  "artifact_hash": "sha256:d17098a45631f11f47b78255f56a1d81b3ac480b263a5fc27c3f5cc64e00546f",
+  "baseline_hash": "sha256:9913897eaeacac7647d92c45071c444f777b282a4e7897b41be46f7b1c7c00b0",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "2c536e39ea7d1c012198cd21b4a43b883b005b47",
-  "repository_head_at_generation": "2c536e39ea7d1c012198cd21b4a43b883b005b47",
+  "commit_sha": "950d13b5fd0671f9b457b18049a8f6f354d4fded",
+  "repository_head_at_generation": "950d13b5fd0671f9b457b18049a8f6f354d4fded",
   "schema_version": "2.0.0",
-  "source_tree_sha": "e1223c2ea1565a9338f910354d8cea8e937dcf64"
+  "source_tree_sha": "8819cea29da045ebf59f99e9c00376fb2634fb57"
 }

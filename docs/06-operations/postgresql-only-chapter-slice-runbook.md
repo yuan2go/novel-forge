@@ -68,5 +68,5 @@ The fixture harness must:
 
 - Node-specific PostgreSQL handlers for the whole chapter chain are not yet implemented.
 - Existing Chapter Production Bus and related services still write LocalStorage business assets.
-- Saga compensation child admission is not yet automatic; current work provides reverse planning, coordinator fencing, and standard forward-child lifecycle proof.
+- Saga compensation children are admitted through the standard Command Kernel when the coordinator receives an authenticated `AdmissionContext`; chapter-node compensation definitions still need to be registered.
 - No PostgreSQL-only single-chapter fixture has therefore been claimed as passed.

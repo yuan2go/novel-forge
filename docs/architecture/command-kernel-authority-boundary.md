@@ -76,7 +76,9 @@ receipt through the same inbox path.
 
 ## Remaining migration boundary
 
-The first PostgreSQL-only business vertical slice is not yet complete. Chapter
+The first PostgreSQL-only business vertical slice is not yet complete. Saga
+compensation children now use standard admission, reverse dependencies,
+Attempt/Completion, and fenced coordination. Chapter
 Plan, ContextBundle, Draft, Review, Revision, Canon, Quality Gate, and Export
 handlers still need operation definitions and migration adapters that invoke
 existing domain services without restoring LocalStorage as command authority.

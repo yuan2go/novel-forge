@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:3064902bab869b0716d8f56d13545fb4d9e77029a25c6c0eced6fb18c947d535",
+  "artifact_hash": "sha256:6e08d08fa9caa9c1c055c7319a3755423a6d1383cd1e5ca3d2f6cc0a108e169c",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "2c536e39ea7d1c012198cd21b4a43b883b005b47",
+  "commit_sha": "950d13b5fd0671f9b457b18049a8f6f354d4fded",
   "definitions": [
     {
       "approval_policy": {
@@ -8388,7 +8388,7 @@
     }
   ],
   "generator_version": "2.1.0",
-  "repository_head_at_generation": "2c536e39ea7d1c012198cd21b4a43b883b005b47",
+  "repository_head_at_generation": "950d13b5fd0671f9b457b18049a8f6f354d4fded",
   "schema_version": "2.0.0",
-  "source_tree_sha": "e1223c2ea1565a9338f910354d8cea8e937dcf64"
+  "source_tree_sha": "8819cea29da045ebf59f99e9c00376fb2634fb57"
 }

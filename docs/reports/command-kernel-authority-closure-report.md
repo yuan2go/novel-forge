@@ -6,9 +6,9 @@ Date: 2026-07-16
 
 - Branch: `feat/v7-content-intelligence-and-longform-proof`
 - Starting HEAD: `32250ff8df20bea7727fce730759e6b0c2f9d5fe`
-- Ending implementation HEAD: `2c536e39ea7d1c012198cd21b4a43b883b005b47`
-- HEAD-bound evidence commit: `d6fee4a`
-- Report pre-commit HEAD: `d6fee4a`
+- Ending implementation HEAD: `950d13b5fd0671f9b457b18049a8f6f354d4fded`
+- Final refreshed evidence: generated from implementation HEAD `950d13b`
+- Report pre-refresh HEAD: `950d13b`
 - Starting worktree: clean after preserving the existing Task 3 regression change that had been committed concurrently at `32250ff`
 - Final worktree target: clean after this report commit
 
@@ -26,8 +26,8 @@ Current Authority coverage:
 | Unknown classifications | 4 |
 
 The prior `63 / 17 / 46` catalog was stale. The refreshed artifacts are bound to
-source commit `2c536e3` and source tree
-`e1223c2ea1565a9338f910354d8cea8e937dcf64`.
+source commit `950d13b` and source tree
+`8819cea29da045ebf59f99e9c00376fb2634fb57`.
 
 ## 2. Fixed Problems
 
@@ -103,7 +103,7 @@ source commit `2c536e3` and source tree
 - Blob requirements support status, role, and minimum count over bound output
   AssetVersions.
 
-### Saga coordinator — Partially completed
+### Saga coordinator and compensation — Completed foundation
 
 - Added coordinator owner, lease id, fencing token, expiry, heartbeat timestamp,
   and forward-recovery attempt count.
@@ -114,6 +114,12 @@ source commit `2c536e3` and source tree
   Outbox evidence.
 - A new integration proof admits a real child through `admit_command`, runs an
   Attempt, submits a worker result, evaluates Completion, and completes Saga.
+- On failure, an authenticated coordinator now admits compensation child
+  Operations idempotently in reverse order, links them on Saga steps, adds
+  ordering dependencies, and derives compensated/failed status from the child
+  Operation terminal state.
+- A PostgreSQL integration proof executes the compensation child through
+  Attempt and Completion and closes the Saga as `COMPENSATED`.
 
 ## 3. Remaining Gaps
 
@@ -125,7 +131,7 @@ source commit `2c536e3` and source tree
 | Adapter exception/orphan lease | Completed | Provider-specific adapters still need production conformance tests. |
 | Receipt completion policies | Partially Completed | Add dedicated runtime behavior/tests for `async_ack` and `poll_reconciliation`, plus an explicit receipt-reject command. |
 | Effect reconciliation/dead-letter | Partially Completed | UNKNOWN, reconciliation and exhaustion exist; operator replay/manual-intervention commands and evidence UI remain. |
-| Saga compensation | Partially Completed | Saga still plans `REQUIRED` in reverse order; it does not yet automatically admit and execute compensation child Operations. |
+| Saga compensation | Completed foundation | Automatic standard admission, reverse dependency, Attempt/Completion, and Saga close are covered; production chapter compensation definitions remain to be registered. |
 | Saga lease | Partially Completed | Per-tick fencing exists; a long-running coordinator heartbeat/takeover command is not yet exposed. |
 | Unified Operation transitions | Partially Completed | Saga repository updates now emit evidence, but `set_ready()` and `complete_root()` are not yet routed through the shared lifecycle CAS service. |
 | Authority/projection migration | Partially Completed | The target boundary is documented; legacy runtimes remain operational. |
@@ -142,9 +148,9 @@ Final successful commands:
 | targeted lifecycle unit suite | 3 | 0 | 0 |
 | targeted ExternalEffect + Blob suite | 19 | 0 | 0 |
 | targeted combined authority protocol suite | 35 | 0 | 0 |
-| Saga PostgreSQL suite | 6 | 0 | 0 |
+| Saga PostgreSQL suite | 7 | 0 | 0 |
 | `python scripts/run_authority_postgres_tests.py` equivalent using `.venv` | 85 | 0 | 0 |
-| PostgreSQL integration discovery | 103 | 0 | 0 |
+| PostgreSQL integration discovery | 104 | 0 | 0 |
 | full unittest discovery | 939 | 0 | none reported |
 | authority/architecture guardrails | 12 | 0 | 0 |
 | `make lint` | passed | 0 | n/a |
@@ -211,7 +217,7 @@ store adapters and operation-scoped output evidence.
 
 - Completed: Tasks 0, 1, 3, and 4; core Task 2 behavior; Task 6 boundary docs.
 - Partial: Task 2 operator commands and all completion-policy variants; Task 5
-  automatic compensation children; Task 7 handler implementation.
+  long-running heartbeat/CAS unification; Task 7 handler implementation.
 - No scope creep into new genre engines, Agent roles, UI consoles, publishing
   platforms, or high-cost long-form generation.
 
@@ -219,14 +225,16 @@ store adapters and operation-scoped output evidence.
 
 The single highest-priority remaining package is:
 
-**Automatic Saga compensation child execution through standard Command Kernel admission.**
+**The first PostgreSQL-only single-chapter handler slice.**
 
 It should:
 
-1. select compensations in strict reverse order;
-2. admit each compensation child idempotently from its registered definition;
-3. run it through Attempt/Completion rather than SQL fixtures;
-4. link it through `compensation_operation_id`;
-5. retry partial failures under coordinator fencing;
-6. enter manual intervention only with explicit evidence;
-7. then use the same mechanism in the first PostgreSQL-only single-chapter fixture.
+1. register the ChapterPlan, ContextBundle, Draft, Review, Revision, Canon,
+   Quality Gate, and Export definitions and compensation definitions;
+2. wrap existing domain services in focused handlers without LocalStorage
+   becoming the new command authority;
+3. bind every output AssetVersion to its producing Operation;
+4. run one deterministic chapter through Attempt/Completion and the fenced Saga;
+5. inject retry, UNKNOWN reconciliation, and one compensation path;
+6. emit the evidence manifest defined by the runbook;
+7. keep 30/50/100 chapter proof deferred until this fixture passes.
