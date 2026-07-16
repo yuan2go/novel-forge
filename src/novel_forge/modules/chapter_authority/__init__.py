@@ -1,0 +1,49 @@
+"""PostgreSQL-authoritative single-chapter application slice."""
+
+from novel_forge.modules.chapter_authority.contracts import (
+    ChapterHandlerOutput,
+    ChapterHandlerRegistry,
+    ChapterInputAsset,
+    ChapterNode,
+)
+from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_SLICE_DEFINITION_VERSION,
+    CHAPTER_SLICE_ROOT_DEFINITION_NAME,
+    chapter_root_operation_definition,
+    chapter_operation_definitions,
+)
+from novel_forge.modules.chapter_authority.evidence import (
+    build_chapter_slice_evidence_manifest,
+)
+from novel_forge.modules.chapter_authority.handlers import (
+    ChapterContentProvider,
+    DeterministicFixtureChapterProvider,
+    build_chapter_handler_registry,
+)
+from novel_forge.modules.chapter_authority.export_delivery import (
+    ExportDeliveryEvidence,
+)
+from novel_forge.modules.chapter_authority.orchestrator import (
+    ChapterSliceResult,
+    SingleChapterRequest,
+    run_single_chapter_slice,
+)
+
+__all__ = [
+    "CHAPTER_SLICE_DEFINITION_VERSION",
+    "CHAPTER_SLICE_ROOT_DEFINITION_NAME",
+    "ChapterContentProvider",
+    "ChapterHandlerOutput",
+    "ChapterHandlerRegistry",
+    "ChapterInputAsset",
+    "ChapterNode",
+    "ChapterSliceResult",
+    "DeterministicFixtureChapterProvider",
+    "ExportDeliveryEvidence",
+    "SingleChapterRequest",
+    "build_chapter_handler_registry",
+    "build_chapter_slice_evidence_manifest",
+    "chapter_root_operation_definition",
+    "chapter_operation_definitions",
+    "run_single_chapter_slice",
+]

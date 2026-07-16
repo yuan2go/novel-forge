@@ -388,6 +388,17 @@ def submit_effect_dispatch_result(
                 evidence,
                 provider_correlation_id,
             )
+            if accepted == "unknown" and dispatch["effect_type"] == "blob.upload":
+                blob_id = str(dispatch["request_payload"].get("blob_id") or "")
+                if not blob_id:
+                    raise KernelError(
+                        "BLOB_EFFECT_PAYLOAD_INVALID",
+                        "Blob upload effect does not identify its reserved Blob",
+                    )
+                uow.repositories.asset_blobs.mark_upload_unknown(
+                    blob_id,
+                    context.project_id,
+                )
             repository.release_lease(
                 dispatch_id,
                 worker_id,

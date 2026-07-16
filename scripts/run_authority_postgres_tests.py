@@ -13,6 +13,8 @@ def main() -> int:
         "test_asset_blob_*_postgres.py",
         "test_command_kernel_*_postgres.py",
         "test_external_effect_*_postgres.py",
+        "test_chapter_authority_*_postgres.py",
+        "test_postgresql_only_chapter_slice.py",
     ):
         suite.addTests(
             unittest.defaultTestLoader.discover(
