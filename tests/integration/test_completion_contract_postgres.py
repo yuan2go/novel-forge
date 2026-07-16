@@ -265,7 +265,42 @@ class CompletionContractPostgresTests(unittest.TestCase):
                 """,
                 [attempt_id],
             )
-            self.assertEqual(cursor.fetchone(), ("SUCCEEDED", "WAITING_GATE"))
+            self.assertEqual(cursor.fetchone(), ("RESULT_SUBMITTED", "WAITING_GATE"))
+
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO authority_completion_gate (
+                    gate_id, operation_id, gate_key, status, evidence
+                ) VALUES (%s, %s, 'release', 'PASSED', '{}'::jsonb)
+                """,
+                [identifier("gate"), operation_id],
+            )
+
+        completed = finalize_operation_completion(
+            DATABASE_URL,
+            context,
+            operation_id=operation_id,
+            expected_status="WAITING_GATE",
+            expected_version=2,
+        )
+        self.assertEqual(completed["status"], "SUCCEEDED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT attempt.status, operation.status,
+                       COUNT(lease.lease_id) FILTER (WHERE lease.status = 'HELD')
+                FROM authority_attempt AS attempt
+                JOIN authority_operation AS operation
+                  ON operation.operation_id = attempt.operation_id
+                LEFT JOIN authority_lease_acquisition AS lease
+                  ON lease.attempt_id = attempt.attempt_id
+                WHERE attempt.attempt_id = %s
+                GROUP BY attempt.status, operation.status
+                """,
+                [attempt_id],
+            )
+            self.assertEqual(cursor.fetchone(), ("SUCCEEDED", "SUCCEEDED", 0))
 
     def _operation(
         self,
