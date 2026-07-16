@@ -7,6 +7,7 @@ from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
 CHAPTER_SLICE_DEFINITION_VERSION = "1.0.0"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "1.1.0"
 CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "1.0.0"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
@@ -16,11 +17,17 @@ def chapter_operation_definitions(
     *,
     application_build_id: str,
     commit_sha: str,
+    model_effects_required: bool = False,
 ) -> tuple[dict[str, Any], ...]:
     if not application_build_id or len(commit_sha) != 40:
         raise ValueError("application_build_id and a 40-character commit_sha are required")
     return tuple(
-        _definition(node, application_build_id=application_build_id, commit_sha=commit_sha)
+        _definition(
+            node,
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+            model_effects_required=model_effects_required,
+        )
         for node in ChapterNode
     )
 
@@ -29,12 +36,13 @@ def chapter_root_operation_definition(
     *,
     application_build_id: str,
     commit_sha: str,
+    model_effects_required: bool = False,
 ) -> dict[str, Any]:
     if not application_build_id or len(commit_sha) != 40:
         raise ValueError("application_build_id and a 40-character commit_sha are required")
     return {
         "name": CHAPTER_SLICE_ROOT_DEFINITION_NAME,
-        "definition_version": CHAPTER_SLICE_DEFINITION_VERSION,
+        "definition_version": chapter_definition_version(model_effects_required),
         "family": "chapter_authority",
         "enabled": True,
         "command_schema": _chapter_command_schema(),
@@ -75,6 +83,7 @@ def _definition(
     *,
     application_build_id: str,
     commit_sha: str,
+    model_effects_required: bool,
 ) -> dict[str, Any]:
     completion: dict[str, Any] = {
         "version": f"{node.definition_name}.completion.v1",
@@ -94,6 +103,16 @@ def _definition(
         "required_outbox_events": [node.completion_topic],
     }
     external_capabilities: list[str] = []
+    model_capability = {
+        ChapterNode.DRAFT: "model.draft",
+        ChapterNode.REVIEW: "model.review",
+        ChapterNode.REVISION: "model.revision",
+    }.get(node)
+    if model_effects_required and model_capability:
+        completion["required_external_effects"] = [
+            {"capability": model_capability, "allowed_states": ["SUCCEEDED"]}
+        ]
+        external_capabilities = [model_capability]
     if node is ChapterNode.EXPORT:
         completion.update(
             {
@@ -108,10 +127,10 @@ def _definition(
                 ],
             }
         )
-        external_capabilities = ["object_store.put"]
+        external_capabilities = [*external_capabilities, "object_store.put"]
     return {
         "name": node.definition_name,
-        "definition_version": CHAPTER_SLICE_DEFINITION_VERSION,
+        "definition_version": chapter_definition_version(model_effects_required),
         "family": "chapter_authority",
         "enabled": True,
         "command_schema": _chapter_command_schema(),
@@ -125,7 +144,9 @@ def _definition(
             "additionalProperties": False,
         },
         "handler_key": node.handler_key,
-        "handler_contract_version": CHAPTER_SLICE_HANDLER_CONTRACT_VERSION,
+        "handler_contract_version": (
+            "1.1.0" if model_effects_required else CHAPTER_SLICE_HANDLER_CONTRACT_VERSION
+        ),
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
         "execution_mode": "worker",
@@ -146,6 +167,14 @@ def _definition(
         },
         "completion_contract": completion,
     }
+
+
+def chapter_definition_version(model_effects_required: bool) -> str:
+    return (
+        CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
+        if model_effects_required
+        else CHAPTER_SLICE_DEFINITION_VERSION
+    )
 
 
 def _chapter_command_schema() -> dict[str, Any]:

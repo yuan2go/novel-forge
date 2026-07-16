@@ -1,8 +1,8 @@
-"""Pure chapter handlers for the first PostgreSQL-authoritative slice."""
+"""Storage-free chapter handlers for PostgreSQL authority execution."""
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any
 
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerOutput,
@@ -10,79 +10,81 @@ from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerRequest,
     ChapterNode,
 )
-
-
-class ChapterContentProvider(Protocol):
-    provider_id: str
-
-    def draft(
-        self,
-        *,
-        plan: dict[str, Any],
-        context: dict[str, Any],
-    ) -> dict[str, Any]: ...
-
-    def review(self, *, draft: dict[str, Any]) -> dict[str, Any]: ...
-
-    def revise(
-        self,
-        *,
-        draft: dict[str, Any],
-        review: dict[str, Any],
-    ) -> dict[str, Any]: ...
+from novel_forge.modules.chapter_authority.domain_handlers import (
+    build_canon_patch,
+    build_chapter_plan,
+    build_context_bundle,
+    build_export_package,
+    build_quality_report,
+    normalize_draft_result,
+    normalize_review_result,
+    normalize_revision_result,
+)
+from novel_forge.modules.chapter_authority.model_effects import (
+    ChapterModelPort,
+    ModelProviderResult,
+)
 
 
 class DeterministicFixtureChapterProvider:
     """Deterministic acceptance provider; never presented as a real model call."""
 
     provider_id = "deterministic_chapter_fixture_v1"
+    external_effect_backed = False
 
-    def draft(
+    def invoke(
         self,
+        request: ChapterHandlerRequest,
         *,
-        plan: dict[str, Any],
-        context: dict[str, Any],
-    ) -> dict[str, Any]:
-        premise = str(plan["premise"])
-        return {
-            "text": (
-                f"{premise} The choice is made in public. "
-                "The promise is kept, but its cost remains too abstract."
-            ),
-            "context_digest": context["context_digest"],
-            "provider": self.provider_id,
-        }
+        stage: str,
+        payload: dict[str, Any],
+    ) -> ModelProviderResult:
+        if stage == "draft":
+            plan = payload["plan"]
+            output = {
+                "text": (
+                    f"{plan['premise']} The choice is made in public. "
+                    "The promise is kept, but its cost remains too abstract."
+                )
+            }
+        elif stage == "review":
+            output = {
+                "decision": "NEEDS_REVISION",
+                "score": 72,
+                "issues": [
+                    {
+                        "code": "COST_NOT_CONCRETE",
+                        "severity": "blocking",
+                        "message": "The promised cost must become visible in the scene.",
+                    }
+                ],
+            }
+        elif stage == "revision":
+            draft = payload["draft"]
+            review = payload["review"]
+            output = {
+                "text": (
+                    f"{draft['text']} The protagonist surrenders the only safe route home "
+                    "before the witnesses leave, making the cost irreversible."
+                ),
+                "resolved_issue_codes": [str(item["code"]) for item in review["issues"]],
+            }
+        else:
+            from novel_forge.modules.command_kernel.errors import KernelError
 
-    def review(self, *, draft: dict[str, Any]) -> dict[str, Any]:
-        return {
-            "decision": "NEEDS_REVISION",
-            "score": 72,
-            "issues": [
-                {
-                    "code": "COST_NOT_CONCRETE",
-                    "severity": "blocking",
-                    "message": "The promised cost must become visible in the scene.",
-                }
-            ],
-            "provider": self.provider_id,
-            "draft_hash_basis": draft["text"],
-        }
-
-    def revise(
-        self,
-        *,
-        draft: dict[str, Any],
-        review: dict[str, Any],
-    ) -> dict[str, Any]:
-        issue_codes = [str(item["code"]) for item in review["issues"]]
-        return {
-            "text": (
-                f"{draft['text']} The protagonist surrenders the only safe route home "
-                "before the witnesses leave, making the cost irreversible."
-            ),
-            "resolved_issue_codes": issue_codes,
-            "provider": self.provider_id,
-        }
+            raise KernelError("MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported fixture stage: {stage}")
+        return ModelProviderResult(
+            output=output,
+            provider_id=self.provider_id,
+            model_id="deterministic-fixture-model-v1",
+            prompt_version=f"chapter-{stage}-fixture-v1",
+            skill_version="deterministic-fixture-v1",
+            input_tokens=0,
+            output_tokens=0,
+            cost_amount="0",
+            currency="USD",
+            real_model_call=False,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,15 +95,12 @@ class _PlanHandler:
         title = str(request.command.get("title") or f"Chapter {chapter}")
         return _output(
             ChapterNode.PLAN,
-            {
-                "chapter": chapter,
-                "title": title,
-                "premise": premise,
-                "objective": "force a consequential choice and preserve continuity",
-                "beats": ["promise tested", "public choice", "visible cost"],
-                "closing_hook": "the cost creates a new obligation",
-                "trace_id": request.trace_id,
-            },
+            build_chapter_plan(
+                chapter=chapter,
+                title=title,
+                premise=premise,
+                trace_id=request.trace_id,
+            ),
         )
 
 
@@ -111,95 +110,81 @@ class _ContextHandler:
         plan = request.require_input("chapter_plan")
         return _output(
             ChapterNode.CONTEXT,
-            {
-                "chapter": plan.content["chapter"],
-                "goal": plan.content["objective"],
-                "selected_asset_version_ids": [plan.asset_version_id],
-                "context_digest": plan.content_hash,
-                "actual_context": {
-                    "premise": plan.content["premise"],
-                    "beats": plan.content["beats"],
-                    "copyright_boundary": "abstract project-owned fixture context only",
-                },
-                "forbidden_source_count": 0,
-            },
+            build_context_bundle(
+                plan=plan.content,
+                plan_asset_version_id=plan.asset_version_id,
+                plan_content_hash=plan.content_hash,
+            ),
         )
 
 
 @dataclass(frozen=True, slots=True)
 class _DraftHandler:
-    provider: ChapterContentProvider
+    provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         plan = request.require_input("chapter_plan")
         context = request.require_input("context_bundle")
-        generated = self.provider.draft(plan=plan.content, context=context.content)
+        generated = self.provider.invoke(
+            request,
+            stage="draft",
+            payload={"plan": plan.content, "context": context.content},
+        )
         return _output(
             ChapterNode.DRAFT,
-            {
-                "chapter": plan.content["chapter"],
-                "title": plan.content["title"],
-                "text": generated["text"],
-                "context_bundle_id": context.asset_version_id,
-                "provider_evidence": {
-                    "provider_id": self.provider.provider_id,
-                    "mode": "deterministic_fixture",
-                    "real_model_call": False,
-                },
-            },
+            normalize_draft_result(
+                plan=plan.content,
+                context_asset_version_id=context.asset_version_id,
+                result=generated.output,
+                provider_evidence=_provider_evidence(generated),
+            ),
         )
 
 
 @dataclass(frozen=True, slots=True)
 class _ReviewHandler:
-    provider: ChapterContentProvider
+    provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         draft = request.require_input("draft_chapter")
-        reviewed = self.provider.review(draft=draft.content)
+        reviewed = self.provider.invoke(
+            request,
+            stage="review",
+            payload={"draft": draft.content},
+        )
         return _output(
             ChapterNode.REVIEW,
-            {
-                "chapter": draft.content["chapter"],
-                "target_asset_version_id": draft.asset_version_id,
-                "decision": reviewed["decision"],
-                "score": reviewed["score"],
-                "issues": reviewed["issues"],
-                "blocking_issue_count": sum(
-                    1 for item in reviewed["issues"] if item["severity"] == "blocking"
-                ),
-                "provider_evidence": {
-                    "provider_id": self.provider.provider_id,
-                    "mode": "deterministic_fixture",
-                    "real_model_call": False,
-                },
-            },
+            normalize_review_result(
+                draft=draft.content,
+                draft_asset_version_id=draft.asset_version_id,
+                result=reviewed.output,
+                provider_evidence=_provider_evidence(reviewed),
+            ),
         )
 
 
 @dataclass(frozen=True, slots=True)
 class _RevisionHandler:
-    provider: ChapterContentProvider
+    provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
-        revised = self.provider.revise(draft=draft.content, review=review.content)
+        revised = self.provider.invoke(
+            request,
+            stage="revision",
+            payload={"draft": draft.content, "review": review.content},
+        )
         return _output(
             ChapterNode.REVISION,
-            {
-                "chapter": draft.content["chapter"],
-                "title": draft.content["title"],
-                "text": revised["text"],
-                "source_draft_version_id": draft.asset_version_id,
-                "review_version_id": review.asset_version_id,
-                "resolved_issue_codes": revised["resolved_issue_codes"],
-                "provider_evidence": {
-                    "provider_id": self.provider.provider_id,
-                    "mode": "deterministic_fixture",
-                    "real_model_call": False,
-                },
-            },
+            normalize_revision_result(
+                draft=draft.content,
+                review=review.content,
+                draft_asset_version_id=draft.asset_version_id,
+                review_asset_version_id=review.asset_version_id,
+                result=revised.output,
+                provider_evidence=_provider_evidence(revised),
+            ),
         )
 
 
@@ -209,20 +194,10 @@ class _CanonHandler:
         revision = request.require_input("draft_version")
         return _output(
             ChapterNode.CANON,
-            {
-                "chapter": revision.content["chapter"],
-                "source_asset_version_id": revision.asset_version_id,
-                "facts": [
-                    {
-                        "subject": "protagonist",
-                        "predicate": "gave_up",
-                        "object": "safe_route_home",
-                        "effective_chapter": revision.content["chapter"],
-                    }
-                ],
-                "conflicts": [],
-                "gate": "PASSED",
-            },
+            build_canon_patch(
+                revision=revision.content,
+                revision_asset_version_id=revision.asset_version_id,
+            ),
         )
 
 
@@ -231,28 +206,14 @@ class _QualityHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
         canon = request.require_input("canon_patch")
-        visible_cost = "surrenders the only safe route home" in revision.content["text"]
-        passed = visible_cost and canon.content["gate"] == "PASSED"
-        if not passed:
-            from novel_forge.modules.command_kernel.errors import KernelError
-
-            raise KernelError(
-                "CHAPTER_QUALITY_GATE_FAILED",
-                "Quality output cannot be qualified while a blocking check fails",
-            )
         return _output(
             ChapterNode.QUALITY,
-            {
-                "chapter": revision.content["chapter"],
-                "target_asset_version_id": revision.asset_version_id,
-                "canon_patch_version_id": canon.asset_version_id,
-                "score": 91,
-                "checks": {
-                    "blocking_review_issue_resolved": visible_cost,
-                    "canon_conflict_free": not canon.content["conflicts"],
-                },
-                "gate": "PASSED",
-            },
+            build_quality_report(
+                revision=revision.content,
+                revision_asset_version_id=revision.asset_version_id,
+                canon=canon.content,
+                canon_asset_version_id=canon.asset_version_id,
+            ),
         )
 
 
@@ -261,28 +222,23 @@ class _ExportHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
         quality = request.require_input("quality_score_report")
-        if quality.content["gate"] != "PASSED":
-            from novel_forge.modules.command_kernel.errors import KernelError
-
-            raise KernelError("CHAPTER_QUALITY_GATE_BLOCKED", "Export requires a passed quality gate")
         return _output(
             ChapterNode.EXPORT,
-            {
-                "chapter": revision.content["chapter"],
-                "title": revision.content["title"],
-                "rendered_text": revision.content["text"],
-                "source_asset_version_id": revision.asset_version_id,
-                "quality_asset_version_id": quality.asset_version_id,
-                "release_status": "READY_FOR_BLOB_VERIFICATION",
-                "media_type": "text/plain",
-            },
+            build_export_package(
+                revision=revision.content,
+                revision_asset_version_id=revision.asset_version_id,
+                quality=quality.content,
+                quality_asset_version_id=quality.asset_version_id,
+            ),
         )
 
 
 def build_chapter_handler_registry(
-    provider: ChapterContentProvider,
+    provider: ChapterModelPort,
 ) -> ChapterHandlerRegistry:
-    registry = ChapterHandlerRegistry()
+    registry = ChapterHandlerRegistry(
+        model_effects_required=bool(getattr(provider, "external_effect_backed", False))
+    )
     registry.register(ChapterNode.PLAN, _PlanHandler())
     registry.register(ChapterNode.CONTEXT, _ContextHandler())
     registry.register(ChapterNode.DRAFT, _DraftHandler(provider))
@@ -301,3 +257,9 @@ def _output(node: ChapterNode, content: dict[str, Any]) -> ChapterHandlerOutput:
         role="primary",
         content=content,
     )
+
+
+def _provider_evidence(result: ModelProviderResult) -> dict[str, Any]:
+    evidence = result.to_evidence()
+    evidence.pop("result", None)
+    return evidence

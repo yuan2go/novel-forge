@@ -26,7 +26,7 @@ class AuthorityCoverageOperationMappingTests(unittest.TestCase):
         for name in required:
             self.assertEqual(definitions[name]["family"], "chapter_authority")
             self.assertEqual(definitions[name]["migration_status"], "implemented")
-            self.assertEqual(definitions[name]["definition_version"], "1.0.0")
+            self.assertEqual(definitions[name]["definition_version"], "1.1.0")
 
     def test_asset_and_blob_protocol_definitions_have_typed_contracts(self) -> None:
         definitions = {item["name"]: item for item in operation_catalog([])}

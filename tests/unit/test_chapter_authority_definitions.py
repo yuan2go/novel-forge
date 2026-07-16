@@ -97,6 +97,26 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             [{"capability": "object_store.put", "allowed_states": ["SUCCEEDED"]}],
         )
 
+    def test_model_effect_profile_versions_and_requires_each_model_capability(self) -> None:
+        definitions = chapter_operation_definitions(
+            application_build_id="unit-test-build",
+            commit_sha="a" * 40,
+            model_effects_required=True,
+        )
+
+        self.assertEqual({item["definition_version"] for item in definitions}, {"1.1.0"})
+        for node, capability in (
+            (ChapterNode.DRAFT, "model.draft"),
+            (ChapterNode.REVIEW, "model.review"),
+            (ChapterNode.REVISION, "model.revision"),
+        ):
+            definition = definitions[list(ChapterNode).index(node)]
+            self.assertIn(capability, definition["external_capabilities"])
+            self.assertIn(
+                {"capability": capability, "allowed_states": ["SUCCEEDED"]},
+                definition["completion_contract"]["required_external_effects"],
+            )
+
     def test_registry_is_explicit_and_fails_closed(self) -> None:
         registry = ChapterHandlerRegistry()
         registry.register(ChapterNode.PLAN, _Handler())

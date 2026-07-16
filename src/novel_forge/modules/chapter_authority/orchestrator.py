@@ -15,6 +15,7 @@ from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_SLICE_ROOT_HANDLER_KEY,
     chapter_operation_definitions,
     chapter_root_operation_definition,
+    chapter_definition_version,
 )
 from novel_forge.modules.chapter_authority.evidence import (
     build_chapter_slice_evidence_manifest,
@@ -92,13 +93,16 @@ def run_single_chapter_slice(
     exercise_unknown_export_reconciliation: bool = False,
 ) -> ChapterSliceResult:
     _validate_request(request)
+    definition_version = chapter_definition_version(registry.model_effects_required)
     definitions = chapter_operation_definitions(
         application_build_id=request.application_build_id,
         commit_sha=request.commit_sha,
+        model_effects_required=registry.model_effects_required,
     )
     root_definition = chapter_root_operation_definition(
         application_build_id=request.application_build_id,
         commit_sha=request.commit_sha,
+        model_effects_required=registry.model_effects_required,
     )
     with AuthorityUnitOfWork(database_url) as uow:
         uow.repositories.definitions.register(root_definition)
@@ -122,6 +126,7 @@ def run_single_chapter_slice(
             definition_name=CHAPTER_SLICE_ROOT_DEFINITION_NAME,
             idempotency_key=f"{request.project_id}:chapter:{request.chapter}:root",
             input_assets=[],
+            definition_version=definition_version,
         ),
         context=admission,
     )["operation_id"]
@@ -156,6 +161,7 @@ def run_single_chapter_slice(
                 root_operation_id=root,
                 parent_operation_id=root,
                 causation_operation_id=previous_operation_id or root,
+                definition_version=definition_version,
             ),
             context=admission,
         )["operation_id"]
@@ -353,10 +359,11 @@ def _command(
     root_operation_id: str | None = None,
     parent_operation_id: str | None = None,
     causation_operation_id: str | None = None,
+    definition_version: str = CHAPTER_SLICE_DEFINITION_VERSION,
 ) -> dict[str, Any]:
     return {
         "definition_name": definition_name,
-        "definition_version": CHAPTER_SLICE_DEFINITION_VERSION,
+        "definition_version": definition_version,
         "project_id": request.project_id,
         "workspace_id": request.workspace_id,
         "actor_id": request.actor_id,

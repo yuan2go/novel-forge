@@ -284,10 +284,12 @@ def _implemented_chapter_authority_definitions(
         chapter_root_operation_definition(
             application_build_id=application_build_id,
             commit_sha=commit_sha,
+            model_effects_required=True,
         ),
         *chapter_operation_definitions(
             application_build_id=application_build_id,
             commit_sha=commit_sha,
+            model_effects_required=True,
         ),
     )
     return [

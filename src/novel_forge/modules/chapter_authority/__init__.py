@@ -8,6 +8,7 @@ from novel_forge.modules.chapter_authority.contracts import (
 )
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_SLICE_DEFINITION_VERSION,
+    CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
     CHAPTER_SLICE_ROOT_DEFINITION_NAME,
     chapter_root_operation_definition,
     chapter_operation_definitions,
@@ -16,9 +17,13 @@ from novel_forge.modules.chapter_authority.evidence import (
     build_chapter_slice_evidence_manifest,
 )
 from novel_forge.modules.chapter_authority.handlers import (
-    ChapterContentProvider,
     DeterministicFixtureChapterProvider,
     build_chapter_handler_registry,
+)
+from novel_forge.modules.chapter_authority.model_effects import (
+    ChapterModelPort,
+    ExternalEffectChapterModelPort,
+    ModelProviderResult,
 )
 from novel_forge.modules.chapter_authority.export_delivery import (
     ExportDeliveryEvidence,
@@ -31,15 +36,18 @@ from novel_forge.modules.chapter_authority.orchestrator import (
 
 __all__ = [
     "CHAPTER_SLICE_DEFINITION_VERSION",
+    "CHAPTER_MODEL_EFFECT_DEFINITION_VERSION",
     "CHAPTER_SLICE_ROOT_DEFINITION_NAME",
-    "ChapterContentProvider",
     "ChapterHandlerOutput",
     "ChapterHandlerRegistry",
     "ChapterInputAsset",
     "ChapterNode",
+    "ChapterModelPort",
     "ChapterSliceResult",
     "DeterministicFixtureChapterProvider",
     "ExportDeliveryEvidence",
+    "ExternalEffectChapterModelPort",
+    "ModelProviderResult",
     "SingleChapterRequest",
     "build_chapter_handler_registry",
     "build_chapter_slice_evidence_manifest",

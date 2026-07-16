@@ -127,8 +127,9 @@ class ChapterNodeHandler(Protocol):
 
 
 class ChapterHandlerRegistry:
-    def __init__(self) -> None:
+    def __init__(self, *, model_effects_required: bool = False) -> None:
         self._handlers: dict[ChapterNode, ChapterNodeHandler] = {}
+        self.model_effects_required = model_effects_required
 
     def register(self, node: ChapterNode, handler: ChapterNodeHandler) -> None:
         if node in self._handlers:

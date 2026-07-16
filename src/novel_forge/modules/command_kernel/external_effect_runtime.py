@@ -244,7 +244,13 @@ def dispatch_external_effect(
             outcome="success",
             evidence=provider_result.evidence,
         )
-    return {"dispatch_id": dispatch["dispatch_id"], "outcome": outcome, "receipt": receipt}
+    return {
+        "dispatch_id": dispatch["dispatch_id"],
+        "outcome": outcome,
+        "receipt": receipt,
+        "provider_correlation_id": provider_result.provider_correlation_id,
+        "provider_evidence": provider_result.evidence,
+    }
 
 
 def heartbeat_effect_dispatch(
