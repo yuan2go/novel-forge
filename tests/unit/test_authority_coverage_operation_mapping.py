@@ -8,6 +8,26 @@ from novel_forge.tools.authority_coverage_manifest import build_manifest, operat
 
 
 class AuthorityCoverageOperationMappingTests(unittest.TestCase):
+    def test_catalog_includes_implemented_chapter_authority_runtime_definitions(self) -> None:
+        definitions = {item["name"]: item for item in operation_catalog([])}
+        required = {
+            "chapter.slice.run",
+            "chapter.plan.materialize",
+            "chapter.context.build",
+            "chapter.draft.generate",
+            "chapter.review.evaluate",
+            "chapter.revision.apply",
+            "chapter.canon.update",
+            "chapter.quality.evaluate",
+            "chapter.export.render",
+        }
+
+        self.assertFalse(required - definitions.keys())
+        for name in required:
+            self.assertEqual(definitions[name]["family"], "chapter_authority")
+            self.assertEqual(definitions[name]["migration_status"], "implemented")
+            self.assertEqual(definitions[name]["definition_version"], "1.0.0")
+
     def test_asset_and_blob_protocol_definitions_have_typed_contracts(self) -> None:
         definitions = {item["name"]: item for item in operation_catalog([])}
         required = {

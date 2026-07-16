@@ -42,6 +42,7 @@ FAMILIES = (
     "asset",
     "blob",
     "external_effect",
+    "chapter_authority",
 )
 
 LOCAL_METHODS = {
@@ -154,10 +155,16 @@ _CATALOG_NAMES: dict[str, tuple[str, ...]] = {
         "compensate",
         "cancel",
     ),
+    "chapter_authority": (),
 }
 
 
-def operation_catalog(entrypoints: Iterable[dict[str, Any]] = ()) -> list[dict[str, Any]]:
+def operation_catalog(
+    entrypoints: Iterable[dict[str, Any]] = (),
+    *,
+    application_build_id: str = "catalog-generation",
+    commit_sha: str = "0" * 40,
+) -> list[dict[str, Any]]:
     """Build candidate Definitions with business-specific execution contracts."""
     mapped: dict[str, set[str]] = {}
     current_handlers: dict[str, set[str]] = {}
@@ -213,6 +220,12 @@ def operation_catalog(entrypoints: Iterable[dict[str, Any]] = ()) -> list[dict[s
                     "migration_status": "entrypoint_mapped" if mapped.get(name) else "candidate",
                 }
             )
+    catalog.extend(
+        _implemented_chapter_authority_definitions(
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+        )
+    )
     return catalog
 
 
@@ -222,7 +235,11 @@ def write_operation_catalog(
     markdown_output: str | Path,
 ) -> list[dict[str, Any]]:
     manifest = build_manifest(repo_root)
-    catalog = operation_catalog(manifest["findings"])
+    catalog = operation_catalog(
+        manifest["findings"],
+        application_build_id="authority-catalog-generator",
+        commit_sha=manifest["commit_sha"],
+    )
     payload = {
         "schema_version": "2.0.0",
         "commit_sha": manifest["commit_sha"],
@@ -240,7 +257,7 @@ def write_operation_catalog(
     rows = [
         "# PostgreSQL OperationDefinition Catalog",
         "",
-        "Receiver-aware generated candidate catalog. Definitions remain disabled until their PostgreSQL acceptance gate passes.",
+        "Receiver-aware generated catalog. Candidate definitions remain disabled until their PostgreSQL acceptance gate passes; implemented definitions preserve their runtime contract.",
         "",
         "| Name | Family | Mode | Entrypoints | Migration |",
         "|---|---|---|---:|---|",
@@ -251,6 +268,43 @@ def write_operation_catalog(
     )
     Path(markdown_output).write_text("\n".join(rows) + "\n", encoding="utf-8")
     return catalog
+
+
+def _implemented_chapter_authority_definitions(
+    *,
+    application_build_id: str,
+    commit_sha: str,
+) -> list[dict[str, Any]]:
+    from novel_forge.modules.chapter_authority.definitions import (
+        chapter_operation_definitions,
+        chapter_root_operation_definition,
+    )
+
+    runtime_definitions = (
+        chapter_root_operation_definition(
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+        ),
+        *chapter_operation_definitions(
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+        ),
+    )
+    return [
+        {
+            **definition,
+            "command_schema_version": f"{definition['name']}.command.v1",
+            "result_schema_version": f"{definition['name']}.result.v1",
+            "current_entrypoints": (
+                ["novel_forge.modules.chapter_authority.run_single_chapter_slice"]
+                if definition["name"] == "chapter.slice.run"
+                else []
+            ),
+            "current_handlers": [definition["handler_key"]],
+            "migration_status": "implemented",
+        }
+        for definition in runtime_definitions
+    ]
 
 
 def write_legacy_actions(manifest: dict[str, Any], output: str | Path) -> dict[str, Any]:
