@@ -38,13 +38,13 @@
 - Consumes: `AuthorityUnitOfWork`, `authority_asset`, `authority_asset_version`, `authority_asset_qualification`, `authority_operation_output_asset`.
 - Produces: `AuthorityAssetRef`, `AuthorityAssetDocument`, `AuthorityAssetQuery`, `AuthorityAssetWriter.materialize_output(...)`, and project-scoped logical locator rows.
 
-- [ ] Write tests proving project-scoped locator uniqueness, immutable version creation, optimistic expected-version rejection, read-your-writes, current-version lookup, category/type/project listing, and cross-project reference rejection.
-- [ ] Add `authority_asset_locator(project_id, logical_ref, category, asset_id, current_asset_version_id, created_at, updated_at)` with foreign keys and indexes for `(project_id, category, updated_at DESC)` and `(project_id, asset_id)`.
-- [ ] Implement typed document reads that return JSON content plus immutable identity/version/hash metadata without materializing filesystem paths.
-- [ ] Implement writes only as an admitted Operation output; require `operation_id`, `project_id`, expected current version, lifecycle, eligibility, governance, output key, role, trace, and event metadata.
-- [ ] Use `SELECT ... FOR UPDATE` on the locator/current asset row and content-derived SHA-256 identity; reject stale writes with `AUTHORITY_ASSET_VERSION_CONFLICT`.
-- [ ] Run `python -m unittest tests.unit.test_authority_asset_locator` and the targeted PostgreSQL integration test.
-- [ ] Commit `feat(storage): add authoritative asset document store`.
+- [x] Write tests proving project-scoped locator uniqueness, immutable version creation, optimistic expected-version rejection, read-your-writes, current-version lookup, category/type/project listing, and cross-project reference rejection.
+- [x] Add `authority_asset_locator(project_id, logical_ref, category, asset_id, current_asset_version_id, created_at, updated_at)` with foreign keys and indexes for `(project_id, category, updated_at DESC)` and `(project_id, asset_id)`.
+- [x] Implement typed document reads that return JSON content plus immutable identity/version/hash metadata without materializing filesystem paths.
+- [x] Implement writes only as an admitted Operation output; require `operation_id`, `project_id`, expected current version, lifecycle, eligibility, governance, output key, role, trace, and event metadata.
+- [x] Use `SELECT ... FOR UPDATE` on the locator/current asset row and content-derived SHA-256 identity; reject stale writes with `AUTHORITY_ASSET_VERSION_CONFLICT`.
+- [x] Run `python -m unittest tests.unit.test_authority_asset_locator` and the targeted PostgreSQL integration test.
+- [x] Commit `feat(storage): add authoritative asset document store`.
 
 ### Task 2: Convert the chapter production algorithms into storage-free handler ports
 
@@ -209,4 +209,3 @@
 - [ ] Regenerate the coverage baseline/catalog/action map at final HEAD and require zero bypasses, unknown writes, fallbacks, sync paths, and production LocalStorage imports.
 - [ ] Record commands, counts, failures/skips, migration IDs, artifact hashes, quarantine counts, and residual non-authority local fixture usage.
 - [ ] Commit `docs: establish postgresql-only authority baseline` and leave the worktree clean except explicitly preserved user changes.
-

@@ -1252,6 +1252,7 @@ class AssetReferenceRepository:
 class AuthorityRepositories:
     def __init__(self, cursor: Any) -> None:
         from novel_forge.storage.asset_blob_repositories import AssetBlobRepository
+        from novel_forge.storage.authority_asset_store import AuthorityAssetDocumentRepository
         from novel_forge.storage.chapter_authority_repositories import (
             ChapterAuthorityRepository,
         )
@@ -1270,6 +1271,7 @@ class AuthorityRepositories:
         self.runtime_evidence = RuntimeEvidenceRepository(cursor)
         self.asset_references = AssetReferenceRepository(cursor)
         self.asset_blobs = AssetBlobRepository(cursor)
+        self.asset_documents = AuthorityAssetDocumentRepository(cursor)
         self.chapter_authority = ChapterAuthorityRepository(cursor)
         self.external_effects = ExternalEffectRepository(cursor)
         self.operation_graph = OperationGraphRepository(cursor)
