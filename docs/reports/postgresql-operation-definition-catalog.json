@@ -1,6 +1,7 @@
 {
-  "artifact_hash": "sha256:95e0c67e6f6bdd468dc4bae99ff49320708294aa9873ad378e6f888f3d077e62",
-  "commit_sha": "23a4d2c574da91a499dd36262e55523a8c722f6d",
+  "artifact_hash": "sha256:3064902bab869b0716d8f56d13545fb4d9e77029a25c6c0eced6fb18c947d535",
+  "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
+  "commit_sha": "2c536e39ea7d1c012198cd21b4a43b883b005b47",
   "definitions": [
     {
       "approval_policy": {
@@ -10,6 +11,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "production.topic.generate.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "production.topic.generate.command.v1",
       "compensation_policy": {
@@ -78,6 +86,19 @@
       "permissions": [
         "production.topic.generate"
       ],
+      "result_schema": {
+        "$id": "production.topic.generate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "production.topic.generate.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -97,6 +118,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "production.world.generate.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "production.world.generate.command.v1",
       "compensation_policy": {
@@ -165,6 +193,19 @@
       "permissions": [
         "production.world.generate"
       ],
+      "result_schema": {
+        "$id": "production.world.generate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "production.world.generate.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -184,6 +225,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "production.character.generate.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "production.character.generate.command.v1",
       "compensation_policy": {
@@ -252,6 +300,19 @@
       "permissions": [
         "production.character.generate"
       ],
+      "result_schema": {
+        "$id": "production.character.generate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "production.character.generate.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -271,6 +332,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "production.outline.generate.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "production.outline.generate.command.v1",
       "compensation_policy": {
@@ -339,6 +407,19 @@
       "permissions": [
         "production.outline.generate"
       ],
+      "result_schema": {
+        "$id": "production.outline.generate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "production.outline.generate.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -358,6 +439,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "production.chapter_plan.generate.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "production.chapter_plan.generate.command.v1",
       "compensation_policy": {
@@ -426,6 +514,19 @@
       "permissions": [
         "production.chapter_plan.generate"
       ],
+      "result_schema": {
+        "$id": "production.chapter_plan.generate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "production.chapter_plan.generate.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -445,6 +546,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "production.draft.generate.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "production.draft.generate.command.v1",
       "compensation_policy": {
@@ -513,6 +621,19 @@
       "permissions": [
         "production.draft.generate"
       ],
+      "result_schema": {
+        "$id": "production.draft.generate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "production.draft.generate.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -532,6 +653,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "production.chapter.export.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "production.chapter.export.command.v1",
       "compensation_policy": {
@@ -589,6 +717,19 @@
       "permissions": [
         "production.chapter.export"
       ],
+      "result_schema": {
+        "$id": "production.chapter.export.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "production.chapter.export.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -608,6 +749,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "workflow.start.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "workflow.start.command.v1",
       "compensation_policy": {
@@ -674,6 +822,19 @@
       "permissions": [
         "workflow.start"
       ],
+      "result_schema": {
+        "$id": "workflow.start.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "workflow.start.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -693,6 +854,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "workflow.resume.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "workflow.resume.command.v1",
       "compensation_policy": {
@@ -739,6 +907,19 @@
       "permissions": [
         "workflow.resume"
       ],
+      "result_schema": {
+        "$id": "workflow.resume.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "workflow.resume.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -758,6 +939,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "workflow.pause.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "workflow.pause.command.v1",
       "compensation_policy": {
@@ -804,6 +992,19 @@
       "permissions": [
         "workflow.pause"
       ],
+      "result_schema": {
+        "$id": "workflow.pause.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "workflow.pause.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -823,6 +1024,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "workflow.cancel.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "workflow.cancel.command.v1",
       "compensation_policy": {
@@ -869,6 +1077,19 @@
       "permissions": [
         "workflow.cancel"
       ],
+      "result_schema": {
+        "$id": "workflow.cancel.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "workflow.cancel.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -888,6 +1109,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "workflow.recover.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "workflow.recover.command.v1",
       "compensation_policy": {
@@ -934,6 +1162,19 @@
       "permissions": [
         "workflow.recover"
       ],
+      "result_schema": {
+        "$id": "workflow.recover.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "workflow.recover.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -953,6 +1194,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "agent.dispatch.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "agent.dispatch.command.v1",
       "compensation_policy": {
@@ -1019,6 +1267,19 @@
       "permissions": [
         "agent.dispatch"
       ],
+      "result_schema": {
+        "$id": "agent.dispatch.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "agent.dispatch.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -1038,6 +1299,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "agent.retry.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "agent.retry.command.v1",
       "compensation_policy": {
@@ -1084,6 +1352,19 @@
       "permissions": [
         "agent.retry"
       ],
+      "result_schema": {
+        "$id": "agent.retry.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "agent.retry.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -1103,6 +1384,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "agent.recover.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "agent.recover.command.v1",
       "compensation_policy": {
@@ -1149,6 +1437,19 @@
       "permissions": [
         "agent.recover"
       ],
+      "result_schema": {
+        "$id": "agent.recover.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "agent.recover.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -1168,6 +1469,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "agent.dead_letter.replay.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "agent.dead_letter.replay.command.v1",
       "compensation_policy": {
@@ -1214,6 +1522,19 @@
       "permissions": [
         "agent.dead_letter.replay"
       ],
+      "result_schema": {
+        "$id": "agent.dead_letter.replay.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "agent.dead_letter.replay.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -1233,6 +1554,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "review.run.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "review.run.command.v1",
       "compensation_policy": {
@@ -1332,6 +1660,19 @@
       "permissions": [
         "review.run"
       ],
+      "result_schema": {
+        "$id": "review.run.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "review.run.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -1351,6 +1692,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "review.resolve_issue.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "review.resolve_issue.command.v1",
       "compensation_policy": {
@@ -1406,6 +1754,19 @@
       "permissions": [
         "review.resolve_issue"
       ],
+      "result_schema": {
+        "$id": "review.resolve_issue.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "review.resolve_issue.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -1425,6 +1786,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "revision.apply.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "revision.apply.command.v1",
       "compensation_policy": {
@@ -1515,6 +1883,19 @@
       "permissions": [
         "revision.apply"
       ],
+      "result_schema": {
+        "$id": "revision.apply.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "revision.apply.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -1534,6 +1915,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "publishing.prepare_release.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "publishing.prepare_release.command.v1",
       "compensation_policy": {
@@ -1593,6 +1981,19 @@
       "permissions": [
         "publishing.prepare_release"
       ],
+      "result_schema": {
+        "$id": "publishing.prepare_release.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "publishing.prepare_release.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -1612,6 +2013,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "publishing.submit.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "publishing.submit.command.v1",
       "compensation_policy": {
@@ -1706,6 +2114,19 @@
       "permissions": [
         "publishing.submit"
       ],
+      "result_schema": {
+        "$id": "publishing.submit.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "publishing.submit.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -1725,6 +2146,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "publishing.receipt.record.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "publishing.receipt.record.command.v1",
       "compensation_policy": {
@@ -1788,6 +2216,19 @@
       "permissions": [
         "publishing.receipt.record"
       ],
+      "result_schema": {
+        "$id": "publishing.receipt.record.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "publishing.receipt.record.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -1807,6 +2248,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "publishing.retract.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "publishing.retract.command.v1",
       "compensation_policy": {
@@ -1879,6 +2327,19 @@
       "permissions": [
         "publishing.retract"
       ],
+      "result_schema": {
+        "$id": "publishing.retract.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "publishing.retract.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -1898,6 +2359,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "canon.update.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "canon.update.command.v1",
       "compensation_policy": {
@@ -1957,6 +2425,19 @@
       "permissions": [
         "canon.update"
       ],
+      "result_schema": {
+        "$id": "canon.update.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "canon.update.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -1976,6 +2457,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "canon.character_state.update.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "canon.character_state.update.command.v1",
       "compensation_policy": {
@@ -2022,6 +2510,19 @@
       "permissions": [
         "canon.character_state.update"
       ],
+      "result_schema": {
+        "$id": "canon.character_state.update.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "canon.character_state.update.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -2041,6 +2542,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "canon.foreshadow_state.update.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "canon.foreshadow_state.update.command.v1",
       "compensation_policy": {
@@ -2087,6 +2595,19 @@
       "permissions": [
         "canon.foreshadow_state.update"
       ],
+      "result_schema": {
+        "$id": "canon.foreshadow_state.update.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "canon.foreshadow_state.update.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -2106,6 +2627,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "canon.recap.writeback.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "canon.recap.writeback.command.v1",
       "compensation_policy": {
@@ -2152,6 +2680,19 @@
       "permissions": [
         "canon.recap.writeback"
       ],
+      "result_schema": {
+        "$id": "canon.recap.writeback.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "canon.recap.writeback.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -2171,6 +2712,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "context.build.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "context.build.command.v1",
       "compensation_policy": {
@@ -2244,6 +2792,19 @@
       "permissions": [
         "context.build"
       ],
+      "result_schema": {
+        "$id": "context.build.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "context.build.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -2263,6 +2824,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "context.compress.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "context.compress.command.v1",
       "compensation_policy": {
@@ -2318,6 +2886,19 @@
       "permissions": [
         "context.compress"
       ],
+      "result_schema": {
+        "$id": "context.compress.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "context.compress.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -2337,6 +2918,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "context.approve.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "context.approve.command.v1",
       "compensation_policy": {
@@ -2394,6 +2982,19 @@
       "permissions": [
         "context.approve"
       ],
+      "result_schema": {
+        "$id": "context.approve.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "context.approve.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -2413,6 +3014,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "context.invalidate.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "context.invalidate.command.v1",
       "compensation_policy": {
@@ -2468,6 +3076,19 @@
       "permissions": [
         "context.invalidate"
       ],
+      "result_schema": {
+        "$id": "context.invalidate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "context.invalidate.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -2487,6 +3108,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "quality.evaluate.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "quality.evaluate.command.v1",
       "compensation_policy": {
@@ -2565,6 +3193,19 @@
       "permissions": [
         "quality.evaluate"
       ],
+      "result_schema": {
+        "$id": "quality.evaluate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "quality.evaluate.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -2584,6 +3225,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "quality.run_completion_gate.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "quality.run_completion_gate.command.v1",
       "compensation_policy": {
@@ -2651,6 +3299,19 @@
       "permissions": [
         "quality.run_completion_gate"
       ],
+      "result_schema": {
+        "$id": "quality.run_completion_gate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "quality.run_completion_gate.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -2670,6 +3331,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "quality.gate.resolve.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "quality.gate.resolve.command.v1",
       "compensation_policy": {
@@ -2729,6 +3397,19 @@
       "permissions": [
         "quality.gate.resolve"
       ],
+      "result_schema": {
+        "$id": "quality.gate.resolve.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "quality.gate.resolve.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -2748,6 +3429,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "source.import.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "source.import.command.v1",
       "compensation_policy": {
@@ -2846,6 +3534,19 @@
       "permissions": [
         "source.import"
       ],
+      "result_schema": {
+        "$id": "source.import.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "source.import.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -2865,6 +3566,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "source.refresh.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "source.refresh.command.v1",
       "compensation_policy": {
@@ -2931,6 +3639,19 @@
       "permissions": [
         "source.refresh"
       ],
+      "result_schema": {
+        "$id": "source.refresh.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "source.refresh.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -2950,6 +3671,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "source.quarantine.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "source.quarantine.command.v1",
       "compensation_policy": {
@@ -2996,6 +3724,19 @@
       "permissions": [
         "source.quarantine"
       ],
+      "result_schema": {
+        "$id": "source.quarantine.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "source.quarantine.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -3015,6 +3756,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "source.release_quarantine.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "source.release_quarantine.command.v1",
       "compensation_policy": {
@@ -3063,6 +3811,19 @@
       "permissions": [
         "source.release_quarantine"
       ],
+      "result_schema": {
+        "$id": "source.release_quarantine.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "source.release_quarantine.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -3082,6 +3843,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "knowledge.card.create.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "knowledge.card.create.command.v1",
       "compensation_policy": {
@@ -3224,6 +3992,19 @@
       "permissions": [
         "knowledge.card.create"
       ],
+      "result_schema": {
+        "$id": "knowledge.card.create.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "knowledge.card.create.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -3243,6 +4024,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "knowledge.rule.create.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "knowledge.rule.create.command.v1",
       "compensation_policy": {
@@ -3289,6 +4077,19 @@
       "permissions": [
         "knowledge.rule.create"
       ],
+      "result_schema": {
+        "$id": "knowledge.rule.create.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "knowledge.rule.create.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -3308,6 +4109,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "knowledge.template.create.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "knowledge.template.create.command.v1",
       "compensation_policy": {
@@ -3354,6 +4162,19 @@
       "permissions": [
         "knowledge.template.create"
       ],
+      "result_schema": {
+        "$id": "knowledge.template.create.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "knowledge.template.create.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -3373,6 +4194,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "knowledge.pack.build.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "knowledge.pack.build.command.v1",
       "compensation_policy": {
@@ -3419,6 +4247,19 @@
       "permissions": [
         "knowledge.pack.build"
       ],
+      "result_schema": {
+        "$id": "knowledge.pack.build.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "knowledge.pack.build.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -3438,6 +4279,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "knowledge.weight.apply.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "knowledge.weight.apply.command.v1",
       "compensation_policy": {
@@ -3494,6 +4342,19 @@
       "permissions": [
         "knowledge.weight.apply"
       ],
+      "result_schema": {
+        "$id": "knowledge.weight.apply.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "knowledge.weight.apply.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -3513,6 +4374,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "knowledge.rebuild.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "knowledge.rebuild.command.v1",
       "compensation_policy": {
@@ -3559,6 +4427,19 @@
       "permissions": [
         "knowledge.rebuild"
       ],
+      "result_schema": {
+        "$id": "knowledge.rebuild.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "knowledge.rebuild.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -3578,6 +4459,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "feedback.import.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "feedback.import.command.v1",
       "compensation_policy": {
@@ -3646,6 +4534,19 @@
       "permissions": [
         "feedback.import"
       ],
+      "result_schema": {
+        "$id": "feedback.import.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "feedback.import.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -3665,6 +4566,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "feedback.cluster.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "feedback.cluster.command.v1",
       "compensation_policy": {
@@ -3711,6 +4619,19 @@
       "permissions": [
         "feedback.cluster"
       ],
+      "result_schema": {
+        "$id": "feedback.cluster.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "feedback.cluster.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -3730,6 +4651,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "feedback.patch.approve.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "feedback.patch.approve.command.v1",
       "compensation_policy": {
@@ -3778,6 +4706,19 @@
       "permissions": [
         "feedback.patch.approve"
       ],
+      "result_schema": {
+        "$id": "feedback.patch.approve.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "feedback.patch.approve.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -3797,6 +4738,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "feedback.patch.apply.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "feedback.patch.apply.command.v1",
       "compensation_policy": {
@@ -3849,6 +4797,19 @@
       "permissions": [
         "feedback.patch.apply"
       ],
+      "result_schema": {
+        "$id": "feedback.patch.apply.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "feedback.patch.apply.result.v1",
       "retry_policy": {
         "backoff": "exponential",
@@ -3868,6 +4829,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "project_lifecycle.create.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "project_lifecycle.create.command.v1",
       "compensation_policy": {
@@ -4128,6 +5096,19 @@
       "permissions": [
         "project_lifecycle.create"
       ],
+      "result_schema": {
+        "$id": "project_lifecycle.create.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "project_lifecycle.create.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4147,6 +5128,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "project_lifecycle.clone.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "project_lifecycle.clone.command.v1",
       "compensation_policy": {
@@ -4193,6 +5181,19 @@
       "permissions": [
         "project_lifecycle.clone"
       ],
+      "result_schema": {
+        "$id": "project_lifecycle.clone.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "project_lifecycle.clone.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4212,6 +5213,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "project_lifecycle.pause.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "project_lifecycle.pause.command.v1",
       "compensation_policy": {
@@ -4258,6 +5266,19 @@
       "permissions": [
         "project_lifecycle.pause"
       ],
+      "result_schema": {
+        "$id": "project_lifecycle.pause.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "project_lifecycle.pause.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4277,6 +5298,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "project_lifecycle.resume.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "project_lifecycle.resume.command.v1",
       "compensation_policy": {
@@ -4323,6 +5351,19 @@
       "permissions": [
         "project_lifecycle.resume"
       ],
+      "result_schema": {
+        "$id": "project_lifecycle.resume.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "project_lifecycle.resume.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4342,6 +5383,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "project_lifecycle.archive.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "project_lifecycle.archive.command.v1",
       "compensation_policy": {
@@ -4388,6 +5436,19 @@
       "permissions": [
         "project_lifecycle.archive"
       ],
+      "result_schema": {
+        "$id": "project_lifecycle.archive.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "project_lifecycle.archive.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4407,6 +5468,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "project_lifecycle.delete.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "project_lifecycle.delete.command.v1",
       "compensation_policy": {
@@ -4453,6 +5521,19 @@
       "permissions": [
         "project_lifecycle.delete"
       ],
+      "result_schema": {
+        "$id": "project_lifecycle.delete.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "project_lifecycle.delete.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4472,6 +5553,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "policy.bundle.apply.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "policy.bundle.apply.command.v1",
       "compensation_policy": {
@@ -4520,6 +5608,19 @@
       "permissions": [
         "policy.bundle.apply"
       ],
+      "result_schema": {
+        "$id": "policy.bundle.apply.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "policy.bundle.apply.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4539,6 +5640,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "policy.provider.update.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "policy.provider.update.command.v1",
       "compensation_policy": {
@@ -4587,6 +5695,19 @@
       "permissions": [
         "policy.provider.update"
       ],
+      "result_schema": {
+        "$id": "policy.provider.update.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "policy.provider.update.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4606,6 +5727,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "policy.budget.update.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "policy.budget.update.command.v1",
       "compensation_policy": {
@@ -4654,6 +5782,19 @@
       "permissions": [
         "policy.budget.update"
       ],
+      "result_schema": {
+        "$id": "policy.budget.update.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "policy.budget.update.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4673,6 +5814,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "portfolio.priority.apply.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "portfolio.priority.apply.command.v1",
       "compensation_policy": {
@@ -4721,6 +5869,19 @@
       "permissions": [
         "portfolio.priority.apply"
       ],
+      "result_schema": {
+        "$id": "portfolio.priority.apply.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "portfolio.priority.apply.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4740,6 +5901,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "portfolio.allocation.apply.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "portfolio.allocation.apply.command.v1",
       "compensation_policy": {
@@ -4788,6 +5956,19 @@
       "permissions": [
         "portfolio.allocation.apply"
       ],
+      "result_schema": {
+        "$id": "portfolio.allocation.apply.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "portfolio.allocation.apply.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4807,6 +5988,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "ops.reindex.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "ops.reindex.command.v1",
       "compensation_policy": {
@@ -4853,6 +6041,19 @@
       "permissions": [
         "ops.reindex"
       ],
+      "result_schema": {
+        "$id": "ops.reindex.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "ops.reindex.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4872,6 +6073,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "ops.reconcile.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "ops.reconcile.command.v1",
       "compensation_policy": {
@@ -4918,6 +6126,19 @@
       "permissions": [
         "ops.reconcile"
       ],
+      "result_schema": {
+        "$id": "ops.reconcile.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "ops.reconcile.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -4937,6 +6158,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "ops.migration.validate.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "ops.migration.validate.command.v1",
       "compensation_policy": {
@@ -4983,6 +6211,19 @@
       "permissions": [
         "ops.migration.validate"
       ],
+      "result_schema": {
+        "$id": "ops.migration.validate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "ops.migration.validate.result.v1",
       "retry_policy": {
         "backoff": "none",
@@ -5002,6 +6243,13 @@
       "cancellation_policy": {
         "command": "kernel.operation.cancel.v1",
         "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "ops.repair.apply.command.v1",
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
       },
       "command_schema_version": "ops.repair.apply.command.v1",
       "compensation_policy": {
@@ -5048,7 +6296,2086 @@
       "permissions": [
         "ops.repair.apply"
       ],
+      "result_schema": {
+        "$id": "ops.repair.apply.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "result_schema_version": "ops.repair.apply.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "asset.create.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "asset_type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_type"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "asset.create.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "asset.create.completed"
+        ],
+        "required_qualifications": [],
+        "version": "asset.create.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:asset:{asset_id}:asset.create",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "asset",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.asset.create",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "asset.create",
+      "permissions": [
+        "asset.create"
+      ],
+      "result_schema": {
+        "$id": "asset.create.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "asset.create.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "asset.version.create.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "type": "string"
+          },
+          "content": {
+            "type": "object"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "content",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "asset.version.create.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "asset.version.create.completed"
+        ],
+        "required_qualifications": [],
+        "version": "asset.version.create.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:asset:{asset_id}:asset.version.create",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "asset",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.asset.version.create",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "asset.version.create",
+      "permissions": [
+        "asset.version.create"
+      ],
+      "result_schema": {
+        "$id": "asset.version.create.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "asset.version.create.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "asset.version.activate.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "asset.version.activate.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "asset.version.activate.completed"
+        ],
+        "required_qualifications": [],
+        "version": "asset.version.activate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:asset:{asset_id}:asset.version.activate",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "asset",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.asset.version.activate",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "asset.version.activate",
+      "permissions": [
+        "asset.version.activate"
+      ],
+      "result_schema": {
+        "$id": "asset.version.activate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "asset.version.activate.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "asset.version.qualify.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object"
+          },
+          "policy_version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "decision",
+          "policy_version",
+          "evidence"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "asset.version.qualify.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "asset.version.qualify.completed"
+        ],
+        "required_qualifications": [],
+        "version": "asset.version.qualify.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:asset:{asset_id}:asset.version.qualify",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "asset",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.asset.version.qualify",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "asset.version.qualify",
+      "permissions": [
+        "asset.version.qualify"
+      ],
+      "result_schema": {
+        "$id": "asset.version.qualify.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "asset.version.qualify.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "blob.reserve.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "expected_hash": {
+            "type": "string"
+          },
+          "expected_size": {
+            "type": "integer"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "object_key": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "object_key",
+          "expected_hash",
+          "expected_size",
+          "media_type"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "blob.reserve.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "blob.reserve.completed"
+        ],
+        "required_qualifications": [],
+        "version": "blob.reserve.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:blob:{blob_id}:blob.reserve",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "blob",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.blob.reserve",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "blob.reserve",
+      "permissions": [
+        "blob.reserve"
+      ],
+      "result_schema": {
+        "$id": "blob.reserve.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "blob.reserve.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "blob.upload.request.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blob_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "blob.upload.request.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": true,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED",
+              "COMPENSATED",
+              "CANCELLED"
+            ],
+            "capability": "object_store.put"
+          }
+        ],
+        "required_gates": [],
+        "required_outbox_events": [
+          "blob.upload.request.completed"
+        ],
+        "required_qualifications": [],
+        "version": "blob.upload.request.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:blob:{blob_id}:blob.upload.request",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "external",
+      "external_capabilities": [
+        "object_store.put"
+      ],
+      "family": "blob",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.blob.upload.request",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": true
+      },
+      "migration_status": "candidate",
+      "name": "blob.upload.request",
+      "permissions": [
+        "blob.upload.request"
+      ],
+      "result_schema": {
+        "$id": "blob.upload.request.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "blob.upload.request.result.v1",
+      "retry_policy": {
+        "backoff": "exponential",
+        "dead_letter_on_exhaustion": true,
+        "max_attempts": 3
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 60,
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "blob.upload.receipt.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blob_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "blob.upload.receipt.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "blob.upload.receipt.completed"
+        ],
+        "required_qualifications": [],
+        "version": "blob.upload.receipt.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:blob:{blob_id}:blob.upload.receipt",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "blob",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.blob.upload.receipt",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "blob.upload.receipt",
+      "permissions": [
+        "blob.upload.receipt"
+      ],
+      "result_schema": {
+        "$id": "blob.upload.receipt.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "blob.upload.receipt.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "blob.verify.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blob_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "blob.verify.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "blob.verify.completed"
+        ],
+        "required_qualifications": [],
+        "version": "blob.verify.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:blob:{blob_id}:blob.verify",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "blob",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.blob.verify",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "blob.verify",
+      "permissions": [
+        "blob.verify"
+      ],
+      "result_schema": {
+        "$id": "blob.verify.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "blob.verify.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "blob.fail.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blob_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "blob.fail.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "blob.fail.completed"
+        ],
+        "required_qualifications": [],
+        "version": "blob.fail.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:blob:{blob_id}:blob.fail",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "blob",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.blob.fail",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "blob.fail",
+      "permissions": [
+        "blob.fail"
+      ],
+      "result_schema": {
+        "$id": "blob.fail.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "blob.fail.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "blob.bind_to_asset_version.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blob_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "blob.bind_to_asset_version.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "blob.bind_to_asset_version.completed"
+        ],
+        "required_qualifications": [],
+        "version": "blob.bind_to_asset_version.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:blob:{blob_id}:blob.bind_to_asset_version",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "blob",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.blob.bind_to_asset_version",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "blob.bind_to_asset_version",
+      "permissions": [
+        "blob.bind_to_asset_version"
+      ],
+      "result_schema": {
+        "$id": "blob.bind_to_asset_version.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "blob.bind_to_asset_version.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "blob.release.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blob_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "blob.release.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": true,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED",
+              "COMPENSATED",
+              "CANCELLED"
+            ],
+            "capability": "object_store.delete"
+          }
+        ],
+        "required_gates": [],
+        "required_outbox_events": [
+          "blob.release.completed"
+        ],
+        "required_qualifications": [],
+        "version": "blob.release.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:blob:{blob_id}:blob.release",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "external",
+      "external_capabilities": [
+        "object_store.delete"
+      ],
+      "family": "blob",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.blob.release",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": true
+      },
+      "migration_status": "candidate",
+      "name": "blob.release",
+      "permissions": [
+        "blob.release"
+      ],
+      "result_schema": {
+        "$id": "blob.release.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "blob.release.result.v1",
+      "retry_policy": {
+        "backoff": "exponential",
+        "dead_letter_on_exhaustion": true,
+        "max_attempts": 3
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 60,
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "blob.approval.v1",
+        "required": true
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "blob.legal_hold.apply.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blob_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "blob.legal_hold.apply.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [
+          "blob.legal_hold.apply.approval"
+        ],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "blob.legal_hold.apply.completed"
+        ],
+        "required_qualifications": [],
+        "version": "blob.legal_hold.apply.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:blob:{blob_id}:blob.legal_hold.apply",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "blob",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.blob.legal_hold.apply",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "blob.legal_hold.apply",
+      "permissions": [
+        "blob.legal_hold.apply"
+      ],
+      "result_schema": {
+        "$id": "blob.legal_hold.apply.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "blob.legal_hold.apply.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "blob.approval.v1",
+        "required": true
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "blob.legal_hold.release.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blob_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "blob.legal_hold.release.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [
+          "blob.legal_hold.release.approval"
+        ],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "blob.legal_hold.release.completed"
+        ],
+        "required_qualifications": [],
+        "version": "blob.legal_hold.release.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:blob:{blob_id}:blob.legal_hold.release",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "blob",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.blob.legal_hold.release",
+      "idempotency_scope": "project:operation",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "blob.legal_hold.release",
+      "permissions": [
+        "blob.legal_hold.release"
+      ],
+      "result_schema": {
+        "$id": "blob.legal_hold.release.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "blob_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "blob.legal_hold.release.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "external_effect.plan.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "capability": {
+            "type": "string"
+          },
+          "effect_type": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "request_payload": {
+            "type": "object"
+          },
+          "stable_idempotency_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "effect_type",
+          "provider",
+          "capability",
+          "stable_idempotency_key",
+          "request_payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "external_effect.plan.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "external_effect.plan.completed"
+        ],
+        "required_qualifications": [],
+        "version": "external_effect.plan.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:effect:{external_effect_id}:external_effect.plan",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "external_effect",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.external_effect.plan",
+      "idempotency_scope": "project:external_effect",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "external_effect.plan",
+      "permissions": [
+        "external_effect.plan"
+      ],
+      "result_schema": {
+        "$id": "external_effect.plan.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "external_effect.plan.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "external_effect.dispatch.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          },
+          "worker_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_effect_id",
+          "worker_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "external_effect.dispatch.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": true,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED",
+              "COMPENSATED",
+              "CANCELLED"
+            ],
+            "capability": "provider.execute_idempotently"
+          }
+        ],
+        "required_gates": [],
+        "required_outbox_events": [
+          "external_effect.dispatch.completed"
+        ],
+        "required_qualifications": [],
+        "version": "external_effect.dispatch.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:effect:{external_effect_id}:external_effect.dispatch",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "external",
+      "external_capabilities": [
+        "provider.execute_idempotently"
+      ],
+      "family": "external_effect",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.external_effect.dispatch",
+      "idempotency_scope": "project:external_effect",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": true
+      },
+      "migration_status": "candidate",
+      "name": "external_effect.dispatch",
+      "permissions": [
+        "external_effect.dispatch"
+      ],
+      "result_schema": {
+        "$id": "external_effect.dispatch.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "external_effect.dispatch.result.v1",
+      "retry_policy": {
+        "backoff": "exponential",
+        "dead_letter_on_exhaustion": true,
+        "max_attempts": 3
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 60,
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "external_effect.receipt.accept.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "dispatch_id": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object"
+          },
+          "external_effect_id": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "integer"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "payload_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_effect_id",
+          "dispatch_id",
+          "message_id",
+          "payload_hash",
+          "generation",
+          "evidence"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "external_effect.receipt.accept.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "external_effect.receipt.accept.completed"
+        ],
+        "required_qualifications": [],
+        "version": "external_effect.receipt.accept.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:effect:{external_effect_id}:external_effect.receipt.accept",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "external_effect",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.external_effect.receipt.accept",
+      "idempotency_scope": "project:external_effect",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "external_effect.receipt.accept",
+      "permissions": [
+        "external_effect.receipt.accept"
+      ],
+      "result_schema": {
+        "$id": "external_effect.receipt.accept.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "external_effect.receipt.accept.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "external_effect.receipt.reject.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "dispatch_id": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object"
+          },
+          "external_effect_id": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "integer"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "payload_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_effect_id",
+          "dispatch_id",
+          "message_id",
+          "payload_hash",
+          "generation",
+          "evidence"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "external_effect.receipt.reject.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "external_effect.receipt.reject.completed"
+        ],
+        "required_qualifications": [],
+        "version": "external_effect.receipt.reject.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:effect:{external_effect_id}:external_effect.receipt.reject",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "external_effect",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.external_effect.receipt.reject",
+      "idempotency_scope": "project:external_effect",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "external_effect.receipt.reject",
+      "permissions": [
+        "external_effect.receipt.reject"
+      ],
+      "result_schema": {
+        "$id": "external_effect.receipt.reject.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "external_effect.receipt.reject.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "external_effect.mark_unknown.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_effect_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "external_effect.mark_unknown.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "external_effect.mark_unknown.completed"
+        ],
+        "required_qualifications": [],
+        "version": "external_effect.mark_unknown.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:effect:{external_effect_id}:external_effect.mark_unknown",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "external_effect",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.external_effect.mark_unknown",
+      "idempotency_scope": "project:external_effect",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "external_effect.mark_unknown",
+      "permissions": [
+        "external_effect.mark_unknown"
+      ],
+      "result_schema": {
+        "$id": "external_effect.mark_unknown.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "external_effect.mark_unknown.result.v1",
+      "retry_policy": {
+        "backoff": "none",
+        "dead_letter_on_exhaustion": false,
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 10,
+        "operation_timeout_seconds": 10
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "external_effect.reconcile.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_effect_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "external_effect.reconcile.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": true,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED",
+              "COMPENSATED",
+              "CANCELLED"
+            ],
+            "capability": "provider.query_by_idempotency_key"
+          }
+        ],
+        "required_gates": [],
+        "required_outbox_events": [
+          "external_effect.reconcile.completed"
+        ],
+        "required_qualifications": [],
+        "version": "external_effect.reconcile.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:effect:{external_effect_id}:external_effect.reconcile",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "external",
+      "external_capabilities": [
+        "provider.query_by_idempotency_key"
+      ],
+      "family": "external_effect",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.external_effect.reconcile",
+      "idempotency_scope": "project:external_effect",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": true
+      },
+      "migration_status": "candidate",
+      "name": "external_effect.reconcile",
+      "permissions": [
+        "external_effect.reconcile"
+      ],
+      "result_schema": {
+        "$id": "external_effect.reconcile.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "external_effect.reconcile.result.v1",
+      "retry_policy": {
+        "backoff": "exponential",
+        "dead_letter_on_exhaustion": true,
+        "max_attempts": 3
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 60,
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "reconcile_before_terminal"
+      },
+      "command_schema": {
+        "$id": "external_effect.compensate.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_effect_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "external_effect.compensate.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": true,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED",
+              "COMPENSATED",
+              "CANCELLED"
+            ],
+            "capability": "provider.compensate_idempotently"
+          }
+        ],
+        "required_gates": [],
+        "required_outbox_events": [
+          "external_effect.compensate.completed"
+        ],
+        "required_qualifications": [],
+        "version": "external_effect.compensate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:effect:{external_effect_id}:external_effect.compensate",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "external",
+      "external_capabilities": [
+        "provider.compensate_idempotently"
+      ],
+      "family": "external_effect",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.external_effect.compensate",
+      "idempotency_scope": "project:external_effect",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": true
+      },
+      "migration_status": "candidate",
+      "name": "external_effect.compensate",
+      "permissions": [
+        "external_effect.compensate"
+      ],
+      "result_schema": {
+        "$id": "external_effect.compensate.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "external_effect.compensate.result.v1",
+      "retry_policy": {
+        "backoff": "exponential",
+        "dead_letter_on_exhaustion": true,
+        "max_attempts": 3
+      },
+      "timeout_policy": {
+        "lease_timeout_seconds": 60,
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "command": "kernel.operation.cancel.v1",
+        "external_state_resolution": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "$id": "external_effect.cancel.command.v1",
+        "additionalProperties": false,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_effect_id"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "external_effect.cancel.command.v1",
+      "compensation_policy": {
+        "child_operation_definition": "",
+        "reconcile_before_compensation": false,
+        "supported": false
+      },
+      "completion_contract": {
+        "required_aggregate_states": [],
+        "required_approvals": [],
+        "required_asset_selectors": [],
+        "required_blobs": [],
+        "required_child_operations": [],
+        "required_evidence": [
+          "trace",
+          "audit",
+          "cost_when_provider_used"
+        ],
+        "required_external_effects": [],
+        "required_gates": [],
+        "required_outbox_events": [
+          "external_effect.cancel.completed"
+        ],
+        "required_qualifications": [],
+        "version": "external_effect.cancel.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:effect:{external_effect_id}:external_effect.cancel",
+      "current_entrypoints": [],
+      "current_handlers": [],
+      "definition_version": "1.0.0-candidate.1",
+      "execution_mode": "transactional",
+      "external_capabilities": [],
+      "family": "external_effect",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.command_handlers.external_effect.cancel",
+      "idempotency_scope": "project:external_effect",
+      "irreversible_effect_policy": {
+        "allowed": false,
+        "requires_approval": false,
+        "requires_receipt": false
+      },
+      "migration_status": "candidate",
+      "name": "external_effect.cancel",
+      "permissions": [
+        "external_effect.cancel"
+      ],
+      "result_schema": {
+        "$id": "external_effect.cancel.result.v1",
+        "additionalProperties": true,
+        "properties": {
+          "external_effect_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "result_schema_version": "external_effect.cancel.result.v1",
       "retry_policy": {
         "backoff": "none",
         "dead_letter_on_exhaustion": false,
@@ -5060,7 +8387,8 @@
       }
     }
   ],
-  "generator_version": "2.0.0",
+  "generator_version": "2.1.0",
+  "repository_head_at_generation": "2c536e39ea7d1c012198cd21b4a43b883b005b47",
   "schema_version": "2.0.0",
-  "source_tree_sha": "e09894e2c5f651d51cdad96952e69a124876e22d"
+  "source_tree_sha": "e1223c2ea1565a9338f910354d8cea8e937dcf64"
 }

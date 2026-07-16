@@ -1,54 +1,59 @@
-# PostgreSQL Authority Coverage: Initial Inventory
+# PostgreSQL Authority Coverage Baseline
 
-Date: 2026-07-12
+Generated: 2026-07-16 21:17 Asia/Shanghai
 
-This is a planning inventory, not a passing `AuthorityCoverageManifest`. It was
-derived from static repository scans and must become build-generated immutable
-JSON at implementation time.
+This Markdown summary describes the machine-generated artifacts at the current
+Command Kernel source snapshot. The JSON files remain authoritative.
 
-## Baseline evidence
+## Snapshot binding
 
-- `src/novel_forge` currently has **199** Python files importing or constructing
-  `LocalStorage`.
-- The largest groups are API routers (**44** files), `source_intake` (**10**),
-  Agent Scheduler (**9**), MKAOS (**6**), and publishing (**5**).
-- Existing Kernel registration covers only five definitions:
-  `chapter_production.start`, `workflow.execute`, `agent.dispatch`, `loop.run`,
-  and `review_revision_publish`.
-- Existing production ingress is distributed across API routers, `cli`,
-  `workers/tasks.py`, `workers/runtime.py`, workflow pipeline/industrial code,
-  scheduler runners, provider adapters, and publishing/feedback callbacks.
+- Source commit: `2c536e39ea7d1c012198cd21b4a43b883b005b47`
+- Source tree SHA: `e1223c2ea1565a9338f910354d8cea8e937dcf64`
+- Binding: latest commit affecting `src/novel_forge` plus the exact working-tree source hash
+- Generator: `2.1.0`
+- Scan rule: `receiver-aware-v2`
 
-## Required enabled-entrypoint inventory
+This binding deliberately does not require the generated JSON to contain the
+hash of the later docs-only commit that stores the JSON. That would be a
+self-reference. Any committed or uncommitted change under `src/novel_forge`
+still changes the binding and fails the architecture check.
 
-| Kind | Current locations to inventory/replace | Required final route |
-|---|---|---|
-| API commands | `src/novel_forge/api/routers/*.py`, especially `assets.py`, `projects.py`, `production_chain.py`, `agents.py`, `loops.py`, `workflow_nodes.py`, `mkaos.py`, `context_builder.py`, `reviews.py`, `publishing_feedback_adapters.py` | typed Kernel command adapter |
-| CLI commands | `src/novel_forge/cli/__init__.py`, workflow CLI surfaces | typed Kernel command adapter |
-| Worker execution | `src/novel_forge/workers/tasks.py`, `runtime.py`, `dispatch.py` | Outbox claim -> Attempt/Lease -> Kernel result command |
-| Scheduler/recovery | `src/novel_forge/modules/agent_scheduler/*.py` | Kernel lifecycle/recovery/compensation commands |
-| Workflow/loop | `src/novel_forge/workflows/*.py`, `modules/workflow_nodes/*.py`, `modules/loop_kernel/service.py` | parent/child Operation/Saga handlers |
-| Provider/tool calls | `modules/model_router/service.py`, `modules/tool_gateway/service.py`, `api/provider_adapters.py` | ExternalEffectDispatch worker only |
-| Object/blob writes | `storage/object_store.py`, asset write paths | Blob intent/upload/verify result commands |
-| Publishing/feedback callbacks | `modules/publishing/*.py`, `modules/publishing_feedback_adapters/*.py`, matching routers | ExternalEffect receipt Inbox command |
-| Event consumers | `modules/state_bus/*.py`, worker consumers, analytics projections | transactional Inbox consumer |
+## Current inventory
 
-## Current known bypass classes
+| Measure | Current value |
+|---|---:|
+| Python files scanned | 423 |
+| Files with findings | 200 |
+| Receiver-aware findings / legacy actions | 2,125 |
+| Owner symbols | 1,452 |
+| Authority writes | 380 |
+| Authority reads | 1,642 |
+| External effects | 37 |
+| Fallback paths | 46 |
+| Sync paths | 13 |
+| Export paths | 3 |
+| Unknown classifications | 4 |
+| Mapped side effects | 480 |
+| Unmapped side effects | 0 |
 
-1. `LocalStorage.write_json`/`write_asset` performs JSON authority writes and
-   write-through PostgreSQL synchronization.
-2. `PostgresAssetStore.sync_from_local` and worker post-task sync make
-   PostgreSQL a secondary index.
-3. `api/services/postgres_fallback_policy.py`, `api/app.py`, and
-   `api/services/product.py` permit JSON/local fallback reads.
-4. `production_kernel/service.py` itself accepts `LocalStorage` and persists
-   parent operations as JSON assets.
-5. Most router and domain-service mutation paths construct LocalStorage and
-   call services directly.
+## OperationDefinition catalog
 
-## Passing manifest requirements
+The current catalog contains **84** definitions across **19** families:
 
-The generated manifest must enumerate every enabled command/callback/consumer
-symbol and map it to an enabled `OperationDefinition`. Static architecture
-tests, runtime registry discovery, and E2E evidence must report both
-`unknown_write_paths=[]` and `kernel_bypasses=[]`.
+- **17** definitions have mapped current entrypoints;
+- **67** remain migration candidates;
+- the new `asset`, `blob`, and `external_effect` families are included.
+
+The previous `63 definitions / 17 mapped / 46 candidate` statement is stale
+and must not be used as current evidence.
+
+## Machine-readable authority
+
+- `docs/reports/postgresql-authority-coverage-baseline.json`
+- `docs/reports/postgresql-operation-definition-catalog.json`
+- `docs/reports/postgresql-authority-legacy-actions.json`
+
+The coverage manifest reports no unmapped side effects. This means the static
+inventory has an assigned migration action and target definition; it does not
+mean all 84 definitions are enabled or that LocalStorage is no longer a
+production authority. Runtime migration status remains separately governed.
