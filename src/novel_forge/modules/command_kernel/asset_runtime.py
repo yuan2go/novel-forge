@@ -1,6 +1,7 @@
 """Authoritative Asset and Blob command handlers backed by short PostgreSQL transactions."""
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 from dataclasses import dataclass
@@ -252,6 +253,8 @@ def request_blob_upload(
     context: AssetCommandContext,
     *,
     blob_id: str,
+    content_base64: str = "",
+    source_asset_version_id: str = "",
 ) -> dict[str, Any]:
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.asset_blobs
@@ -267,6 +270,22 @@ def request_blob_upload(
             "expected_size": blob["expected_size"],
             "media_type": blob["media_type"],
         }
+        if content_base64:
+            try:
+                content_bytes = base64.b64decode(content_base64, validate=True)
+            except (ValueError, TypeError) as exc:
+                raise KernelError(
+                    "BLOB_UPLOAD_CONTENT_INVALID",
+                    "Blob upload content is not valid base64",
+                ) from exc
+            actual_hash = "sha256:" + hashlib.sha256(content_bytes).hexdigest()
+            if actual_hash != blob["expected_hash"] or len(content_bytes) != blob["expected_size"]:
+                raise KernelError(
+                    "BLOB_UPLOAD_CONTENT_MISMATCH",
+                    "Blob upload content does not match the reservation",
+                )
+            request_payload["content_base64"] = content_base64
+            request_payload["source_asset_version_id"] = source_asset_version_id
         result = uow.repositories.external_effects.plan(
             {
                 "external_effect_id": str(uuid4()),

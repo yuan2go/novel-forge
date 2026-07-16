@@ -1,6 +1,7 @@
 """Generic ExternalEffect/Blob delivery for a chapter Export AssetVersion."""
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 from dataclasses import dataclass
@@ -83,6 +84,8 @@ def deliver_export(
         database_url,
         asset_context,
         blob_id=blob_id,
+        content_base64=base64.b64encode(rendered).decode("ascii"),
+        source_asset_version_id=request.asset_version_id,
     )["external_effect_id"]
     effect_context = EffectCommandContext(
         operation_id=request.operation_id,

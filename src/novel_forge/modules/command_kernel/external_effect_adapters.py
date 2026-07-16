@@ -1,6 +1,7 @@
 """External-effect adapters. Calls are intentionally made outside database transactions."""
 from __future__ import annotations
 
+import base64
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
@@ -152,14 +153,41 @@ class LocalFileObjectStoreAdapter:
                 f"local:{stable_idempotency_key}",
                 {"error": "object_key_escapes_root"},
             )
-        content = str(request_payload.get("content") or "").encode("utf-8")
+        encoded = str(request_payload.get("content_base64") or "")
+        if encoded:
+            try:
+                content = base64.b64decode(encoded, validate=True)
+            except ValueError:
+                return ProviderResult(
+                    "final_failure",
+                    f"local:{stable_idempotency_key}",
+                    {"error": "invalid_content_base64"},
+                )
+        elif "content" in request_payload:
+            content = str(request_payload.get("content") or "").encode("utf-8")
+        else:
+            return ProviderResult(
+                "final_failure",
+                f"local:{stable_idempotency_key}",
+                {"error": "content_bytes_missing"},
+            )
+        expected_hash = str(request_payload.get("expected_hash") or "")
+        expected_size = request_payload.get("expected_size")
+        digest = "sha256:" + hashlib.sha256(content).hexdigest()
+        if (expected_hash and digest != expected_hash) or (
+            expected_size is not None and len(content) != expected_size
+        ):
+            return ProviderResult(
+                "final_failure",
+                f"local:{stable_idempotency_key}",
+                {"error": "content_identity_mismatch"},
+            )
         destination.parent.mkdir(parents=True, exist_ok=True)
         if destination.exists() and destination.read_bytes() == content:
             replayed = True
         else:
             destination.write_bytes(content)
             replayed = False
-        digest = "sha256:" + hashlib.sha256(content).hexdigest()
         return ProviderResult(
             "success",
             f"local:{stable_idempotency_key}",

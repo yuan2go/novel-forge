@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+import tempfile
+from pathlib import Path
 
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
@@ -16,6 +18,7 @@ from novel_forge.modules.chapter_authority.orchestrator import (
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapterError,
     FakeDeterministicProvider,
+    LocalFileObjectStoreAdapter,
     ProviderResult,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -216,10 +219,12 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 for stage in ("draft", "review", "revision")
             }
         )
+        export_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(export_directory.cleanup)
         application = ChapterAuthorityApplication(
             DATABASE_URL,
             model_adapter=adapter,
-            object_store_adapter=FakeDeterministicProvider("success"),
+            object_store_adapter=LocalFileObjectStoreAdapter(Path(export_directory.name)),
             worker_id="model-worker",
         )
         result = application.run(
@@ -239,6 +244,8 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
 
         self.assertEqual(result.root_status, "SUCCEEDED")
         self.assertEqual(stage_model.calls, 3)
+        exported = Path(export_directory.name) / f"chapters/{project_id}/1/chapter.txt"
+        self.assertIn("surrenders the only safe route home", exported.read_text())
         query = application.query
         listed = query.list_runs(project_id=project_id)
         detail = query.require_run(
