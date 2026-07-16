@@ -1,6 +1,6 @@
 # PostgreSQL-only Single-Chapter Slice Runbook
 
-Status: deterministic PostgreSQL-only handler proof implemented; real-provider and long-form proofs remain deferred.
+Status: PostgreSQL-only handler and model-effect boundaries implemented; a real-provider run and long-form proofs remain deferred.
 
 ## Scope
 
@@ -62,6 +62,34 @@ The repository now provides these prerequisites through:
   admission, Attempt execution, Saga coordination, recovery, and Export delivery;
 - `novel_forge.modules.chapter_authority.evidence` for the read-only evidence
   manifest.
+- `novel_forge.modules.chapter_authority.application` for the command/strong-query
+  application boundary;
+- `novel_forge.modules.chapter_authority.model_effects` for frozen Draft, Review,
+  and Revision provider routes through Generic ExternalEffect, including
+  operation-bound `model_call_log` and `cost_ledger` assets;
+- `novel_forge.api.routers.chapter_authority` for PostgreSQL-only command and
+  project-scoped strong-query routes.
+
+## Production API configuration
+
+The authority route is fail-closed and does not consult LocalStorage routing
+policies. Configure all of the following before invoking it:
+
+```text
+NOVEL_FORGE_DATABASE_URL
+NOVEL_FORGE_APPLICATION_BUILD_ID
+NOVEL_FORGE_COMMIT_SHA
+NOVEL_FORGE_DRAFT_PROVIDER / NOVEL_FORGE_DRAFT_MODEL
+NOVEL_FORGE_REVIEW_PROVIDER / NOVEL_FORGE_REVIEW_MODEL
+NOVEL_FORGE_REVISION_PROVIDER / NOVEL_FORGE_REVISION_MODEL
+NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT
+```
+
+Production rejects `mock`, `local`, and `offline` providers. The command route
+is `POST /product/production/chapter-authority/run`. Strong query routes are
+`GET /product/production/chapter-authority/runs` and
+`GET /product/production/chapter-authority/run`; query construction requires
+only PostgreSQL and never requires a live provider.
 
 ## Acceptance harness design
 
@@ -102,15 +130,15 @@ NOVEL_FORGE_DATABASE_URL=postgresql://novel_forge:novel_forge@127.0.0.1:55432/no
 make postgres-authority-test-down
 ```
 
-Remaining blockers for a production provider-backed slice:
+Remaining blockers for production cutover and real-provider proof:
 
-- the deterministic fixture handlers do not call a model and are not proof of
-  prose quality or provider readiness;
+- the model-effect adapter is implemented but has not been executed against a
+  real provider, so prose quality and provider readiness are not claimed;
 - the existing Chapter Production Bus and related services still write
   LocalStorage business assets and have not been converted into projections;
-- production handler adapters must preserve AgentRun, ContextBundle,
-  model-call, cost-ledger, ReviewIssue, Canon, and publish-gate contracts without
-  restoring LocalStorage as command authority;
+- AgentRun, ReviewIssue, and publish-gate projection migration remains outside
+  the bounded handler proof; ContextBundle, model-call, cost-ledger, Canon,
+  Quality, and Export evidence are PostgreSQL authoritative in this slice;
 - automatic compensation is intentionally not declared for append-only chapter
   evidence; a production object-store retention/cleanup policy remains a
   separate design decision;

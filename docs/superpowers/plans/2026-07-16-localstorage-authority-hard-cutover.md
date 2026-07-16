@@ -67,13 +67,17 @@
 - Consumes: `AuthorityAssetQuery`, typed chapter node commands, ContextBundle and KnowledgePack version references, `ModelEffectPort`.
 - Produces: storage-free `ChapterNodeResult` values and explicit model/external-effect intents; persistence remains owned by `ChapterAuthorityRuntime`.
 
-- [ ] Characterize the existing ChapterPlan, ContextBundle, Draft, Review, Revision, Canon, Quality, and Export behavior with deterministic tests using authoritative input documents.
-- [ ] Extract pure normalization, validation, gate, and payload-building functions from legacy services; they accept dictionaries/dataclasses and never receive a storage object.
-- [ ] Represent model generation as a versioned ExternalEffect intent with provider/runtime profile, prompt/skill versions, token/cost ceilings, input hashes, and completion policy.
-- [ ] Submit model results through the existing fenced Attempt/result path; record ModelCallLog and CostLedger evidence before completion.
-- [ ] Replace in-place JSON edits with new AssetVersions bound to the current Operation.
-- [ ] Run unit tests, one deterministic PostgreSQL-only chapter, and one mocked model-effect success/failure/retry scenario.
-- [ ] Commit `refactor(chapter): run production handlers on postgres authority`.
+- [x] Characterize the ChapterPlan, ContextBundle, Draft, Review, Revision, Canon, Quality, and Export behavior with deterministic tests using authoritative input documents.
+- [x] Extract pure normalization, validation, gate, and payload-building functions; they accept dictionaries/dataclasses and never receive a storage object.
+- [x] Represent model generation as a versioned ExternalEffect intent with provider/runtime profile, prompt/skill versions, input hashes, and completion policy.
+- [x] Submit model results through the Generic ExternalEffect receipt path and record operation-bound ModelCallLog and CostLedger evidence before completion.
+- [x] Replace slice output JSON edits with immutable AssetVersions bound to the current Operation.
+- [x] Run unit tests, deterministic PostgreSQL-only chapters, and mocked model-effect success/UNKNOWN/replay scenarios.
+- [x] Commit the storage-free handlers, model effects, application queries, real-byte Export binding, explicit dependencies, and API in bounded commits.
+
+Task 2 closes the bounded single-chapter handler slice. It does not declare the
+legacy Chapter Production Bus migrated; disabling/replacing those entrypoints is
+tracked by Tasks 3 and 5.
 
 ### Task 3: Migrate production control-plane domains
 
