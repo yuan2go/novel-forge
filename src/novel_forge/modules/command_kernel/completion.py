@@ -6,7 +6,10 @@ from typing import Any
 from uuid import uuid4
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.command_kernel.lifecycle import require_operation_transition
+from novel_forge.modules.command_kernel.lifecycle import (
+    require_attempt_transition,
+    require_operation_transition,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -188,6 +191,34 @@ def finalize_operation_completion(
         if target == expected_status:
             return {**evaluation, "status": target, "version": expected_version, "replayed": True}
         require_operation_transition(expected_status, target)
+        submitted_attempt = uow.repositories.attempt_runtime.submitted_for_operation(
+            operation_id,
+            context.project_id,
+        )
+        if submitted_attempt is not None and target in {"SUCCEEDED", "FAILED_FINAL"}:
+            require_attempt_transition(submitted_attempt["status"], target)
+            uow.repositories.attempt_runtime.transition(
+                submitted_attempt["attempt_id"],
+                submitted_attempt["status"],
+                target,
+            )
+            uow.repositories.runtime_evidence.record_attempt_transition(
+                {
+                    "attempt_id": submitted_attempt["attempt_id"],
+                    "operation_id": operation_id,
+                    "project_id": context.project_id,
+                    "expected_status": submitted_attempt["status"],
+                    "target_status": target,
+                    "worker_id": submitted_attempt["worker_id"],
+                    "fencing_token": None,
+                    "trace_id": context.trace_id,
+                    "correlation_id": context.correlation_id,
+                    "causation_id": context.causation_id,
+                    "event_id": str(uuid4()),
+                    "audit_id": str(uuid4()),
+                    "outbox_id": str(uuid4()),
+                }
+            )
         result = uow.repositories.operation_lifecycle.compare_and_set(
             {
                 "operation_id": operation_id,

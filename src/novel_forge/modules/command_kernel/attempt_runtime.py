@@ -269,16 +269,6 @@ def submit_attempt_result(
                 result=result,
             )
             submitted = {**attempt, "status": "RESULT_SUBMITTED"}
-            _transition_attempt(
-                uow,
-                submitted,
-                attempt_target,
-                worker_id=command.worker_id,
-                fencing_token=command.fencing_token,
-                trace_id=command.trace_id,
-                correlation_id=command.correlation_id,
-                result=result,
-            )
             if outcome == "success":
                 from novel_forge.modules.command_kernel.completion import (
                     evaluate_completion_in_uow,
@@ -291,6 +281,29 @@ def submit_attempt_result(
                 )
                 completion = evaluate_completion_in_uow(uow, operation)
                 operation_target = completion["target_status"]
+                if operation_target in {"SUCCEEDED", "FAILED_FINAL"}:
+                    attempt_target = operation_target
+                    _transition_attempt(
+                        uow,
+                        submitted,
+                        attempt_target,
+                        worker_id=command.worker_id,
+                        fencing_token=command.fencing_token,
+                        trace_id=command.trace_id,
+                        correlation_id=command.correlation_id,
+                        result=result,
+                    )
+            else:
+                _transition_attempt(
+                    uow,
+                    submitted,
+                    attempt_target,
+                    worker_id=command.worker_id,
+                    fencing_token=command.fencing_token,
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                    result=result,
+                )
             _cas_operation(
                 uow,
                 operation_id=attempt["operation_id"],

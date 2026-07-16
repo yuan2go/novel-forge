@@ -545,6 +545,33 @@ class AttemptRuntimeRepository:
         )
         return dict(zip(fields, row, strict=True))
 
+    def submitted_for_operation(
+        self,
+        operation_id: str,
+        project_id: str,
+    ) -> dict[str, Any] | None:
+        self.cursor.execute(
+            """
+            SELECT attempt.attempt_id, attempt.operation_id, attempt.status,
+                   attempt.worker_id, operation.project_id
+            FROM authority_attempt AS attempt
+            JOIN authority_operation AS operation
+              ON operation.operation_id = attempt.operation_id
+            WHERE attempt.operation_id = %s
+              AND operation.project_id = %s
+              AND attempt.status = 'RESULT_SUBMITTED'
+            ORDER BY attempt.attempt_number DESC
+            LIMIT 1
+            FOR UPDATE OF attempt
+            """,
+            [operation_id, project_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            return None
+        fields = ("attempt_id", "operation_id", "status", "worker_id", "project_id")
+        return dict(zip(fields, row, strict=True))
+
     def transition(
         self,
         attempt_id: str,
