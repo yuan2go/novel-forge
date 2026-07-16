@@ -6,6 +6,8 @@ from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelExternalEffectAdapter,
     ChapterModelRoute,
 )
+from novel_forge.model_adapters.mock import MockModelAdapter
+from novel_forge.model_adapters.selection import model_for_explicit_route
 
 
 class _Adapter:
@@ -125,6 +127,13 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
         self.assertEqual(result.outcome, "final_failure")
         self.assertEqual(result.evidence["error_code"], "MODEL_RESPONSE_INVALID")
         self.assertEqual(query.outcome, "ambiguous")
+
+    def test_explicit_model_route_never_requires_filesystem_policy_lookup(self) -> None:
+        adapter = model_for_explicit_route("mock")
+
+        self.assertIsInstance(adapter, MockModelAdapter)
+        with self.assertRaisesRegex(ValueError, "explicit model provider is required"):
+            model_for_explicit_route("")
 
 
 if __name__ == "__main__":

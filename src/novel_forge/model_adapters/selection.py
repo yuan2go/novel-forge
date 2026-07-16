@@ -27,6 +27,31 @@ OPERATION_ENV_KEYS = {
 DEFAULT_MODEL_PROVIDER = "claude-code"
 
 
+def model_for_explicit_route(provider: str, model_name: str = "") -> ModelAdapter:
+    """Build one frozen route without consulting persisted routing policies."""
+    normalized = provider.strip().lower()
+    if not normalized:
+        raise ValueError("explicit model provider is required")
+    if normalized in {"mock", "local", "offline"}:
+        return MockModelAdapter()
+    adapter_cls = PROVIDER_ADAPTERS.get(normalized)
+    if adapter_cls is None:
+        known = ", ".join(["mock", *sorted(PROVIDER_ADAPTERS)])
+        raise ValueError(f"unknown model provider '{normalized}'. Expected one of: {known}")
+    if not model_name.strip():
+        return adapter_cls()
+    base_config = adapter_cls.config
+    return adapter_cls(
+        ModelAdapterConfig(
+            provider=base_config.provider,
+            role=base_config.role,
+            default_model=model_name.strip(),
+            required_env_vars=list(base_config.required_env_vars),
+            external_api=base_config.external_api,
+        )
+    )
+
+
 def model_from_env(operation: str = "", env: Mapping[str, str] | None = None) -> ModelAdapter:
     values = env or os.environ
     explicit_provider = _explicit_provider_name(operation, values)
