@@ -5,6 +5,15 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.attempt_runtime import (
+    WorkerLeaseCommand,
+    WorkerResultCommand,
+    acquire_attempt_lease,
+    create_attempt,
+    queue_attempt,
+    start_attempt,
+    submit_attempt_result,
+)
 from novel_forge.modules.command_kernel.operation_graph import (
     GraphCommandContext,
     add_operation_dependency,
@@ -13,6 +22,12 @@ from novel_forge.modules.command_kernel.operation_graph import (
     register_saga_step,
     start_saga,
 )
+from novel_forge.modules.command_kernel.runtime import (
+    OperationTransitionCommand,
+    transition_operation,
+)
+from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -21,6 +36,7 @@ from tests.integration.authority_postgres_support import (
     insert_operation,
     transaction,
 )
+from tests.integration.test_command_kernel_definition_postgres import definition_payload
 
 
 class OperationGraphSagaPostgresTests(unittest.TestCase):
@@ -193,6 +209,142 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
             self.assertEqual(attempts, 1)
             self.assertGreaterEqual(token, 1)
             self.assertEqual(event_count, 1)
+
+    def test_saga_child_uses_standard_admission_attempt_and_completion_path(self) -> None:
+        project_id = identifier("project")
+        root_definition = definition_payload(identifier("saga-root-definition"))
+        child_definition = definition_payload(identifier("saga-child-definition"))
+        root_definition["completion_contract"] = {}
+        child_definition["completion_contract"] = {}
+        root_definition["concurrency_key_template"] = "project:{project_id}:saga-root"
+        child_definition["concurrency_key_template"] = "project:{project_id}:saga-child"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.repositories.definitions.register(root_definition)
+            uow.repositories.definitions.register(child_definition)
+            uow.commit()
+        admission = AdmissionContext(
+            actor_id="saga-runtime",
+            permissions=frozenset({"ops.echo"}),
+            available_handlers=frozenset({root_definition["handler_key"]}),
+            application_build_id="saga-standard-path-test",
+            commit_sha="f" * 40,
+        )
+
+        def command(definition: dict, key: str, **relations: str) -> dict:
+            return {
+                "definition_name": definition["name"],
+                "definition_version": definition["definition_version"],
+                "project_id": project_id,
+                "workspace_id": f"workspace:{project_id}",
+                "actor_id": admission.actor_id,
+                "idempotency_scope": definition["idempotency_scope"],
+                "idempotency_key": key,
+                "trace_id": identifier("trace"),
+                "span_id": identifier("span"),
+                "correlation_id": identifier("correlation"),
+                "causation_id": "",
+                "input": {"value": key},
+                "input_assets": [],
+                **relations,
+            }
+
+        root = admit_command(
+            DATABASE_URL,
+            command(root_definition, identifier("root-command")),
+            context=admission,
+        )["operation_id"]
+        for version, current, target in (
+            (0, "ADMITTED", "READY"),
+            (1, "READY", "EXECUTING"),
+        ):
+            transition_operation(
+                DATABASE_URL,
+                OperationTransitionCommand(
+                    operation_id=root,
+                    project_id=project_id,
+                    expected_version=version,
+                    expected_status=current,
+                    target_status=target,
+                    actor_id="saga-runtime",
+                    reason="standard saga root lifecycle",
+                    trace_id=identifier("trace"),
+                    correlation_id=identifier("correlation"),
+                    causation_id="",
+                ),
+            )
+        child = admit_command(
+            DATABASE_URL,
+            command(
+                child_definition,
+                identifier("child-command"),
+                root_operation_id=root,
+                parent_operation_id=root,
+                causation_operation_id=root,
+            ),
+            context=admission,
+        )["operation_id"]
+        graph_context = GraphCommandContext(
+            project_id=project_id,
+            actor_id="saga-runtime",
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        saga_id = start_saga(DATABASE_URL, graph_context, root_operation_id=root)["saga_id"]
+        register_saga_step(
+            DATABASE_URL,
+            graph_context,
+            saga_id,
+            child,
+            "child",
+            1,
+            "",
+        )
+        self.assertEqual(coordinate_saga(DATABASE_URL, graph_context, saga_id)["ready"], [child])
+
+        attempt_id = create_attempt(
+            DATABASE_URL,
+            operation_id=child,
+            project_id=project_id,
+            max_attempts=1,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )["attempt_id"]
+        queue_attempt(
+            DATABASE_URL,
+            attempt_id=attempt_id,
+            project_id=project_id,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        lease = acquire_attempt_lease(
+            DATABASE_URL,
+            attempt_id=attempt_id,
+            project_id=project_id,
+            worker_id="saga-child-worker",
+            lease_seconds=30,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        worker = WorkerLeaseCommand(
+            attempt_id=attempt_id,
+            project_id=project_id,
+            worker_id="saga-child-worker",
+            fencing_token=lease["fencing_token"],
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        start_attempt(DATABASE_URL, worker)
+        submit_attempt_result(
+            DATABASE_URL,
+            WorkerResultCommand(
+                **worker.__dict__,
+                expected_operation_version=2,
+                expected_operation_status="EXECUTING",
+            ),
+            outcome="success",
+            result={"completed": True},
+        )
+        self.assertEqual(coordinate_saga(DATABASE_URL, graph_context, saga_id)["status"], "SUCCEEDED")
 
     def _graph_fixture(
         self,

@@ -19,14 +19,19 @@ class BlobExternalEffectProtocolArchitectureTests(unittest.TestCase):
         self.assertIn("accept_external_effect_receipt(", source)
         self.assertIn("mark_external_effect_unknown(", source)
 
-    def test_legacy_blob_repository_dispatch_methods_fail_closed(self) -> None:
+    def test_legacy_blob_repository_dispatch_methods_are_removed(self) -> None:
         source = (
             ROOT / "src/novel_forge/storage/asset_blob_repositories.py"
         ).read_text(encoding="utf-8")
-        self.assertGreaterEqual(
-            source.count("BLOB_EXTERNAL_EFFECT_PROTOCOL_DEPRECATED"),
-            7,
-        )
+        for method in (
+            "plan_effect",
+            "begin_dispatch",
+            "dispatch_for_update",
+            "record_inbox",
+            "insert_receipt",
+            "accept_upload_receipt",
+        ):
+            self.assertNotIn(f"def {method}(", source)
 
 
 if __name__ == "__main__":

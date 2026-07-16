@@ -18,21 +18,31 @@ def insert_effect(
     *,
     external_effect_id: str,
     operation_id: str,
-    status: str = "REQUESTED",
+    status: str = "READY",
 ) -> None:
     cursor.execute(
         """
         INSERT INTO authority_external_effect (
             external_effect_id,
             operation_id,
+            project_id,
             effect_type,
             stable_idempotency_key,
             status,
             request_hash
         )
-        VALUES (%s, %s, 'publisher.submit', %s, %s, %s)
+        SELECT %s, %s, operation.project_id, 'publisher.submit', %s, %s, %s
+        FROM authority_operation AS operation
+        WHERE operation.operation_id = %s
         """,
-        [external_effect_id, operation_id, external_effect_id, status, f"hash:{external_effect_id}"],
+        [
+            external_effect_id,
+            operation_id,
+            external_effect_id,
+            status,
+            f"hash:{external_effect_id}",
+            operation_id,
+        ],
     )
 
 
