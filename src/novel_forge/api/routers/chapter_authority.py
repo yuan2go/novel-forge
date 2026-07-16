@@ -27,7 +27,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.post("/run")
     def run_authoritative_chapter(request: AuthorityChapterRunRequest) -> dict[str, Any]:
         try:
-            application = build_chapter_authority_application(ctx.app_settings)
+            application = _application(ctx)
             build_id, commit_sha = authority_release_identity()
             trace_id = request.trace_id.strip() or f"trace:{uuid4()}"
             correlation_id = request.correlation_id.strip() or f"correlation:{uuid4()}"
@@ -64,7 +64,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         limit: int = Query(default=100, ge=1, le=500),
     ) -> list[dict[str, Any]]:
         try:
-            query = build_chapter_authority_query(ctx.app_settings)
+            query = _query(ctx)
             return query.list_runs(project_id=project_id, limit=limit)
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -75,7 +75,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         root_operation_id: str = Query(..., min_length=1),
     ) -> dict[str, Any]:
         try:
-            query = build_chapter_authority_query(ctx.app_settings)
+            query = _query(ctx)
             return query.require_run(
                 project_id=project_id,
                 root_operation_id=root_operation_id,
@@ -90,6 +90,16 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     return router
+
+
+def _application(ctx: ProductRouterContext):
+    application = getattr(ctx.services, "chapter_application", None)
+    return application or build_chapter_authority_application(ctx.app_settings)
+
+
+def _query(ctx: ProductRouterContext):
+    query = getattr(ctx.services, "chapter_query", None)
+    return query or build_chapter_authority_query(ctx.app_settings)
 
 
 __all__ = ["create_router"]

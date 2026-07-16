@@ -22,6 +22,8 @@ def _env_list(value: str | None) -> tuple[str, ...]:
 @dataclass(frozen=True)
 class IndustrialSettings:
     root: Path
+    environment: str = "development"
+    storage_authority: str = "legacy_local"
     database_url: str = ""
     postgres_write_through: bool = True
     postgres_write_strict: bool = False
@@ -50,6 +52,18 @@ class IndustrialSettings:
     neo4j_password: str = ""
     neo4j_enabled: bool = False
 
+    def __post_init__(self) -> None:
+        environment = self.environment.strip().lower()
+        authority = self.storage_authority.strip().lower()
+        if environment not in {"development", "test", "production"}:
+            raise ValueError("environment must be development, test, or production")
+        if authority not in {"legacy_local", "postgresql"}:
+            raise ValueError("storage_authority must be legacy_local or postgresql")
+        if environment == "production" and authority != "postgresql":
+            raise ValueError("production storage authority must be postgresql")
+        object.__setattr__(self, "environment", environment)
+        object.__setattr__(self, "storage_authority", authority)
+
     @classmethod
     def from_env(
         cls,
@@ -69,8 +83,17 @@ class IndustrialSettings:
             root_file_values = _read_dotenv(resolved_root / ".env")
             file_values = {**cwd_file_values, **root_file_values}
         redis_url = _get(values, file_values, "NOVEL_FORGE_REDIS_URL", _get(values, file_values, "REDIS_URL", "redis://localhost:6379/0"))
+        environment = _get(values, file_values, "NOVEL_FORGE_ENVIRONMENT", "development").strip().lower()
+        storage_authority = _get(
+            values,
+            file_values,
+            "NOVEL_FORGE_STORAGE_AUTHORITY",
+            "postgresql" if environment == "production" else "legacy_local",
+        )
         return cls(
             root=resolved_root,
+            environment=environment,
+            storage_authority=storage_authority,
             database_url=_get(values, file_values, "NOVEL_FORGE_DATABASE_URL", _get(values, file_values, "DATABASE_URL", "")),
             postgres_write_through=_env_bool(
                 _get(values, file_values, "NOVEL_FORGE_POSTGRES_WRITE_THROUGH", "true"),
