@@ -15,6 +15,14 @@ class ProviderResult:
     evidence: dict[str, Any]
 
 
+class ExternalEffectAdapterError(RuntimeError):
+    """Typed adapter failure that records whether provider submission may have started."""
+
+    def __init__(self, message: str, *, request_sent: bool) -> None:
+        super().__init__(message)
+        self.request_sent = request_sent
+
+
 class ExternalEffectAdapter(Protocol):
     provider: str
 
@@ -57,6 +65,14 @@ class FakeDeterministicProvider:
                 return ProviderResult("success", correlation, {**evidence, "replayed": True})
             if self.scenario == "success":
                 evidence = {"capability": capability, "applied": True}
+                if capability == "object_store.put":
+                    evidence.update(
+                        {
+                            "object_key": request_payload.get("object_key"),
+                            "actual_hash": request_payload.get("expected_hash"),
+                            "actual_size": request_payload.get("expected_size"),
+                        }
+                    )
                 self._effects[stable_idempotency_key] = evidence
                 return ProviderResult("success", correlation, evidence)
             if self.scenario == "retryable_failure":
@@ -73,6 +89,16 @@ class FakeDeterministicProvider:
                 evidence = {"timeout": True, "side_effect_applied": True}
                 self._effects[stable_idempotency_key] = evidence
                 return ProviderResult("unknown", correlation, evidence)
+            if self.scenario == "raise_before":
+                raise ExternalEffectAdapterError(
+                    "provider rejected the request before submission",
+                    request_sent=False,
+                )
+            if self.scenario == "raise_after":
+                raise ExternalEffectAdapterError(
+                    "provider connection failed after submission",
+                    request_sent=True,
+                )
             return ProviderResult("unknown", correlation, {"provider_state": "unknown"})
 
     def query(

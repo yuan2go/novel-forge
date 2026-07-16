@@ -31,17 +31,18 @@ class ExternalEffectRepository:
         self.cursor.execute(
             """
             INSERT INTO authority_external_effect (
-                external_effect_id, operation_id, effect_type, stable_idempotency_key,
+                external_effect_id, operation_id, project_id, effect_type, stable_idempotency_key,
                 status, request_hash, request_payload, provider, capability,
-                max_attempts, reversible
+                max_attempts, reversible, completion_policy, compensates_effect_id
             )
             VALUES (
-                %(external_effect_id)s, %(operation_id)s, %(effect_type)s,
+                %(external_effect_id)s, %(operation_id)s, %(project_id)s, %(effect_type)s,
                 %(stable_idempotency_key)s, 'READY', %(request_hash)s,
                 %(request_payload)s, %(provider)s, %(capability)s,
-                %(max_attempts)s, %(reversible)s
+                %(max_attempts)s, %(reversible)s, %(completion_policy)s,
+                %(compensates_effect_id)s
             )
-            ON CONFLICT (effect_type, stable_idempotency_key) DO NOTHING
+            ON CONFLICT (project_id, effect_type, stable_idempotency_key) DO NOTHING
             RETURNING external_effect_id
             """,
             {**row, "request_payload": Jsonb(row["request_payload"])},
@@ -53,10 +54,10 @@ class ExternalEffectRepository:
             """
             SELECT external_effect_id, request_hash
             FROM authority_external_effect
-            WHERE effect_type = %s AND stable_idempotency_key = %s
+            WHERE project_id = %s AND effect_type = %s AND stable_idempotency_key = %s
             FOR UPDATE
             """,
-            [row["effect_type"], row["stable_idempotency_key"]],
+            [row["project_id"], row["effect_type"], row["stable_idempotency_key"]],
         )
         existing = self.cursor.fetchone()
         if existing is None or existing[1] != row["request_hash"]:
@@ -69,13 +70,12 @@ class ExternalEffectRepository:
     def get_for_update(self, effect_id: str) -> dict[str, Any]:
         self.cursor.execute(
             """
-            SELECT effect.external_effect_id, effect.operation_id, operation.project_id,
+            SELECT effect.external_effect_id, effect.operation_id, effect.project_id,
                    effect.effect_type, effect.status, effect.stable_idempotency_key,
                    effect.request_hash, effect.request_payload, effect.provider,
-                   effect.capability, effect.max_attempts, effect.reversible
+                   effect.capability, effect.max_attempts, effect.reversible,
+                   effect.completion_policy, effect.compensates_effect_id
             FROM authority_external_effect AS effect
-            JOIN authority_operation AS operation
-              ON operation.operation_id = effect.operation_id
             WHERE effect.external_effect_id = %s
             FOR UPDATE OF effect
             """,
@@ -97,6 +97,8 @@ class ExternalEffectRepository:
             "capability",
             "max_attempts",
             "reversible",
+            "completion_policy",
+            "compensates_effect_id",
         )
         return dict(zip(fields, row, strict=True))
 
@@ -152,7 +154,10 @@ class ExternalEffectRepository:
             """
             SELECT dispatch.dispatch_id, dispatch.external_effect_id,
                    dispatch.generation, dispatch.status, dispatch.provider,
-                   effect.status, effect.max_attempts, operation.project_id
+                   effect.status, effect.max_attempts, effect.project_id,
+                   effect.effect_type, effect.request_payload,
+                   effect.completion_policy, effect.capability,
+                   effect.compensates_effect_id
             FROM authority_external_effect_dispatch AS dispatch
             JOIN authority_external_effect AS effect
               ON effect.external_effect_id = dispatch.external_effect_id
@@ -175,6 +180,11 @@ class ExternalEffectRepository:
             "effect_status",
             "max_attempts",
             "project_id",
+            "effect_type",
+            "request_payload",
+            "completion_policy",
+            "capability",
+            "compensates_effect_id",
         )
         return dict(zip(fields, row, strict=True))
 
@@ -281,11 +291,11 @@ class ExternalEffectRepository:
         if outcome == "retryable_failure" and dispatch["generation"] >= dispatch["max_attempts"]:
             accepted_outcome = "final_failure"
             dispatch_status = "DEAD_LETTER"
-            effect_status = "FAILED_FINAL"
+            effect_status = "DEAD_LETTER"
         else:
             accepted_outcome = outcome
             dispatch_status, effect_status = {
-                "success": ("SUCCEEDED", "SUCCEEDED"),
+                "success": ("ACKNOWLEDGED", "DISPATCHED"),
                 "retryable_failure": ("FAILED_RETRYABLE", "FAILED_RETRYABLE"),
                 "final_failure": ("FAILED_FINAL", "FAILED_FINAL"),
                 "unknown": ("UNKNOWN", "UNKNOWN"),
@@ -297,10 +307,16 @@ class ExternalEffectRepository:
                 provider_correlation_id = %s,
                 evidence = evidence || %s,
                 updated_at = NOW(),
-                finished_at = NOW()
+                finished_at = CASE WHEN %s = 'ACKNOWLEDGED' THEN NULL ELSE NOW() END
             WHERE dispatch_id = %s AND status = 'DISPATCHING'
             """,
-            [dispatch_status, provider_correlation_id, Jsonb(evidence), dispatch["dispatch_id"]],
+            [
+                dispatch_status,
+                provider_correlation_id,
+                Jsonb(evidence),
+                dispatch_status,
+                dispatch["dispatch_id"],
+            ],
         )
         if self.cursor.rowcount != 1:
             raise KernelError("EFFECT_DISPATCH_CONFLICT", "dispatch no longer accepts results")
@@ -355,9 +371,12 @@ class ExternalEffectRepository:
         self.cursor.execute(
             """
             INSERT INTO authority_external_receipt (
-                provider, receipt_id, dispatch_id, payload_hash, payload
+                provider, receipt_id, dispatch_id, payload_hash, payload, status
             )
-            VALUES (%(provider)s, %(receipt_id)s, %(dispatch_id)s, %(payload_hash)s, %(payload)s)
+            VALUES (
+                %(provider)s, %(receipt_id)s, %(dispatch_id)s,
+                %(payload_hash)s, %(payload)s, 'VERIFIED'
+            )
             """,
             {**row, "payload": Jsonb(row["payload"])},
         )
@@ -376,7 +395,7 @@ class ExternalEffectRepository:
                 updated_at = NOW(), finished_at = NOW()
             WHERE dispatch_id = %s
               AND generation = %s
-              AND status IN ('CREATED', 'DISPATCHING', 'SENT', 'UNKNOWN', 'TIMED_OUT')
+              AND status IN ('CREATED', 'DISPATCHING', 'ACKNOWLEDGED', 'UNKNOWN')
             """,
             [
                 target_dispatch,
@@ -394,7 +413,10 @@ class ExternalEffectRepository:
             UPDATE authority_external_effect
             SET status = %s
             WHERE external_effect_id = %s
-              AND status NOT IN ('SUCCEEDED', 'FAILED_FINAL', 'CANCELLED', 'COMPENSATED')
+              AND status NOT IN (
+                  'SUCCEEDED', 'FAILED_FINAL', 'CANCELLED',
+                  'COMPENSATED', 'DEAD_LETTER'
+              )
             """,
             [target_effect, row["external_effect_id"]],
         )
@@ -434,10 +456,60 @@ class ExternalEffectRepository:
         if self.cursor.rowcount != 1:
             raise KernelError("EFFECT_STATUS_CONFLICT", "effect is not reconcilable")
 
+    def complete_compensated_effect(self, external_effect_id: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_external_effect
+            SET status = 'COMPENSATED'
+            WHERE external_effect_id = %s
+              AND status IN ('SUCCEEDED', 'COMPENSATION_REQUIRED', 'COMPENSATING')
+            """,
+            [external_effect_id],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "EFFECT_COMPENSATION_CONFLICT",
+                "compensated effect is not in a compensatable state",
+            )
+
+    def mark_unknown(self, dispatch: dict[str, Any], evidence: dict[str, Any]) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_external_effect_dispatch
+            SET status = 'UNKNOWN', evidence = evidence || %s,
+                updated_at = NOW(), finished_at = NOW()
+            WHERE dispatch_id = %s
+              AND status IN ('CREATED', 'DISPATCHING', 'ACKNOWLEDGED')
+            """,
+            [Jsonb(evidence), dispatch["dispatch_id"]],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError("EFFECT_DISPATCH_CONFLICT", "dispatch cannot become UNKNOWN")
+        self.cursor.execute(
+            """
+            UPDATE authority_external_effect
+            SET status = 'RECONCILIATION_REQUIRED', reconciliation = %s
+            WHERE external_effect_id = %s
+              AND status IN ('READY', 'DISPATCHING', 'DISPATCHED', 'UNKNOWN')
+            """,
+            [Jsonb(evidence), dispatch["external_effect_id"]],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError("EFFECT_STATUS_CONFLICT", "effect cannot require reconciliation")
+        self.cursor.execute(
+            """
+            UPDATE authority_effect_dispatch_lease
+            SET status = 'RELEASED', released_at = NOW(),
+                release_reason = 'marked_unknown'
+            WHERE dispatch_id = %s AND status = 'HELD'
+            """,
+            [dispatch["dispatch_id"]],
+        )
+
     def cancel(self, effect: dict[str, Any]) -> str:
         self.cursor.execute(
             """
-            SELECT status FROM authority_external_effect_dispatch
+            SELECT dispatch_id, status FROM authority_external_effect_dispatch
             WHERE external_effect_id = %s
             ORDER BY generation DESC LIMIT 1
             FOR UPDATE
@@ -445,7 +517,7 @@ class ExternalEffectRepository:
             [effect["external_effect_id"]],
         )
         dispatch = self.cursor.fetchone()
-        if dispatch is None or dispatch[0] == "CREATED":
+        if dispatch is None or dispatch[1] == "CREATED":
             target = "CANCELLED"
         elif effect["reversible"]:
             target = "COMPENSATION_REQUIRED"
@@ -455,14 +527,30 @@ class ExternalEffectRepository:
             "UPDATE authority_external_effect SET status = %s WHERE external_effect_id = %s",
             [target, effect["external_effect_id"]],
         )
-        if target == "CANCELLED" and dispatch is not None:
+        if dispatch is not None:
+            dispatch_target = {
+                "CANCELLED": "CANCELLED",
+                "COMPENSATION_REQUIRED": "CANCEL_REQUESTED",
+                "RECONCILIATION_REQUIRED": "UNKNOWN",
+            }[target]
             self.cursor.execute(
                 """
                 UPDATE authority_external_effect_dispatch
-                SET status = 'CANCELLED', updated_at = NOW(), finished_at = NOW()
-                WHERE external_effect_id = %s AND status = 'CREATED'
+                SET status = %s, updated_at = NOW(),
+                    finished_at = CASE WHEN %s = 'CANCELLED' THEN NOW() ELSE finished_at END
+                WHERE dispatch_id = %s
+                  AND status IN ('CREATED', 'DISPATCHING', 'ACKNOWLEDGED', 'UNKNOWN')
                 """,
-                [effect["external_effect_id"]],
+                [dispatch_target, dispatch_target, dispatch[0]],
+            )
+            self.cursor.execute(
+                """
+                UPDATE authority_effect_dispatch_lease
+                SET status = 'RELEASED', released_at = NOW(),
+                    release_reason = 'effect_cancelled'
+                WHERE dispatch_id = %s AND status = 'HELD'
+                """,
+                [dispatch[0]],
             )
         return target
 

@@ -19,6 +19,9 @@ from . import (
     v20260713_0016_asset_blob_protocol,
     v20260713_0017_external_effect_runtime,
     v20260713_0018_operation_graph_completion,
+    v20260716_0019_external_effect_protocol,
+    v20260716_0020_operation_output_evidence,
+    v20260716_0021_saga_coordination,
 )
 
 VERSION_MODULES = [
@@ -40,6 +43,9 @@ VERSION_MODULES = [
     v20260713_0016_asset_blob_protocol,
     v20260713_0017_external_effect_runtime,
     v20260713_0018_operation_graph_completion,
+    v20260716_0019_external_effect_protocol,
+    v20260716_0020_operation_output_evidence,
+    v20260716_0021_saga_coordination,
 ]
 
 __all__ = ["VERSION_MODULES"]

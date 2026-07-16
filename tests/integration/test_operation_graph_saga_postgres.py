@@ -158,6 +158,42 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
         self.assertEqual(partial["status"], "COMPENSATION_FAILED")
         self.assertEqual(partial["manual_intervention"], [first])
 
+    def test_retryable_child_uses_forward_recovery_with_fenced_evidence(self) -> None:
+        context, root, children = self._graph_fixture(1, root_status="EXECUTING")
+        child = children[0]
+        saga_id = start_saga(DATABASE_URL, context, root_operation_id=root)["saga_id"]
+        register_saga_step(DATABASE_URL, context, saga_id, child, "retryable", 1, "")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status = 'FAILED_RETRYABLE' WHERE operation_id = %s",
+                [child],
+            )
+        recovered = coordinate_saga(DATABASE_URL, context, saga_id)
+        self.assertEqual(recovered["status"], "FORWARD_RECOVERY")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.status, saga.forward_recovery_attempts,
+                       saga.coordinator_fencing_token,
+                       COUNT(event.event_id)
+                FROM authority_operation AS operation
+                JOIN authority_saga AS saga ON saga.saga_id = %s
+                LEFT JOIN state_event AS event
+                  ON event.aggregate_type = 'authority_operation'
+                 AND event.aggregate_id = operation.operation_id
+                 AND event.event_type = 'authority.operation.saga_transitioned'
+                WHERE operation.operation_id = %s
+                GROUP BY operation.status, saga.forward_recovery_attempts,
+                         saga.coordinator_fencing_token
+                """,
+                [saga_id, child],
+            )
+            status, attempts, token, event_count = cursor.fetchone()
+            self.assertEqual(status, "READY")
+            self.assertEqual(attempts, 1)
+            self.assertGreaterEqual(token, 1)
+            self.assertEqual(event_count, 1)
+
     def _graph_fixture(
         self,
         child_count: int,

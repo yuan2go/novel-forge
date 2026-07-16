@@ -9,6 +9,10 @@ from novel_forge.modules.command_kernel.completion import (
     evaluate_completion_contract,
     finalize_operation_completion,
 )
+from novel_forge.modules.command_kernel.asset_runtime import (
+    AssetCommandContext,
+    bind_operation_output_asset,
+)
 from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
     WorkerResultCommand,
@@ -103,14 +107,17 @@ class CompletionContractPostgresTests(unittest.TestCase):
             "required_asset_selectors": [
                 {
                     "selector": "draft",
+                    "output_key": "draft.primary",
+                    "role": "primary",
                     "lifecycle": "ACTIVE",
                     "eligibility": "ELIGIBLE",
                     "governance": "CLEAR",
                 }
             ],
             "required_qualifications": ["production_eligible"],
-            "required_blobs": ["AVAILABLE"],
+            "required_blobs": [{"status": "AVAILABLE", "role": "content", "min_count": 1}],
             "required_evidence": ["trace", "audit", "cost_when_provider_used"],
+            "required_audit_actions": ["draft.completed"],
             "required_outbox_events": ["draft.completed"],
         }
         context, operation_id, _ = self._operation(contract)
@@ -200,9 +207,69 @@ class CompletionContractPostgresTests(unittest.TestCase):
                     Jsonb({"operation_id": operation_id}),
                 ],
             )
+        bind_operation_output_asset(
+            DATABASE_URL,
+            AssetCommandContext(
+                operation_id=operation_id,
+                project_id=context.project_id,
+                actor_id="draft-handler",
+                trace_id=context.trace_id,
+                correlation_id=context.correlation_id,
+            ),
+            asset_version_id=version_id,
+            output_key="draft.primary",
+            role="primary",
+        )
         passed = evaluate_completion_contract(DATABASE_URL, operation_id, context.project_id)
         self.assertTrue(passed["satisfied"])
         self.assertEqual(passed["target_status"], "SUCCEEDED")
+
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO authority_asset_qualification (
+                    qualification_id, asset_version_id, policy_version, decision, evidence
+                ) VALUES (%s, %s, 'v2', 'REVOKED', '{}'::jsonb)
+                """,
+                [identifier("qualification-revoked"), version_id],
+            )
+        revoked = evaluate_completion_contract(DATABASE_URL, operation_id, context.project_id)
+        self.assertFalse(revoked["satisfied"])
+        self.assertIn("qualification:production_eligible", revoked["missing"])
+
+    def test_project_asset_and_admission_audit_cannot_satisfy_operation_evidence(self) -> None:
+        contract = {
+            "required_asset_selectors": [{"selector": "draft"}],
+            "required_evidence": ["audit"],
+            "required_audit_actions": ["draft.generated"],
+        }
+        context, operation_id, _ = self._operation(contract)
+        with transaction() as connection, connection.cursor() as cursor:
+            asset_id = identifier("unrelated-asset")
+            cursor.execute(
+                "INSERT INTO authority_asset (asset_id, project_id, asset_type) VALUES (%s, %s, 'draft')",
+                [asset_id, context.project_id],
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_asset_version (
+                    asset_version_id, asset_id, version_number, lifecycle,
+                    eligibility, governance, content, content_hash
+                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', '{}'::jsonb, 'sha256:old')
+                """,
+                [identifier("unrelated-version"), asset_id],
+            )
+            cursor.execute(
+                """
+                INSERT INTO audit_log (audit_id, project_id, operation_id, action, payload)
+                VALUES (%s, %s, %s, 'authority.operation.admitted', '{}'::jsonb)
+                """,
+                [identifier("admission-audit"), context.project_id, operation_id],
+            )
+        evaluation = evaluate_completion_contract(DATABASE_URL, operation_id, context.project_id)
+        self.assertIn("asset:draft", evaluation["missing"])
+        self.assertIn("evidence:audit", evaluation["missing"])
+        self.assertIn("audit:draft.generated", evaluation["missing"])
 
     def test_worker_success_submits_result_but_cannot_bypass_completion_contract(self) -> None:
         context, operation_id, _ = self._operation({"required_gates": ["release"]})

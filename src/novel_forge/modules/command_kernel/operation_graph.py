@@ -184,6 +184,12 @@ def coordinate_saga(
         steps = repository.saga_steps(saga_id)
         if saga["status"] in {"SUCCEEDED", "COMPENSATED", "COMPENSATION_FAILED", "CANCELLED"}:
             return _saga_result(saga["status"], steps)
+        lease = repository.acquire_coordinator(
+            saga,
+            owner=context.actor_id,
+            lease_id=str(uuid4()),
+            lease_seconds=30,
+        )
 
         failed_compensations = [
             step["operation_id"]
@@ -195,7 +201,14 @@ def coordinate_saga(
         if failed_compensations:
             target_status = "COMPENSATION_FAILED"
             repository.update_saga(saga_id, saga["version"], target_status)
-            repository.complete_root(saga["root_operation_id"], target_status)
+            if repository.complete_root(saga["root_operation_id"], target_status):
+                _record_operation_transition(
+                    repository,
+                    context,
+                    saga["root_operation_id"],
+                    target_status,
+                    lease["fencing_token"],
+                )
             changed = True
         elif saga["status"] == "COMPENSATING":
             required = [
@@ -208,8 +221,30 @@ def coordinate_saga(
             ):
                 target_status = "COMPENSATED"
                 repository.update_saga(saga_id, saga["version"], target_status)
-                repository.complete_root(saga["root_operation_id"], target_status)
+                if repository.complete_root(saga["root_operation_id"], target_status):
+                    _record_operation_transition(
+                        repository,
+                        context,
+                        saga["root_operation_id"],
+                        target_status,
+                        lease["fencing_token"],
+                    )
                 changed = True
+        elif any(step["status"] == "FAILED_RETRYABLE" for step in steps):
+            recovered = repository.recover_forward(
+                [step["operation_id"] for step in steps if step["status"] == "FAILED_RETRYABLE"]
+            )
+            target_status = "FORWARD_RECOVERY"
+            repository.update_saga(saga_id, saga["version"], target_status)
+            for operation_id in recovered:
+                _record_operation_transition(
+                    repository,
+                    context,
+                    operation_id,
+                    "READY",
+                    lease["fencing_token"],
+                )
+            changed = True
         elif any(step["status"] in FAILURE_STATUSES for step in steps):
             compensatable = [
                 step["operation_id"]
@@ -227,12 +262,33 @@ def coordinate_saga(
         elif steps and all(step["status"] == "SUCCEEDED" for step in steps):
             target_status = "SUCCEEDED"
             repository.update_saga(saga_id, saga["version"], target_status)
-            repository.complete_root(saga["root_operation_id"], target_status)
+            if repository.complete_root(saga["root_operation_id"], target_status):
+                _record_operation_transition(
+                    repository,
+                    context,
+                    saga["root_operation_id"],
+                    target_status,
+                    lease["fencing_token"],
+                )
             changed = True
         else:
             graph = _build_graph(repository, context.project_id, saga["root_operation_id"])
-            repository.set_ready(graph["ready"])
-            repository.complete_root(saga["root_operation_id"], "WAITING_CHILDREN")
+            for operation_id in repository.set_ready(graph["ready"]):
+                _record_operation_transition(
+                    repository,
+                    context,
+                    operation_id,
+                    "READY",
+                    lease["fencing_token"],
+                )
+            if repository.complete_root(saga["root_operation_id"], "WAITING_CHILDREN"):
+                _record_operation_transition(
+                    repository,
+                    context,
+                    saga["root_operation_id"],
+                    "WAITING_CHILDREN",
+                    lease["fencing_token"],
+                )
             steps = repository.saga_steps(saga_id)
 
         if changed:
@@ -241,10 +297,19 @@ def coordinate_saga(
                 context,
                 saga["root_operation_id"],
                 "authority.saga.coordinated",
-                {"saga_id": saga_id, "status": target_status},
+                {
+                    "saga_id": saga_id,
+                    "status": target_status,
+                    "coordinator_fencing_token": lease["fencing_token"],
+                },
                 aggregate_type="authority_saga",
                 aggregate_id=saga_id,
             )
+        repository.release_coordinator(
+            saga_id,
+            context.actor_id,
+            lease["fencing_token"],
+        )
         uow.commit()
     return _saga_result(target_status, steps)
 
@@ -357,6 +422,25 @@ def _record(
                 "operation_id": operation_id,
             },
         }
+    )
+
+
+def _record_operation_transition(
+    repository: Any,
+    context: GraphCommandContext,
+    operation_id: str,
+    target_status: str,
+    fencing_token: int,
+) -> None:
+    _record(
+        repository,
+        context,
+        operation_id,
+        "authority.operation.saga_transitioned",
+        {
+            "target_status": target_status,
+            "coordinator_fencing_token": fencing_token,
+        },
     )
 
 

@@ -111,7 +111,13 @@ def evaluate_completion_in_uow(uow: AuthorityUnitOfWork, operation: dict[str, An
         if not isinstance(requirement, dict):
             raise _invalid("required_asset_selectors")
         selector = str(requirement.get("selector") or requirement.get("asset_type") or "")
-        assets = repository.qualifying_assets(operation["project_id"], selector)
+        assets = repository.qualifying_assets(
+            operation["operation_id"],
+            operation["project_id"],
+            selector,
+            output_key=str(requirement.get("output_key") or ""),
+            role=str(requirement.get("role") or ""),
+        )
         matching = [
             asset
             for asset in assets
@@ -127,13 +133,23 @@ def evaluate_completion_in_uow(uow: AuthorityUnitOfWork, operation: dict[str, An
     for requirement in contract.get("required_qualifications", []):
         requested = _requirement_key(requirement, "decision")
         normalized = "ELIGIBLE" if requested == "production_eligible" else requested
-        if normalized not in qualification_states:
+        if not asset_version_ids or any(
+            qualification_states.get(asset_version_id) != normalized
+            for asset_version_id in asset_version_ids
+        ):
             missing.append(f"qualification:{requested}")
 
     blob_states = repository.blob_states(asset_version_ids)
     for requirement in contract.get("required_blobs", []):
         required_status = _requirement_key(requirement, "status")
-        if not blob_states or any(status != required_status for status in blob_states):
+        role = str(requirement.get("role") or "") if isinstance(requirement, dict) else ""
+        min_count = int(requirement.get("min_count", 1)) if isinstance(requirement, dict) else 1
+        matching_blobs = [
+            blob
+            for blob in blob_states
+            if blob["status"] == required_status and (not role or blob["role"] == role)
+        ]
+        if len(matching_blobs) < min_count:
             missing.append(f"blob:{required_status}")
 
     required_evidence = set(contract.get("required_evidence", []))
@@ -141,6 +157,12 @@ def evaluate_completion_in_uow(uow: AuthorityUnitOfWork, operation: dict[str, An
         missing.append("evidence:trace")
     if "audit" in required_evidence and not repository.has_audit(operation["operation_id"]):
         missing.append("evidence:audit")
+    audit_actions = repository.audit_actions(operation["operation_id"])
+    for action in contract.get("required_audit_actions", []):
+        if not isinstance(action, str) or not action:
+            raise _invalid("required_audit_actions")
+        if action not in audit_actions:
+            missing.append(f"audit:{action}")
     provider_used = bool(effect_states) or bool(
         (operation.get("definition_snapshot") or {}).get("external_capabilities")
     )

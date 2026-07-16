@@ -137,6 +137,29 @@ class AssetBlobRepository:
                 "only a DRAFT asset version can be activated",
             )
 
+    def bind_operation_output(
+        self,
+        *,
+        operation_id: str,
+        asset_id: str,
+        asset_version_id: str,
+        output_key: str,
+        role: str,
+        content_hash: str,
+    ) -> bool:
+        self.cursor.execute(
+            """
+            INSERT INTO authority_operation_output_asset (
+                operation_id, asset_id, asset_version_id,
+                output_key, role, content_hash
+            ) VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (operation_id, output_key, role, asset_version_id) DO NOTHING
+            RETURNING operation_id
+            """,
+            [operation_id, asset_id, asset_version_id, output_key, role, content_hash],
+        )
+        return self.cursor.fetchone() is not None
+
     def qualify_version(
         self,
         qualification_id: str,
@@ -212,6 +235,10 @@ class AssetBlobRepository:
         return dict(zip(fields, row, strict=True))
 
     def plan_effect(self, row: dict[str, Any]) -> dict[str, Any]:
+        raise KernelError(
+            "BLOB_EXTERNAL_EFFECT_PROTOCOL_DEPRECATED",
+            "Blob effects must be planned by ExternalEffectRepository",
+        )
         self.cursor.execute(
             """
             INSERT INTO authority_external_effect (
@@ -263,6 +290,10 @@ class AssetBlobRepository:
             raise KernelError("BLOB_STATUS_CONFLICT", "blob is not uploadable")
 
     def effect_for_update(self, effect_id: str) -> dict[str, Any]:
+        raise KernelError(
+            "BLOB_EXTERNAL_EFFECT_PROTOCOL_DEPRECATED",
+            "Blob effects must be read by ExternalEffectRepository",
+        )
         self.cursor.execute(
             """
             SELECT effect.external_effect_id, effect.operation_id, operation.project_id,
@@ -297,6 +328,10 @@ class AssetBlobRepository:
         provider: str,
         payload_hash: str,
     ) -> dict[str, Any]:
+        raise KernelError(
+            "BLOB_EXTERNAL_EFFECT_PROTOCOL_DEPRECATED",
+            "Blob dispatch must use the generic ExternalEffect lease dispatcher",
+        )
         self.cursor.execute(
             """
             SELECT dispatch_id, provider
@@ -337,6 +372,10 @@ class AssetBlobRepository:
         return {"dispatch_id": dispatch_id, "generation": 1, "replayed": False}
 
     def dispatch_for_update(self, dispatch_id: str) -> dict[str, Any]:
+        raise KernelError(
+            "BLOB_EXTERNAL_EFFECT_PROTOCOL_DEPRECATED",
+            "Blob dispatch must be read by ExternalEffectRepository",
+        )
         self.cursor.execute(
             """
             SELECT dispatch.dispatch_id, dispatch.external_effect_id,
@@ -376,6 +415,10 @@ class AssetBlobRepository:
         payload_hash: str,
         outcome: dict[str, Any],
     ) -> tuple[str, dict[str, Any]]:
+        raise KernelError(
+            "BLOB_EXTERNAL_EFFECT_PROTOCOL_DEPRECATED",
+            "Blob receipts must use the generic ExternalEffect inbox",
+        )
         self.cursor.execute(
             """
             SELECT disposition, stored_outcome
@@ -394,6 +437,10 @@ class AssetBlobRepository:
         payload_hash: str,
         payload: dict[str, Any],
     ) -> None:
+        raise KernelError(
+            "BLOB_EXTERNAL_EFFECT_PROTOCOL_DEPRECATED",
+            "Blob receipts must use the generic ExternalEffect receipt repository",
+        )
         self.cursor.execute(
             """
             INSERT INTO authority_external_receipt (
@@ -414,6 +461,10 @@ class AssetBlobRepository:
         actual_hash: str,
         actual_size: int,
     ) -> None:
+        raise KernelError(
+            "BLOB_EXTERNAL_EFFECT_PROTOCOL_DEPRECATED",
+            "Blob receipts must use the generic ExternalEffect receipt transition",
+        )
         self.cursor.execute(
             """
             UPDATE authority_external_effect_dispatch
@@ -467,6 +518,41 @@ class AssetBlobRepository:
         if self.cursor.rowcount != 1:
             raise KernelError("BLOB_STATUS_CONFLICT", f"blob cannot transition to {target}")
 
+    def accept_generic_upload_receipt(
+        self,
+        *,
+        blob_id: str,
+        project_id: str,
+        provider: str,
+        object_key: str,
+        actual_hash: str,
+        actual_size: int,
+    ) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_blob
+            SET status = 'UPLOADED', actual_object_key = %s,
+                actual_hash = %s, actual_size = %s, receipt_provider = %s
+            WHERE blob_id = %s AND project_id = %s
+              AND provider = %s
+              AND status IN ('UPLOADING', 'RECONCILIATION_REQUIRED')
+            """,
+            [
+                object_key,
+                actual_hash,
+                actual_size,
+                provider,
+                blob_id,
+                project_id,
+                provider,
+            ],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "BLOB_STATUS_CONFLICT",
+                "Blob cannot accept the generic ExternalEffect receipt",
+            )
+
     def bind_blob(
         self,
         reference_id: str,
@@ -509,39 +595,17 @@ class AssetBlobRepository:
         )
         return int(self.cursor.fetchone()[0])
 
-    def mark_unknown(
-        self,
-        dispatch_id: str,
-        effect_id: str,
-        blob_id: str,
-        evidence: dict[str, Any],
-    ) -> None:
-        self.cursor.execute(
-            """
-            UPDATE authority_external_effect_dispatch
-            SET status = 'UNKNOWN', evidence = evidence || %s
-            WHERE dispatch_id = %s AND status = 'SENT'
-            """,
-            [Jsonb(evidence), dispatch_id],
-        )
-        if self.cursor.rowcount != 1:
-            raise KernelError("EFFECT_DISPATCH_CONFLICT", "dispatch is not awaiting result")
-        self.cursor.execute(
-            """
-            UPDATE authority_external_effect
-            SET status = 'RECONCILIATION_REQUIRED', reconciliation = %s
-            WHERE external_effect_id = %s AND status = 'IN_FLIGHT'
-            """,
-            [Jsonb(evidence), effect_id],
-        )
+    def mark_upload_unknown(self, blob_id: str, project_id: str) -> None:
         self.cursor.execute(
             """
             UPDATE authority_blob
             SET status = 'RECONCILIATION_REQUIRED'
-            WHERE blob_id = %s AND status = 'UPLOADING'
+            WHERE blob_id = %s AND project_id = %s AND status = 'UPLOADING'
             """,
-            [blob_id],
+            [blob_id, project_id],
         )
+        if self.cursor.rowcount != 1:
+            raise KernelError("BLOB_STATUS_CONFLICT", "Blob is not awaiting upload result")
 
     def record_event(self, row: dict[str, Any]) -> None:
         self.cursor.execute(

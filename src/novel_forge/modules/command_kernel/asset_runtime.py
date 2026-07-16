@@ -10,6 +10,12 @@ from uuid import uuid4
 import psycopg
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectCommandContext,
+    accept_external_effect_receipt,
+    mark_external_effect_unknown,
+    prepare_effect_dispatch,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -154,6 +160,54 @@ def activate_asset_version(
         ) from exc
 
 
+def bind_operation_output_asset(
+    database_url: str,
+    context: AssetCommandContext,
+    *,
+    asset_version_id: str,
+    output_key: str,
+    role: str,
+) -> dict[str, Any]:
+    if not output_key or not role:
+        raise KernelError("COMMAND_SCHEMA_INVALID", "output key and role are required")
+    with AuthorityUnitOfWork(database_url) as uow:
+        repository = uow.repositories.asset_blobs
+        _require_context(repository, context)
+        version = repository.version_for_update(asset_version_id)
+        _require_project(version, context.project_id, "asset version")
+        created = repository.bind_operation_output(
+            operation_id=context.operation_id,
+            asset_id=version["asset_id"],
+            asset_version_id=asset_version_id,
+            output_key=output_key,
+            role=role,
+            content_hash=version["content_hash"],
+        )
+        if created:
+            _record(
+                repository,
+                context,
+                "authority_operation",
+                context.operation_id,
+                "operation.output_asset.bound",
+                {
+                    "asset_id": version["asset_id"],
+                    "asset_version_id": asset_version_id,
+                    "output_key": output_key,
+                    "role": role,
+                    "content_hash": version["content_hash"],
+                },
+            )
+        uow.commit()
+    return {
+        "operation_id": context.operation_id,
+        "asset_version_id": asset_version_id,
+        "output_key": output_key,
+        "role": role,
+        "replayed": not created,
+    }
+
+
 def reserve_blob(
     database_url: str,
     context: AssetCommandContext,
@@ -213,14 +267,21 @@ def request_blob_upload(
             "expected_size": blob["expected_size"],
             "media_type": blob["media_type"],
         }
-        result = repository.plan_effect(
+        result = uow.repositories.external_effects.plan(
             {
                 "external_effect_id": str(uuid4()),
                 "operation_id": context.operation_id,
+                "project_id": context.project_id,
                 "effect_type": "blob.upload",
                 "stable_idempotency_key": f"blob.upload:{context.project_id}:{blob_id}",
                 "request_hash": _hash(request_payload),
                 "request_payload": request_payload,
+                "provider": blob["provider"],
+                "capability": "object_store.put",
+                "max_attempts": 3,
+                "reversible": False,
+                "completion_policy": "synchronous_final",
+                "compensates_effect_id": None,
             }
         )
         repository.attach_upload_effect(blob_id, result["external_effect_id"])
@@ -244,36 +305,22 @@ def begin_blob_upload_dispatch(
     external_effect_id: str,
     provider: str,
 ) -> dict[str, Any]:
+    """Deprecated compatibility entry point backed by the generic dispatcher."""
     with AuthorityUnitOfWork(database_url) as uow:
-        repository = uow.repositories.asset_blobs
-        _require_context(repository, context)
-        effect = repository.effect_for_update(external_effect_id)
+        effect = uow.repositories.external_effects.get_for_update(external_effect_id)
         _require_project(effect, context.project_id, "external effect")
         if effect["effect_type"] != "blob.upload":
             raise KernelError("EFFECT_TYPE_INVALID", "effect is not a Blob upload")
-        expected_provider = effect["request_payload"].get("provider")
-        if provider != expected_provider:
+        if provider != effect["provider"]:
             raise KernelError(
                 "EFFECT_PROVIDER_CONFLICT",
-                "dispatch provider differs from reserved Blob provider",
+                "dispatch provider differs from the frozen Blob effect",
             )
-        result = repository.begin_dispatch(
-            str(uuid4()),
-            external_effect_id,
-            provider,
-            effect["request_hash"],
-        )
-        if not result["replayed"]:
-            _record(
-                repository,
-                context,
-                "authority_external_effect_dispatch",
-                result["dispatch_id"],
-                "blob.upload.dispatched",
-                {"external_effect_id": external_effect_id, "provider": provider},
-            )
-        uow.commit()
-    return result
+    return prepare_effect_dispatch(
+        database_url,
+        _effect_context(context),
+        effect_id=external_effect_id,
+    )
 
 
 def accept_blob_upload_receipt(
@@ -289,79 +336,37 @@ def accept_blob_upload_receipt(
     payload_hash: str,
     evidence: dict[str, Any],
 ) -> dict[str, Any]:
+    """Deprecated receipt shape translated into the generic receipt inbox."""
     if actual_size < 0:
         raise KernelError("COMMAND_SCHEMA_INVALID", "receipt size cannot be negative")
-    conflict = False
-    stored: dict[str, Any] = {}
     with AuthorityUnitOfWork(database_url) as uow:
-        repository = uow.repositories.asset_blobs
-        _require_context(repository, context)
-        dispatch = repository.dispatch_for_update(dispatch_id)
+        _require_context(uow.repositories.asset_blobs, context)
+        dispatch = uow.repositories.external_effects.dispatch_for_update(dispatch_id)
         _require_project(dispatch, context.project_id, "dispatch")
         if dispatch["provider"] != provider:
             raise KernelError(
                 "RECEIPT_PROVIDER_CONFLICT",
                 "receipt provider differs from dispatch provider",
             )
-        blob_id = str(dispatch["request_payload"].get("blob_id") or "")
-        message_id = f"{provider}:{receipt_id}"
-        outcome = {"dispatch_id": dispatch_id, "blob_id": blob_id, "receipt_id": receipt_id}
-        disposition, stored = repository.record_inbox(
-            "blob.upload.receipt",
-            message_id,
-            payload_hash,
-            outcome,
-        )
-        if disposition == "REPLAY":
-            return {**stored, "replayed": True}
-        if disposition == "CONFLICT":
-            _record(
-                repository,
-                context,
-                "authority_external_effect_dispatch",
-                dispatch_id,
-                "blob.upload.receipt_conflicted",
-                {"provider": provider, "receipt_id": receipt_id},
-            )
-            conflict = True
-        else:
-            payload = {
-                "object_key": object_key,
-                "actual_hash": actual_hash,
-                "actual_size": actual_size,
-                "evidence": evidence,
-            }
-            repository.insert_receipt(
-                provider,
-                receipt_id,
-                dispatch_id,
-                payload_hash,
-                payload,
-            )
-            repository.accept_upload_receipt(
-                dispatch_id,
-                receipt_id,
-                blob_id,
-                provider,
-                object_key,
-                actual_hash,
-                actual_size,
-            )
-            _record(
-                repository,
-                context,
-                "authority_blob",
-                blob_id,
-                "blob.upload.receipt_accepted",
-                {"dispatch_id": dispatch_id, "provider": provider, "receipt_id": receipt_id},
-            )
-        uow.commit()
-    if conflict:
-        raise KernelError(
-            "RECEIPT_PAYLOAD_CONFLICT",
-            "receipt message id was reused with different content",
-        )
-    return {**stored, "replayed": False}
+        generation = int(dispatch["generation"])
+    return accept_external_effect_receipt(
+        database_url,
+        _effect_context(context),
+        dispatch_id=dispatch_id,
+        provider=provider,
+        receipt_id=receipt_id,
+        message_id=f"{provider}:{receipt_id}",
+        payload_hash=payload_hash,
+        provider_correlation_id=receipt_id,
+        generation=generation,
+        outcome="success",
+        evidence={
+            **evidence,
+            "object_key": object_key,
+            "actual_hash": actual_hash,
+            "actual_size": actual_size,
+        },
+    )
 
 
 def verify_blob(
@@ -488,14 +493,21 @@ def release_blob(
             "provider": blob["provider"],
             "object_key": blob["object_key"],
         }
-        result = repository.plan_effect(
+        result = uow.repositories.external_effects.plan(
             {
                 "external_effect_id": str(uuid4()),
                 "operation_id": context.operation_id,
+                "project_id": context.project_id,
                 "effect_type": "blob.delete",
                 "stable_idempotency_key": f"blob.delete:{context.project_id}:{blob_id}",
                 "request_hash": _hash(request_payload),
                 "request_payload": request_payload,
+                "provider": blob["provider"],
+                "capability": "object_store.delete",
+                "max_attempts": 3,
+                "reversible": False,
+                "completion_policy": "synchronous_final",
+                "compensates_effect_id": None,
             }
         )
         repository.update_blob_status(
@@ -528,27 +540,12 @@ def reconcile_blob_upload(
             "RECONCILIATION_OUTCOME_INVALID",
             "Task 4 supports explicit UNKNOWN classification only",
         )
-    with AuthorityUnitOfWork(database_url) as uow:
-        repository = uow.repositories.asset_blobs
-        _require_context(repository, context)
-        dispatch = repository.dispatch_for_update(dispatch_id)
-        _require_project(dispatch, context.project_id, "dispatch")
-        blob_id = str(dispatch["request_payload"].get("blob_id") or "")
-        repository.mark_unknown(
-            dispatch_id,
-            dispatch["external_effect_id"],
-            blob_id,
-            evidence,
-        )
-        _record(
-            repository,
-            context,
-            "authority_external_effect",
-            dispatch["external_effect_id"],
-            "blob.upload.reconciliation_required",
-            {"dispatch_id": dispatch_id, "evidence": evidence},
-        )
-        uow.commit()
+    mark_external_effect_unknown(
+        database_url,
+        _effect_context(context),
+        dispatch_id=dispatch_id,
+        evidence=evidence,
+    )
 
 
 def _set_blob_hold(
@@ -587,6 +584,17 @@ def _require_context(repository: Any, context: AssetCommandContext) -> None:
     if any(not value for value in required):
         raise KernelError("COMMAND_SCHEMA_INVALID", "asset command context is incomplete")
     repository.require_executing_operation(context.operation_id, context.project_id)
+
+
+def _effect_context(context: AssetCommandContext) -> EffectCommandContext:
+    return EffectCommandContext(
+        operation_id=context.operation_id,
+        project_id=context.project_id,
+        actor_id=context.actor_id,
+        trace_id=context.trace_id,
+        correlation_id=context.correlation_id,
+        causation_id=context.causation_id,
+    )
 
 
 def _require_project(row: dict[str, Any], project_id: str, aggregate: str) -> None:

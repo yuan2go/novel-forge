@@ -22,6 +22,11 @@ from novel_forge.modules.command_kernel.asset_runtime import (
     verify_blob,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_adapters import FakeDeterministicProvider
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectCommandContext,
+    dispatch_external_effect,
+)
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -50,32 +55,22 @@ class AssetBlobProtocolPostgresTests(unittest.TestCase):
         blob_id = reserve_blob(
             DATABASE_URL,
             context,
-            provider="local_file_object_store",
+            provider="fake_deterministic_provider",
             object_key=f"objects/{context.project_id}/chapter.json",
             expected_hash="sha256:blob-v1",
             expected_size=19,
             media_type="application/json",
         )
         effect = request_blob_upload(DATABASE_URL, context, blob_id=blob_id)
-        dispatch = begin_blob_upload_dispatch(
+        dispatched = dispatch_external_effect(
             DATABASE_URL,
-            context,
-            external_effect_id=effect["external_effect_id"],
-            provider="local_file_object_store",
+            EffectCommandContext(**context.__dict__),
+            effect_id=effect["external_effect_id"],
+            worker_id="blob-generic-dispatcher",
+            lease_seconds=30,
+            adapter=FakeDeterministicProvider("success"),
         )
-        receipt = accept_blob_upload_receipt(
-            DATABASE_URL,
-            context,
-            dispatch_id=dispatch["dispatch_id"],
-            provider="local_file_object_store",
-            receipt_id=identifier("receipt"),
-            object_key=f"objects/{context.project_id}/chapter.json",
-            actual_hash="sha256:blob-v1",
-            actual_size=19,
-            payload_hash="sha256:receipt-v1",
-            evidence={"provider_version": "local-file-v1"},
-        )
-        self.assertFalse(receipt["replayed"])
+        self.assertEqual(dispatched["outcome"], "success")
         verified = verify_blob(DATABASE_URL, context, blob_id=blob_id)
         self.assertEqual(verified["status"], "AVAILABLE")
         reference_id = bind_blob_to_asset_version(
@@ -102,7 +97,7 @@ class AssetBlobProtocolPostgresTests(unittest.TestCase):
                 SELECT version.lifecycle, version.eligibility, version.governance,
                        blob.status, reference.reference_id,
                        authority_asset_version_is_production_eligible(version.asset_version_id),
-                       receipt.payload->'evidence'->>'provider_version'
+                       receipt.status
                 FROM authority_asset_version AS version
                 JOIN authority_asset_version_blob_reference AS reference
                   ON reference.asset_version_id = version.asset_version_id
@@ -126,7 +121,7 @@ class AssetBlobProtocolPostgresTests(unittest.TestCase):
                     "AVAILABLE",
                     reference_id,
                     True,
-                    "local-file-v1",
+                    "VERIFIED",
                 ),
             )
 
@@ -208,7 +203,7 @@ class AssetBlobProtocolPostgresTests(unittest.TestCase):
             cursor.execute(
                 """
                 SELECT COUNT(*) FROM authority_inbox_conflict
-                WHERE consumer_name = 'blob.upload.receipt'
+                WHERE consumer_name = 'external_effect.receipt'
                   AND message_id = %s
                 """,
                 [f"fake_deterministic_provider:{receipt_id}"],
@@ -360,7 +355,7 @@ class AssetBlobProtocolPostgresTests(unittest.TestCase):
                     """,
                     [dispatch["dispatch_id"], blob_id],
                 )
-                self.assertEqual(cursor.fetchone(), ("UPLOADING", "SENT", 0))
+                self.assertEqual(cursor.fetchone(), ("UPLOADING", "CREATED", 0))
         finally:
             with transaction() as connection, connection.cursor() as cursor:
                 cursor.execute("DROP TRIGGER authority_test_fail_blob_receipt_trigger ON authority_blob")

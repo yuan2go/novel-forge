@@ -192,7 +192,9 @@ class OperationGraphRepository:
     def saga_for_update(self, saga_id: str, project_id: str) -> dict[str, Any]:
         self.cursor.execute(
             """
-            SELECT saga_id, root_operation_id, status, version
+            SELECT saga_id, root_operation_id, status, version,
+                   coordinator_owner, coordinator_lease_id,
+                   coordinator_fencing_token, coordinator_expires_at
             FROM authority_saga
             WHERE saga_id = %s AND project_id = %s
             FOR UPDATE
@@ -207,7 +209,62 @@ class OperationGraphRepository:
             "root_operation_id": row[1],
             "status": row[2],
             "version": row[3],
+            "coordinator_owner": row[4],
+            "coordinator_lease_id": row[5],
+            "coordinator_fencing_token": row[6],
+            "coordinator_expires_at": row[7],
         }
+
+    def acquire_coordinator(
+        self,
+        saga: dict[str, Any],
+        *,
+        owner: str,
+        lease_id: str,
+        lease_seconds: int,
+    ) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            UPDATE authority_saga
+            SET coordinator_owner = %s,
+                coordinator_lease_id = %s,
+                coordinator_fencing_token = coordinator_fencing_token + 1,
+                coordinator_expires_at = NOW() + make_interval(secs => %s),
+                coordinator_heartbeat_at = NOW(),
+                updated_at = NOW()
+            WHERE saga_id = %s
+              AND (
+                  coordinator_expires_at IS NULL
+                  OR coordinator_expires_at <= NOW()
+                  OR coordinator_owner = %s
+              )
+            RETURNING coordinator_fencing_token, coordinator_expires_at
+            """,
+            [owner, lease_id, lease_seconds, saga["saga_id"], owner],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError("SAGA_COORDINATOR_LEASE_HELD", "another coordinator owns the saga")
+        return {
+            "lease_id": lease_id,
+            "fencing_token": int(row[0]),
+            "expires_at": row[1],
+        }
+
+    def release_coordinator(self, saga_id: str, owner: str, fencing_token: int) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_saga
+            SET coordinator_expires_at = NULL,
+                coordinator_heartbeat_at = NOW(),
+                updated_at = NOW()
+            WHERE saga_id = %s AND coordinator_owner = %s
+              AND coordinator_fencing_token = %s
+            """,
+            [saga_id, owner, fencing_token],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError("SAGA_FENCING_TOKEN_STALE", "coordinator lease is stale")
 
     def saga_steps(self, saga_id: str) -> list[dict[str, Any]]:
         self.cursor.execute(
@@ -246,6 +303,33 @@ class OperationGraphRepository:
             [operation_ids],
         )
 
+    def recover_forward(self, operation_ids: list[str]) -> list[str]:
+        if not operation_ids:
+            return []
+        self.cursor.execute(
+            """
+            UPDATE authority_operation
+            SET status = 'READY', version = version + 1, updated_at = NOW()
+            WHERE operation_id = ANY(%s) AND status = 'FAILED_RETRYABLE'
+            RETURNING operation_id
+            """,
+            [operation_ids],
+        )
+        recovered = [row[0] for row in self.cursor.fetchall()]
+        if recovered:
+            self.cursor.execute(
+                """
+                UPDATE authority_saga
+                SET forward_recovery_attempts = forward_recovery_attempts + 1
+                WHERE saga_id = (
+                    SELECT saga_id FROM authority_saga_step
+                    WHERE operation_id = ANY(%s) LIMIT 1
+                )
+                """,
+                [recovered],
+            )
+        return recovered
+
     def update_saga(self, saga_id: str, expected_version: int, status: str) -> None:
         self.cursor.execute(
             """
@@ -258,19 +342,21 @@ class OperationGraphRepository:
         if self.cursor.rowcount != 1:
             raise KernelError("SAGA_VERSION_CONFLICT", "saga changed during coordination")
 
-    def set_ready(self, operation_ids: list[str]) -> None:
+    def set_ready(self, operation_ids: list[str]) -> list[str]:
         if not operation_ids:
-            return
+            return []
         self.cursor.execute(
             """
             UPDATE authority_operation
             SET status = 'READY', version = version + 1, updated_at = NOW()
             WHERE operation_id = ANY(%s) AND status = 'ADMITTED'
+            RETURNING operation_id
             """,
             [operation_ids],
         )
+        return [row[0] for row in self.cursor.fetchall()]
 
-    def complete_root(self, root_operation_id: str, status: str) -> None:
+    def complete_root(self, root_operation_id: str, status: str) -> bool:
         self.cursor.execute(
             """
             UPDATE authority_operation
@@ -279,6 +365,7 @@ class OperationGraphRepository:
             """,
             [status, root_operation_id, status],
         )
+        return self.cursor.rowcount == 1
 
     def record_event(self, row: dict[str, Any]) -> None:
         self.cursor.execute(
@@ -393,16 +480,32 @@ class CompletionContractRepository:
         )
         return self.cursor.fetchall()
 
-    def qualifying_assets(self, project_id: str, selector: str) -> list[dict[str, Any]]:
+    def qualifying_assets(
+        self,
+        operation_id: str,
+        project_id: str,
+        selector: str,
+        *,
+        output_key: str = "",
+        role: str = "",
+    ) -> list[dict[str, Any]]:
         self.cursor.execute(
             """
             SELECT version.asset_version_id, version.lifecycle, version.eligibility,
-                   version.governance
-            FROM authority_asset AS asset
-            JOIN authority_asset_version AS version ON version.asset_id = asset.asset_id
-            WHERE asset.project_id = %s AND asset.asset_type = %s
+                   version.governance, binding.output_key, binding.role
+            FROM authority_operation_output_asset AS binding
+            JOIN authority_asset AS asset ON asset.asset_id = binding.asset_id
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id = binding.asset_version_id
+             AND version.asset_id = binding.asset_id
+            WHERE binding.operation_id = %s
+              AND asset.project_id = %s
+              AND asset.asset_type = %s
+              AND binding.content_hash = version.content_hash
+              AND (%s = '' OR binding.output_key = %s)
+              AND (%s = '' OR binding.role = %s)
             """,
-            [project_id, selector],
+            [operation_id, project_id, selector, output_key, output_key, role, role],
         )
         return [
             {
@@ -410,39 +513,69 @@ class CompletionContractRepository:
                 "lifecycle": row[1],
                 "eligibility": row[2],
                 "governance": row[3],
+                "output_key": row[4],
+                "role": row[5],
             }
             for row in self.cursor.fetchall()
         ]
 
-    def qualifications(self, asset_version_ids: list[str]) -> set[str]:
+    def qualifications(self, asset_version_ids: list[str]) -> dict[str, str]:
         if not asset_version_ids:
-            return set()
+            return {}
         self.cursor.execute(
             """
-            SELECT DISTINCT decision FROM authority_asset_qualification
+            SELECT DISTINCT ON (asset_version_id) asset_version_id, decision
+            FROM authority_asset_qualification
             WHERE asset_version_id = ANY(%s)
+            ORDER BY asset_version_id, created_at DESC, qualification_id DESC
             """,
             [asset_version_ids],
         )
-        return {row[0] for row in self.cursor.fetchall()}
+        return {row[0]: row[1] for row in self.cursor.fetchall()}
 
-    def blob_states(self, asset_version_ids: list[str]) -> list[str]:
+    def blob_states(self, asset_version_ids: list[str]) -> list[dict[str, Any]]:
         if not asset_version_ids:
             return []
         self.cursor.execute(
             """
-            SELECT blob.status
+            SELECT reference.asset_version_id, blob.status, reference.role,
+                   reference.ordinal, reference.content_hash
             FROM authority_asset_version_blob_reference AS reference
             JOIN authority_blob AS blob ON blob.blob_id = reference.blob_id
             WHERE reference.asset_version_id = ANY(%s)
             """,
             [asset_version_ids],
         )
-        return [row[0] for row in self.cursor.fetchall()]
+        return [
+            {
+                "asset_version_id": row[0],
+                "status": row[1],
+                "role": row[2],
+                "ordinal": row[3],
+                "content_hash": row[4],
+            }
+            for row in self.cursor.fetchall()
+        ]
 
     def has_audit(self, operation_id: str) -> bool:
-        self.cursor.execute("SELECT EXISTS(SELECT 1 FROM audit_log WHERE operation_id = %s)", [operation_id])
+        self.cursor.execute(
+            """
+            SELECT EXISTS(
+                SELECT 1 FROM audit_log
+                WHERE operation_id = %s
+                  AND action <> 'authority.operation.admitted'
+            )
+            """,
+            [operation_id],
+        )
         return bool(self.cursor.fetchone()[0])
+
+    def audit_actions(self, operation_id: str) -> set[str]:
+        self.cursor.execute(
+            "SELECT DISTINCT action FROM audit_log WHERE operation_id = %s",
+            [operation_id],
+        )
+        return {row[0] for row in self.cursor.fetchall()}
 
     def has_cost(self, operation_id: str) -> bool:
         self.cursor.execute(

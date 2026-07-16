@@ -10,7 +10,10 @@ from uuid import uuid4
 import psycopg
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.command_kernel.external_effect_adapters import ExternalEffectAdapter
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapter,
+    ExternalEffectAdapterError,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -35,11 +38,20 @@ def plan_external_effect(
     request_payload: dict[str, Any],
     max_attempts: int,
     reversible: bool,
+    completion_policy: str = "synchronous_final",
+    compensates_effect_id: str | None = None,
 ) -> dict[str, Any]:
     if max_attempts <= 0 or not all(
         (effect_type, provider, capability, stable_idempotency_key)
     ):
         raise KernelError("COMMAND_SCHEMA_INVALID", "external effect intent is incomplete")
+    if completion_policy not in {
+        "synchronous_final",
+        "async_ack",
+        "callback_receipt",
+        "poll_reconciliation",
+    }:
+        raise KernelError("EFFECT_COMPLETION_POLICY_INVALID", "unknown completion policy")
     request_hash = _hash(request_payload)
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
@@ -48,6 +60,7 @@ def plan_external_effect(
             {
                 "external_effect_id": str(uuid4()),
                 "operation_id": context.operation_id,
+                "project_id": context.project_id,
                 "effect_type": effect_type,
                 "stable_idempotency_key": stable_idempotency_key,
                 "request_hash": request_hash,
@@ -56,6 +69,8 @@ def plan_external_effect(
                 "capability": capability,
                 "max_attempts": max_attempts,
                 "reversible": reversible,
+                "completion_policy": completion_policy,
+                "compensates_effect_id": compensates_effect_id,
             }
         )
         if not result["replayed"]:
@@ -143,6 +158,12 @@ def dispatch_external_effect(
     lease_seconds: int,
     adapter: ExternalEffectAdapter,
 ) -> dict[str, Any]:
+    effect = _read_effect(database_url, effect_id, context.project_id)
+    if adapter.provider != effect["provider"]:
+        raise KernelError(
+            "EFFECT_PROVIDER_CONFLICT",
+            "adapter provider differs from the frozen effect intent",
+        )
     dispatch = prepare_effect_dispatch(database_url, context, effect_id=effect_id)
     lease = acquire_effect_dispatch(
         database_url,
@@ -151,18 +172,49 @@ def dispatch_external_effect(
         worker_id=worker_id,
         lease_seconds=lease_seconds,
     )
-    effect = _read_effect(database_url, effect_id, context.project_id)
-    if adapter.provider != effect["provider"]:
-        raise KernelError(
-            "EFFECT_PROVIDER_CONFLICT",
-            "adapter provider differs from the frozen effect intent",
+    try:
+        provider_result = adapter.execute(
+            stable_idempotency_key=effect["stable_idempotency_key"],
+            capability=effect["capability"],
+            request_payload=effect["request_payload"],
         )
-
-    provider_result = adapter.execute(
-        stable_idempotency_key=effect["stable_idempotency_key"],
-        capability=effect["capability"],
-        request_payload=effect["request_payload"],
-    )
+    except ExternalEffectAdapterError as exc:
+        recorded = "unknown" if exc.request_sent else "retryable_failure"
+        submit_effect_dispatch_result(
+            database_url,
+            context,
+            dispatch_id=dispatch["dispatch_id"],
+            worker_id=worker_id,
+            fencing_token=lease["fencing_token"],
+            outcome=recorded,
+            evidence={
+                "error_type": type(exc).__name__,
+                "message": str(exc),
+                "request_sent": exc.request_sent,
+            },
+        )
+        raise KernelError(
+            "EFFECT_ADAPTER_EXCEPTION_RECORDED",
+            f"adapter exception was recorded as {recorded}",
+        ) from exc
+    except Exception as exc:
+        submit_effect_dispatch_result(
+            database_url,
+            context,
+            dispatch_id=dispatch["dispatch_id"],
+            worker_id=worker_id,
+            fencing_token=lease["fencing_token"],
+            outcome="unknown",
+            evidence={
+                "error_type": type(exc).__name__,
+                "message": str(exc),
+                "request_sent": "not_established",
+            },
+        )
+        raise KernelError(
+            "EFFECT_ADAPTER_EXCEPTION_RECORDED",
+            "untyped adapter exception was conservatively recorded as UNKNOWN",
+        ) from exc
 
     outcome = submit_effect_dispatch_result(
         database_url,
@@ -174,7 +226,25 @@ def dispatch_external_effect(
         evidence=provider_result.evidence,
         provider_correlation_id=provider_result.provider_correlation_id,
     )
-    return {"dispatch_id": dispatch["dispatch_id"], "outcome": outcome}
+    receipt: dict[str, Any] | None = None
+    if outcome == "success" and effect["completion_policy"] == "synchronous_final":
+        receipt_id = provider_result.provider_correlation_id or (
+            f"{adapter.provider}:{dispatch['dispatch_id']}:{dispatch['generation']}"
+        )
+        receipt = accept_external_effect_receipt(
+            database_url,
+            context,
+            dispatch_id=dispatch["dispatch_id"],
+            provider=adapter.provider,
+            receipt_id=receipt_id,
+            message_id=f"sync-final:{receipt_id}:{dispatch['generation']}",
+            payload_hash=_hash(provider_result.evidence),
+            provider_correlation_id=provider_result.provider_correlation_id,
+            generation=dispatch["generation"],
+            outcome="success",
+            evidence=provider_result.evidence,
+        )
+    return {"dispatch_id": dispatch["dispatch_id"], "outcome": outcome, "receipt": receipt}
 
 
 def heartbeat_effect_dispatch(
@@ -417,6 +487,47 @@ def accept_external_effect_receipt(
                     },
                 }
             )
+            if dispatch["effect_type"] == "blob.upload" and outcome == "success":
+                request = dispatch["request_payload"]
+                required = {
+                    "object_key": evidence.get("object_key"),
+                    "actual_hash": evidence.get("actual_hash"),
+                    "actual_size": evidence.get("actual_size"),
+                }
+                if (
+                    not request.get("blob_id")
+                    or not required["object_key"]
+                    or not required["actual_hash"]
+                    or not isinstance(required["actual_size"], int)
+                    or required["actual_size"] < 0
+                ):
+                    raise KernelError(
+                        "BLOB_RECEIPT_EVIDENCE_INVALID",
+                        "Blob upload receipt lacks verified object identity evidence",
+                    )
+                uow.repositories.asset_blobs.accept_generic_upload_receipt(
+                    blob_id=str(request["blob_id"]),
+                    project_id=context.project_id,
+                    provider=provider,
+                    object_key=str(required["object_key"]),
+                    actual_hash=str(required["actual_hash"]),
+                    actual_size=int(required["actual_size"]),
+                )
+            if (
+                dispatch["effect_type"] == "external_effect.compensate"
+                and outcome == "success"
+                and dispatch["compensates_effect_id"]
+            ):
+                repository.complete_compensated_effect(
+                    str(dispatch["compensates_effect_id"])
+                )
+                _record(
+                    repository,
+                    context,
+                    str(dispatch["compensates_effect_id"]),
+                    "external_effect.compensated",
+                    {"compensation_effect_id": dispatch["external_effect_id"]},
+                )
             _record(
                 repository,
                 context,
@@ -485,6 +596,42 @@ def reconcile_external_effect(
     return {"external_effect_id": effect_id, "outcome": result.outcome}
 
 
+def mark_external_effect_unknown(
+    database_url: str,
+    context: EffectCommandContext,
+    *,
+    dispatch_id: str,
+    evidence: dict[str, Any],
+) -> dict[str, Any]:
+    with AuthorityUnitOfWork(database_url) as uow:
+        repository = uow.repositories.external_effects
+        _require_context(repository, context)
+        dispatch = repository.dispatch_for_update(dispatch_id)
+        _require_project(dispatch, context.project_id)
+        repository.mark_unknown(dispatch, evidence)
+        if dispatch["effect_type"] == "blob.upload":
+            blob_id = str(dispatch["request_payload"].get("blob_id") or "")
+            if not blob_id:
+                raise KernelError(
+                    "BLOB_EFFECT_PAYLOAD_INVALID",
+                    "Blob upload effect does not identify its reserved Blob",
+                )
+            uow.repositories.asset_blobs.mark_upload_unknown(blob_id, context.project_id)
+        _record(
+            repository,
+            context,
+            dispatch["external_effect_id"],
+            "external_effect.reconciliation_required",
+            {"dispatch_id": dispatch_id, "evidence": evidence},
+        )
+        uow.commit()
+    return {
+        "external_effect_id": dispatch["external_effect_id"],
+        "dispatch_id": dispatch_id,
+        "status": "RECONCILIATION_REQUIRED",
+    }
+
+
 def cancel_external_effect(
     database_url: str,
     context: EffectCommandContext,
@@ -506,6 +653,37 @@ def cancel_external_effect(
         )
         uow.commit()
     return {"external_effect_id": effect_id, "status": target}
+
+
+def compensate_external_effect(
+    database_url: str,
+    context: EffectCommandContext,
+    *,
+    effect_id: str,
+    max_attempts: int = 3,
+) -> dict[str, Any]:
+    effect = _read_effect(database_url, effect_id, context.project_id)
+    if not effect["reversible"]:
+        raise KernelError("EFFECT_NOT_REVERSIBLE", "external effect has no compensation protocol")
+    if effect["status"] not in {"SUCCEEDED", "COMPENSATION_REQUIRED"}:
+        raise KernelError("EFFECT_STATUS_CONFLICT", "external effect is not compensatable")
+    return plan_external_effect(
+        database_url,
+        context,
+        effect_type="external_effect.compensate",
+        provider=effect["provider"],
+        capability=f"{effect['capability']}.compensate",
+        stable_idempotency_key=f"compensate:{effect['stable_idempotency_key']}",
+        request_payload={
+            "compensates_effect_id": effect_id,
+            "original_capability": effect["capability"],
+            "original_request_hash": effect["request_hash"],
+        },
+        max_attempts=max_attempts,
+        reversible=False,
+        completion_policy=effect["completion_policy"],
+        compensates_effect_id=effect_id,
+    )
 
 
 def _read_effect(database_url: str, effect_id: str, project_id: str) -> dict[str, Any]:

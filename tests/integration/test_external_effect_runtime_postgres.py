@@ -16,6 +16,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     acquire_effect_dispatch,
     accept_external_effect_receipt,
     cancel_external_effect,
+    compensate_external_effect,
     dispatch_external_effect,
     heartbeat_effect_dispatch,
     plan_external_effect,
@@ -141,7 +142,7 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
             outcome="success",
             evidence={"current": True},
         )
-        self._assert_effect(effect, "SUCCEEDED", "SUCCEEDED")
+        self._assert_effect(effect, "DISPATCHED", "ACKNOWLEDGED")
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -176,7 +177,7 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
             adapter=FakeDeterministicProvider("timeout_before"),
         )
         self.assertEqual(second["outcome"], "final_failure")
-        self._assert_effect(effect, "FAILED_FINAL", "DEAD_LETTER")
+        self._assert_effect(effect, "DEAD_LETTER", "DEAD_LETTER")
 
     def test_timeout_after_effect_requires_provider_reconciliation(self) -> None:
         context = self._context()
@@ -257,6 +258,38 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
             accept_external_effect_receipt(DATABASE_URL, context, **receipt)
         self.assertEqual(conflict.exception.code, "RECEIPT_PAYLOAD_CONFLICT")
 
+    def test_callback_policy_keeps_ack_distinct_from_business_success(self) -> None:
+        context = self._context()
+        effect = self._plan(
+            context,
+            scenario="success",
+            completion_policy="callback_receipt",
+        )
+        dispatched = dispatch_external_effect(
+            DATABASE_URL,
+            context,
+            effect_id=effect,
+            worker_id="callback-dispatcher",
+            lease_seconds=30,
+            adapter=FakeDeterministicProvider("success"),
+        )
+        self.assertIsNone(dispatched["receipt"])
+        self._assert_effect(effect, "DISPATCHED", "ACKNOWLEDGED")
+        accept_external_effect_receipt(
+            DATABASE_URL,
+            context,
+            dispatch_id=dispatched["dispatch_id"],
+            provider="fake_deterministic_provider",
+            receipt_id=identifier("callback-receipt"),
+            message_id=identifier("callback-message"),
+            payload_hash="sha256:callback-final",
+            provider_correlation_id=identifier("callback-correlation"),
+            generation=1,
+            outcome="success",
+            evidence={"business_final": True},
+        )
+        self._assert_effect(effect, "SUCCEEDED", "SUCCEEDED")
+
     def test_cancel_before_dispatch_and_after_dispatch_have_distinct_outcomes(self) -> None:
         context = self._context()
         before = self._plan(context, scenario="success")
@@ -277,6 +310,75 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
             cancel_external_effect(DATABASE_URL, context, effect_id=after)["status"],
             "COMPENSATION_REQUIRED",
         )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT dispatch.status,
+                       COUNT(lease.lease_id) FILTER (WHERE lease.status = 'HELD')
+                FROM authority_external_effect_dispatch AS dispatch
+                LEFT JOIN authority_effect_dispatch_lease AS lease
+                  ON lease.dispatch_id = dispatch.dispatch_id
+                WHERE dispatch.dispatch_id = %s
+                GROUP BY dispatch.status
+                """,
+                [dispatch["dispatch_id"]],
+            )
+            self.assertEqual(cursor.fetchone(), ("CANCEL_REQUESTED", 0))
+
+    def test_adapter_exception_is_recorded_and_releases_lease(self) -> None:
+        for scenario, effect_status in (
+            ("raise_before", "FAILED_RETRYABLE"),
+            ("raise_after", "UNKNOWN"),
+        ):
+            with self.subTest(scenario=scenario):
+                context = self._context()
+                effect = self._plan(context, scenario=scenario)
+                with self.assertRaises(KernelError) as caught:
+                    dispatch_external_effect(
+                        DATABASE_URL,
+                        context,
+                        effect_id=effect,
+                        worker_id=identifier("exception-worker"),
+                        lease_seconds=30,
+                        adapter=FakeDeterministicProvider(scenario),
+                    )
+                self.assertEqual(caught.exception.code, "EFFECT_ADAPTER_EXCEPTION_RECORDED")
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT effect.status,
+                               COUNT(lease.lease_id) FILTER (WHERE lease.status = 'HELD')
+                        FROM authority_external_effect AS effect
+                        JOIN authority_external_effect_dispatch AS dispatch
+                          ON dispatch.external_effect_id = effect.external_effect_id
+                        LEFT JOIN authority_effect_dispatch_lease AS lease
+                          ON lease.dispatch_id = dispatch.dispatch_id
+                        WHERE effect.external_effect_id = %s
+                        GROUP BY effect.status
+                        """,
+                        [effect],
+                    )
+                    self.assertEqual(cursor.fetchone(), (effect_status, 0))
+
+    def test_stable_effect_key_is_scoped_by_project(self) -> None:
+        first_context = self._context()
+        second_context = self._context()
+        key = identifier("shared-effect-key")
+        effects = [
+            plan_external_effect(
+                DATABASE_URL,
+                context,
+                effect_type="provider.test",
+                provider="fake_deterministic_provider",
+                capability="provider.test",
+                stable_idempotency_key=key,
+                request_payload={"same": True},
+                max_attempts=1,
+                reversible=False,
+            )["external_effect_id"]
+            for context in (first_context, second_context)
+        ]
+        self.assertNotEqual(effects[0], effects[1])
 
     def test_local_file_adapter_executes_outside_transaction_and_is_idempotent(self) -> None:
         context = self._context()
@@ -311,6 +413,47 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
                 "durable external bytes",
             )
 
+    def test_compensation_is_a_linked_idempotent_external_effect(self) -> None:
+        context = self._context()
+        original = self._plan(context, scenario="success", reversible=True)
+        dispatch_external_effect(
+            DATABASE_URL,
+            context,
+            effect_id=original,
+            worker_id="original-dispatcher",
+            lease_seconds=30,
+            adapter=FakeDeterministicProvider("success"),
+        )
+        first = compensate_external_effect(DATABASE_URL, context, effect_id=original)
+        replay = compensate_external_effect(DATABASE_URL, context, effect_id=original)
+        self.assertFalse(first["replayed"])
+        self.assertTrue(replay["replayed"])
+        self.assertEqual(first["external_effect_id"], replay["external_effect_id"])
+        dispatch_external_effect(
+            DATABASE_URL,
+            context,
+            effect_id=first["external_effect_id"],
+            worker_id="compensation-dispatcher",
+            lease_seconds=30,
+            adapter=FakeDeterministicProvider("success"),
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT compensation.effect_type, compensation.compensates_effect_id,
+                       original.status, compensation.status
+                FROM authority_external_effect AS compensation
+                JOIN authority_external_effect AS original
+                  ON original.external_effect_id = compensation.compensates_effect_id
+                WHERE compensation.external_effect_id = %s
+                """,
+                [first["external_effect_id"]],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("external_effect.compensate", original, "COMPENSATED", "SUCCEEDED"),
+            )
+
     def _context(self) -> EffectCommandContext:
         project_id = identifier("project")
         operation_id = identifier("operation")
@@ -339,6 +482,7 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
         scenario: str,
         max_attempts: int = 3,
         reversible: bool = False,
+        completion_policy: str = "synchronous_final",
     ) -> str:
         return plan_external_effect(
             DATABASE_URL,
@@ -350,6 +494,7 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
             request_payload={"scenario": scenario},
             max_attempts=max_attempts,
             reversible=reversible,
+            completion_policy=completion_policy,
         )["external_effect_id"]
 
     def _assert_effect(self, effect_id: str, effect_status: str, dispatch_status: str) -> None:
