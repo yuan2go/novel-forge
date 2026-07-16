@@ -8,6 +8,10 @@ from uuid import uuid4
 import psycopg
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.service import (
+    AdmissionContext,
+    admit_command_in_uow,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -176,11 +180,14 @@ def coordinate_saga(
     database_url: str,
     context: GraphCommandContext,
     saga_id: str,
+    *,
+    admission_context: AdmissionContext | None = None,
 ) -> dict[str, Any]:
     _validate_context(context)
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.operation_graph
         saga = repository.saga_for_update(saga_id, context.project_id)
+        repository.synchronize_compensation_statuses(saga_id)
         steps = repository.saga_steps(saga_id)
         if saga["status"] in {"SUCCEEDED", "COMPENSATED", "COMPENSATION_FAILED", "CANCELLED"}:
             return _saga_result(saga["status"], steps)
@@ -230,6 +237,21 @@ def coordinate_saga(
                         lease["fencing_token"],
                     )
                 changed = True
+            else:
+                graph = _build_graph(
+                    repository,
+                    context.project_id,
+                    saga["root_operation_id"],
+                )
+                for operation_id in repository.set_ready(graph["ready"]):
+                    _record_operation_transition(
+                        repository,
+                        context,
+                        operation_id,
+                        "READY",
+                        lease["fencing_token"],
+                    )
+                steps = repository.saga_steps(saga_id)
         elif any(step["status"] == "FAILED_RETRYABLE" for step in steps):
             recovered = repository.recover_forward(
                 [step["operation_id"] for step in steps if step["status"] == "FAILED_RETRYABLE"]
@@ -259,6 +281,16 @@ def coordinate_saga(
             repository.update_saga(saga_id, saga["version"], target_status)
             changed = True
             steps = repository.saga_steps(saga_id)
+            if compensatable and admission_context is not None:
+                _admit_saga_compensation_children(
+                    uow,
+                    repository,
+                    context,
+                    saga,
+                    steps,
+                    admission_context,
+                )
+                steps = repository.saga_steps(saga_id)
         elif steps and all(step["status"] == "SUCCEEDED" for step in steps):
             target_status = "SUCCEEDED"
             repository.update_saga(saga_id, saga["version"], target_status)
@@ -442,6 +474,78 @@ def _record_operation_transition(
             "coordinator_fencing_token": fencing_token,
         },
     )
+
+
+def _admit_saga_compensation_children(
+    uow: AuthorityUnitOfWork,
+    repository: Any,
+    context: GraphCommandContext,
+    saga: dict[str, Any],
+    steps: list[dict[str, Any]],
+    admission_context: AdmissionContext,
+) -> None:
+    previous_compensation_id = ""
+    for step in reversed(steps):
+        if step["compensation_status"] not in {"REQUIRED", "COMPENSATING"}:
+            continue
+        if step["compensation_operation_id"]:
+            previous_compensation_id = str(step["compensation_operation_id"])
+            continue
+        definition_name = str(step["compensation_definition"])
+        definition_version = repository.latest_definition_version(definition_name)
+        definition = uow.repositories.definitions.get(definition_name, definition_version)
+        if definition is None:
+            raise KernelError(
+                "OPERATION_DEFINITION_NOT_FOUND",
+                "saga compensation definition disappeared during admission",
+            )
+        command = {
+            "definition_name": definition_name,
+            "definition_version": definition_version,
+            "project_id": context.project_id,
+            "workspace_id": f"workspace:{context.project_id}",
+            "actor_id": admission_context.actor_id,
+            "idempotency_scope": definition["idempotency_scope"],
+            "idempotency_key": f"saga:{saga['saga_id']}:compensate:{step['step_key']}",
+            "trace_id": context.trace_id,
+            "span_id": str(uuid4()),
+            "correlation_id": context.correlation_id,
+            "causation_id": step["operation_id"],
+            "parent_operation_id": step["operation_id"],
+            "root_operation_id": saga["root_operation_id"],
+            "causation_operation_id": step["operation_id"],
+            "input": {"value": f"compensate:{step['step_key']}"},
+            "input_assets": [],
+            "metadata": {
+                "operation_role": "saga_compensation",
+                "saga_id": saga["saga_id"],
+                "step_key": step["step_key"],
+            },
+        }
+        admitted = admit_command_in_uow(uow, command, context=admission_context)
+        compensation_id = str(admitted["operation_id"])
+        repository.attach_compensation_operation(step["operation_id"], compensation_id)
+        if previous_compensation_id:
+            repository.add_dependency(
+                compensation_id,
+                previous_compensation_id,
+                "ON_SUCCESS",
+            )
+        _record(
+            repository,
+            context,
+            saga["root_operation_id"],
+            "authority.saga.compensation_child_admitted",
+            {
+                "saga_id": saga["saga_id"],
+                "step_operation_id": step["operation_id"],
+                "compensation_operation_id": compensation_id,
+                "replayed": admitted["replayed"],
+            },
+            aggregate_type="authority_saga",
+            aggregate_id=saga["saga_id"],
+        )
+        previous_compensation_id = compensation_id
 
 
 def _validate_context(context: GraphCommandContext) -> None:

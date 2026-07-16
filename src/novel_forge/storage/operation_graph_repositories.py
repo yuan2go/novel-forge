@@ -39,6 +39,25 @@ class OperationGraphRepository:
         )
         return dict(zip(fields, row, strict=True))
 
+    def latest_definition_version(self, name: str) -> str:
+        self.cursor.execute(
+            """
+            SELECT definition_version
+            FROM authority_operation_definition
+            WHERE name = %s AND enabled = TRUE
+            ORDER BY created_at DESC, definition_version DESC
+            LIMIT 1
+            """,
+            [name],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "OPERATION_DEFINITION_NOT_FOUND",
+                "saga compensation definition is not registered",
+            )
+        return str(row[0])
+
     def add_dependency(self, operation_id: str, depends_on: str, condition: str) -> bool:
         self.cursor.execute(
             """
@@ -271,10 +290,13 @@ class OperationGraphRepository:
             """
             SELECT step.operation_id, step.step_key, step.ordinal,
                    step.compensation_definition, step.compensation_status,
-                   operation.status
+                   operation.status, step.compensation_operation_id,
+                   compensation.status
             FROM authority_saga_step AS step
             JOIN authority_operation AS operation
               ON operation.operation_id = step.operation_id
+            LEFT JOIN authority_operation AS compensation
+              ON compensation.operation_id = step.compensation_operation_id
             WHERE step.saga_id = %s
             ORDER BY step.ordinal
             FOR UPDATE OF step, operation
@@ -288,6 +310,8 @@ class OperationGraphRepository:
             "compensation_definition",
             "compensation_status",
             "status",
+            "compensation_operation_id",
+            "compensation_operation_status",
         )
         return [dict(zip(fields, row, strict=True)) for row in self.cursor.fetchall()]
 
@@ -301,6 +325,49 @@ class OperationGraphRepository:
             WHERE operation_id = ANY(%s) AND compensation_status = 'NOT_REQUIRED'
             """,
             [operation_ids],
+        )
+
+    def attach_compensation_operation(
+        self,
+        operation_id: str,
+        compensation_operation_id: str,
+    ) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_saga_step
+            SET compensation_operation_id = %s,
+                compensation_status = 'COMPENSATING'
+            WHERE operation_id = %s
+              AND compensation_status IN ('REQUIRED', 'COMPENSATING')
+              AND (
+                  compensation_operation_id IS NULL
+                  OR compensation_operation_id = %s
+              )
+            """,
+            [compensation_operation_id, operation_id, compensation_operation_id],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "SAGA_COMPENSATION_CHILD_CONFLICT",
+                "saga step is already bound to another compensation child",
+            )
+
+    def synchronize_compensation_statuses(self, saga_id: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_saga_step AS step
+            SET compensation_status = CASE
+                WHEN operation.status = 'SUCCEEDED' THEN 'COMPENSATED'
+                WHEN operation.status IN ('FAILED_FINAL', 'DEAD_LETTER')
+                    THEN 'COMPENSATION_FAILED'
+                ELSE step.compensation_status
+            END
+            FROM authority_operation AS operation
+            WHERE step.saga_id = %s
+              AND step.compensation_operation_id = operation.operation_id
+              AND step.compensation_status = 'COMPENSATING'
+            """,
+            [saga_id],
         )
 
     def recover_forward(self, operation_ids: list[str]) -> list[str]:

@@ -346,6 +346,125 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
         )
         self.assertEqual(coordinate_saga(DATABASE_URL, graph_context, saga_id)["status"], "SUCCEEDED")
 
+    def test_saga_admits_and_completes_compensation_child_through_kernel(self) -> None:
+        context, root, children = self._graph_fixture(2, root_status="EXECUTING")
+        completed_step, failed_step = children
+        compensation = definition_payload(identifier("saga-compensation-definition"))
+        compensation["completion_contract"] = {}
+        compensation["idempotency_scope"] = "operation:compensation"
+        compensation["concurrency_key_template"] = "operation:{parent_operation_id}:compensation"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.repositories.definitions.register(compensation)
+            uow.commit()
+        admission = AdmissionContext(
+            actor_id="saga-compensator",
+            permissions=frozenset(compensation["permissions"]),
+            available_handlers=frozenset({compensation["handler_key"]}),
+            application_build_id="saga-compensation-test",
+            commit_sha="c" * 40,
+        )
+        saga_id = start_saga(DATABASE_URL, context, root_operation_id=root)["saga_id"]
+        register_saga_step(
+            DATABASE_URL,
+            context,
+            saga_id,
+            completed_step,
+            "completed",
+            1,
+            compensation["name"],
+        )
+        register_saga_step(
+            DATABASE_URL,
+            context,
+            saga_id,
+            failed_step,
+            "failed",
+            2,
+            "",
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status = 'SUCCEEDED' WHERE operation_id = %s",
+                [completed_step],
+            )
+            cursor.execute(
+                "UPDATE authority_operation SET status = 'FAILED_FINAL' WHERE operation_id = %s",
+                [failed_step],
+            )
+        planned = coordinate_saga(
+            DATABASE_URL,
+            context,
+            saga_id,
+            admission_context=admission,
+        )
+        self.assertEqual(planned["status"], "COMPENSATING")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT compensation_operation_id
+                FROM authority_saga_step WHERE operation_id = %s
+                """,
+                [completed_step],
+            )
+            compensation_operation_id = cursor.fetchone()[0]
+            self.assertTrue(compensation_operation_id)
+        coordinate_saga(
+            DATABASE_URL,
+            context,
+            saga_id,
+            admission_context=admission,
+        )
+        attempt_id = create_attempt(
+            DATABASE_URL,
+            operation_id=compensation_operation_id,
+            project_id=context.project_id,
+            max_attempts=1,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )["attempt_id"]
+        queue_attempt(
+            DATABASE_URL,
+            attempt_id=attempt_id,
+            project_id=context.project_id,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        lease = acquire_attempt_lease(
+            DATABASE_URL,
+            attempt_id=attempt_id,
+            project_id=context.project_id,
+            worker_id="saga-compensation-worker",
+            lease_seconds=30,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        worker = WorkerLeaseCommand(
+            attempt_id=attempt_id,
+            project_id=context.project_id,
+            worker_id="saga-compensation-worker",
+            fencing_token=lease["fencing_token"],
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+        start_attempt(DATABASE_URL, worker)
+        submit_attempt_result(
+            DATABASE_URL,
+            WorkerResultCommand(
+                **worker.__dict__,
+                expected_operation_version=2,
+                expected_operation_status="EXECUTING",
+            ),
+            outcome="success",
+            result={"compensated": True},
+        )
+        result = coordinate_saga(
+            DATABASE_URL,
+            context,
+            saga_id,
+            admission_context=admission,
+        )
+        self.assertEqual(result["status"], "COMPENSATED")
+
     def _graph_fixture(
         self,
         child_count: int,
