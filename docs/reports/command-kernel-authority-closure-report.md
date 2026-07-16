@@ -2,6 +2,10 @@
 
 Date: 2026-07-16
 
+Follow-up: deterministic PostgreSQL-only single-chapter slice and Catalog
+integration implemented through source commit
+`87e68b3a1b01362c0578dca573d4801c5c6c8abc`.
+
 ## 1. Baseline
 
 - Branch: `feat/v7-content-intelligence-and-longform-proof`
@@ -16,18 +20,19 @@ Current Authority coverage:
 
 | Measure | Result |
 |---|---:|
-| OperationDefinitions | 84 |
+| OperationDefinitions | 93 |
 | Entrypoint-mapped definitions | 17 |
+| Implemented chapter authority definitions | 9 |
 | Migration candidates | 67 |
-| Families | 19 |
-| Receiver-aware findings / legacy actions | 2,125 |
-| Mapped side effects | 480 |
+| Families | 20 |
+| Receiver-aware findings / legacy actions | 2,127 |
+| Mapped side effects | 482 |
 | Unmapped side effects | 0 |
 | Unknown classifications | 4 |
 
-The prior `63 / 17 / 46` catalog was stale. The refreshed artifacts are bound to
-source commit `950d13b` and source tree
-`8819cea29da045ebf59f99e9c00376fb2634fb57`.
+The prior `63 / 17 / 46` catalog was stale. The latest refreshed artifacts are
+bound to source commit `87e68b3` and source tree
+`24d1abae066a35de6a01791f50074631b334dfe9`.
 
 ## 2. Fixed Problems
 
@@ -135,7 +140,7 @@ source commit `950d13b` and source tree
 | Saga lease | Partially Completed | Per-tick fencing exists; a long-running coordinator heartbeat/takeover command is not yet exposed. |
 | Unified Operation transitions | Partially Completed | Saga repository updates now emit evidence, but `set_ready()` and `complete_root()` are not yet routed through the shared lifecycle CAS service. |
 | Authority/projection migration | Partially Completed | The target boundary is documented; legacy runtimes remain operational. |
-| PostgreSQL-only chapter slice | Deferred | Evidence contract/runbook exists; node handlers and migration adapters are not implemented end to end. |
+| PostgreSQL-only chapter slice | Completed deterministic foundation | Root/eight node definitions, typed handlers, fenced idempotent output materialization, dynamic Saga admission, retry recovery, Generic ExternalEffect Export, verified Blob binding, and evidence manifest are implemented. Real-provider handler adapters remain. |
 | High-cost long-form proof | Deferred | Intentionally not run in this architecture-fix round. |
 
 ## 4. Tests
@@ -157,6 +162,17 @@ Final successful commands:
 | `make validate` | passed | 0 | n/a |
 | `make check-skills` | passed | 0 | n/a |
 | `git diff --check` | passed | 0 | n/a |
+
+Single-chapter follow-up verification:
+
+| Command/suite | Passed | Failed | Skipped |
+|---|---:|---:|---:|
+| chapter authority definition unit tests | 4 | 0 | 0 |
+| fenced chapter handler PostgreSQL runtime | 1 | 0 | 0 |
+| PostgreSQL-only chapter slice (success + recovery probe) | 2 | 0 | 0 |
+| updated Authority PostgreSQL script | 88 | 0 | 0 |
+| Completion + Saga + chapter slice regression | 14 | 0 | 0 |
+| full unittest discovery | 948 | 0 | none reported |
 
 Two failures were found and corrected during development:
 
@@ -194,11 +210,13 @@ claim PostgreSQL-only production authority across the application.
   still have compatibility/runtime write responsibilities rather than being
   purely rebuildable projections.
 
-### Next PostgreSQL vertical slice
+### First PostgreSQL vertical slice
 
-One deterministic chapter from ChapterPlan through ContextBundle, Draft,
-Review, Revision, Canon, Quality Gate, and Export, using fake provider/object
-store adapters and operation-scoped output evidence.
+One deterministic chapter now passes from ChapterPlan through ContextBundle,
+Draft, Review, Revision, Canon, Quality Gate, and Export using a fake provider,
+Generic ExternalEffect object-store protocol, and operation-scoped output
+evidence. LocalStorage is not imported by the slice. This does not yet migrate
+the legacy production services or prove a real provider.
 
 ## 6. Architecture Review
 
@@ -225,16 +243,14 @@ store adapters and operation-scoped output evidence.
 
 The single highest-priority remaining package is:
 
-**The first PostgreSQL-only single-chapter handler slice.**
+**The first production-provider PostgreSQL-native chapter handler adapter.**
 
 It should:
 
-1. register the ChapterPlan, ContextBundle, Draft, Review, Revision, Canon,
-   Quality Gate, and Export definitions and compensation definitions;
-2. wrap existing domain services in focused handlers without LocalStorage
-   becoming the new command authority;
-3. bind every output AssetVersion to its producing Operation;
-4. run one deterministic chapter through Attempt/Completion and the fenced Saga;
-5. inject retry, UNKNOWN reconciliation, and one compensation path;
-6. emit the evidence manifest defined by the runbook;
-7. keep 30/50/100 chapter proof deferred until this fixture passes.
+1. replace one deterministic model-producing handler with an explicit provider
+   Effect/receipt adapter and schema-validated output;
+2. persist AgentRun/model-call/cost evidence and ContextBundle identity without
+   introducing LocalStorage command writes;
+3. retain the same OperationDefinition, Attempt fencing, output binding,
+   Completion, retry, reconciliation, and evidence-manifest contracts;
+4. run only the one-chapter bounded proof before considering 30/50/100 chapters.

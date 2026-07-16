@@ -1,6 +1,6 @@
 # PostgreSQL OperationDefinition Catalog
 
-Receiver-aware generated candidate catalog. Definitions remain disabled until their PostgreSQL acceptance gate passes.
+Receiver-aware generated catalog. Candidate definitions remain disabled until their PostgreSQL acceptance gate passes; implemented definitions preserve their runtime contract.
 
 | Name | Family | Mode | Entrypoints | Migration |
 |---|---|---|---:|---|
@@ -20,9 +20,9 @@ Receiver-aware generated candidate catalog. Definitions remain disabled until th
 | `agent.retry` | `agent` | `saga` | 0 | `candidate` |
 | `agent.recover` | `agent` | `saga` | 0 | `candidate` |
 | `agent.dead_letter.replay` | `agent` | `saga` | 0 | `candidate` |
-| `review.run` | `review` | `worker` | 23 | `entrypoint_mapped` |
+| `review.run` | `review` | `worker` | 24 | `entrypoint_mapped` |
 | `review.resolve_issue` | `review` | `worker` | 0 | `candidate` |
-| `revision.apply` | `revision` | `transactional` | 23 | `entrypoint_mapped` |
+| `revision.apply` | `revision` | `transactional` | 24 | `entrypoint_mapped` |
 | `publishing.prepare_release` | `publishing` | `transactional` | 0 | `candidate` |
 | `publishing.submit` | `publishing` | `external` | 14 | `entrypoint_mapped` |
 | `publishing.receipt.record` | `publishing` | `transactional` | 1 | `entrypoint_mapped` |
@@ -88,3 +88,12 @@ Receiver-aware generated candidate catalog. Definitions remain disabled until th
 | `external_effect.reconcile` | `external_effect` | `external` | 0 | `candidate` |
 | `external_effect.compensate` | `external_effect` | `external` | 0 | `candidate` |
 | `external_effect.cancel` | `external_effect` | `transactional` | 0 | `candidate` |
+| `chapter.slice.run` | `chapter_authority` | `saga` | 1 | `implemented` |
+| `chapter.plan.materialize` | `chapter_authority` | `worker` | 0 | `implemented` |
+| `chapter.context.build` | `chapter_authority` | `worker` | 0 | `implemented` |
+| `chapter.draft.generate` | `chapter_authority` | `worker` | 0 | `implemented` |
+| `chapter.review.evaluate` | `chapter_authority` | `worker` | 0 | `implemented` |
+| `chapter.revision.apply` | `chapter_authority` | `worker` | 0 | `implemented` |
+| `chapter.canon.update` | `chapter_authority` | `worker` | 0 | `implemented` |
+| `chapter.quality.evaluate` | `chapter_authority` | `worker` | 0 | `implemented` |
+| `chapter.export.render` | `chapter_authority` | `worker` | 0 | `implemented` |

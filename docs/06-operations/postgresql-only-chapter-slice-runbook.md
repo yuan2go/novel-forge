@@ -1,6 +1,6 @@
 # PostgreSQL-only Single-Chapter Slice Runbook
 
-Status: readiness contract; execution deferred until the remaining handlers are implemented.
+Status: deterministic PostgreSQL-only handler proof implemented; real-provider and long-form proofs remain deferred.
 
 ## Scope
 
@@ -50,6 +50,19 @@ worker result alone is insufficient.
 5. Provide an isolated PostgreSQL database and deterministic fake provider for
    the fixture proof.
 
+The repository now provides these prerequisites through:
+
+- `novel_forge.modules.chapter_authority.definitions` for the root and eight
+  versioned node definitions;
+- `novel_forge.modules.chapter_authority.handlers` for the typed handler port
+  and deterministic fixture handlers;
+- `novel_forge.modules.chapter_authority.runtime` for fenced, idempotent,
+  operation-scoped output materialization;
+- `novel_forge.modules.chapter_authority.orchestrator` for dynamic standard
+  admission, Attempt execution, Saga coordination, recovery, and Export delivery;
+- `novel_forge.modules.chapter_authority.evidence` for the read-only evidence
+  manifest.
+
 ## Acceptance harness design
 
 The fixture harness must:
@@ -66,7 +79,39 @@ The fixture harness must:
 
 ## Current blockers
 
-- Node-specific PostgreSQL handlers for the whole chapter chain are not yet implemented.
-- Existing Chapter Production Bus and related services still write LocalStorage business assets.
-- Saga compensation children are admitted through the standard Command Kernel when the coordinator receives an authenticated `AdmissionContext`; chapter-node compensation definitions still need to be registered.
-- No PostgreSQL-only single-chapter fixture has therefore been claimed as passed.
+The deterministic fixture proof is implemented and passes without LocalStorage
+or a real model provider. It proves:
+
+- one root plus eight child Operations use standard admission;
+- all child outputs are ACTIVE/ELIGIBLE/CLEAR AssetVersions bound to their
+  producing Operation with content hashes and latest effective qualification;
+- Attempts use leases and fencing, including one injected Draft crash followed
+  by Saga `FORWARD_RECOVERY` and a second Attempt;
+- Export uses the Generic ExternalEffect dispatcher, records a post-send
+  `UNKNOWN`, blocks blind retry, records ambiguous reconciliation, rejects a
+  stale dispatch result, replays a duplicate receipt, verifies the Blob, and
+  binds it to the Export AssetVersion before Completion;
+- the root succeeds only after every child Completion Contract is satisfied.
+
+Run the bounded proof with the isolated PostgreSQL test service:
+
+```bash
+make postgres-authority-test-up
+NOVEL_FORGE_DATABASE_URL=postgresql://novel_forge:novel_forge@127.0.0.1:55432/novel_forge_authority_test \
+  .venv/bin/python -m unittest tests.integration.test_postgresql_only_chapter_slice -v
+make postgres-authority-test-down
+```
+
+Remaining blockers for a production provider-backed slice:
+
+- the deterministic fixture handlers do not call a model and are not proof of
+  prose quality or provider readiness;
+- the existing Chapter Production Bus and related services still write
+  LocalStorage business assets and have not been converted into projections;
+- production handler adapters must preserve AgentRun, ContextBundle,
+  model-call, cost-ledger, ReviewIssue, Canon, and publish-gate contracts without
+  restoring LocalStorage as command authority;
+- automatic compensation is intentionally not declared for append-only chapter
+  evidence; a production object-store retention/cleanup policy remains a
+  separate design decision;
+- no 30/50/100-chapter or real-provider run is claimed.

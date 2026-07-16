@@ -1,6 +1,6 @@
 # PostgreSQL-only Single-Chapter Handler Slice Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Implement the runbook's deterministic one-project, one-chapter PostgreSQL-only handler chain from ChapterPlan through verified Export Blob without using LocalStorage as command authority.
 
@@ -31,19 +31,19 @@
 - Produces: `ChapterNode`, `ChapterHandlerRequest`, `ChapterHandlerOutput`, `ChapterHandlerRegistry`, `chapter_operation_definitions()`.
 - Consumes: the existing OperationDefinition repository contract.
 
-- [ ] **Step 1: Write failing catalog and registry tests**
+- [x] **Step 1: Write failing catalog and registry tests**
 
 Assert the eight ordered node definitions have closed command schemas, unique handler keys, frozen completion contracts, output selectors, and explicit compensation metadata where applicable. Assert duplicate or missing registry handlers fail closed.
 
-- [ ] **Step 2: Run the focused unit test and verify RED**
+- [x] **Step 2: Run the focused unit test and verify RED**
 
 Run: `.venv/bin/python -m unittest tests.unit.test_chapter_authority_definitions -v`
 
-- [ ] **Step 3: Implement immutable contracts, catalog, and fail-closed registry**
+- [x] **Step 3: Implement immutable contracts, catalog, and fail-closed registry**
 
 Use `dataclass(frozen=True, slots=True)`, `Protocol`, explicit node enums, version `1.0.0`, and no runtime imports of LocalStorage or model adapters.
 
-- [ ] **Step 4: Run the focused unit test and verify GREEN**
+- [x] **Step 4: Run the focused unit test and verify GREEN**
 
 Run: `.venv/bin/python -m unittest tests.unit.test_chapter_authority_definitions -v`
 
@@ -59,19 +59,19 @@ Run: `.venv/bin/python -m unittest tests.unit.test_chapter_authority_definitions
 - Consumes: `WorkerLeaseCommand`, a registered handler, frozen operation input snapshots.
 - Produces: `execute_chapter_handler(...) -> ChapterExecutionResult` and one idempotent authoritative output binding.
 
-- [ ] **Step 1: Write a failing PostgreSQL handler-runtime test**
+- [x] **Step 1: Write a failing PostgreSQL handler-runtime test**
 
 Admit a node, create/lease/start an Attempt, execute a handler, and assert one ACTIVE/ELIGIBLE/CLEAR AssetVersion, latest ELIGIBLE qualification, operation output binding, handler audit, and handler outbox record. Replay with the same fenced execution and assert no duplicate output.
 
-- [ ] **Step 2: Run the focused PostgreSQL test and verify RED**
+- [x] **Step 2: Run the focused PostgreSQL test and verify RED**
 
 Run: `NOVEL_FORGE_DATABASE_URL=postgresql://novel_forge@127.0.0.1:55432/novel_forge_authority_test .venv/bin/python -m unittest tests.integration.test_chapter_authority_runtime_postgres -v`
 
-- [ ] **Step 3: Implement the repository/runtime transaction**
+- [x] **Step 3: Implement the repository/runtime transaction**
 
 Lock the Attempt and Operation, validate the current fencing token, load only the frozen input AssetVersions, execute the typed handler outside neither project nor operation scope, derive stable IDs/content hash, and atomically insert or replay Asset, AssetVersion, qualification, binding, StateEvent, AuditLog, and Outbox.
 
-- [ ] **Step 4: Run the focused PostgreSQL test and verify GREEN**
+- [x] **Step 4: Run the focused PostgreSQL test and verify GREEN**
 
 Run the command from Step 2.
 
@@ -86,19 +86,19 @@ Run the command from Step 2.
 - Consumes: `ChapterContentProvider` and existing admission/Attempt/Completion/Saga services.
 - Produces: `run_single_chapter_slice(...) -> ChapterSliceResult` for ChapterPlan, ContextBundle, Draft, Review, Revision, Canon, Quality Gate, and Export.
 
-- [ ] **Step 1: Write the failing end-to-end deterministic fixture test**
+- [x] **Step 1: Write the failing end-to-end deterministic fixture test**
 
 Run one chapter with a fake provider; assert every child followed admission/Attempt/Completion, every output is operation-bound, dependencies are linear, the root/Saga succeed, review evidence drives revision, and no LocalStorage/`nf_*` rows are used as authority.
 
-- [ ] **Step 2: Run the focused integration test and verify RED**
+- [x] **Step 2: Run the focused integration test and verify RED**
 
 Run: `NOVEL_FORGE_DATABASE_URL=postgresql://novel_forge@127.0.0.1:55432/novel_forge_authority_test .venv/bin/python -m unittest tests.integration.test_postgresql_only_chapter_slice -v`
 
-- [ ] **Step 3: Implement handlers and dynamic child admission**
+- [x] **Step 3: Implement handlers and dynamic child admission**
 
 Admit the root, start the Saga, then for each node admit a child with upstream content hashes frozen in `input_asset_snapshot`, register the step/dependency, let the fenced coordinator set READY, run a leased Attempt, materialize output, and submit Completion. Inject a single retryable pre-output failure through the public Attempt result path and let Saga forward recovery create the next Attempt.
 
-- [ ] **Step 4: Run the focused integration test and verify GREEN**
+- [x] **Step 4: Run the focused integration test and verify GREEN**
 
 Run the command from Step 2.
 
@@ -113,19 +113,19 @@ Run the command from Step 2.
 - Consumes: injected Generic ExternalEffect adapter and existing Blob commands.
 - Produces: verified Export Blob binding and `build_chapter_slice_evidence_manifest(...)`.
 
-- [ ] **Step 1: Extend the fixture test for upload/reconciliation evidence**
+- [x] **Step 1: Extend the fixture test for upload/reconciliation evidence**
 
 Assert export reserves a Blob, plans one project-scoped upload Effect, records a post-send UNKNOWN outcome, blocks retry in reconciliation, accepts a reconciled receipt, rejects stale fencing, replays duplicate receipt safely, verifies/binds the Blob, and only then completes Export/root.
 
-- [ ] **Step 2: Run the focused integration test and verify RED**
+- [x] **Step 2: Run the focused integration test and verify RED**
 
 Run the Task 3 command.
 
-- [ ] **Step 3: Implement export delivery and the read-only evidence manifest**
+- [x] **Step 3: Implement export delivery and the read-only evidence manifest**
 
 Use the Generic ExternalEffect adapter/receipt/reconciliation services only. The manifest must contain root/Saga status, definitions, Operations, Attempts, output hashes, qualifications, Blob/effect/receipt states, and counts for StateEvent/Audit/Outbox without mutating runtime state.
 
-- [ ] **Step 4: Run the focused integration test and verify GREEN**
+- [x] **Step 4: Run the focused integration test and verify GREEN**
 
 Run the Task 3 command.
 
@@ -139,18 +139,18 @@ Run the Task 3 command.
 **Interfaces:**
 - Produces: accurate implementation status, runtime command, limitations, and future production-provider migration boundary.
 
-- [ ] **Step 1: Update docs from readiness-only to implemented deterministic proof**
+- [x] **Step 1: Update docs from readiness-only to implemented deterministic proof**
 
 Keep real-provider and long-form proof explicitly unclaimed.
 
-- [ ] **Step 2: Run targeted and Authority regressions**
+- [x] **Step 2: Run targeted and Authority regressions**
 
 Run the two new test modules, `python scripts/run_authority_postgres_tests.py`, related architecture tests, `make lint`, `make validate`, `make check-skills`, and `git diff --check`.
 
-- [ ] **Step 3: Review the complete diff against AGENTS.md and the runbook**
+- [x] **Step 3: Review the complete diff against AGENTS.md and the runbook**
 
 Check for LocalStorage writes, direct SQL lifecycle mutation in behavioral tests, missing fencing, non-idempotent outputs, provider fallback, missing trace/cost evidence, and premature root success.
 
-- [ ] **Step 4: Commit implementation and documentation intentionally**
+- [x] **Step 4: Commit implementation and documentation intentionally**
 
 Create small commits for contracts/runtime, slice proof, and documentation/evidence.

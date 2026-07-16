@@ -1,14 +1,14 @@
 # PostgreSQL Authority Coverage Baseline
 
-Generated: 2026-07-16 21:17 Asia/Shanghai
+Generated: 2026-07-16 22:43 Asia/Shanghai
 
 This Markdown summary describes the machine-generated artifacts at the current
 Command Kernel source snapshot. The JSON files remain authoritative.
 
 ## Snapshot binding
 
-- Source commit: `950d13b5fd0671f9b457b18049a8f6f354d4fded`
-- Source tree SHA: `8819cea29da045ebf59f99e9c00376fb2634fb57`
+- Source commit: `87e68b3a1b01362c0578dca573d4801c5c6c8abc`
+- Source tree SHA: `24d1abae066a35de6a01791f50074631b334dfe9`
 - Binding: latest commit affecting `src/novel_forge` plus the exact working-tree source hash
 - Generator: `2.1.0`
 - Scan rule: `receiver-aware-v2`
@@ -22,27 +22,28 @@ still changes the binding and fails the architecture check.
 
 | Measure | Current value |
 |---|---:|
-| Python files scanned | 423 |
-| Files with findings | 200 |
-| Receiver-aware findings / legacy actions | 2,125 |
-| Owner symbols | 1,452 |
+| Python files scanned | 432 |
+| Files with findings | 201 |
+| Receiver-aware findings / legacy actions | 2,127 |
+| Owner symbols | 1,454 |
 | Authority writes | 380 |
 | Authority reads | 1,642 |
-| External effects | 37 |
+| External effects | 39 |
 | Fallback paths | 46 |
 | Sync paths | 13 |
 | Export paths | 3 |
 | Unknown classifications | 4 |
-| Mapped side effects | 480 |
+| Mapped side effects | 482 |
 | Unmapped side effects | 0 |
 
 ## OperationDefinition catalog
 
-The current catalog contains **84** definitions across **19** families:
+The current catalog contains **93** definitions across **20** families:
 
 - **17** definitions have mapped current entrypoints;
+- **9** PostgreSQL-only `chapter_authority` definitions are implemented;
 - **67** remain migration candidates;
-- the new `asset`, `blob`, and `external_effect` families are included.
+- the `asset`, `blob`, `external_effect`, and `chapter_authority` families are included.
 
 The previous `63 definitions / 17 mapped / 46 candidate` statement is stale
 and must not be used as current evidence.
@@ -55,5 +56,5 @@ and must not be used as current evidence.
 
 The coverage manifest reports no unmapped side effects. This means the static
 inventory has an assigned migration action and target definition; it does not
-mean all 84 definitions are enabled or that LocalStorage is no longer a
+mean all 93 definitions are enabled or that LocalStorage is no longer a
 production authority. Runtime migration status remains separately governed.

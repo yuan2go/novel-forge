@@ -74,11 +74,29 @@ not final business success unless the frozen completion policy is
 `synchronous_final`, in which case the runtime still materializes a verified
 receipt through the same inbox path.
 
+## First vertical slice boundary
+
+The deterministic PostgreSQL-only single-chapter handler slice is implemented
+under `src/novel_forge/modules/chapter_authority/`. It owns one Saga root and
+eight standard child Operations for ChapterPlan, ContextBundle, Draft, Review,
+Revision, Canon, Quality Gate, and Export. Its handler boundary is pure: handler
+code returns typed output descriptions while the authority runtime alone owns
+AssetVersion materialization, qualification, output binding, Completion, and
+evidence writes. Export bytes use the Generic ExternalEffect/Blob path.
+
+This is a bounded authority proof, not a claim that legacy production is
+migrated. Its deterministic provider records `real_model_call=false`; it does
+not call model adapters or write model-call/cost ledgers because no model call
+occurs. Production provider handlers must use explicit provider effects and
+AgentRun/cost evidence rather than replacing the fixture provider silently.
+
 ## Remaining migration boundary
 
-The first PostgreSQL-only business vertical slice is not yet complete. Saga
-compensation children now use standard admission, reverse dependencies,
-Attempt/Completion, and fenced coordination. Chapter
-Plan, ContextBundle, Draft, Review, Revision, Canon, Quality Gate, and Export
-handlers still need operation definitions and migration adapters that invoke
-existing domain services without restoring LocalStorage as command authority.
+Saga compensation children use standard admission, reverse dependencies,
+Attempt/Completion, and fenced coordination. The existing Chapter Production
+Bus, Context Builder, Draft, Review/Revision, Canon, Quality, and Publishing
+services remain LocalStorage-authoritative and are not called by the new slice.
+The next migration step is to replace one deterministic handler at a time with
+a PostgreSQL-native adapter to the corresponding domain capability while
+keeping LocalStorage and `nf_*` tables projection-only. No real-provider or
+long-form acceptance is currently claimed.

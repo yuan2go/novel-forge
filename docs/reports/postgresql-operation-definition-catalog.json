@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:6e08d08fa9caa9c1c055c7319a3755423a6d1383cd1e5ca3d2f6cc0a108e169c",
+  "artifact_hash": "sha256:32b00e6a5c28d8df99b5bcd8ccaff1c881ace9689feab07cfc7af731408e78cf",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "950d13b5fd0671f9b457b18049a8f6f354d4fded",
+  "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
   "definitions": [
     {
       "approval_policy": {
@@ -1613,6 +1613,7 @@
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.review",
         "novel_forge.modules.agent_scheduler.service._create_revision_task_from_review_issue",
         "novel_forge.modules.agent_scheduler.service._run_preview_provider_fallback",
+        "novel_forge.modules.chapter_authority.handlers._ReviewHandler.execute",
         "novel_forge.modules.evaluation_center.service._run_adapter",
         "novel_forge.modules.loop_kernel.service._loop_re_review",
         "novel_forge.modules.loop_kernel.service._loop_review_run",
@@ -1639,7 +1640,8 @@
         "novel_forge.modules.provider_fallback.preview_provider_fallback",
         "novel_forge.storage.local.LocalStorage.write_asset",
         "novel_forge.storage.local.LocalStorage.write_json",
-        "preview_provider_fallback"
+        "preview_provider_fallback",
+        "self.provider.review"
       ],
       "definition_version": "1.0.0-candidate.1",
       "execution_mode": "worker",
@@ -1832,6 +1834,7 @@
       "current_entrypoints": [
         "novel_forge.api.services.product.apply_revision_plan",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.revise",
+        "novel_forge.modules.chapter_authority.handlers._RevisionHandler.execute",
         "novel_forge.modules.editor.service._annotate_apply_editor_patch_metadata",
         "novel_forge.modules.editor.service._fallback_revision_execution_packet",
         "novel_forge.modules.editor.service._fallback_revision_operations",
@@ -1864,7 +1867,8 @@
         "novel_forge.model_adapters.base.ModelAdapter.revise",
         "novel_forge.storage.local.LocalStorage.write_asset",
         "novel_forge.storage.local.LocalStorage.write_asset_auto",
-        "novel_forge.storage.local.LocalStorage.write_json"
+        "novel_forge.storage.local.LocalStorage.write_json",
+        "self.provider.revise"
       ],
       "definition_version": "1.0.0-candidate.1",
       "execution_mode": "transactional",
@@ -8385,10 +8389,1019 @@
         "lease_timeout_seconds": 10,
         "operation_timeout_seconds": 10
       }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_children"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "chapter.slice.run.command.v1",
+      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_child_operations": [
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "definition_name": "chapter.plan.materialize"
+          },
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "definition_name": "chapter.context.build"
+          },
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "definition_name": "chapter.draft.generate"
+          },
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "definition_name": "chapter.review.evaluate"
+          },
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "definition_name": "chapter.revision.apply"
+          },
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "definition_name": "chapter.canon.update"
+          },
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "definition_name": "chapter.quality.evaluate"
+          },
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "definition_name": "chapter.export.render"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "chapter.slice.run.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice:root",
+      "current_entrypoints": [
+        "novel_forge.modules.chapter_authority.run_single_chapter_slice"
+      ],
+      "current_handlers": [
+        "novel_forge.chapter_authority.root"
+      ],
+      "definition_version": "1.0.0",
+      "enabled": true,
+      "execution_mode": "saga",
+      "external_capabilities": [],
+      "family": "chapter_authority",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.chapter_authority.root",
+      "idempotency_scope": "project:chapter-slice",
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "migration_status": "implemented",
+      "name": "chapter.slice.run",
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "local_storage_writes": "forbidden",
+        "orchestration": "dynamic_fenced_saga_v1"
+      },
+      "result_schema": {
+        "type": "object"
+      },
+      "result_schema_version": "chapter.slice.run.result.v1",
+      "retry_policy": {
+        "max_attempts": 1
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 600
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "chapter.plan.materialize.command.v1",
+      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.plan",
+            "role": "primary",
+            "selector": "chapter_plan"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.plan.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "chapter.plan.materialized"
+        ],
+        "required_qualifications": [
+          "production_eligible"
+        ],
+        "version": "chapter.plan.materialize.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.chapter_authority.plan"
+      ],
+      "definition_version": "1.0.0",
+      "enabled": true,
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "chapter_authority",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.chapter_authority.plan",
+      "idempotency_scope": "project:chapter-slice",
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "migration_status": "implemented",
+      "name": "chapter.plan.materialize",
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "handler_output_policy": "chapter-authority-output-v1",
+        "local_storage_writes": "forbidden"
+      },
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "chapter.plan.materialize.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 60
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "chapter.context.build.command.v1",
+      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.context",
+            "role": "primary",
+            "selector": "context_bundle"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.context.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "chapter.context.materialized"
+        ],
+        "required_qualifications": [
+          "production_eligible"
+        ],
+        "version": "chapter.context.build.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.chapter_authority.context"
+      ],
+      "definition_version": "1.0.0",
+      "enabled": true,
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "chapter_authority",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.chapter_authority.context",
+      "idempotency_scope": "project:chapter-slice",
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "migration_status": "implemented",
+      "name": "chapter.context.build",
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "handler_output_policy": "chapter-authority-output-v1",
+        "local_storage_writes": "forbidden"
+      },
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "chapter.context.build.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 60
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "chapter.draft.generate.command.v1",
+      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.draft",
+            "role": "primary",
+            "selector": "draft_chapter"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.draft.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "chapter.draft.materialized"
+        ],
+        "required_qualifications": [
+          "production_eligible"
+        ],
+        "version": "chapter.draft.generate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.chapter_authority.draft"
+      ],
+      "definition_version": "1.0.0",
+      "enabled": true,
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "chapter_authority",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.chapter_authority.draft",
+      "idempotency_scope": "project:chapter-slice",
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "migration_status": "implemented",
+      "name": "chapter.draft.generate",
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "handler_output_policy": "chapter-authority-output-v1",
+        "local_storage_writes": "forbidden"
+      },
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "chapter.draft.generate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 60
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "chapter.review.evaluate.command.v1",
+      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.review",
+            "role": "primary",
+            "selector": "review_report"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.review.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "chapter.review.materialized"
+        ],
+        "required_qualifications": [
+          "production_eligible"
+        ],
+        "version": "chapter.review.evaluate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.chapter_authority.review"
+      ],
+      "definition_version": "1.0.0",
+      "enabled": true,
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "chapter_authority",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.chapter_authority.review",
+      "idempotency_scope": "project:chapter-slice",
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "migration_status": "implemented",
+      "name": "chapter.review.evaluate",
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "handler_output_policy": "chapter-authority-output-v1",
+        "local_storage_writes": "forbidden"
+      },
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "chapter.review.evaluate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 60
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "chapter.revision.apply.command.v1",
+      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.revision",
+            "role": "primary",
+            "selector": "draft_version"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.revision.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "chapter.revision.materialized"
+        ],
+        "required_qualifications": [
+          "production_eligible"
+        ],
+        "version": "chapter.revision.apply.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.chapter_authority.revision"
+      ],
+      "definition_version": "1.0.0",
+      "enabled": true,
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "chapter_authority",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.chapter_authority.revision",
+      "idempotency_scope": "project:chapter-slice",
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "migration_status": "implemented",
+      "name": "chapter.revision.apply",
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "handler_output_policy": "chapter-authority-output-v1",
+        "local_storage_writes": "forbidden"
+      },
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "chapter.revision.apply.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 60
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "chapter.canon.update.command.v1",
+      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.canon",
+            "role": "primary",
+            "selector": "canon_patch"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.canon.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "chapter.canon.materialized"
+        ],
+        "required_qualifications": [
+          "production_eligible"
+        ],
+        "version": "chapter.canon.update.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.chapter_authority.canon"
+      ],
+      "definition_version": "1.0.0",
+      "enabled": true,
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "chapter_authority",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.chapter_authority.canon",
+      "idempotency_scope": "project:chapter-slice",
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "migration_status": "implemented",
+      "name": "chapter.canon.update",
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "handler_output_policy": "chapter-authority-output-v1",
+        "local_storage_writes": "forbidden"
+      },
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "chapter.canon.update.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 60
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "chapter.quality.evaluate.command.v1",
+      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality",
+            "role": "primary",
+            "selector": "quality_score_report"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.quality.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "chapter.quality.materialized"
+        ],
+        "required_qualifications": [
+          "production_eligible"
+        ],
+        "version": "chapter.quality.evaluate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.chapter_authority.quality"
+      ],
+      "definition_version": "1.0.0",
+      "enabled": true,
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "chapter_authority",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.chapter_authority.quality",
+      "idempotency_scope": "project:chapter-slice",
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "migration_status": "implemented",
+      "name": "chapter.quality.evaluate",
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "handler_output_policy": "chapter-authority-output-v1",
+        "local_storage_writes": "forbidden"
+      },
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "chapter.quality.evaluate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 60
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "chapter.export.render.command.v1",
+      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.export",
+            "role": "primary",
+            "selector": "release_package"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.export.materialized"
+        ],
+        "required_blobs": [
+          {
+            "min_count": 1,
+            "role": "content",
+            "status": "AVAILABLE"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "capability": "object_store.put"
+          }
+        ],
+        "required_outbox_events": [
+          "chapter.export.materialized"
+        ],
+        "required_qualifications": [
+          "production_eligible"
+        ],
+        "version": "chapter.export.render.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.chapter_authority.export"
+      ],
+      "definition_version": "1.0.0",
+      "enabled": true,
+      "execution_mode": "worker",
+      "external_capabilities": [
+        "object_store.put"
+      ],
+      "family": "chapter_authority",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.chapter_authority.export",
+      "idempotency_scope": "project:chapter-slice",
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "migration_status": "implemented",
+      "name": "chapter.export.render",
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "handler_output_policy": "chapter-authority-output-v1",
+        "local_storage_writes": "forbidden"
+      },
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "chapter.export.render.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 60
+      }
     }
   ],
   "generator_version": "2.1.0",
-  "repository_head_at_generation": "950d13b5fd0671f9b457b18049a8f6f354d4fded",
+  "repository_head_at_generation": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
   "schema_version": "2.0.0",
-  "source_tree_sha": "8819cea29da045ebf59f99e9c00376fb2634fb57"
+  "source_tree_sha": "24d1abae066a35de6a01791f50074631b334dfe9"
 }
