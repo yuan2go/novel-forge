@@ -18,6 +18,10 @@ class AuthorityCoverageBaselineTests(unittest.TestCase):
         current = build_manifest(root, generated_at=baseline["generated_at"])
         validate_head_binding(current, root)
         self.assertIn("commit_sha", baseline)
+        self.assertEqual(
+            baseline["binding_semantics"],
+            "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
+        )
         self.assertIn("source_tree_sha", baseline)
         self.assertIn("scan_rule_version", baseline)
         self.assertEqual(current["source_tree_sha"], baseline["source_tree_sha"])

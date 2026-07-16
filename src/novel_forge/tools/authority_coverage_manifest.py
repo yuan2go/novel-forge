@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
-GENERATOR_VERSION = "2.0.0"
+GENERATOR_VERSION = "2.1.0"
 SCAN_RULE_VERSION = "receiver-aware-v2"
 SCAN_RULES = (
     "localstorage_import",
@@ -226,6 +226,8 @@ def write_operation_catalog(
     payload = {
         "schema_version": "2.0.0",
         "commit_sha": manifest["commit_sha"],
+        "repository_head_at_generation": manifest["repository_head_at_generation"],
+        "binding_semantics": manifest["binding_semantics"],
         "source_tree_sha": manifest["source_tree_sha"],
         "generator_version": GENERATOR_VERSION,
         "definitions": catalog,
@@ -260,6 +262,8 @@ def write_legacy_actions(manifest: dict[str, Any], output: str | Path) -> dict[s
     payload = {
         "schema_version": "2.0.0",
         "commit_sha": manifest["commit_sha"],
+        "repository_head_at_generation": manifest["repository_head_at_generation"],
+        "binding_semantics": manifest["binding_semantics"],
         "source_tree_sha": manifest["source_tree_sha"],
         "baseline_hash": manifest["artifact_hash"],
         "actions": actions,
@@ -288,7 +292,9 @@ def build_manifest(repo_root: str | Path, *, generated_at: str | None = None) ->
     side_effects = [item for item in findings if item["side_effect"]]
     payload = {
         "schema_version": "2.0.0",
-        "commit_sha": _git_value(root, "HEAD"),
+        "commit_sha": _source_commit_sha(root),
+        "repository_head_at_generation": _git_value(root, "HEAD"),
+        "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
         "source_tree_sha": _source_tree_sha(root, paths),
         "generator_version": GENERATOR_VERSION,
         "generated_at": generated_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -331,10 +337,16 @@ def write_manifest(
 
 
 def validate_head_binding(manifest: dict[str, Any], repo_root: str | Path) -> None:
-    """Fail unless a freshly generated build artifact is bound to this checkout."""
+    """Fail unless an artifact is bound to the current authoritative source snapshot.
+
+    Binding to the latest commit affecting ``src/novel_forge`` avoids the impossible
+    self-reference created when committing the generated evidence in a later docs-only
+    commit. The working-tree hash still fails closed for any committed or uncommitted
+    source drift.
+    """
     root = Path(repo_root).resolve()
     paths = sorted((root / "src" / "novel_forge").rglob("*.py"))
-    commit_sha = _git_value(root, "HEAD")
+    commit_sha = _source_commit_sha(root)
     source_tree_sha = _source_tree_sha(root, paths)
     if manifest.get("commit_sha") != commit_sha:
         raise RuntimeError(
@@ -1044,6 +1056,18 @@ def _git_value(root: Path, revision: str) -> str:
             text=True,
             stderr=subprocess.DEVNULL,
         ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+
+
+def _source_commit_sha(root: Path) -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "log", "-1", "--format=%H", "--", "src/novel_forge"],
+            cwd=root,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip() or "unknown"
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
 
