@@ -633,6 +633,17 @@ class ChapterProductionRunRequest(BaseModel):
     require_external_provider_proof: bool = False
 
 
+class AuthorityChapterRunRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    actor_id: str = Field(min_length=1)
+    chapter: int = Field(ge=1)
+    title: str = Field(min_length=1)
+    premise: str = Field(min_length=1)
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
 class ChapterProductionResumeRequest(BaseModel):
     run_path: str
     from_step: str | None = None
@@ -1973,6 +1984,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "DraftVersionRequest": DraftVersionRequest,
         "GenerationRunRequest": GenerationRunRequest,
         "ChapterProductionRunRequest": ChapterProductionRunRequest,
+        "AuthorityChapterRunRequest": AuthorityChapterRunRequest,
         "ChapterProductionResumeRequest": ChapterProductionResumeRequest,
         "ChapterProductionControlRequest": ChapterProductionControlRequest,
         "ChapterProductionRecoverRequest": ChapterProductionRecoverRequest,

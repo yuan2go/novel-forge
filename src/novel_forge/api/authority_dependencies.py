@@ -12,9 +12,25 @@ from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelExternalEffectAdapter,
     ChapterModelRoute,
 )
+from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     LocalFileObjectStoreAdapter,
 )
+
+
+def authority_release_identity(
+    *, env: Mapping[str, str] | None = None
+) -> tuple[str, str]:
+    values = env or os.environ
+    build_id = str(values.get("NOVEL_FORGE_APPLICATION_BUILD_ID") or "").strip()
+    commit_sha = str(values.get("NOVEL_FORGE_COMMIT_SHA") or "").strip().lower()
+    if not build_id:
+        raise RuntimeError("NOVEL_FORGE_APPLICATION_BUILD_ID is required")
+    if len(commit_sha) < 7 or len(commit_sha) > 64 or any(
+        character not in "0123456789abcdef" for character in commit_sha
+    ):
+        raise RuntimeError("NOVEL_FORGE_COMMIT_SHA must be a 7-64 character hexadecimal commit id")
+    return build_id, commit_sha
 
 
 def build_chapter_authority_application(
@@ -76,4 +92,14 @@ def build_chapter_authority_application(
     )
 
 
-__all__ = ["build_chapter_authority_application"]
+def build_chapter_authority_query(settings: IndustrialSettings) -> ChapterAuthorityQuery:
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL database is required for chapter authority")
+    return ChapterAuthorityQuery(settings.database_url)
+
+
+__all__ = [
+    "authority_release_identity",
+    "build_chapter_authority_application",
+    "build_chapter_authority_query",
+]

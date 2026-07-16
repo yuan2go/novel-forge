@@ -4,11 +4,43 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from novel_forge.api.authority_dependencies import build_chapter_authority_application
+from novel_forge.api.authority_dependencies import (
+    authority_release_identity,
+    build_chapter_authority_application,
+    build_chapter_authority_query,
+)
 from novel_forge.infrastructure.settings import IndustrialSettings
 
 
 class ChapterAuthorityDependenciesTests(unittest.TestCase):
+    def test_strong_query_requires_only_postgresql(self) -> None:
+        query = build_chapter_authority_query(
+            IndustrialSettings(root=Path("."), database_url="postgresql://authority")
+        )
+        self.assertEqual(query.database_url, "postgresql://authority")
+        with self.assertRaisesRegex(RuntimeError, "PostgreSQL"):
+            build_chapter_authority_query(IndustrialSettings(root=Path(".")))
+
+    def test_release_identity_is_explicit_and_validated(self) -> None:
+        self.assertEqual(
+            authority_release_identity(
+                env={
+                    "NOVEL_FORGE_APPLICATION_BUILD_ID": "build-42",
+                    "NOVEL_FORGE_COMMIT_SHA": "A" * 40,
+                }
+            ),
+            ("build-42", "a" * 40),
+        )
+        with self.assertRaisesRegex(RuntimeError, "APPLICATION_BUILD_ID"):
+            authority_release_identity(env={})
+        with self.assertRaisesRegex(RuntimeError, "hexadecimal"):
+            authority_release_identity(
+                env={
+                    "NOVEL_FORGE_APPLICATION_BUILD_ID": "build-42",
+                    "NOVEL_FORGE_COMMIT_SHA": "not-a-commit",
+                }
+            )
+
     def test_requires_explicit_routes_and_object_store(self) -> None:
         settings = IndustrialSettings(
             root=Path("."),
