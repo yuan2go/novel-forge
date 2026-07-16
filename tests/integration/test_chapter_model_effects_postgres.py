@@ -5,6 +5,8 @@ import unittest
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
 from novel_forge.modules.chapter_authority.handlers import build_chapter_handler_registry
 from novel_forge.modules.chapter_authority.model_effects import (
+    ChapterModelExternalEffectAdapter,
+    ChapterModelRoute,
     ExternalEffectChapterModelPort,
     ModelProviderResult,
 )
@@ -78,6 +80,43 @@ class _ModelAdapter:
 
     def query(self, *, stable_idempotency_key, capability, request_payload):  # type: ignore[no-untyped-def]
         return ProviderResult("ambiguous", "", {"provider_state": "unknown"})
+
+
+class _StageModelAdapter:
+    name = "stage-model"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
+        self.calls += 1
+        return {
+            "text": "The promise is public, but its cost remains abstract.",
+            "usage": {"input_tokens": 12, "output_tokens": 8},
+            "cost": {"amount": "0.001", "currency": "USD"},
+        }
+
+    def review(self, content, context=None):  # type: ignore[no-untyped-def]
+        self.calls += 1
+        return {
+            "score": 70,
+            "issues": [
+                {
+                    "dimension": "cost_not_concrete",
+                    "severity": "high",
+                    "message": "The cost must be visible.",
+                }
+            ],
+            "cost": {"amount": "0.001", "currency": "USD"},
+        }
+
+    def revise(self, content, review, context=None):  # type: ignore[no-untyped-def]
+        self.calls += 1
+        return {
+            "text": "The protagonist surrenders the only safe route home before every witness.",
+            "resolved_issue_codes": ["COST_NOT_CONCRETE"],
+            "cost": {"amount": "0.001", "currency": "USD"},
+        }
 
 
 class ChapterModelEffectsPostgresTests(unittest.TestCase):
@@ -164,7 +203,20 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
 
     def test_full_chapter_slice_uses_three_model_effects_and_authority_ledgers(self) -> None:
         project_id = identifier("model-slice-project")
-        adapter = _ModelAdapter()
+        stage_model = _StageModelAdapter()
+        adapter = ChapterModelExternalEffectAdapter(
+            {
+                stage: ChapterModelRoute(
+                    adapter=stage_model,
+                    provider_id="fixture-provider",
+                    model_id=f"fixture-{stage}-model",
+                    prompt_version=f"fixture-{stage}-prompt-v1",
+                    skill_version=f"fixture-{stage}-skill-v1",
+                    real_model_call=True,
+                )
+                for stage in ("draft", "review", "revision")
+            }
+        )
         model_port = ExternalEffectChapterModelPort(
             DATABASE_URL,
             adapter=adapter,
@@ -189,7 +241,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         )
 
         self.assertEqual(result.root_status, "SUCCEEDED")
-        self.assertEqual(adapter.calls, 3)
+        self.assertEqual(stage_model.calls, 3)
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
