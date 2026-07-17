@@ -10,7 +10,7 @@ from novel_forge.modules.context_builder.domain import (
 )
 from novel_forge.modules.review.domain import evaluate_rereview_result, evaluate_review_result
 from novel_forge.modules.revision.domain import apply_revision_result
-from novel_forge.modules.canon_graph.domain import build_canon_update
+from novel_forge.modules.canon_graph.domain import build_canon_update, extract_canon_candidates
 from novel_forge.modules.content_quality_loop.domain import evaluate_quality_evidence
 from novel_forge.modules.publishing.domain import (
     build_export_blob_manifest,
@@ -211,8 +211,49 @@ def build_canon_patch(
     revision_asset_version_id: str,
     project_id: str = "local-system",
     context_bundle_version_id: str = "legacy-context-bundle",
+    extraction: dict[str, Any] | None = None,
+    context_bundle: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    historical_state: dict[str, list[dict[str, Any]]] = {}
+    for segment in (context_bundle or {}).get("context_segments", []):
+        asset_type = str(segment.get("asset_type") or "")
+        if asset_type not in {
+            "canon_snapshot", "character_state", "relationship_state",
+            "timeline_snapshot", "foreshadow_state", "reader_promise",
+            "reward_ledger", "world_rule", "power_state",
+        }:
+            continue
+        facts = list(segment.get("structured_facts", []))
+        historical_state.setdefault(asset_type, []).append(
+            {
+                "asset_version_id": segment.get("asset_version_id", ""),
+                "facts": facts,
+                **(facts[0] if len(facts) == 1 and isinstance(facts[0], dict) else {}),
+            }
+        )
+    if int(revision.get("chapter", 0)) > 1 and not historical_state.get("canon_snapshot"):
+        raise KernelError(
+            "CANON_HISTORY_BASELINE_REQUIRED",
+            "chapters after the first require an explicit CanonSnapshot baseline",
+        )
     return build_canon_update(
+        project_id=project_id,
+        revision=revision,
+        revision_asset_version_id=revision_asset_version_id,
+        context_bundle_version_id=context_bundle_version_id,
+        extraction=extraction,
+        historical_state=historical_state,
+    )
+
+
+def build_canon_extraction(
+    *,
+    revision: dict[str, Any],
+    revision_asset_version_id: str,
+    project_id: str,
+    context_bundle_version_id: str,
+) -> dict[str, Any]:
+    return extract_canon_candidates(
         project_id=project_id,
         revision=revision,
         revision_asset_version_id=revision_asset_version_id,
@@ -326,6 +367,7 @@ def _require_keys(payload: dict[str, Any], *keys: str) -> None:
 
 __all__ = [
     "build_canon_patch",
+    "build_canon_extraction",
     "build_chapter_plan",
     "build_context_bundle",
     "build_export_package",

@@ -11,6 +11,7 @@ from novel_forge.modules.chapter_authority.contracts import (
     ChapterNode,
 )
 from novel_forge.modules.chapter_authority.domain_handlers import (
+    build_canon_extraction,
     build_canon_patch,
     build_chapter_plan,
     build_context_bundle,
@@ -287,10 +288,29 @@ class _ReReviewHandler:
 class _CanonHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
+        extraction = request.require_input("canon_extraction")
         context = request.require_input("context_bundle")
         return _output(
             ChapterNode.CANON,
             build_canon_patch(
+                revision=revision.content,
+                revision_asset_version_id=revision.asset_version_id,
+                project_id=request.project_id,
+                context_bundle_version_id=context.asset_version_id,
+                extraction=extraction.content,
+                context_bundle=context.content,
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _CanonExtractionHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        revision = request.require_input("draft_version")
+        context = request.require_input("context_bundle")
+        return _output(
+            ChapterNode.CANON_EXTRACTION,
+            build_canon_extraction(
                 revision=revision.content,
                 revision_asset_version_id=revision.asset_version_id,
                 project_id=request.project_id,
@@ -376,6 +396,7 @@ def build_chapter_handler_registry(
     registry.register(ChapterNode.REVIEW, _ReviewHandler(provider))
     registry.register(ChapterNode.REVISION, _RevisionHandler(provider))
     registry.register(ChapterNode.REREVIEW, _ReReviewHandler(provider))
+    registry.register(ChapterNode.CANON_EXTRACTION, _CanonExtractionHandler())
     registry.register(ChapterNode.CANON, _CanonHandler())
     registry.register(ChapterNode.QUALITY, _QualityHandler())
     registry.register(ChapterNode.PUBLISH_GATE, _PublishGateHandler())

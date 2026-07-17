@@ -467,7 +467,17 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
             ChapterNode.REVISION,
             ChapterNode.CONTEXT,
         ),
-        ChapterNode.CANON: (ChapterNode.REVISION, ChapterNode.REREVIEW, ChapterNode.CONTEXT),
+        ChapterNode.CANON_EXTRACTION: (
+            ChapterNode.REVISION,
+            ChapterNode.REREVIEW,
+            ChapterNode.CONTEXT,
+        ),
+        ChapterNode.CANON: (
+            ChapterNode.REVISION,
+            ChapterNode.REREVIEW,
+            ChapterNode.CANON_EXTRACTION,
+            ChapterNode.CONTEXT,
+        ),
         ChapterNode.QUALITY: (
             ChapterNode.REVISION,
             ChapterNode.REREVIEW,

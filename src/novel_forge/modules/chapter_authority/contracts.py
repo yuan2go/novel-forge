@@ -51,6 +51,13 @@ class ChapterNode(Enum):
         "chapter.rereview",
         "chapter.rereview.materialized",
     )
+    CANON_EXTRACTION = (
+        "canon_extraction",
+        "chapter.canon.extract",
+        "canon_extraction",
+        "chapter.canon_extraction",
+        "chapter.canon_extraction.materialized",
+    )
     CANON = (
         "canon",
         "chapter.canon.update",
