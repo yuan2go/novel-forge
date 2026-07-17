@@ -21461,7 +21461,7 @@
       "external_effect_type": "http.request",
       "function_name": "execute",
       "legacy_action": "replace",
-      "line": 139,
+      "line": 142,
       "mapping_confidence": 0.98,
       "mapping_reason": "path/owner/receiver map to project_lifecycle.create",
       "migration_action": "replace",
@@ -21491,7 +21491,7 @@
       "external_effect_type": "http.request",
       "function_name": "execute",
       "legacy_action": "replace",
-      "line": 162,
+      "line": 165,
       "mapping_confidence": 0.98,
       "mapping_reason": "path/owner/receiver map to project_lifecycle.create",
       "migration_action": "replace",
@@ -21521,7 +21521,7 @@
       "external_effect_type": "http.request",
       "function_name": "execute",
       "legacy_action": "replace",
-      "line": 188,
+      "line": 191,
       "mapping_confidence": 0.98,
       "mapping_reason": "path/owner/receiver map to project_lifecycle.create",
       "migration_action": "replace",
@@ -63931,11 +63931,11 @@
       "usage_type": "authority_read"
     }
   ],
-  "artifact_hash": "sha256:696dc63a3c2e323e305313b39b4c756cb0b8432f2e96d78fda12922ec2e38347",
-  "baseline_hash": "sha256:f02038e45ce3d2a991bff8fb03a04551b570e7e36e00f4f8b4ea2765a2ed44d1",
+  "artifact_hash": "sha256:186878665253c4887766c23b2150db7826c2ae38d057a74c83b0d91923d75b5c",
+  "baseline_hash": "sha256:587fad2b66e1f1a46b262cbed29c41af3eccb637d2432084624dc268df12dc09",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
-  "repository_head_at_generation": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+  "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+  "repository_head_at_generation": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
   "schema_version": "2.0.0",
-  "source_tree_sha": "14daaf62fe29c63c6556fdde76f8d274e10179ee"
+  "source_tree_sha": "c347ac8cd31e7d7f063ec01f807b9df97cb23c71"
 }

@@ -7,8 +7,8 @@ Command Kernel source snapshot. The JSON files remain authoritative.
 
 ## Snapshot binding
 
-- Source commit: `5aa2a89dc1510324728c1bf03f00f95d6c7b77d9`
-- Source tree SHA: `14daaf62fe29c63c6556fdde76f8d274e10179ee`
+- Source commit: `1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8`
+- Source tree SHA: `c347ac8cd31e7d7f063ec01f807b9df97cb23c71`
 - Binding: latest commit affecting `src/novel_forge` plus the exact working-tree source hash
 - Generator: `2.1.0`
 - Scan rule: `receiver-aware-v2`

@@ -1,6 +1,6 @@
 # OperationDefinition Maturity Matrix
 
-Generated catalog source: `docs/reports/postgresql-operation-definition-catalog.json`, source commit `5aa2a89`.
+Generated catalog source: `docs/reports/postgresql-operation-definition-catalog.json`, source commit `1ef93fa`.
 
 | Definition status | Count | Meaning |
 |---|---:|---|

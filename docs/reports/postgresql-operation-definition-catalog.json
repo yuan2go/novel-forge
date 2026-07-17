@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:06f00375743ea194fb39664b33e25d40d248850d2c191b828f29886e5f2a8795",
+  "artifact_hash": "sha256:016be8806d73d10e4a322f0878d9d726982814f3801a6acfe757fb092def93be",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+  "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
   "definitions": [
     {
       "approval_policy": {
@@ -11681,6 +11681,18 @@
           "chapter": {
             "type": "integer"
           },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
           "premise": {
             "type": "string"
           },
@@ -11694,7 +11706,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.slice.run.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -11770,7 +11782,7 @@
         "novel_forge.chapter_authority.root"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -11791,6 +11803,18 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
           },
           "premise": {
             "type": "string"
@@ -11858,6 +11882,18 @@
           "chapter": {
             "type": "integer"
           },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
           "premise": {
             "type": "string"
           },
@@ -11871,7 +11907,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.plan.materialize.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -11908,7 +11944,7 @@
         "novel_forge.chapter_authority.plan"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -11929,6 +11965,18 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
           },
           "premise": {
             "type": "string"
@@ -12020,6 +12068,18 @@
           "chapter": {
             "type": "integer"
           },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
           "premise": {
             "type": "string"
           },
@@ -12033,7 +12093,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.context.build.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12070,7 +12130,7 @@
         "novel_forge.chapter_authority.context"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12091,6 +12151,18 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
           },
           "premise": {
             "type": "string"
@@ -12182,6 +12254,18 @@
           "chapter": {
             "type": "integer"
           },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
           "premise": {
             "type": "string"
           },
@@ -12195,7 +12279,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.draft.generate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12240,7 +12324,7 @@
         "novel_forge.chapter_authority.draft"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12263,6 +12347,18 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
           },
           "premise": {
             "type": "string"
@@ -12354,6 +12450,18 @@
           "chapter": {
             "type": "integer"
           },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
           "premise": {
             "type": "string"
           },
@@ -12367,7 +12475,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.review.evaluate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12412,7 +12520,7 @@
         "novel_forge.chapter_authority.review"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12435,6 +12543,18 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
           },
           "premise": {
             "type": "string"
@@ -12526,6 +12646,18 @@
           "chapter": {
             "type": "integer"
           },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
           "premise": {
             "type": "string"
           },
@@ -12539,7 +12671,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.apply.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12584,7 +12716,7 @@
         "novel_forge.chapter_authority.revision"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12607,6 +12739,18 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
           },
           "premise": {
             "type": "string"
@@ -12698,6 +12842,18 @@
           "chapter": {
             "type": "integer"
           },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
           "premise": {
             "type": "string"
           },
@@ -12711,7 +12867,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.update.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12748,7 +12904,7 @@
         "novel_forge.chapter_authority.canon"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12769,6 +12925,18 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
           },
           "premise": {
             "type": "string"
@@ -12860,6 +13028,18 @@
           "chapter": {
             "type": "integer"
           },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
           "premise": {
             "type": "string"
           },
@@ -12873,7 +13053,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.evaluate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12910,7 +13090,7 @@
         "novel_forge.chapter_authority.quality"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12931,6 +13111,18 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
           },
           "premise": {
             "type": "string"
@@ -13022,6 +13214,18 @@
           "chapter": {
             "type": "integer"
           },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
           "premise": {
             "type": "string"
           },
@@ -13035,7 +13239,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.prepare_release.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13072,7 +13276,7 @@
         "novel_forge.chapter_authority.publish_gate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13093,6 +13297,18 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
           },
           "premise": {
             "type": "string"
@@ -13184,6 +13400,18 @@
           "chapter": {
             "type": "integer"
           },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
           "premise": {
             "type": "string"
           },
@@ -13197,7 +13425,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.export.render.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13249,7 +13477,7 @@
         "novel_forge.chapter_authority.export"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13272,6 +13500,18 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
           },
           "premise": {
             "type": "string"
@@ -13382,7 +13622,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.brief.create.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -13534,7 +13774,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.evaluate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -13686,7 +13926,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.cluster.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -13838,7 +14078,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.project.approve.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -13990,7 +14230,7 @@
         "type": "object"
       },
       "command_schema_version": "production.world.generate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14142,7 +14382,7 @@
         "type": "object"
       },
       "command_schema_version": "world.validate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14294,7 +14534,7 @@
         "type": "object"
       },
       "command_schema_version": "production.character.generate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14446,7 +14686,7 @@
         "type": "object"
       },
       "command_schema_version": "character.relationships.generate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14598,7 +14838,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.question.create.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14750,7 +14990,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.arc.build.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14902,7 +15142,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.anti_preaching.evaluate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15054,7 +15294,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.closure.plan.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15206,7 +15446,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.payoff_matrix.build.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15358,7 +15598,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.quality.evaluate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15510,7 +15750,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.motivation.evaluate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15662,7 +15902,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.entity_merge.propose.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15814,7 +16054,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.foreshadow_payoff.evaluate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15966,7 +16206,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.world_rule.evaluate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16118,7 +16358,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.power.evaluate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16270,7 +16510,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.pattern.evaluate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16422,7 +16662,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.narrative_debt.evaluate.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16574,7 +16814,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.recap.enhance.command.v1",
-      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16695,7 +16935,7 @@
     }
   ],
   "generator_version": "2.1.0",
-  "repository_head_at_generation": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+  "repository_head_at_generation": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
   "schema_version": "2.0.0",
-  "source_tree_sha": "14daaf62fe29c63c6556fdde76f8d274e10179ee"
+  "source_tree_sha": "c347ac8cd31e7d7f063ec01f807b9df97cb23c71"
 }
