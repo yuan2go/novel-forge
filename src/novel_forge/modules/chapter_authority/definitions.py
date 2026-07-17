@@ -224,6 +224,12 @@ def _chapter_command_schema() -> dict[str, Any]:
             "chapter": {"type": "integer"},
             "premise": {"type": "string"},
             "title": {"type": "string"},
+            "context_candidates": {
+                "type": "array",
+                "items": {"type": "object"},
+            },
+            "context_version_refs": {"type": "object"},
+            "context_token_budget": {"type": "integer"},
         },
         "additionalProperties": False,
     }

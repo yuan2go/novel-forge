@@ -94,6 +94,42 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
                 canon={"gate": "PASSED", "conflicts": []},
                 canon_asset_version_id="canon-version-1",
             )
+
+    def test_authority_context_consumes_governed_mkaos_and_source_decisions(self) -> None:
+        plan = build_chapter_plan(
+            chapter=1,
+            title="Governed context",
+            premise="A choice must obey source boundaries.",
+            trace_id="trace-governed",
+        )
+        bundle = build_context_bundle(
+            plan=plan,
+            plan_asset_version_id="plan-v1",
+            plan_content_hash="sha256:plan",
+            project_id="project-a",
+            created_by_operation_id="operation-context",
+            governed_candidates=[
+                {
+                    "asset_version_id": "pack-v1", "asset_type": "knowledge_pack",
+                    "project_id": "project-a", "estimated_tokens": 100, "score": .9,
+                    "allowed_use": "generation", "source_policy_version": "policy-v1",
+                },
+                {
+                    "asset_version_id": "review-only-v1", "asset_type": "knowledge_pack",
+                    "project_id": "project-a", "estimated_tokens": 100,
+                    "source_use_mode": "review_only",
+                },
+                {
+                    "asset_version_id": "foreign-v1", "asset_type": "knowledge_pack",
+                    "project_id": "project-b", "estimated_tokens": 100,
+                },
+            ],
+        )
+        self.assertEqual(bundle["knowledge_pack_versions"], ["pack-v1"])
+        self.assertEqual(bundle["source_policy_versions"], ["policy-v1"])
+        reasons = {item["asset_version_id"]: item["reason"] for item in bundle["rejected_asset_versions"]}
+        self.assertEqual(reasons["review-only-v1"], "source_mode:review_only")
+        self.assertEqual(reasons["foreign-v1"], "cross_project")
         with self.assertRaisesRegex(KernelError, "CHAPTER_QUALITY_GATE_BLOCKED"):
             build_export_package(
                 revision={"chapter": 1, "title": "Blocked", "text": "text"},

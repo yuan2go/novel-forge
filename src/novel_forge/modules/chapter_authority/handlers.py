@@ -125,6 +125,9 @@ class _ContextHandler:
                 plan_content_hash=plan.content_hash,
                 project_id=request.project_id,
                 created_by_operation_id=request.operation_id,
+                governed_candidates=list(request.command.get("context_candidates", [])),
+                version_refs=dict(request.command.get("context_version_refs", {})),
+                token_budget=int(request.command.get("context_token_budget", 6000)),
             ),
         )
 

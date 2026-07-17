@@ -46,27 +46,52 @@ def build_context_bundle(
     plan_content_hash: str,
     project_id: str = "local-system",
     created_by_operation_id: str = "legacy-direct-call",
+    governed_candidates: list[dict[str, Any]] | None = None,
+    version_refs: dict[str, Any] | None = None,
+    token_budget: int = 6000,
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "objective", "premise", "beats")
+    candidates = [
+        ContextCandidate(
+            asset_version_id=str(item["asset_version_id"]),
+            asset_type=str(item["asset_type"]),
+            project_id=str(item["project_id"]),
+            estimated_tokens=int(item.get("estimated_tokens", 0)),
+            relevance_score=float(item.get("relevance_score", item.get("score", 0))),
+            qualification=str(item.get("qualification", "ELIGIBLE")),
+            governance_status=str(item.get("governance_status", "CLEAR")),
+            source_use_mode=str(item.get("source_use_mode", item.get("allowed_use", "generation"))),
+            source_risk=int(item.get("source_risk", 0)),
+            raw_source=bool(item.get("raw_source", False)),
+            content_digest=str(item.get("content_digest", "")),
+            policy_version=str(item.get("policy_version", item.get("source_policy_version", ""))),
+            invalidation_keys=tuple(item.get("invalidation_keys", [])),
+            narrative_function=str(item.get("narrative_function", "")),
+        )
+        for item in (governed_candidates or [])
+    ]
+    candidates.insert(
+        0,
+        ContextCandidate(
+            asset_version_id=plan_asset_version_id,
+            asset_type="chapter_plan",
+            project_id=project_id,
+            estimated_tokens=max(1, len(str(plan)) // 4),
+            relevance_score=1.0,
+            content_digest=plan_content_hash,
+            invalidation_keys=(f"chapter-plan:{plan_asset_version_id}",),
+            narrative_function="current_chapter_plan",
+        ),
+    )
+    refs = {**(version_refs or {}), "chapter_plan_version": plan_asset_version_id}
     governed = build_authority_context_bundle(
         project_id=project_id,
         stage="draft",
         created_by_operation_id=created_by_operation_id,
         context_profile_version="draft-context-profile-v2",
-        candidates=(
-            ContextCandidate(
-                asset_version_id=plan_asset_version_id,
-                asset_type="chapter_plan",
-                project_id=project_id,
-                estimated_tokens=max(1, len(str(plan)) // 4),
-                relevance_score=1.0,
-                content_digest=plan_content_hash,
-                invalidation_keys=(f"chapter-plan:{plan_asset_version_id}",),
-                narrative_function="current_chapter_plan",
-            ),
-        ),
-        token_budget=6000,
-        version_refs={"chapter_plan_version": plan_asset_version_id},
+        candidates=candidates,
+        token_budget=token_budget,
+        version_refs=refs,
     )
     return {
         **governed,
