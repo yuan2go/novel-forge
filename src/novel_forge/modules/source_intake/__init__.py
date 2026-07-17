@@ -21,6 +21,12 @@ from novel_forge.modules.source_intake.retention_sweep import sweep_source_reten
 from novel_forge.modules.source_intake.runtime_gate import run_source_governance_runtime_gate
 from novel_forge.modules.source_intake.source_leakage_preflight import build_source_leakage_readiness_report, run_source_leakage_preflight_gate
 from novel_forge.modules.source_intake.stale_sweep import sweep_source_stale_quarantine
+from novel_forge.modules.source_intake.eligibility_domain import (
+    SourceGovernanceEvidence,
+    build_change_impact_report,
+    build_regeneration_plan,
+    decide_source_eligibility,
+)
 
 __all__ = [
     "create_license_check_result",
@@ -49,4 +55,8 @@ __all__ = [
     "run_source_leakage_preflight_gate",
     "sweep_source_retention_expiry",
     "sweep_source_stale_quarantine",
+    "SourceGovernanceEvidence",
+    "build_change_impact_report",
+    "build_regeneration_plan",
+    "decide_source_eligibility",
 ]
