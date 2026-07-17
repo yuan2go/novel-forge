@@ -7,8 +7,8 @@ Command Kernel source snapshot. The JSON files remain authoritative.
 
 ## Snapshot binding
 
-- Source commit: `2c5b1ddc8136372efb27d74b78864faa3678f0a5`
-- Source tree SHA: `ff6b972eab5e28b38e418e459f692a3ddffdfeb9`
+- Source commit: `cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214`
+- Source tree SHA: `6f6cd76d6232a6e7c96519315bf482f8f622d5cd`
 - Binding: latest commit affecting `src/novel_forge` plus the exact working-tree source hash
 - Generator: `2.1.0`
 - Scan rule: `receiver-aware-v2`
@@ -22,7 +22,7 @@ still changes the binding and fails the architecture check.
 
 | Measure | Current value |
 |---|---:|
-| Python files scanned | 445 |
+| Python files scanned | 451 |
 | Files with findings | 202 |
 | Receiver-aware findings / legacy actions | 2,131 |
 | Owner symbols | 1,456 |
@@ -38,10 +38,10 @@ still changes the binding and fails the architecture check.
 
 ## OperationDefinition catalog
 
-The current catalog contains **93** definitions across **20** families:
+The current catalog contains **94** definitions across **20** families:
 
 - **17** definitions are mapped to current entrypoints but have no bound handler;
-- **9** PostgreSQL-only `chapter_authority` definitions are
+- **10** PostgreSQL-only `chapter_authority` definitions are
   `integration_proven` by the committed PostgreSQL test contracts;
 - **67** remain unbound migration candidates;
 - the `asset`, `blob`, `external_effect`, and `chapter_authority` families are included.

@@ -96,4 +96,5 @@ Receiver-aware generated catalog. Candidate definitions remain disabled until th
 | `chapter.revision.apply` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
 | `chapter.canon.update` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
 | `chapter.quality.evaluate` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.publishing.prepare_release` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
 | `chapter.export.render` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
