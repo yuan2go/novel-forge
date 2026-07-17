@@ -7,6 +7,7 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.longform_stability import create_arc_plan, create_canon_database
+from novel_forge.modules.longform_stability.semantic_domain import build_enhanced_recap
 from novel_forge.modules.production_kernel import dispatch_production_operation
 from novel_forge.modules.mkaos import record_review_feedback, record_usage_event
 from novel_forge.modules.production_context import filter_project_safe_references
@@ -182,6 +183,12 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
         loop=loop,
     )
     content["knowledge_context_contract"] = knowledge_contract
+    semantic_reports = payload.get("semantic_reports")
+    if isinstance(semantic_reports, dict) and semantic_reports:
+        content["semantic_stability"] = build_enhanced_recap(
+            project_id=project_id,
+            reports=semantic_reports,
+        )
     asset = LongformRecapReport(
         id=recap_report_id,
         title=f"Longform recap chapters {selected[0]['chapter']}-{selected[-1]['chapter']}",
