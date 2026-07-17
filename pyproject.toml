@@ -17,6 +17,10 @@ api = [
 postgres = [
     "psycopg[binary]>=3.2",
 ]
+test = [
+    "fastapi>=0.115",
+    "psycopg[binary]>=3.2",
+]
 worker = [
     "celery[redis]>=5.4",
     "redis>=5.0",
