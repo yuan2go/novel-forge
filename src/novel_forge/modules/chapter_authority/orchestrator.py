@@ -445,11 +445,23 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
         ChapterNode.PLAN: (),
         ChapterNode.CONTEXT: (ChapterNode.PLAN,),
         ChapterNode.DRAFT: (ChapterNode.PLAN, ChapterNode.CONTEXT),
-        ChapterNode.REVIEW: (ChapterNode.DRAFT,),
-        ChapterNode.REVISION: (ChapterNode.DRAFT, ChapterNode.REVIEW),
-        ChapterNode.CANON: (ChapterNode.REVISION,),
-        ChapterNode.QUALITY: (ChapterNode.REVISION, ChapterNode.CANON),
-        ChapterNode.EXPORT: (ChapterNode.REVISION, ChapterNode.QUALITY),
+        ChapterNode.REVIEW: (ChapterNode.DRAFT, ChapterNode.CONTEXT),
+        ChapterNode.REVISION: (ChapterNode.DRAFT, ChapterNode.REVIEW, ChapterNode.CONTEXT),
+        ChapterNode.CANON: (ChapterNode.REVISION, ChapterNode.CONTEXT),
+        ChapterNode.QUALITY: (
+            ChapterNode.REVISION,
+            ChapterNode.REVIEW,
+            ChapterNode.CANON,
+            ChapterNode.CONTEXT,
+        ),
+        ChapterNode.PUBLISH_GATE: (
+            ChapterNode.REVISION,
+            ChapterNode.REVIEW,
+            ChapterNode.CANON,
+            ChapterNode.QUALITY,
+            ChapterNode.CONTEXT,
+        ),
+        ChapterNode.EXPORT: (ChapterNode.REVISION, ChapterNode.PUBLISH_GATE),
     }[node]
 
 

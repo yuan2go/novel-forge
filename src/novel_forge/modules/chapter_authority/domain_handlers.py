@@ -8,6 +8,14 @@ from novel_forge.modules.context_builder.domain import (
     ContextCandidate,
     build_authority_context_bundle,
 )
+from novel_forge.modules.review.domain import evaluate_review_result
+from novel_forge.modules.revision.domain import apply_revision_result
+from novel_forge.modules.canon_graph.domain import build_canon_update
+from novel_forge.modules.content_quality_loop.domain import evaluate_quality_evidence
+from novel_forge.modules.publishing.domain import (
+    build_export_blob_manifest,
+    prepare_internal_release,
+)
 
 
 def build_chapter_plan(
@@ -98,33 +106,17 @@ def normalize_review_result(
     draft_asset_version_id: str,
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
+    project_id: str = "local-system",
+    context_bundle_version_id: str = "legacy-context-bundle",
 ) -> dict[str, Any]:
-    decision = str(result.get("decision") or "").upper()
-    if decision not in {"PASSED", "NEEDS_REVISION", "BLOCKED"}:
-        raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "review decision is unsupported")
-    score = result.get("score")
-    if not isinstance(score, (int, float)) or isinstance(score, bool) or not 0 <= float(score) <= 100:
-        raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "review score must be between 0 and 100")
-    issues = result.get("issues")
-    if not isinstance(issues, list) or any(not isinstance(item, dict) for item in issues):
-        raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "review issues must be objects")
-    normalized_issues: list[dict[str, str]] = []
-    for item in issues:
-        code = str(item.get("code") or "").strip()
-        severity = str(item.get("severity") or "").lower()
-        message = str(item.get("message") or "").strip()
-        if not code or severity not in {"blocking", "major", "minor"} or not message:
-            raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "review issue is incomplete")
-        normalized_issues.append({"code": code, "severity": severity, "message": message})
-    return {
-        "chapter": draft["chapter"],
-        "target_asset_version_id": draft_asset_version_id,
-        "decision": decision,
-        "score": float(score),
-        "issues": normalized_issues,
-        "blocking_issue_count": sum(item["severity"] == "blocking" for item in normalized_issues),
-        "provider_evidence": dict(provider_evidence),
-    }
+    return evaluate_review_result(
+        project_id=project_id,
+        target_asset_version_id=draft_asset_version_id,
+        context_bundle_version_id=context_bundle_version_id,
+        chapter=int(draft["chapter"]),
+        result=result,
+        provider_evidence=provider_evidence,
+    )
 
 
 def normalize_revision_result(
@@ -135,53 +127,34 @@ def normalize_revision_result(
     review_asset_version_id: str,
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
+    project_id: str = "local-system",
+    context_bundle_version_id: str = "legacy-context-bundle",
 ) -> dict[str, Any]:
-    text = str(result.get("text") or "").strip()
-    resolved = [str(item) for item in result.get("resolved_issue_codes", []) if str(item).strip()]
-    blocking = {
-        str(item["code"])
-        for item in review.get("issues", [])
-        if item.get("severity") == "blocking"
-    }
-    if not text or not blocking.issubset(set(resolved)):
-        raise KernelError(
-            "CHAPTER_REVISION_INCOMPLETE",
-            "revision must provide text and resolve every blocking issue",
-        )
-    return {
-        "chapter": draft["chapter"],
-        "title": draft["title"],
-        "text": text,
-        "source_draft_version_id": draft_asset_version_id,
-        "review_version_id": review_asset_version_id,
-        "resolved_issue_codes": resolved,
-        "provider_evidence": dict(provider_evidence),
-    }
+    return apply_revision_result(
+        project_id=project_id,
+        draft=draft,
+        review=review,
+        draft_asset_version_id=draft_asset_version_id,
+        review_asset_version_id=review_asset_version_id,
+        context_bundle_version_id=context_bundle_version_id,
+        result=result,
+        provider_evidence=provider_evidence,
+    )
 
 
 def build_canon_patch(
     *,
     revision: dict[str, Any],
     revision_asset_version_id: str,
+    project_id: str = "local-system",
+    context_bundle_version_id: str = "legacy-context-bundle",
 ) -> dict[str, Any]:
-    text = str(revision.get("text") or "")
-    facts: list[dict[str, Any]] = []
-    if "surrenders the only safe route home" in text:
-        facts.append(
-            {
-                "subject": "protagonist",
-                "predicate": "gave_up",
-                "object": "safe_route_home",
-                "effective_chapter": revision["chapter"],
-            }
-        )
-    return {
-        "chapter": revision["chapter"],
-        "source_asset_version_id": revision_asset_version_id,
-        "facts": facts,
-        "conflicts": [],
-        "gate": "PASSED",
-    }
+    return build_canon_update(
+        project_id=project_id,
+        revision=revision,
+        revision_asset_version_id=revision_asset_version_id,
+        context_bundle_version_id=context_bundle_version_id,
+    )
 
 
 def build_quality_report(
@@ -190,25 +163,56 @@ def build_quality_report(
     revision_asset_version_id: str,
     canon: dict[str, Any],
     canon_asset_version_id: str,
+    review: dict[str, Any] | None = None,
+    review_asset_version_id: str = "legacy-review-version",
+    project_id: str = "local-system",
+    context_bundle_version_id: str = "legacy-context-bundle",
 ) -> dict[str, Any]:
-    visible_cost = "surrenders the only safe route home" in str(revision.get("text") or "")
-    canon_clear = canon.get("gate") == "PASSED" and not canon.get("conflicts")
-    if not visible_cost or not canon_clear:
-        raise KernelError(
-            "CHAPTER_QUALITY_GATE_FAILED",
-            "Quality output cannot be qualified while a blocking check fails",
-        )
-    return {
-        "chapter": revision["chapter"],
-        "target_asset_version_id": revision_asset_version_id,
-        "canon_patch_version_id": canon_asset_version_id,
-        "score": 91,
-        "checks": {
-            "blocking_review_issue_resolved": visible_cost,
-            "canon_conflict_free": canon_clear,
-        },
-        "gate": "PASSED",
+    effective_review = review or {
+        "issues": [
+            {"code": code, "severity": "blocking", "status": "OPEN", "qualification": "ELIGIBLE"}
+            for code in revision.get("resolved_issue_codes", [])
+        ]
     }
+    return evaluate_quality_evidence(
+        project_id=project_id,
+        revision=revision,
+        revision_asset_version_id=revision_asset_version_id,
+        review=effective_review,
+        review_asset_version_id=review_asset_version_id,
+        canon=canon,
+        canon_asset_version_id=canon_asset_version_id,
+        context_bundle_version_id=context_bundle_version_id,
+    )
+
+
+def build_publish_gate(
+    *,
+    revision: dict[str, Any],
+    revision_asset_version_id: str,
+    quality: dict[str, Any],
+    quality_asset_version_id: str,
+    review: dict[str, Any],
+    review_asset_version_id: str,
+    canon: dict[str, Any],
+    canon_asset_version_id: str,
+    context_bundle: dict[str, Any],
+    context_bundle_version_id: str,
+    project_id: str,
+) -> dict[str, Any]:
+    return prepare_internal_release(
+        project_id=project_id,
+        revision=revision,
+        revision_asset_version_id=revision_asset_version_id,
+        quality=quality,
+        quality_asset_version_id=quality_asset_version_id,
+        review=review,
+        review_asset_version_id=review_asset_version_id,
+        canon=canon,
+        canon_asset_version_id=canon_asset_version_id,
+        context_bundle=context_bundle,
+        context_bundle_version_id=context_bundle_version_id,
+    )
 
 
 def build_export_package(
@@ -218,17 +222,12 @@ def build_export_package(
     quality: dict[str, Any],
     quality_asset_version_id: str,
 ) -> dict[str, Any]:
-    if quality.get("gate") != "PASSED":
-        raise KernelError("CHAPTER_QUALITY_GATE_BLOCKED", "Export requires a passed quality gate")
-    return {
-        "chapter": revision["chapter"],
-        "title": revision["title"],
-        "rendered_text": revision["text"],
-        "source_asset_version_id": revision_asset_version_id,
-        "quality_asset_version_id": quality_asset_version_id,
-        "release_status": "READY_FOR_BLOB_VERIFICATION",
-        "media_type": "text/plain",
-    }
+    return build_export_blob_manifest(
+        revision=revision,
+        revision_asset_version_id=revision_asset_version_id,
+        publish_gate=quality,
+        publish_gate_asset_version_id=quality_asset_version_id,
+    )
 
 
 def _require_keys(payload: dict[str, Any], *keys: str) -> None:
@@ -242,6 +241,7 @@ __all__ = [
     "build_chapter_plan",
     "build_context_bundle",
     "build_export_package",
+    "build_publish_gate",
     "build_quality_report",
     "normalize_draft_result",
     "normalize_review_result",

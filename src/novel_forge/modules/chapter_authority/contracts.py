@@ -58,6 +58,13 @@ class ChapterNode(Enum):
         "chapter.quality",
         "chapter.quality.materialized",
     )
+    PUBLISH_GATE = (
+        "publish_gate",
+        "chapter.publishing.prepare_release",
+        "publish_gate_report",
+        "chapter.publish_gate",
+        "chapter.publish_gate.materialized",
+    )
     EXPORT = (
         "export",
         "chapter.export.render",

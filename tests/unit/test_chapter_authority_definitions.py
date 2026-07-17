@@ -9,6 +9,8 @@ from novel_forge.modules.chapter_authority.contracts import (
     ChapterNode,
 )
 from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+    CHAPTER_SLICE_HANDLER_CONTRACT_VERSION,
     CHAPTER_SLICE_DEFINITION_VERSION,
     CHAPTER_SLICE_ROOT_DEFINITION_NAME,
     chapter_root_operation_definition,
@@ -59,12 +61,13 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             [definition["name"] for definition in definitions],
             [node.definition_name for node in ChapterNode],
         )
-        self.assertEqual(len(definitions), 8)
+        self.assertEqual(len(definitions), 9)
         self.assertEqual(
             {definition["definition_version"] for definition in definitions},
             {CHAPTER_SLICE_DEFINITION_VERSION},
         )
-        self.assertEqual(len({item["handler_key"] for item in definitions}), 8)
+        self.assertEqual(len({item["handler_key"] for item in definitions}), 9)
+        self.assertEqual(definitions[-2]["name"], "chapter.publishing.prepare_release")
         for node, definition in zip(ChapterNode, definitions, strict=True):
             with self.subTest(node=node.value):
                 schema = definition["command_schema"]
@@ -73,7 +76,10 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
                 self.assertIn("chapter", schema["required"])
                 self.assertEqual(definition["family"], "chapter_authority")
                 self.assertEqual(definition["idempotency_scope"], "project:chapter-slice")
-                self.assertEqual(definition["handler_contract_version"], "1.0.0")
+                self.assertEqual(
+                    definition["handler_contract_version"],
+                    CHAPTER_SLICE_HANDLER_CONTRACT_VERSION,
+                )
                 self.assertEqual(definition["definition_status"], "enabled")
                 self.assertEqual(definition["input_contract"], definition["command_schema"])
                 self.assertEqual(definition["output_contract"], definition["result_schema"])
@@ -112,7 +118,10 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             model_effects_required=True,
         )
 
-        self.assertEqual({item["definition_version"] for item in definitions}, {"1.1.0"})
+        self.assertEqual(
+            {item["definition_version"] for item in definitions},
+            {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION},
+        )
         for node, capability in (
             (ChapterNode.DRAFT, "model.draft"),
             (ChapterNode.REVIEW, "model.review"),

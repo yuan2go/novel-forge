@@ -65,8 +65,8 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["root"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["forward_recovery_attempts"], 1)
-        self.assertEqual(len(manifest["operations"]), 9)
-        self.assertEqual(len(manifest["outputs"]), 8)
+        self.assertEqual(len(manifest["operations"]), 10)
+        self.assertEqual(len(manifest["outputs"]), 9)
         self.assertEqual(manifest["attempt_counts"][ChapterNode.DRAFT.value], 2)
         for node in ChapterNode:
             self.assertEqual(manifest["operation_statuses"][node.value], "SUCCEEDED")
@@ -92,7 +92,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 8)
+            self.assertEqual(cursor.fetchone()[0], 9)
             cursor.execute(
                 """
                 SELECT COUNT(*)
@@ -103,7 +103,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id, result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 7)
+            self.assertEqual(cursor.fetchone()[0], 8)
 
     def test_standard_success_adapter_completes_without_unknown_probe(self) -> None:
         project_id = identifier("chapter-project-success")

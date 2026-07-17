@@ -7,7 +7,10 @@ from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerRegistry,
     ChapterNode,
 )
-from novel_forge.modules.chapter_authority.definitions import chapter_operation_definitions
+from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_SLICE_DEFINITION_VERSION,
+    chapter_operation_definitions,
+)
 from novel_forge.modules.chapter_authority.runtime import execute_chapter_handler
 from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
@@ -70,7 +73,7 @@ class ChapterAuthorityRuntimePostgresTests(unittest.TestCase):
             DATABASE_URL,
             {
                 "definition_name": ChapterNode.PLAN.definition_name,
-                "definition_version": "1.0.0",
+                "definition_version": CHAPTER_SLICE_DEFINITION_VERSION,
                 "project_id": project_id,
                 "workspace_id": f"workspace:{project_id}",
                 "actor_id": admission.actor_id,

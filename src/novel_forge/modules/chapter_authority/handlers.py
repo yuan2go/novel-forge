@@ -15,6 +15,7 @@ from novel_forge.modules.chapter_authority.domain_handlers import (
     build_chapter_plan,
     build_context_bundle,
     build_export_package,
+    build_publish_gate,
     build_quality_report,
     normalize_draft_result,
     normalize_review_result,
@@ -68,6 +69,14 @@ class DeterministicFixtureChapterProvider:
                     "before the witnesses leave, making the cost irreversible."
                 ),
                 "resolved_issue_codes": [str(item["code"]) for item in review["issues"]],
+                "canon_assertions": [
+                    {
+                        "subject": "protagonist",
+                        "predicate": "gave_up",
+                        "object": "safe_route_home",
+                        "effective_chapter": draft["chapter"],
+                    }
+                ],
             }
         else:
             from novel_forge.modules.command_kernel.errors import KernelError
@@ -149,6 +158,7 @@ class _ReviewHandler:
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         draft = request.require_input("draft_chapter")
+        context = request.require_input("context_bundle")
         reviewed = self.provider.invoke(
             request,
             stage="review",
@@ -161,6 +171,8 @@ class _ReviewHandler:
                 draft_asset_version_id=draft.asset_version_id,
                 result=reviewed.output,
                 provider_evidence=_provider_evidence(reviewed),
+                project_id=request.project_id,
+                context_bundle_version_id=context.asset_version_id,
             ),
         )
 
@@ -172,6 +184,7 @@ class _RevisionHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
+        context = request.require_input("context_bundle")
         revised = self.provider.invoke(
             request,
             stage="revision",
@@ -186,6 +199,8 @@ class _RevisionHandler:
                 review_asset_version_id=review.asset_version_id,
                 result=revised.output,
                 provider_evidence=_provider_evidence(revised),
+                project_id=request.project_id,
+                context_bundle_version_id=context.asset_version_id,
             ),
         )
 
@@ -194,11 +209,14 @@ class _RevisionHandler:
 class _CanonHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
+        context = request.require_input("context_bundle")
         return _output(
             ChapterNode.CANON,
             build_canon_patch(
                 revision=revision.content,
                 revision_asset_version_id=revision.asset_version_id,
+                project_id=request.project_id,
+                context_bundle_version_id=context.asset_version_id,
             ),
         )
 
@@ -207,7 +225,9 @@ class _CanonHandler:
 class _QualityHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
+        review = request.require_input("review_report")
         canon = request.require_input("canon_patch")
+        context = request.require_input("context_bundle")
         return _output(
             ChapterNode.QUALITY,
             build_quality_report(
@@ -215,6 +235,36 @@ class _QualityHandler:
                 revision_asset_version_id=revision.asset_version_id,
                 canon=canon.content,
                 canon_asset_version_id=canon.asset_version_id,
+                review=review.content,
+                review_asset_version_id=review.asset_version_id,
+                project_id=request.project_id,
+                context_bundle_version_id=context.asset_version_id,
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _PublishGateHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        revision = request.require_input("draft_version")
+        review = request.require_input("review_report")
+        canon = request.require_input("canon_patch")
+        quality = request.require_input("quality_score_report")
+        context = request.require_input("context_bundle")
+        return _output(
+            ChapterNode.PUBLISH_GATE,
+            build_publish_gate(
+                revision=revision.content,
+                revision_asset_version_id=revision.asset_version_id,
+                quality=quality.content,
+                quality_asset_version_id=quality.asset_version_id,
+                review=review.content,
+                review_asset_version_id=review.asset_version_id,
+                canon=canon.content,
+                canon_asset_version_id=canon.asset_version_id,
+                context_bundle=context.content,
+                context_bundle_version_id=context.asset_version_id,
+                project_id=request.project_id,
             ),
         )
 
@@ -223,14 +273,14 @@ class _QualityHandler:
 class _ExportHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
-        quality = request.require_input("quality_score_report")
+        publish_gate = request.require_input("publish_gate_report")
         return _output(
             ChapterNode.EXPORT,
             build_export_package(
                 revision=revision.content,
                 revision_asset_version_id=revision.asset_version_id,
-                quality=quality.content,
-                quality_asset_version_id=quality.asset_version_id,
+                quality=publish_gate.content,
+                quality_asset_version_id=publish_gate.asset_version_id,
             ),
         )
 
@@ -248,6 +298,7 @@ def build_chapter_handler_registry(
     registry.register(ChapterNode.REVISION, _RevisionHandler(provider))
     registry.register(ChapterNode.CANON, _CanonHandler())
     registry.register(ChapterNode.QUALITY, _QualityHandler())
+    registry.register(ChapterNode.PUBLISH_GATE, _PublishGateHandler())
     registry.register(ChapterNode.EXPORT, _ExportHandler())
     return registry
 

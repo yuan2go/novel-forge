@@ -6,9 +6,9 @@ from typing import Any
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
-CHAPTER_SLICE_DEFINITION_VERSION = "1.0.0"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "1.1.0"
-CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "1.0.0"
+CHAPTER_SLICE_DEFINITION_VERSION = "2.0.0"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.0"
+CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.0"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
 CHAPTER_PROJECTION_CONSUMERS = [
@@ -159,7 +159,7 @@ def _definition(
         "output_contract": result_schema,
         "handler_key": node.handler_key,
         "handler_contract_version": (
-            "1.1.0" if model_effects_required else CHAPTER_SLICE_HANDLER_CONTRACT_VERSION
+            "2.1.0" if model_effects_required else CHAPTER_SLICE_HANDLER_CONTRACT_VERSION
         ),
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
