@@ -4,6 +4,10 @@ from __future__ import annotations
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.context_builder.domain import (
+    ContextCandidate,
+    build_authority_context_bundle,
+)
 
 
 def build_chapter_plan(
@@ -32,20 +36,40 @@ def build_context_bundle(
     plan: dict[str, Any],
     plan_asset_version_id: str,
     plan_content_hash: str,
+    project_id: str = "local-system",
+    created_by_operation_id: str = "legacy-direct-call",
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "objective", "premise", "beats")
+    governed = build_authority_context_bundle(
+        project_id=project_id,
+        stage="draft",
+        created_by_operation_id=created_by_operation_id,
+        context_profile_version="draft-context-profile-v2",
+        candidates=(
+            ContextCandidate(
+                asset_version_id=plan_asset_version_id,
+                asset_type="chapter_plan",
+                project_id=project_id,
+                estimated_tokens=max(1, len(str(plan)) // 4),
+                relevance_score=1.0,
+                content_digest=plan_content_hash,
+                invalidation_keys=(f"chapter-plan:{plan_asset_version_id}",),
+                narrative_function="current_chapter_plan",
+            ),
+        ),
+        token_budget=6000,
+        version_refs={"chapter_plan_version": plan_asset_version_id},
+    )
     return {
+        **governed,
         "chapter": plan["chapter"],
         "goal": plan["objective"],
-        "selected_asset_version_ids": [plan_asset_version_id],
-        "context_digest": plan_content_hash,
         "actual_context": {
             "premise": plan["premise"],
             "beats": plan["beats"],
             "copyright_boundary": "project-owned and abstract eligible context only",
         },
         "forbidden_source_count": 0,
-        "context_contract_version": "chapter-context-v1",
     }
 
 

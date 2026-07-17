@@ -114,6 +114,8 @@ class _ContextHandler:
                 plan=plan.content,
                 plan_asset_version_id=plan.asset_version_id,
                 plan_content_hash=plan.content_hash,
+                project_id=request.project_id,
+                created_by_operation_id=request.operation_id,
             ),
         )
 
