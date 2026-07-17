@@ -7,15 +7,20 @@ from novel_forge.modules.content_authority.codecs import CONTENT_CODECS
 
 
 CONTENT_DEFINITION_VERSION = "2.0.0"
+CONTENT_INTEGRATION_PROVEN = frozenset(CONTENT_CODECS)
 
 
 def content_operation_definitions(
     *,
     application_build_id: str,
     commit_sha: str,
-    integration_proven: Collection[str] = (),
+    integration_proven: Collection[str] | None = None,
 ) -> tuple[dict[str, Any], ...]:
-    proven = frozenset(integration_proven)
+    proven = (
+        CONTENT_INTEGRATION_PROVEN
+        if integration_proven is None
+        else frozenset(integration_proven)
+    )
     unknown = proven - CONTENT_CODECS.keys()
     if unknown:
         raise ValueError(f"unknown content definition maturity: {sorted(unknown)}")
@@ -127,4 +132,8 @@ def content_operation_definitions(
     return tuple(definitions)
 
 
-__all__ = ["CONTENT_DEFINITION_VERSION", "content_operation_definitions"]
+__all__ = [
+    "CONTENT_DEFINITION_VERSION",
+    "CONTENT_INTEGRATION_PROVEN",
+    "content_operation_definitions",
+]

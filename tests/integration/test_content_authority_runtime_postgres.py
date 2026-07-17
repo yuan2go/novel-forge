@@ -1,0 +1,202 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import unittest
+
+from novel_forge.modules.content_authority import CONTENT_CODECS
+from novel_forge.modules.content_authority.application import (
+    ContentAuthorityApplication,
+    ContentOperationRequest,
+)
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier
+
+
+class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        ensure_migrated()
+
+    def setUp(self) -> None:
+        self.project_id = identifier("content-project")
+        self.counter = 0
+        self.app = ContentAuthorityApplication(
+            DATABASE_URL,
+            application_build_id="content-authority-integration",
+            commit_sha="d" * 40,
+            integration_proven=CONTENT_CODECS,
+        )
+
+    def seed(self, asset_type: str, content: dict, label: str):
+        asset_version_id = f"{self.project_id}:{label}:v1"
+        asset_id = f"{self.project_id}:{label}"
+        content_hash = "sha256:" + hashlib.sha256(
+            json.dumps(content, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "INSERT INTO authority_asset (asset_id, project_id, asset_type) VALUES (%s, %s, %s)",
+                [asset_id, self.project_id, asset_type],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset_version (
+                    asset_version_id, asset_id, version_number, lifecycle,
+                    eligibility, governance, content, content_hash
+                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s)
+                """,
+                [asset_version_id, asset_id, json.dumps(content), content_hash],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset_qualification (
+                    qualification_id, asset_version_id, policy_version, decision, evidence
+                ) VALUES (%s, %s, 'content-fixture-v1', 'ELIGIBLE', '{}'::jsonb)
+                """,
+                [f"{asset_version_id}:qualification", asset_version_id],
+            )
+            uow.commit()
+        return {"asset_version_id": asset_version_id, "content_hash": content_hash}
+
+    def run_op(self, name: str, inputs=(), payload=None, approval=None):
+        self.counter += 1
+        result = self.app.execute(
+            ContentOperationRequest(
+                definition_name=name,
+                project_id=self.project_id,
+                workspace_id=f"workspace:{self.project_id}",
+                actor_id="content-operator",
+                trace_id=f"trace:{self.project_id}",
+                correlation_id=f"correlation:{self.project_id}",
+                idempotency_key=f"{self.project_id}:{name}:{self.counter}",
+                payload=payload or {},
+                input_assets=tuple(inputs),
+                approval=approval,
+            )
+        )
+        return {"asset_version_id": result.asset_version_id, "content_hash": result.content_hash}
+
+    def test_all_22_codecs_execute_through_postgresql_authority(self) -> None:
+        brief_payload = {
+            "target_genre": "fantasy", "subgenre": "mystery", "target_platform": "serial",
+            "target_audience": "adult", "reading_promise": "costly public choices",
+            "core_fantasy": "truth changes power", "core_conflict": "truth versus safety",
+            "protagonist_mechanism": "auditable memory", "antagonist_mechanism": "institutional erasure",
+            "world_novelty": "records alter reality", "emotional_engine": "loyalty under evidence",
+            "pleasure_engine": "clever reversals", "suspense_engine": "missing records",
+            "theme_question": "When safety requires betrayal, is loyalty still worth its cost?",
+            "serialization_strategy": "case arcs", "prohibited_elements": ["copying"],
+            "source_boundaries": ["abstract_only"], "quality_targets": {"review": 80},
+        }
+        brief = self.run_op("creative.brief.create", payload={"brief": brief_payload})
+        fingerprint = {
+            "protagonist_advantage_mechanism": "auditable memory", "conflict_loop": "record versus erasure",
+            "growth_loop": "trust through costly proof", "reward_loop": "restore a hidden fact",
+            "information_asymmetry": "institutions know deletions", "world_constraint": "records require sacrifice",
+            "relationship_engine": "mutual audit", "antagonist_response_pattern": "rewrite procedure",
+            "chapter_payoff_pattern": "public proof with private cost",
+        }
+        scores = {
+            "novelty": .8, "genre_fit": .8, "platform_fit": .8, "conflict_sustainability": .8,
+            "longform_capacity": .8, "protagonist_agency": .8, "antagonist_pressure": .8,
+            "pleasure_potential": .8, "suspense_potential": .8, "theme_potential": .8,
+            "serialization_potential": .8, "similarity_risk": .1, "production_difficulty": .2,
+        }
+        candidate1 = self.seed("creative_candidate", {"project_id": self.project_id, "candidate_id": "c1", "fingerprint": fingerprint, "scores": scores, "known_risks": []}, "candidate-1")
+        candidate2 = self.seed("creative_candidate", {"project_id": self.project_id, "candidate_id": "c2", "fingerprint": {**fingerprint, "conflict_loop": "witness versus archive"}, "scores": scores, "known_risks": []}, "candidate-2")
+        evaluation1 = self.run_op("creative.candidates.evaluate", [brief, candidate1])
+        evaluation2 = self.run_op("creative.candidates.evaluate", [brief, candidate2])
+        self.run_op("creative.candidates.cluster", [evaluation1, evaluation2], {"threshold": .7})
+        self.run_op("creative.project.approve", [brief, evaluation1, evaluation2], approval={"status": "APPROVED", "project_id": self.project_id})
+
+        rules = [{
+            "rule_key": "memory_cost", "rule": "restoring a record costs a memory", "scope": "archive",
+            "cost": "one personal memory", "exception": "none", "observable_consequence": "name loss",
+            "narrative_function": "force costly proof", "conflict_potential": "high",
+            "failure_mode": "identity erosion", "canon_policy": "append_only",
+        }]
+        world = self.run_op("production.world.generate", [brief], {"rules": rules, "entities": {"world_premise": [{"name": "Archive City"}], "factions": [], "institutions": [], "locations": [], "resources": [], "systems": [], "economy": [], "social_hierarchy": [], "information_boundaries": [], "historical_events": [], "conflict_sources": [], "daily_life_impacts": []}})
+        self.run_op("world.validate", [world])
+        theme_question = self.run_op("theme.question.create", payload={"question": brief_payload["theme_question"]})
+        character_fields = {
+            "project_id": self.project_id, "desire": "restore truth", "need": "trust others", "fear": "self-erasure",
+            "wound": "a deleted family", "false_belief": "proof is enough", "value_hierarchy": ["truth", "loyalty"],
+            "moral_boundary": "never erase another", "capability": "audit records", "capability_cost": "memory loss",
+            "weakness": "solitary", "agency": "chooses cases", "voice": "precise", "public_identity": "clerk",
+            "private_identity": "survivor", "secret": "altered record", "relationship_goals": ["earn trust"],
+            "conflict_style": "document first", "growth_arc": "proof to solidarity", "failure_arc": "becomes eraser",
+            "reader_charm_mechanism": "pays costs first",
+        }
+        character1 = self.run_op("production.character.generate", [brief, world, theme_question], {"profile": {**character_fields, "character_id": "hero"}})
+        character2 = self.run_op("production.character.generate", [brief, world, theme_question], {"profile": {**character_fields, "character_id": "ally", "public_identity": "witness"}})
+        self.run_op("character.relationships.generate", [character1, character2], {"state": {"relationship_edge": "allies", "power_relation": "balanced", "trust_state": "fragile", "debt": "shared proof", "dependency": "mutual witness", "hidden_conflict": "different costs", "relationship_arc": "audit to trust"}})
+        value_conflict = self.seed("value_conflict", {"conflicting_values": ["safety", "loyalty"], "character_initial_position": "safety first", "pressure_event": "ally accused", "choice": "testify", "immediate_cost": "job loss", "longterm_cost": "exile", "relationship_consequence": "trust gained", "world_consequence": "record reopened", "belief_change": "loyalty needs action", "unresolved_tension": "family risk"}, "value-conflict")
+        self.run_op("theme.arc.build", [theme_question, value_conflict])
+        draft = self.seed("draft_version", {"text": "The clerk chooses and pays."}, "draft")
+        anti_evidence = self.seed("anti_preaching_evidence", {"passages": []}, "anti-evidence")
+        self.run_op("theme.anti_preaching.evaluate", [draft, anti_evidence])
+
+        ending_intent = self.seed("ending_intent", {"intent": "costly truth"}, "ending-intent")
+        closure = self.run_op("ending.closure.plan", [ending_intent], {"plan": {"main_problem_resolution": "restore the archive", "protagonist_final_choice": "publish the record", "protagonist_cost": "loses the final family memory", "antagonist_end": "authority removed by evidence", "relationship_closures": ["mutual trust"], "reader_promises": ["truth revealed"], "foreshadow_payoffs": ["missing name"], "open_questions": ["who rebuilds"], "theme_reanswer": "loyalty is chosen through cost", "world_state_change": "public archive", "aftertaste": "hope with loss", "epilogue_policy": "one quiet scene"}})
+        promise = self.seed("promise", {"promise": "truth revealed"}, "promise")
+        payoff = self.run_op("ending.payoff_matrix.build", [promise], {"items": [{"type": "promise", "status": "PAID", "asset_version_id": promise["asset_version_id"]}]})
+        ending_evidence = self.seed("ending_evidence", {}, "ending-evidence")
+        self.run_op("ending.quality.evaluate", [closure, payoff, ending_evidence])
+
+        character_state = self.seed("character_state", {"long_term_goal": "restore truth"}, "character-state")
+        behavior = self.seed("character_behavior", {"implied_goal": "restore truth", "change_evidence": []}, "behavior")
+        motivation = self.run_op("longform.motivation.evaluate", [character_state, behavior])
+        entity1 = self.seed("entity_identity", {"project_id": self.project_id, "entity_id": "hero", "name": "Arin", "aliases": ["Clerk"], "entity_type": "character"}, "entity-1")
+        entity2 = self.seed("entity_identity", {"project_id": self.project_id, "entity_id": "masked", "name": "Clerk", "aliases": [], "entity_type": "character"}, "entity-2")
+        self.run_op("longform.entity_merge.propose", [entity1, entity2])
+        foreshadow_state = self.seed("foreshadow_state", {"thread": "missing name"}, "foreshadow")
+        foreshadow_evidence = self.seed("foreshadow_payoff_evidence", {"scores": {"setup_clarity": .8, "reader_memory": .8, "timing": .8, "causal_relevance": .8, "surprise": .8, "fairness": .8, "emotional_payoff": .8, "plot_consequence": .8, "character_consequence": .8, "theme_relevance": .8}}, "foreshadow-evidence")
+        foreshadow_report = self.run_op("longform.foreshadow_payoff.evaluate", [foreshadow_state, foreshadow_evidence])
+        world_rule = self.seed("world_rule", {"rule_key": "memory_cost", "scope": "archive", "definition": "restoration costs memory"}, "world-rule")
+        world_event = self.seed("world_event", {"unpaid_exception": False}, "world-event")
+        world_report = self.run_op("longform.world_rule.evaluate", [world_rule, world_event])
+        power1 = self.seed("power_state", {"power_tier": 1, "cost": "memory"}, "power-1")
+        power2 = self.seed("power_state", {"power_tier": 2, "cost": "memory", "change_reasons": ["training"], "scale_growth": 2}, "power-2")
+        power_report = self.run_op("longform.power.evaluate", [power1, power2])
+        patterns = [self.seed("narrative_pattern_fingerprint", {"conflict_trigger": "missing record", "antagonist_entry": "procedure", "resolution": f"proof-{index}", "reward": "truth", "misunderstanding": "", "humiliation": "", "chapter_ending": "new cost", "revelation": "record", "character_reaction": "choice"}, f"pattern-{index}") for index in range(3)]
+        pattern_report = self.run_op("longform.pattern.evaluate", patterns, {"threshold": 3})
+        debt_asset = self.seed("narrative_debt", {"type": "main_plot", "opened_chapter": 1, "payoff_window_end": 4}, "debt")
+        debt_report = self.run_op("longform.narrative_debt.evaluate", [debt_asset], {"current_chapter": 5})
+        recap_inputs = [
+            motivation,
+            self.seed("relationship_report", {"movement": "trust grows"}, "relationship-report"),
+            self.seed("canon_conflict_report", {"issues": []}, "canon-report"),
+            world_report, power_report, foreshadow_report, debt_report,
+            self.seed("reward_cadence_report", {"cadence": "steady"}, "reward-report"),
+            self.seed("antagonist_pressure_report", {"pressure": "rising"}, "antagonist-report"),
+            pattern_report,
+            self.seed("theme_movement_report", {"movement": "choice gains cost"}, "theme-report"),
+            self.seed("quality_score_report", {"trend": "improving"}, "quality-report"),
+        ]
+        self.run_op("longform.recap.enhance", recap_inputs, {"reports": {"main_plot_progress": "archive reopened", "constraints": ["preserve memory cost"]}})
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT definition_name, status FROM authority_operation WHERE project_id = %s",
+                [self.project_id],
+            )
+            operations = uow.cursor.fetchall()
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM audit_log WHERE project_id = %s AND action LIKE 'content.%%.materialized'",
+                [self.project_id],
+            )
+            audits = uow.cursor.fetchone()[0]
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM outbox_event WHERE project_id = %s AND topic LIKE 'content.%%.materialized'",
+                [self.project_id],
+            )
+            outbox = uow.cursor.fetchone()[0]
+        self.assertEqual({name for name, _ in operations}, set(CONTENT_CODECS))
+        self.assertTrue(all(status == "SUCCEEDED" for _, status in operations))
+        self.assertGreaterEqual(audits, len(operations))
+        self.assertGreaterEqual(outbox, len(operations))
+
+
+if __name__ == "__main__":
+    unittest.main()
