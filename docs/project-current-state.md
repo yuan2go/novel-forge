@@ -1,13 +1,19 @@
 # Project Current State
 
-Updated: 2026-07-12
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `6f3ba61`
+Updated: 2026-07-18
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `5aa2a89`
 
 Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
 
 The current code/runtime baseline is Novel Forge v6. The repository/package/CLI name remains `novel-forge`; do not rename code paths without a dedicated migration.
 
 Current priority: v1 single-book production closure before broader multi-book, SaaS, or platform automation.
+
+## 2026-07-18 Core Functional Convergence
+
+The PostgreSQL-only chapter Authority slice now contains a nine-node business chain plus root Saga, including governed Context, structured ReviewIssue/Revision/Canon/Quality, internal Publish Gate, and verified Export. Ten definitions are `integration_proven`; 22 new content-intelligence definitions are honestly `handler_bound` and disabled. Creative/World/Character, Theme/Ending, governed MKAOS/Source, controlled connector contracts, and long-form semantic reports have storage-free domain cores and focused tests.
+
+This is not a complete autonomous Agent Center or long-novel proof. Legacy LocalStorage compatibility services remain, content-intelligence handlers still need generic PostgreSQL runtime integration, and real-provider/10/30/100-chapter runs were intentionally not performed. See `docs/reports/core-functional-convergence-progress.md` and `docs/reports/operation-definition-maturity-matrix.md`.
 
 This document describes the current state as observed from code, tests, configuration, routes, and skills. It does not treat historical docs as truth unless code evidence exists.
 

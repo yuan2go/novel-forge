@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:6c617c1714cfa644975777d7eda40d9247593135d29fd4180236829f81cb5f7d",
+  "artifact_hash": "sha256:06f00375743ea194fb39664b33e25d40d248850d2c191b828f29886e5f2a8795",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+  "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
   "definitions": [
     {
       "approval_policy": {
@@ -134,288 +134,6 @@
         "type": "object"
       },
       "result_schema_version": "production.topic.generate.result.v1",
-      "retry_policy": {
-        "backoff": "exponential",
-        "dead_letter_on_exhaustion": true,
-        "max_attempts": 3
-      },
-      "timeout_policy": {
-        "lease_timeout_seconds": 60,
-        "operation_timeout_seconds": 900
-      }
-    },
-    {
-      "approval_policy": {
-        "policy_key": "none",
-        "required": false
-      },
-      "cancellation_policy": {
-        "command": "kernel.operation.cancel.v1",
-        "external_state_resolution": "reconcile_before_terminal"
-      },
-      "command_schema": {
-        "$id": "production.world.generate.command.v1",
-        "additionalProperties": false,
-        "properties": {},
-        "required": [],
-        "type": "object"
-      },
-      "command_schema_version": "production.world.generate.command.v1",
-      "compensation_policy": {
-        "child_operation_definition": "",
-        "reconcile_before_compensation": true,
-        "supported": false
-      },
-      "completion_contract": {
-        "required_aggregate_states": [],
-        "required_approvals": [],
-        "required_asset_selectors": [
-          {
-            "eligibility": "ELIGIBLE",
-            "governance": "CLEAR",
-            "lifecycle": "ACTIVE",
-            "selector": "production_output"
-          }
-        ],
-        "required_blobs": [],
-        "required_child_operations": [],
-        "required_evidence": [
-          "trace",
-          "audit",
-          "cost_when_provider_used"
-        ],
-        "required_external_effects": [
-          {
-            "allowed_states": [
-              "SUCCEEDED",
-              "COMPENSATED",
-              "CANCELLED"
-            ],
-            "capability": "model.generate"
-          }
-        ],
-        "required_gates": [
-          "production.quality_gate"
-        ],
-        "required_outbox_events": [
-          "production.world.generate.completed"
-        ],
-        "required_qualifications": [
-          "production_eligible"
-        ],
-        "version": "production.world.generate.completion.v1"
-      },
-      "concurrency_key_template": "project:{project_id}:project:{project_id}:production.world.generate",
-      "current_entrypoints": [],
-      "current_handlers": [],
-      "definition_status": "candidate",
-      "definition_version": "1.0.0-candidate.1",
-      "evidence_status": {
-        "documented": true,
-        "handler_bound": false,
-        "implemented": false,
-        "integration_proven": false,
-        "longform_proven": false,
-        "real_provider_proven": false
-      },
-      "execution_mode": "worker",
-      "external_capabilities": [
-        "model.generate"
-      ],
-      "family": "production",
-      "handler_contract_version": "1.0.0",
-      "handler_key": "novel_forge.command_handlers.production.world.generate",
-      "idempotency_scope": "project:operation",
-      "input_contract": {
-        "$id": "production.world.generate.command.v1",
-        "additionalProperties": false,
-        "properties": {},
-        "required": [],
-        "type": "object"
-      },
-      "irreversible_effect_policy": {
-        "allowed": false,
-        "requires_approval": false,
-        "requires_receipt": true
-      },
-      "legacy_entrypoints": [],
-      "migration_owner": "production-authority-migration",
-      "migration_status": "candidate",
-      "name": "production.world.generate",
-      "output_contract": {
-        "$id": "production.world.generate.result.v1",
-        "additionalProperties": true,
-        "properties": {
-          "asset_version_id": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "permissions": [
-        "production.world.generate"
-      ],
-      "projection_consumers": [
-        "production_operation_view"
-      ],
-      "result_schema": {
-        "$id": "production.world.generate.result.v1",
-        "additionalProperties": true,
-        "properties": {
-          "asset_version_id": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "result_schema_version": "production.world.generate.result.v1",
-      "retry_policy": {
-        "backoff": "exponential",
-        "dead_letter_on_exhaustion": true,
-        "max_attempts": 3
-      },
-      "timeout_policy": {
-        "lease_timeout_seconds": 60,
-        "operation_timeout_seconds": 900
-      }
-    },
-    {
-      "approval_policy": {
-        "policy_key": "none",
-        "required": false
-      },
-      "cancellation_policy": {
-        "command": "kernel.operation.cancel.v1",
-        "external_state_resolution": "reconcile_before_terminal"
-      },
-      "command_schema": {
-        "$id": "production.character.generate.command.v1",
-        "additionalProperties": false,
-        "properties": {},
-        "required": [],
-        "type": "object"
-      },
-      "command_schema_version": "production.character.generate.command.v1",
-      "compensation_policy": {
-        "child_operation_definition": "",
-        "reconcile_before_compensation": true,
-        "supported": false
-      },
-      "completion_contract": {
-        "required_aggregate_states": [],
-        "required_approvals": [],
-        "required_asset_selectors": [
-          {
-            "eligibility": "ELIGIBLE",
-            "governance": "CLEAR",
-            "lifecycle": "ACTIVE",
-            "selector": "production_output"
-          }
-        ],
-        "required_blobs": [],
-        "required_child_operations": [],
-        "required_evidence": [
-          "trace",
-          "audit",
-          "cost_when_provider_used"
-        ],
-        "required_external_effects": [
-          {
-            "allowed_states": [
-              "SUCCEEDED",
-              "COMPENSATED",
-              "CANCELLED"
-            ],
-            "capability": "model.generate"
-          }
-        ],
-        "required_gates": [
-          "production.quality_gate"
-        ],
-        "required_outbox_events": [
-          "production.character.generate.completed"
-        ],
-        "required_qualifications": [
-          "production_eligible"
-        ],
-        "version": "production.character.generate.completion.v1"
-      },
-      "concurrency_key_template": "project:{project_id}:project:{project_id}:production.character.generate",
-      "current_entrypoints": [],
-      "current_handlers": [],
-      "definition_status": "candidate",
-      "definition_version": "1.0.0-candidate.1",
-      "evidence_status": {
-        "documented": true,
-        "handler_bound": false,
-        "implemented": false,
-        "integration_proven": false,
-        "longform_proven": false,
-        "real_provider_proven": false
-      },
-      "execution_mode": "worker",
-      "external_capabilities": [
-        "model.generate"
-      ],
-      "family": "production",
-      "handler_contract_version": "1.0.0",
-      "handler_key": "novel_forge.command_handlers.production.character.generate",
-      "idempotency_scope": "project:operation",
-      "input_contract": {
-        "$id": "production.character.generate.command.v1",
-        "additionalProperties": false,
-        "properties": {},
-        "required": [],
-        "type": "object"
-      },
-      "irreversible_effect_policy": {
-        "allowed": false,
-        "requires_approval": false,
-        "requires_receipt": true
-      },
-      "legacy_entrypoints": [],
-      "migration_owner": "production-authority-migration",
-      "migration_status": "candidate",
-      "name": "production.character.generate",
-      "output_contract": {
-        "$id": "production.character.generate.result.v1",
-        "additionalProperties": true,
-        "properties": {
-          "asset_version_id": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "permissions": [
-        "production.character.generate"
-      ],
-      "projection_consumers": [
-        "production_operation_view"
-      ],
-      "result_schema": {
-        "$id": "production.character.generate.result.v1",
-        "additionalProperties": true,
-        "properties": {
-          "asset_version_id": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "result_schema_version": "production.character.generate.result.v1",
       "retry_policy": {
         "backoff": "exponential",
         "dead_letter_on_exhaustion": true,
@@ -11976,7 +11694,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.slice.run.command.v1",
-      "commit_sha": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12153,7 +11871,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.plan.materialize.command.v1",
-      "commit_sha": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12315,7 +12033,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.context.build.command.v1",
-      "commit_sha": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12477,7 +12195,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.draft.generate.command.v1",
-      "commit_sha": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12649,7 +12367,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.review.evaluate.command.v1",
-      "commit_sha": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12821,7 +12539,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.apply.command.v1",
-      "commit_sha": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12993,7 +12711,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.update.command.v1",
-      "commit_sha": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13155,7 +12873,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.evaluate.command.v1",
-      "commit_sha": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13317,7 +13035,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.prepare_release.command.v1",
-      "commit_sha": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13479,7 +13197,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.export.render.command.v1",
-      "commit_sha": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13630,10 +13348,3354 @@
       "timeout_policy": {
         "operation_timeout_seconds": 60
       }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "creative.brief.create.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "creative_brief"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "creative.brief.create.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:creative.brief.create",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.creative.brief.create"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "creative",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.creative.brief.create",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "creative.brief.create",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "creative.brief.create"
+      ],
+      "projection_consumers": [
+        "creative_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "creative.brief.create.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "creative.candidates.evaluate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "candidate_evaluation"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "creative.candidates.evaluate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:creative.candidates.evaluate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.creative.candidates.evaluate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "creative",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.creative.candidates.evaluate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "creative.candidates.evaluate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "creative.candidates.evaluate"
+      ],
+      "projection_consumers": [
+        "creative_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "creative.candidates.evaluate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "creative.candidates.cluster.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "candidate_cluster"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "creative.candidates.cluster.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:creative.candidates.cluster",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.creative.candidates.cluster"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "creative",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.creative.candidates.cluster",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "creative.candidates.cluster",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "creative.candidates.cluster"
+      ],
+      "projection_consumers": [
+        "creative_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "creative.candidates.cluster.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "operator.project.approval.v1",
+        "required": true
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "creative.project.approve.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "project_proposal"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "creative.project.approve.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:creative.project.approve",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.creative.project.approve"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "creative",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.creative.project.approve",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "creative.project.approve",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "creative.project.approve"
+      ],
+      "projection_consumers": [
+        "creative_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "creative.project.approve.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "production.world.generate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "world_bible"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "production.world.generate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:production.world.generate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.production.world.generate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "production",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.production.world.generate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "production.world.generate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "production.world.generate"
+      ],
+      "projection_consumers": [
+        "production_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "production.world.generate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "world.validate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "world_rule_conflict_report"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "world.validate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:world.validate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.world.validate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "world",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.world.validate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "world.validate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "world.validate"
+      ],
+      "projection_consumers": [
+        "world_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "world.validate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "production.character.generate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "character_card"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "production.character.generate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:production.character.generate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.production.character.generate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "production",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.production.character.generate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "production.character.generate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "production.character.generate"
+      ],
+      "projection_consumers": [
+        "production_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "production.character.generate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "character.relationships.generate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "relationship_state"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "character.relationships.generate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:character.relationships.generate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.character.relationships.generate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "character",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.character.relationships.generate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "character.relationships.generate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "character.relationships.generate"
+      ],
+      "projection_consumers": [
+        "character_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "character.relationships.generate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "theme.question.create.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "theme_question"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "theme.question.create.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:theme.question.create",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.theme.question.create"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "theme",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.theme.question.create",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "theme.question.create",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "theme.question.create"
+      ],
+      "projection_consumers": [
+        "theme_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "theme.question.create.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "theme.arc.build.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "theme_arc"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "theme.arc.build.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:theme.arc.build",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.theme.arc.build"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "theme",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.theme.arc.build",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "theme.arc.build",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "theme.arc.build"
+      ],
+      "projection_consumers": [
+        "theme_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "theme.arc.build.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "theme.anti_preaching.evaluate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "anti_preaching_report"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "theme.anti_preaching.evaluate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:theme.anti_preaching.evaluate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.theme.anti_preaching.evaluate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "theme",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.theme.anti_preaching.evaluate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "theme.anti_preaching.evaluate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "theme.anti_preaching.evaluate"
+      ],
+      "projection_consumers": [
+        "theme_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "theme.anti_preaching.evaluate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "ending.closure.plan.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "closure_plan"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "ending.closure.plan.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:ending.closure.plan",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.ending.closure.plan"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "ending",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.ending.closure.plan",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "ending.closure.plan",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "ending.closure.plan"
+      ],
+      "projection_consumers": [
+        "ending_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "ending.closure.plan.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "ending.payoff_matrix.build.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "payoff_matrix"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "ending.payoff_matrix.build.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:ending.payoff_matrix.build",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.ending.payoff_matrix.build"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "ending",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.ending.payoff_matrix.build",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "ending.payoff_matrix.build",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "ending.payoff_matrix.build"
+      ],
+      "projection_consumers": [
+        "ending_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "ending.payoff_matrix.build.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "ending.quality.evaluate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "ending_quality_report"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "ending.quality.evaluate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:ending.quality.evaluate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.ending.quality.evaluate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "ending",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.ending.quality.evaluate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "ending.quality.evaluate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "ending.quality.evaluate"
+      ],
+      "projection_consumers": [
+        "ending_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "ending.quality.evaluate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "longform.motivation.evaluate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "motivation_drift_report"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "longform.motivation.evaluate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:longform.motivation.evaluate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.longform.motivation.evaluate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "longform",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.longform.motivation.evaluate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "longform.motivation.evaluate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "longform.motivation.evaluate"
+      ],
+      "projection_consumers": [
+        "longform_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "longform.motivation.evaluate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "longform.entity_merge.propose.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "entity_merge_proposal"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "longform.entity_merge.propose.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:longform.entity_merge.propose",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.longform.entity_merge.propose"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "longform",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.longform.entity_merge.propose",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "longform.entity_merge.propose",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "longform.entity_merge.propose"
+      ],
+      "projection_consumers": [
+        "longform_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "longform.entity_merge.propose.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "longform.foreshadow_payoff.evaluate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "foreshadow_payoff_report"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "longform.foreshadow_payoff.evaluate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:longform.foreshadow_payoff.evaluate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.longform.foreshadow_payoff.evaluate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "longform",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.longform.foreshadow_payoff.evaluate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "longform.foreshadow_payoff.evaluate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "longform.foreshadow_payoff.evaluate"
+      ],
+      "projection_consumers": [
+        "longform_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "longform.foreshadow_payoff.evaluate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "longform.world_rule.evaluate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "world_rule_conflict_report"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "longform.world_rule.evaluate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:longform.world_rule.evaluate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.longform.world_rule.evaluate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "longform",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.longform.world_rule.evaluate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "longform.world_rule.evaluate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "longform.world_rule.evaluate"
+      ],
+      "projection_consumers": [
+        "longform_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "longform.world_rule.evaluate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "longform.power.evaluate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "power_conflict_report"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "longform.power.evaluate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:longform.power.evaluate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.longform.power.evaluate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "longform",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.longform.power.evaluate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "longform.power.evaluate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "longform.power.evaluate"
+      ],
+      "projection_consumers": [
+        "longform_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "longform.power.evaluate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "longform.pattern.evaluate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "pattern_repetition_report"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "longform.pattern.evaluate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:longform.pattern.evaluate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.longform.pattern.evaluate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "longform",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.longform.pattern.evaluate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "longform.pattern.evaluate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "longform.pattern.evaluate"
+      ],
+      "projection_consumers": [
+        "longform_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "longform.pattern.evaluate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "longform.narrative_debt.evaluate.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "narrative_debt_report"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "longform.narrative_debt.evaluate.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:longform.narrative_debt.evaluate",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.longform.narrative_debt.evaluate"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "longform",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.longform.narrative_debt.evaluate",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "longform.narrative_debt.evaluate",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "longform.narrative_debt.evaluate"
+      ],
+      "projection_consumers": [
+        "longform_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "longform.narrative_debt.evaluate.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "policy_key": "none",
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "longform.recap.enhance.command.v1",
+      "commit_sha": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
+      "compensation_policy": {
+        "reason": "append_only_asset_versions",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "role": "primary",
+            "selector": "longform_recap_report"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "version": "longform.recap.enhance.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:longform.recap.enhance",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.content_authority.longform.recap.enhance"
+      ],
+      "definition_status": "handler_bound",
+      "definition_version": "1.0.0",
+      "enabled": false,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": false,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "longform",
+      "handler_contract_version": "1.0.0",
+      "handler_key": "novel_forge.content_authority.longform.recap.enhance",
+      "idempotency_scope": "project:content-domain",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "input_asset_version_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "content-intelligence-authority",
+      "migration_status": "handler_bound",
+      "name": "longform.recap.enhance",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "longform.recap.enhance"
+      ],
+      "projection_consumers": [
+        "longform_console"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "longform.recap.enhance.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      }
     }
   ],
   "generator_version": "2.1.0",
-  "repository_head_at_generation": "cf5ef1ed0b66ca96b28c7e4d828781f3c88b2214",
+  "repository_head_at_generation": "5aa2a89dc1510324728c1bf03f00f95d6c7b77d9",
   "schema_version": "2.0.0",
-  "source_tree_sha": "6f6cd76d6232a6e7c96519315bf482f8f622d5cd"
+  "source_tree_sha": "14daaf62fe29c63c6556fdde76f8d274e10179ee"
 }
