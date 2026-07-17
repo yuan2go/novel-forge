@@ -122,6 +122,11 @@ def start_chapter_production(
         bypass_reason=str(envelope_payload.get("bypass_reason") or "") if envelope_payload is not None else "",
         require_for_production=True,
     )
+    if is_production_environment(environment):
+        raise ValueError(
+            "LEGACY_CHAPTER_BUS_PRODUCTION_DISABLED: submit a PostgreSQL Chapter Authority command; "
+            "LocalStorage ChapterProductionRun is a non-authoritative development projection"
+        )
     runtime_policy_resolution = _resolve_runtime_artifact_policy(
         storage,
         project_id=project_id,

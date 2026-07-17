@@ -10,9 +10,13 @@ from novel_forge.modules.chapter_production_bus.service import (
     run_chapter_production_sequence,
     start_chapter_production,
 )
+from novel_forge.modules.chapter_production_bus.authority_adapter import (
+    ChapterProductionAuthorityAdapter,
+)
 
 __all__ = [
     "CHAPTER_PRODUCTION_STEPS",
+    "ChapterProductionAuthorityAdapter",
     "cancel_chapter_production",
     "chapter_production_run_detail",
     "list_chapter_production_runs",
