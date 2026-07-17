@@ -19,6 +19,7 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     start_attempt,
     submit_attempt_result,
 )
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.content_authority.definitions import (
@@ -189,7 +190,7 @@ class ContentAuthorityApplication:
             uow.cursor.execute(
                 """
                 SELECT binding.asset_id, binding.asset_version_id, binding.content_hash,
-                       binding.output_key
+                       binding.output_key, operation.status
                 FROM authority_operation_output_asset AS binding
                 JOIN authority_operation AS operation ON operation.operation_id = binding.operation_id
                 WHERE binding.operation_id = %s AND operation.project_id = %s
@@ -200,6 +201,11 @@ class ContentAuthorityApplication:
             row = uow.cursor.fetchone()
         if row is None:
             return None
+        if row[4] != "SUCCEEDED":
+            raise KernelError(
+                "CONTENT_OPERATION_RECOVERY_REQUIRED",
+                "an output exists but Completion is not terminal; resume the fenced Attempt",
+            )
         return AuthorityExecutionResult(
             operation_id=operation_id,
             asset_id=row[0],
