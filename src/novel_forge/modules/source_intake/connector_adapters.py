@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import asdict, dataclass
+import hashlib
 from urllib.parse import urlsplit
 from typing import Any
 
@@ -20,6 +22,142 @@ from novel_forge.modules.source_intake.service import (
     create_source_sync_job,
 )
 from novel_forge.storage.local import LocalStorage
+
+
+CONTROLLED_CONNECTOR_KINDS = {"git", "rss", "public_domain"}
+
+
+@dataclass(frozen=True, slots=True)
+class ControlledConnectorPlan:
+    connector_kind: str
+    project_id: str
+    endpoint: str
+    allowlisted_hosts: tuple[str, ...]
+    timeout_seconds: int
+    max_retries: int
+    max_requests_per_minute: int
+    max_content_bytes: int
+    allowed_media_types: tuple[str, ...]
+    license_required: bool
+    robots_tos_evidence_required: bool
+    approval_required: bool
+    network_enabled: bool = False
+
+
+def plan_controlled_connector(
+    *,
+    connector_kind: str,
+    project_id: str,
+    endpoint: str,
+    allowlisted_hosts: list[str],
+    approval_granted: bool = False,
+    timeout_seconds: int = 10,
+    max_retries: int = 2,
+    max_requests_per_minute: int = 20,
+    max_content_bytes: int = 2_000_000,
+    allowed_media_types: tuple[str, ...] = ("text/plain", "text/markdown", "application/xml", "application/rss+xml"),
+) -> dict[str, Any]:
+    """Return an ExternalEffect-shaped, no-default-network connector plan."""
+    kind = connector_kind.strip().lower()
+    if kind not in CONTROLLED_CONNECTOR_KINDS:
+        raise ValueError("unsupported controlled connector kind")
+    if not project_id or timeout_seconds <= 0 or max_retries < 0 or max_requests_per_minute <= 0:
+        raise ValueError("invalid connector limits")
+    parsed = urlsplit(endpoint)
+    host = (parsed.hostname or "").lower()
+    allowed = {item.lower() for item in allowlisted_hosts}
+    if parsed.scheme not in {"https", "file"}:
+        raise ValueError("connector endpoint scheme is not allowed")
+    if parsed.scheme == "https" and host not in allowed:
+        raise ValueError("connector endpoint host is not allowlisted")
+    requires_approval = parsed.scheme == "https"
+    plan = ControlledConnectorPlan(
+        connector_kind=kind,
+        project_id=project_id,
+        endpoint=endpoint,
+        allowlisted_hosts=tuple(sorted(allowed)),
+        timeout_seconds=timeout_seconds,
+        max_retries=max_retries,
+        max_requests_per_minute=max_requests_per_minute,
+        max_content_bytes=max_content_bytes,
+        allowed_media_types=allowed_media_types,
+        license_required=True,
+        robots_tos_evidence_required=parsed.scheme == "https",
+        approval_required=requires_approval,
+        network_enabled=False,
+    )
+    status = "READY_FOR_APPROVED_ADAPTER" if (not requires_approval or approval_granted) else "REQUIRES_APPROVAL"
+    return {
+        "status": status,
+        "plan": asdict(plan),
+        "external_effect_intent": {
+            "capability": f"source.fetch.{kind}",
+            "status": "PLANNED",
+            "project_id": project_id,
+            "idempotency_key_required": True,
+            "dispatch_allowed": bool(approval_granted and requires_approval),
+        },
+        "network_execution_performed": False,
+        "connector_contract_version": "controlled-source-connector-v1",
+    }
+
+
+def execute_controlled_fixture(
+    plan_result: dict[str, Any],
+    *,
+    content: bytes,
+    media_type: str,
+    license_metadata: dict[str, Any],
+    robots_tos_evidence: dict[str, Any] | None = None,
+    previous_checksum: str = "",
+) -> dict[str, Any]:
+    """Deterministic local/test adapter; never performs network access."""
+    plan = plan_result.get("plan", {})
+    if plan_result.get("status") != "READY_FOR_APPROVED_ADAPTER":
+        raise ValueError("connector plan is not approved for adapter execution")
+    if media_type not in plan.get("allowed_media_types", []):
+        raise ValueError("connector media type is not allowed")
+    if len(content) > int(plan.get("max_content_bytes", 0)):
+        raise ValueError("connector content size limit exceeded")
+    if not license_metadata.get("license_id") or license_metadata.get("commercial_use_allowed") is not True:
+        raise ValueError("connector license evidence is incomplete")
+    if plan.get("robots_tos_evidence_required") and not (
+        robots_tos_evidence
+        and robots_tos_evidence.get("robots_checked")
+        and robots_tos_evidence.get("tos_checked")
+    ):
+        raise ValueError("robots/ToS evidence is required")
+    decoded = content.decode("utf-8", errors="replace")
+    injection_signals = [
+        signal for signal in ("ignore previous instructions", "system prompt", "developer message")
+        if signal in decoded.lower()
+    ]
+    checksum = "sha256:" + hashlib.sha256(content).hexdigest()
+    changed = checksum != previous_checksum
+    status = "QUARANTINED" if injection_signals else "SNAPSHOTTED"
+    return {
+        "status": status,
+        "snapshot": {
+            "project_id": plan["project_id"],
+            "connector_kind": plan["connector_kind"],
+            "checksum": checksum,
+            "byte_count": len(content),
+            "media_type": media_type,
+            "license_metadata": dict(license_metadata),
+            "prompt_injection_scan": {"passed": not injection_signals, "signals": injection_signals},
+            "raw_content_persisted": False,
+        },
+        "receipt": {
+            "capability": f"source.fetch.{plan['connector_kind']}",
+            "status": "SUCCEEDED" if not injection_signals else "QUARANTINED",
+            "checksum": checksum,
+            "network_access_used": False,
+            "fixture_adapter": True,
+        },
+        "source_diff": {"changed": changed, "previous_checksum": previous_checksum, "current_checksum": checksum},
+        "downstream_invalidation_recommendation": "PLAN_REGENERATION" if changed else "NO_CHANGE",
+        "audit": {"project_id": plan["project_id"], "connector_kind": plan["connector_kind"], "status": status},
+    }
 
 
 def list_source_connector_adapters(include_network: bool = True) -> list[dict[str, Any]]:
