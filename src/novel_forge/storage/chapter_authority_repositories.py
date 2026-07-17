@@ -1,4 +1,8 @@
-"""Focused repository for fenced chapter-handler input and output evidence."""
+"""Persistence mechanics for fenced authority-handler input and output evidence.
+
+The historical module path remains for compatibility.  No chapter business rule lives
+here; Chapter Authority and Content Authority share this repository.
+"""
 from __future__ import annotations
 
 from typing import Any
@@ -8,14 +12,14 @@ from psycopg.types.json import Jsonb
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
-class ChapterAuthorityRepository:
+class AuthorityHandlerRepository:
     def __init__(self, cursor: Any) -> None:
         self.cursor = cursor
 
     def operation_execution(self, operation_id: str, project_id: str) -> dict[str, Any]:
         self.cursor.execute(
             """
-            SELECT operation_id, project_id, workspace_id, status, definition_name,
+            SELECT operation_id, project_id, workspace_id, actor_id, status, definition_name,
                    definition_version, definition_snapshot, command_payload,
                    input_asset_snapshot, trace_id, correlation_id
             FROM authority_operation
@@ -25,11 +29,12 @@ class ChapterAuthorityRepository:
         )
         row = self.cursor.fetchone()
         if row is None:
-            raise KernelError("OPERATION_NOT_FOUND", "chapter operation does not exist")
+            raise KernelError("OPERATION_NOT_FOUND", "authority operation does not exist")
         fields = (
             "operation_id",
             "project_id",
             "workspace_id",
+            "actor_id",
             "status",
             "definition_name",
             "definition_version",
@@ -53,9 +58,18 @@ class ChapterAuthorityRepository:
             self.cursor.execute(
                 """
                 SELECT version.asset_version_id, asset.asset_type,
-                       version.content_hash, version.content
+                       version.content_hash, version.content, version.lifecycle,
+                       version.eligibility, version.governance,
+                       qualification.decision, qualification.policy_version
                 FROM authority_asset_version AS version
                 JOIN authority_asset AS asset ON asset.asset_id = version.asset_id
+                LEFT JOIN LATERAL (
+                    SELECT decision, policy_version
+                    FROM authority_asset_qualification
+                    WHERE asset_version_id = version.asset_version_id
+                    ORDER BY created_at DESC, qualification_id DESC
+                    LIMIT 1
+                ) AS qualification ON TRUE
                 WHERE version.asset_version_id = %s
                   AND asset.project_id = %s
                   AND version.content_hash = %s
@@ -65,8 +79,18 @@ class ChapterAuthorityRepository:
             row = self.cursor.fetchone()
             if row is None:
                 raise KernelError(
-                    "CHAPTER_INPUT_SNAPSHOT_STALE",
-                    f"frozen chapter input is missing or changed: {asset_version_id}",
+                    "AUTHORITY_INPUT_SNAPSHOT_STALE",
+                    f"frozen authority input is missing or changed: {asset_version_id}",
+                )
+            if row[4] != "ACTIVE" or row[5] != "ELIGIBLE" or row[6] != "CLEAR":
+                raise KernelError(
+                    "AUTHORITY_INPUT_NOT_ELIGIBLE",
+                    f"frozen authority input is not active and eligible: {asset_version_id}",
+                )
+            if row[7] not in {None, "ELIGIBLE"}:
+                raise KernelError(
+                    "AUTHORITY_INPUT_QUALIFICATION_REVOKED",
+                    f"frozen authority input qualification is {row[7]}: {asset_version_id}",
                 )
             resolved.append(
                 {
@@ -74,6 +98,11 @@ class ChapterAuthorityRepository:
                     "asset_type": row[1],
                     "content_hash": row[2],
                     "content": row[3],
+                    "lifecycle": row[4],
+                    "eligibility": row[5],
+                    "governance": row[6],
+                    "qualification_decision": row[7] or "ELIGIBLE",
+                    "qualification_policy_version": row[8] or "implicit-active-v1",
                 }
             )
         return resolved
@@ -109,8 +138,8 @@ class ChapterAuthorityRepository:
         asset = self.cursor.fetchone()
         if asset != (project_id, asset_type):
             raise KernelError(
-                "CHAPTER_OUTPUT_REPLAY_CONFLICT",
-                "stable chapter Asset identity belongs to different content scope",
+                "AUTHORITY_OUTPUT_REPLAY_CONFLICT",
+                "stable authority Asset identity belongs to different content scope",
             )
         self.cursor.execute(
             """
@@ -135,8 +164,8 @@ class ChapterAuthorityRepository:
         expected = (asset_id, content_hash, content, "ACTIVE", "ELIGIBLE", "CLEAR")
         if version != expected:
             raise KernelError(
-                "CHAPTER_OUTPUT_REPLAY_CONFLICT",
-                "stable chapter AssetVersion identity has different content",
+                "AUTHORITY_OUTPUT_REPLAY_CONFLICT",
+                "stable authority AssetVersion identity has different content",
             )
         self.cursor.execute(
             """
@@ -163,3 +192,7 @@ class ChapterAuthorityRepository:
             [operation_id, asset_id, asset_version_id, output_key, role, content_hash],
         )
         return created
+
+
+# Backwards-compatible public name used by the established chapter runtime.
+ChapterAuthorityRepository = AuthorityHandlerRepository
