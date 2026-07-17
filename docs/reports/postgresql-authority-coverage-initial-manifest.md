@@ -7,8 +7,8 @@ Command Kernel source snapshot. The JSON files remain authoritative.
 
 ## Snapshot binding
 
-- Source commit: `bfd7d90332ce114577737eca05375b4835a4cf93`
-- Source tree SHA: `f512f145c382b99a27662392722018de23464028`
+- Source commit: `2c5b1ddc8136372efb27d74b78864faa3678f0a5`
+- Source tree SHA: `ff6b972eab5e28b38e418e459f692a3ddffdfeb9`
 - Binding: latest commit affecting `src/novel_forge` plus the exact working-tree source hash
 - Generator: `2.1.0`
 - Scan rule: `receiver-aware-v2`
@@ -40,9 +40,10 @@ still changes the binding and fails the architecture check.
 
 The current catalog contains **93** definitions across **20** families:
 
-- **17** definitions have mapped current entrypoints;
-- **9** PostgreSQL-only `chapter_authority` definitions are implemented;
-- **67** remain migration candidates;
+- **17** definitions are mapped to current entrypoints but have no bound handler;
+- **9** PostgreSQL-only `chapter_authority` definitions are
+  `integration_proven` by the committed PostgreSQL test contracts;
+- **67** remain unbound migration candidates;
 - the `asset`, `blob`, `external_effect`, and `chapter_authority` families are included.
 
 The previous `63 definitions / 17 mapped / 46 candidate` statement is stale
@@ -57,4 +58,7 @@ and must not be used as current evidence.
 The coverage manifest reports no unmapped side effects. This means the static
 inventory has an assigned migration action and target definition; it does not
 mean all 93 definitions are enabled or that LocalStorage is no longer a
-production authority. Runtime migration status remains separately governed.
+production authority. Runtime maturity now separately records `candidate`,
+`mapped`, `handler_bound`, `enabled`, `integration_proven`, and
+`production_verified`; real-provider and long-form proof remain independent
+evidence flags.
