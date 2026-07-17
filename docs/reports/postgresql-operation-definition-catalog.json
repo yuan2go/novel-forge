@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:32b00e6a5c28d8df99b5bcd8ccaff1c881ace9689feab07cfc7af731408e78cf",
+  "artifact_hash": "sha256:9142dc3834236a4d631f4f815bdaba8009583f830d003296ad71af282cb6a0c6",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+  "commit_sha": "bfd7d90332ce114577737eca05375b4835a4cf93",
   "definitions": [
     {
       "approval_policy": {
@@ -784,7 +784,7 @@
       },
       "concurrency_key_template": "project:{project_id}:project:{project_id}:workflow.start",
       "current_entrypoints": [
-        "novel_forge.cli.__init__.main",
+        "novel_forge.cli.legacy.main",
         "novel_forge.modules.production_kernel.service.dispatch_production_operation",
         "novel_forge.modules.workflow_nodes.service._mark_workflow_run_superseded",
         "novel_forge.modules.workflow_nodes.service._quarantine_output_assets",
@@ -792,7 +792,7 @@
         "novel_forge.modules.workflow_nodes.service._update_ready_node_queue_item",
         "novel_forge.modules.workflow_nodes.service._update_workflow_run_control",
         "novel_forge.modules.workflow_nodes.service._write",
-        "novel_forge.workers.tasks.postgres_sync_task",
+        "novel_forge.workers.legacy_tasks.postgres_sync_task",
         "novel_forge.workflows.pipeline._attach_run_assets_to_workspace",
         "novel_forge.workflows.pipeline.postgres_sync",
         "novel_forge.workflows.status.write_task_status"
@@ -1613,7 +1613,7 @@
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.review",
         "novel_forge.modules.agent_scheduler.service._create_revision_task_from_review_issue",
         "novel_forge.modules.agent_scheduler.service._run_preview_provider_fallback",
-        "novel_forge.modules.chapter_authority.handlers._ReviewHandler.execute",
+        "novel_forge.modules.chapter_authority.model_effects.ChapterModelExternalEffectAdapter._call",
         "novel_forge.modules.evaluation_center.service._run_adapter",
         "novel_forge.modules.loop_kernel.service._loop_re_review",
         "novel_forge.modules.loop_kernel.service._loop_review_run",
@@ -1640,8 +1640,7 @@
         "novel_forge.modules.provider_fallback.preview_provider_fallback",
         "novel_forge.storage.local.LocalStorage.write_asset",
         "novel_forge.storage.local.LocalStorage.write_json",
-        "preview_provider_fallback",
-        "self.provider.review"
+        "preview_provider_fallback"
       ],
       "definition_version": "1.0.0-candidate.1",
       "execution_mode": "worker",
@@ -1834,7 +1833,7 @@
       "current_entrypoints": [
         "novel_forge.api.services.product.apply_revision_plan",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.revise",
-        "novel_forge.modules.chapter_authority.handlers._RevisionHandler.execute",
+        "novel_forge.modules.chapter_authority.model_effects.ChapterModelExternalEffectAdapter._call",
         "novel_forge.modules.editor.service._annotate_apply_editor_patch_metadata",
         "novel_forge.modules.editor.service._fallback_revision_execution_packet",
         "novel_forge.modules.editor.service._fallback_revision_operations",
@@ -1867,8 +1866,7 @@
         "novel_forge.model_adapters.base.ModelAdapter.revise",
         "novel_forge.storage.local.LocalStorage.write_asset",
         "novel_forge.storage.local.LocalStorage.write_asset_auto",
-        "novel_forge.storage.local.LocalStorage.write_json",
-        "self.provider.revise"
+        "novel_forge.storage.local.LocalStorage.write_json"
       ],
       "definition_version": "1.0.0-candidate.1",
       "execution_mode": "transactional",
@@ -4868,7 +4866,7 @@
       },
       "concurrency_key_template": "project:{project_id}:project:{project_id}:project_lifecycle.create",
       "current_entrypoints": [
-        "novel_forge.api.app.create_app.assets",
+        "novel_forge.api.legacy_app.create_app.assets",
         "novel_forge.api.routers.__init__.product_routers",
         "novel_forge.api.routers.provider_fallback.create_router.provider_fallback_approve",
         "novel_forge.api.routers.provider_fallback.create_router.provider_fallback_resolve",
@@ -4916,6 +4914,10 @@
         "novel_forge.modules.audit_log.service._write",
         "novel_forge.modules.change_impact.service.create_change_impact_report",
         "novel_forge.modules.change_impact.service.mark_downstream_assets_stale",
+        "novel_forge.modules.chapter_authority.handlers._DraftHandler.execute",
+        "novel_forge.modules.chapter_authority.handlers._ReviewHandler.execute",
+        "novel_forge.modules.chapter_authority.handlers._RevisionHandler.execute",
+        "novel_forge.modules.chapter_authority.model_effects.ChapterModelExternalEffectAdapter._call",
         "novel_forge.modules.chapter_economy.service._write",
         "novel_forge.modules.chapter_economy.service.create_chapter_economy_report",
         "novel_forge.modules.chapter_plan.service._chapter_plan_packet",
@@ -5078,6 +5080,7 @@
         "postgres_asset_read_fallback_policy",
         "postgres_asset_read_fallback_policy.get",
         "self.generate",
+        "self.provider.invoke",
         "subprocess.Popen",
         "subprocess.run",
         "sync_postgres_after_task",
@@ -8417,7 +8420,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.slice.run.command.v1",
-      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "commit_sha": "bfd7d90332ce114577737eca05375b4835a4cf93",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -8486,7 +8489,7 @@
       "current_handlers": [
         "novel_forge.chapter_authority.root"
       ],
-      "definition_version": "1.0.0",
+      "definition_version": "1.1.0",
       "enabled": true,
       "execution_mode": "saga",
       "external_capabilities": [],
@@ -8545,7 +8548,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.plan.materialize.command.v1",
-      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "commit_sha": "bfd7d90332ce114577737eca05375b4835a4cf93",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -8581,12 +8584,12 @@
       "current_handlers": [
         "novel_forge.chapter_authority.plan"
       ],
-      "definition_version": "1.0.0",
+      "definition_version": "1.1.0",
       "enabled": true,
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "1.1.0",
       "handler_key": "novel_forge.chapter_authority.plan",
       "idempotency_scope": "project:chapter-slice",
       "irreversible_effect_policy": {
@@ -8653,7 +8656,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.context.build.command.v1",
-      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "commit_sha": "bfd7d90332ce114577737eca05375b4835a4cf93",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -8689,12 +8692,12 @@
       "current_handlers": [
         "novel_forge.chapter_authority.context"
       ],
-      "definition_version": "1.0.0",
+      "definition_version": "1.1.0",
       "enabled": true,
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "1.1.0",
       "handler_key": "novel_forge.chapter_authority.context",
       "idempotency_scope": "project:chapter-slice",
       "irreversible_effect_policy": {
@@ -8761,7 +8764,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.draft.generate.command.v1",
-      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "commit_sha": "bfd7d90332ce114577737eca05375b4835a4cf93",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -8784,6 +8787,14 @@
           "trace",
           "audit"
         ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "capability": "model.draft"
+          }
+        ],
         "required_outbox_events": [
           "chapter.draft.materialized"
         ],
@@ -8797,12 +8808,14 @@
       "current_handlers": [
         "novel_forge.chapter_authority.draft"
       ],
-      "definition_version": "1.0.0",
+      "definition_version": "1.1.0",
       "enabled": true,
       "execution_mode": "worker",
-      "external_capabilities": [],
+      "external_capabilities": [
+        "model.draft"
+      ],
       "family": "chapter_authority",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "1.1.0",
       "handler_key": "novel_forge.chapter_authority.draft",
       "idempotency_scope": "project:chapter-slice",
       "irreversible_effect_policy": {
@@ -8869,7 +8882,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.review.evaluate.command.v1",
-      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "commit_sha": "bfd7d90332ce114577737eca05375b4835a4cf93",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -8892,6 +8905,14 @@
           "trace",
           "audit"
         ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "capability": "model.review"
+          }
+        ],
         "required_outbox_events": [
           "chapter.review.materialized"
         ],
@@ -8905,12 +8926,14 @@
       "current_handlers": [
         "novel_forge.chapter_authority.review"
       ],
-      "definition_version": "1.0.0",
+      "definition_version": "1.1.0",
       "enabled": true,
       "execution_mode": "worker",
-      "external_capabilities": [],
+      "external_capabilities": [
+        "model.review"
+      ],
       "family": "chapter_authority",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "1.1.0",
       "handler_key": "novel_forge.chapter_authority.review",
       "idempotency_scope": "project:chapter-slice",
       "irreversible_effect_policy": {
@@ -8977,7 +9000,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.apply.command.v1",
-      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "commit_sha": "bfd7d90332ce114577737eca05375b4835a4cf93",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -9000,6 +9023,14 @@
           "trace",
           "audit"
         ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "capability": "model.revision"
+          }
+        ],
         "required_outbox_events": [
           "chapter.revision.materialized"
         ],
@@ -9013,12 +9044,14 @@
       "current_handlers": [
         "novel_forge.chapter_authority.revision"
       ],
-      "definition_version": "1.0.0",
+      "definition_version": "1.1.0",
       "enabled": true,
       "execution_mode": "worker",
-      "external_capabilities": [],
+      "external_capabilities": [
+        "model.revision"
+      ],
       "family": "chapter_authority",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "1.1.0",
       "handler_key": "novel_forge.chapter_authority.revision",
       "idempotency_scope": "project:chapter-slice",
       "irreversible_effect_policy": {
@@ -9085,7 +9118,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.update.command.v1",
-      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "commit_sha": "bfd7d90332ce114577737eca05375b4835a4cf93",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -9121,12 +9154,12 @@
       "current_handlers": [
         "novel_forge.chapter_authority.canon"
       ],
-      "definition_version": "1.0.0",
+      "definition_version": "1.1.0",
       "enabled": true,
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "1.1.0",
       "handler_key": "novel_forge.chapter_authority.canon",
       "idempotency_scope": "project:chapter-slice",
       "irreversible_effect_policy": {
@@ -9193,7 +9226,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.evaluate.command.v1",
-      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "commit_sha": "bfd7d90332ce114577737eca05375b4835a4cf93",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -9229,12 +9262,12 @@
       "current_handlers": [
         "novel_forge.chapter_authority.quality"
       ],
-      "definition_version": "1.0.0",
+      "definition_version": "1.1.0",
       "enabled": true,
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "1.1.0",
       "handler_key": "novel_forge.chapter_authority.quality",
       "idempotency_scope": "project:chapter-slice",
       "irreversible_effect_policy": {
@@ -9301,7 +9334,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.export.render.command.v1",
-      "commit_sha": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+      "commit_sha": "bfd7d90332ce114577737eca05375b4835a4cf93",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -9352,14 +9385,14 @@
       "current_handlers": [
         "novel_forge.chapter_authority.export"
       ],
-      "definition_version": "1.0.0",
+      "definition_version": "1.1.0",
       "enabled": true,
       "execution_mode": "worker",
       "external_capabilities": [
         "object_store.put"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "1.1.0",
       "handler_key": "novel_forge.chapter_authority.export",
       "idempotency_scope": "project:chapter-slice",
       "irreversible_effect_policy": {
@@ -9401,7 +9434,7 @@
     }
   ],
   "generator_version": "2.1.0",
-  "repository_head_at_generation": "87e68b3a1b01362c0578dca573d4801c5c6c8abc",
+  "repository_head_at_generation": "bfd7d90332ce114577737eca05375b4835a4cf93",
   "schema_version": "2.0.0",
-  "source_tree_sha": "24d1abae066a35de6a01791f50074631b334dfe9"
+  "source_tree_sha": "f512f145c382b99a27662392722018de23464028"
 }

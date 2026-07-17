@@ -1,14 +1,14 @@
 # PostgreSQL Authority Coverage Baseline
 
-Generated: 2026-07-16 22:43 Asia/Shanghai
+Generated: 2026-07-18 Asia/Shanghai
 
 This Markdown summary describes the machine-generated artifacts at the current
 Command Kernel source snapshot. The JSON files remain authoritative.
 
 ## Snapshot binding
 
-- Source commit: `87e68b3a1b01362c0578dca573d4801c5c6c8abc`
-- Source tree SHA: `24d1abae066a35de6a01791f50074631b334dfe9`
+- Source commit: `bfd7d90332ce114577737eca05375b4835a4cf93`
+- Source tree SHA: `f512f145c382b99a27662392722018de23464028`
 - Binding: latest commit affecting `src/novel_forge` plus the exact working-tree source hash
 - Generator: `2.1.0`
 - Scan rule: `receiver-aware-v2`
@@ -22,18 +22,18 @@ still changes the binding and fails the architecture check.
 
 | Measure | Current value |
 |---|---:|
-| Python files scanned | 432 |
-| Files with findings | 201 |
-| Receiver-aware findings / legacy actions | 2,127 |
-| Owner symbols | 1,454 |
+| Python files scanned | 445 |
+| Files with findings | 202 |
+| Receiver-aware findings / legacy actions | 2,131 |
+| Owner symbols | 1,456 |
 | Authority writes | 380 |
 | Authority reads | 1,642 |
-| External effects | 39 |
+| External effects | 43 |
 | Fallback paths | 46 |
 | Sync paths | 13 |
 | Export paths | 3 |
 | Unknown classifications | 4 |
-| Mapped side effects | 482 |
+| Mapped side effects | 486 |
 | Unmapped side effects | 0 |
 
 ## OperationDefinition catalog

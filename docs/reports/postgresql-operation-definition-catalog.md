@@ -52,7 +52,7 @@ Receiver-aware generated catalog. Candidate definitions remain disabled until th
 | `feedback.cluster` | `feedback` | `worker` | 0 | `candidate` |
 | `feedback.patch.approve` | `feedback` | `transactional` | 0 | `candidate` |
 | `feedback.patch.apply` | `feedback` | `worker` | 3 | `entrypoint_mapped` |
-| `project_lifecycle.create` | `project_lifecycle` | `transactional` | 170 | `entrypoint_mapped` |
+| `project_lifecycle.create` | `project_lifecycle` | `transactional` | 174 | `entrypoint_mapped` |
 | `project_lifecycle.clone` | `project_lifecycle` | `transactional` | 0 | `candidate` |
 | `project_lifecycle.pause` | `project_lifecycle` | `transactional` | 0 | `candidate` |
 | `project_lifecycle.resume` | `project_lifecycle` | `transactional` | 0 | `candidate` |
