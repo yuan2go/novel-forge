@@ -26,7 +26,29 @@ class AuthorityCoverageOperationMappingTests(unittest.TestCase):
         for name in required:
             self.assertEqual(definitions[name]["family"], "chapter_authority")
             self.assertEqual(definitions[name]["migration_status"], "implemented")
+            self.assertEqual(definitions[name]["definition_status"], "integration_proven")
+            self.assertTrue(definitions[name]["evidence_status"]["handler_bound"])
+            self.assertTrue(definitions[name]["evidence_status"]["integration_proven"])
+            self.assertFalse(definitions[name]["evidence_status"]["real_provider_proven"])
+            self.assertFalse(definitions[name]["evidence_status"]["longform_proven"])
             self.assertEqual(definitions[name]["definition_version"], "1.1.0")
+
+    def test_catalog_keeps_candidate_mapped_and_proven_states_distinct(self) -> None:
+        finding = {
+            "target_operation_definition": "context.build",
+            "qualified_symbol": "novel_forge.modules.context_builder.service.build_flow_context_bundle",
+            "called_symbol": "LocalStorage.write_asset",
+        }
+        definitions = {item["name"]: item for item in operation_catalog([finding])}
+
+        self.assertEqual(definitions["context.build"]["definition_status"], "mapped")
+        self.assertEqual(definitions["context.compress"]["definition_status"], "candidate")
+        self.assertFalse(definitions["context.build"]["evidence_status"]["handler_bound"])
+        self.assertEqual(definitions["chapter.context.build"]["definition_status"], "integration_proven")
+        self.assertEqual(
+            definitions["context.build"]["legacy_entrypoints"],
+            [finding["qualified_symbol"]],
+        )
 
     def test_asset_and_blob_protocol_definitions_have_typed_contracts(self) -> None:
         definitions = {item["name"]: item for item in operation_catalog([])}
@@ -138,6 +160,13 @@ class AuthorityCoverageOperationMappingTests(unittest.TestCase):
             "completion_contract",
             "current_entrypoints",
             "migration_status",
+            "definition_status",
+            "evidence_status",
+            "input_contract",
+            "output_contract",
+            "projection_consumers",
+            "migration_owner",
+            "legacy_entrypoints",
         }
         catalog = operation_catalog()
         for definition in catalog:

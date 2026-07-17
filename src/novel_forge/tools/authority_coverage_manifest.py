@@ -182,6 +182,10 @@ def operation_catalog(
             mode = _execution_mode(name, family)
             capabilities = _external_capabilities(name, family)
             approval_required = _approval_required(name, family)
+            command_schema = _command_schema(name)
+            result_schema = _result_schema(name)
+            legacy_entrypoints = sorted(value for value in mapped.get(name, set()) if value)
+            definition_status = "mapped" if legacy_entrypoints else "candidate"
             catalog.append(
                 {
                     "name": name,
@@ -189,8 +193,10 @@ def operation_catalog(
                     "family": family,
                     "command_schema_version": f"{name}.command.v1",
                     "result_schema_version": f"{name}.result.v1",
-                    "command_schema": _command_schema(name),
-                    "result_schema": _result_schema(name),
+                    "command_schema": command_schema,
+                    "result_schema": result_schema,
+                    "input_contract": command_schema,
+                    "output_contract": result_schema,
                     "handler_key": f"novel_forge.command_handlers.{name}",
                     "handler_contract_version": "1.0.0",
                     "execution_mode": mode,
@@ -215,9 +221,14 @@ def operation_catalog(
                     },
                     "external_capabilities": capabilities,
                     "completion_contract": _completion_contract(name, family, capabilities),
-                    "current_entrypoints": sorted(value for value in mapped.get(name, set()) if value),
+                    "current_entrypoints": legacy_entrypoints,
                     "current_handlers": sorted(value for value in current_handlers.get(name, set()) if value),
                     "migration_status": "entrypoint_mapped" if mapped.get(name) else "candidate",
+                    "definition_status": definition_status,
+                    "evidence_status": _catalog_evidence_status(definition_status),
+                    "projection_consumers": _projection_consumers(name, family),
+                    "migration_owner": f"{family}-authority-migration",
+                    "legacy_entrypoints": legacy_entrypoints,
                 }
             )
     catalog.extend(
@@ -259,15 +270,57 @@ def write_operation_catalog(
         "",
         "Receiver-aware generated catalog. Candidate definitions remain disabled until their PostgreSQL acceptance gate passes; implemented definitions preserve their runtime contract.",
         "",
-        "| Name | Family | Mode | Entrypoints | Migration |",
-        "|---|---|---|---:|---|",
+        "| Name | Family | Mode | Entrypoints | Definition status | Migration |",
+        "|---|---|---|---:|---|---|",
     ]
     rows.extend(
-        f"| `{item['name']}` | `{item['family']}` | `{item['execution_mode']}` | {len(item['current_entrypoints'])} | `{item['migration_status']}` |"
+        f"| `{item['name']}` | `{item['family']}` | `{item['execution_mode']}` | {len(item['current_entrypoints'])} | `{item['definition_status']}` | `{item['migration_status']}` |"
         for item in catalog
     )
     Path(markdown_output).write_text("\n".join(rows) + "\n", encoding="utf-8")
     return catalog
+
+
+def _catalog_evidence_status(definition_status: str) -> dict[str, bool]:
+    return {
+        "documented": True,
+        "implemented": definition_status in {
+            "handler_bound",
+            "enabled",
+            "integration_proven",
+            "production_verified",
+        },
+        "handler_bound": definition_status in {
+            "handler_bound",
+            "enabled",
+            "integration_proven",
+            "production_verified",
+        },
+        "integration_proven": definition_status in {
+            "integration_proven",
+            "production_verified",
+        },
+        "real_provider_proven": definition_status == "production_verified",
+        "longform_proven": False,
+    }
+
+
+def _projection_consumers(name: str, family: str) -> list[str]:
+    explicit = {
+        "workflow": ["workflow_run", "workflow_runtime_console"],
+        "agent": ["agent_run", "agent_center"],
+        "review": ["review_report", "review_center"],
+        "revision": ["chapter_production_run", "review_rework_board"],
+        "publishing": ["release_package", "publish_gate_console"],
+        "canon": ["canon_graph_snapshot", "canon_console"],
+        "context": ["context_bundle", "context_builder_console"],
+        "quality": ["quality_dashboard", "publish_gate_console"],
+        "source": ["source_governance_console"],
+        "knowledge": ["mkaos_console", "context_builder_console"],
+        "feedback": ["feedback_console"],
+        "project_lifecycle": ["project_workspace_state"],
+    }
+    return explicit.get(family, [f"{family}_operation_view"])
 
 
 def _implemented_chapter_authority_definitions(
@@ -304,6 +357,22 @@ def _implemented_chapter_authority_definitions(
             ),
             "current_handlers": [definition["handler_key"]],
             "migration_status": "implemented",
+            "definition_status": "integration_proven",
+            "evidence_status": {
+                **definition["evidence_status"],
+                "integration_proven": True,
+                "real_provider_proven": False,
+                "longform_proven": False,
+            },
+            "integration_evidence": [
+                "tests/integration/test_postgresql_only_chapter_slice.py",
+                "tests/integration/test_chapter_authority_runtime_postgres.py",
+            ],
+            "legacy_entrypoints": (
+                ["novel_forge.modules.chapter_authority.run_single_chapter_slice"]
+                if definition["name"] == "chapter.slice.run"
+                else []
+            ),
         }
         for definition in runtime_definitions
     ]

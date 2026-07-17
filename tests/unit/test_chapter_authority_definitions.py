@@ -36,6 +36,11 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
 
         self.assertEqual(definition["name"], CHAPTER_SLICE_ROOT_DEFINITION_NAME)
         self.assertEqual(definition["execution_mode"], "saga")
+        self.assertEqual(definition["definition_status"], "enabled")
+        self.assertTrue(definition["evidence_status"]["handler_bound"])
+        self.assertFalse(definition["evidence_status"]["integration_proven"])
+        self.assertEqual(definition["migration_owner"], "chapter-authority")
+        self.assertIn("chapter_production_run", definition["projection_consumers"])
         self.assertEqual(
             [
                 item["definition_name"]
@@ -69,6 +74,9 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
                 self.assertEqual(definition["family"], "chapter_authority")
                 self.assertEqual(definition["idempotency_scope"], "project:chapter-slice")
                 self.assertEqual(definition["handler_contract_version"], "1.0.0")
+                self.assertEqual(definition["definition_status"], "enabled")
+                self.assertEqual(definition["input_contract"], definition["command_schema"])
+                self.assertEqual(definition["output_contract"], definition["result_schema"])
                 self.assertEqual(
                     definition["completion_contract"]["required_asset_selectors"][0],
                     {

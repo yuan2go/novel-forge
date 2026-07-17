@@ -11,6 +11,11 @@ CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "1.1.0"
 CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "1.0.0"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
+CHAPTER_PROJECTION_CONSUMERS = [
+    "chapter_production_run",
+    "operation_timeline",
+    "project_cockpit",
+]
 
 
 def chapter_operation_definitions(
@@ -40,13 +45,17 @@ def chapter_root_operation_definition(
 ) -> dict[str, Any]:
     if not application_build_id or len(commit_sha) != 40:
         raise ValueError("application_build_id and a 40-character commit_sha are required")
+    command_schema = _chapter_command_schema()
+    result_schema = {"type": "object"}
     return {
         "name": CHAPTER_SLICE_ROOT_DEFINITION_NAME,
         "definition_version": chapter_definition_version(model_effects_required),
         "family": "chapter_authority",
         "enabled": True,
-        "command_schema": _chapter_command_schema(),
-        "result_schema": {"type": "object"},
+        "command_schema": command_schema,
+        "result_schema": result_schema,
+        "input_contract": command_schema,
+        "output_contract": result_schema,
         "handler_key": CHAPTER_SLICE_ROOT_HANDLER_KEY,
         "handler_contract_version": CHAPTER_SLICE_HANDLER_CONTRACT_VERSION,
         "application_build_id": application_build_id,
@@ -62,6 +71,7 @@ def chapter_root_operation_definition(
         "compensation_policy": {"supported": False, "reason": "append_only_evidence"},
         "irreversible_effect_policy": {"allowed": False},
         "external_capabilities": [],
+        **_definition_maturity_metadata(),
         "policy": {
             "authority": "postgresql",
             "local_storage_writes": "forbidden",
@@ -85,6 +95,7 @@ def _definition(
     commit_sha: str,
     model_effects_required: bool,
 ) -> dict[str, Any]:
+    command_schema = _chapter_command_schema()
     completion: dict[str, Any] = {
         "version": f"{node.definition_name}.completion.v1",
         "required_asset_selectors": [
@@ -128,21 +139,24 @@ def _definition(
             }
         )
         external_capabilities = [*external_capabilities, "object_store.put"]
+    result_schema = {
+        "type": "object",
+        "required": ["asset_version_id", "content_hash"],
+        "properties": {
+            "asset_version_id": {"type": "string"},
+            "content_hash": {"type": "string"},
+        },
+        "additionalProperties": False,
+    }
     return {
         "name": node.definition_name,
         "definition_version": chapter_definition_version(model_effects_required),
         "family": "chapter_authority",
         "enabled": True,
-        "command_schema": _chapter_command_schema(),
-        "result_schema": {
-            "type": "object",
-            "required": ["asset_version_id", "content_hash"],
-            "properties": {
-                "asset_version_id": {"type": "string"},
-                "content_hash": {"type": "string"},
-            },
-            "additionalProperties": False,
-        },
+        "command_schema": command_schema,
+        "result_schema": result_schema,
+        "input_contract": command_schema,
+        "output_contract": result_schema,
         "handler_key": node.handler_key,
         "handler_contract_version": (
             "1.1.0" if model_effects_required else CHAPTER_SLICE_HANDLER_CONTRACT_VERSION
@@ -160,12 +174,37 @@ def _definition(
         "compensation_policy": {"supported": False, "reason": "append_only_evidence"},
         "irreversible_effect_policy": {"allowed": False},
         "external_capabilities": external_capabilities,
+        **_definition_maturity_metadata(),
         "policy": {
             "authority": "postgresql",
             "local_storage_writes": "forbidden",
             "handler_output_policy": "chapter-authority-output-v1",
         },
         "completion_contract": completion,
+    }
+
+
+def _definition_maturity_metadata() -> dict[str, Any]:
+    """Describe runtime binding without claiming test/provider proof here.
+
+    The generated catalog may promote this to ``integration_proven`` when it
+    attaches the committed PostgreSQL evidence suite.  Runtime definitions
+    themselves only assert that a concrete handler is bound and enabled.
+    """
+
+    return {
+        "definition_status": "enabled",
+        "evidence_status": {
+            "documented": True,
+            "implemented": True,
+            "handler_bound": True,
+            "integration_proven": False,
+            "real_provider_proven": False,
+            "longform_proven": False,
+        },
+        "projection_consumers": list(CHAPTER_PROJECTION_CONSUMERS),
+        "migration_owner": "chapter-authority",
+        "legacy_entrypoints": [],
     }
 
 
