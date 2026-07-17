@@ -72,4 +72,99 @@ def evaluate_review_result(
     }
 
 
-__all__ = ["evaluate_review_result"]
+def evaluate_rereview_result(
+    *,
+    project_id: str,
+    original_draft_version_id: str,
+    initial_review_version_id: str,
+    revision_version_id: str,
+    context_bundle_version_id: str,
+    initial_review: dict[str, Any],
+    revision: dict[str, Any],
+    result: dict[str, Any],
+    provider_evidence: dict[str, Any],
+) -> dict[str, Any]:
+    """Verify revision claims independently and preserve ReviewIssue lineage."""
+    reviewed = evaluate_review_result(
+        project_id=project_id,
+        target_asset_version_id=revision_version_id,
+        context_bundle_version_id=context_bundle_version_id,
+        chapter=int(revision["chapter"]),
+        result=result,
+        provider_evidence=provider_evidence,
+    )
+    claimed = set(revision.get("resolution_claimed_issue_codes", []))
+    initial_by_code = {
+        str(item.get("code")): item for item in initial_review.get("issues", [])
+    }
+    current_codes = {str(item.get("code")) for item in reviewed["issues"]}
+    verified = {str(item) for item in result.get("resolved_issue_codes", [])}
+    if reviewed["decision"] == "PASSED":
+        verified.update(claimed - current_codes)
+    issue_lineage: list[dict[str, Any]] = []
+    remaining: list[str] = []
+    resolved: list[str] = []
+    regressions: list[str] = []
+    for code, issue in initial_by_code.items():
+        if code in verified and code not in current_codes:
+            status = "RESOLVED"
+            resolved.append(code)
+        elif code in current_codes:
+            status = "REOPENED" if code in claimed else "OPEN"
+            remaining.append(code)
+        else:
+            status = "RESOLUTION_CLAIMED" if code in claimed else "OPEN"
+            remaining.append(code)
+        issue_lineage.append(
+            {
+                "review_issue_id": issue.get("review_issue_id", ""),
+                "code": code,
+                "from_status": issue.get("status", "OPEN"),
+                "revision_claimed": code in claimed,
+                "verified_by_rereview": status == "RESOLVED",
+                "to_status": status,
+            }
+        )
+    new_issues = []
+    for issue in reviewed["issues"]:
+        code = str(issue["code"])
+        if code not in initial_by_code:
+            new_issues.append(issue)
+            regressions.append(code)
+    blocking_remaining = sum(
+        initial_by_code[code].get("severity") == "blocking" for code in remaining
+    ) + sum(item.get("severity") == "blocking" for item in new_issues)
+    decision = reviewed["decision"]
+    if blocking_remaining and decision == "PASSED":
+        decision = "NEEDS_REVISION"
+    before_score = float(initial_review.get("score", 0.0))
+    after_score = float(reviewed["score"])
+    return {
+        **reviewed,
+        "report_type": "ReReviewReport",
+        "decision": decision,
+        "original_draft_version_id": original_draft_version_id,
+        "initial_review_version_id": initial_review_version_id,
+        "revision_version_id": revision_version_id,
+        "issue_lineage": issue_lineage,
+        "resolved_issue_codes": sorted(resolved),
+        "remaining_issue_codes": sorted(remaining),
+        "new_issues": new_issues,
+        "regression_issue_codes": sorted(regressions),
+        "blocking_issue_count": blocking_remaining,
+        "revision_quality_delta": {
+            "before_score": before_score,
+            "after_score": after_score,
+            "score_delta": after_score - before_score,
+            "resolved_issue_count": len(resolved),
+            "remaining_issue_count": len(remaining),
+            "new_issue_count": len(new_issues),
+            "regression_count": len(regressions),
+            "content_hash_before": str(initial_review.get("target_content_hash", "")),
+            "content_hash_after": str(result.get("target_content_hash", "")),
+        },
+        "review_contract_version": "re-review-domain-v1",
+    }
+
+
+__all__ = ["evaluate_rereview_result", "evaluate_review_result"]

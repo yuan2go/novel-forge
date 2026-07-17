@@ -39,10 +39,12 @@ def decide_source_eligibility(
     reasons: list[str] = []
     status = "ELIGIBLE"
     use_mode = "generation"
+    # Decisions are evaluated in descending severity.  A cross-project or revoked
+    # source is terminal and cannot be downgraded by a later stale/approval branch.
     if evidence.project_id != project_id:
         status, use_mode = "REVOKED", "quarantine"
         reasons.append("cross_project")
-    if evidence.revoked:
+    elif evidence.revoked:
         status, use_mode = "REVOKED", "quarantine"
         reasons.append("eligibility_revoked")
     elif evidence.quarantined or not evidence.privacy_clear or not evidence.prompt_injection_clear:

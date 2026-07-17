@@ -21,6 +21,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             "relevance_score": 0.8,
             "content_digest": f"sha256:{asset_version_id}",
             "policy_version": "source-policy-v1",
+            "safe_summary": f"Safe facts for {asset_version_id}",
         }
         values.update(changes)
         return ContextCandidate(**values)
@@ -52,14 +53,16 @@ class ContextAuthorityDomainTests(unittest.TestCase):
                 self.candidate("raw", "source_document", raw_source=True),
             ],
         )
-        self.assertEqual([item.asset_version_id for item in selection.selected], ["plan-v1"])
+        self.assertEqual(
+            [item.asset_version_id for item in selection.selected],
+            ["plan-v1", "structure-only"],
+        )
         reasons = {item["asset_version_id"]: item["reason"] for item in selection.rejected}
         self.assertEqual(reasons["other-project"], "cross_project")
         self.assertEqual(reasons["revoked"], "qualification:REVOKED")
         self.assertEqual(reasons["stale"], "qualification:STALE")
         self.assertEqual(reasons["quarantine"], "qualification:QUARANTINED")
         self.assertEqual(reasons["review-only"], "source_mode:review_only")
-        self.assertEqual(reasons["structure-only"], "source_mode:structure_only")
         self.assertEqual(reasons["raw"], "raw_source_forbidden")
 
     def test_budget_is_deterministic_and_never_exceeded(self) -> None:
@@ -106,6 +109,29 @@ class ContextAuthorityDomainTests(unittest.TestCase):
         self.assertTrue(bundle["source_isolation_result"]["passed"])
         self.assertTrue(bundle["actual_context_digest"].startswith("sha256:"))
         self.assertEqual(bundle["created_by_operation_id"], "operation-1")
+        self.assertIn("Safe facts for plan-v1", bundle["stage_context_view"]["rendered_safe_context"])
+        self.assertTrue(bundle["context_segments"])
+        self.assertTrue(
+            all(not item["source_expression_included"] for item in bundle["context_segments"])
+        )
+
+    def test_structure_only_becomes_an_abstract_segment_and_changes_digest(self) -> None:
+        base = self.candidate("plan-v1", "chapter_plan")
+        first = build_authority_context_bundle(
+            project_id="project-a", stage="draft", created_by_operation_id="op-1",
+            context_profile_version="draft-v3", token_budget=600,
+            candidates=[base, self.candidate("knowledge-v1", "knowledge_card", source_use_mode="structure_only", safe_summary="Escalate by narrowing choices")],
+        )
+        second = build_authority_context_bundle(
+            project_id="project-a", stage="draft", created_by_operation_id="op-1",
+            context_profile_version="draft-v3", token_budget=600,
+            candidates=[base, self.candidate("knowledge-v1", "knowledge_card", source_use_mode="structure_only", safe_summary="Escalate by increasing public cost")],
+        )
+        segment = first["context_segments"][1]
+        self.assertEqual(segment["allowed_use"], "structure_only")
+        self.assertEqual(segment["compression_method"], "structural_abstraction")
+        self.assertFalse(segment["source_expression_included"])
+        self.assertNotEqual(first["actual_context_digest"], second["actual_context_digest"])
 
     def test_required_asset_and_profile_budget_fail_closed(self) -> None:
         with self.assertRaisesRegex(ValueError, "required context asset types missing"):

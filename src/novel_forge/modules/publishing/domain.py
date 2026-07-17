@@ -1,4 +1,4 @@
-"""Storage-free internal publish gate and release manifest builder."""
+"""Storage-free internal release gate and export manifest builder."""
 from __future__ import annotations
 
 from typing import Any
@@ -20,21 +20,44 @@ def prepare_internal_release(
     context_bundle: dict[str, Any],
     context_bundle_version_id: str,
 ) -> dict[str, Any]:
-    blockers = [
-        item for item in review.get("issues", [])
-        if item.get("severity") == "blocking"
-        and item.get("qualification", "ELIGIBLE") == "ELIGIBLE"
-        and item.get("code") not in set(revision.get("resolved_issue_codes", []))
+    dimensions = quality.get("dimensions", [])
+    source_gate = [
+        item for item in dimensions
+        if item.get("gate_type") == "source_originality_gate" and item.get("blocking")
     ]
-    source_clear = bool(context_bundle.get("source_isolation_result", {}).get("passed"))
-    originality_clear = context_bundle.get("copyright_boundary") == "abstract_or_project_owned_only"
+    evidence_types = {
+        str(item.get("asset_type")): item
+        for item in context_bundle.get("context_segments", [])
+    }
+    checklist = evidence_types.get("operator_checklist", {})
+    checklist_facts = {
+        str(item.get("key")): item.get("value")
+        for item in checklist.get("structured_facts", [])
+    }
+    operator_approval = evidence_types.get("operator_approval", {})
+    approval_facts = {
+        str(item.get("key")): item.get("value")
+        for item in operator_approval.get("structured_facts", [])
+    }
     checks = {
-        "quality_evidence_current": quality.get("gate") == "PASSED",
-        "review_issues_resolved": not blockers,
+        "quality_evidence_current": quality.get("gate") in {"PASSED", "PASSED_WITH_UNCALIBRATED"},
+        "latest_rereview_passed": review.get("report_type") == "ReReviewReport" and review.get("decision") == "PASSED" and int(review.get("blocking_issue_count", 0)) == 0,
         "canon_consistent": canon.get("gate") == "PASSED" and not canon.get("conflicts"),
-        "source_eligible": source_clear,
-        "originality_risk_clear": originality_clear,
-        "operator_checklist_present": True,
+        "source_eligible_and_leakage_clear": bool(source_gate) and all(item.get("gate_status") == "PASSED" for item in source_gate),
+        "originality_risk_clear_or_approved": (
+            any(item.get("dimension") == "originality_risk" and item.get("gate_status") == "PASSED" for item in dimensions)
+            or approval_facts.get("approved") is True
+        ),
+        "anti_ai_clear_or_approved": (
+            "anti_ai_report" in evidence_types or approval_facts.get("approved") is True
+        ),
+        "platform_rules_clear_or_approved": (
+            "platform_rule_report" in evidence_types or approval_facts.get("approved") is True
+        ),
+        "operator_checklist_approved": (
+            bool(checklist.get("asset_version_id"))
+            and checklist_facts.get("completed") is True
+        ),
     }
     if not project_id or not all(checks.values()):
         raise KernelError("PUBLISH_GATE_BLOCKED", "release evidence is missing or blocked")
@@ -49,18 +72,16 @@ def prepare_internal_release(
             "review_asset_version_id": review_asset_version_id,
             "canon_asset_version_id": canon_asset_version_id,
             "context_bundle_version_id": context_bundle_version_id,
-            "content_hash_pending_blob": True,
+            "operator_checklist_version_id": checklist.get("asset_version_id", ""),
+            "operator_approval_version_id": operator_approval.get("asset_version_id", ""),
+            "blob_verification_required": True,
+            "blob_verification_status": "PENDING_EXPORT",
         },
-        "operator_checklist": [
-            "confirm_title_and_summary",
-            "confirm_review_and_quality_evidence",
-            "verify_export_blob_checksum",
-        ],
         "rollback_metadata": {
             "rollback_to_asset_version_id": revision.get("source_draft_version_id", ""),
             "release_not_externally_published": True,
         },
-        "publish_gate_contract_version": "internal-publish-gate-v2",
+        "publish_gate_contract_version": "internal-publish-gate-v3",
     }
 
 

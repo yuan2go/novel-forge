@@ -69,6 +69,9 @@ class SingleChapterRequest:
     correlation_id: str
     application_build_id: str
     commit_sha: str
+    context_candidates: tuple[dict[str, Any], ...] = ()
+    context_version_refs: dict[str, Any] | None = None
+    context_token_budget: int = 6000
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,6 +154,14 @@ def run_single_chapter_slice(
             }
             for source in _input_nodes(node)
         ]
+        if node is ChapterNode.CONTEXT:
+            input_assets.extend(
+                {
+                    "asset_version_id": str(item["asset_version_id"]),
+                    "content_hash": str(item["content_hash"]),
+                }
+                for item in request.context_candidates
+            )
         operation_id = admit_command(
             database_url,
             _command(
@@ -377,6 +388,9 @@ def _command(
             "chapter": request.chapter,
             "title": request.title,
             "premise": request.premise,
+            "context_candidates": [dict(item) for item in request.context_candidates],
+            "context_version_refs": dict(request.context_version_refs or {}),
+            "context_token_budget": request.context_token_budget,
         },
         "input_assets": input_assets,
         "root_operation_id": root_operation_id,
@@ -447,16 +461,22 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
         ChapterNode.DRAFT: (ChapterNode.PLAN, ChapterNode.CONTEXT),
         ChapterNode.REVIEW: (ChapterNode.DRAFT, ChapterNode.CONTEXT),
         ChapterNode.REVISION: (ChapterNode.DRAFT, ChapterNode.REVIEW, ChapterNode.CONTEXT),
-        ChapterNode.CANON: (ChapterNode.REVISION, ChapterNode.CONTEXT),
+        ChapterNode.REREVIEW: (
+            ChapterNode.DRAFT,
+            ChapterNode.REVIEW,
+            ChapterNode.REVISION,
+            ChapterNode.CONTEXT,
+        ),
+        ChapterNode.CANON: (ChapterNode.REVISION, ChapterNode.REREVIEW, ChapterNode.CONTEXT),
         ChapterNode.QUALITY: (
             ChapterNode.REVISION,
-            ChapterNode.REVIEW,
+            ChapterNode.REREVIEW,
             ChapterNode.CANON,
             ChapterNode.CONTEXT,
         ),
         ChapterNode.PUBLISH_GATE: (
             ChapterNode.REVISION,
-            ChapterNode.REVIEW,
+            ChapterNode.REREVIEW,
             ChapterNode.CANON,
             ChapterNode.QUALITY,
             ChapterNode.CONTEXT,
@@ -476,5 +496,10 @@ def _validate_request(request: SingleChapterRequest) -> None:
         request.correlation_id,
         request.application_build_id,
     )
-    if any(not value for value in required) or request.chapter <= 0 or len(request.commit_sha) != 40:
+    if (
+        any(not value for value in required)
+        or request.chapter <= 0
+        or len(request.commit_sha) != 40
+        or request.context_token_budget <= 0
+    ):
         raise KernelError("CHAPTER_SLICE_REQUEST_INVALID", "single-chapter request is incomplete")

@@ -50,6 +50,25 @@ class ContextCandidate:
     policy_version: str = ""
     invalidation_keys: tuple[str, ...] = ()
     narrative_function: str = ""
+    safe_summary: str = ""
+    structured_facts: tuple[dict[str, Any], ...] = ()
+    allowed_use: str = "generation"
+    compression_method: str = "safe_summary"
+
+
+@dataclass(frozen=True, slots=True)
+class ContextSegment:
+    asset_version_id: str
+    asset_type: str
+    narrative_function: str
+    safe_summary: str
+    structured_facts: tuple[dict[str, Any], ...]
+    allowed_use: str
+    content_digest: str
+    source_policy_version: str
+    token_count: int
+    compression_method: str
+    source_expression_included: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,6 +87,8 @@ _COMMON = frozenset({
     "style_policy", "knowledge_pack", "knowledge_card", "material_asset", "material_card",
     "theme_arc", "theme_beat", "closure_plan", "review_issue", "review_report",
     "draft_chapter", "draft_version", "quality_report", "longform_recap_report",
+    "operator_checklist", "operator_approval", "source_leakage_report",
+    "originality_risk_report", "anti_ai_report", "platform_rule_report",
 })
 
 
@@ -102,7 +123,16 @@ CONTEXT_PROFILES: dict[str, ContextProfile] = {
     "character": _profile("character", required=("creative_brief", "world_bible"), maximum=4800, allowed={"creative_brief"}),
     "outline": _profile("outline", required=("world_bible", "character_card"), maximum=6000, allowed={"creative_brief"}),
     "chapter_plan": _profile("chapter_plan", required=("outline_version",), maximum=5200),
-    "draft": _profile("draft", required=("chapter_plan",), maximum=6000, review_only={"review_report", "review_issue", "quality_report"}),
+    "draft": _profile(
+        "draft",
+        required=("chapter_plan",),
+        maximum=6000,
+        review_only={"review_report", "review_issue", "quality_report"},
+        evidence_only={
+            "operator_checklist", "operator_approval", "source_leakage_report",
+            "originality_risk_report", "anti_ai_report", "platform_rule_report",
+        },
+    ),
     "review": _profile("review", required=("draft_version",), maximum=5000, evidence_only={"source_policy"}),
     "revision": _profile("revision", required=("draft_version", "review_report"), maximum=5000),
     "canon_extraction": _profile("canon_extraction", required=("draft_version",), maximum=4200),
@@ -191,10 +221,39 @@ def build_authority_context_bundle(
     refs = dict(version_refs or {})
     selected = [item.asset_version_id for item in selection.selected]
     rejected = [item["asset_version_id"] for item in selection.rejected]
-    digest_payload = [
-        {"asset_version_id": item.asset_version_id, "content_digest": item.content_digest}
-        for item in selection.selected
-    ]
+    segments = [_context_segment(item, profile) for item in selection.selected]
+    stage_view = {
+        "stage": profile.name,
+        "segments": [
+            {
+                "asset_version_id": item.asset_version_id,
+                "asset_type": item.asset_type,
+                "narrative_function": item.narrative_function,
+                "safe_summary": item.safe_summary,
+                "structured_facts": list(item.structured_facts),
+                "allowed_use": item.allowed_use,
+                "content_digest": item.content_digest,
+                "source_policy_version": item.source_policy_version,
+                "token_count": item.token_count,
+                "compression_method": item.compression_method,
+                "source_expression_included": item.source_expression_included,
+            }
+            for item in segments
+        ],
+        "rendered_safe_context": "\n\n".join(
+            item.safe_summary
+            for item in segments
+            if item.safe_summary and item.allowed_use != "evidence_only"
+        ),
+        "token_count": selection.estimated_tokens,
+    }
+    digest_payload = {
+        "manifest": [
+            {"asset_version_id": item.asset_version_id, "content_digest": item.content_digest}
+            for item in selection.selected
+        ],
+        "stage_context_view": stage_view,
+    }
     actual_context_digest = "sha256:" + hashlib.sha256(
         json.dumps(digest_payload, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -215,12 +274,20 @@ def build_authority_context_bundle(
         "reader_promise_versions": list(refs.get("reader_promise_versions", [])),
         "reward_ledger_version": refs.get("reward_ledger_version", ""),
         "style_policy_version": refs.get("style_policy_version", ""),
+        "operator_checklist_version": refs.get("operator_checklist_version", ""),
         "knowledge_pack_versions": [item.asset_version_id for item in selection.selected if item.asset_type == "knowledge_pack"],
         "material_asset_versions": [item.asset_version_id for item in selection.selected if item.asset_type in {"material_asset", "material_card"}],
         "source_policy_versions": policy_versions,
         "selected_asset_versions": selected,
         "selected_asset_version_ids": selected,
         "rejected_asset_versions": list(selection.rejected),
+        "context_manifest": {
+            "selected_asset_version_ids": selected,
+            "rejected_asset_versions": list(selection.rejected),
+            "policy_versions": policy_versions,
+        },
+        "context_segments": stage_view["segments"],
+        "stage_context_view": stage_view,
         "token_budget": selection.token_budget,
         "estimated_tokens": selection.estimated_tokens,
         "actual_context_digest": actual_context_digest,
@@ -243,8 +310,37 @@ def build_authority_context_bundle(
             "priority_rules": list(profile.priority_rules),
             "compression_policy": profile.compression_policy,
         },
-        "context_contract_version": "authority-context-bundle-v2",
+        "context_contract_version": "authority-context-bundle-v3",
     }
+
+
+def _context_segment(candidate: ContextCandidate, profile: ContextProfile) -> ContextSegment:
+    safe_summary = candidate.safe_summary.strip()
+    facts = tuple(dict(item) for item in candidate.structured_facts)
+    if not safe_summary and not facts:
+        # Version identity alone is not usable model context.  The caller must provide
+        # safe material, while project-owned planning assets may use a concise marker.
+        safe_summary = f"[{candidate.asset_type}:{candidate.asset_version_id}]"
+    allowed_use = "evidence_only" if candidate.asset_type in profile.evidence_only_types else (
+        "structure_only" if candidate.source_use_mode == "structure_only" else candidate.allowed_use
+    )
+    return ContextSegment(
+        asset_version_id=candidate.asset_version_id,
+        asset_type=candidate.asset_type,
+        narrative_function=candidate.narrative_function,
+        safe_summary=safe_summary,
+        structured_facts=facts,
+        allowed_use=allowed_use,
+        content_digest=candidate.content_digest,
+        source_policy_version=candidate.policy_version,
+        token_count=candidate.estimated_tokens,
+        compression_method=(
+            "structural_abstraction"
+            if candidate.source_use_mode == "structure_only"
+            else candidate.compression_method
+        ),
+        source_expression_included=False,
+    )
 
 
 def _rejection_reason(project_id: str, profile: ContextProfile, candidate: ContextCandidate) -> str:
@@ -262,7 +358,10 @@ def _rejection_reason(project_id: str, profile: ContextProfile, candidate: Conte
         return "review_only_type"
     if candidate.source_use_mode not in SOURCE_MODES:
         return "unknown_source_use_mode"
-    if profile.generation_allowed_requirement and candidate.source_use_mode != "generation":
+    if profile.generation_allowed_requirement and candidate.source_use_mode not in {
+        "generation",
+        "structure_only",
+    }:
         return f"source_mode:{candidate.source_use_mode}"
     if candidate.source_risk > profile.source_risk_threshold:
         return "source_risk"
@@ -273,6 +372,7 @@ __all__ = [
     "CONTEXT_PROFILES",
     "ContextCandidate",
     "ContextProfile",
+    "ContextSegment",
     "ContextSelection",
     "build_authority_context_bundle",
     "resolve_context_profile",

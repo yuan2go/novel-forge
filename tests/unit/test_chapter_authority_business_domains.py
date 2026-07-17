@@ -6,7 +6,7 @@ from novel_forge.modules.canon_graph.domain import build_canon_update
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.content_quality_loop.domain import evaluate_quality_evidence
 from novel_forge.modules.publishing.domain import prepare_internal_release
-from novel_forge.modules.review.domain import evaluate_review_result
+from novel_forge.modules.review.domain import evaluate_rereview_result, evaluate_review_result
 from novel_forge.modules.revision.domain import apply_revision_result
 
 
@@ -45,6 +45,27 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
             provider_evidence={"provider_id": "fixture", "real_model_call": False},
         )
 
+    def rereview(self, review, revision, *, passed=True):
+        return evaluate_rereview_result(
+            project_id="project-a",
+            original_draft_version_id="draft-v1",
+            initial_review_version_id="review-v1",
+            revision_version_id="revision-v1",
+            context_bundle_version_id="context-v1",
+            initial_review=review,
+            revision=revision,
+            result={
+                "decision": "PASSED" if passed else "NEEDS_REVISION",
+                "score": 88 if passed else 72,
+                "issues": [] if passed else [{
+                    "code": "COST_MISSING", "severity": "blocking",
+                    "message": "Cost remains abstract.",
+                }],
+                "resolved_issue_codes": ["COST_MISSING"] if passed else [],
+            },
+            provider_evidence={"provider_id": "fixture", "real_model_call": False},
+        )
+
     def test_review_issues_are_versioned_locatable_and_qualified(self) -> None:
         issue = self.review()["issues"][0]
         self.assertTrue(issue["review_issue_id"].startswith("review-issue:"))
@@ -67,41 +88,67 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
                 provider_evidence={},
             )
         review["issues"][0]["qualification"] = "REVOKED"
-        self.assertEqual(self.revision(review)["issue_resolutions"][0]["to_status"], "RESOLVED")
+        self.assertEqual(
+            self.revision(review)["issue_resolutions"][0]["to_status"],
+            "RESOLUTION_CLAIMED",
+        )
+
+    def test_revision_claim_does_not_resolve_until_independent_rereview(self) -> None:
+        review = self.review()
+        revision = self.revision(review)
+        failed = self.rereview(review, revision, passed=False)
+        self.assertEqual(failed["issue_lineage"][0]["to_status"], "REOPENED")
+        self.assertEqual(failed["blocking_issue_count"], 1)
+        passed = self.rereview(review, revision, passed=True)
+        self.assertEqual(passed["issue_lineage"][0]["to_status"], "RESOLVED")
+        self.assertEqual(passed["revision_quality_delta"]["resolved_issue_count"], 1)
 
     def test_canon_quality_and_publish_use_structured_evidence(self) -> None:
         review = self.review()
         revision = self.revision(review)
+        rereview = self.rereview(review, revision)
         canon = build_canon_update(
             project_id="project-a", revision=revision,
             revision_asset_version_id="revision-v1", context_bundle_version_id="context-v1",
         )
         quality = evaluate_quality_evidence(
             project_id="project-a", revision=revision,
-            revision_asset_version_id="revision-v1", review=review,
-            review_asset_version_id="review-v1", canon=canon,
+            revision_asset_version_id="revision-v1", review=rereview,
+            review_asset_version_id="rereview-v1", canon=canon,
             canon_asset_version_id="canon-v1", context_bundle_version_id="context-v1",
+            evidence_reports=[{
+                "project_id": "project-a", "dimension": "source_isolation",
+                "gate_type": "source_originality_gate", "score": None,
+                "gate_status": "PASSED", "asset_version_id": "context-v1",
+                "weight": 0, "blocking": True,
+                "calibration_status": "DETERMINISTIC", "source": "deterministic_extractor",
+            }],
         )
         gate = prepare_internal_release(
             project_id="project-a", revision=revision,
             revision_asset_version_id="revision-v1", quality=quality,
-            quality_asset_version_id="quality-v1", review=review,
-            review_asset_version_id="review-v1", canon=canon,
+            quality_asset_version_id="quality-v1", review=rereview,
+            review_asset_version_id="rereview-v1", canon=canon,
             canon_asset_version_id="canon-v1",
             context_bundle={
                 "source_isolation_result": {"passed": True},
                 "copyright_boundary": "abstract_or_project_owned_only",
+                "context_segments": [
+                    {"asset_version_id": "checklist-v1", "asset_type": "operator_checklist", "structured_facts": [{"key": "completed", "value": True}]},
+                    {"asset_version_id": "approval-v1", "asset_type": "operator_approval", "structured_facts": [{"key": "approved", "value": True}]},
+                ],
             },
             context_bundle_version_id="context-v1",
         )
         self.assertEqual(canon["facts"][0]["object"], "broken")
-        self.assertEqual(quality["gate"], "PASSED")
+        self.assertEqual(quality["gate"], "PASSED_WITH_UNCALIBRATED")
         self.assertEqual(gate["gate"], "PASSED")
         self.assertTrue(gate["rollback_metadata"]["release_not_externally_published"])
 
     def test_canon_conflict_blocks_quality(self) -> None:
         review = self.review()
         revision = self.revision(review)
+        rereview = self.rereview(review, revision)
         canon = build_canon_update(
             project_id="project-a", revision=revision,
             revision_asset_version_id="revision-v1", context_bundle_version_id="context-v1",
@@ -111,8 +158,8 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
         with self.assertRaisesRegex(KernelError, "CHAPTER_QUALITY_GATE_FAILED"):
             evaluate_quality_evidence(
                 project_id="project-a", revision=revision,
-                revision_asset_version_id="revision-v1", review=review,
-                review_asset_version_id="review-v1", canon=canon,
+                revision_asset_version_id="revision-v1", review=rereview,
+                review_asset_version_id="rereview-v1", canon=canon,
                 canon_asset_version_id="canon-v1", context_bundle_version_id="context-v1",
             )
 

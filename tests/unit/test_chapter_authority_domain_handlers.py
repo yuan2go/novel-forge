@@ -10,6 +10,7 @@ from novel_forge.modules.chapter_authority.domain_handlers import (
     build_quality_report,
     normalize_draft_result,
     normalize_review_result,
+    normalize_rereview_result,
     normalize_revision_result,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -63,6 +64,17 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
             },
             provider_evidence={"provider_id": "provider-1", "real_model_call": True},
         )
+        rereview = normalize_rereview_result(
+            draft_asset_version_id="draft-version-1",
+            review=review,
+            review_asset_version_id="review-version-1",
+            revision=revision,
+            revision_asset_version_id="revision-version-1",
+            context_bundle_version_id="context-version-1",
+            result={"decision": "PASSED", "score": 88, "issues": [], "resolved_issue_codes": ["COST_NOT_CONCRETE"]},
+            provider_evidence={"provider_id": "provider-1", "real_model_call": True},
+            project_id="project-a",
+        )
         canon = build_canon_patch(
             revision=revision,
             revision_asset_version_id="revision-version-1",
@@ -72,22 +84,25 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
             revision_asset_version_id="revision-version-1",
             canon=canon,
             canon_asset_version_id="canon-version-1",
+            review=rereview,
+            review_asset_version_id="rereview-version-1",
+            context_bundle=context,
         )
         exported = build_export_package(
             revision=revision,
             revision_asset_version_id="revision-version-1",
-            quality=quality,
-            quality_asset_version_id="quality-version-1",
+            quality={"gate": "PASSED"},
+            quality_asset_version_id="publish-gate-version-1",
         )
 
         self.assertEqual(context["selected_asset_version_ids"], ["plan-version-1"])
         self.assertEqual(review["blocking_issue_count"], 1)
         self.assertEqual(canon["gate"], "PASSED")
-        self.assertEqual(quality["gate"], "PASSED")
+        self.assertEqual(quality["gate"], "PASSED_WITH_UNCALIBRATED")
         self.assertEqual(exported["release_status"], "READY_FOR_BLOB_VERIFICATION")
 
     def test_quality_and_export_fail_closed(self) -> None:
-        with self.assertRaisesRegex(KernelError, "CHAPTER_QUALITY_GATE_FAILED"):
+        with self.assertRaisesRegex(KernelError, "QUALITY_REREVIEW_REQUIRED"):
             build_quality_report(
                 revision={"chapter": 1, "text": "Nothing changes."},
                 revision_asset_version_id="revision-version-1",

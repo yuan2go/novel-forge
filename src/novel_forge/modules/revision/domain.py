@@ -1,4 +1,4 @@
-"""Storage-free controlled revision and ReviewIssue resolution."""
+"""Storage-free controlled revision and ReviewIssue resolution claims."""
 from __future__ import annotations
 
 from typing import Any
@@ -38,7 +38,11 @@ def apply_revision_result(
             "code": str(item.get("code") or ""),
             "review_issue_id": str(item.get("review_issue_id") or ""),
             "from_status": item.get("status", "OPEN"),
-            "to_status": "RESOLVED" if item.get("code") in resolved else item.get("status", "OPEN"),
+            "to_status": (
+                "RESOLUTION_CLAIMED"
+                if item.get("code") in resolved
+                else item.get("status", "OPEN")
+            ),
         }
         for item in review.get("issues", [])
     ]
@@ -54,10 +58,11 @@ def apply_revision_result(
         "review_version_id": review_asset_version_id,
         "context_bundle_version_id": context_bundle_version_id,
         "resolved_issue_codes": resolved,
+        "resolution_claimed_issue_codes": resolved,
         "issue_resolutions": resolutions,
         "canon_assertions": assertions,
         "provider_evidence": dict(provider_evidence),
-        "revision_contract_version": "revision-domain-v2",
+        "revision_contract_version": "revision-domain-v3",
     }
 
 

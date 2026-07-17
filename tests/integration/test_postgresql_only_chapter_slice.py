@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+import hashlib
+import json
 
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.modules.chapter_authority.handlers import (
@@ -27,6 +29,58 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
+    @staticmethod
+    def release_evidence(project_id: str):
+        candidates = (
+            {
+                "asset_version_id": f"{project_id}:checklist-v1", "asset_type": "operator_checklist",
+                "project_id": project_id, "estimated_tokens": 20,
+                "safe_summary": "Operator checklist completed.",
+                "structured_facts": [{"key": "completed", "value": True}],
+                "narrative_function": "release_evidence",
+            },
+            {
+                "asset_version_id": f"{project_id}:approval-v1", "asset_type": "operator_approval",
+                "project_id": project_id, "estimated_tokens": 20,
+                "safe_summary": "Operator approved fixture release evidence.",
+                "structured_facts": [{"key": "approved", "value": True}],
+                "narrative_function": "release_evidence",
+            },
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            for candidate in candidates:
+                content = {
+                    "safe_summary": candidate["safe_summary"],
+                    "structured_facts": candidate["structured_facts"],
+                }
+                content_hash = "sha256:" + hashlib.sha256(
+                    json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest()
+                candidate["content_hash"] = content_hash
+                asset_id = f"{candidate['asset_version_id']}:asset"
+                cursor.execute(
+                    "INSERT INTO authority_asset (asset_id, project_id, asset_type) VALUES (%s, %s, %s)",
+                    [asset_id, project_id, candidate["asset_type"]],
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO authority_asset_version (
+                        asset_version_id, asset_id, version_number, lifecycle,
+                        eligibility, governance, content, content_hash
+                    ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s)
+                    """,
+                    [candidate["asset_version_id"], asset_id, json.dumps(content), content_hash],
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO authority_asset_qualification (
+                        qualification_id, asset_version_id, policy_version, decision, evidence
+                    ) VALUES (%s, %s, 'fixture-release-evidence-v1', 'ELIGIBLE', '{}'::jsonb)
+                    """,
+                    [f"{candidate['asset_version_id']}:qualification", candidate["asset_version_id"]],
+                )
+        return candidates
+
     def test_one_chapter_uses_authority_handlers_recovery_and_verified_export(self) -> None:
         project_id = identifier("chapter-project")
         request = SingleChapterRequest(
@@ -40,6 +94,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
             correlation_id=identifier("correlation"),
             application_build_id="postgresql-only-chapter-test",
             commit_sha="c" * 40,
+            context_candidates=self.release_evidence(project_id),
         )
         result = run_single_chapter_slice(
             DATABASE_URL,
@@ -65,8 +120,8 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["root"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["forward_recovery_attempts"], 1)
-        self.assertEqual(len(manifest["operations"]), 10)
-        self.assertEqual(len(manifest["outputs"]), 9)
+        self.assertEqual(len(manifest["operations"]), 11)
+        self.assertEqual(len(manifest["outputs"]), 10)
         self.assertEqual(manifest["attempt_counts"][ChapterNode.DRAFT.value], 2)
         for node in ChapterNode:
             self.assertEqual(manifest["operation_statuses"][node.value], "SUCCEEDED")
@@ -92,7 +147,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 9)
+            self.assertEqual(cursor.fetchone()[0], 10)
             cursor.execute(
                 """
                 SELECT COUNT(*)
@@ -103,7 +158,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id, result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 8)
+            self.assertEqual(cursor.fetchone()[0], 9)
 
     def test_standard_success_adapter_completes_without_unknown_probe(self) -> None:
         project_id = identifier("chapter-project-success")
@@ -118,6 +173,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
             correlation_id=identifier("correlation"),
             application_build_id="postgresql-only-chapter-test",
             commit_sha="c" * 40,
+            context_candidates=self.release_evidence(project_id),
         )
 
         result = run_single_chapter_slice(

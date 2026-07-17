@@ -19,6 +19,7 @@ from novel_forge.modules.chapter_authority.domain_handlers import (
     build_quality_report,
     normalize_draft_result,
     normalize_review_result,
+    normalize_rereview_result,
     normalize_revision_result,
 )
 from novel_forge.modules.chapter_authority.model_effects import (
@@ -78,6 +79,18 @@ class DeterministicFixtureChapterProvider:
                     }
                 ],
             }
+        elif stage == "rereview":
+            revision = payload["revision"]
+            review = payload["review"]
+            output = {
+                "decision": "PASSED",
+                "score": 88,
+                "issues": [],
+                "resolved_issue_codes": [
+                    str(item["code"]) for item in review.get("issues", [])
+                ],
+                "target_content_hash": str(revision.get("content_hash", "")),
+            }
         else:
             from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -117,6 +130,30 @@ class _PlanHandler:
 class _ContextHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         plan = request.require_input("chapter_plan")
+        candidate_metadata = {
+            str(item.get("asset_version_id")): dict(item)
+            for item in request.command.get("context_candidates", [])
+        }
+        governed_candidates = []
+        frozen_candidates = [item for item in request.inputs if item.asset_type != "chapter_plan"]
+        if set(candidate_metadata) != {item.asset_version_id for item in frozen_candidates}:
+            from novel_forge.modules.command_kernel.errors import KernelError
+
+            raise KernelError(
+                "CONTEXT_FROZEN_INPUT_MISMATCH",
+                "governed context candidates must equal frozen AssetVersion inputs",
+            )
+        for item in frozen_candidates:
+            metadata = candidate_metadata[item.asset_version_id]
+            governed_candidates.append(
+                {
+                    **metadata,
+                    "asset_type": item.asset_type,
+                    "content_digest": item.content_hash,
+                    "safe_summary": str(item.content.get("safe_summary") or metadata.get("safe_summary") or ""),
+                    "structured_facts": list(item.content.get("structured_facts") or metadata.get("structured_facts") or []),
+                }
+            )
         return _output(
             ChapterNode.CONTEXT,
             build_context_bundle(
@@ -125,7 +162,7 @@ class _ContextHandler:
                 plan_content_hash=plan.content_hash,
                 project_id=request.project_id,
                 created_by_operation_id=request.operation_id,
-                governed_candidates=list(request.command.get("context_candidates", [])),
+                governed_candidates=governed_candidates,
                 version_refs=dict(request.command.get("context_version_refs", {})),
                 token_budget=int(request.command.get("context_token_budget", 6000)),
             ),
@@ -165,7 +202,7 @@ class _ReviewHandler:
         reviewed = self.provider.invoke(
             request,
             stage="review",
-            payload={"draft": draft.content},
+            payload={"draft": draft.content, "context": context.content},
         )
         return _output(
             ChapterNode.REVIEW,
@@ -191,7 +228,7 @@ class _RevisionHandler:
         revised = self.provider.invoke(
             request,
             stage="revision",
-            payload={"draft": draft.content, "review": review.content},
+            payload={"draft": draft.content, "review": review.content, "context": context.content},
         )
         return _output(
             ChapterNode.REVISION,
@@ -208,6 +245,44 @@ class _RevisionHandler:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class _ReReviewHandler:
+    provider: ChapterModelPort
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        draft = request.require_input("draft_chapter")
+        review = request.require_input("review_report")
+        revision = request.require_input("draft_version")
+        context = request.require_input("context_bundle")
+        reviewed = self.provider.invoke(
+            request,
+            stage=(
+                "review"
+                if getattr(self.provider, "external_effect_backed", False)
+                else "rereview"
+            ),
+            payload={
+                "draft": revision.content,
+                "original_draft": draft.content,
+                "review": review.content,
+                "revision": revision.content,
+                "context": context.content,
+            },
+        )
+        return _output(
+            ChapterNode.REREVIEW,
+            normalize_rereview_result(
+                draft_asset_version_id=draft.asset_version_id,
+                review=review.content,
+                review_asset_version_id=review.asset_version_id,
+                revision=revision.content,
+                revision_asset_version_id=revision.asset_version_id,
+                context_bundle_version_id=context.asset_version_id,
+                result=reviewed.output,
+                provider_evidence=_provider_evidence(reviewed),
+                project_id=request.project_id,
+            ),
+        )
 @dataclass(frozen=True, slots=True)
 class _CanonHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
@@ -228,7 +303,7 @@ class _CanonHandler:
 class _QualityHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
-        review = request.require_input("review_report")
+        review = request.require_input("re_review_report")
         canon = request.require_input("canon_patch")
         context = request.require_input("context_bundle")
         return _output(
@@ -242,6 +317,7 @@ class _QualityHandler:
                 review_asset_version_id=review.asset_version_id,
                 project_id=request.project_id,
                 context_bundle_version_id=context.asset_version_id,
+                context_bundle=context.content,
             ),
         )
 
@@ -250,7 +326,7 @@ class _QualityHandler:
 class _PublishGateHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
-        review = request.require_input("review_report")
+        review = request.require_input("re_review_report")
         canon = request.require_input("canon_patch")
         quality = request.require_input("quality_score_report")
         context = request.require_input("context_bundle")
@@ -299,6 +375,7 @@ def build_chapter_handler_registry(
     registry.register(ChapterNode.DRAFT, _DraftHandler(provider))
     registry.register(ChapterNode.REVIEW, _ReviewHandler(provider))
     registry.register(ChapterNode.REVISION, _RevisionHandler(provider))
+    registry.register(ChapterNode.REREVIEW, _ReReviewHandler(provider))
     registry.register(ChapterNode.CANON, _CanonHandler())
     registry.register(ChapterNode.QUALITY, _QualityHandler())
     registry.register(ChapterNode.PUBLISH_GATE, _PublishGateHandler())

@@ -8,7 +8,7 @@ from novel_forge.modules.context_builder.domain import (
     ContextCandidate,
     build_authority_context_bundle,
 )
-from novel_forge.modules.review.domain import evaluate_review_result
+from novel_forge.modules.review.domain import evaluate_rereview_result, evaluate_review_result
 from novel_forge.modules.revision.domain import apply_revision_result
 from novel_forge.modules.canon_graph.domain import build_canon_update
 from novel_forge.modules.content_quality_loop.domain import evaluate_quality_evidence
@@ -67,6 +67,10 @@ def build_context_bundle(
             policy_version=str(item.get("policy_version", item.get("source_policy_version", ""))),
             invalidation_keys=tuple(item.get("invalidation_keys", [])),
             narrative_function=str(item.get("narrative_function", "")),
+            safe_summary=str(item.get("safe_summary", "")),
+            structured_facts=tuple(item.get("structured_facts", [])),
+            allowed_use=str(item.get("allowed_use", "generation")),
+            compression_method=str(item.get("compression_method", "safe_summary")),
         )
         for item in (governed_candidates or [])
     ]
@@ -81,6 +85,14 @@ def build_context_bundle(
             content_digest=plan_content_hash,
             invalidation_keys=(f"chapter-plan:{plan_asset_version_id}",),
             narrative_function="current_chapter_plan",
+            safe_summary=(
+                f"Chapter {plan['chapter']} objective: {plan['objective']}. "
+                f"Premise: {plan['premise']}. Beats: {'; '.join(plan['beats'])}."
+            ),
+            structured_facts=(
+                {"kind": "chapter", "value": plan["chapter"]},
+                {"kind": "objective", "value": plan["objective"]},
+            ),
         ),
     )
     refs = {**(version_refs or {}), "chapter_plan_version": plan_asset_version_id}
@@ -100,6 +112,7 @@ def build_context_bundle(
         "actual_context": {
             "premise": plan["premise"],
             "beats": plan["beats"],
+            "stage_context_view": governed["stage_context_view"],
             "copyright_boundary": "project-owned and abstract eligible context only",
         },
         "forbidden_source_count": 0,
@@ -167,6 +180,31 @@ def normalize_revision_result(
     )
 
 
+def normalize_rereview_result(
+    *,
+    draft_asset_version_id: str,
+    review: dict[str, Any],
+    review_asset_version_id: str,
+    revision: dict[str, Any],
+    revision_asset_version_id: str,
+    context_bundle_version_id: str,
+    result: dict[str, Any],
+    provider_evidence: dict[str, Any],
+    project_id: str,
+) -> dict[str, Any]:
+    return evaluate_rereview_result(
+        project_id=project_id,
+        original_draft_version_id=draft_asset_version_id,
+        initial_review_version_id=review_asset_version_id,
+        revision_version_id=revision_asset_version_id,
+        context_bundle_version_id=context_bundle_version_id,
+        initial_review=review,
+        revision=revision,
+        result=result,
+        provider_evidence=provider_evidence,
+    )
+
+
 def build_canon_patch(
     *,
     revision: dict[str, Any],
@@ -192,6 +230,8 @@ def build_quality_report(
     review_asset_version_id: str = "legacy-review-version",
     project_id: str = "local-system",
     context_bundle_version_id: str = "legacy-context-bundle",
+    context_bundle: dict[str, Any] | None = None,
+    evidence_reports: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     effective_review = review or {
         "issues": [
@@ -208,6 +248,29 @@ def build_quality_report(
         canon=canon,
         canon_asset_version_id=canon_asset_version_id,
         context_bundle_version_id=context_bundle_version_id,
+        evidence_reports=[
+            {
+                "project_id": project_id,
+                "dimension": "source_isolation",
+                "gate_type": "source_originality_gate",
+                "score": None,
+                "gate_status": (
+                    "PASSED"
+                    if (context_bundle or {}).get("source_isolation_result", {}).get("passed")
+                    and all(
+                        not item.get("source_expression_included", True)
+                        for item in (context_bundle or {}).get("context_segments", [])
+                    )
+                    else "FAILED"
+                ),
+                "asset_version_id": context_bundle_version_id,
+                "weight": 0.0,
+                "blocking": True,
+                "calibration_status": "DETERMINISTIC",
+                "source": "deterministic_extractor",
+            },
+            *(evidence_reports or []),
+        ],
     )
 
 
@@ -270,5 +333,6 @@ __all__ = [
     "build_quality_report",
     "normalize_draft_result",
     "normalize_review_result",
+    "normalize_rereview_result",
     "normalize_revision_result",
 ]

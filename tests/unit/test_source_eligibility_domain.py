@@ -53,6 +53,24 @@ class SourceEligibilityDomainTests(unittest.TestCase):
         self.assertEqual(decision["status"], "REQUIRES_APPROVAL")
         self.assertEqual(decision["use_mode"], "structure_only")
 
+    def test_cross_project_revocation_is_terminal_across_combined_states(self) -> None:
+        combinations = (
+            {"stale": True},
+            {"approval_required": True},
+            {"generation_context_allowed": False},
+            {"copyright_clear": False, "license_id": ""},
+            {"source_trust": 0.1},
+        )
+        for changes in combinations:
+            with self.subTest(changes=changes):
+                decision = decide_source_eligibility(
+                    project_id="project-a",
+                    evidence=self.evidence(project_id="project-b", **changes),
+                )
+                self.assertEqual(decision["status"], "REVOKED")
+                self.assertEqual(decision["use_mode"], "quarantine")
+                self.assertIn("cross_project", decision["reasons"])
+
     def test_change_impact_only_plans_regeneration_and_never_mutates_prose(self) -> None:
         impact = build_change_impact_report(
             project_id="project-a", changed_asset_version_id="source-v2",

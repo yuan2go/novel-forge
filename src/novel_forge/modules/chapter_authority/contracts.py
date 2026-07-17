@@ -44,6 +44,13 @@ class ChapterNode(Enum):
         "chapter.revision",
         "chapter.revision.materialized",
     )
+    REREVIEW = (
+        "rereview",
+        "chapter.revision.review",
+        "re_review_report",
+        "chapter.rereview",
+        "chapter.rereview.materialized",
+    )
     CANON = (
         "canon",
         "chapter.canon.update",

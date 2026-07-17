@@ -118,6 +118,7 @@ def _definition(
         ChapterNode.DRAFT: "model.draft",
         ChapterNode.REVIEW: "model.review",
         ChapterNode.REVISION: "model.revision",
+        ChapterNode.REREVIEW: "model.review",
     }.get(node)
     if model_effects_required and model_capability:
         completion["required_external_effects"] = [
