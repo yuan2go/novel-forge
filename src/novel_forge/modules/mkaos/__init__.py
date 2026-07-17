@@ -79,6 +79,11 @@ from .service import (
     convert_assets,
     convert_rules,
 )
+from .selection_domain import (
+    KnowledgeCandidate,
+    select_knowledge_pack,
+    selection_to_context_candidates,
+)
 from .pack_policy import (
     MkaosPackPolicyError,
     build_mkaos_flow_context_with_policy,
@@ -199,3 +204,9 @@ __all__ = [
     "resolve_mkaos_pack_policy",
     "validate_mkaos_pack_result",
 ]
+
+__all__.extend([
+    "KnowledgeCandidate",
+    "select_knowledge_pack",
+    "selection_to_context_candidates",
+])
