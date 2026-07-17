@@ -237,6 +237,11 @@ def operation_catalog(
             commit_sha=commit_sha,
         )
     )
+    from novel_forge.modules.content_authority.definitions import content_operation_definitions
+    bound = content_operation_definitions(application_build_id=application_build_id, commit_sha=commit_sha)
+    bound_names = {item["name"] for item in bound}
+    catalog = [item for item in catalog if item["name"] not in bound_names]
+    catalog.extend(bound)
     return catalog
 
 
