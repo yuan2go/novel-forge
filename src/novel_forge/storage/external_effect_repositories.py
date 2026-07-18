@@ -28,6 +28,13 @@ class ExternalEffectRepository:
             raise KernelError("OPERATION_STATUS_CONFLICT", "effect operation is not EXECUTING")
 
     def plan(self, row: dict[str, Any]) -> dict[str, Any]:
+        parameters = {
+            "model_id": "",
+            "request_timeout_seconds": None,
+            "reconciliation_mode": "query",
+            "manual_resolution_required": False,
+            **row,
+        }
         self.cursor.execute(
             """
             INSERT INTO authority_external_effect (
@@ -52,7 +59,7 @@ class ExternalEffectRepository:
             ON CONFLICT (project_id, effect_type, stable_idempotency_key) DO NOTHING
             RETURNING external_effect_id
             """,
-            {**row, "request_payload": Jsonb(row["request_payload"])},
+            {**parameters, "request_payload": Jsonb(parameters["request_payload"])},
         )
         inserted = self.cursor.fetchone()
         if inserted:
