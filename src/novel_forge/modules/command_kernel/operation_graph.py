@@ -291,7 +291,15 @@ def coordinate_saga(
                     admission_context,
                 )
                 steps = repository.saga_steps(saga_id)
-        elif steps and all(step["status"] == "SUCCEEDED" for step in steps):
+        elif (
+            steps
+            and all(step["status"] == "SUCCEEDED" for step in steps)
+            and (
+                repository.expected_saga_step_count(saga["root_operation_id"]) == 0
+                or len(steps)
+                >= repository.expected_saga_step_count(saga["root_operation_id"])
+            )
+        ):
             target_status = "SUCCEEDED"
             repository.update_saga(saga_id, saga["version"], target_status)
             if repository.complete_root(saga["root_operation_id"], target_status):

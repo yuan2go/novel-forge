@@ -644,6 +644,32 @@ class AuthorityChapterRunRequest(BaseModel):
     correlation_id: str = ""
 
 
+class AuthorityChapterCommandRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    chapter: int = Field(ge=1)
+    idempotency_key: str = Field(min_length=1)
+    title_override: str = ""
+    premise_override: str = ""
+    explicit_asset_version_overrides: dict[str, str] = Field(default_factory=dict)
+    requested_quality_profile: str = "default"
+    requested_platform_profile: str = "default"
+    operator_decision: dict[str, Any] = Field(default_factory=dict)
+    context_token_budget: int = Field(default=6000, ge=1)
+    actor_id: str = ""  # deprecated compatibility metadata; never trusted
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class AuthorityOperationControlRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+    actor_id: str = ""  # deprecated compatibility metadata; never trusted
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
 class ChapterProductionResumeRequest(BaseModel):
     run_path: str
     from_step: str | None = None
@@ -1985,6 +2011,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "GenerationRunRequest": GenerationRunRequest,
         "ChapterProductionRunRequest": ChapterProductionRunRequest,
         "AuthorityChapterRunRequest": AuthorityChapterRunRequest,
+        "AuthorityChapterCommandRequest": AuthorityChapterCommandRequest,
+        "AuthorityOperationControlRequest": AuthorityOperationControlRequest,
         "ChapterProductionResumeRequest": ChapterProductionResumeRequest,
         "ChapterProductionControlRequest": ChapterProductionControlRequest,
         "ChapterProductionRecoverRequest": ChapterProductionRecoverRequest,

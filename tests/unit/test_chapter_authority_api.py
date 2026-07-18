@@ -31,8 +31,93 @@ class _FakeApplication:
         self.requests.append(request)
         return SimpleNamespace(root_operation_id="operation-1")
 
+    def admit(self, request: object, *, principal: object) -> object:
+        self.requests.append(request)
+        return SimpleNamespace(
+            root_operation_id="operation-async-1",
+            saga_id="saga-1",
+            status="ACCEPTED",
+            replayed=False,
+        )
+
 
 class ChapterAuthorityApiTests(unittest.TestCase):
+    def test_async_command_returns_202_and_uses_trusted_principal(self) -> None:
+        try:
+            from fastapi.testclient import TestClient
+        except ModuleNotFoundError:
+            self.skipTest("FastAPI test client is not installed")
+        from novel_forge.modules.authority_security import TrustedPrincipalResolver
+        from novel_forge.modules.production_preparation.contracts import (
+            ChapterAuthorityCommand,
+            ProductionPreparationReport,
+            ProductionPreparationResult,
+        )
+
+        fake = _FakeApplication()
+        command = ChapterAuthorityCommand(
+            project_id="project-1",
+            workspace_id="workspace-1",
+            chapter=1,
+            title="Prepared title",
+            premise="Prepared premise",
+            context_candidates=(),
+            context_version_refs={},
+            context_token_budget=6000,
+            preparation_report={"decision": "READY"},
+            idempotency_key="chapter-command-1",
+        )
+        report = ProductionPreparationReport(
+            project_id="project-1", chapter=1, decision="READY",
+            selected_asset_version_ids=(), selection_reasons={},
+            missing_required_asset_types=(), blocked_assets=(),
+            approval_requirements=(), context_digest="sha256:ready",
+            estimated_token_budget=6000, estimated_provider_budget={},
+            repair_actions=(), idempotency_key="chapter-command-1",
+        )
+        preparation_service = SimpleNamespace(
+            prepare=lambda request: ProductionPreparationResult(report=report, command=command)
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            app = create_app(IndustrialSettings(root=Path(directory)))
+            with (
+                patch(
+                    "novel_forge.api.routers.chapter_authority.build_chapter_authority_application",
+                    return_value=fake,
+                ),
+                patch(
+                    "novel_forge.api.routers.chapter_authority.build_production_preparation_service",
+                    return_value=preparation_service,
+                ),
+                patch(
+                    "novel_forge.api.routers.chapter_authority.build_trusted_principal_resolver",
+                    return_value=TrustedPrincipalResolver(
+                        environment="test",
+                        configured_local_operator_id="trusted-operator",
+                    ),
+                ),
+                patch(
+                    "novel_forge.api.routers.chapter_authority.authority_release_identity",
+                    return_value=("build-42", "a" * 40),
+                ),
+                TestClient(app) as client,
+            ):
+                response = client.post(
+                    "/product/production/chapter-authority/commands",
+                    json={
+                        "project_id": "project-1",
+                        "workspace_id": "workspace-1",
+                        "chapter": 1,
+                        "idempotency_key": "chapter-command-1",
+                        "actor_id": "untrusted-caller",
+                    },
+                )
+
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(response.json()["saga_id"], "saga-1")
+        self.assertEqual(fake.requests[0].actor_id, "trusted-operator")
+        self.assertNotEqual(fake.requests[0].actor_id, "untrusted-caller")
+
     def test_command_and_strong_query_routes_use_authority_application(self) -> None:
         try:
             from fastapi.testclient import TestClient

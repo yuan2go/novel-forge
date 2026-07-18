@@ -58,6 +58,18 @@ class OperationGraphRepository:
             )
         return str(row[0])
 
+    def expected_saga_step_count(self, root_operation_id: str) -> int:
+        self.cursor.execute(
+            """
+            SELECT COALESCE((definition_snapshot->'policy'->>'expected_saga_steps')::int, 0)
+            FROM authority_operation
+            WHERE operation_id = %s AND root_operation_id = operation_id
+            """,
+            [root_operation_id],
+        )
+        row = self.cursor.fetchone()
+        return 0 if row is None else int(row[0] or 0)
+
     def add_dependency(self, operation_id: str, depends_on: str, condition: str) -> bool:
         self.cursor.execute(
             """

@@ -13,8 +13,13 @@ from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelRoute,
 )
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
+from novel_forge.modules.authority_security import TrustedPrincipalResolver
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     LocalFileObjectStoreAdapter,
+)
+from novel_forge.modules.production_preparation import (
+    PostgresProductionAssetResolver,
+    ProductionPreparationService,
 )
 
 
@@ -89,7 +94,24 @@ def build_chapter_authority_application(
         model_adapter=ChapterModelExternalEffectAdapter(routes),
         object_store_adapter=LocalFileObjectStoreAdapter(object_root),
         worker_id=str(values.get("NOVEL_FORGE_AUTHORITY_WORKER_ID") or "chapter-authority-api"),
+        allow_synchronous_fixture=environment in {"test", "development"}
+        and str(values.get("NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE") or "").lower()
+        in {"1", "true", "yes"},
     )
+
+
+def build_production_preparation_service(
+    settings: IndustrialSettings,
+) -> ProductionPreparationService:
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL database is required for production preparation")
+    return ProductionPreparationService(PostgresProductionAssetResolver(settings.database_url))
+
+
+def build_trusted_principal_resolver(
+    *, env: Mapping[str, str] | None = None,
+) -> TrustedPrincipalResolver:
+    return TrustedPrincipalResolver.from_environment(env or os.environ)
 
 
 def build_chapter_authority_query(settings: IndustrialSettings) -> ChapterAuthorityQuery:
@@ -102,4 +124,6 @@ __all__ = [
     "authority_release_identity",
     "build_chapter_authority_application",
     "build_chapter_authority_query",
+    "build_production_preparation_service",
+    "build_trusted_principal_resolver",
 ]

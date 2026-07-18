@@ -6,9 +6,9 @@ from typing import Any
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
-CHAPTER_SLICE_DEFINITION_VERSION = "2.0.3"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.3"
-CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.3"
+CHAPTER_SLICE_DEFINITION_VERSION = "2.0.4"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.4"
+CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.4"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
 CHAPTER_PROJECTION_CONSUMERS = [
@@ -76,6 +76,7 @@ def chapter_root_operation_definition(
             "authority": "postgresql",
             "local_storage_writes": "forbidden",
             "orchestration": "dynamic_fenced_saga_v1",
+            "expected_saga_steps": len(ChapterNode),
         },
         "completion_contract": {
             "version": "chapter.slice.run.completion.v1",
@@ -245,6 +246,8 @@ def _chapter_command_schema() -> dict[str, Any]:
             },
             "context_version_refs": {"type": "object"},
             "context_token_budget": {"type": "integer"},
+            "preparation_report": {"type": "object"},
+            "chapter_idempotency_key": {"type": "string"},
         },
         "additionalProperties": False,
     }

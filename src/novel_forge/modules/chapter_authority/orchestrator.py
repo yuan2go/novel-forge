@@ -72,6 +72,17 @@ class SingleChapterRequest:
     context_candidates: tuple[dict[str, Any], ...] = ()
     context_version_refs: dict[str, Any] | None = None
     context_token_budget: int = 6000
+    preparation_report: dict[str, Any] | None = None
+    idempotency_key: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class ChapterSagaAdmission:
+    root_operation_id: str
+    saga_id: str
+    first_operation_id: str
+    status: str
+    replayed: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +95,93 @@ class ChapterSliceResult:
     outputs: dict[ChapterNode, ChapterExecutionResult]
     export_evidence: ExportDeliveryEvidence
     evidence_manifest: dict[str, Any]
+
+
+def admit_single_chapter_saga(
+    database_url: str,
+    *,
+    request: SingleChapterRequest,
+    registry: ChapterHandlerRegistry,
+    permissions: frozenset[str],
+) -> ChapterSagaAdmission:
+    """Persist a durable root Saga and first READY node without executing a handler."""
+    _validate_request(request)
+    definition_version = chapter_definition_version(registry.model_effects_required)
+    definitions = chapter_operation_definitions(
+        application_build_id=request.application_build_id,
+        commit_sha=request.commit_sha,
+        model_effects_required=registry.model_effects_required,
+    )
+    root_definition = chapter_root_operation_definition(
+        application_build_id=request.application_build_id,
+        commit_sha=request.commit_sha,
+        model_effects_required=registry.model_effects_required,
+    )
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.repositories.definitions.register(root_definition)
+        for definition in definitions:
+            uow.repositories.definitions.register(definition)
+        uow.commit()
+    admission = AdmissionContext(
+        actor_id=request.actor_id,
+        permissions=permissions,
+        available_handlers=registry.available_handler_keys
+        | frozenset({CHAPTER_SLICE_ROOT_HANDLER_KEY}),
+        application_build_id=request.application_build_id,
+        commit_sha=request.commit_sha,
+    )
+    stable_root_key = request.idempotency_key or (
+        f"{request.project_id}:chapter:{request.chapter}:root"
+    )
+    admitted_root = admit_command(
+        database_url,
+        _command(
+            request,
+            definition_name=CHAPTER_SLICE_ROOT_DEFINITION_NAME,
+            idempotency_key=stable_root_key,
+            input_assets=[],
+            definition_version=definition_version,
+        ),
+        context=admission,
+    )
+    root = str(admitted_root["operation_id"])
+    root_status, _ = _operation_state(database_url, root, request.project_id)
+    if root_status == "ADMITTED":
+        _transition_root_to_executing(database_url, request, root)
+    graph_context = GraphCommandContext(
+        project_id=request.project_id,
+        actor_id=request.actor_id,
+        trace_id=request.trace_id,
+        correlation_id=request.correlation_id,
+    )
+    saga_id = str(
+        start_saga(database_url, graph_context, root_operation_id=root)["saga_id"]
+    )
+    plan = ChapterNode.PLAN
+    admitted_plan = admit_command(
+        database_url,
+        _command(
+            request,
+            definition_name=plan.definition_name,
+            idempotency_key=f"{stable_root_key}:{plan.value}",
+            input_assets=[],
+            root_operation_id=root,
+            parent_operation_id=root,
+            causation_operation_id=root,
+            definition_version=definition_version,
+        ),
+        context=admission,
+    )
+    plan_id = str(admitted_plan["operation_id"])
+    register_saga_step(database_url, graph_context, saga_id, plan_id, plan.value, 1, "")
+    coordinate_saga(database_url, graph_context, saga_id)
+    return ChapterSagaAdmission(
+        root_operation_id=root,
+        saga_id=saga_id,
+        first_operation_id=plan_id,
+        status="ACCEPTED",
+        replayed=bool(admitted_root["replayed"]),
+    )
 
 
 def run_single_chapter_slice(
@@ -391,6 +489,8 @@ def _command(
             "context_candidates": [dict(item) for item in request.context_candidates],
             "context_version_refs": dict(request.context_version_refs or {}),
             "context_token_budget": request.context_token_budget,
+            "preparation_report": dict(request.preparation_report or {}),
+            "chapter_idempotency_key": request.idempotency_key,
         },
         "input_assets": input_assets,
         "root_operation_id": root_operation_id,
