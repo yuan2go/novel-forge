@@ -9,13 +9,52 @@ concurrency:
   group: core-os-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PYTHONPATH: src
+  NOVEL_FORGE_POSTGRES_WRITE_STRICT: "true"
+
 jobs:
-  core:
-    name: core (${{ github.sha }})
+  lint-and-architecture:
+    name: lint and architecture
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[api,postgres]"
+      - name: Immutable revision and compile
+        run: |
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          python -m compileall -q src tests
+          git diff --check
+      - name: Architecture boundaries
+        run: python -m unittest discover -s tests/architecture -p 'test_*.py'
+      - name: Static validation
+        run: |
+          make lint
+          make validate
+          make check-skills
+
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[test]"
+      - run: python -m unittest discover -s tests/unit -p 'test_*.py'
+
+  postgres-authority:
+    name: postgres authority
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_DB: novel_forge_core_os_test
           POSTGRES_USER: novel_forge
@@ -26,59 +65,76 @@ jobs:
           --health-cmd "pg_isready -U novel_forge -d novel_forge_core_os_test"
           --health-interval 5s --health-timeout 5s --health-retries 12
     env:
-      PYTHONPATH: src
       NOVEL_FORGE_DATABASE_URL: postgresql://novel_forge:novel_forge@localhost:5432/novel_forge_core_os_test
-      NOVEL_FORGE_POSTGRES_WRITE_STRICT: "true"
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Record immutable revision
-        run: |
-          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
-          git status --porcelain
-          echo "core_os_head=${GITHUB_SHA}" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install Python dependencies
-        run: python -m pip install -e ".[api,postgres]"
-      - name: Generate head-bound authority coverage evidence
-        run: |
-          python -m novel_forge.tools.authority_coverage_manifest \
-            --repo-root . \
-            --output /tmp/postgresql-authority-coverage-${GITHUB_SHA}.json \
-            --check-head
-          python -m unittest tests.architecture.test_authority_coverage_baseline -v
-      - name: Upload authority coverage evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: postgresql-authority-coverage-${{ github.sha }}
-          path: /tmp/postgresql-authority-coverage-${{ github.sha }}.json
-          if-no-files-found: error
-      - name: Python regression
-        run: python -m unittest discover -s tests -p 'test_*.py'
-      - name: PostgreSQL migrations and integration
+      - run: python -m pip install -e ".[test]"
+      - name: Focused Command Kernel and Authority proofs
         run: |
           python -m novel_forge.cli postgres-init --root .local/ci-workspace
           python scripts/run_authority_postgres_tests.py
-          python -m unittest discover -s tests/integration -p 'test_*postgres*.py'
-      - name: Static and workspace validation
-        run: |
-          make lint
-          make validate
-          make check-skills
-          git diff --check
+          python -m unittest tests.integration.test_chapter_authority_scheduler_postgres
+          python -m unittest tests.integration.test_content_authority_scheduler_recovery_postgres
+          python -m unittest tests.integration.test_external_effect_runtime_postgres
 
-  web:
-    name: web (${{ github.sha }})
+  migration:
+    name: clean and legacy migration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: novel_forge_core_os_migration
+          POSTGRES_USER: novel_forge
+          POSTGRES_PASSWORD: novel_forge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U novel_forge -d novel_forge_core_os_migration"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      NOVEL_FORGE_DATABASE_URL: postgresql://novel_forge:novel_forge@localhost:5432/novel_forge_core_os_migration
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[postgres]"
+      - run: python -m unittest tests.integration.test_authority_migrations_postgres tests.integration.test_authority_schema_postgres
+
+  catalog-integrity:
+    name: catalog and coverage binding
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - name: Record immutable revision
-        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[test]"
+      - name: Generate HEAD-bound evidence
+        run: |
+          python -m novel_forge.tools.authority_coverage_manifest \
+            --repo-root . \
+            --output /tmp/postgresql-authority-coverage-${GITHUB_SHA}.json \
+            --check-head
+          python -m unittest tests.architecture.test_authority_coverage_baseline
+          python -m unittest tests.unit.test_authority_coverage_manifest
+      - uses: actions/upload-artifact@v4
+        with:
+          name: postgresql-authority-coverage-${{ github.sha }}
+          path: /tmp/postgresql-authority-coverage-${{ github.sha }}.json
+          if-no-files-found: error
+
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -87,3 +143,6 @@ jobs:
       - run: npm --prefix web/admin ci
       - run: npm --prefix web/admin test
       - run: npm --prefix web/admin run build
+
+# Real-provider proofs are intentionally absent. They remain credentialed,
+# manual, opt-in workflows after functional convergence is accepted.
