@@ -10,7 +10,11 @@ from novel_forge.api.authority_dependencies import (
     build_trusted_principal_resolver,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.modules.command_kernel.worker_execution import AuthorityWorkerExecutionBoundary
+from novel_forge.modules.command_kernel.worker_execution import (
+    AuthorityWorkerExecutionBoundary,
+    WorkerProgrammingError,
+    WorkerSupervisor,
+)
 from novel_forge.modules.command_kernel.deadline_runtime import scan_expired_operation_deadlines
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 
@@ -35,6 +39,7 @@ def main() -> int:
     )
     stopping = False
     boundary = AuthorityWorkerExecutionBoundary(worker_kind="content")
+    supervisor = WorkerSupervisor(worker_kind="content", worker_id=principal.principal_id)
 
     def stop(_signum: int, _frame: object) -> None:
         nonlocal stopping
@@ -48,8 +53,10 @@ def main() -> int:
         )
         pending = scheduler.pending_operations(limit=batch_size)
         if not pending:
+            supervisor.polled(idle=True)
             time.sleep(poll_seconds)
             continue
+        supervisor.polled(idle=False)
         batch = tuple(item for item in pending if not stopping)
 
         def execute(item: tuple[str, str]) -> object:
@@ -60,11 +67,17 @@ def main() -> int:
                 project_id=project_id,
             )
 
-        boundary.execute_batch(
-            batch,
-            identity=lambda item: (item[1], item[0]),
-            execute=execute,
-        )
+        try:
+            failures = boundary.execute_batch(
+                batch,
+                identity=lambda item: (item[1], item[0]),
+                execute=execute,
+            )
+            supervisor.batch_completed(failures)
+        except WorkerProgrammingError as error:
+            supervisor.fatal(error)
+            return WorkerSupervisor.FATAL_EXIT_CODE
+    supervisor.stopped()
     return 0
 
 

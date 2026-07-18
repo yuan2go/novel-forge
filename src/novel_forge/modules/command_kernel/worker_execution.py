@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import StrEnum
 from typing import Callable, Iterable, TypeVar
 
@@ -43,6 +44,112 @@ _DEAD_LETTER_CODES = frozenset(
 
 class WorkerProgrammingError(RuntimeError):
     """Raised after the rest of the current batch has been isolated and attempted."""
+
+
+class WorkerHealthStatus(StrEnum):
+    STARTING = "starting"
+    HEALTHY = "healthy"
+    IDLE = "idle"
+    DEGRADED = "degraded"
+    FATAL = "fatal"
+    STOPPED = "stopped"
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerHealthSnapshot:
+    worker_kind: str
+    worker_id: str
+    status: WorkerHealthStatus
+    last_poll_at: str
+    last_successful_poll_at: str
+    last_fatal_error: str
+    exit_code: int | None
+    restart_policy_expectation: str
+    completed_batches: int
+    failed_tasks: int
+
+
+class WorkerSupervisor:
+    """Process-local health and deployment restart contract."""
+
+    FATAL_EXIT_CODE = 70
+
+    def __init__(
+        self,
+        *,
+        worker_kind: str,
+        worker_id: str,
+        observer: Callable[[WorkerHealthSnapshot], None] | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        if not worker_kind or not worker_id:
+            raise ValueError("worker kind and configured identity are required")
+        self.worker_kind = worker_kind
+        self.worker_id = worker_id
+        self._observer = observer
+        self._clock = clock or (lambda: datetime.now(timezone.utc))
+        self._status = WorkerHealthStatus.STARTING
+        self._last_poll_at = ""
+        self._last_successful_poll_at = ""
+        self._last_fatal_error = ""
+        self._exit_code: int | None = None
+        self._completed_batches = 0
+        self._failed_tasks = 0
+        self._publish()
+
+    def polled(self, *, idle: bool) -> WorkerHealthSnapshot:
+        now = self._timestamp()
+        self._last_poll_at = now
+        self._last_successful_poll_at = now
+        self._status = WorkerHealthStatus.IDLE if idle else WorkerHealthStatus.HEALTHY
+        return self._publish()
+
+    def batch_completed(
+        self, failures: Iterable[WorkerTaskFailure]
+    ) -> WorkerHealthSnapshot:
+        failures = tuple(failures)
+        self._completed_batches += 1
+        self._failed_tasks += len(failures)
+        self._last_successful_poll_at = self._timestamp()
+        self._status = (
+            WorkerHealthStatus.DEGRADED if failures else WorkerHealthStatus.HEALTHY
+        )
+        return self._publish()
+
+    def fatal(self, error: BaseException) -> WorkerHealthSnapshot:
+        self._status = WorkerHealthStatus.FATAL
+        self._last_fatal_error = f"{type(error).__name__}: {error}"
+        self._exit_code = self.FATAL_EXIT_CODE
+        return self._publish()
+
+    def stopped(self) -> WorkerHealthSnapshot:
+        if self._status is not WorkerHealthStatus.FATAL:
+            self._status = WorkerHealthStatus.STOPPED
+            self._exit_code = 0
+        return self._publish()
+
+    def snapshot(self) -> WorkerHealthSnapshot:
+        return WorkerHealthSnapshot(
+            worker_kind=self.worker_kind,
+            worker_id=self.worker_id,
+            status=self._status,
+            last_poll_at=self._last_poll_at,
+            last_successful_poll_at=self._last_successful_poll_at,
+            last_fatal_error=self._last_fatal_error,
+            exit_code=self._exit_code,
+            restart_policy_expectation="restart_on_nonzero_exit_with_backoff",
+            completed_batches=self._completed_batches,
+            failed_tasks=self._failed_tasks,
+        )
+
+    def _timestamp(self) -> str:
+        return self._clock().astimezone(timezone.utc).isoformat()
+
+    def _publish(self) -> WorkerHealthSnapshot:
+        snapshot = self.snapshot()
+        if self._observer is not None:
+            self._observer(snapshot)
+        return snapshot
 
 
 class WorkerFailureClassifier:
@@ -113,7 +220,7 @@ class AuthorityWorkerExecutionBoundary:
             project_id, task_id = identity(task)
             try:
                 execute(task)
-            except BaseException as exc:  # process boundary; classification is explicit
+            except Exception as exc:  # signals and explicit process exits must propagate
                 classification = WorkerFailureClassifier.classify(exc)
                 failure = WorkerTaskFailure(
                     task_id=task_id,
@@ -154,6 +261,9 @@ __all__ = [
     "AuthorityWorkerExecutionBoundary",
     "WorkerFailureClass",
     "WorkerFailureClassifier",
+    "WorkerHealthSnapshot",
+    "WorkerHealthStatus",
     "WorkerProgrammingError",
+    "WorkerSupervisor",
     "WorkerTaskFailure",
 ]

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import unittest
+from datetime import datetime, timezone
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.worker_execution import (
     AuthorityWorkerExecutionBoundary,
     WorkerFailureClass,
     WorkerFailureClassifier,
+    WorkerHealthStatus,
     WorkerProgrammingError,
+    WorkerSupervisor,
 )
 
 
@@ -44,6 +47,26 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
         self.assertEqual(visited, ["first", "second"])
         self.assertEqual(len(failures), 1)
         self.assertEqual(failures[0].classification, WorkerFailureClass.FINAL_FAILURE)
+
+    def test_supervision_snapshot_exposes_restart_and_fatal_contract(self) -> None:
+        observed = []
+        supervisor = WorkerSupervisor(
+            worker_kind="chapter",
+            worker_id="configured-worker",
+            observer=observed.append,
+            clock=lambda: datetime(2026, 7, 18, tzinfo=timezone.utc),
+        )
+        supervisor.polled(idle=False)
+        supervisor.batch_completed(())
+        fatal = supervisor.fatal(RuntimeError("broken invariant"))
+        self.assertEqual(fatal.status, WorkerHealthStatus.FATAL)
+        self.assertEqual(fatal.exit_code, 70)
+        self.assertIn("broken invariant", fatal.last_fatal_error)
+        self.assertEqual(
+            fatal.restart_policy_expectation,
+            "restart_on_nonzero_exit_with_backoff",
+        )
+        self.assertEqual(observed[-1], fatal)
 
     def test_programming_bug_is_raised_after_rest_of_batch(self) -> None:
         visited: list[str] = []
