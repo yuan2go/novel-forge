@@ -24,6 +24,7 @@ class BudgetReservationRequest:
     estimated_tokens: int
     chapter: int | None = None
     caps: dict[str, str] | None = None
+    budget_timezone: str = "UTC"
 
 
 def reserve_provider_budget(
@@ -40,6 +41,7 @@ def reserve_provider_budget(
                 request.stable_idempotency_key,
                 request.provider,
                 request.currency,
+                request.budget_timezone,
             )
         )
         or request.estimated_tokens < 0
@@ -48,6 +50,12 @@ def reserve_provider_budget(
         raise KernelError("BUDGET_RESERVATION_INVALID", "budget reservation is incomplete")
     caps = {key: _amount(value) for key, value in (request.caps or {}).items()}
     with AuthorityUnitOfWork(database_url) as uow:
+        # A currency-scoped transaction lock serializes cap decisions, including
+        # global_daily across different projects. It is released on commit/rollback.
+        uow.cursor.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+            [f"authority-provider-budget:{request.currency.upper()}"],
+        )
         uow.cursor.execute(
             """
             SELECT operation.project_id, effect.project_id
@@ -70,9 +78,10 @@ def reserve_provider_budget(
                 reservation_id, operation_id, external_effect_id, project_id,
                 stable_idempotency_key, provider, chapter, currency,
                 estimated_amount, reserved_amount, estimated_tokens, status, caps, evidence
+                , budget_timezone
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, 'RESERVED', %s, %s
+                %s, %s, %s, 'RESERVED', %s, %s, %s
             )
             ON CONFLICT (project_id, stable_idempotency_key) DO NOTHING
             RETURNING reservation_id
@@ -91,6 +100,7 @@ def reserve_provider_budget(
                 request.estimated_tokens,
                 Jsonb({key: str(value) for key, value in caps.items()}),
                 Jsonb({"phase": "pre_dispatch", "fixture": amount == 0}),
+                request.budget_timezone,
             ],
         )
         inserted = uow.cursor.fetchone()
@@ -138,6 +148,7 @@ def settle_provider_budget(
     amount = _amount(actual_amount)
     if actual_tokens < 0:
         raise KernelError("BUDGET_SETTLEMENT_INVALID", "actual tokens cannot be negative")
+    breached = False
     with AuthorityUnitOfWork(database_url) as uow:
         row = _reservation(uow, reservation_id, project_id, lock=True)
         if row["status"] == "SETTLED":
@@ -147,11 +158,38 @@ def settle_provider_budget(
         if row["status"] not in {"RESERVED", "HELD_UNKNOWN"}:
             raise KernelError("BUDGET_STATUS_CONFLICT", "reservation cannot be settled")
         if amount > row["reserved_amount"]:
-            raise KernelError(
-                "BUDGET_ACTUAL_EXCEEDS_RESERVATION",
-                "provider actual cost exceeds the fail-closed reservation",
+            breached = True
+            uow.cursor.execute(
+                """
+                UPDATE authority_budget_reservation
+                SET budget_breach = TRUE, status = 'HELD_UNKNOWN',
+                    evidence = evidence || %s, updated_at = NOW()
+                WHERE reservation_id = %s AND project_id = %s
+                """,
+                [
+                    Jsonb(
+                        {
+                            **evidence,
+                            "budget_breach": True,
+                            "actual_amount": str(amount),
+                            "reserved_amount": str(row["reserved_amount"]),
+                            "manual_resolution_required": True,
+                        }
+                    ),
+                    reservation_id,
+                    project_id,
+                ],
             )
-        uow.cursor.execute(
+            _record(
+                uow,
+                _request_from_row(row),
+                reservation_id,
+                "authority.budget.breach_detected",
+                {"actual_amount": str(amount), "reserved_amount": str(row["reserved_amount"])},
+            )
+            uow.commit()
+        else:
+            uow.cursor.execute(
             """
             UPDATE authority_budget_reservation
             SET status = 'SETTLED', settled_amount = %s, actual_tokens = %s,
@@ -160,8 +198,8 @@ def settle_provider_budget(
             """,
             [amount, actual_tokens, Jsonb(evidence), reservation_id, project_id],
         )
-        if amount > 0:
-            uow.cursor.execute(
+            if amount > 0:
+                uow.cursor.execute(
                 """
                 INSERT INTO authority_operation_cost_evidence (
                     cost_evidence_id, operation_id, provider, model,
@@ -178,10 +216,15 @@ def settle_provider_budget(
                     row["currency"],
                     Jsonb({**evidence, "reservation_id": reservation_id}),
                 ],
-            )
-        request = _request_from_row(row)
-        _record(uow, request, reservation_id, "authority.budget.settled", {"amount": str(amount)})
-        uow.commit()
+                )
+            request = _request_from_row(row)
+            _record(uow, request, reservation_id, "authority.budget.settled", {"amount": str(amount)})
+            uow.commit()
+    if breached:
+        raise KernelError(
+            "BUDGET_ACTUAL_EXCEEDS_RESERVATION",
+            "provider actual cost exceeds reservation and requires manual resolution",
+        )
     return {"reservation_id": reservation_id, "status": "SETTLED", "replayed": False}
 
 
@@ -223,18 +266,39 @@ def resolve_provider_budget_failure(
 
 
 def _enforce_caps(cursor: Any, request: BudgetReservationRequest, amount: Decimal, caps: dict[str, Decimal]) -> None:
+    try:
+        cursor.execute("SELECT NOW() AT TIME ZONE %s", [request.budget_timezone])
+        cursor.fetchone()
+    except Exception as exc:
+        raise KernelError("BUDGET_TIMEZONE_INVALID", "budget timezone is invalid") from exc
     dimensions = {
-        "project": ("project_id = %s", [request.project_id]),
-        "operation": ("operation_id = %s", [request.operation_id]),
-        "provider": ("project_id = %s AND provider = %s", [request.project_id, request.provider]),
-        "daily": ("project_id = %s AND created_at >= CURRENT_DATE", [request.project_id]),
-        "chapter": (
+        "operation_total": ("operation_id = %s", [request.operation_id]),
+        "chapter_total": (
             "project_id = %s AND chapter = %s",
             [request.project_id, request.chapter],
         ),
+        "project_daily": (
+            "project_id = %s AND (created_at AT TIME ZONE %s)::date = (NOW() AT TIME ZONE %s)::date",
+            [request.project_id, request.budget_timezone, request.budget_timezone],
+        ),
+        "project_total": ("project_id = %s", [request.project_id]),
+        "provider_project_daily": (
+            "project_id = %s AND provider = %s AND (created_at AT TIME ZONE %s)::date = (NOW() AT TIME ZONE %s)::date",
+            [request.project_id, request.provider, request.budget_timezone, request.budget_timezone],
+        ),
+        "provider_project_total": (
+            "project_id = %s AND provider = %s",
+            [request.project_id, request.provider],
+        ),
+        "global_daily": (
+            "currency = %s AND (created_at AT TIME ZONE %s)::date = (NOW() AT TIME ZONE %s)::date",
+            [request.currency, request.budget_timezone, request.budget_timezone],
+        ),
     }
     for dimension, cap in caps.items():
-        if dimension not in dimensions or (dimension == "chapter" and request.chapter is None):
+        if dimension not in dimensions or (
+            dimension == "chapter_total" and request.chapter is None
+        ):
             raise KernelError("BUDGET_CAP_INVALID", f"unsupported budget cap: {dimension}")
         where, params = dimensions[dimension]
         cursor.execute(
@@ -264,6 +328,7 @@ def _reservation(uow: AuthorityUnitOfWork, reservation_id: str, project_id: str,
                stable_idempotency_key, provider, chapter, currency,
                estimated_amount, reserved_amount, settled_amount,
                estimated_tokens, actual_tokens, status, caps, evidence
+               , budget_timezone, budget_breach
         FROM authority_budget_reservation
         WHERE reservation_id = %s AND project_id = %s{suffix}
         """,
@@ -279,6 +344,7 @@ def _reservation(uow: AuthorityUnitOfWork, reservation_id: str, project_id: str,
                 "stable_idempotency_key", "provider", "chapter", "currency",
                 "estimated_amount", "reserved_amount", "settled_amount",
                 "estimated_tokens", "actual_tokens", "status", "caps", "evidence",
+                "budget_timezone", "budget_breach",
             ),
             row,
             strict=True,
@@ -298,6 +364,7 @@ def _request_from_row(row: dict[str, Any]) -> BudgetReservationRequest:
         estimated_tokens=int(row["estimated_tokens"]),
         chapter=row["chapter"],
         caps=dict(row["caps"] or {}),
+        budget_timezone=str(row.get("budget_timezone") or "UTC"),
     )
 
 

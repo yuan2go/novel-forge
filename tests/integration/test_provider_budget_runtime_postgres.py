@@ -44,7 +44,11 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                 estimated_amount="1.25",
                 estimated_tokens=1200,
                 chapter=1,
-                caps={"project": "2.00", "operation": "1.50", "daily": "2.00"},
+                caps={
+                    "project_total": "2.00",
+                    "operation_total": "1.50",
+                    "project_daily": "2.00",
+                },
             ),
         )
         replay = reserve_provider_budget(
@@ -59,7 +63,11 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                 estimated_amount="1.25",
                 estimated_tokens=1200,
                 chapter=1,
-                caps={"project": "2.00", "operation": "1.50", "daily": "2.00"},
+                caps={
+                    "project_total": "2.00",
+                    "operation_total": "1.50",
+                    "project_daily": "2.00",
+                },
             ),
         )
         self.assertTrue(replay["replayed"])

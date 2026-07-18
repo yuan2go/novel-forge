@@ -42,7 +42,7 @@ class ExternalEffectRepository:
                 status, request_hash, request_payload, provider, capability,
                 max_attempts, reversible, completion_policy, compensates_effect_id
                 , model_id, request_deadline_at, reconciliation_mode,
-                manual_resolution_required
+                manual_resolution_required, request_timeout_seconds
             )
             VALUES (
                 %(external_effect_id)s, %(operation_id)s, %(project_id)s, %(effect_type)s,
@@ -54,7 +54,8 @@ class ExternalEffectRepository:
                      ELSE NOW() + make_interval(
                          secs => CAST(%(request_timeout_seconds)s AS INTEGER)
                      ) END,
-                %(reconciliation_mode)s, %(manual_resolution_required)s
+                %(reconciliation_mode)s, %(manual_resolution_required)s,
+                %(request_timeout_seconds)s
             )
             ON CONFLICT (project_id, effect_type, stable_idempotency_key) DO NOTHING
             RETURNING external_effect_id
@@ -474,6 +475,7 @@ class ExternalEffectRepository:
             "not_found": "FAILED_RETRYABLE",
             "ambiguous": "RECONCILIATION_REQUIRED",
             "failed_final": "FAILED_FINAL",
+            "cancelled": "CANCELLED",
         }[row["outcome"]]
         self.cursor.execute(
             """

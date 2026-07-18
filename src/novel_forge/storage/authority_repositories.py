@@ -256,7 +256,8 @@ class OperationRepository:
                 command_payload,
                 approval_requirement_snapshot,
                 input_asset_snapshot,
-                metadata
+                metadata,
+                business_deadline_at
             )
             VALUES (
                 %(operation_id)s,
@@ -283,7 +284,14 @@ class OperationRepository:
                 %(command_payload)s,
                 %(approval_requirement_snapshot)s,
                 %(input_asset_snapshot)s,
-                %(metadata)s
+                %(metadata)s,
+                NOW() + make_interval(secs => GREATEST(
+                    1,
+                    COALESCE(
+                        (%(definition_snapshot)s->'timeout_policy'->>'operation_timeout_seconds')::int,
+                        300
+                    )
+                ))
             )
             ON CONFLICT (idempotency_scope, idempotency_key) DO NOTHING
             RETURNING operation_id
@@ -482,13 +490,15 @@ class AttemptRuntimeRepository:
                 attempt_number,
                 max_attempts,
                 status
+                , business_deadline_at
             )
             VALUES (
                 %(attempt_id)s,
                 %(operation_id)s,
                 %(attempt_number)s,
                 %(max_attempts)s,
-                'CREATED'
+                'CREATED',
+                (SELECT business_deadline_at FROM authority_operation WHERE operation_id = %(operation_id)s)
             )
             """,
             row,
