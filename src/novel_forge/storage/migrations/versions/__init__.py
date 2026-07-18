@@ -31,6 +31,7 @@ from . import (
     v20260718_0028_provider_adapter_v2,
     v20260718_0029_canon_reextraction_authority,
     v20260718_0030_provider_callback_authority,
+    v20260718_0031_canon_reextraction_governance,
 )
 
 VERSION_MODULES = [
@@ -64,6 +65,7 @@ VERSION_MODULES = [
     v20260718_0028_provider_adapter_v2,
     v20260718_0029_canon_reextraction_authority,
     v20260718_0030_provider_callback_authority,
+    v20260718_0031_canon_reextraction_governance,
 ]
 
 __all__ = ["VERSION_MODULES"]

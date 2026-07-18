@@ -270,6 +270,11 @@ class ChapterAuthorityScheduler:
         idempotency_suffix: str = "",
         register_step: bool = True,
         input_overrides: dict[str, Any] | None = None,
+        explicit_inputs: list[dict[str, str]] | None = None,
+        dependency_operation_ids: list[str] | None = None,
+        timeline_step_key: str = "",
+        timeline_ordinal: int = 0,
+        activate_immediately: bool = False,
     ) -> dict[str, Any]:
         inputs: list[dict[str, str]] = []
         for source in _input_nodes(node):
@@ -304,6 +309,8 @@ class ChapterAuthorityScheduler:
                     root_operation_id=str(root["operation_id"]),
                 )
             )
+        if explicit_inputs is not None:
+            inputs = list(explicit_inputs)
         admission = AdmissionContext(
             actor_id=root["actor_id"],
             permissions=self.permissions,
@@ -319,6 +326,8 @@ class ChapterAuthorityScheduler:
             str(children[item]["operation_id"])
             for item in dependencies
         ]
+        if dependency_operation_ids is not None:
+            dependency_ids = list(dependency_operation_ids)
         previous_id = dependency_ids[-1] if dependency_ids else root["operation_id"]
         admitted = admit_command(
             self.database_url,
@@ -348,8 +357,8 @@ class ChapterAuthorityScheduler:
                 graph_context,
                 saga_id,
                 operation_id,
-                node.value,
-                list(ChapterNode).index(node) + 1,
+                timeline_step_key or node.value,
+                timeline_ordinal or list(ChapterNode).index(node) + 1,
                 "",
             )
         for dependency_id in dependency_ids:
@@ -360,7 +369,7 @@ class ChapterAuthorityScheduler:
                 dependency_id,
                 "ON_SUCCESS",
             )
-        if not register_step:
+        if not register_step or activate_immediately:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 state = uow.repositories.attempt_runtime.operation_state(
                     operation_id, root["project_id"]
@@ -396,7 +405,7 @@ class ChapterAuthorityScheduler:
             project_id=request.project_id,
             root_operation_id=str(root["operation_id"]),
         )
-        if generation is None or generation["status"] == "WAITING_APPROVAL":
+        if generation is None or generation["status"] in {"WAITING_APPROVAL", "WAITING_OPERATOR"}:
             return None
         context = CanonApprovalContext(
             project_id=request.project_id,
@@ -410,8 +419,11 @@ class ChapterAuthorityScheduler:
             operation = self._admit_node(
                 request=request, root=root, saga_id=str(saga["saga_id"]),
                 children=children, node=ChapterNode.CANON_EXTRACTION,
-                idempotency_suffix=f":generation:{number}", register_step=False,
+                idempotency_suffix=f":generation:{number}",
                 input_overrides={"canon_reextraction_generation": number},
+                timeline_step_key=f"canon_extraction:g{number}",
+                timeline_ordinal=1000 + number * 2,
+                activate_immediately=True,
             )
             advance_canon_reextraction(
                 self.database_url, context, generation_id=generation_id,
@@ -437,11 +449,20 @@ class ChapterAuthorityScheduler:
             operation = self._admit_node(
                 request=request, root=root, saga_id=str(saga["saga_id"]),
                 children=refreshed, node=ChapterNode.CANON_PROPOSAL,
-                idempotency_suffix=f":generation:{number}", register_step=False,
+                idempotency_suffix=f":generation:{number}",
                 input_overrides={
                     "canon_reextraction_generation": number,
                     "supersedes_proposal_asset_version_id": generation["supersedes_proposal_asset_version_id"],
                 },
+                explicit_inputs=[
+                    self._primary_output(
+                        str(generation["extraction_operation_id"]), request.project_id
+                    )
+                ],
+                dependency_operation_ids=[str(generation["extraction_operation_id"])],
+                timeline_step_key=f"canon_proposal:g{number}",
+                timeline_ordinal=1001 + number * 2,
+                activate_immediately=True,
             )
             advance_canon_reextraction(
                 self.database_url, context, generation_id=generation_id,
@@ -457,11 +478,16 @@ class ChapterAuthorityScheduler:
                 return self._generation_tick(root, saga, operation, ChapterNode.CANON_PROPOSAL, recovery)
             output = self._primary_output(str(operation["operation_id"]), request.project_id)
             proposal = self._asset_content(output["asset_version_id"], request.project_id)
-            advance_canon_reextraction(
+            progress_status = advance_canon_reextraction(
                 self.database_url, context, generation_id=generation_id,
                 expected_status="PROPOSAL_RUNNING", target_status="WAITING_APPROVAL",
                 proposal_asset_version_id=output["asset_version_id"],
             )
+            if progress_status == "WAITING_OPERATOR":
+                return self._generation_tick(
+                    root, saga, operation, ChapterNode.CANON_PROPOSAL,
+                    "reproposal_waiting_operator",
+                )
             ensure_canon_approval_requests(
                 self.database_url, context,
                 root_operation_id=str(root["operation_id"]), saga_id=str(saga["saga_id"]),

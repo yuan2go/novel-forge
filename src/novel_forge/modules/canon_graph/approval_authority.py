@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 from typing import Any
@@ -12,6 +12,7 @@ from novel_forge.modules.canon_graph.approval_domain import (
     CANON_DECISIONS,
     validate_edited_canon_payload,
 )
+from novel_forge.modules.canon_graph.reextraction_policy import CanonReextractionPolicy
 from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
     WorkerResultCommand,
@@ -101,9 +102,24 @@ def ensure_canon_approval_requests(database_url: str, context: CanonApprovalCont
     return {"waiting": True, "approval_request_ids": ids}
 
 
-def decide_canon_approval(database_url: str, context: CanonApprovalContext, *, approval_request_id: str, expected_version: int, decision: str, reason: str, evidence: dict[str, Any], edited_payload: dict[str, Any] | None, idempotency_key: str) -> dict[str, Any]:
+def decide_canon_approval(database_url: str, context: CanonApprovalContext, *, approval_request_id: str, expected_version: int, decision: str, reason: str, evidence: dict[str, Any], edited_payload: dict[str, Any] | None, idempotency_key: str, reextraction_policy: CanonReextractionPolicy | None = None) -> dict[str, Any]:
     if decision not in CANON_DECISIONS or not reason.strip() or not idempotency_key.strip():
         raise KernelError("CANON_APPROVAL_COMMAND_INVALID", "decision, reason, and idempotency key are required")
+    policy = reextraction_policy or CanonReextractionPolicy()
+    if decision == "REQUEST_REEXTRACTION":
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute(
+                "SELECT root_operation_id FROM authority_canon_approval_request WHERE approval_request_id=%s AND project_id=%s",
+                [approval_request_id, context.project_id],
+            )
+            root_row = uow.cursor.fetchone()
+            if root_row is None:
+                raise KernelError("CANON_APPROVAL_NOT_FOUND", "Canon approval request does not exist")
+            uow.cursor.execute(
+                "SELECT COALESCE(MAX(proposal_generation), 1) + 1 FROM authority_canon_approval_request WHERE root_operation_id=%s",
+                [root_row[0]],
+            )
+            policy.require_generation(int(uow.cursor.fetchone()[0]))
     operation = _admit_decision_operation(
         database_url,
         context,
@@ -249,11 +265,15 @@ def decide_canon_approval(database_url: str, context: CanonApprovalContext, *, a
                     reextraction_generation_id, project_id, root_operation_id,
                     saga_id, generation, status,
                     supersedes_proposal_asset_version_id, invalidation_reason,
-                    created_by_decision_asset_version_id
-                ) VALUES (%s,%s,%s,%s,%s,'REEXTRACTION_PENDING',%s,%s,%s)
+                    created_by_decision_asset_version_id, policy_snapshot, deadline_at
+                ) VALUES (%s,%s,%s,%s,%s,'REEXTRACTION_PENDING',%s,%s,%s,%s,%s)
                 ON CONFLICT (project_id, root_operation_id, generation) DO NOTHING
                 """,
-                [str(uuid4()), project_id, root_id, saga_id, next_generation, proposal_id, reason, asset_version_id],
+                [
+                    str(uuid4()), project_id, root_id, saga_id, next_generation,
+                    proposal_id, reason, asset_version_id, json.dumps(policy.snapshot()),
+                    datetime.now(timezone.utc) + timedelta(seconds=policy.generation_timeout_seconds),
+                ],
             )
         _event(uow, context, str(operation["operation_id"]), "canon.approval.decided", {"approval_request_id": approval_request_id, "change_id": change_id, "decision": decision, "asset_version_id": asset_version_id, "root_operation_id": root_id})
         uow.cursor.execute("SELECT COUNT(*) FILTER (WHERE status NOT IN ('APPROVED','REJECTED','EDITED_AND_APPROVED','INVALIDATED','EXPIRED')), COUNT(*) FROM authority_canon_approval_request WHERE root_operation_id = %s", [root_id])
@@ -596,7 +616,7 @@ def pending_canon_reextraction(
 ) -> dict[str, Any] | None:
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
-            "SELECT reextraction_generation_id, generation, status, supersedes_proposal_asset_version_id, extraction_operation_id, extraction_asset_version_id, proposal_operation_id, proposal_asset_version_id FROM authority_canon_reextraction_generation WHERE project_id=%s AND root_operation_id=%s AND status NOT IN ('RESOLVED','CANCELLED') ORDER BY generation DESC LIMIT 1",
+            "SELECT reextraction_generation_id, generation, status, supersedes_proposal_asset_version_id, extraction_operation_id, extraction_asset_version_id, proposal_operation_id, proposal_asset_version_id, policy_snapshot, deadline_at, no_progress_count, escalation_reason FROM authority_canon_reextraction_generation WHERE project_id=%s AND root_operation_id=%s AND status NOT IN ('RESOLVED','CANCELLED') ORDER BY generation DESC LIMIT 1",
             [project_id, root_operation_id],
         )
         row = uow.cursor.fetchone()
@@ -606,7 +626,8 @@ def pending_canon_reextraction(
         "reextraction_generation_id", "generation", "status",
         "supersedes_proposal_asset_version_id", "extraction_operation_id",
         "extraction_asset_version_id", "proposal_operation_id",
-        "proposal_asset_version_id",
+        "proposal_asset_version_id", "policy_snapshot", "deadline_at",
+        "no_progress_count", "escalation_reason",
     )
     return dict(zip(keys, row, strict=True))
 
@@ -622,7 +643,7 @@ def advance_canon_reextraction(
     extraction_asset_version_id: str = "",
     proposal_operation_id: str = "",
     proposal_asset_version_id: str = "",
-) -> None:
+) -> str:
     allowed = {
         ("REEXTRACTION_PENDING", "EXTRACTION_RUNNING"),
         ("EXTRACTION_RUNNING", "PROPOSAL_PENDING"),
@@ -634,24 +655,73 @@ def advance_canon_reextraction(
         raise KernelError("CANON_REEXTRACTION_TRANSITION_INVALID", "invalid re-extraction transition")
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
-            "SELECT root_operation_id FROM authority_canon_reextraction_generation WHERE reextraction_generation_id=%s AND project_id=%s FOR UPDATE",
+            "SELECT root_operation_id, policy_snapshot, deadline_at FROM authority_canon_reextraction_generation WHERE reextraction_generation_id=%s AND project_id=%s FOR UPDATE",
             [generation_id, context.project_id],
         )
         generation_row = uow.cursor.fetchone()
         if generation_row is None:
             raise KernelError("CANON_REEXTRACTION_NOT_FOUND", "re-extraction generation is missing")
         root_operation_id = str(generation_row[0])
+        policy_snapshot = dict(generation_row[1] or {})
+        deadline_at = generation_row[2]
+        if deadline_at is not None and deadline_at <= datetime.now(timezone.utc):
+            target_status = "WAITING_OPERATOR"
+        extraction_digest = ""
+        proposal_digest = ""
+        change_set_digest = ""
+        conflict_set_digest = ""
+        no_progress_count = 0
+        escalation_reason = ""
+        if extraction_asset_version_id:
+            uow.cursor.execute(
+                "SELECT content_hash FROM authority_asset_version WHERE asset_version_id=%s",
+                [extraction_asset_version_id],
+            )
+            digest_row = uow.cursor.fetchone()
+            extraction_digest = str(digest_row[0]) if digest_row else ""
+        if proposal_asset_version_id:
+            uow.cursor.execute(
+                "SELECT content, content_hash FROM authority_asset_version WHERE asset_version_id=%s",
+                [proposal_asset_version_id],
+            )
+            proposal_row = uow.cursor.fetchone()
+            if proposal_row:
+                proposal_content = dict(proposal_row[0] or {})
+                proposal_digest = str(proposal_row[1])
+                change_set_digest = _stable_digest(proposal_content.get("changes", []))
+                conflict_set_digest = _stable_digest(proposal_content.get("conflicts", []))
+                uow.cursor.execute(
+                    "SELECT COUNT(*) FROM authority_canon_reextraction_generation WHERE project_id=%s AND root_operation_id=%s AND reextraction_generation_id<>%s AND (change_set_digest=%s OR proposal_digest=%s)",
+                    [context.project_id, root_operation_id, generation_id, change_set_digest, proposal_digest],
+                )
+                no_progress_count = int(uow.cursor.fetchone()[0]) + 1
+                limit = min(
+                    int(policy_snapshot.get("same_digest_limit") or 2),
+                    int(policy_snapshot.get("no_progress_limit") or 2),
+                )
+                if no_progress_count >= limit:
+                    target_status = "WAITING_OPERATOR"
+                    escalation_reason = "CANON_REEXTRACTION_NO_PROGRESS"
+        if target_status == "WAITING_OPERATOR" and not escalation_reason:
+            escalation_reason = "CANON_REEXTRACTION_DEADLINE_EXCEEDED"
         uow.cursor.execute(
-            "UPDATE authority_canon_reextraction_generation SET status=%s, extraction_operation_id=COALESCE(NULLIF(%s,''), extraction_operation_id), extraction_asset_version_id=COALESCE(NULLIF(%s,''), extraction_asset_version_id), proposal_operation_id=COALESCE(NULLIF(%s,''), proposal_operation_id), proposal_asset_version_id=COALESCE(NULLIF(%s,''), proposal_asset_version_id), updated_at=NOW() WHERE reextraction_generation_id=%s AND project_id=%s AND status=%s",
-            [target_status, extraction_operation_id, extraction_asset_version_id, proposal_operation_id, proposal_asset_version_id, generation_id, context.project_id, expected_status],
+            "UPDATE authority_canon_reextraction_generation SET status=%s, extraction_operation_id=COALESCE(NULLIF(%s,''), extraction_operation_id), extraction_asset_version_id=COALESCE(NULLIF(%s,''), extraction_asset_version_id), proposal_operation_id=COALESCE(NULLIF(%s,''), proposal_operation_id), proposal_asset_version_id=COALESCE(NULLIF(%s,''), proposal_asset_version_id), extraction_digest=COALESCE(NULLIF(%s,''), extraction_digest), proposal_digest=COALESCE(NULLIF(%s,''), proposal_digest), change_set_digest=COALESCE(NULLIF(%s,''), change_set_digest), conflict_set_digest=COALESCE(NULLIF(%s,''), conflict_set_digest), no_progress_count=GREATEST(no_progress_count,%s), escalation_reason=COALESCE(NULLIF(%s,''), escalation_reason), updated_at=NOW() WHERE reextraction_generation_id=%s AND project_id=%s AND status=%s",
+            [target_status, extraction_operation_id, extraction_asset_version_id, proposal_operation_id, proposal_asset_version_id, extraction_digest, proposal_digest, change_set_digest, conflict_set_digest, no_progress_count, escalation_reason, generation_id, context.project_id, expected_status],
         )
         if uow.cursor.rowcount != 1:
             raise KernelError("CANON_REEXTRACTION_STATE_CONFLICT", "re-extraction generation changed")
         _event(
             uow, context, root_operation_id, "canon.reextraction.advanced",
-            {"from": expected_status, "to": target_status},
+            {"from": expected_status, "to": target_status, "no_progress_count": no_progress_count, "escalation_reason": escalation_reason},
         )
         uow.commit()
+    return target_status
+
+
+def _stable_digest(value: Any) -> str:
+    return "sha256:" + hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
 
 
 def list_canon_approvals(database_url: str, *, project_id: str, approval_request_id: str = "") -> list[dict[str, Any]]:

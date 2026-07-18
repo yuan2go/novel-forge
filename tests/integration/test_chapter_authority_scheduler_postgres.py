@@ -512,6 +512,23 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         self.assertNotEqual(
             new_approval["proposal_asset_version_id"], old["proposal_asset_version_id"]
         )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT step_key FROM authority_saga_step WHERE saga_id=%s AND step_key LIKE 'canon_%%:g2' ORDER BY step_key",
+                [admission.saga_id],
+            )
+            self.assertEqual(
+                [row[0] for row in cursor.fetchall()],
+                ["canon_extraction:g2", "canon_proposal:g2"],
+            )
+            cursor.execute(
+                "SELECT policy_snapshot->>'policy_version', extraction_digest, proposal_digest, change_set_digest, no_progress_count FROM authority_canon_reextraction_generation WHERE project_id=%s AND root_operation_id=%s",
+                [project_id, admission.root_operation_id],
+            )
+            governance = cursor.fetchone()
+            self.assertEqual(governance[0], "canon-reextraction-policy-v1")
+            self.assertTrue(all(str(value).startswith("sha256:") for value in governance[1:4]))
+            self.assertEqual(governance[4], 1)
         approved = decide_canon_approval(
             DATABASE_URL,
             CanonApprovalContext(
