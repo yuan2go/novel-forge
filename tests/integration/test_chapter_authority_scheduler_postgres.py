@@ -639,6 +639,8 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 "emotional_curve": ["resolve", "fear", "costly resolve"],
                 "suspense_curve": ["question", "pressure", "new obligation"],
                 "reader_promise_actions": ["test and advance the promise"],
+                "protagonist_charm_mechanism": "keeps a costly promise under pressure",
+                "information_reveals": ["the safe path requires betraying the promise"],
                 "antagonist_pressure": "the institution closes the safe path",
                 "next_chapter_bridge": "the obligation requires a new witness",
                 "safe_summary": "Prepared chapter plan.",

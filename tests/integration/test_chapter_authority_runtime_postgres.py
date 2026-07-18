@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import unittest
 
 from novel_forge.modules.chapter_authority.contracts import (
@@ -54,6 +56,34 @@ class ChapterAuthorityRuntimePostgresTests(unittest.TestCase):
 
     def test_fenced_handler_materializes_one_replayable_authoritative_output(self) -> None:
         project_id = identifier("project")
+        plan_content = {
+            "project_id": project_id,
+            "chapter": 1,
+            "title": "A Durable Promise",
+            "premise": "A promise becomes a cost",
+            "chapter_objective": "Force a consequential choice",
+            "scene_sequence": [{"scene_id": "s1", "goal": "keep the promise"}],
+            "chapter_hook": "The cost creates a new obligation",
+        }
+        plan_hash = "sha256:" + hashlib.sha256(
+            json.dumps(plan_content, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        plan_asset_id = identifier("chapter-plan-asset")
+        plan_version_id = identifier("chapter-plan-version")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO authority_asset (asset_id, project_id, asset_type) VALUES (%s, %s, 'chapter_plan')",
+                [plan_asset_id, project_id],
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_asset_version (
+                    asset_version_id, asset_id, version_number, lifecycle,
+                    eligibility, governance, content, content_hash
+                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s)
+                """,
+                [plan_version_id, plan_asset_id, json.dumps(plan_content), plan_hash],
+            )
         definitions = chapter_operation_definitions(
             application_build_id="chapter-runtime-test",
             commit_sha="b" * 40,
@@ -83,8 +113,18 @@ class ChapterAuthorityRuntimePostgresTests(unittest.TestCase):
                 "span_id": identifier("span"),
                 "correlation_id": identifier("correlation"),
                 "causation_id": "",
-                "input": {"chapter": 1, "premise": "A promise becomes a cost"},
-                "input_assets": [],
+                "input": {
+                    "chapter": 1,
+                    "premise": "A promise becomes a cost",
+                    "chapter_plan_asset_version_id": plan_version_id,
+                    "chapter_plan_content_hash": plan_hash,
+                },
+                "input_assets": [
+                    {
+                        "asset_version_id": plan_version_id,
+                        "content_hash": plan_hash,
+                    }
+                ],
             },
             context=admission,
         )["operation_id"]
