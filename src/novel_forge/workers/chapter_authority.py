@@ -16,6 +16,7 @@ from novel_forge.modules.command_kernel.worker_execution import (
     WorkerSupervisor,
 )
 from novel_forge.modules.command_kernel.deadline_runtime import scan_expired_operation_deadlines
+from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
 
 
 @dataclass(slots=True)
@@ -33,7 +34,10 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
     scheduler = application.scheduler(principal=worker)
     shutdown = _Shutdown()
     boundary = AuthorityWorkerExecutionBoundary(worker_kind="chapter")
-    supervisor = WorkerSupervisor(worker_kind="chapter", worker_id=worker.principal_id)
+    supervisor = WorkerSupervisor(
+        worker_kind="chapter", worker_id=worker.principal_id,
+        observer=PostgresWorkerHealthObserver(settings.database_url),
+    )
 
     def request_shutdown(_signum: int, _frame: object) -> None:
         shutdown.requested = True

@@ -17,6 +17,7 @@ from novel_forge.modules.command_kernel.worker_execution import (
 )
 from novel_forge.modules.command_kernel.deadline_runtime import scan_expired_operation_deadlines
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
+from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
 
 
 def main() -> int:
@@ -39,7 +40,10 @@ def main() -> int:
     )
     stopping = False
     boundary = AuthorityWorkerExecutionBoundary(worker_kind="content")
-    supervisor = WorkerSupervisor(worker_kind="content", worker_id=principal.principal_id)
+    supervisor = WorkerSupervisor(
+        worker_kind="content", worker_id=principal.principal_id,
+        observer=PostgresWorkerHealthObserver(settings.database_url),
+    )
 
     def stop(_signum: int, _frame: object) -> None:
         nonlocal stopping

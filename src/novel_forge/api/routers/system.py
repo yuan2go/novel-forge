@@ -46,6 +46,15 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.get("/product/system/authority-health")
+    def authority_health_endpoint() -> dict[str, Any]:
+        from novel_forge.storage.worker_health import runtime_health_report
+
+        try:
+            return runtime_health_report(app_settings.database_url)
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
     @router.get("/product/system/operation-reports")
     def operation_reports_endpoint(limit: int = Query(default=100, ge=1, le=500)) -> list[dict[str, Any]]:
         try:
