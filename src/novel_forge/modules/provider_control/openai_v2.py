@@ -208,13 +208,22 @@ class OpenAISdkTransport:
         request_id = str(getattr(data, "id", "") or "")
         message_id = str(getattr(webhook, "id", "") or headers.get("webhook-id") or "")
         outcome = str(getattr(webhook, "type", "") or "")
+        normalized_outcome = {
+            "response.completed": "success",
+            "response.failed": "final_failure",
+            "response.cancelled": "cancelled",
+        }.get(outcome, "retryable_failure")
         return ProviderReceipt(
             provider_request_id=request_id,
             receipt_id=message_id,
             message_id=message_id,
-            outcome=outcome,
-            payload_hash=hashlib.sha256(body).hexdigest(),
-            evidence={"signature_verified": True, "provider": "openai"},
+            outcome=normalized_outcome,
+            payload_hash="sha256:" + hashlib.sha256(body).hexdigest(),
+            evidence={
+                "signature_verified": True,
+                "provider": "openai",
+                "provider_event_type": outcome,
+            },
         )
 
     @staticmethod

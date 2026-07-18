@@ -1271,6 +1271,9 @@ class AuthorityRepositories:
             CompletionContractRepository,
             OperationGraphRepository,
         )
+        from novel_forge.storage.provider_callback_repositories import (
+            ProviderCallbackRepository,
+        )
 
         self.definitions = OperationDefinitionRepository(cursor)
         self.operations = OperationRepository(cursor)
@@ -1286,3 +1289,4 @@ class AuthorityRepositories:
         self.external_effects = ExternalEffectRepository(cursor)
         self.operation_graph = OperationGraphRepository(cursor)
         self.completion_contracts = CompletionContractRepository(cursor)
+        self.provider_callbacks = ProviderCallbackRepository(cursor)

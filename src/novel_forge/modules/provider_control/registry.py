@@ -167,12 +167,16 @@ class ChapterProviderV2Route:
 class ChapterProviderV2Gateway:
     """ExternalEffect adapter that preserves v2 provider controls per chapter stage."""
 
-    provider = "novel_forge_provider_v2_gateway"
-
     def __init__(self, routes: Mapping[str, ChapterProviderV2Route]) -> None:
         if not routes:
             raise ValueError("chapter provider v2 gateway requires routes")
         self.routes = dict(routes)
+        providers = {route.adapter.provider for route in self.routes.values()}
+        if len(providers) != 1:
+            raise ValueError(
+                "one chapter gateway must use one provider identity; split mixed providers"
+            )
+        self.provider = providers.pop()
         profiles = [route.adapter.capability_profile for route in self.routes.values()]
         self.reconciliation_mode = (
             "query" if all(profile.supports_query for profile in profiles)

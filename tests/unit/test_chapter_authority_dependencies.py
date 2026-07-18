@@ -78,7 +78,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 },
             )
 
-        self.assertEqual(application.model_port.adapter.provider, "novel_forge_provider_v2_gateway")
+        self.assertEqual(application.model_port.adapter.provider, "scripted_provider_v2")
         self.assertEqual(
             application.model_port.adapter.capability_profile.control_level.value,
             "FIXTURE_CONTROLLED",

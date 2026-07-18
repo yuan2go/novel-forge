@@ -1100,6 +1100,36 @@ def _resolve_reconciled_budget(
         )
 
 
+def resolve_external_effect_receipt_budget(
+    database_url: str,
+    *,
+    project_id: str,
+    effect_id: str,
+    outcome: str,
+    evidence: dict[str, Any],
+) -> None:
+    """Public idempotent settlement seam for verified callback receipts."""
+
+    normalized = dict(evidence)
+    usage = normalized.get("usage")
+    cost = normalized.get("cost")
+    if isinstance(usage, dict):
+        normalized.setdefault(
+            "actual_tokens",
+            int(usage.get("total_tokens") or 0)
+            or int(usage.get("input_tokens") or 0) + int(usage.get("output_tokens") or 0),
+        )
+    if isinstance(cost, dict):
+        normalized.setdefault("actual_cost", str(cost.get("amount") or "0"))
+    _resolve_reconciled_budget(
+        database_url,
+        project_id=project_id,
+        effect_id=effect_id,
+        outcome=("failed_final" if outcome == "final_failure" else outcome),
+        evidence=normalized,
+    )
+
+
 def _require_project(row: dict[str, Any], project_id: str) -> None:
     if row["project_id"] != project_id:
         raise KernelError("CROSS_PROJECT_REFERENCE", "external effect belongs to another project")
