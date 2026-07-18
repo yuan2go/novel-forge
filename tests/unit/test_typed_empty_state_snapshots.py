@@ -31,6 +31,15 @@ def _asset(asset_type: str, *, chapter: int = 1, suffix: str = "") -> ResolvedPr
             "chapter": chapter,
             "title": "Chapter Two" if asset_type == "chapter_plan" else "",
             "premise": "The first stateful continuation." if asset_type == "chapter_plan" else "",
+            "chapter_objective": "advance the first stateful continuation" if asset_type == "chapter_plan" else "",
+            "scene_sequence": [{"scene_id": "scene-1", "goal": "make a costly choice"}] if asset_type == "chapter_plan" else [],
+            "chapter_hook": "the choice creates a new obligation" if asset_type == "chapter_plan" else "",
+            "conflict_chain": ["promise collides with safety"] if asset_type == "chapter_plan" else [],
+            "emotional_curve": ["resolve", "fear", "costly resolve"] if asset_type == "chapter_plan" else [],
+            "suspense_curve": ["question", "pressure", "new obligation"] if asset_type == "chapter_plan" else [],
+            "reader_promise_actions": ["test the opening promise"] if asset_type == "chapter_plan" else [],
+            "antagonist_pressure": "the institution closes the safe path" if asset_type == "chapter_plan" else "",
+            "next_chapter_bridge": "the obligation requires a new witness" if asset_type == "chapter_plan" else "",
             "safe_summary": f"Safe {asset_type} summary.",
             "structured_facts": [],
         },
@@ -52,7 +61,10 @@ def _empty(state_kind: str, *, chapter: int = 1) -> ResolvedProductionAsset:
             "previous_chapter": chapter,
             "entries": [],
             "reason": "project explicitly starts this ledger empty",
-            "contract_version": "typed-empty-state-snapshot-v1",
+            "producer_operation_id": f"operation:{state_kind}",
+            "producer_definition": "chapter.state.initialize_empty",
+            "_authority_producer_verified": True,
+            "contract_version": "typed-empty-state-snapshot-v2",
         },
     )
 
@@ -156,6 +168,25 @@ class TypedEmptyStateSnapshotTests(unittest.TestCase):
                     workspace_id="workspace-1",
                     chapter=2,
                     idempotency_key="wrong-empty-chapter",
+                )
+            )
+
+    def test_untrusted_asset_cannot_claim_an_empty_state(self) -> None:
+        rows = _base_rows()
+        forged = _empty("relationship_state_snapshot")
+        rows[TYPED_EMPTY_STATE_ASSET_TYPE] = [
+            replace(
+                forged,
+                content={**forged.content, "_authority_producer_verified": False},
+            )
+        ]
+        with self.assertRaisesRegex(KernelError, "trusted initializer"):
+            ProductionPreparationService(_Resolver(rows)).prepare(
+                ProductionPreparationRequest(
+                    project_id="project-1",
+                    workspace_id="workspace-1",
+                    chapter=2,
+                    idempotency_key="forged-empty-state",
                 )
             )
 

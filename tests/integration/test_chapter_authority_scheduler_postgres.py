@@ -24,6 +24,11 @@ from novel_forge.modules.chapter_authority.orchestrator import (
 from novel_forge.modules.chapter_authority.scheduler import ChapterAuthorityScheduler
 from novel_forge.modules.command_kernel.external_effect_adapters import FakeDeterministicProvider
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.content_authority import CONTENT_CODECS
+from novel_forge.modules.content_authority.application import (
+    ContentAuthorityApplication,
+    ContentOperationRequest,
+)
 from novel_forge.modules.production_preparation import (
     PostgresProductionAssetResolver,
     ProductionPreparationRequest,
@@ -202,6 +207,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 workspace_id=f"workspace:{project_id}",
                 chapter=2,
                 idempotency_key=f"{project_id}:chapter:2",
+                context_token_budget=6_000,
             )
         )
         self.assertEqual(prepared.report.decision, "READY")
@@ -585,6 +591,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
     def _preparation_assets(
         project_id: str, *, chapter: int = 1, typed_empty: bool = False
     ) -> None:
+        absence_inputs: list[tuple[str, dict[str, str]]] = []
         def calibrated(dimensions: tuple[str, ...]) -> dict[str, object]:
             return {
                 "safe_summary": "Human-calibrated fixture gate evidence.",
@@ -611,6 +618,12 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 "chapter_objective": "Force a public choice with a visible cost.",
                 "scene_sequence": [{"scene_id": "s1", "goal": "keep the promise"}],
                 "chapter_hook": "The cost creates a new obligation.",
+                "conflict_chain": ["promise collides with institutional safety"],
+                "emotional_curve": ["resolve", "fear", "costly resolve"],
+                "suspense_curve": ["question", "pressure", "new obligation"],
+                "reader_promise_actions": ["test and advance the promise"],
+                "antagonist_pressure": "the institution closes the safe path",
+                "next_chapter_bridge": "the obligation requires a new witness",
                 "safe_summary": "Prepared chapter plan.",
                 "structured_facts": [{"key": "chapter", "value": 1}],
             },
@@ -681,25 +694,21 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 )
                 for state_kind in state_kinds:
                     content = {
-                        "type": "TypedEmptyStateSnapshot",
-                        "project_id": project_id,
-                        "chapter": chapter - 1,
-                        "previous_chapter": chapter - 1,
                         "state_kind": state_kind,
-                        "logical_asset_type": state_kind,
-                        "declared_empty": True,
-                        "entries": [],
-                        "reason": "explicit empty fixture baseline",
-                        "contract_version": "typed-empty-state-snapshot-v1",
+                        "previous_chapter": chapter - 1,
+                        "state_exists": False,
+                        "canon_reduction_status": "SUCCEEDED",
+                        "previous_final_release_gate_id": f"release-gate:{chapter - 1}",
+                        "fixture_protocol_only": True,
                     }
                     content_hash = "sha256:" + hashlib.sha256(
                         json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
                     ).hexdigest()
-                    asset_id = identifier(f"typed-empty-{state_kind}-asset")
-                    version_id = identifier(f"typed-empty-{state_kind}")
+                    asset_id = identifier(f"state-absence-{state_kind}-asset")
+                    version_id = identifier(f"state-absence-{state_kind}")
                     cursor.execute(
                         "INSERT INTO authority_asset (asset_id, project_id, asset_type) VALUES (%s, %s, %s)",
-                        [asset_id, project_id, "typed_empty_state_snapshot"],
+                        [asset_id, project_id, "state_absence_evidence"],
                     )
                     cursor.execute(
                         """
@@ -710,6 +719,34 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                         """,
                         [version_id, asset_id, json.dumps(content), content_hash],
                     )
+                    absence_inputs.append(
+                        (state_kind, {"asset_version_id": version_id, "content_hash": content_hash})
+                    )
+        if typed_empty:
+            app = ContentAuthorityApplication(
+                DATABASE_URL,
+                application_build_id="typed-empty-integration",
+                commit_sha="a" * 40,
+                integration_proven=CONTENT_CODECS,
+            )
+            for state_kind, evidence in absence_inputs:
+                app.execute(
+                    ContentOperationRequest(
+                        definition_name="chapter.state.initialize_empty",
+                        project_id=project_id,
+                        workspace_id=f"workspace:{project_id}",
+                        actor_id="fixture-system-scheduler",
+                        trace_id=identifier(f"empty-trace-{state_kind}"),
+                        correlation_id=identifier("empty-correlation"),
+                        idempotency_key=f"{project_id}:empty:{chapter - 1}:{state_kind}",
+                        payload={
+                            "state_kind": state_kind,
+                            "previous_chapter": chapter - 1,
+                            "reason": "explicit empty fixture baseline",
+                        },
+                        input_assets=(evidence,),
+                    )
+                )
 
     @staticmethod
     def _release_evidence(project_id: str) -> list[dict[str, object]]:

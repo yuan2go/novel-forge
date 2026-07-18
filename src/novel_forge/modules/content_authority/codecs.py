@@ -27,6 +27,7 @@ from novel_forge.modules.chapter_quality_authority.calibration import (
     promote_calibration_profile,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.production_preparation.empty_state import initialize_typed_empty_state
 from novel_forge.modules.creative.domain import (
     build_project_proposal,
     cluster_candidates,
@@ -300,6 +301,22 @@ def _golden_sample_create(request: AuthorityHandlerRequest) -> dict[str, Any]:
     return {"project_id": request.project_id, **asdict(sample)}
 
 
+def _state_initialize_empty(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    evidence = _one(request, "state_absence_evidence")
+    payload = _payload(request)
+    state_kind = str(payload["state_kind"])
+    previous_chapter = int(payload["previous_chapter"])
+    return initialize_typed_empty_state(
+        project_id=request.project_id,
+        operation_id=request.operation_id,
+        state_kind=state_kind,
+        previous_chapter=previous_chapter,
+        reason=str(payload.get("reason") or "explicit authority state initialization"),
+        absence_evidence_asset_version_id=evidence.asset_version_id,
+        absence_evidence=evidence.content,
+    )
+
+
 def _human_decision_record(request: AuthorityHandlerRequest) -> dict[str, Any]:
     sample = _one(request, "quality_golden_sample")
     payload = dict(_payload(request)["decision"])
@@ -459,6 +476,7 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
         ("quality.calibration.run", "quality_calibration_report", "quality.calibration_report", _calibration_run),
         ("quality.calibration.profile.promote", "quality_calibration_profile", "quality.calibration.profile", _calibration_profile_promote),
         ("quality.calibration.profile.revoke", "quality_calibration_profile", "quality.calibration.profile_revocation", _calibration_profile_revoke),
+        ("chapter.state.initialize_empty", "typed_empty_state_snapshot", "chapter.state.empty_snapshot", _state_initialize_empty),
     )
 }
 

@@ -19,7 +19,8 @@ class PostgresProductionAssetResolver:
                 """
                 SELECT asset.project_id, asset.asset_id, version.asset_version_id,
                        asset.asset_type, version.content_hash, version.content,
-                       COALESCE(qualification.decision, 'ELIGIBLE')
+                       COALESCE(qualification.decision, 'ELIGIBLE'),
+                       producer.operation_id, producer.definition_name, producer.status
                 FROM authority_asset AS asset
                 JOIN authority_asset_version AS version ON version.asset_id = asset.asset_id
                 LEFT JOIN LATERAL (
@@ -29,6 +30,15 @@ class PostgresProductionAssetResolver:
                     ORDER BY created_at DESC, qualification_id DESC
                     LIMIT 1
                 ) AS qualification ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT operation.operation_id, operation.definition_name, operation.status
+                    FROM authority_operation_output_asset AS binding
+                    JOIN authority_operation AS operation
+                      ON operation.operation_id = binding.operation_id
+                    WHERE binding.asset_version_id = version.asset_version_id
+                    ORDER BY binding.created_at DESC, operation.updated_at DESC
+                    LIMIT 1
+                ) AS producer ON TRUE
                 WHERE asset.project_id = %s AND asset.asset_type = %s
                   AND version.lifecycle = 'ACTIVE'
                   AND version.eligibility = 'ELIGIBLE'
@@ -55,7 +65,8 @@ class PostgresProductionAssetResolver:
                 """
                 SELECT asset.project_id, asset.asset_id, version.asset_version_id,
                        asset.asset_type, version.content_hash, version.content,
-                       COALESCE(qualification.decision, 'ELIGIBLE')
+                       COALESCE(qualification.decision, 'ELIGIBLE'),
+                       producer.operation_id, producer.definition_name, producer.status
                 FROM authority_asset AS asset
                 JOIN authority_asset_version AS version ON version.asset_id = asset.asset_id
                 LEFT JOIN LATERAL (
@@ -63,6 +74,15 @@ class PostgresProductionAssetResolver:
                     WHERE asset_version_id = version.asset_version_id
                     ORDER BY created_at DESC, qualification_id DESC LIMIT 1
                 ) AS qualification ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT operation.operation_id, operation.definition_name, operation.status
+                    FROM authority_operation_output_asset AS binding
+                    JOIN authority_operation AS operation
+                      ON operation.operation_id = binding.operation_id
+                    WHERE binding.asset_version_id = version.asset_version_id
+                    ORDER BY binding.created_at DESC, operation.updated_at DESC
+                    LIMIT 1
+                ) AS producer ON TRUE
                 WHERE asset.project_id = %s AND asset.asset_type = %s
                   AND version.lifecycle = 'ACTIVE'
                   AND version.eligibility = 'ELIGIBLE'
@@ -94,6 +114,7 @@ class PostgresProductionAssetResolver:
                 SELECT asset.project_id, asset.asset_id, version.asset_version_id,
                        asset.asset_type, version.content_hash, version.content,
                        COALESCE(qualification.decision, 'ELIGIBLE'),
+                       producer.operation_id, producer.definition_name, producer.status,
                        version.lifecycle, version.eligibility, version.governance
                 FROM authority_asset_version AS version
                 JOIN authority_asset AS asset ON asset.asset_id = version.asset_id
@@ -104,6 +125,15 @@ class PostgresProductionAssetResolver:
                     ORDER BY created_at DESC, qualification_id DESC
                     LIMIT 1
                 ) AS qualification ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT operation.operation_id, operation.definition_name, operation.status
+                    FROM authority_operation_output_asset AS binding
+                    JOIN authority_operation AS operation
+                      ON operation.operation_id = binding.operation_id
+                    WHERE binding.asset_version_id = version.asset_version_id
+                    ORDER BY binding.created_at DESC, operation.updated_at DESC
+                    LIMIT 1
+                ) AS producer ON TRUE
                 WHERE version.asset_version_id = %s
                 """,
                 [asset_version_id],
@@ -116,22 +146,41 @@ class PostgresProductionAssetResolver:
                 "PREPARATION_CROSS_PROJECT_INPUT",
                 "override AssetVersion belongs to another project",
             )
-        if tuple(row[7:10]) != ("ACTIVE", "ELIGIBLE", "CLEAR") or row[6] != "ELIGIBLE":
+        if tuple(row[10:13]) != ("ACTIVE", "ELIGIBLE", "CLEAR") or row[6] != "ELIGIBLE":
             raise KernelError(
                 "PREPARATION_OVERRIDE_NOT_ELIGIBLE",
                 "override AssetVersion is stale, revoked, or quarantined",
             )
-        return self._asset(row[:7], "explicit audited AssetVersion override")
+        return self._asset(row[:10], "explicit audited AssetVersion override")
 
     @staticmethod
     def _asset(row: tuple[object, ...], reason: str) -> ResolvedProductionAsset:
+        content = dict(row[5] or {})
+        if str(row[3]) == "typed_empty_state_snapshot":
+            producer_operation_id = str(row[7] or "")
+            producer_definition = str(row[8] or "")
+            producer_status = str(row[9] or "")
+            content.update(
+                {
+                    "_authority_producer_verified": (
+                        producer_operation_id != ""
+                        and producer_definition == "chapter.state.initialize_empty"
+                        and producer_status == "SUCCEEDED"
+                        and content.get("producer_operation_id") == producer_operation_id
+                        and content.get("producer_definition") == producer_definition
+                    ),
+                    "_authority_producer_operation_id": producer_operation_id,
+                    "_authority_producer_definition": producer_definition,
+                    "_authority_producer_status": producer_status,
+                }
+            )
         return ResolvedProductionAsset(
             project_id=str(row[0]),
             asset_id=str(row[1]),
             asset_version_id=str(row[2]),
             asset_type=str(row[3]),
             content_hash=str(row[4]),
-            content=dict(row[5] or {}),
+            content=content,
             qualification=str(row[6]),
             selected_reason=reason,
         )

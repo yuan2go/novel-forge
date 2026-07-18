@@ -12,6 +12,54 @@ from .policies import CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES
 TYPED_EMPTY_STATE_ASSET_TYPE = "typed_empty_state_snapshot"
 
 
+def initialize_typed_empty_state(
+    *,
+    project_id: str,
+    operation_id: str,
+    state_kind: str,
+    previous_chapter: int,
+    reason: str,
+    absence_evidence_asset_version_id: str,
+    absence_evidence: dict[str, object],
+) -> dict[str, object]:
+    """Build an explicit empty baseline after Authority absence proof succeeds."""
+    if state_kind not in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES:
+        raise ValueError("typed empty initializer state kind is unsupported")
+    if absence_evidence.get("state_kind") != state_kind:
+        raise ValueError("state absence evidence targets another state kind")
+    if int(absence_evidence.get("previous_chapter", -1)) != previous_chapter:
+        raise ValueError("state absence evidence targets another chapter")
+    if absence_evidence.get("state_exists") is not False:
+        raise ValueError("state absence evidence does not prove absence")
+    reduction_status = str(absence_evidence.get("canon_reduction_status") or "")
+    if reduction_status not in {"SUCCEEDED", "NOT_REQUIRED_PROJECT_INITIALIZATION"}:
+        raise KernelError(
+            "STATE_REDUCTION_INCOMPLETE",
+            "failed or incomplete Canon Reduction cannot be replaced by an empty snapshot",
+        )
+    gate_id = str(absence_evidence.get("previous_final_release_gate_id") or "")
+    if previous_chapter > 0 and not gate_id:
+        raise ValueError("previous chapter final release gate evidence is required")
+    return {
+        "type": "TypedEmptyStateSnapshot",
+        "project_id": project_id,
+        "chapter": previous_chapter,
+        "previous_chapter": previous_chapter,
+        "state_kind": state_kind,
+        "logical_asset_type": state_kind,
+        "declared_empty": True,
+        "entries": [],
+        "reason": reason,
+        "producer_operation_id": operation_id,
+        "producer_definition": "chapter.state.initialize_empty",
+        "previous_final_release_gate_id": gate_id,
+        "initialization_reason": reason,
+        "absence_evidence_asset_version_id": absence_evidence_asset_version_id,
+        "absence_evidence": [dict(absence_evidence)],
+        "contract_version": "typed-empty-state-snapshot-v2",
+    }
+
+
 @dataclass(frozen=True, slots=True)
 class TypedEmptyStateSnapshot:
     project_id: str
@@ -43,6 +91,15 @@ def validate_typed_empty_state(
             "typed empty state belongs to another project",
         )
     content = asset.content
+    if (
+        content.get("_authority_producer_verified") is not True
+        or content.get("producer_definition") != "chapter.state.initialize_empty"
+        or not str(content.get("producer_operation_id") or "")
+    ):
+        raise KernelError(
+            "TYPED_EMPTY_STATE_PRODUCER_UNTRUSTED",
+            "typed empty state was not materialized by the trusted initializer Operation",
+        )
     state_kind = str(content.get("state_kind") or content.get("logical_asset_type") or "")
     if state_kind not in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES:
         raise KernelError(
@@ -137,6 +194,7 @@ def project_typed_empty_state(
 __all__ = [
     "TYPED_EMPTY_STATE_ASSET_TYPE",
     "TypedEmptyStateSnapshot",
+    "initialize_typed_empty_state",
     "project_typed_empty_state",
     "validate_typed_empty_state",
 ]

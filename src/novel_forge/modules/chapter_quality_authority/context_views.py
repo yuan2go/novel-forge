@@ -314,6 +314,11 @@ def _group_state_segments(
             item.get("declared_empty")
             or any(isinstance(fact, dict) and fact.get("declared_empty") for fact in facts)
         )
+        # The row-level flag is the canonical empty-state fact. Keeping the
+        # ContextSegment's duplicate structured marker wastes scarce judge
+        # budget without adding evidence identity.
+        if declared_empty:
+            facts = []
         grouped[state_type].setdefault(identity, []).append(
             {
                 "asset_version_id": item.get("asset_version_id"),
@@ -340,8 +345,31 @@ def _group_current_state_candidates(
     grouped: dict[str, dict[str, list[dict[str, Any]]]] = {}
     for candidate in candidates:
         state_type = str(candidate.get("asset_type") or "")
-        identity = _state_identity(candidate, state_type)
-        grouped.setdefault(state_type, {}).setdefault(identity, []).append(dict(candidate))
+        changes = [dict(item) for item in candidate.get("changes", []) if isinstance(item, dict)]
+        changes_by_identity: dict[str, list[dict[str, Any]]] = {}
+        for change in changes:
+            changes_by_identity.setdefault(
+                _state_identity(change, state_type), []
+            ).append(change)
+        if not changes_by_identity:
+            changes_by_identity[f"{state_type}:project"] = []
+        for identity, identity_changes in changes_by_identity.items():
+            grouped.setdefault(state_type, {}).setdefault(identity, []).append(
+                {
+                    "asset_version_id": "",
+                    "candidate_digest": _digest(candidate),
+                    "entity_id": identity,
+                    "chapter": candidate.get("chapter"),
+                    "qualification": "CANDIDATE",
+                    "previous_asset_version_ids": list(
+                        candidate.get("previous_asset_version_ids") or []
+                    ),
+                    "structured_facts": identity_changes,
+                    "declared_empty": False,
+                    "compressed": False,
+                    "omitted_fact_count": 0,
+                }
+            )
     return grouped
 
 

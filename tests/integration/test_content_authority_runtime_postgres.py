@@ -259,6 +259,27 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
             [promoted],
             {"reason": "fixture lifecycle proof"},
         )
+        absence_evidence = self.seed(
+            "state_absence_evidence",
+            {
+                "state_kind": "relationship_state_snapshot",
+                "previous_chapter": 1,
+                "state_exists": False,
+                "canon_reduction_status": "SUCCEEDED",
+                "previous_final_release_gate_id": "release-gate:chapter-1",
+                "fixture_protocol_only": True,
+            },
+            "relationship-state-absence",
+        )
+        self.run_op(
+            "chapter.state.initialize_empty",
+            [absence_evidence],
+            {
+                "state_kind": "relationship_state_snapshot",
+                "previous_chapter": 1,
+                "reason": "chapter one completed without relationship state entries",
+            },
+        )
 
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
