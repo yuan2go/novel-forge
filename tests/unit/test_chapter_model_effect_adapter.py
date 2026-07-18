@@ -14,6 +14,25 @@ class _Adapter:
     name = "provider-model"
 
     def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
+        if "canon-semantic-extraction-v2" in prompt:
+            return {
+                "canon_facts": [
+                    {
+                        "subject": "protagonist",
+                        "predicate": "paid",
+                        "object": "visible_cost",
+                        "evidence_start": 0,
+                        "evidence_end": 8,
+                        "confidence": 0.91,
+                    }
+                ],
+                "character_state_changes": [], "relationship_changes": [],
+                "timeline_events": [], "foreshadow_changes": [],
+                "promise_changes": [], "reward_changes": [],
+                "world_rule_usages": [], "power_state_changes": [],
+                "narrative_pattern_fingerprints": [], "theme_movements": [],
+                "antagonist_pressure_changes": [],
+            }
         return {
             "text": "A public promise creates a visible debt.",
             "usage": {"input_tokens": 12, "output_tokens": 8},
@@ -51,7 +70,7 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
                     skill_version=f"skill-{stage}-v1",
                     real_model_call=True,
                 )
-                for stage in ("draft", "review", "revision")
+                for stage in ("draft", "review", "revision", "canon_extraction")
             }
         )
 
@@ -94,6 +113,18 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
         self.assertEqual(
             revision.evidence["result"]["resolved_issue_codes"],
             ["VISIBLE_COST"],
+        )
+        extraction = self.adapter.execute(
+            stable_idempotency_key="canon-key",
+            capability="model.canon_extraction",
+            request_payload={
+                "stage": "canon_extraction",
+                "input": {"revision": {"text": "A visible cost."}, "context": {}},
+            },
+        )
+        self.assertEqual(extraction.outcome, "success")
+        self.assertEqual(
+            extraction.evidence["result"]["canon_facts"][0]["predicate"], "paid"
         )
 
     def test_invalid_model_response_is_final_failure_and_query_is_ambiguous(self) -> None:

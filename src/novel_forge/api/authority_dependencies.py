@@ -57,6 +57,11 @@ def build_chapter_authority_application(
         ("draft", "NOVEL_FORGE_DRAFT_PROVIDER", "NOVEL_FORGE_DRAFT_MODEL"),
         ("review", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
         ("revision", "NOVEL_FORGE_REVISION_PROVIDER", "NOVEL_FORGE_REVISION_MODEL"),
+        (
+            "canon_extraction",
+            "NOVEL_FORGE_CANON_EXTRACTION_PROVIDER",
+            "NOVEL_FORGE_CANON_EXTRACTION_MODEL",
+        ),
     ):
         provider = str(
             values.get(provider_key)

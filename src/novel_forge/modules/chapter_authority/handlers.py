@@ -340,9 +340,19 @@ class _CanonHandler:
 
 @dataclass(frozen=True, slots=True)
 class _CanonExtractionHandler:
+    provider: ChapterModelPort
+
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
         context = request.require_input("context_bundle")
+        provider_extraction = None
+        if bool(getattr(self.provider, "external_effect_backed", False)):
+            generated = self.provider.invoke(
+                request,
+                stage="canon_extraction",
+                payload={"revision": revision.content, "context": context.content},
+            )
+            provider_extraction = _canon_provider_extraction(generated)
         return _output(
             ChapterNode.CANON_EXTRACTION,
             build_canon_extraction(
@@ -350,6 +360,7 @@ class _CanonExtractionHandler:
                 revision_asset_version_id=revision.asset_version_id,
                 project_id=request.project_id,
                 context_bundle_version_id=context.asset_version_id,
+                provider_extraction=provider_extraction,
             ),
         )
 
@@ -489,7 +500,7 @@ def build_chapter_handler_registry(
     registry.register(ChapterNode.REVIEW, _ReviewHandler(provider))
     registry.register(ChapterNode.REVISION, _RevisionHandler(provider))
     registry.register(ChapterNode.REREVIEW, _ReReviewHandler(provider))
-    registry.register(ChapterNode.CANON_EXTRACTION, _CanonExtractionHandler())
+    registry.register(ChapterNode.CANON_EXTRACTION, _CanonExtractionHandler(provider))
     registry.register(ChapterNode.CANON, _CanonHandler())
     registry.register(ChapterNode.QUALITY, _QualityHandler())
     registry.register(ChapterNode.PUBLISH_GATE, _PublishGateHandler())
@@ -511,3 +522,16 @@ def _provider_evidence(result: ModelProviderResult) -> dict[str, Any]:
     evidence = result.to_evidence()
     evidence.pop("result", None)
     return evidence
+
+
+def _canon_provider_extraction(result: ModelProviderResult) -> dict[str, Any]:
+    identity = {
+        "provider_id": result.provider_id,
+        "model_id": result.model_id,
+        "prompt_version": result.prompt_version,
+    }
+    return {
+        field: [{**dict(item), **identity} for item in values]
+        for field, values in result.output.items()
+        if isinstance(values, list)
+    }

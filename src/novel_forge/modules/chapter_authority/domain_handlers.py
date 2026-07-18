@@ -269,12 +269,14 @@ def build_canon_extraction(
     revision_asset_version_id: str,
     project_id: str,
     context_bundle_version_id: str,
+    provider_extraction: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return extract_canon_candidates(
         project_id=project_id,
         revision=revision,
         revision_asset_version_id=revision_asset_version_id,
         context_bundle_version_id=context_bundle_version_id,
+        provider_extraction=provider_extraction,
     )
 
 

@@ -140,7 +140,7 @@ class ChapterModelExternalEffectAdapter:
     reconciliation_mode = "unsupported"
 
     def __init__(self, routes: dict[str, ChapterModelRoute]) -> None:
-        unsupported = set(routes) - {"draft", "review", "revision"}
+        unsupported = set(routes) - {"draft", "review", "revision", "canon_extraction"}
         if not routes or unsupported:
             raise ValueError("chapter model routes contain unsupported stages")
         self.routes = dict(routes)
@@ -276,7 +276,34 @@ class ChapterModelExternalEffectAdapter:
             draft = _object(inputs, "draft")
             return adapter.review(
                 str(draft.get("text") or ""),
-                {"rubric": "chapter-authority-review-v1"},
+                {
+                    "rubric": (
+                        "chapter-authority-rereview-v1"
+                        if "revision" in inputs
+                        else "chapter-authority-review-v1"
+                    ),
+                    "initial_review": inputs.get("review", {}),
+                },
+            )
+        if stage == "canon_extraction":
+            revision = _object(inputs, "revision")
+            context = _object(inputs, "context")
+            prompt = (
+                "Extract Canon semantic changes as a JSON object matching "
+                "canon-semantic-extraction-v2. Return arrays for canon_facts, "
+                "character_state_changes, relationship_changes, timeline_events, "
+                "foreshadow_changes, promise_changes, reward_changes, world_rule_usages, "
+                "power_state_changes, narrative_pattern_fingerprints, theme_movements, "
+                "and antagonist_pressure_changes. Every item must cite evidence_start, "
+                "evidence_end and confidence.\nRevision:\n"
+                + str(revision.get("text") or "")
+            )
+            return adapter.generate(
+                prompt,
+                {
+                    "contract_version": "canon-semantic-extraction-v2",
+                    "context": context,
+                },
             )
         draft = _object(inputs, "draft")
         review = _object(inputs, "review")
@@ -323,7 +350,7 @@ class ExternalEffectChapterModelPort:
         stage: str,
         payload: dict[str, Any],
     ) -> ModelProviderResult:
-        if stage not in {"draft", "review", "revision"}:
+        if stage not in {"draft", "review", "revision", "canon_extraction"}:
             raise KernelError("MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}")
         logical_ref = _model_log_ref(request.operation_id, stage)
         existing = self._existing_result(request.project_id, logical_ref)
@@ -550,6 +577,29 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             normalized.append({"code": code, "severity": severity, "message": message})
         decision = "NEEDS_REVISION" if normalized or score < 80 else "PASSED"
         return {"decision": decision, "score": score, "issues": normalized}
+    if stage == "canon_extraction":
+        fields = (
+            "canon_facts", "character_state_changes", "relationship_changes",
+            "timeline_events", "foreshadow_changes", "promise_changes",
+            "reward_changes", "world_rule_usages", "power_state_changes",
+            "narrative_pattern_fingerprints", "theme_movements",
+            "antagonist_pressure_changes",
+        )
+        normalized_extraction: dict[str, list[dict[str, Any]]] = {}
+        for field in fields:
+            values = raw.get(field)
+            if not isinstance(values, list) or any(not isinstance(item, dict) for item in values):
+                raise KernelError(
+                    "MODEL_RESPONSE_INVALID",
+                    f"Canon semantic extraction field {field} must be an array of objects",
+                )
+            normalized_extraction[field] = [dict(item) for item in values]
+        if not any(normalized_extraction.values()):
+            raise KernelError(
+                "MODEL_RESPONSE_INVALID",
+                "Canon semantic extraction cannot be empty on the Provider path",
+            )
+        return normalized_extraction
     text = str(raw.get("text") or raw.get("revised_text") or "").strip()
     resolved = [
         str(item).strip()

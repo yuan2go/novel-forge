@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import unittest
 import tempfile
+import hashlib
+import json
 from pathlib import Path
 
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
@@ -92,6 +94,24 @@ class _StageModelAdapter:
 
     def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
         self.calls += 1
+        if "canon-semantic-extraction-v2" in prompt:
+            return {
+                "canon_facts": [
+                    {
+                        "subject": "protagonist", "predicate": "gave_up",
+                        "object": "safe_route_home", "evidence_start": 0,
+                        "evidence_end": 10, "confidence": 0.95,
+                    }
+                ],
+                "character_state_changes": [], "relationship_changes": [],
+                "timeline_events": [], "foreshadow_changes": [],
+                "promise_changes": [], "reward_changes": [],
+                "world_rule_usages": [], "power_state_changes": [],
+                "narrative_pattern_fingerprints": [], "theme_movements": [],
+                "antagonist_pressure_changes": [],
+                "usage": {"input_tokens": 30, "output_tokens": 20},
+                "cost": {"amount": "0.001", "currency": "USD"},
+            }
         return {
             "text": "The promise is public, but its cost remains abstract.",
             "usage": {"input_tokens": 12, "output_tokens": 8},
@@ -100,6 +120,12 @@ class _StageModelAdapter:
 
     def review(self, content, context=None):  # type: ignore[no-untyped-def]
         self.calls += 1
+        if (context or {}).get("rubric") == "chapter-authority-rereview-v1":
+            return {
+                "score": 91,
+                "issues": [],
+                "cost": {"amount": "0.001", "currency": "USD"},
+            }
         return {
             "score": 70,
             "issues": [
@@ -149,6 +175,61 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             inputs=(),
         )
 
+    def _release_evidence(self, project_id: str) -> tuple[dict[str, object], ...]:
+        candidates: list[dict[str, object]] = [
+            {
+                "asset_version_id": f"{project_id}:checklist-v1",
+                "asset_type": "operator_checklist",
+                "project_id": project_id,
+                "safe_summary": "Release checklist completed.",
+                "structured_facts": [{"key": "completed", "value": True}],
+                "estimated_tokens": 8,
+                "narrative_function": "release_evidence",
+            },
+            {
+                "asset_version_id": f"{project_id}:approval-v1",
+                "asset_type": "operator_approval",
+                "project_id": project_id,
+                "safe_summary": "Fixture release approval.",
+                "structured_facts": [{"key": "approved", "value": True}],
+                "estimated_tokens": 8,
+                "narrative_function": "release_evidence",
+            },
+        ]
+        with transaction() as connection, connection.cursor() as cursor:
+            for candidate in candidates:
+                content = {
+                    "safe_summary": candidate["safe_summary"],
+                    "structured_facts": candidate["structured_facts"],
+                }
+                content_hash = "sha256:" + hashlib.sha256(
+                    json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest()
+                candidate["content_hash"] = content_hash
+                asset_id = f"{candidate['asset_version_id']}:asset"
+                cursor.execute(
+                    "INSERT INTO authority_asset (asset_id, project_id, asset_type) VALUES (%s, %s, %s)",
+                    [asset_id, project_id, candidate["asset_type"]],
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO authority_asset_version (
+                        asset_version_id, asset_id, version_number, lifecycle,
+                        eligibility, governance, content, content_hash
+                    ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s)
+                    """,
+                    [candidate["asset_version_id"], asset_id, json.dumps(content), content_hash],
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO authority_asset_qualification (
+                        qualification_id, asset_version_id, policy_version, decision, evidence
+                    ) VALUES (%s, %s, 'model-fixture-release-v1', 'ELIGIBLE', '{}'::jsonb)
+                    """,
+                    [f"{candidate['asset_version_id']}:qualification", candidate["asset_version_id"]],
+                )
+        return tuple(candidates)
+
     def test_success_records_effect_receipt_model_call_and_cost_once(self) -> None:
         request = self._request()
         adapter = _ModelAdapter()
@@ -156,6 +237,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             DATABASE_URL,
             adapter=adapter,
             worker_id="model-worker",
+            max_cost_per_call="0.01",
         )
 
         first = port.invoke(request, stage="draft", payload={"prompt": "write"})
@@ -203,7 +285,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone()[0], "UNKNOWN")
 
-    def test_full_chapter_slice_uses_three_model_effects_and_authority_ledgers(self) -> None:
+    def test_full_chapter_slice_uses_five_model_effects_and_authority_ledgers(self) -> None:
         project_id = identifier("model-slice-project")
         stage_model = _StageModelAdapter()
         adapter = ChapterModelExternalEffectAdapter(
@@ -214,9 +296,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     model_id=f"fixture-{stage}-model",
                     prompt_version=f"fixture-{stage}-prompt-v1",
                     skill_version=f"fixture-{stage}-skill-v1",
-                    real_model_call=True,
+                    real_model_call=False,
                 )
-                for stage in ("draft", "review", "revision")
+                for stage in ("draft", "review", "revision", "canon_extraction")
             }
         )
         export_directory = tempfile.TemporaryDirectory()
@@ -226,6 +308,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             model_adapter=adapter,
             object_store_adapter=LocalFileObjectStoreAdapter(Path(export_directory.name)),
             worker_id="model-worker",
+            max_cost_per_model_call="0.01",
         )
         result = application.run(
             SingleChapterRequest(
@@ -239,11 +322,12 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 correlation_id=identifier("correlation"),
                 application_build_id="chapter-model-effect-test",
                 commit_sha="d" * 40,
+                context_candidates=self._release_evidence(project_id),
             ),
         )
 
         self.assertEqual(result.root_status, "SUCCEEDED")
-        self.assertEqual(stage_model.calls, 3)
+        self.assertEqual(stage_model.calls, 5)
         exported = Path(export_directory.name) / f"chapters/{project_id}/1/chapter.txt"
         self.assertIn("surrenders the only safe route home", exported.read_text())
         query = application.query
@@ -255,9 +339,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         self.assertEqual(listed[0]["root_operation_id"], result.root_operation_id)
         self.assertEqual(listed[0]["status"], "SUCCEEDED")
         self.assertEqual(detail["saga"]["status"], "SUCCEEDED")
-        self.assertEqual(len(detail["operations"]), 9)
-        self.assertEqual(len(detail["primary_outputs"]), 8)
-        self.assertEqual(len(detail["model_effects"]), 3)
+        self.assertEqual(len(detail["operations"]), 13)
+        self.assertEqual(len(detail["primary_outputs"]), 12)
+        self.assertEqual(len(detail["model_effects"]), 5)
         self.assertEqual(query.list_runs(project_id=identifier("other-project")), [])
         with self.assertRaisesRegex(KernelError, "CHAPTER_RUN_NOT_FOUND"):
             query.require_run(
@@ -278,8 +362,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(
                 cursor.fetchall(),
                 [
+                    ("model.canon_extraction", "SUCCEEDED", 1),
                     ("model.draft", "SUCCEEDED", 1),
-                    ("model.review", "SUCCEEDED", 1),
+                    ("model.review", "SUCCEEDED", 2),
                     ("model.revision", "SUCCEEDED", 1),
                 ],
             )
@@ -296,7 +381,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(dict(cursor.fetchall()), {"cost_ledger": 3, "model_call_log": 3})
+            self.assertEqual(dict(cursor.fetchall()), {"cost_ledger": 5, "model_call_log": 5})
 
 
 if __name__ == "__main__":
