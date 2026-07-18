@@ -10,7 +10,7 @@ from novel_forge.api.authority_dependencies import (
     build_trusted_principal_resolver,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.worker_execution import AuthorityWorkerExecutionBoundary
 
 
 @dataclass(slots=True)
@@ -27,6 +27,7 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> None:
     worker = principal_resolver.resolve_worker_principal(application.worker_id)
     scheduler = application.scheduler(principal=worker)
     shutdown = _Shutdown()
+    boundary = AuthorityWorkerExecutionBoundary(worker_kind="chapter")
 
     def request_shutdown(_signum: int, _frame: object) -> None:
         shutdown.requested = True
@@ -38,20 +39,14 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> None:
         if not roots:
             time.sleep(poll_seconds)
             continue
-        for project_id, root_operation_id in roots:
-            if shutdown.requested:
-                break
-            try:
-                scheduler.tick(
-                    project_id=project_id,
-                    root_operation_id=root_operation_id,
-                )
-            except KernelError as exc:
-                if exc.code not in {
-                    "LEASE_NOT_AVAILABLE",
-                    "CHAPTER_OPERATION_NOT_RECOVERABLE",
-                }:
-                    raise
+        batch = tuple(item for item in roots if not shutdown.requested)
+        boundary.execute_batch(
+            batch,
+            identity=lambda item: (item[0], item[1]),
+            execute=lambda item: scheduler.tick(
+                project_id=item[0], root_operation_id=item[1]
+            ),
+        )
 
 
 def main() -> None:

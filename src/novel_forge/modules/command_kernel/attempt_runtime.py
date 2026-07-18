@@ -331,6 +331,36 @@ def submit_attempt_result(
         raise stale_error
 
 
+def submit_attempt_failure(
+    database_url: str,
+    command: WorkerLeaseCommand,
+    *,
+    retryable: bool,
+    error_code: str,
+    error_message: str,
+    failure_class: str,
+) -> None:
+    """Terminalize a running fenced Attempt after handler execution raised."""
+    with AuthorityUnitOfWork(database_url) as uow:
+        operation = uow.repositories.attempt_runtime.operation_state(
+            command.causation_id, command.project_id
+        )
+    submit_attempt_result(
+        database_url,
+        WorkerResultCommand(
+            **command.__dict__,
+            expected_operation_status=str(operation["status"]),
+            expected_operation_version=int(operation["version"]),
+        ),
+        outcome="retryable_failure" if retryable else "final_failure",
+        result={
+            "error_code": error_code,
+            "error_message": error_message,
+            "failure_class": failure_class,
+        },
+    )
+
+
 def heartbeat_attempt(
     database_url: str,
     command: WorkerLeaseCommand,

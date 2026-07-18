@@ -11,11 +11,16 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     create_attempt,
     queue_attempt,
     start_attempt,
+    submit_attempt_failure,
     submit_attempt_result,
     heartbeat_attempt,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
+from novel_forge.modules.command_kernel.worker_execution import (
+    WorkerFailureClass,
+    WorkerFailureClassifier,
+)
 from novel_forge.modules.content_authority.registry import ContentHandlerRegistry
 from novel_forge.modules.content_authority.runtime import execute_content_handler
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -182,36 +187,54 @@ class ContentAuthorityScheduler:
                 "CONTENT_RECOVERY_ATTEMPT_INVALID",
                 f"Content Attempt cannot resume from {attempt_status}",
             )
-        with LeaseHeartbeatGuard(
-            lambda: heartbeat_attempt(self.database_url, worker, self.lease_seconds),
-            lease_seconds=self.lease_seconds,
-            label=f"attempt:{attempt_id}",
-        ):
-            output = execute_content_handler(
+        try:
+            with LeaseHeartbeatGuard(
+                lambda: heartbeat_attempt(self.database_url, worker, self.lease_seconds),
+                lease_seconds=self.lease_seconds,
+                label=f"attempt:{attempt_id}",
+            ):
+                output = execute_content_handler(
+                    self.database_url,
+                    command=worker,
+                    definition_name=state["definition_name"],
+                    definition_version=state["definition_version"],
+                    registry=self.registry,
+                )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                operation = uow.repositories.attempt_runtime.operation_state(
+                    operation_id, project_id
+                )
+            submit_attempt_result(
                 self.database_url,
-                command=worker,
-                definition_name=state["definition_name"],
-                definition_version=state["definition_version"],
-                registry=self.registry,
+                WorkerResultCommand(
+                    **worker.__dict__,
+                    expected_operation_status=operation["status"],
+                    expected_operation_version=operation["version"],
+                ),
+                outcome="success",
+                result={
+                    "asset_version_id": output.asset_version_id,
+                    "content_hash": output.content_hash,
+                    "recovery_mode": recovery_mode,
+                },
             )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            operation = uow.repositories.attempt_runtime.operation_state(
-                operation_id, project_id
-            )
-        submit_attempt_result(
-            self.database_url,
-            WorkerResultCommand(
-                **worker.__dict__,
-                expected_operation_status=operation["status"],
-                expected_operation_version=operation["version"],
-            ),
-            outcome="success",
-            result={
-                "asset_version_id": output.asset_version_id,
-                "content_hash": output.content_hash,
-                "recovery_mode": recovery_mode,
-            },
-        )
+        except BaseException as exc:
+            classification = WorkerFailureClassifier.classify(exc)
+            if classification not in {
+                WorkerFailureClass.LEASE_CONFLICT,
+                WorkerFailureClass.FENCING_CONFLICT,
+                WorkerFailureClass.CANCELLATION,
+                WorkerFailureClass.UNKNOWN_EXTERNAL_STATE,
+            }:
+                submit_attempt_failure(
+                    self.database_url,
+                    worker,
+                    retryable=classification is WorkerFailureClass.RETRYABLE,
+                    error_code=exc.code if isinstance(exc, KernelError) else "PROGRAMMING_BUG",
+                    error_message=str(exc),
+                    failure_class=classification.value,
+                )
+            raise
         return ContentScheduledExecution(
             output=output,
             attempt_id=attempt_id,

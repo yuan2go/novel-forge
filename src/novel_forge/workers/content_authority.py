@@ -10,7 +10,7 @@ from novel_forge.api.authority_dependencies import (
     build_trusted_principal_resolver,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.worker_execution import AuthorityWorkerExecutionBoundary
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 
 
@@ -33,6 +33,7 @@ def main() -> int:
         lease_seconds=lease_seconds,
     )
     stopping = False
+    boundary = AuthorityWorkerExecutionBoundary(worker_kind="content")
 
     def stop(_signum: int, _frame: object) -> None:
         nonlocal stopping
@@ -45,21 +46,21 @@ def main() -> int:
         if not pending:
             time.sleep(poll_seconds)
             continue
-        for operation_id, project_id in pending:
-            if stopping:
-                break
+        batch = tuple(item for item in pending if not stopping)
+
+        def execute(item: tuple[str, str]) -> object:
+            operation_id, project_id = item
             principal.require("content.authority.execute", project_id)
-            try:
-                scheduler.run_or_recover(
-                    operation_id=operation_id,
-                    project_id=project_id,
-                )
-            except KernelError as exc:
-                if exc.code not in {
-                    "CONTENT_RECOVERY_LEASE_ACTIVE",
-                    "CONTENT_RECOVERY_TERMINAL",
-                }:
-                    raise
+            return scheduler.run_or_recover(
+                operation_id=operation_id,
+                project_id=project_id,
+            )
+
+        boundary.execute_batch(
+            batch,
+            identity=lambda item: (item[1], item[0]),
+            execute=execute,
+        )
     return 0
 
 
