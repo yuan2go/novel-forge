@@ -1,0 +1,103 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import StrEnum
+from typing import Mapping
+
+
+class PrincipalType(StrEnum):
+    LOCAL_OPERATOR = "local_operator"
+    SERVICE = "service"
+    WORKER = "worker"
+    SYSTEM_SCHEDULER = "system_scheduler"
+
+
+@dataclass(frozen=True, slots=True)
+class Principal:
+    principal_id: str
+    principal_type: PrincipalType
+    permissions: frozenset[str]
+    project_scope: frozenset[str]
+    authentication_source: str
+
+    def allows(self, permission: str, project_id: str) -> bool:
+        project_allowed = "*" in self.project_scope or project_id in self.project_scope
+        return project_allowed and ("*" in self.permissions or permission in self.permissions)
+
+    def require(self, permission: str, project_id: str) -> None:
+        if not self.allows(permission, project_id):
+            raise PermissionError(
+                f"principal {self.principal_id} cannot {permission} in project {project_id}"
+            )
+
+
+class TrustedPrincipalResolver:
+    """Resolve identities from trusted server configuration, never request payloads."""
+
+    def __init__(
+        self,
+        *,
+        environment: str,
+        configured_local_operator_id: str = "",
+        configured_project_scope: frozenset[str] | None = None,
+    ) -> None:
+        self.environment = environment.strip().lower() or "development"
+        self.configured_local_operator_id = configured_local_operator_id.strip()
+        self.configured_project_scope = configured_project_scope or frozenset({"*"})
+
+    @classmethod
+    def from_environment(cls, values: Mapping[str, str]) -> "TrustedPrincipalResolver":
+        scope = frozenset(
+            item.strip()
+            for item in str(values.get("NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE") or "*").split(",")
+            if item.strip()
+        )
+        return cls(
+            environment=str(values.get("NOVEL_FORGE_ENVIRONMENT") or "development"),
+            configured_local_operator_id=str(
+                values.get("NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID") or ""
+            ),
+            configured_project_scope=scope,
+        )
+
+    def resolve_api_principal(self, *, claimed_actor_id: str = "") -> Principal:
+        del claimed_actor_id  # compatibility input is deliberately not an identity source
+        principal_id = self.configured_local_operator_id
+        if not principal_id and self.environment == "production":
+            raise RuntimeError("a trusted local operator principal is required in production")
+        return Principal(
+            principal_id=principal_id or "local-operator",
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset(
+                {
+                    "chapter.authority.execute",
+                    "chapter.authority.query",
+                    "chapter.authority.cancel",
+                    "content.authority.execute",
+                    "content.authority.query",
+                    "content.authority.cancel",
+                    "content.authority.recover",
+                }
+            ),
+            project_scope=self.configured_project_scope,
+            authentication_source="server_configuration",
+        )
+
+    def resolve_worker_principal(self, worker_id: str) -> Principal:
+        worker_id = worker_id.strip()
+        if not worker_id:
+            raise RuntimeError("configured Authority worker identity is required")
+        return Principal(
+            principal_id=worker_id,
+            principal_type=PrincipalType.WORKER,
+            permissions=frozenset(
+                {
+                    "chapter.authority.execute",
+                    "content.authority.execute",
+                    "external_effect.execute",
+                }
+            ),
+            project_scope=self.configured_project_scope,
+            authentication_source="worker_configuration",
+        )
+

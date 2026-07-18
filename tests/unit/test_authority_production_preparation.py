@@ -1,0 +1,130 @@
+from __future__ import annotations
+
+import unittest
+
+from novel_forge.modules.authority_security import (
+    PrincipalType,
+    TrustedPrincipalResolver,
+)
+from novel_forge.modules.production_preparation.contracts import (
+    ProductionPreparationRequest,
+    ResolvedProductionAsset,
+)
+from novel_forge.modules.production_preparation.service import ProductionPreparationService
+
+
+class _Resolver:
+    def __init__(self, assets: dict[str, ResolvedProductionAsset]) -> None:
+        self.assets = assets
+
+    def resolve_latest(self, *, project_id: str, asset_type: str):
+        asset = self.assets.get(asset_type)
+        if asset is not None and asset.project_id != project_id:
+            return None
+        return asset
+
+    def resolve_override(self, *, project_id: str, asset_version_id: str):
+        for asset in self.assets.values():
+            if asset.asset_version_id == asset_version_id:
+                if asset.project_id != project_id:
+                    raise ValueError("cross-project override")
+                return asset
+        raise ValueError("missing override")
+
+
+def _asset(asset_type: str, *, project_id: str = "project-1") -> ResolvedProductionAsset:
+    return ResolvedProductionAsset(
+        project_id=project_id,
+        asset_id=f"asset:{asset_type}",
+        asset_version_id=f"version:{asset_type}",
+        asset_type=asset_type,
+        content_hash=f"sha256:{asset_type}",
+        content={"type": asset_type, "chapter": 1},
+        qualification="ELIGIBLE",
+        selected_reason="latest eligible authority version",
+    )
+
+
+class ProductionPreparationTests(unittest.TestCase):
+    def test_ready_report_freezes_context_and_versions(self) -> None:
+        assets = {
+            kind: _asset(kind)
+            for kind in (
+                "chapter_plan", "style_policy", "quality_rubric",
+                "operator_checklist", "operator_approval", "world_bible",
+            )
+        }
+        result = ProductionPreparationService(_Resolver(assets)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                chapter=1,
+                title_override="Chapter One",
+                premise_override="A costly promise.",
+                idempotency_key="chapter-1",
+            )
+        )
+
+        self.assertEqual(result.report.decision, "READY")
+        self.assertIn("version:chapter_plan", result.report.selected_asset_version_ids)
+        self.assertEqual(
+            result.command.context_version_refs["chapter_plan_version"],
+            "version:chapter_plan",
+        )
+        self.assertTrue(result.command.context_candidates)
+
+    def test_second_chapter_without_canon_baseline_is_blocked_with_repair(self) -> None:
+        assets = {
+            kind: _asset(kind)
+            for kind in (
+                "chapter_plan", "style_policy", "quality_rubric",
+                "operator_checklist", "operator_approval",
+            )
+        }
+        result = ProductionPreparationService(_Resolver(assets)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                chapter=2,
+                idempotency_key="chapter-2",
+            )
+        )
+
+        self.assertEqual(result.report.decision, "BLOCKED")
+        self.assertIn("canon_snapshot", result.report.missing_required_asset_types)
+        self.assertTrue(any("Canon" in action for action in result.report.repair_actions))
+        self.assertIsNone(result.command)
+
+    def test_cross_project_override_fails_closed(self) -> None:
+        assets = {"chapter_plan": _asset("chapter_plan", project_id="project-2")}
+        with self.assertRaisesRegex(ValueError, "cross-project"):
+            ProductionPreparationService(_Resolver(assets)).prepare(
+                ProductionPreparationRequest(
+                    project_id="project-1",
+                    workspace_id="workspace-1",
+                    chapter=1,
+                    explicit_asset_version_overrides={
+                        "chapter_plan": "version:chapter_plan"
+                    },
+                    idempotency_key="chapter-1",
+                )
+            )
+
+    def test_api_actor_is_not_a_trusted_principal_source(self) -> None:
+        principal = TrustedPrincipalResolver(
+            environment="test",
+            configured_local_operator_id="trusted-local",
+        ).resolve_api_principal(claimed_actor_id="attacker-supplied")
+
+        self.assertEqual(principal.principal_id, "trusted-local")
+        self.assertEqual(principal.principal_type, PrincipalType.LOCAL_OPERATOR)
+        self.assertNotEqual(principal.principal_id, "attacker-supplied")
+        self.assertTrue(principal.allows("chapter.authority.execute", "project-1"))
+
+    def test_production_requires_configured_trusted_principal(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "trusted local operator"):
+            TrustedPrincipalResolver(environment="production").resolve_api_principal()
+
+
+if __name__ == "__main__":
+    unittest.main()
