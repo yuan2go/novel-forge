@@ -352,6 +352,7 @@ class ChapterModelExternalEffectAdapter:
             )
         if stage.startswith("quality_"):
             revision = _object(inputs, "revision")
+            quality_context = _object(inputs, "quality_context")
             group = stage.removeprefix("quality_")
             dimensions = inputs.get("dimensions")
             if not isinstance(dimensions, list) or not dimensions:
@@ -364,8 +365,8 @@ class ChapterModelExternalEffectAdapter:
                 "{dimensions:[{dimension,gate_status,score,evidence_locations,confidence,"
                 "issue_codes,revision_strategies}]}. Use PASSED only when the chapter "
                 "contains direct evidence; otherwise use INSUFFICIENT_EVIDENCE or FAILED.\n"
-                f"Group: {group}\nDimensions: {dimensions}\nRevision:\n"
-                + str(revision.get("text") or "")
+                f"Group: {group}\nDimensions: {dimensions}\nGoverned context:\n"
+                + str(quality_context)
             )
             return adapter.generate(
                 prompt,
@@ -373,9 +374,7 @@ class ChapterModelExternalEffectAdapter:
                     "contract_version": "chapter-quality-provider-evidence-v1",
                     "group": group,
                     "dimensions": dimensions,
-                    "chapter_plan": inputs.get("chapter_plan", {}),
-                    "canon": inputs.get("canon", {}),
-                    "context_policy": inputs.get("context_policy", {}),
+                    "quality_context": quality_context,
                 },
             )
         draft = _object(inputs, "draft")

@@ -109,6 +109,26 @@ class _StageModelAdapter:
 
     def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
         self.calls += 1
+        if (context or {}).get("contract_version") == "chapter-quality-provider-evidence-v1":
+            quality_context = (context or {}).get("quality_context") or {}
+            if not str(quality_context.get("type") or "").endswith("QualityContextView"):
+                raise AssertionError("quality provider did not receive a stage-specific view")
+            return {
+                "dimensions": [
+                    {
+                        "dimension": dimension,
+                        "gate_status": "PASSED",
+                        "score": 85,
+                        "confidence": .8,
+                        "evidence_locations": [{"start": 0, "end": 10}],
+                        "issue_codes": [],
+                        "revision_strategies": [],
+                    }
+                    for dimension in (context or {}).get("dimensions", [])
+                ],
+                "usage": {"input_tokens": 20, "output_tokens": 10},
+                "cost": {"amount": "0.001", "currency": "USD"},
+            }
         if "canon-semantic-extraction-v2" in prompt:
             return {
                 "canon_facts": [
@@ -204,6 +224,26 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     "scene_sequence": [{"scene_id": "s1", "goal": "choose the cost"}],
                     "chapter_hook": "A new obligation arrives.",
                 },
+            },
+            {
+                "asset_version_id": f"{project_id}:quality-rubric-v1",
+                "asset_type": "quality_rubric", "project_id": project_id,
+                "safe_summary": "Versioned chapter quality thresholds.",
+                "structured_facts": [{"key": "thresholds", "value": {"readability": 70}}],
+                "estimated_tokens": 20, "narrative_function": "quality_policy",
+            },
+            {
+                "asset_version_id": f"{project_id}:platform-profile-v1",
+                "asset_type": "platform_profile", "project_id": project_id,
+                "safe_summary": "Versioned internal platform policy.",
+                "structured_facts": [{"key": "platform_rules", "value": {
+                    "chapter_length": {"minimum": 10, "maximum": 10000},
+                    "format": {"paragraph_max": 500},
+                    "sensitive_content": [], "ai_content": {"mode": "internal"},
+                    "opening": ["visible conflict"], "rhythm": ["payoff"],
+                    "publish_metadata": {"title_required": True},
+                }}],
+                "estimated_tokens": 30, "narrative_function": "platform_policy",
             },
             {
                 "asset_version_id": f"{project_id}:checklist-v1",
@@ -326,7 +366,12 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     skill_version=f"fixture-{stage}-skill-v1",
                     real_model_call=False,
                 )
-                for stage in ("draft", "review", "revision", "canon_extraction")
+                for stage in (
+                    "draft", "review", "revision", "canon_extraction",
+                    "quality_structural", "quality_commercial",
+                    "quality_source_originality", "quality_longform",
+                    "quality_platform",
+                )
             }
         )
         export_directory = tempfile.TemporaryDirectory()
@@ -355,7 +400,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         )
 
         self.assertEqual(result.root_status, "SUCCEEDED")
-        self.assertEqual(stage_model.calls, 5)
+        self.assertEqual(stage_model.calls, 10)
         exported = Path(export_directory.name) / f"chapters/{project_id}/1/chapter.txt"
         self.assertIn("surrenders the only safe route home", exported.read_text())
         query = application.query
@@ -367,9 +412,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         self.assertEqual(listed[0]["root_operation_id"], result.root_operation_id)
         self.assertEqual(listed[0]["status"], "SUCCEEDED")
         self.assertEqual(detail["saga"]["status"], "SUCCEEDED")
-        self.assertEqual(len(detail["operations"]), 13)
-        self.assertEqual(len(detail["primary_outputs"]), 12)
-        self.assertEqual(len(detail["model_effects"]), 5)
+        self.assertEqual(len(detail["operations"]), 19)
+        self.assertEqual(len(detail["primary_outputs"]), 18)
+        self.assertEqual(len(detail["model_effects"]), 10)
         self.assertEqual(query.list_runs(project_id=identifier("other-project")), [])
         with self.assertRaisesRegex(KernelError, "CHAPTER_RUN_NOT_FOUND"):
             query.require_run(
@@ -392,6 +437,11 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 [
                     ("model.canon_extraction", "SUCCEEDED", 1),
                     ("model.draft", "SUCCEEDED", 1),
+                    ("model.quality_commercial", "SUCCEEDED", 1),
+                    ("model.quality_longform", "SUCCEEDED", 1),
+                    ("model.quality_platform", "SUCCEEDED", 1),
+                    ("model.quality_source_originality", "SUCCEEDED", 1),
+                    ("model.quality_structural", "SUCCEEDED", 1),
                     ("model.review", "SUCCEEDED", 2),
                     ("model.revision", "SUCCEEDED", 1),
                 ],
@@ -409,7 +459,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(dict(cursor.fetchall()), {"cost_ledger": 5, "model_call_log": 5})
+            self.assertEqual(dict(cursor.fetchall()), {"cost_ledger": 10, "model_call_log": 10})
 
 
 if __name__ == "__main__":

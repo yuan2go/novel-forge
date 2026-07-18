@@ -41,6 +41,7 @@ from novel_forge.modules.chapter_authority.model_effects import (
 from novel_forge.modules.chapter_quality_authority import (
     QUALITY_GROUPS,
     build_quality_group_evidence,
+    build_quality_context_view,
 )
 from novel_forge.modules.canon_graph.approval_domain import (
     build_canon_change_proposal,
@@ -176,6 +177,20 @@ class _PlanHandler:
             manifest = {
                 **payload,
                 "workspace_id": request.workspace_id,
+                "quality_profile_version_id": next(
+                    (
+                        item["asset_version_id"] for item in selected
+                        if item["asset_type"] in {"quality_profile", "quality_rubric"}
+                    ),
+                    "",
+                ),
+                "platform_profile_version_id": next(
+                    (
+                        item["asset_version_id"] for item in selected
+                        if item["asset_type"] == "platform_profile"
+                    ),
+                    "",
+                ),
                 "manifest_digest": "sha256:"
                 + hashlib.sha256(
                     json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
@@ -580,6 +595,7 @@ class _QualityGroupHandler:
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
+        plan = request.require_input("chapter_plan")
         canon = request.require_input("canon_patch")
         context = request.require_input("context_bundle")
         fixture = not any(
@@ -587,17 +603,25 @@ class _QualityGroupHandler:
             for item in request.inputs
         )
         context_content = dict(context.content)
+        quality_context = build_quality_context_view(
+            group=self.group,
+            revision=revision.content,
+            revision_asset_version_id=revision.asset_version_id,
+            chapter_plan=plan.content,
+            chapter_plan_asset_version_id=plan.asset_version_id,
+            context_bundle=context.content,
+            context_bundle_asset_version_id=context.asset_version_id,
+            canon=canon.content,
+            canon_asset_version_id=canon.asset_version_id,
+            token_budget=int(request.command.get("context_token_budget") or 6000),
+        )
         if bool(getattr(self.provider, "external_effect_backed", False)):
             generated = self.provider.invoke(
                 request,
                 stage=f"quality_{self.group}",
                 payload={
                     "revision": revision.content,
-                    "canon": canon.content,
-                    "context_policy": {
-                        "quality_profile_version_id": context.content.get("production_input_manifest", {}).get("quality_profile_version_id", ""),
-                        "platform_profile_version_id": context.content.get("production_input_manifest", {}).get("platform_profile_version_id", ""),
-                    },
+                    "quality_context": quality_context,
                     "dimensions": list(QUALITY_GROUPS[self.group]),
                 },
             )
@@ -628,6 +652,8 @@ class _QualityGroupHandler:
             canon=canon.content,
             fixture=fixture,
         )
+        content["quality_context_type"] = quality_context["type"]
+        content["quality_context_digest"] = quality_context["context_digest"]
         node = {
             "structural": ChapterNode.QUALITY_STRUCTURAL,
             "commercial": ChapterNode.QUALITY_COMMERCIAL,

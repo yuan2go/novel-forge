@@ -609,6 +609,7 @@ def _operation_state(
 def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
     if node in QUALITY_GROUP_NODES:
         return (
+            ChapterNode.PLAN,
             ChapterNode.REVISION,
             ChapterNode.REREVIEW,
             ChapterNode.CANON,

@@ -156,6 +156,7 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
                 "stage": "quality_structural",
                 "input": {
                     "revision": {"text": "A visible cost changes the next choice."},
+                    "quality_context": {"type": "StructuralQualityContextView"},
                     "dimensions": ["readability", "scene_completeness"],
                 },
             },
@@ -193,6 +194,7 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
                 "stage": "quality_structural",
                 "input": {
                     "revision": {"text": "A complete chapter."},
+                    "quality_context": {"type": "StructuralQualityContextView"},
                     "dimensions": ["readability", "scene_completeness"],
                 },
             },
@@ -226,6 +228,7 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
                 "stage": "quality_structural",
                 "input": {
                     "revision": {"text": "A complete chapter."},
+                    "quality_context": {"type": "StructuralQualityContextView"},
                     "dimensions": ["readability"],
                 },
             },

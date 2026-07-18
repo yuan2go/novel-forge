@@ -541,6 +541,20 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     "chapter_hook": "The cost creates a new obligation.",
                 },
             ),
+            (
+                "quality_rubric", "Versioned quality thresholds.",
+                [{"key": "thresholds", "value": {"readability": 70}}], None,
+            ),
+            (
+                "platform_profile", "Versioned internal platform rules.",
+                [{"key": "platform_rules", "value": {
+                    "chapter_length": {"minimum": 10, "maximum": 10000},
+                    "format": {"paragraph_max": 500}, "sensitive_content": [],
+                    "ai_content": {"mode": "internal"},
+                    "opening": ["visible conflict"], "rhythm": ["payoff"],
+                    "publish_metadata": {"title_required": True},
+                }}], None,
+            ),
             ("operator_checklist", "Operator checklist completed.", [{"key": "completed", "value": True}]),
             ("operator_approval", "Operator approved fixture release.", [{"key": "approved", "value": True}]),
         ]

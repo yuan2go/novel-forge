@@ -73,6 +73,26 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 "narrative_function": "release_evidence",
             },
             {
+                "asset_version_id": f"{project_id}:quality-rubric-v1",
+                "asset_type": "quality_rubric", "project_id": project_id,
+                "safe_summary": "Versioned quality thresholds.",
+                "structured_facts": [{"key": "thresholds", "value": {"readability": 70}}],
+                "estimated_tokens": 20, "narrative_function": "quality_policy",
+            },
+            {
+                "asset_version_id": f"{project_id}:platform-profile-v1",
+                "asset_type": "platform_profile", "project_id": project_id,
+                "safe_summary": "Versioned internal platform policy.",
+                "structured_facts": [{"key": "platform_rules", "value": {
+                    "chapter_length": {"minimum": 10, "maximum": 10000},
+                    "format": {"paragraph_max": 500}, "sensitive_content": [],
+                    "ai_content": {"mode": "internal"},
+                    "opening": ["visible conflict"], "rhythm": ["payoff"],
+                    "publish_metadata": {"title_required": True},
+                }}],
+                "estimated_tokens": 30, "narrative_function": "platform_policy",
+            },
+            {
                 "asset_version_id": f"{project_id}:approval-v1", "asset_type": "operator_approval",
                 "project_id": project_id, "estimated_tokens": 20,
                 "safe_summary": "Operator approved fixture release evidence.",
