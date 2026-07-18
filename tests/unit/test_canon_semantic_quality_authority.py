@@ -7,7 +7,10 @@ from novel_forge.modules.canon_graph.domain import (
     extract_canon_candidates,
 )
 from novel_forge.modules.chapter_authority.domain_handlers import build_quality_report
-from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
+from novel_forge.modules.chapter_quality_authority import (
+    QUALITY_DIMENSIONS,
+    build_quality_group_evidence,
+)
 
 
 class CanonSemanticQualityAuthorityTests(unittest.TestCase):
@@ -99,6 +102,31 @@ class CanonSemanticQualityAuthorityTests(unittest.TestCase):
         )
         self.assertFalse(report["production_verified"])
         self.assertIn("originality", report["uncalibrated_dimensions"])
+
+    def test_nonfixture_quality_evidence_for_wrong_revision_is_not_accepted(self) -> None:
+        group = build_quality_group_evidence(
+            group="source_originality", project_id="project-1",
+            revision={"chapter": 1, "text": "A complete sentence. Another consequence follows."},
+            revision_asset_version_id="revision-current",
+            context_bundle={
+                "source_isolation_result": {"passed": True},
+                "copyright_boundary": "abstract_or_project_owned_only",
+                "context_segments": [{
+                    "asset_version_id": "old-quality-v1",
+                    "narrative_function": "quality_evidence",
+                    "source_expression_included": False,
+                    "structured_facts": [{"key": "dimension_evidence", "value": [{
+                        "dimension": "originality", "gate_status": "PASSED",
+                        "target_asset_version_id": "revision-old",
+                        "calibration_status": "HUMAN_CALIBRATED", "human_verified": True,
+                    }]}],
+                }],
+            },
+            canon={"gate": "PASSED", "conflicts": []}, fixture=False,
+        )
+        originality = next(item for item in group["dimensions"] if item["dimension"] == "originality")
+        self.assertEqual(originality["gate_status"], "REQUIRES_PROVIDER_JUDGE")
+        self.assertIn("originality", group["blocking_dimension_codes"])
 
 
 if __name__ == "__main__":

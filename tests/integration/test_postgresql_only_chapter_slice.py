@@ -46,6 +46,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                         "dimension": item, "gate_status": "PASSED",
                         "calibration_status": "HUMAN_CALIBRATED",
                         "human_verified": True,
+                        "fixture_protocol_only": True,
                     } for item in dimensions],
                 }],
                 "narrative_function": "quality_evidence",

@@ -110,7 +110,9 @@ def _evaluate(
     context_bundle: dict[str, Any], canon: dict[str, Any], fixture: bool,
     profile_ids: dict[str, str],
 ) -> dict[str, Any]:
-    calibrated = _calibrated_evidence(dimension, segments)
+    calibrated = _calibrated_evidence(
+        dimension, segments, target_asset_version_id=target, fixture=fixture
+    )
     if calibrated is not None:
         status = str(calibrated.get("gate_status") or "INSUFFICIENT_EVIDENCE").upper()
         if status not in QUALITY_EVIDENCE_STATUSES:
@@ -158,13 +160,23 @@ def _evaluate(
     return _report(group, dimension, project_id, target, status, score=None, calibration="FIXTURE_UNCALIBRATED" if fixture else "PROVIDER_UNCALIBRATED", source="none", locations=[], fixture=fixture, profile_ids=profile_ids)
 
 
-def _calibrated_evidence(dimension: str, segments: Iterable[dict[str, Any]]) -> dict[str, Any] | None:
+def _calibrated_evidence(
+    dimension: str,
+    segments: Iterable[dict[str, Any]],
+    *,
+    target_asset_version_id: str,
+    fixture: bool,
+) -> dict[str, Any] | None:
     for segment in segments:
         facts = {str(item.get("key")): item.get("value") for item in segment.get("structured_facts", [])}
         entries = list(facts.get("dimension_evidence") or [])
         entries.append(facts)
         for entry in entries:
             if str(entry.get("dimension") or segment.get("narrative_function") or "") != dimension:
+                continue
+            target = str(entry.get("target_asset_version_id") or "")
+            fixture_protocol = fixture and entry.get("fixture_protocol_only") is True
+            if target != target_asset_version_id and not fixture_protocol:
                 continue
             calibration = str(entry.get("calibration_status") or "").upper()
             human = entry.get("human_verified") is True
@@ -177,6 +189,7 @@ def _calibrated_evidence(dimension: str, segments: Iterable[dict[str, Any]]) -> 
                 "human_verified": human, "provider_verified": provider,
                 "evidence_source": segment.get("asset_version_id"),
                 "evidence_locations": entry.get("evidence_locations") or [],
+                "fixture_protocol_only": fixture_protocol,
             }
     return None
 

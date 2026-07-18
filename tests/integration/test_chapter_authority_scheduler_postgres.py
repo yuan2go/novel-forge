@@ -254,6 +254,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                             "gate_status": "PASSED",
                             "calibration_status": "HUMAN_CALIBRATED",
                             "human_verified": True,
+                            "fixture_protocol_only": True,
                         }
                         for item in dimensions
                     ],
@@ -358,6 +359,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     {
                         "dimension": dimension, "gate_status": "PASSED",
                         "calibration_status": "HUMAN_CALIBRATED", "human_verified": True,
+                        "fixture_protocol_only": True,
                     }
                     for dimension in dimensions
                 ]}],
