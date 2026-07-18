@@ -5,11 +5,13 @@ from dataclasses import replace
 
 from novel_forge.modules.chapter_quality_authority.calibration import (
     QualityCalibrationProfile,
+    QualityCalibrationPolicy,
     QualityCalibrationRun,
     QualityCalibrationStatus,
     QualityGoldenSample,
     QualityProviderDecision,
     evaluate_calibration_run,
+    promote_calibration_profile,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -41,13 +43,23 @@ class QualityCalibrationFoundationTests(unittest.TestCase):
         )
 
     def test_deterministic_golden_fixture_report(self) -> None:
+        policy = QualityCalibrationPolicy(
+            policy_version="fixture-policy-v1", minimum_sample_count=1,
+            minimum_coverage=1, minimum_status_accuracy=1,
+            minimum_score_in_range_rate=1, minimum_per_status_precision=1,
+            minimum_per_status_recall=1, minimum_inter_annotator_agreement=1,
+            maximum_unresolved_adjudication=0,
+        )
         report = evaluate_calibration_run(
             run=self.run, profile=self.profile,
             samples=(self.sample,), decisions=(self.decision,),
+            policy=policy,
         )
         self.assertEqual(report.status_accuracy, 1)
         self.assertEqual(report.score_in_range_rate, 1)
-        self.assertEqual(report.calibration_status, QualityCalibrationStatus.GOLDEN_SET_CALIBRATED)
+        self.assertEqual(report.calibration_status, QualityCalibrationStatus.CALIBRATION_CANDIDATE)
+        promoted = promote_calibration_profile(profile=self.profile, report=report)
+        self.assertEqual(promoted.status, QualityCalibrationStatus.GOLDEN_SET_CALIBRATED)
         self.assertFalse(report.production_verified)
         self.assertFalse(report.real_provider_proven)
 
@@ -76,6 +88,29 @@ class QualityCalibrationFoundationTests(unittest.TestCase):
             replace(
                 self.decision,
                 calibration_status=QualityCalibrationStatus.HUMAN_CALIBRATED,
+            )
+
+    def test_default_policy_rejects_zero_or_insufficient_sample_coverage(self) -> None:
+        report = evaluate_calibration_run(
+            run=self.run, profile=self.profile,
+            samples=(self.sample,), decisions=(self.decision,),
+        )
+        self.assertEqual(
+            report.calibration_status,
+            QualityCalibrationStatus.PROVIDER_UNCALIBRATED,
+        )
+        self.assertIn("minimum_sample_count", report.failed_policy_rules)
+
+    def test_run_profile_and_exact_decision_sets_are_enforced(self) -> None:
+        with self.assertRaisesRegex(KernelError, "profile"):
+            evaluate_calibration_run(
+                run=replace(self.run, profile_id="wrong-profile"),
+                profile=self.profile, samples=(self.sample,), decisions=(self.decision,),
+            )
+        with self.assertRaisesRegex(KernelError, "decision IDs"):
+            evaluate_calibration_run(
+                run=replace(self.run, provider_decision_asset_version_ids=("extra",)),
+                profile=self.profile, samples=(self.sample,), decisions=(self.decision,),
             )
 
 

@@ -5,7 +5,8 @@ Each binder names and validates its inputs.  There is deliberately no generic
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+import json
 from typing import Any, Callable
 
 from novel_forge.modules.authority_handler_runtime import (
@@ -14,6 +15,17 @@ from novel_forge.modules.authority_handler_runtime import (
     AuthorityInputAsset,
 )
 from novel_forge.modules.characters.domain import build_character, build_relationship_state
+from novel_forge.modules.chapter_quality_authority.calibration import (
+    QualityCalibrationPolicy,
+    QualityCalibrationProfile,
+    QualityCalibrationRun,
+    QualityCalibrationStatus,
+    QualityGoldenSample,
+    QualityHumanDecision,
+    QualityProviderDecision,
+    evaluate_calibration_run,
+    promote_calibration_profile,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.creative.domain import (
     build_project_proposal,
@@ -69,7 +81,13 @@ class ContentHandlerCodec:
                 "declared content inputs do not equal the frozen Operation inputs",
             )
         try:
-            content = self.bind_and_execute(request)
+            content = json.loads(
+                json.dumps(
+                    self.bind_and_execute(request),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
         except KernelError:
             raise
         except (KeyError, TypeError, ValueError) as exc:
@@ -260,6 +278,157 @@ def _recap(request: AuthorityHandlerRequest) -> dict[str, Any]:
     return build_enhanced_recap(project_id=request.project_id, reports=reports)
 
 
+def _golden_sample_create(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    payload = dict(_payload(request)["sample"])
+    payload["project_scope"] = request.project_id
+    if tuple(payload["input_asset_version_ids"]) != tuple(
+        item.asset_version_id for item in request.inputs
+    ):
+        raise ValueError("golden sample targets must equal its frozen input assets")
+    sample = QualityGoldenSample(
+        sample_id=str(payload["sample_id"]),
+        project_scope=request.project_id,
+        dimension=str(payload["dimension"]),
+        input_asset_version_ids=tuple(payload["input_asset_version_ids"]),
+        expected_status=str(payload["expected_status"]),
+        expected_score_range=tuple(payload["expected_score_range"]),
+        human_evidence=tuple(payload["human_evidence"]),
+        annotator=str(payload["annotator"]),
+        adjudication_status=str(payload["adjudication_status"]),
+        dataset_version=str(payload["dataset_version"]),
+    )
+    return {"project_id": request.project_id, **asdict(sample)}
+
+
+def _human_decision_record(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    sample = _one(request, "quality_golden_sample")
+    payload = dict(_payload(request)["decision"])
+    if str(payload.get("sample_id") or "") != str(sample.content.get("sample_id") or ""):
+        raise ValueError("human decision targets another golden sample")
+    decision = QualityHumanDecision(
+        sample_id=str(payload["sample_id"]), dimension=str(payload["dimension"]),
+        status=str(payload["status"]), score=payload.get("score"),
+        evidence=tuple(payload.get("evidence") or ()), annotator=str(payload["annotator"]),
+    )
+    if decision.dimension != sample.content.get("dimension"):
+        raise ValueError("human decision dimension differs from its sample")
+    return {"project_id": request.project_id, **asdict(decision)}
+
+
+def _calibration_run(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    profile_asset = _one(request, "quality_calibration_profile")
+    sample_assets = _many(request, "quality_golden_sample")
+    decision_assets = _many(request, "quality_provider_decision")
+    profile = _calibration_profile(profile_asset.content)
+    payload = _payload(request)
+    run = QualityCalibrationRun(
+        run_id=str(payload["run_id"]), profile_id=profile.profile_id,
+        dimension=profile.dimension, dataset_version=profile.dataset_version,
+        provider_decision_asset_version_ids=tuple(
+            item.asset_version_id for item in decision_assets
+        ),
+        sample_ids=tuple(str(item.content["sample_id"]) for item in sample_assets),
+    )
+    policy_payload = dict(payload["policy"])
+    policy = QualityCalibrationPolicy(**policy_payload)
+    report = evaluate_calibration_run(
+        run=run, profile=profile,
+        samples=tuple(_golden_sample(item.content) for item in sample_assets),
+        decisions=tuple(
+            QualityProviderDecision(
+                sample_id=str(item.content["sample_id"]),
+                dimension=str(item.content["dimension"]),
+                status=str(item.content["status"]),
+                score=item.content.get("score"),
+                confidence=float(item.content["confidence"]),
+                provider_evidence_asset_version_id=item.asset_version_id,
+            )
+            for item in decision_assets
+        ),
+        policy=policy,
+    )
+    return {
+        "project_id": request.project_id,
+        "profile_asset_version_id": profile_asset.asset_version_id,
+        "sample_asset_version_ids": [item.asset_version_id for item in sample_assets],
+        "provider_decision_asset_version_ids": [item.asset_version_id for item in decision_assets],
+        **asdict(report),
+        "calibration_status": report.calibration_status.value,
+        "fixture_protocol_only": bool(payload.get("fixture_protocol_only", False)),
+        "real_model_call": False,
+        "production_verified": False,
+    }
+
+
+def _calibration_profile_promote(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    profile_asset = _one(request, "quality_calibration_profile")
+    report_asset = _one(request, "quality_calibration_report")
+    report_content = report_asset.content
+    from novel_forge.modules.chapter_quality_authority.calibration import QualityCalibrationReport
+
+    report = QualityCalibrationReport(
+        **{
+            key: value for key, value in report_content.items()
+            if key in QualityCalibrationReport.__dataclass_fields__
+            and key != "calibration_status"
+        },
+        calibration_status=QualityCalibrationStatus(
+            str(report_content["calibration_status"])
+        ),
+    )
+    promoted = promote_calibration_profile(
+        profile=_calibration_profile(profile_asset.content), report=report
+    )
+    return {
+        "project_id": request.project_id,
+        **asdict(promoted),
+        "status": promoted.status.value,
+        "promoted_from_asset_version_id": profile_asset.asset_version_id,
+        "calibration_report_asset_version_id": report_asset.asset_version_id,
+        "production_verified": False,
+    }
+
+
+def _calibration_profile_revoke(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    profile_asset = _one(request, "quality_calibration_profile")
+    profile = _calibration_profile(profile_asset.content)
+    reason = str(_payload(request).get("reason") or "").strip()
+    if not reason:
+        raise ValueError("calibration revocation reason is required")
+    return {
+        "project_id": request.project_id,
+        **asdict(profile),
+        "status": QualityCalibrationStatus.CALIBRATION_REVOKED.value,
+        "revoked": True,
+        "revocation_reason": reason,
+        "revoked_asset_version_id": profile_asset.asset_version_id,
+        "production_verified": False,
+    }
+
+
+def _calibration_profile(content: dict[str, Any]) -> QualityCalibrationProfile:
+    return QualityCalibrationProfile(
+        profile_id=str(content["profile_id"]), dimension=str(content["dimension"]),
+        dataset_version=str(content["dataset_version"]),
+        threshold_policy_version_id=str(content["threshold_policy_version_id"]),
+        status=QualityCalibrationStatus(str(content.get("status") or "UNCALIBRATED")),
+        revoked=bool(content.get("revoked")), stale=bool(content.get("stale")),
+    )
+
+
+def _golden_sample(content: dict[str, Any]) -> QualityGoldenSample:
+    return QualityGoldenSample(
+        sample_id=str(content["sample_id"]), project_scope=str(content["project_scope"]),
+        dimension=str(content["dimension"]),
+        input_asset_version_ids=tuple(content["input_asset_version_ids"]),
+        expected_status=str(content["expected_status"]),
+        expected_score_range=tuple(content["expected_score_range"]),
+        human_evidence=tuple(content["human_evidence"]), annotator=str(content["annotator"]),
+        adjudication_status=str(content["adjudication_status"]),
+        dataset_version=str(content["dataset_version"]),
+    )
+
+
 CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
     name: ContentHandlerCodec(name, asset_type, output_key, binder)
     for name, asset_type, output_key, binder in (
@@ -285,6 +454,11 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
         ("longform.pattern.evaluate", "pattern_repetition_report", "longform.pattern", _pattern),
         ("longform.narrative_debt.evaluate", "narrative_debt_report", "longform.narrative_debt", _debt),
         ("longform.recap.enhance", "longform_recap_report", "longform.recap", _recap),
+        ("quality.golden_sample.create", "quality_golden_sample", "quality.golden_sample", _golden_sample_create),
+        ("quality.human_decision.record", "quality_human_decision", "quality.human_decision", _human_decision_record),
+        ("quality.calibration.run", "quality_calibration_report", "quality.calibration_report", _calibration_run),
+        ("quality.calibration.profile.promote", "quality_calibration_profile", "quality.calibration.profile", _calibration_profile_promote),
+        ("quality.calibration.profile.revoke", "quality_calibration_profile", "quality.calibration.profile_revocation", _calibration_profile_revoke),
     )
 }
 

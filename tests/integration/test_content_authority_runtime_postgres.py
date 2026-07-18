@@ -176,6 +176,90 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         ]
         self.run_op("longform.recap.enhance", recap_inputs, {"reports": {"main_plot_progress": "archive reopened", "constraints": ["preserve memory cost"]}})
 
+        calibration_profile = self.seed(
+            "quality_calibration_profile",
+            {
+                "profile_id": "readability-golden-v1", "dimension": "readability",
+                "dataset_version": "golden-v1",
+                "threshold_policy_version_id": "quality-policy-v1",
+                "status": "UNCALIBRATED", "revoked": False, "stale": False,
+            },
+            "calibration-profile",
+        )
+        golden_samples = []
+        provider_decisions = []
+        for index in range(5):
+            target = self.seed(
+                "draft_version", {"text": f"Deterministic golden sample {index}."},
+                f"golden-target-{index}",
+            )
+            sample_id = f"sample-{index}"
+            golden = self.run_op(
+                "quality.golden_sample.create",
+                [target],
+                {"sample": {
+                    "sample_id": sample_id,
+                    "dimension": "readability",
+                    "input_asset_version_ids": [target["asset_version_id"]],
+                    "expected_status": "PASSED",
+                    "expected_score_range": [75, 90],
+                    "human_evidence": [{"span": [0, 10]}],
+                    "annotator": "fixture-adjudicator",
+                    "adjudication_status": "ADJUDICATED",
+                    "dataset_version": "golden-v1",
+                }},
+            )
+            golden_samples.append(golden)
+            provider_decisions.append(
+                self.seed(
+                    "quality_provider_decision",
+                    {
+                        "sample_id": sample_id, "dimension": "readability",
+                        "status": "PASSED", "score": 82, "confidence": .9,
+                        "fixture_protocol_only": True, "real_model_call": False,
+                        "production_verified": False,
+                    },
+                    f"provider-decision-{index}",
+                )
+            )
+        self.run_op(
+            "quality.human_decision.record",
+            [golden_samples[0]],
+            {"decision": {
+                "sample_id": "sample-0", "dimension": "readability",
+                "status": "PASSED", "score": 82,
+                "evidence": [{"span": [0, 10]}], "annotator": "fixture-human",
+            }},
+        )
+        calibration_report = self.run_op(
+            "quality.calibration.run",
+            [calibration_profile, *golden_samples, *provider_decisions],
+            {
+                "run_id": "calibration-run-v1",
+                "fixture_protocol_only": True,
+                "policy": {
+                    "policy_version": "fixture-calibration-policy-v1",
+                    "minimum_sample_count": 5, "minimum_coverage": 1.0,
+                    "minimum_status_accuracy": 1.0,
+                    "minimum_score_in_range_rate": 1.0,
+                    "minimum_per_status_precision": 1.0,
+                    "minimum_per_status_recall": 1.0,
+                    "minimum_inter_annotator_agreement": 1.0,
+                    "maximum_unresolved_adjudication": 0,
+                    "confidence_interval_policy": "deterministic-fixture-exact",
+                },
+            },
+        )
+        promoted = self.run_op(
+            "quality.calibration.profile.promote",
+            [calibration_profile, calibration_report],
+        )
+        self.run_op(
+            "quality.calibration.profile.revoke",
+            [promoted],
+            {"reason": "fixture lifecycle proof"},
+        )
+
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 "SELECT definition_name, status FROM authority_operation WHERE project_id = %s",
