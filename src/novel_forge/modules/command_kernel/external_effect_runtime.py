@@ -522,7 +522,7 @@ def accept_external_effect_receipt(
     stored: dict[str, Any] = {}
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
-        _require_context(repository, context)
+        _validate_effect_context(context)
         dispatch = repository.dispatch_for_update(dispatch_id)
         _require_project(dispatch, context.project_id)
         if provider != dispatch["provider"]:
@@ -617,6 +617,36 @@ def accept_external_effect_receipt(
                 "external_effect.receipt_accepted",
                 {"message_id": message_id, "receipt_id": receipt_id, "outcome": outcome},
             )
+            operation = uow.repositories.attempt_runtime.operation_state(
+                context.operation_id, context.project_id
+            )
+            current_status = str(operation["status"])
+            target_status = {
+                "success": "EXECUTING",
+                "retryable_failure": "FAILED_RETRYABLE",
+                "final_failure": "FAILED_FINAL",
+                "cancelled": "CANCELLED",
+                "compensated": current_status,
+            }[outcome]
+            if current_status == "WAITING_EXTERNAL_RESULT" and outcome == "cancelled":
+                target_status = "FAILED_FINAL"
+            if (
+                current_status in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}
+                and target_status != current_status
+            ):
+                _cas_operation(
+                    uow,
+                    operation_id=context.operation_id,
+                    project_id=context.project_id,
+                    expected_status=current_status,
+                    expected_version=int(operation["version"]),
+                    target_status=target_status,
+                    actor_id=context.actor_id,
+                    reason=f"external receipt accepted as {outcome}",
+                    trace_id=context.trace_id,
+                    correlation_id=context.correlation_id,
+                    causation_id=dispatch["external_effect_id"],
+                )
         uow.commit()
     if conflict:
         raise KernelError(
