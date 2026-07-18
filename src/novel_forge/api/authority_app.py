@@ -12,16 +12,21 @@ from novel_forge.api.authority_dependencies import (
     authority_release_identity,
     build_chapter_authority_application,
     build_chapter_authority_query,
+    build_content_authority_application,
+    build_content_authority_query,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
+from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentAuthorityQuery
 
 
 @dataclass(frozen=True, slots=True)
 class AuthorityApiServices:
     chapter_application: ChapterAuthorityApplication
     chapter_query: ChapterAuthorityQuery
+    content_authority_application: ContentAuthorityApplication
+    content_authority_query: ContentAuthorityQuery
 
 
 def create_authority_app(settings: IndustrialSettings):
@@ -40,6 +45,8 @@ def create_authority_app(settings: IndustrialSettings):
     services = AuthorityApiServices(
         chapter_application=application,
         chapter_query=build_chapter_authority_query(settings),
+        content_authority_application=build_content_authority_application(settings),
+        content_authority_query=build_content_authority_query(settings),
     )
     app = FastAPI(
         title="Novel Forge PostgreSQL Authority API",
@@ -55,11 +62,21 @@ def create_authority_app(settings: IndustrialSettings):
     )
 
     from novel_forge.api.models import product_model_map
-    from novel_forge.api.routers.chapter_authority import create_router
+    from novel_forge.api.routers.chapter_authority import create_router as create_chapter_router
+    from novel_forge.api.routers.content_authority import create_router as create_content_router
     from novel_forge.api.routers.context import ProductRouterContext
 
     app.include_router(
-        create_router(
+        create_chapter_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_content_router(
             ProductRouterContext(
                 app_settings=settings,
                 models=product_model_map(),
