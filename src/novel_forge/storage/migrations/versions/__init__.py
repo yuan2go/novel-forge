@@ -29,6 +29,7 @@ from . import (
     v20260718_0026_canon_saga_gate,
     v20260718_0027_canon_approval_operation,
     v20260718_0028_provider_adapter_v2,
+    v20260718_0029_canon_reextraction_authority,
 )
 
 VERSION_MODULES = [
@@ -60,6 +61,7 @@ VERSION_MODULES = [
     v20260718_0026_canon_saga_gate,
     v20260718_0027_canon_approval_operation,
     v20260718_0028_provider_adapter_v2,
+    v20260718_0029_canon_reextraction_authority,
 ]
 
 __all__ = ["VERSION_MODULES"]

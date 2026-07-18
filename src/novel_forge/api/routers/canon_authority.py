@@ -13,6 +13,7 @@ from novel_forge.modules.canon_graph.approval_authority import (
     CanonApprovalContext,
     decide_canon_approval,
     list_canon_approvals,
+    reopen_canon_approval,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -26,6 +27,16 @@ class CanonApprovalDecisionRequest(BaseModel):
     reason: str = Field(min_length=1)
     evidence: dict[str, Any] = Field(default_factory=dict)
     edited_payload: dict[str, Any] | None = None
+    idempotency_key: str = Field(min_length=1)
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class CanonApprovalReopenRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1)
+    expected_version: int = Field(ge=0)
+    reason: str = Field(min_length=1)
     idempotency_key: str = Field(min_length=1)
     trace_id: str = ""
     correlation_id: str = ""
@@ -75,6 +86,31 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except KernelError as exc:
             raise HTTPException(status_code=409, detail={"code": exc.code, "message": exc.message}) from exc
+
+    @router.post("/approvals/{approval_id}/reopen")
+    def reopen(approval_id: str, request: CanonApprovalReopenRequest) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("canon.authority.approve", request.project_id)
+            return reopen_canon_approval(
+                ctx.app_settings.database_url,
+                CanonApprovalContext(
+                    project_id=request.project_id,
+                    principal_id=principal.principal_id,
+                    trace_id=request.trace_id or f"trace:{uuid4()}",
+                    correlation_id=request.correlation_id or f"correlation:{uuid4()}",
+                ),
+                approval_request_id=approval_id,
+                expected_version=request.expected_version,
+                reason=request.reason,
+                idempotency_key=request.idempotency_key,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except KernelError as exc:
+            raise HTTPException(
+                status_code=409, detail={"code": exc.code, "message": exc.message}
+            ) from exc
 
     @router.post("/operations/{operation_id}/resume", status_code=202)
     def resume(operation_id: str, project_id: str) -> dict[str, Any]:

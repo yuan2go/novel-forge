@@ -13,7 +13,9 @@ from novel_forge.modules.chapter_authority.model_effects import ModelProviderRes
 from novel_forge.modules.canon_graph.approval_authority import (
     CanonApprovalContext,
     decide_canon_approval,
+    expire_deferred_canon_approvals,
     list_canon_approvals,
+    reopen_canon_approval,
 )
 from novel_forge.modules.chapter_authority.orchestrator import (
     SingleChapterRequest,
@@ -21,6 +23,7 @@ from novel_forge.modules.chapter_authority.orchestrator import (
 )
 from novel_forge.modules.chapter_authority.scheduler import ChapterAuthorityScheduler
 from novel_forge.modules.command_kernel.external_effect_adapters import FakeDeterministicProvider
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_preparation import (
     PostgresProductionAssetResolver,
     ProductionPreparationRequest,
@@ -377,6 +380,206 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             snapshot = cursor.fetchone()[0]
         self.assertEqual(snapshot["changes"][0]["status"], "dead")
         self.assertIn(decision["asset_version_id"], snapshot["canon_approval_decision_asset_version_ids"])
+
+    def test_deferred_canon_approval_reopens_without_bypassing_gate(self) -> None:
+        project_id, request, admission, scheduler = self._high_impact_waiting_fixture(
+            "canon-defer"
+        )
+        approval = list_canon_approvals(DATABASE_URL, project_id=project_id)[0]
+        deferred = decide_canon_approval(
+            DATABASE_URL,
+            CanonApprovalContext(
+                project_id, "local-operator", request.trace_id, request.correlation_id
+            ),
+            approval_request_id=approval["approval_request_id"],
+            expected_version=approval["version"], decision="DEFER",
+            reason="need a continuity packet",
+            evidence={
+                "defer_until": "2999-07-18T00:00:00+00:00",
+                "required_information": "continuity packet",
+                "assigned_operator": "chief-editor",
+                "expiry_policy": "REOPEN",
+            },
+            edited_payload=None, idempotency_key="defer-once",
+        )
+        self.assertFalse(deferred["gate_resumed"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT status FROM authority_operation WHERE operation_id=%s",
+                [admission.root_operation_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], "WAITING_GATE")
+        reopened = reopen_canon_approval(
+            DATABASE_URL,
+            CanonApprovalContext(
+                project_id, "local-operator", request.trace_id, request.correlation_id
+            ),
+            approval_request_id=approval["approval_request_id"],
+            expected_version=approval["version"] + 1,
+            reason="continuity packet supplied", idempotency_key="reopen-once",
+        )
+        self.assertEqual(reopened["status"], "PENDING")
+        replay = reopen_canon_approval(
+            DATABASE_URL,
+            CanonApprovalContext(
+                project_id, "local-operator", request.trace_id, request.correlation_id
+            ),
+            approval_request_id=approval["approval_request_id"],
+            expected_version=approval["version"] + 1,
+            reason="continuity packet supplied", idempotency_key="reopen-once",
+        )
+        self.assertTrue(replay["replayed"])
+        with self.assertRaisesRegex(KernelError, "CANON_APPROVAL_VERSION_CONFLICT"):
+            reopen_canon_approval(
+                DATABASE_URL,
+                CanonApprovalContext(
+                    project_id, "local-operator", request.trace_id,
+                    request.correlation_id,
+                ),
+                approval_request_id=approval["approval_request_id"],
+                expected_version=approval["version"] + 1,
+                reason="stale reopen", idempotency_key="reopen-stale",
+            )
+        deferred_again = decide_canon_approval(
+            DATABASE_URL,
+            CanonApprovalContext(
+                project_id, "local-operator", request.trace_id, request.correlation_id
+            ),
+            approval_request_id=approval["approval_request_id"],
+            expected_version=approval["version"] + 2, decision="DEFER",
+            reason="wait for automatic expiry",
+            evidence={
+                "defer_until": "2999-07-19T00:00:00+00:00",
+                "required_information": "expiry fixture",
+                "assigned_operator": "chief-editor",
+                "expiry_policy": "REOPEN",
+            },
+            edited_payload=None, idempotency_key="defer-for-expiry",
+        )
+        self.assertFalse(deferred_again["gate_resumed"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_canon_approval_request SET defer_until=NOW() - INTERVAL '1 second' WHERE approval_request_id=%s",
+                [approval["approval_request_id"]],
+            )
+        expired = expire_deferred_canon_approvals(
+            DATABASE_URL,
+            CanonApprovalContext(
+                project_id, "system-scheduler", request.trace_id,
+                request.correlation_id,
+            ),
+        )
+        self.assertEqual(expired[0]["status"], "PENDING")
+
+    def test_request_reextraction_supersedes_old_proposal_and_recovers_gate(self) -> None:
+        project_id, request, admission, scheduler = self._high_impact_waiting_fixture(
+            "canon-reextract"
+        )
+        old = list_canon_approvals(DATABASE_URL, project_id=project_id)[0]
+        decision = decide_canon_approval(
+            DATABASE_URL,
+            CanonApprovalContext(
+                project_id, "local-operator", request.trace_id, request.correlation_id
+            ),
+            approval_request_id=old["approval_request_id"],
+            expected_version=old["version"], decision="REQUEST_REEXTRACTION",
+            reason="evidence needs a clean semantic pass",
+            evidence={"fixture_protocol_only": True}, edited_payload=None,
+            idempotency_key="reextract-once",
+        )
+        self.assertTrue(decision["reextraction_requested"])
+        self.assertFalse(decision["gate_resumed"])
+        for _ in range(8):
+            scheduler.tick(
+                project_id=project_id, root_operation_id=admission.root_operation_id
+            )
+            approvals = list_canon_approvals(DATABASE_URL, project_id=project_id)
+            pending = [item for item in approvals if item["status"] == "PENDING"]
+            if pending and pending[0]["proposal_generation"] == 2:
+                break
+        else:
+            self.fail("re-extraction did not produce a generation-2 approval")
+        invalidated = [item for item in approvals if item["proposal_generation"] == 1]
+        self.assertTrue(invalidated)
+        self.assertTrue(all(item["status"] == "INVALIDATED" for item in invalidated))
+        new_approval = pending[0]
+        self.assertNotEqual(
+            new_approval["proposal_asset_version_id"], old["proposal_asset_version_id"]
+        )
+        approved = decide_canon_approval(
+            DATABASE_URL,
+            CanonApprovalContext(
+                project_id, "local-operator", request.trace_id, request.correlation_id
+            ),
+            approval_request_id=new_approval["approval_request_id"],
+            expected_version=new_approval["version"], decision="APPROVE",
+            reason="generation two evidence reviewed",
+            evidence={"fixture_protocol_only": True}, edited_payload=None,
+            idempotency_key="approve-generation-two",
+        )
+        self.assertTrue(approved["gate_resumed"])
+        for _ in range(30):
+            terminal = scheduler.tick(
+                project_id=project_id, root_operation_id=admission.root_operation_id
+            )
+            if terminal.saga_status == "SUCCEEDED":
+                break
+        self.assertEqual(terminal.saga_status, "SUCCEEDED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT status FROM authority_canon_reextraction_generation WHERE project_id=%s AND root_operation_id=%s",
+                [project_id, admission.root_operation_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], "RESOLVED")
+
+    def _high_impact_waiting_fixture(self, prefix: str):
+        class HighImpactFixture(DeterministicFixtureChapterProvider):
+            supports_semantic_extraction = True
+
+            def invoke(self, request, *, stage, payload):
+                if stage != "canon_extraction":
+                    return super().invoke(request, stage=stage, payload=payload)
+                return ModelProviderResult(
+                    output={"character_state_changes": [{
+                        "character_id": "protagonist", "status": "dead",
+                        "impact_type": "character_death", "confidence": .9,
+                        "evidence_start": 0, "evidence_end": 12,
+                    }]},
+                    provider_id="deterministic_semantic_fixture", model_id="fixture",
+                    prompt_version="fixture-v1", skill_version="fixture-v1",
+                    input_tokens=0, output_tokens=0, cost_amount="0", currency="USD",
+                    real_model_call=False,
+                )
+
+        project_id = identifier(f"{prefix}-project")
+        registry = build_chapter_handler_registry(HighImpactFixture())
+        request = SingleChapterRequest(
+            project_id=project_id, workspace_id=f"workspace:{project_id}",
+            actor_id="trusted-operator", chapter=1, title="A Canon Gate",
+            premise="A costly choice changes an identity permanently.",
+            trace_id=identifier("trace"), correlation_id=identifier("correlation"),
+            application_build_id=f"{prefix}-test", commit_sha="e" * 40,
+            idempotency_key=f"{project_id}:chapter:1",
+            preparation_report={"decision": "READY", "fixture": True},
+            context_candidates=tuple(self._release_evidence(project_id)),
+        )
+        admission = admit_single_chapter_saga(
+            DATABASE_URL, request=request, registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL, registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="configured-chapter-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        for _ in range(20):
+            tick = scheduler.tick(
+                project_id=project_id, root_operation_id=admission.root_operation_id
+            )
+            if tick.saga_status == "WAITING_GATE":
+                return project_id, request, admission, scheduler
+        self.fail("high-impact fixture did not reach Canon WAITING_GATE")
 
     @staticmethod
     def _preparation_assets(

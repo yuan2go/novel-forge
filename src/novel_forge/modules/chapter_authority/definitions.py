@@ -6,8 +6,8 @@ from typing import Any
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
-CHAPTER_SLICE_DEFINITION_VERSION = "2.0.9"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.11"
+CHAPTER_SLICE_DEFINITION_VERSION = "2.0.10"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.12"
 CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.9"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
@@ -300,6 +300,8 @@ def _chapter_command_schema() -> dict[str, Any]:
             "context_token_budget": {"type": "integer"},
             "preparation_report": {"type": "object"},
             "chapter_idempotency_key": {"type": "string"},
+            "canon_reextraction_generation": {"type": "integer", "minimum": 1},
+            "supersedes_proposal_asset_version_id": {"type": "string"},
         },
         "additionalProperties": False,
     }

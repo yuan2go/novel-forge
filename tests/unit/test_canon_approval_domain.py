@@ -5,6 +5,7 @@ import unittest
 from novel_forge.modules.canon_graph.approval_domain import (
     build_canon_change_proposal,
     resolve_canon_extraction,
+    validate_edited_canon_payload,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -55,7 +56,11 @@ class CanonApprovalDomainTests(unittest.TestCase):
             extraction=extraction(), proposal=proposal,
             decisions=[{
                 "change_id": change_id, "decision": "EDIT_AND_APPROVE",
-                "edited_payload": {"character_id": "hero", "status": "missing"},
+                "change_resolution": validate_edited_canon_payload(
+                    project_id="project-a",
+                    change=proposal["changes"][0],
+                    edited_payload={"character_id": "hero", "status": "missing"},
+                ),
                 "asset_version_id": "decision-v2",
             }],
         )
@@ -64,6 +69,18 @@ class CanonApprovalDomainTests(unittest.TestCase):
             edited["character_state_changes"][0]["approval_resolution"]["decision"],
             "EDIT_AND_APPROVE",
         )
+
+    def test_edited_payload_cannot_change_identity_or_cross_project(self) -> None:
+        proposal = build_canon_change_proposal(
+            project_id="project-a", extraction=extraction(),
+            extraction_asset_version_id="extraction-v2",
+        )
+        with self.assertRaisesRegex(KernelError, "CANON_EDITED_PAYLOAD_INVALID"):
+            validate_edited_canon_payload(
+                project_id="project-a",
+                change=proposal["changes"][0],
+                edited_payload={"character_id": "villain", "project_id": "project-b"},
+            )
 
     def test_high_impact_without_digest_is_rejected(self) -> None:
         broken = extraction()

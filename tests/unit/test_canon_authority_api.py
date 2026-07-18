@@ -74,6 +74,25 @@ class CanonAuthorityApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         listing.assert_not_called()
 
+    def test_reopen_is_strict_and_uses_trusted_principal(self) -> None:
+        root, client, resolver = self._client()
+        with root, patch(
+            "novel_forge.api.routers.canon_authority.build_trusted_principal_resolver",
+            return_value=resolver,
+        ), patch(
+            "novel_forge.api.routers.canon_authority.reopen_canon_approval",
+            return_value={"status": "PENDING", "replayed": False},
+        ) as reopen:
+            response = client.post(
+                "/product/canon-authority/approvals/request-1/reopen",
+                json={
+                    "project_id": "project-a", "expected_version": 1,
+                    "reason": "requested evidence arrived", "idempotency_key": "reopen-1",
+                },
+            )
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(reopen.call_args.args[1].principal_id, "trusted-operator")
+
 
 if __name__ == "__main__":
     unittest.main()

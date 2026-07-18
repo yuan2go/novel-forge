@@ -101,6 +101,84 @@ def _valid_span(span: dict[str, Any]) -> bool:
     return start >= 0 and end > start
 
 
+def validate_edited_canon_payload(
+    *, project_id: str, change: dict[str, Any], edited_payload: dict[str, Any]
+) -> dict[str, Any]:
+    if not isinstance(edited_payload, dict) or not edited_payload:
+        raise KernelError("CANON_EDITED_PAYLOAD_REQUIRED", "edited approval requires a payload")
+    original = dict(change.get("proposed_state") or {})
+    payload = {**original, **edited_payload}
+    entity_keys = (
+        "entity_id", "character_id", "relationship_id", "world_rule_id",
+        "foreshadow_id", "promise_id", "subject",
+    )
+    original_entity = str(change.get("entity_id") or "")
+    edited_entity = next((str(payload[key]) for key in entity_keys if payload.get(key)), "")
+    errors: list[str] = []
+    if original_entity and edited_entity != original_entity:
+        errors.append("ENTITY_IDENTITY_CHANGED")
+    if payload.get("project_id", project_id) != project_id:
+        errors.append("CROSS_PROJECT_REFERENCE")
+    if str(payload.get("impact_type") or payload.get("change_type") or change.get("change_type")) != str(change.get("change_type")):
+        errors.append("CHANGE_TYPE_CHANGED")
+    try:
+        confidence = float(payload.get("confidence", change.get("confidence", 0)))
+    except (TypeError, ValueError):
+        confidence = -1
+    if not 0 <= confidence <= 1:
+        errors.append("CONFIDENCE_INVALID")
+    evidence = dict(payload.get("extraction_evidence") or original.get("extraction_evidence") or {})
+    if change.get("approval_requirement") == "REQUIRED":
+        if not _valid_span(dict(evidence.get("span") or change.get("evidence_span") or {})):
+            errors.append("EVIDENCE_SPAN_INVALID")
+        if not str(evidence.get("excerpt_digest") or change.get("evidence_digest") or ""):
+            errors.append("EVIDENCE_DIGEST_MISSING")
+    previous_project = str(evidence.get("previous_state_project_id") or project_id)
+    if previous_project != project_id:
+        errors.append("PREVIOUS_STATE_CROSS_PROJECT")
+    conflict_codes = {
+        str(item) for item in (
+            payload.get("conflict_codes") or change.get("conflict_codes") or []
+        )
+    }
+    blocking_conflicts = sorted(
+        code for code in conflict_codes
+        if any(token in code for token in ("WORLD_RULE", "TIMELINE", "POWER", "RELATIONSHIP", "CONTRADICTION"))
+    )
+    if blocking_conflicts:
+        errors.extend(blocking_conflicts)
+    if payload.get("duplicate_change") is True:
+        errors.append("DUPLICATE_CHANGE")
+    if payload.get("contradictory_change") is True:
+        errors.append("CONTRADICTORY_CHANGE")
+    report = {
+        "type": "CanonEditedPayloadValidationReport",
+        "project_id": project_id,
+        "change_id": change.get("change_id"),
+        "valid": not errors,
+        "errors": errors,
+        "contract_version": "canon-edited-payload-validation-v1",
+    }
+    if errors:
+        raise KernelError(
+            "CANON_EDITED_PAYLOAD_INVALID",
+            "edited Canon payload failed validation: " + ", ".join(errors),
+        )
+    return {
+        "type": "CanonChangeResolution",
+        "project_id": project_id,
+        "change_id": change["change_id"],
+        "state_kind": change["state_kind"],
+        "change_type": change["change_type"],
+        "entity_id": original_entity,
+        "original_proposed_payload": original,
+        "edited_payload": dict(edited_payload),
+        "validated_payload": payload,
+        "validation_report": report,
+        "contract_version": "canon-change-resolution-v1",
+    }
+
+
 def resolve_canon_extraction(*, extraction: dict[str, Any], proposal: dict[str, Any], decisions: Iterable[dict[str, Any]]) -> dict[str, Any]:
     by_id = {str(item["change_id"]): dict(item) for item in decisions}
     resolved = {key: list(extraction.get(key, [])) for key in SEMANTIC_CHANGE_FIELDS}
@@ -119,10 +197,13 @@ def resolve_canon_extraction(*, extraction: dict[str, Any], proposal: dict[str, 
             continue
         payload = dict(change["proposed_state"])
         if action == "EDIT_AND_APPROVE":
-            edited = decision.get("edited_payload")
-            if not isinstance(edited, dict) or not edited:
-                raise KernelError("CANON_EDITED_PAYLOAD_REQUIRED", "edited approval requires a payload")
-            payload = dict(edited)
+            resolution = decision.get("change_resolution")
+            if not isinstance(resolution, dict) or not resolution.get("validated_payload"):
+                raise KernelError(
+                    "CANON_EDITED_RESOLUTION_REQUIRED",
+                    "edited approval requires a validated CanonChangeResolution",
+                )
+            payload = dict(resolution["validated_payload"])
         payload["approval_resolution"] = {
             "change_id": change["change_id"], "decision": action,
             "approval_decision_asset_version_id": str((decision or {}).get("asset_version_id") or ""),
@@ -142,4 +223,7 @@ def resolve_canon_extraction(*, extraction: dict[str, Any], proposal: dict[str, 
     }
 
 
-__all__ = ["CANON_DECISIONS", "build_canon_change_proposal", "resolve_canon_extraction"]
+__all__ = [
+    "CANON_DECISIONS", "build_canon_change_proposal", "resolve_canon_extraction",
+    "validate_edited_canon_payload",
+]

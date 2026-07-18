@@ -578,13 +578,19 @@ class _CanonExtractionHandler:
 class _CanonProposalHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         extraction = request.require_input("canon_extraction")
+        proposal = build_canon_change_proposal(
+            project_id=request.project_id,
+            extraction=extraction.content,
+            extraction_asset_version_id=extraction.asset_version_id,
+        )
+        generation = int(request.command.get("canon_reextraction_generation") or 1)
+        proposal["generation"] = generation
+        proposal["supersedes_asset_version_id"] = str(
+            request.command.get("supersedes_proposal_asset_version_id") or ""
+        )
         return _output(
             ChapterNode.CANON_PROPOSAL,
-            build_canon_change_proposal(
-                project_id=request.project_id,
-                extraction=extraction.content,
-                extraction_asset_version_id=extraction.asset_version_id,
-            ),
+            proposal,
         )
 
 

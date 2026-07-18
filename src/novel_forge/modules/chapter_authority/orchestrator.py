@@ -519,6 +519,7 @@ def _command(
     parent_operation_id: str | None = None,
     causation_operation_id: str | None = None,
     definition_version: str = CHAPTER_SLICE_DEFINITION_VERSION,
+    input_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "definition_name": definition_name,
@@ -543,6 +544,7 @@ def _command(
             "context_token_budget": request.context_token_budget,
             "preparation_report": dict(request.preparation_report or {}),
             "chapter_idempotency_key": request.idempotency_key,
+            **dict(input_overrides or {}),
         },
         "input_assets": input_assets,
         "root_operation_id": root_operation_id,
