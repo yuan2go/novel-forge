@@ -86,6 +86,14 @@ def build_chapter_authority_application(
     ).strip()
     if not object_root_value:
         raise RuntimeError("explicit authority object-store root is required")
+    max_cost_per_call = str(
+        values.get("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL") or ""
+    ).strip()
+    if environment == "production" and any(route.real_model_call for route in routes.values()):
+        if not max_cost_per_call:
+            raise RuntimeError(
+                "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL is required for production providers"
+            )
     object_root = Path(object_root_value).expanduser()
     if not object_root.is_absolute():
         object_root = settings.root / object_root
@@ -97,6 +105,18 @@ def build_chapter_authority_application(
         allow_synchronous_fixture=environment in {"test", "development"}
         and str(values.get("NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE") or "").lower()
         in {"1", "true", "yes"},
+        max_cost_per_model_call=max_cost_per_call or "0",
+        budget_caps={
+            key: str(values[value])
+            for key, value in (
+                ("project", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"),
+                ("operation", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
+                ("provider", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
+                ("daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),
+                ("chapter", "NOVEL_FORGE_CHAPTER_PROVIDER_CAP"),
+            )
+            if str(values.get(value) or "").strip()
+        },
     )
 
 

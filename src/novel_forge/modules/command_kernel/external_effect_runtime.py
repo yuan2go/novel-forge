@@ -40,6 +40,9 @@ def plan_external_effect(
     reversible: bool,
     completion_policy: str = "synchronous_final",
     compensates_effect_id: str | None = None,
+    model_id: str = "",
+    request_timeout_seconds: int | None = None,
+    reconciliation_mode: str = "query",
 ) -> dict[str, Any]:
     if max_attempts <= 0 or not all(
         (effect_type, provider, capability, stable_idempotency_key)
@@ -52,6 +55,10 @@ def plan_external_effect(
         "poll_reconciliation",
     }:
         raise KernelError("EFFECT_COMPLETION_POLICY_INVALID", "unknown completion policy")
+    if reconciliation_mode not in {"query", "callback", "unsupported"}:
+        raise KernelError("EFFECT_RECONCILIATION_MODE_INVALID", "unknown reconciliation mode")
+    if request_timeout_seconds is not None and request_timeout_seconds <= 0:
+        raise KernelError("EFFECT_TIMEOUT_POLICY_INVALID", "effect timeout must be positive")
     request_hash = _hash(request_payload)
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
@@ -71,6 +78,10 @@ def plan_external_effect(
                 "reversible": reversible,
                 "completion_policy": completion_policy,
                 "compensates_effect_id": compensates_effect_id,
+                "model_id": model_id,
+                "request_timeout_seconds": request_timeout_seconds,
+                "reconciliation_mode": reconciliation_mode,
+                "manual_resolution_required": reconciliation_mode == "unsupported",
             }
         )
         if not result["replayed"]:
@@ -573,6 +584,11 @@ def reconcile_external_effect(
         raise KernelError("EFFECT_STATUS_CONFLICT", "effect does not require reconciliation")
     if adapter.provider != effect["provider"]:
         raise KernelError("EFFECT_PROVIDER_CONFLICT", "reconciler provider is unexpected")
+    if effect.get("reconciliation_mode") == "unsupported":
+        raise KernelError(
+            "EFFECT_RECONCILIATION_UNSUPPORTED",
+            "provider cannot be queried; manual resolution is required",
+        )
 
     result = adapter.query(
         stable_idempotency_key=effect["stable_idempotency_key"],

@@ -19,6 +19,12 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     dispatch_external_effect,
     plan_external_effect,
 )
+from novel_forge.modules.command_kernel.budget_runtime import (
+    BudgetReservationRequest,
+    reserve_provider_budget,
+    resolve_provider_budget_failure,
+    settle_provider_budget,
+)
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery, AuthorityAssetWriter
 
 
@@ -131,6 +137,7 @@ class ChapterModelExternalEffectAdapter:
     """Adapts explicit stage routes without consulting filesystem routing state."""
 
     provider = "novel_forge_model_gateway_v1"
+    reconciliation_mode = "unsupported"
 
     def __init__(self, routes: dict[str, ChapterModelRoute]) -> None:
         unsupported = set(routes) - {"draft", "review", "revision"}
@@ -209,6 +216,27 @@ class ChapterModelExternalEffectAdapter:
             },
         )
 
+    def cancel(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+        provider_request_id: str,
+    ) -> ProviderResult:
+        stage, route, _inputs = self._request(capability, request_payload)
+        return ProviderResult(
+            "ambiguous",
+            provider_request_id or f"model-cancel:{stable_idempotency_key}",
+            {
+                "cancel_capability_not_established": True,
+                "manual_resolution_required": True,
+                "stage": stage,
+                "provider_id": route.provider_id,
+                "model_id": route.model_id,
+            },
+        )
+
     def _request(
         self,
         capability: str,
@@ -227,6 +255,10 @@ class ChapterModelExternalEffectAdapter:
                 request_sent=False,
             )
         return stage, self.routes[stage], inputs
+
+    def model_id_for_stage(self, stage: str) -> str:
+        route = self.routes.get(stage)
+        return "" if route is None else route.model_id
 
     @staticmethod
     def _call(adapter: ModelAdapter, stage: str, inputs: dict[str, Any]) -> dict[str, Any]:
@@ -265,6 +297,8 @@ class ExternalEffectChapterModelPort:
         adapter: ExternalEffectAdapter,
         worker_id: str,
         lease_seconds: int = 60,
+        max_cost_per_call: str = "0",
+        budget_caps: dict[str, str] | None = None,
     ) -> None:
         if not database_url or not worker_id or lease_seconds <= 0:
             raise ValueError("model effect database, worker, and lease are required")
@@ -272,6 +306,13 @@ class ExternalEffectChapterModelPort:
         self.adapter = adapter
         self.worker_id = worker_id
         self.lease_seconds = lease_seconds
+        try:
+            if Decimal(max_cost_per_call) < 0:
+                raise ValueError
+        except (InvalidOperation, ValueError) as exc:
+            raise ValueError("model max cost per call must be a non-negative decimal") from exc
+        self.max_cost_per_call = max_cost_per_call
+        self.budget_caps = dict(budget_caps or {})
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
 
@@ -313,18 +354,66 @@ class ExternalEffectChapterModelPort:
             max_attempts=2,
             reversible=False,
             completion_policy="synchronous_final",
+            model_id=str(
+                getattr(self.adapter, "model_id_for_stage", lambda _stage: "")(stage)
+            ),
+            request_timeout_seconds=self.lease_seconds * 5,
+            reconciliation_mode=str(
+                getattr(self.adapter, "reconciliation_mode", "unsupported")
+            ),
         )
-        dispatched = dispatch_external_effect(
+        reservation = reserve_provider_budget(
             self.database_url,
-            context,
-            effect_id=effect["external_effect_id"],
-            worker_id=self.worker_id,
-            lease_seconds=self.lease_seconds,
-            adapter=self.adapter,
+            BudgetReservationRequest(
+                operation_id=request.operation_id,
+                external_effect_id=str(effect["external_effect_id"]),
+                project_id=request.project_id,
+                stable_idempotency_key=f"budget:{request.operation_id}:{stage}:v1",
+                provider=self.adapter.provider,
+                currency="USD",
+                estimated_amount=self.max_cost_per_call,
+                estimated_tokens=int(request.command.get("context_token_budget") or 0),
+                chapter=int(request.command.get("chapter") or 0) or None,
+                caps=self.budget_caps,
+            ),
         )
+        try:
+            dispatched = dispatch_external_effect(
+                self.database_url,
+                context,
+                effect_id=effect["external_effect_id"],
+                worker_id=self.worker_id,
+                lease_seconds=self.lease_seconds,
+                adapter=self.adapter,
+            )
+        except KernelError:
+            resolve_provider_budget_failure(
+                self.database_url,
+                reservation_id=str(reservation["reservation_id"]),
+                project_id=request.project_id,
+            )
+            raise
         if dispatched["outcome"] != "success":
+            resolve_provider_budget_failure(
+                self.database_url,
+                reservation_id=str(reservation["reservation_id"]),
+                project_id=request.project_id,
+            )
             raise KernelError("MODEL_EFFECT_NOT_FINAL", "model effect did not complete successfully")
         result = ModelProviderResult.from_evidence(dict(dispatched["provider_evidence"]))
+        settle_provider_budget(
+            self.database_url,
+            reservation_id=str(reservation["reservation_id"]),
+            project_id=request.project_id,
+            actual_amount=result.cost_amount,
+            actual_tokens=result.total_tokens,
+            evidence={
+                "provider_id": result.provider_id,
+                "model_id": result.model_id,
+                "real_model_call": result.real_model_call,
+                "fixture": not result.real_model_call,
+            },
+        )
         self._record_model_call(request, stage, result, logical_ref)
         self._ensure_cost_evidence(request, stage, result)
         return result

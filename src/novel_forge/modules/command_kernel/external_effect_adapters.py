@@ -26,6 +26,7 @@ class ExternalEffectAdapterError(RuntimeError):
 
 class ExternalEffectAdapter(Protocol):
     provider: str
+    reconciliation_mode: str
 
     def execute(
         self,
@@ -43,9 +44,19 @@ class ExternalEffectAdapter(Protocol):
         request_payload: dict[str, Any],
     ) -> ProviderResult: ...
 
+    def cancel(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+        provider_request_id: str,
+    ) -> ProviderResult: ...
+
 
 class FakeDeterministicProvider:
     provider = "fake_deterministic_provider"
+    reconciliation_mode = "query"
 
     def __init__(self, scenario: str) -> None:
         self.scenario = scenario
@@ -125,9 +136,27 @@ class FakeDeterministicProvider:
             return ProviderResult("failed_final", correlation, {"provider_failed": True})
         return ProviderResult("ambiguous", correlation, {"provider_state": "unknown"})
 
+    def cancel(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+        provider_request_id: str,
+    ) -> ProviderResult:
+        del capability, request_payload
+        with self._lock:
+            existed = self._effects.pop(stable_idempotency_key, None) is not None
+        return ProviderResult(
+            "cancelled",
+            provider_request_id or f"fake-cancel:{stable_idempotency_key}",
+            {"cancelled": True, "provider_effect_existed": existed},
+        )
+
 
 class LocalFileObjectStoreAdapter:
     provider = "local_file_object_store"
+    reconciliation_mode = "query"
 
     def __init__(self, root: Path) -> None:
         self.root = root.resolve()
@@ -222,5 +251,23 @@ class LocalFileObjectStoreAdapter:
                 "object_key": object_key,
                 "actual_hash": "sha256:" + hashlib.sha256(content).hexdigest(),
                 "actual_size": len(content),
+            },
+        )
+
+    def cancel(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+        provider_request_id: str,
+    ) -> ProviderResult:
+        del capability, request_payload
+        return ProviderResult(
+            "cancelled",
+            provider_request_id or f"local-cancel:{stable_idempotency_key}",
+            {
+                "cancelled": False,
+                "reason": "completed local object writes are immutable; compensation required",
             },
         )

@@ -25,6 +25,8 @@ class ChapterAuthorityApplication:
         object_store_adapter: ExternalEffectAdapter,
         worker_id: str,
         allow_synchronous_fixture: bool = True,
+        max_cost_per_model_call: str = "0",
+        budget_caps: dict[str, str] | None = None,
     ) -> None:
         if not database_url or not worker_id:
             raise ValueError("PostgreSQL database and worker identity are required")
@@ -33,6 +35,8 @@ class ChapterAuthorityApplication:
             database_url,
             adapter=model_adapter,
             worker_id=f"{worker_id}:model",
+            max_cost_per_call=max_cost_per_model_call,
+            budget_caps=budget_caps,
         )
         self.registry = build_chapter_handler_registry(self.model_port)
         self.object_store_adapter = object_store_adapter

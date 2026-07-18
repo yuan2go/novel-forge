@@ -23,6 +23,7 @@ from . import (
     v20260716_0020_operation_output_evidence,
     v20260716_0021_saga_coordination,
     v20260716_0022_authority_asset_locator,
+    v20260718_0023_provider_budget_lifecycle,
 )
 
 VERSION_MODULES = [
@@ -48,6 +49,7 @@ VERSION_MODULES = [
     v20260716_0020_operation_output_evidence,
     v20260716_0021_saga_coordination,
     v20260716_0022_authority_asset_locator,
+    v20260718_0023_provider_budget_lifecycle,
 ]
 
 __all__ = ["VERSION_MODULES"]

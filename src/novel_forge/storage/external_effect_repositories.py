@@ -34,13 +34,20 @@ class ExternalEffectRepository:
                 external_effect_id, operation_id, project_id, effect_type, stable_idempotency_key,
                 status, request_hash, request_payload, provider, capability,
                 max_attempts, reversible, completion_policy, compensates_effect_id
+                , model_id, request_deadline_at, reconciliation_mode,
+                manual_resolution_required
             )
             VALUES (
                 %(external_effect_id)s, %(operation_id)s, %(project_id)s, %(effect_type)s,
                 %(stable_idempotency_key)s, 'READY', %(request_hash)s,
                 %(request_payload)s, %(provider)s, %(capability)s,
                 %(max_attempts)s, %(reversible)s, %(completion_policy)s,
-                %(compensates_effect_id)s
+                %(compensates_effect_id)s, %(model_id)s,
+                CASE WHEN CAST(%(request_timeout_seconds)s AS INTEGER) IS NULL THEN NULL
+                     ELSE NOW() + make_interval(
+                         secs => CAST(%(request_timeout_seconds)s AS INTEGER)
+                     ) END,
+                %(reconciliation_mode)s, %(manual_resolution_required)s
             )
             ON CONFLICT (project_id, effect_type, stable_idempotency_key) DO NOTHING
             RETURNING external_effect_id
@@ -75,6 +82,9 @@ class ExternalEffectRepository:
                    effect.request_hash, effect.request_payload, effect.provider,
                    effect.capability, effect.max_attempts, effect.reversible,
                    effect.completion_policy, effect.compensates_effect_id
+                   , effect.model_id, effect.request_deadline_at,
+                   effect.reconciliation_mode, effect.manual_resolution_required,
+                   effect.provider_request_id, effect.last_provider_heartbeat_at
             FROM authority_external_effect AS effect
             WHERE effect.external_effect_id = %s
             FOR UPDATE OF effect
@@ -99,6 +109,12 @@ class ExternalEffectRepository:
             "reversible",
             "completion_policy",
             "compensates_effect_id",
+            "model_id",
+            "request_deadline_at",
+            "reconciliation_mode",
+            "manual_resolution_required",
+            "provider_request_id",
+            "last_provider_heartbeat_at",
         )
         return dict(zip(fields, row, strict=True))
 
@@ -323,13 +339,21 @@ class ExternalEffectRepository:
         self.cursor.execute(
             """
             UPDATE authority_external_effect
-            SET status = %s, last_error = %s
+            SET status = %s, last_error = %s,
+                provider_request_id = CASE WHEN %s <> '' THEN %s ELSE provider_request_id END,
+                last_provider_heartbeat_at = NOW(),
+                manual_resolution_required = CASE
+                    WHEN %s = 'UNKNOWN' AND reconciliation_mode = 'unsupported' THEN TRUE
+                    ELSE manual_resolution_required END
             WHERE external_effect_id = %s
               AND status IN ('READY', 'DISPATCHING', 'DISPATCHED', 'FAILED_RETRYABLE')
             """,
             [
                 effect_status,
                 Jsonb({} if accepted_outcome == "success" else evidence),
+                provider_correlation_id,
+                provider_correlation_id,
+                effect_status,
                 dispatch["external_effect_id"],
             ],
         )
