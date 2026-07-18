@@ -24,12 +24,38 @@ class _Resolver:
             return None
         return asset
 
+    def resolve_all(self, *, project_id: str, asset_type: str, limit: int = 200):
+        del limit
+        asset = self.resolve_latest(project_id=project_id, asset_type=asset_type)
+        return () if asset is None else (asset,)
+
     def resolve_override(self, *, project_id: str, asset_version_id: str):
         for asset in self.assets.values():
             if asset.asset_version_id == asset_version_id:
                 if asset.project_id != project_id:
                     raise ValueError("cross-project override")
                 return asset
+        raise ValueError("missing override")
+
+
+class _MultiResolver(_Resolver):
+    def __init__(self, assets: dict[str, list[ResolvedProductionAsset]]) -> None:
+        self.collections = assets
+        super().__init__({key: values[0] for key, values in assets.items() if values})
+
+    def resolve_all(self, *, project_id: str, asset_type: str, limit: int = 200):
+        return tuple(
+            item for item in self.collections.get(asset_type, [])[:limit]
+            if item.project_id == project_id
+        )
+
+    def resolve_override(self, *, project_id: str, asset_version_id: str):
+        for values in self.collections.values():
+            for asset in values:
+                if asset.asset_version_id == asset_version_id:
+                    if asset.project_id != project_id:
+                        raise ValueError("cross-project override")
+                    return asset
         raise ValueError("missing override")
 
 
@@ -62,7 +88,7 @@ class ProductionPreparationTests(unittest.TestCase):
             kind: _asset(kind)
             for kind in (
                 "chapter_plan", "style_policy", "quality_rubric",
-                "operator_checklist", "operator_approval", "world_bible",
+                "platform_profile", "world_bible",
             )
         }
         result = ProductionPreparationService(_Resolver(assets)).prepare(
@@ -89,9 +115,13 @@ class ProductionPreparationTests(unittest.TestCase):
         )
         self.assertEqual(style_candidate["project_id"], "project-1")
         self.assertTrue(style_candidate["safe_summary"])
-        self.assertNotIn(
+        self.assertIn(
             "chapter_plan",
             {item["asset_type"] for item in result.command.context_candidates},
+        )
+        self.assertEqual(
+            result.report.production_input_manifest["platform_profile_version_id"],
+            "version:platform_profile",
         )
 
     def test_wrong_chapter_plan_is_blocked(self) -> None:
@@ -99,7 +129,7 @@ class ProductionPreparationTests(unittest.TestCase):
             kind: _asset(kind)
             for kind in (
                 "chapter_plan", "style_policy", "quality_rubric",
-                "operator_checklist", "operator_approval",
+                "platform_profile",
             )
         }
         assets["chapter_plan"] = replace(
@@ -123,7 +153,7 @@ class ProductionPreparationTests(unittest.TestCase):
             kind: _asset(kind)
             for kind in (
                 "chapter_plan", "style_policy", "quality_rubric",
-                "operator_checklist", "operator_approval",
+                "platform_profile",
             )
         }
         result = ProductionPreparationService(_Resolver(assets)).prepare(
@@ -172,6 +202,75 @@ class ProductionPreparationTests(unittest.TestCase):
     def test_production_requires_configured_trusted_principal(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "trusted local operator"):
             TrustedPrincipalResolver(environment="production").resolve_api_principal()
+
+    def test_v2_selects_multiple_character_and_relationship_states(self) -> None:
+        required = (
+            "chapter_plan", "style_policy", "quality_rubric", "platform_profile",
+            "canon_snapshot", "timeline_snapshot", "foreshadow_snapshot",
+            "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
+            "power_state_snapshot",
+        )
+        collections = {kind: [_asset(kind)] for kind in required}
+        collections["chapter_plan"][0] = replace(
+            collections["chapter_plan"][0],
+            content={**collections["chapter_plan"][0].content, "chapter": 2},
+        )
+        collections["character_state_snapshot"] = [
+            replace(
+                _asset("character_state_snapshot"),
+                asset_id=f"asset:character:{index}",
+                asset_version_id=f"version:character:{index}",
+                content={**_asset("character_state_snapshot").content, "entity_id": f"character-{index}"},
+            )
+            for index in (1, 2)
+        ]
+        collections["relationship_state_snapshot"] = [
+            replace(
+                _asset("relationship_state_snapshot"),
+                asset_id=f"asset:relationship:{index}",
+                asset_version_id=f"version:relationship:{index}",
+                content={**_asset("relationship_state_snapshot").content, "entity_id": f"pair-{index}"},
+            )
+            for index in (1, 2)
+        ]
+        result = ProductionPreparationService(_MultiResolver(collections)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1", workspace_id="workspace-1", chapter=2,
+                title_override="Chapter Two", premise_override="State carries forward.",
+                idempotency_key="chapter-2-multi",
+            )
+        )
+        self.assertEqual(result.report.decision, "READY")
+        manifest = result.report.production_input_manifest
+        self.assertEqual(
+            sorted(manifest["entity_scopes"]["character_state_snapshot"]),
+            ["character-1", "character-2"],
+        )
+        self.assertEqual(
+            sorted(manifest["entity_scopes"]["relationship_state_snapshot"]),
+            ["pair-1", "pair-2"],
+        )
+
+    def test_relationship_snapshot_is_required_for_continuing_chapter(self) -> None:
+        assets = {
+            kind: _asset(kind)
+            for kind in (
+                "chapter_plan", "style_policy", "quality_rubric", "platform_profile",
+                "canon_snapshot", "character_state_snapshot", "timeline_snapshot",
+                "foreshadow_snapshot", "promise_ledger_snapshot", "reward_ledger_snapshot",
+                "world_rule_snapshot", "power_state_snapshot",
+            )
+        }
+        assets["chapter_plan"] = replace(
+            assets["chapter_plan"], content={**assets["chapter_plan"].content, "chapter": 2}
+        )
+        result = ProductionPreparationService(_Resolver(assets)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1", workspace_id="workspace-1", chapter=2,
+                idempotency_key="missing-relationship",
+            )
+        )
+        self.assertIn("relationship_state_snapshot", result.report.missing_required_asset_types)
 
 
 if __name__ == "__main__":

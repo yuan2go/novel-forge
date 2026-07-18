@@ -193,6 +193,14 @@ class ChapterAuthorityScheduler:
                     f"{node.value} input {source.value} has not completed",
                 )
             inputs.append(self._primary_output(str(source_operation["operation_id"]), root["project_id"]))
+            if node is ChapterNode.CONTEXT and source is ChapterNode.PLAN:
+                inputs.append(
+                    self._output_by_key(
+                        str(source_operation["operation_id"]),
+                        root["project_id"],
+                        "chapter.production_input_manifest",
+                    )
+                )
         if node is ChapterNode.CONTEXT:
             inputs.extend(
                 {
@@ -489,6 +497,29 @@ class ChapterAuthorityScheduler:
             row = uow.cursor.fetchone()
         if row is None:
             raise KernelError("CHAPTER_INPUT_OUTPUT_MISSING", "completed predecessor has no primary output")
+        return {"asset_version_id": str(row[0]), "content_hash": str(row[1])}
+
+    def _output_by_key(
+        self, operation_id: str, project_id: str, output_key: str
+    ) -> dict[str, str]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT binding.asset_version_id, binding.content_hash
+                FROM authority_operation_output_asset AS binding
+                JOIN authority_operation AS operation
+                  ON operation.operation_id = binding.operation_id
+                WHERE binding.operation_id=%s AND operation.project_id=%s
+                  AND binding.output_key=%s
+                """,
+                [operation_id, project_id, output_key],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "CHAPTER_INPUT_OUTPUT_MISSING",
+                f"completed predecessor has no {output_key} output",
+            )
         return {"asset_version_id": str(row[0]), "content_hash": str(row[1])}
 
     def _active_attempt(self, operation_id: str, project_id: str) -> dict[str, str] | None:

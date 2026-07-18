@@ -45,6 +45,46 @@ class PostgresProductionAssetResolver:
             return None
         return self._asset(row, "latest eligible authority version")
 
+    def resolve_all(
+        self, *, project_id: str, asset_type: str, limit: int = 200
+    ) -> tuple[ResolvedProductionAsset, ...]:
+        if limit <= 0 or limit > 1000:
+            raise ValueError("production asset selection limit is invalid")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT asset.project_id, asset.asset_id, version.asset_version_id,
+                       asset.asset_type, version.content_hash, version.content,
+                       COALESCE(qualification.decision, 'ELIGIBLE')
+                FROM authority_asset AS asset
+                JOIN authority_asset_version AS version ON version.asset_id = asset.asset_id
+                LEFT JOIN LATERAL (
+                    SELECT decision FROM authority_asset_qualification
+                    WHERE asset_version_id = version.asset_version_id
+                    ORDER BY created_at DESC, qualification_id DESC LIMIT 1
+                ) AS qualification ON TRUE
+                WHERE asset.project_id = %s AND asset.asset_type = %s
+                  AND version.lifecycle = 'ACTIVE'
+                  AND version.eligibility = 'ELIGIBLE'
+                  AND version.governance = 'CLEAR'
+                  AND COALESCE(qualification.decision, 'ELIGIBLE') = 'ELIGIBLE'
+                  AND NOT EXISTS (
+                    SELECT 1 FROM authority_asset_version AS newer
+                    WHERE newer.asset_id = version.asset_id
+                      AND newer.version_number > version.version_number
+                      AND newer.lifecycle = 'ACTIVE'
+                  )
+                ORDER BY
+                    COALESCE((version.content->>'priority')::int, 0) DESC,
+                    version.created_at DESC, version.version_number DESC,
+                    version.asset_version_id DESC
+                LIMIT %s
+                """,
+                [project_id, asset_type, limit],
+            )
+            rows = uow.cursor.fetchall()
+        return tuple(self._asset(row, "eligible scoped authority collection") for row in rows)
+
     def resolve_override(
         self, *, project_id: str, asset_version_id: str
     ) -> ResolvedProductionAsset:

@@ -88,9 +88,10 @@ _COMMON = frozenset({
     "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
     "power_state_snapshot",
     "style_policy", "knowledge_pack", "knowledge_card", "material_asset", "material_card",
+    "quality_rubric", "quality_profile", "platform_profile", "context_profile",
     "theme_arc", "theme_beat", "closure_plan", "review_issue", "review_report",
     "draft_chapter", "draft_version", "quality_report", "longform_recap_report",
-    "operator_checklist", "operator_approval", "source_leakage_report",
+    "operator_checklist", "operator_approval", "approval_decision", "source_leakage_report",
     "originality_risk_report", "anti_ai_report", "platform_rule_report",
 })
 
@@ -132,8 +133,9 @@ CONTEXT_PROFILES: dict[str, ContextProfile] = {
         maximum=6000,
         review_only={"review_report", "review_issue", "quality_report"},
         evidence_only={
-            "operator_checklist", "operator_approval", "source_leakage_report",
+            "operator_checklist", "operator_approval", "approval_decision", "source_leakage_report",
             "originality_risk_report", "anti_ai_report", "platform_rule_report",
+            "quality_rubric", "quality_profile", "platform_profile", "context_profile",
         },
     ),
     "review": _profile("review", required=("draft_version",), maximum=5000, evidence_only={"source_policy"}),

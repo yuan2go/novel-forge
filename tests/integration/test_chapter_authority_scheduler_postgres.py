@@ -155,6 +155,10 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             "quality_rubric": {
                 "safe_summary": "Project quality rubric.", "structured_facts": []
             },
+            "platform_profile": {
+                "safe_summary": "Internal fixture platform profile.",
+                "structured_facts": [{"key": "platform", "value": "fixture"}],
+            },
             "operator_checklist": {
                 "safe_summary": "Checklist completed.",
                 "structured_facts": [{"key": "completed", "value": True}],

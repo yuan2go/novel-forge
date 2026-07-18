@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
+import json
 from typing import Any
 
 from novel_forge.modules.chapter_authority.contracts import (
@@ -118,27 +120,98 @@ class _PlanHandler:
         chapter = int(request.command["chapter"])
         premise = str(request.command.get("premise") or "")
         title = str(request.command.get("title") or f"Chapter {chapter}")
-        return _output(
-            ChapterNode.PLAN,
-            build_chapter_plan(
+        plan = build_chapter_plan(
                 chapter=chapter,
                 title=title,
                 premise=premise,
                 trace_id=request.trace_id,
+            )
+        manifest = dict(
+            request.command.get("preparation_report", {}).get(
+                "production_input_manifest", {}
+            )
+        )
+        if not manifest:
+            selected = [
+                {
+                    "asset_version_id": str(item["asset_version_id"]),
+                    "asset_type": str(item.get("asset_type") or "unknown"),
+                    "content_hash": str(item["content_hash"]),
+                    "role": "context",
+                    "entity_id": str(item.get("entity_id") or ""),
+                }
+                for item in request.command.get("context_candidates", [])
+            ]
+            payload = {
+                "project_id": request.project_id,
+                "chapter": chapter,
+                "stage": "draft",
+                "selected_asset_versions": selected,
+                "fixture": True,
+            }
+            manifest = {
+                **payload,
+                "workspace_id": request.workspace_id,
+                "manifest_digest": "sha256:"
+                + hashlib.sha256(
+                    json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest(),
+                "contract_version": "production-input-manifest-v2",
+                "approval_requirements": [],
+                "risk_summary": [],
+            }
+        manifest["created_by_operation_id"] = request.operation_id
+        auxiliary = (
+            ChapterAuxiliaryOutput(
+                asset_type="production_input_manifest",
+                output_key="chapter.production_input_manifest",
+                role="production_input_manifest",
+                content=manifest,
+                reference_asset_version_ids=tuple(
+                    str(item["asset_version_id"])
+                    for item in manifest.get("selected_asset_versions", [])
+                ),
             ),
+        )
+        return ChapterHandlerOutput(
+            asset_type=ChapterNode.PLAN.asset_type,
+            output_key=ChapterNode.PLAN.output_key,
+            role="primary",
+            content=plan,
+            auxiliary_outputs=auxiliary,
         )
 
 
 @dataclass(frozen=True, slots=True)
 class _ContextHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
-        plan = request.require_input("chapter_plan")
+        plan = next((item for item in request.inputs if item.asset_type == "chapter_plan"), None)
+        if plan is None:
+            from novel_forge.modules.command_kernel.errors import KernelError
+            raise KernelError("CHAPTER_HANDLER_INPUT_INVALID", "generated chapter plan is missing")
+        manifest_asset = next(
+            (item for item in request.inputs if item.asset_type == "production_input_manifest"),
+            None,
+        )
+        manifest = (
+            dict(manifest_asset.content)
+            if manifest_asset is not None
+            else dict(
+                request.command.get("preparation_report", {}).get(
+                    "production_input_manifest", {}
+                )
+            )
+        )
         candidate_metadata = {
             str(item.get("asset_version_id")): dict(item)
             for item in request.command.get("context_candidates", [])
         }
         governed_candidates = []
-        frozen_candidates = [item for item in request.inputs if item.asset_type != "chapter_plan"]
+        frozen_candidates = [
+            item
+            for item in request.inputs
+            if item is not plan and item.asset_type != "production_input_manifest"
+        ]
         if set(candidate_metadata) != {item.asset_version_id for item in frozen_candidates}:
             from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -157,9 +230,7 @@ class _ContextHandler:
                     "structured_facts": list(item.content.get("structured_facts") or metadata.get("structured_facts") or []),
                 }
             )
-        return _output(
-            ChapterNode.CONTEXT,
-            build_context_bundle(
+        bundle = build_context_bundle(
                 plan=plan.content,
                 plan_asset_version_id=plan.asset_version_id,
                 plan_content_hash=plan.content_hash,
@@ -167,7 +238,59 @@ class _ContextHandler:
                 created_by_operation_id=request.operation_id,
                 governed_candidates=governed_candidates,
                 version_refs=dict(request.command.get("context_version_refs", {})),
-                token_budget=int(request.command.get("context_token_budget", 6000)),
+            token_budget=int(request.command.get("context_token_budget", 6000)),
+        )
+        bundle["production_input_manifest"] = manifest
+        bundle["production_input_manifest_asset_version_id"] = (
+            manifest_asset.asset_version_id if manifest_asset is not None else ""
+        )
+        manifest_ids = {
+            str(item.get("asset_version_id"))
+            for item in manifest.get("selected_asset_versions", [])
+        }
+        frozen_ids = {item.asset_version_id for item in frozen_candidates}
+        segment_ids = {
+            str(item.get("asset_version_id"))
+            for item in bundle.get("context_segments", [])
+            if str(item.get("asset_version_id")) != plan.asset_version_id
+        }
+        consistent = bool(manifest) and manifest_ids == frozen_ids == segment_ids
+        if not consistent:
+            from novel_forge.modules.command_kernel.errors import KernelError
+            raise KernelError(
+                "CONTEXT_MANIFEST_CONSISTENCY_FAILED",
+                "Manifest, frozen inputs, and Context segments differ: "
+                f"manifest_only={sorted(manifest_ids - frozen_ids)}; "
+                f"frozen_only={sorted(frozen_ids - manifest_ids)}; "
+                f"segment_only={sorted(segment_ids - frozen_ids)}; "
+                f"frozen_without_segment={sorted(frozen_ids - segment_ids)}",
+            )
+        report = {
+            "type": "ContextManifestConsistencyReport",
+            "project_id": request.project_id,
+            "manifest_asset_version_id": (
+                manifest_asset.asset_version_id if manifest_asset is not None else ""
+            ),
+            "manifest_digest": str(manifest.get("manifest_digest") or ""),
+            "selected_asset_version_ids": sorted(manifest_ids),
+            "frozen_input_asset_version_ids": sorted(frozen_ids),
+            "context_segment_asset_version_ids": sorted(segment_ids),
+            "consistent": True,
+            "contract_version": "context-manifest-consistency-v1",
+        }
+        return ChapterHandlerOutput(
+            asset_type=ChapterNode.CONTEXT.asset_type,
+            output_key=ChapterNode.CONTEXT.output_key,
+            role="primary",
+            content=bundle,
+            auxiliary_outputs=(
+                ChapterAuxiliaryOutput(
+                    asset_type="context_manifest_consistency_report",
+                    output_key="chapter.context.manifest_consistency",
+                    role="completion_evidence",
+                    content=report,
+                    reference_asset_version_ids=tuple(sorted(manifest_ids)),
+                ),
             ),
         )
 

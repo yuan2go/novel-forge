@@ -651,7 +651,7 @@ class AuthorityChapterCommandRequest(BaseModel):
     idempotency_key: str = Field(min_length=1)
     title_override: str = ""
     premise_override: str = ""
-    explicit_asset_version_overrides: dict[str, str] = Field(default_factory=dict)
+    explicit_asset_version_overrides: dict[str, str | list[str]] = Field(default_factory=dict)
     requested_quality_profile: str = "default"
     requested_platform_profile: str = "default"
     operator_decision: dict[str, Any] = Field(default_factory=dict)

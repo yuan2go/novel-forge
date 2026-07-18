@@ -121,7 +121,9 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["saga"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["forward_recovery_attempts"], 1)
         self.assertEqual(len(manifest["operations"]), 13)
-        self.assertEqual(len(manifest["outputs"]), 36)
+        # Plan and Context now materialize the immutable preparation manifest and
+        # its consistency report as completion evidence.
+        self.assertEqual(len(manifest["outputs"]), 38)
         self.assertEqual(
             len(
                 [
@@ -163,7 +165,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 36)
+            self.assertEqual(cursor.fetchone()[0], 38)
             cursor.execute(
                 """
                 SELECT asset.asset_type, binding.role, version.content->>'state_kind'

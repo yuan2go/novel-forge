@@ -41,11 +41,20 @@ def prepare_internal_release(
         str(item.get("key")): item.get("value")
         for item in checklist.get("structured_facts", [])
     }
-    operator_approval = evidence_types.get("operator_approval", {})
+    operator_approval = (
+        evidence_types.get("approval_decision")
+        or evidence_types.get("operator_approval", {})
+    )
     approval_facts = {
         str(item.get("key")): item.get("value")
         for item in operator_approval.get("structured_facts", [])
     }
+    approval_requirements = list(
+        context_bundle.get("production_input_manifest", {}).get(
+            "approval_requirements", []
+        )
+    )
+    approval_required = bool(approval_requirements)
     checks = {
         "quality_evidence_current": (
             quality.get("gate") in {"PASSED", "PASSED_WITH_UNCALIBRATED"}
@@ -67,7 +76,13 @@ def prepare_internal_release(
         ),
         "platform_rules_clear_or_approved": (
             by_dimension.get("platform_rules", {}).get("gate_status") == "PASSED"
-            or approval_facts.get("approved") is True
+            or (
+                approval_required
+                and (
+                    approval_facts.get("approved") is True
+                    or approval_facts.get("decision") == "APPROVED"
+                )
+            )
         ),
         "all_blocking_dimensions_passed": all(
             item.get("gate_status") in {"PASSED", "PASSED_WITH_WARNINGS"}
@@ -77,6 +92,11 @@ def prepare_internal_release(
         "operator_checklist_approved": (
             bool(checklist.get("asset_version_id"))
             and checklist_facts.get("completed") is True
+        ),
+        "risk_approval_satisfied": (
+            not approval_required
+            or approval_facts.get("approved") is True
+            or approval_facts.get("decision") == "APPROVED"
         ),
     }
     if not project_id or not all(checks.values()):

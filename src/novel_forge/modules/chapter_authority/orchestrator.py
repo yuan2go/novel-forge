@@ -139,7 +139,13 @@ def admit_single_chapter_saga(
             request,
             definition_name=CHAPTER_SLICE_ROOT_DEFINITION_NAME,
             idempotency_key=stable_root_key,
-            input_assets=[],
+            input_assets=[
+                {
+                    "asset_version_id": str(item["asset_version_id"]),
+                    "content_hash": str(item["content_hash"]),
+                }
+                for item in request.context_candidates
+            ],
             definition_version=definition_version,
         ),
         context=admission,
@@ -164,7 +170,14 @@ def admit_single_chapter_saga(
             request,
             definition_name=plan.definition_name,
             idempotency_key=f"{stable_root_key}:{plan.value}",
-            input_assets=[],
+            input_assets=[
+                {
+                    "asset_version_id": str(item["asset_version_id"]),
+                    "content_hash": str(item["content_hash"]),
+                }
+                for item in request.context_candidates
+                if item.get("asset_type") == "chapter_plan"
+            ],
             root_operation_id=root,
             parent_operation_id=root,
             causation_operation_id=root,
@@ -226,7 +239,13 @@ def run_single_chapter_slice(
             request,
             definition_name=CHAPTER_SLICE_ROOT_DEFINITION_NAME,
             idempotency_key=f"{request.project_id}:chapter:{request.chapter}:root",
-            input_assets=[],
+            input_assets=[
+                {
+                    "asset_version_id": str(item["asset_version_id"]),
+                    "content_hash": str(item["content_hash"]),
+                }
+                for item in request.context_candidates
+            ],
             definition_version=definition_version,
         ),
         context=admission,
@@ -253,6 +272,14 @@ def run_single_chapter_slice(
             for source in _input_nodes(node)
         ]
         if node is ChapterNode.CONTEXT:
+            input_assets.append(
+                _operation_output_by_key(
+                    database_url,
+                    operation_ids[ChapterNode.PLAN],
+                    request.project_id,
+                    "chapter.production_input_manifest",
+                )
+            )
             input_assets.extend(
                 {
                     "asset_version_id": str(item["asset_version_id"]),
@@ -457,6 +484,30 @@ def _start_attempt(
     )
     start_attempt(database_url, worker)
     return worker
+
+
+def _operation_output_by_key(
+    database_url: str,
+    operation_id: str,
+    project_id: str,
+    output_key: str,
+) -> dict[str, str]:
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """
+            SELECT binding.asset_version_id, binding.content_hash
+            FROM authority_operation_output_asset AS binding
+            JOIN authority_operation AS operation
+              ON operation.operation_id=binding.operation_id
+            WHERE binding.operation_id=%s AND operation.project_id=%s
+              AND binding.output_key=%s
+            """,
+            [operation_id, project_id, output_key],
+        )
+        row = uow.cursor.fetchone()
+    if row is None:
+        raise KernelError("CHAPTER_INPUT_OUTPUT_MISSING", f"missing output {output_key}")
+    return {"asset_version_id": str(row[0]), "content_hash": str(row[1])}
 
 
 def _command(

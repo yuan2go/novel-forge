@@ -6,9 +6,9 @@ from typing import Any
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
-CHAPTER_SLICE_DEFINITION_VERSION = "2.0.5"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.6"
-CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.5"
+CHAPTER_SLICE_DEFINITION_VERSION = "2.0.6"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.7"
+CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.6"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
 CHAPTER_PROJECTION_CONSUMERS = [
@@ -140,6 +140,28 @@ def _definition(
                 "governance": "CLEAR",
             }
             for state_kind, asset_type in SNAPSHOT_ASSET_TYPES.items()
+        )
+    if node is ChapterNode.PLAN:
+        completion["required_asset_selectors"].append(
+            {
+                "selector": "production_input_manifest",
+                "output_key": "chapter.production_input_manifest",
+                "role": "production_input_manifest",
+                "lifecycle": "ACTIVE",
+                "eligibility": "ELIGIBLE",
+                "governance": "CLEAR",
+            }
+        )
+    if node is ChapterNode.CONTEXT:
+        completion["required_asset_selectors"].append(
+            {
+                "selector": "context_manifest_consistency_report",
+                "output_key": "chapter.context.manifest_consistency",
+                "role": "completion_evidence",
+                "lifecycle": "ACTIVE",
+                "eligibility": "ELIGIBLE",
+                "governance": "CLEAR",
+            }
         )
     if node is ChapterNode.QUALITY:
         from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
