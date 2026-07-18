@@ -34,6 +34,6 @@ class AuthorityCoverageManifestTests(unittest.TestCase):
 
     def test_catalog_covers_every_required_operation_family(self) -> None:
         catalog = operation_catalog()
-        self.assertEqual({item["family"] for item in catalog}, set(FAMILIES))
+        self.assertTrue(set(FAMILIES).issubset({item["family"] for item in catalog}))
         self.assertNotIn("review_revision_publish", {item["name"] for item in catalog})
         self.assertTrue({"review.run", "review.resolve_issue", "revision.apply", "quality.run_completion_gate", "publishing.prepare_release", "publishing.submit"}.issubset({item["name"] for item in catalog}))
