@@ -408,6 +408,8 @@ def _implemented_canon_approval_definition(
         "output_contract": definition["result_schema"],
         "current_entrypoints": [
             "novel_forge.api.routers.canon_authority.decide",
+            "novel_forge.api.routers.canon_authority.reopen",
+            "novel_forge.modules.chapter_authority.scheduler.ChapterAuthorityScheduler._advance_reextraction",
         ],
         "current_handlers": [definition["handler_key"]],
         "migration_status": "implemented",
