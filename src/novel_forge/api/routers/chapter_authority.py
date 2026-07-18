@@ -128,6 +128,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     def run_authoritative_chapter(request: AuthorityChapterRunRequest) -> dict[str, Any]:
         try:
             application = _application(ctx)
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            principal.require("chapter.authority.execute", request.project_id)
             build_id, commit_sha = authority_release_identity()
             trace_id = request.trace_id.strip() or f"trace:{uuid4()}"
             correlation_id = request.correlation_id.strip() or f"correlation:{uuid4()}"
@@ -135,7 +139,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 SingleChapterRequest(
                     project_id=request.project_id,
                     workspace_id=request.workspace_id,
-                    actor_id=request.actor_id,
+                    actor_id=principal.principal_id,
                     chapter=request.chapter,
                     title=request.title,
                     premise=request.premise,

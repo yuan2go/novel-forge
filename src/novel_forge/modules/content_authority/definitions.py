@@ -6,7 +6,7 @@ from typing import Any, Collection
 from novel_forge.modules.content_authority.codecs import CONTENT_CODECS
 
 
-CONTENT_DEFINITION_VERSION = "2.1.0"
+CONTENT_DEFINITION_VERSION = "2.1.1"
 CONTENT_INTEGRATION_PROVEN = frozenset(CONTENT_CODECS)
 
 
@@ -71,7 +71,7 @@ def content_operation_definitions(
                 "application_build_id": application_build_id,
                 "commit_sha": commit_sha,
                 "execution_mode": "worker",
-                "permissions": [name],
+                "permissions": [f"content.operation:{name}"],
                 "approval_policy": {
                     "required": name == "creative.project.approve",
                     "policy_key": (

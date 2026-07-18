@@ -94,15 +94,12 @@ class ContentAuthorityApplication:
         if self.trusted_only and principal is None:
             raise PermissionError("trusted Principal is required for Content admission")
         actor_id = request.actor_id
-        permissions = frozenset(self.registry.definition_names)
+        definition_permission = f"content.operation:{request.definition_name}"
+        permissions = frozenset({definition_permission})
         if principal is not None:
             principal.require("content.authority.execute", request.project_id)
+            principal.require(definition_permission, request.project_id)
             actor_id = principal.principal_id
-            permissions = (
-                frozenset(self.registry.definition_names)
-                if principal.allows("content.authority.execute", request.project_id)
-                else frozenset()
-            )
         admission = AdmissionContext(
             actor_id=actor_id,
             permissions=permissions,

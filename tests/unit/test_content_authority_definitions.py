@@ -18,6 +18,7 @@ class ContentAuthorityDefinitionTests(unittest.TestCase):
             self.assertTrue(item["completion_contract"]["required_asset_selectors"])
             self.assertIn("POST /product/content-authority/commands", item["current_entrypoints"])
             self.assertEqual(item["agent_capability"]["execution_authority"], "authority_operation")
+            self.assertEqual(item["permissions"], [f"content.operation:{item['name']}"])
 
     def test_explicit_unproven_registration_remains_disabled(self):
         definitions = content_operation_definitions(

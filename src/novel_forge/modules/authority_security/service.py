@@ -22,7 +22,15 @@ class Principal:
 
     def allows(self, permission: str, project_id: str) -> bool:
         project_allowed = "*" in self.project_scope or project_id in self.project_scope
-        return project_allowed and ("*" in self.permissions or permission in self.permissions)
+        permission_allowed = (
+            "*" in self.permissions
+            or permission in self.permissions
+            or any(
+                value.endswith("*") and permission.startswith(value[:-1])
+                for value in self.permissions
+            )
+        )
+        return project_allowed and permission_allowed
 
     def require(self, permission: str, project_id: str) -> None:
         if not self.allows(permission, project_id):
@@ -77,6 +85,7 @@ class TrustedPrincipalResolver:
                     "content.authority.query",
                     "content.authority.cancel",
                     "content.authority.recover",
+                    "content.operation:*",
                 }
             ),
             project_scope=self.configured_project_scope,
@@ -94,10 +103,10 @@ class TrustedPrincipalResolver:
                 {
                     "chapter.authority.execute",
                     "content.authority.execute",
+                    "content.operation:*",
                     "external_effect.execute",
                 }
             ),
             project_scope=self.configured_project_scope,
             authentication_source="worker_configuration",
         )
-

@@ -55,7 +55,7 @@ class LeaseHeartbeatGuard:
         while not self._stop.wait(self._interval):
             try:
                 self._renew()
-            except BaseException as exc:  # recorded and re-raised on the owning thread
+            except Exception as exc:  # recorded and re-raised on the owning thread
                 self._failure = exc
                 self._stop.set()
                 return
