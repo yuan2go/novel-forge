@@ -76,6 +76,30 @@ class PostgreSQLAuthorityApiBoundaryTests(unittest.TestCase):
                 f"{path.relative_to(root)} imports a forbidden production dependency",
             )
 
+    def test_command_admission_routes_are_explicitly_asynchronous(self) -> None:
+        root = Path(__file__).resolve().parents[2] / "src" / "novel_forge" / "api" / "routers"
+        for filename in ("chapter_authority.py", "content_authority.py"):
+            tree = ast.parse((root / filename).read_text(encoding="utf-8"))
+            commands = [
+                decorator
+                for node in ast.walk(tree)
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                for decorator in node.decorator_list
+                if isinstance(decorator, ast.Call)
+                and isinstance(decorator.func, ast.Attribute)
+                and decorator.func.attr == "post"
+                and decorator.args
+                and isinstance(decorator.args[0], ast.Constant)
+                and decorator.args[0].value == "/commands"
+            ]
+            self.assertEqual(len(commands), 1, filename)
+            status = next(
+                keyword.value.value
+                for keyword in commands[0].keywords
+                if keyword.arg == "status_code" and isinstance(keyword.value, ast.Constant)
+            )
+            self.assertEqual(status, 202, filename)
+
 
 if __name__ == "__main__":
     unittest.main()
