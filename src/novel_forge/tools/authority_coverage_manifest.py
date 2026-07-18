@@ -248,6 +248,54 @@ def operation_catalog(
     bound_names = {item["name"] for item in bound}
     catalog = [item for item in catalog if item["name"] not in bound_names]
     catalog.extend(bound)
+    return _apply_catalog_relationships(catalog)
+
+
+_DEFINITION_RELATIONSHIPS: dict[str, dict[str, Any]] = {
+    "production.draft.generate": {
+        "definition_status": "superseded",
+        "superseded_by": "chapter.draft.generate",
+        "supersession_reason": "Chapter Authority owns frozen-context draft generation",
+        "migration_status": "complete",
+        "replacement_entrypoints": ["POST /product/production/chapter-authority/commands"],
+        "compatibility_until": "development-only legacy adapter removal",
+    },
+    "production.chapter.export": {
+        "definition_status": "alias",
+        "alias_of": "chapter.export.render",
+        "superseded_by": "chapter.export.render",
+        "supersession_reason": "Historical catalog name for the Authority export render node",
+        "migration_status": "alias",
+        "replacement_entrypoints": ["POST /product/production/chapter-authority/commands"],
+        "compatibility_until": "catalog alias retained indefinitely",
+    },
+}
+
+
+def _apply_catalog_relationships(
+    catalog: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    known = {item["name"] for item in catalog}
+    for item in catalog:
+        item.setdefault("superseded_by", "")
+        item.setdefault("alias_of", "")
+        item.setdefault("merged_into", [])
+        item.setdefault("supersession_reason", "")
+        item.setdefault("replacement_entrypoints", [])
+        item.setdefault("compatibility_until", "")
+        relationship = _DEFINITION_RELATIONSHIPS.get(item["name"])
+        if relationship is None:
+            continue
+        replacement = str(relationship.get("superseded_by") or "")
+        if replacement not in known:
+            raise ValueError(
+                f"catalog replacement {replacement!r} for {item['name']!r} is missing"
+            )
+        item.update(relationship)
+        item["enabled"] = False
+        item["evidence_status"] = _catalog_evidence_status(
+            str(relationship["definition_status"])
+        )
     return catalog
 
 
