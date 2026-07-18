@@ -224,10 +224,14 @@ def _validate_output(
         )
     identities = {(output.output_key, output.role)}
     for item in output.auxiliary_outputs:
+        if not isinstance(item, AuthorityAuxiliaryOutput):
+            raise KernelError(
+                "AUTHORITY_HANDLER_OUTPUT_INVALID",
+                f"{registration.definition_name} auxiliary output violates its contract",
+            )
         identity = (item.output_key, item.role)
         if (
-            not isinstance(item, AuthorityAuxiliaryOutput)
-            or not item.asset_type
+            not item.asset_type
             or not item.output_key
             or not item.role
             or not isinstance(item.content, dict)
