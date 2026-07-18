@@ -1,4 +1,4 @@
-PYTHON ?= python3
+PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 PYTHONPATH := src
 WEB_DIR ?= web/admin
 LOCAL_WORKSPACE ?= .local/workspace
