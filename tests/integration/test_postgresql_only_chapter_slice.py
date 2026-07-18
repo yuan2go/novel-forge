@@ -121,7 +121,17 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["saga"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["forward_recovery_attempts"], 1)
         self.assertEqual(len(manifest["operations"]), 13)
-        self.assertEqual(len(manifest["outputs"]), 21)
+        self.assertEqual(len(manifest["outputs"]), 36)
+        self.assertEqual(
+            len(
+                [
+                    item
+                    for item in manifest["outputs"]
+                    if item["asset_type"] == "chapter_quality_evidence"
+                ]
+            ),
+            15,
+        )
         self.assertEqual(manifest["attempt_counts"][ChapterNode.DRAFT.value], 2)
         for node in ChapterNode:
             self.assertEqual(manifest["operation_statuses"][node.value], "SUCCEEDED")

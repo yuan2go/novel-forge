@@ -4,6 +4,7 @@ import unittest
 
 from novel_forge.modules.canon_graph.domain import build_canon_update
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.chapter_authority.domain_handlers import build_quality_report
 from novel_forge.modules.content_quality_loop.domain import evaluate_quality_evidence
 from novel_forge.modules.publishing.domain import prepare_internal_release
 from novel_forge.modules.review.domain import evaluate_rereview_result, evaluate_review_result
@@ -111,18 +112,20 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
             project_id="project-a", revision=revision,
             revision_asset_version_id="revision-v1", context_bundle_version_id="context-v1",
         )
-        quality = evaluate_quality_evidence(
+        context_bundle = {
+            "source_isolation_result": {"passed": True},
+            "copyright_boundary": "abstract_or_project_owned_only",
+            "context_segments": [
+                {"asset_version_id": "checklist-v1", "asset_type": "operator_checklist", "structured_facts": [{"key": "completed", "value": True}], "source_expression_included": False},
+                {"asset_version_id": "approval-v1", "asset_type": "operator_approval", "structured_facts": [{"key": "approved", "value": True}], "source_expression_included": False},
+            ],
+        }
+        quality = build_quality_report(
             project_id="project-a", revision=revision,
             revision_asset_version_id="revision-v1", review=rereview,
             review_asset_version_id="rereview-v1", canon=canon,
             canon_asset_version_id="canon-v1", context_bundle_version_id="context-v1",
-            evidence_reports=[{
-                "project_id": "project-a", "dimension": "source_isolation",
-                "gate_type": "source_originality_gate", "score": None,
-                "gate_status": "PASSED", "asset_version_id": "context-v1",
-                "weight": 0, "blocking": True,
-                "calibration_status": "DETERMINISTIC", "source": "deterministic_extractor",
-            }],
+            context_bundle=context_bundle,
         )
         gate = prepare_internal_release(
             project_id="project-a", revision=revision,
@@ -130,14 +133,7 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
             quality_asset_version_id="quality-v1", review=rereview,
             review_asset_version_id="rereview-v1", canon=canon,
             canon_asset_version_id="canon-v1",
-            context_bundle={
-                "source_isolation_result": {"passed": True},
-                "copyright_boundary": "abstract_or_project_owned_only",
-                "context_segments": [
-                    {"asset_version_id": "checklist-v1", "asset_type": "operator_checklist", "structured_facts": [{"key": "completed", "value": True}]},
-                    {"asset_version_id": "approval-v1", "asset_type": "operator_approval", "structured_facts": [{"key": "approved", "value": True}]},
-                ],
-            },
+            context_bundle=context_bundle,
             context_bundle_version_id="context-v1",
         )
         self.assertEqual(canon["facts"][0]["object"], "broken")

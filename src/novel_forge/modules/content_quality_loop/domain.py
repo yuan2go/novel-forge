@@ -63,7 +63,13 @@ def evaluate_quality_evidence(
         ),
     ]
     for report in evidence_reports:
-        dimensions.append(_normalize_evidence_dimension(project_id, report))
+        dimensions.append(
+            _normalize_evidence_dimension(
+                project_id,
+                revision_asset_version_id,
+                report,
+            )
+        )
     present_gates = {item["gate_type"] for item in dimensions}
     for gate_type in QUALITY_GATE_TYPES:
         if gate_type not in present_gates:
@@ -103,22 +109,41 @@ def evaluate_quality_evidence(
         "dimensions": dimensions,
         "uncalibrated_dimensions": [
             item["dimension"] for item in dimensions
-            if item["calibration_status"] == "UNCALIBRATED"
+            if item["calibration_status"] in {
+                "UNCALIBRATED", "FIXTURE_UNCALIBRATED", "PROVIDER_UNCALIBRATED"
+            }
         ],
         "fixture": all(item["source"] in {"fixture", "none", "deterministic_extractor"} for item in dimensions),
         "production_verified": False,
-        "gate": "PASSED_WITH_UNCALIBRATED" if any(item["calibration_status"] == "UNCALIBRATED" for item in dimensions) else "PASSED",
+        "gate": "PASSED_WITH_UNCALIBRATED" if any(
+            item["calibration_status"] in {
+                "UNCALIBRATED", "FIXTURE_UNCALIBRATED", "PROVIDER_UNCALIBRATED"
+            }
+            for item in dimensions
+        ) else "PASSED",
         "quality_contract_version": "chapter-quality-aggregate-v1",
     }
 
 
-def _normalize_evidence_dimension(project_id: str, report: dict[str, Any]) -> dict[str, Any]:
+def _normalize_evidence_dimension(
+    project_id: str,
+    revision_asset_version_id: str,
+    report: dict[str, Any],
+) -> dict[str, Any]:
     if report.get("project_id") != project_id:
         raise KernelError("CROSS_PROJECT_REFERENCE", "quality evidence belongs to another project")
-    calibration = str(report.get("calibration_status") or "UNCALIBRATED").upper()
+    target_version = str(report.get("target_asset_version_id") or "")
+    if target_version and target_version != revision_asset_version_id:
+        raise KernelError(
+            "QUALITY_TARGET_VERSION_CONFLICT",
+            "quality evidence targets another Revision AssetVersion",
+        )
+    calibration = str(
+        report.get("calibration_status") or "PROVIDER_UNCALIBRATED"
+    ).upper()
     source = str(report.get("source") or "fixture")
     if source == "fixture":
-        calibration = "UNCALIBRATED"
+        calibration = "FIXTURE_UNCALIBRATED"
     status = str(report.get("gate_status") or "UNCALIBRATED").upper()
     return _dimension(
         dimension=str(report["dimension"]),

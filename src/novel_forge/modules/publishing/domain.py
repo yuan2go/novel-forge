@@ -21,6 +21,13 @@ def prepare_internal_release(
     context_bundle_version_id: str,
 ) -> dict[str, Any]:
     dimensions = quality.get("dimensions", [])
+    required_dimensions = {
+        "readability", "golden_opening", "chapter_economy", "reader_promise",
+        "reward", "toxic_point", "protagonist_charm", "antagonist_pressure",
+        "mobile_reading", "style_drift", "originality", "source_leakage",
+        "anti_ai", "platform_rules", "longform_stability",
+    }
+    by_dimension = {str(item.get("dimension")): item for item in dimensions}
     source_gate = [
         item for item in dimensions
         if item.get("gate_type") == "source_originality_gate" and item.get("blocking")
@@ -40,19 +47,32 @@ def prepare_internal_release(
         for item in operator_approval.get("structured_facts", [])
     }
     checks = {
-        "quality_evidence_current": quality.get("gate") in {"PASSED", "PASSED_WITH_UNCALIBRATED"},
+        "quality_evidence_current": (
+            quality.get("gate") in {"PASSED", "PASSED_WITH_UNCALIBRATED"}
+            and quality.get("target_asset_version_id") == revision_asset_version_id
+            and required_dimensions.issubset(by_dimension)
+        ),
         "latest_rereview_passed": review.get("report_type") == "ReReviewReport" and review.get("decision") == "PASSED" and int(review.get("blocking_issue_count", 0)) == 0,
         "canon_consistent": canon.get("gate") == "PASSED" and not canon.get("conflicts"),
-        "source_eligible_and_leakage_clear": bool(source_gate) and all(item.get("gate_status") == "PASSED" for item in source_gate),
-        "originality_risk_clear_or_approved": (
-            any(item.get("dimension") == "originality_risk" and item.get("gate_status") == "PASSED" for item in dimensions)
-            or approval_facts.get("approved") is True
+        "source_eligible_and_leakage_clear": (
+            bool(source_gate)
+            and by_dimension.get("source_leakage", {}).get("gate_status") == "PASSED"
+        ),
+        "originality_risk_clear": (
+            by_dimension.get("originality", {}).get("gate_status") == "PASSED"
         ),
         "anti_ai_clear_or_approved": (
-            "anti_ai_report" in evidence_types or approval_facts.get("approved") is True
+            by_dimension.get("anti_ai", {}).get("gate_status") == "PASSED"
+            or approval_facts.get("approved") is True
         ),
         "platform_rules_clear_or_approved": (
-            "platform_rule_report" in evidence_types or approval_facts.get("approved") is True
+            by_dimension.get("platform_rules", {}).get("gate_status") == "PASSED"
+            or approval_facts.get("approved") is True
+        ),
+        "all_blocking_dimensions_passed": all(
+            item.get("gate_status") in {"PASSED", "PASSED_WITH_WARNINGS"}
+            for item in dimensions
+            if item.get("blocking")
         ),
         "operator_checklist_approved": (
             bool(checklist.get("asset_version_id"))

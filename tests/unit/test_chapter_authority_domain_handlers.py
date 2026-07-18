@@ -73,7 +73,7 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
             revision_asset_version_id="revision-version-1",
             context_bundle_version_id="context-version-1",
             result={"decision": "PASSED", "score": 88, "issues": [], "resolved_issue_codes": ["COST_NOT_CONCRETE"]},
-            provider_evidence={"provider_id": "provider-1", "real_model_call": True},
+            provider_evidence={"provider_id": "fixture", "real_model_call": False},
             project_id="project-a",
         )
         canon = build_canon_patch(

@@ -6,9 +6,9 @@ from typing import Any
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
-CHAPTER_SLICE_DEFINITION_VERSION = "2.0.4"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.4"
-CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.4"
+CHAPTER_SLICE_DEFINITION_VERSION = "2.0.5"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.5"
+CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.5"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
 CHAPTER_PROJECTION_CONSUMERS = [
@@ -139,6 +139,20 @@ def _definition(
                 "governance": "CLEAR",
             }
             for state_kind, asset_type in SNAPSHOT_ASSET_TYPES.items()
+        )
+    if node is ChapterNode.QUALITY:
+        from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
+
+        completion["required_asset_selectors"].extend(
+            {
+                "selector": "chapter_quality_evidence",
+                "output_key": f"chapter.quality.evidence.{dimension}",
+                "role": "quality_evidence",
+                "lifecycle": "ACTIVE",
+                "eligibility": "ELIGIBLE",
+                "governance": "CLEAR",
+            }
+            for dimension in QUALITY_DIMENSIONS
         )
     if node is ChapterNode.EXPORT:
         completion.update(

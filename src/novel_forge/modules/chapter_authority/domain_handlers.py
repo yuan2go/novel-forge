@@ -12,6 +12,7 @@ from novel_forge.modules.review.domain import evaluate_rereview_result, evaluate
 from novel_forge.modules.revision.domain import apply_revision_result
 from novel_forge.modules.canon_graph.domain import build_canon_update, extract_canon_candidates
 from novel_forge.modules.content_quality_loop.domain import evaluate_quality_evidence
+from novel_forge.modules.chapter_quality_authority import build_chapter_quality_evidence
 from novel_forge.modules.publishing.domain import (
     build_export_blob_manifest,
     finalize_blob_verified_release,
@@ -296,7 +297,18 @@ def build_quality_report(
             for code in revision.get("resolved_issue_codes", [])
         ]
     }
-    return evaluate_quality_evidence(
+    fixture = not bool(
+        effective_review.get("provider_evidence", {}).get("real_model_call")
+    )
+    authority_reports = build_chapter_quality_evidence(
+        project_id=project_id,
+        revision=revision,
+        revision_asset_version_id=revision_asset_version_id,
+        context_bundle=context_bundle or {},
+        canon=canon,
+        fixture=fixture,
+    )
+    aggregate = evaluate_quality_evidence(
         project_id=project_id,
         revision=revision,
         revision_asset_version_id=revision_asset_version_id,
@@ -305,30 +317,9 @@ def build_quality_report(
         canon=canon,
         canon_asset_version_id=canon_asset_version_id,
         context_bundle_version_id=context_bundle_version_id,
-        evidence_reports=[
-            {
-                "project_id": project_id,
-                "dimension": "source_isolation",
-                "gate_type": "source_originality_gate",
-                "score": None,
-                "gate_status": (
-                    "PASSED"
-                    if (context_bundle or {}).get("source_isolation_result", {}).get("passed")
-                    and all(
-                        not item.get("source_expression_included", True)
-                        for item in (context_bundle or {}).get("context_segments", [])
-                    )
-                    else "FAILED"
-                ),
-                "asset_version_id": context_bundle_version_id,
-                "weight": 0.0,
-                "blocking": True,
-                "calibration_status": "DETERMINISTIC",
-                "source": "deterministic_extractor",
-            },
-            *(evidence_reports or []),
-        ],
+        evidence_reports=[*authority_reports, *(evidence_reports or [])],
     )
+    return {**aggregate, "evidence_reports": authority_reports}
 
 
 def build_publish_gate(

@@ -361,19 +361,48 @@ class _QualityHandler:
         review = request.require_input("re_review_report")
         canon = request.require_input("canon_patch")
         context = request.require_input("context_bundle")
-        return _output(
+        content = build_quality_report(
+            revision=revision.content,
+            revision_asset_version_id=revision.asset_version_id,
+            canon=canon.content,
+            canon_asset_version_id=canon.asset_version_id,
+            review=review.content,
+            review_asset_version_id=review.asset_version_id,
+            project_id=request.project_id,
+            context_bundle_version_id=context.asset_version_id,
+            context_bundle=context.content,
+        )
+        primary = _output(
             ChapterNode.QUALITY,
-            build_quality_report(
-                revision=revision.content,
-                revision_asset_version_id=revision.asset_version_id,
-                canon=canon.content,
-                canon_asset_version_id=canon.asset_version_id,
-                review=review.content,
-                review_asset_version_id=review.asset_version_id,
-                project_id=request.project_id,
-                context_bundle_version_id=context.asset_version_id,
-                context_bundle=context.content,
-            ),
+            content,
+        )
+        evidence_outputs = tuple(
+            ChapterAuxiliaryOutput(
+                asset_type="chapter_quality_evidence",
+                output_key=f"chapter.quality.evidence.{report['dimension']}",
+                role="quality_evidence",
+                content=dict(report),
+                reference_asset_version_ids=(
+                    revision.asset_version_id,
+                    review.asset_version_id,
+                    canon.asset_version_id,
+                    context.asset_version_id,
+                ),
+                evidence={
+                    "dimension": report["dimension"],
+                    "calibration_status": report["calibration_status"],
+                    "production_verified": False,
+                },
+            )
+            for report in content["evidence_reports"]
+        )
+        return ChapterHandlerOutput(
+            asset_type=primary.asset_type,
+            output_key=primary.output_key,
+            role=primary.role,
+            content=primary.content,
+            qualification_policy=primary.qualification_policy,
+            auxiliary_outputs=evidence_outputs,
         )
 
 
