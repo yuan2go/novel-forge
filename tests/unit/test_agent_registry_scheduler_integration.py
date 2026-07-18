@@ -213,21 +213,13 @@ class AgentRegistrySchedulerIntegrationTests(unittest.TestCase):
             runs = [row for row in list_agent_runs(storage, operation="start-chapter-production")]
             queue = list_agent_dispatch_queue(storage)[0]
             queue_asset = storage.read_json(storage.root / queue["path"])
-            output_assets = queue_asset["content"]["result"]["output_assets"]
-            chapter_run_path = next(path for path in output_assets if storage.read_json(storage.root / path)["type"] == "chapter_production_run")
-            chapter_run = storage.read_json(storage.root / chapter_run_path)
-            policy = chapter_run["content"]["quality_loop_policy"]
-
-            self.assertEqual(tick["status"], "completed")
-            self.assertEqual(tick["acked_count"], 1)
-            self.assertEqual(queue["status"], "acked")
+            self.assertNotIn("output_assets", queue_asset["content"]["result"])
+            self.assertIn(
+                "LEGACY_CHAPTER_BUS_PRODUCTION_DISABLED",
+                str(queue_asset["content"]),
+            )
             self.assertEqual(runs[0]["agent_type"], "Workflow Agent")
-            self.assertEqual(chapter_run["content"]["current_step"], "outline_checkpoint")
-            self.assertEqual(policy["environment"], "production")
-            self.assertEqual(policy["source_policy"]["source_isolation_required"], True)
-            self.assertEqual(policy["os_envelope"]["asset_type"], "chapter_production_run")
-            self.assertEqual(policy["require_external_provider_proof"], True)
-            self.assertEqual(queue_asset["content"]["result"]["evidence"]["production_governance_status"], "passed")
+            self.assertIn(tick["status"], {"completed", "failed"})
 
     def test_scheduler_executes_chapter_production_resume(self):
         with tempfile.TemporaryDirectory() as tmp:

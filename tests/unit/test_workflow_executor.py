@@ -1503,19 +1503,10 @@ class WorkflowExecutorTests(unittest.TestCase):
             )
 
             result = execute_workflow(storage, workflow["path"], input_assets=[fixture["outline_path"]])
-            output_path = result["workflow_run"]["asset"]["content"]["outputs"][0]
-            chapter_run = storage.read_json(storage.root / output_path)
             node_run = storage.read_asset(list_node_runs(storage, run_id=result["run_id"])[0]["path"])
-            policy = chapter_run["content"]["quality_loop_policy"]
-
-            self.assertEqual(result["status"], "completed")
-            self.assertEqual(chapter_run["type"], "chapter_production_run")
-            self.assertEqual(chapter_run["content"]["current_step"], "outline_checkpoint")
-            self.assertEqual(node_run.content["processor"]["registry_operation"], "chapter_production_start")
-            self.assertEqual(policy["environment"], "production")
-            self.assertEqual(policy["source_policy"]["source_isolation_required"], True)
-            self.assertEqual(policy["os_envelope"]["asset_type"], "chapter_production_run")
-            self.assertEqual(policy["require_external_provider_proof"], True)
+            self.assertEqual(result["workflow_run"]["asset"]["content"]["outputs"], [])
+            self.assertIn("LEGACY_CHAPTER_BUS_PRODUCTION_DISABLED", str(node_run.content))
+            self.assertEqual(result["status"], "failed")
 
     def test_service_processor_resumes_chapter_production(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1633,12 +1624,9 @@ class WorkflowExecutorTests(unittest.TestCase):
             self.assertFalse(console["ready_queue"]["queue"][0]["template_contract"]["production_fail_closed"])
 
             result = execute_workflow(storage, workflow["path"], input_assets=[fixture["outline_path"]])
-            chapter_run = storage.read_json(storage.root / result["workflow_run"]["asset"]["content"]["outputs"][0])
-
-            self.assertEqual(result["status"], "completed")
+            self.assertEqual(result["workflow_run"]["asset"]["content"]["outputs"], [])
+            self.assertEqual(result["status"], "failed")
             self.assertEqual(result["preflight"]["status"], "passed")
-            self.assertEqual(chapter_run["type"], "chapter_production_run")
-            self.assertEqual(chapter_run["content"]["current_step"], "outline_checkpoint")
             lineage = result["workflow_run"]["asset"]["content"]["lineage"]["workflow_governance_preflight"]
             self.assertEqual(lineage["gate_status"], "passed")
             self.assertTrue(lineage["gate_result_path"])

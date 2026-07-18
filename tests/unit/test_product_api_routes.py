@@ -633,14 +633,8 @@ class ProductApiRouterTests(unittest.TestCase):
                     "require_external_provider_proof": True,
                 },
             )
-            self.assertEqual(chapter_run.status_code, 200, chapter_run.text)
-            self.assertEqual(chapter_run.json()["status"], "succeeded")
-            self.assertTrue(chapter_run.json()["outputs"]["context_bundle_path"])
-            quality_policy = chapter_run.json()["asset"]["content"]["quality_loop_policy"]
-            self.assertEqual(quality_policy["environment"], "operating_system")
-            self.assertEqual(quality_policy["os_envelope"]["trace_id"], "trace-api-fixture")
-            self.assertFalse(quality_policy["source_policy"]["raw_source_text_allowed"])
-            self.assertTrue(quality_policy["require_external_provider_proof"])
+            self.assertEqual(chapter_run.status_code, 400, chapter_run.text)
+            self.assertIn("LEGACY_CHAPTER_BUS_PRODUCTION_DISABLED", chapter_run.text)
             with patch("novel_forge.api.routers.production_chain._enqueue_chapter_production_task") as enqueue:
                 enqueue.return_value = type("Task", (), {"id": "celery-policy-fixture"})()
                 async_chapter_run = client.post(
@@ -657,24 +651,9 @@ class ProductApiRouterTests(unittest.TestCase):
                         "require_external_provider_proof": True,
                     },
                 )
-            self.assertEqual(async_chapter_run.status_code, 200, async_chapter_run.text)
-            self.assertEqual(async_chapter_run.json()["mode"], "async")
-            async_quality_policy = async_chapter_run.json()["asset"]["content"]["quality_loop_policy"]
-            self.assertEqual(async_quality_policy["environment"], "operating_system")
-            self.assertEqual(async_quality_policy["os_envelope"]["trace_id"], "trace-api-async-fixture")
-            self.assertFalse(async_quality_policy["source_policy"]["raw_source_text_allowed"])
-            self.assertTrue(async_quality_policy["require_external_provider_proof"])
-            chapter_runs = client.get(f"/product/production/chapter-runs?project_id={project.json()['project_id']}")
-            self.assertEqual(chapter_runs.status_code, 200, chapter_runs.text)
-            self.assertGreaterEqual(len(chapter_runs.json()), 1)
-            chapter_run_detail = client.get(f"/product/production/chapter-run?path={chapter_run.json()['path']}")
-            self.assertEqual(chapter_run_detail.status_code, 200, chapter_run_detail.text)
-            chapter_run_resume = client.post(
-                "/product/production/chapter-run/resume",
-                json={"run_path": chapter_run.json()["path"], "from_step": "context_bundle", "run_to": "context_bundle"},
-            )
-            self.assertEqual(chapter_run_resume.status_code, 200, chapter_run_resume.text)
-            self.assertTrue(chapter_run_resume.json()["outputs"]["context_bundle_path"])
+            self.assertEqual(async_chapter_run.status_code, 400, async_chapter_run.text)
+            self.assertIn("LEGACY_CHAPTER_BUS_PRODUCTION_DISABLED", async_chapter_run.text)
+            enqueue.assert_not_called()
 
             draft_path = storage.write_asset(
                 "drafts",

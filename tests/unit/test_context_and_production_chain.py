@@ -1024,7 +1024,9 @@ class ContextAndProductionChainTests(unittest.TestCase):
                 ),
             )
 
-            with self.assertRaisesRegex(ValueError, "rolled back"):
+            # Production no longer reaches LocalStorage runtime-policy selection:
+            # the legacy bus is blocked before it can become an execution authority.
+            with self.assertRaisesRegex(ValueError, "LEGACY_CHAPTER_BUS_PRODUCTION_DISABLED"):
                 start_chapter_production(
                     storage,
                     outline_path=str(outline.relative_to(storage.root)),
