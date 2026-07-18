@@ -20,6 +20,7 @@ class AuthorityCoverageOperationMappingTests(unittest.TestCase):
             "chapter.canon.update",
             "chapter.quality.evaluate",
             "chapter.export.render",
+            "chapter.publishing.finalize_release",
         }
 
         self.assertFalse(required - definitions.keys())
@@ -31,7 +32,7 @@ class AuthorityCoverageOperationMappingTests(unittest.TestCase):
             self.assertTrue(definitions[name]["evidence_status"]["integration_proven"])
             self.assertFalse(definitions[name]["evidence_status"]["real_provider_proven"])
             self.assertFalse(definitions[name]["evidence_status"]["longform_proven"])
-            self.assertEqual(definitions[name]["definition_version"], "2.1.2")
+            self.assertEqual(definitions[name]["definition_version"], "2.1.3")
 
     def test_catalog_keeps_candidate_mapped_and_proven_states_distinct(self) -> None:
         finding = {

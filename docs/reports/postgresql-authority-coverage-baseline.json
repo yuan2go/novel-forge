@@ -1,9 +1,9 @@
 {
-  "artifact_hash": "sha256:43da0af6a41c6b6e18b12d4d5d7ecb233b7605e063839dc1e2a8912deb1d2050",
+  "artifact_hash": "sha256:7a1f96572778f27a4a9ddec6ba698c9c5ff401369c6c50364ddc48e885e8d2e0",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
-  "coverage_hash": "sha256:16918787928ee2986c5da1bf692893505f39caa93cad33dec7b45a92cacaf293",
-  "file_count": 473,
+  "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+  "coverage_hash": "sha256:64fc03223875e5def98d27e64b7aaddeba44f5d6578d9ef82f15d0aa23ad4d78",
+  "file_count": 474,
   "finding_count": 2132,
   "findings": [
     {
@@ -20036,7 +20036,7 @@
       "external_effect_type": "http.request",
       "function_name": "execute",
       "legacy_action": "replace",
-      "line": 180,
+      "line": 182,
       "mapping_confidence": 0.98,
       "mapping_reason": "path/owner/receiver map to project_lifecycle.create",
       "migration_action": "replace",
@@ -20064,7 +20064,7 @@
       "external_effect_type": "http.request",
       "function_name": "execute",
       "legacy_action": "replace",
-      "line": 203,
+      "line": 205,
       "mapping_confidence": 0.98,
       "mapping_reason": "path/owner/receiver map to project_lifecycle.create",
       "migration_action": "replace",
@@ -20092,7 +20092,7 @@
       "external_effect_type": "http.request",
       "function_name": "execute",
       "legacy_action": "replace",
-      "line": 229,
+      "line": 231,
       "mapping_confidence": 0.98,
       "mapping_reason": "path/owner/receiver map to project_lifecycle.create",
       "migration_action": "replace",
@@ -20120,7 +20120,7 @@
       "external_effect_type": "http.request",
       "function_name": "execute",
       "legacy_action": "replace",
-      "line": 258,
+      "line": 260,
       "mapping_confidence": 0.98,
       "mapping_reason": "path/owner/receiver map to project_lifecycle.create",
       "migration_action": "replace",
@@ -59703,7 +59703,7 @@
       "usage_type": "authority_read"
     }
   ],
-  "generated_at": "2026-07-17T19:04:21+00:00",
+  "generated_at": "2026-07-18T01:33:16+00:00",
   "generator_version": "2.1.0",
   "quality_metrics": {
     "false_positive_sample_count": 0,
@@ -59711,7 +59711,7 @@
     "false_positive_sample_rate": 0.0,
     "false_positive_sample_size": 44
   },
-  "repository_head_at_generation": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+  "repository_head_at_generation": "ed30ab6ca16fb73017b3d058592edd5bec748947",
   "scan_rule_version": "receiver-aware-v2",
   "scan_rules": [
     "localstorage_import",
@@ -59723,7 +59723,7 @@
     "direct_runner"
   ],
   "schema_version": "2.0.0",
-  "source_tree_sha": "8a49013befb50e5e7d0da4f28f9f9e574a98a1ae",
+  "source_tree_sha": "2e3ee5a59f693d3c4d3480a0c9c49431114a3cc4",
   "summary": {
     "authority_read": 1642,
     "authority_write": 380,

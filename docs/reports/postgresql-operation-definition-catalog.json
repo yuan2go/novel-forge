@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:280290515f7340344850817d5dd11a0b9873d02e9ef0c2907383511fa687bbac",
+  "artifact_hash": "sha256:e60ffe2c97d0a9ac5222f1df2802d2d70332740e527cca79906d9795e3e0591f",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+  "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
   "definitions": [
     {
       "approval_policy": {
@@ -11708,7 +11708,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.slice.run.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -11780,6 +11780,12 @@
               "SUCCEEDED"
             ],
             "definition_name": "chapter.export.render"
+          },
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "definition_name": "chapter.publishing.finalize_release"
           }
         ],
         "required_evidence": [
@@ -11796,7 +11802,7 @@
         "novel_forge.chapter_authority.root"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -11809,7 +11815,7 @@
       "execution_mode": "saga",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "2.0.2",
+      "handler_contract_version": "2.0.3",
       "handler_key": "novel_forge.chapter_authority.root",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -11921,7 +11927,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.plan.materialize.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -11958,7 +11964,7 @@
         "novel_forge.chapter_authority.plan"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12107,7 +12113,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.context.build.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12144,7 +12150,7 @@
         "novel_forge.chapter_authority.context"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12293,7 +12299,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.draft.generate.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12338,7 +12344,7 @@
         "novel_forge.chapter_authority.draft"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12489,7 +12495,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.review.evaluate.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12534,7 +12540,7 @@
         "novel_forge.chapter_authority.review"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12685,7 +12691,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.apply.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12730,7 +12736,7 @@
         "novel_forge.chapter_authority.revision"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12881,7 +12887,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.review.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12926,7 +12932,7 @@
         "novel_forge.chapter_authority.rereview"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13077,7 +13083,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.extract.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13114,7 +13120,7 @@
         "novel_forge.chapter_authority.canon_extraction"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13263,7 +13269,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.update.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13277,6 +13283,78 @@
             "output_key": "chapter.canon",
             "role": "primary",
             "selector": "canon_patch"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.canon.snapshot.canon_snapshot",
+            "role": "state_snapshot",
+            "selector": "canon_snapshot"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.canon.snapshot.character_state",
+            "role": "state_snapshot",
+            "selector": "character_state_snapshot"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.canon.snapshot.relationship_state",
+            "role": "state_snapshot",
+            "selector": "relationship_state_snapshot"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.canon.snapshot.timeline_snapshot",
+            "role": "state_snapshot",
+            "selector": "timeline_snapshot"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.canon.snapshot.foreshadow_state",
+            "role": "state_snapshot",
+            "selector": "foreshadow_snapshot"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.canon.snapshot.reader_promise",
+            "role": "state_snapshot",
+            "selector": "promise_ledger_snapshot"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.canon.snapshot.reward_ledger",
+            "role": "state_snapshot",
+            "selector": "reward_ledger_snapshot"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.canon.snapshot.world_rule",
+            "role": "state_snapshot",
+            "selector": "world_rule_snapshot"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.canon.snapshot.power_state",
+            "role": "state_snapshot",
+            "selector": "power_state_snapshot"
           }
         ],
         "required_audit_actions": [
@@ -13300,7 +13378,7 @@
         "novel_forge.chapter_authority.canon"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13449,7 +13527,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.evaluate.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13486,7 +13564,7 @@
         "novel_forge.chapter_authority.quality"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13635,7 +13713,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.prepare_release.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13672,7 +13750,7 @@
         "novel_forge.chapter_authority.publish_gate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13821,7 +13899,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.export.render.command.v1",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13873,7 +13951,7 @@
         "novel_forge.chapter_authority.export"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.2",
+      "definition_version": "2.1.3",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13988,6 +14066,192 @@
     {
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "chapter.publishing.finalize_release.command.v1",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.final_release_gate",
+            "role": "primary",
+            "selector": "final_release_gate_report"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.final_release_gate.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "chapter.final_release_gate.materialized"
+        ],
+        "required_qualifications": [
+          "production_eligible"
+        ],
+        "version": "chapter.publishing.finalize_release.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.chapter_authority.final_release_gate"
+      ],
+      "definition_status": "integration_proven",
+      "definition_version": "2.1.3",
+      "enabled": true,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": true,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "chapter_authority",
+      "handler_contract_version": "2.1.0",
+      "handler_key": "novel_forge.chapter_authority.final_release_gate",
+      "idempotency_scope": "project:chapter-slice",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "integration_evidence": [
+        "tests/integration/test_postgresql_only_chapter_slice.py",
+        "tests/integration/test_chapter_authority_runtime_postgres.py"
+      ],
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "chapter-authority",
+      "migration_status": "implemented",
+      "name": "chapter.publishing.finalize_release",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "handler_output_policy": "chapter-authority-output-v1",
+        "local_storage_writes": "forbidden"
+      },
+      "projection_consumers": [
+        "chapter_production_run",
+        "operation_timeline",
+        "project_cockpit"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "chapter.publishing.finalize_release.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 60
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
         "policy_key": "none",
         "required": false
       },
@@ -14018,7 +14282,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.brief.create.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14188,7 +14452,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.evaluate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14358,7 +14622,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.cluster.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14528,7 +14792,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.project.approve.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14698,7 +14962,7 @@
         "type": "object"
       },
       "command_schema_version": "production.world.generate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14868,7 +15132,7 @@
         "type": "object"
       },
       "command_schema_version": "world.validate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15038,7 +15302,7 @@
         "type": "object"
       },
       "command_schema_version": "production.character.generate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15208,7 +15472,7 @@
         "type": "object"
       },
       "command_schema_version": "character.relationships.generate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15378,7 +15642,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.question.create.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15548,7 +15812,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.arc.build.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15718,7 +15982,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.anti_preaching.evaluate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15888,7 +16152,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.closure.plan.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16058,7 +16322,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.payoff_matrix.build.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16228,7 +16492,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.quality.evaluate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16398,7 +16662,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.motivation.evaluate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16568,7 +16832,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.entity_merge.propose.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16738,7 +17002,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.foreshadow_payoff.evaluate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16908,7 +17172,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.world_rule.evaluate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -17078,7 +17342,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.power.evaluate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -17248,7 +17512,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.pattern.evaluate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -17418,7 +17682,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.narrative_debt.evaluate.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -17588,7 +17852,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.recap.enhance.command.v2",
-      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -17727,7 +17991,7 @@
     }
   ],
   "generator_version": "2.1.0",
-  "repository_head_at_generation": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+  "repository_head_at_generation": "ed30ab6ca16fb73017b3d058592edd5bec748947",
   "schema_version": "2.0.0",
-  "source_tree_sha": "8a49013befb50e5e7d0da4f28f9f9e574a98a1ae"
+  "source_tree_sha": "2e3ee5a59f693d3c4d3480a0c9c49431114a3cc4"
 }
