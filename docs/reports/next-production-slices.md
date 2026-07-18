@@ -297,3 +297,13 @@ runtime growth hotspot ledger
 ```
 
 Do not run chapter acceptance during the development loop. Keep the 2026-07-07 slow report as the current baseline until the final unified acceptance phase.
+
+## Authority runtime P1 slices after 2026-07-18
+
+1. Exercise the active Attempt/effect heartbeat and typed Canon extraction against an
+   explicitly approved real Provider single chapter.
+2. Promote 15 Quality evidence evaluators to child Operations with parallel readiness
+   and a deterministic fan-in Completion contract.
+3. Add the minimal Cockpit view for Content Operation inputs, outputs, approval,
+   failure and recovery advice.
+4. Only then extend to 3 chapters; do not jump to 10/30 chapters.

@@ -22,3 +22,16 @@ The PostgreSQL-only chapter slice now runs Plan → governed Context → Draft �
 | Content scheduler recovery | integration_proven | retry, lease takeover, replay, stale fencing, audit/outbox uniqueness | PostgreSQL fault fixtures | `a38edc7` |
 
 Real-provider proof and long-form proof were not run; this round is functional convergence only. Legacy LocalStorage services remain compatibility entrypoints and are not claimed migrated unless listed in the PostgreSQL matrix.
+
+## 2026-07-18 Authority production runtime update
+
+- Server-side preparation now resolves and freezes qualified production inputs (`0bc22a1`).
+- Chapter commands are 202-admitted and executed by the durable scheduler/worker (`6dbcb02`).
+- Provider UNKNOWN/reconciliation and reserve/settle cost governance are fixture-proven (`9f33ff3`).
+- Canon extraction carries evidence/confidence and Quality emits 15 versioned evidence assets (`1a75aa7`, `4f3bb65`).
+- The 22 Content Operations now have PostgreSQL-only API/worker plus Agent/Workflow adapter metadata (`f57aef0`, `1ab7b57`).
+- Blocking handler/effect leases actively heartbeat (`b9aee6e`), and Canon semantic Provider output now traverses ExternalEffect/Cost/Completion (`d58d31e`).
+- Final review bound prepared safe content to the async chain and replaced Registry-derived permissions with explicit per-Definition policy (`d3a3738`, `ab37474`, `de738d6`).
+
+Remaining P1 work is listed in `authority-production-runtime-convergence.md`; no
+production-verified, real-provider-proven, or longform-proven claim was added.

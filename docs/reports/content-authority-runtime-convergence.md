@@ -95,3 +95,12 @@ or real platform publishing was run.
 - P2: retire development LocalStorage bus steps after all callers use the adapter;
   calibrate quality dimensions with provider/human sets.
 - P3: deeper UI and real platform adapters remain deferred.
+
+## Product entrypoint update (2026-07-18)
+
+The former `current_entrypoints=[]` limitation is closed. All 22 definitions expose
+the shared `/product/content-authority/commands` admission surface, project-scoped
+strong queries, cancellation/recovery controls, and an independent polling worker.
+Agent capability and Workflow binding metadata dispatch to Authority Operations;
+AgentRun/WorkflowRun do not become execution authority. Evidence: `f57aef0` and
+`1ab7b57`. Real-provider and long-form maturity remain false.

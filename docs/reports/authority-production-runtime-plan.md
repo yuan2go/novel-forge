@@ -1,7 +1,7 @@
 # Authority Production Runtime Convergence Plan
 
-Date: 2026-07-18  
-Branch: `feat/v7-content-intelligence-and-longform-proof`  
+Date: 2026-07-18
+Branch: `feat/v7-content-intelligence-and-longform-proof`
 Baseline HEAD: `a5cabc035d8aea365fb9aed5fc2b1614302178ba`
 
 ## Scope and evidence boundary

@@ -133,6 +133,16 @@ Current implementation proves many slices and fixtures, including a true one-cha
 
 ## Next Stage Recommendation
 
+### 2026-07-18 authority runtime delta
+
+The former P0 gaps for server-side chapter input preparation, asynchronous admission,
+Content product entrypoints, Provider UNKNOWN/reconciliation, budget reservation,
+evidence-bearing Canon extraction, and 15-dimension Quality evidence are now
+integration-proven with deterministic/PostgreSQL fixtures. The remaining pre-real-
+Provider gaps are: parallel Quality child-operation fan-out/fan-in and real-adapter
+proof for the now effect-bound Canon semantic extractor and active lease heartbeat.
+See `authority-production-runtime-convergence.md`.
+
 Do not add another broad V7 surface first. The next production slice should be:
 
 ```text

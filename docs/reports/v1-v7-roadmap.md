@@ -393,3 +393,14 @@ python3 -m compileall -q src/novel_forge tests scripts/import_classical_modern_t
 ```
 
 For production-loop slices, add focused tests covering the modified module and at least one integration/acceptance path.
+
+## 2026-07-18 v1 single-book authority checkpoint
+
+The next validation sequence is no longer blocked by synchronous chapter admission or
+missing Content API entrypoints. Active heartbeat and Provider-bound Canon semantic
+extraction are fixture-proven; the remaining topology improvement is optional Quality
+evidence child-operation fan-out/fan-in. Then proceed strictly:
+
+`deterministic fixture -> approved real Provider single chapter -> 3 chapters -> 10 chapters -> 30 chapters`.
+
+This checkpoint does not authorize or claim any real-provider or long-form proof.

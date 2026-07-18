@@ -106,6 +106,17 @@ Implementation status note:
 
 ## Highest-Leverage Next Order
 
+### Authority runtime addendum (2026-07-18)
+
+| Module | Current maturity | Evidence boundary | Next gate |
+|---|---|---|---|
+| Production Preparation | M4 integration fixture | qualified frozen Authority inputs | real project asset pool |
+| Async Chapter Scheduler | M4 integration fixture | 202 admission, durable recovery, slow-fixture heartbeat | real Provider proof |
+| Provider lifecycle/budget | M4 integration fixture | UNKNOWN/reconcile/reserve/settle | real adapter query/cancel |
+| Canon semantic extraction | M4 ExternalEffect fixture | typed response, budget, model log, confidence gate | real Provider single chapter |
+| Chapter Quality Authority | M3/M4 mixed | 15 versioned uncalibrated evidence outputs | calibrated child-operation fan-out |
+| Content Authority product entry | M4 API/worker | Agent/Workflow are projections | minimal Cockpit UI |
+
 1. Reduce true chapter-bus runtime growth and asset-volume amplification, then extend slow acceptance to 30 chapters.
 2. Cross-book similarity guard so portfolio scheduling cannot share context or assets without contamination evidence.
 3. ApprovalRequest caller migration for high-risk source/context/publish/story changes.

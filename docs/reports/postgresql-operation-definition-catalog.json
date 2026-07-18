@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:e60ffe2c97d0a9ac5222f1df2802d2d70332740e527cca79906d9795e3e0591f",
+  "artifact_hash": "sha256:e1f06eb6671805222e541795c732fea911b2e3ea9fad172830b2dc06a4a2c547",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+  "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
   "definitions": [
     {
       "approval_policy": {
@@ -6567,6 +6567,7 @@
         "novel_forge.modules.audit_log.service._write",
         "novel_forge.modules.change_impact.service.create_change_impact_report",
         "novel_forge.modules.change_impact.service.mark_downstream_assets_stale",
+        "novel_forge.modules.chapter_authority.handlers._CanonExtractionHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._DraftHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._ReReviewHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._ReviewHandler.execute",
@@ -6817,6 +6818,7 @@
         "novel_forge.modules.audit_log.service._write",
         "novel_forge.modules.change_impact.service.create_change_impact_report",
         "novel_forge.modules.change_impact.service.mark_downstream_assets_stale",
+        "novel_forge.modules.chapter_authority.handlers._CanonExtractionHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._DraftHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._ReReviewHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._ReviewHandler.execute",
@@ -11683,6 +11685,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -11698,6 +11703,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -11708,7 +11716,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.slice.run.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -11802,7 +11810,7 @@
         "novel_forge.chapter_authority.root"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -11815,7 +11823,7 @@
       "execution_mode": "saga",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "2.0.3",
+      "handler_contract_version": "2.0.5",
       "handler_key": "novel_forge.chapter_authority.root",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -11823,6 +11831,9 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "chapter_idempotency_key": {
+            "type": "string"
           },
           "context_candidates": {
             "items": {
@@ -11838,6 +11849,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -11869,6 +11883,7 @@
       ],
       "policy": {
         "authority": "postgresql",
+        "expected_saga_steps": 12,
         "local_storage_writes": "forbidden",
         "orchestration": "dynamic_fenced_saga_v1"
       },
@@ -11902,6 +11917,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -11917,6 +11935,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -11927,7 +11948,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.plan.materialize.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -11964,7 +11985,7 @@
         "novel_forge.chapter_authority.plan"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -11986,6 +12007,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -12000,6 +12024,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -12088,6 +12115,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -12103,6 +12133,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -12113,7 +12146,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.context.build.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12150,7 +12183,7 @@
         "novel_forge.chapter_authority.context"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12172,6 +12205,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -12186,6 +12222,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -12274,6 +12313,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -12289,6 +12331,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -12299,7 +12344,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.draft.generate.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12344,7 +12389,7 @@
         "novel_forge.chapter_authority.draft"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12368,6 +12413,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -12382,6 +12430,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -12470,6 +12521,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -12485,6 +12539,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -12495,7 +12552,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.review.evaluate.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12540,7 +12597,7 @@
         "novel_forge.chapter_authority.review"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12564,6 +12621,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -12578,6 +12638,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -12666,6 +12729,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -12681,6 +12747,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -12691,7 +12760,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.apply.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12736,7 +12805,7 @@
         "novel_forge.chapter_authority.revision"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12760,6 +12829,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -12774,6 +12846,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -12862,6 +12937,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -12877,6 +12955,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -12887,7 +12968,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.review.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12932,7 +13013,7 @@
         "novel_forge.chapter_authority.rereview"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12956,6 +13037,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -12970,6 +13054,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -13058,6 +13145,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -13073,6 +13163,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -13083,7 +13176,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.extract.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13106,6 +13199,14 @@
           "trace",
           "audit"
         ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "capability": "model.canon_extraction"
+          }
+        ],
         "required_outbox_events": [
           "chapter.canon_extraction.materialized"
         ],
@@ -13120,7 +13221,7 @@
         "novel_forge.chapter_authority.canon_extraction"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13131,7 +13232,9 @@
         "real_provider_proven": false
       },
       "execution_mode": "worker",
-      "external_capabilities": [],
+      "external_capabilities": [
+        "model.canon_extraction"
+      ],
       "family": "chapter_authority",
       "handler_contract_version": "2.1.0",
       "handler_key": "novel_forge.chapter_authority.canon_extraction",
@@ -13141,6 +13244,9 @@
         "properties": {
           "chapter": {
             "type": "integer"
+          },
+          "chapter_idempotency_key": {
+            "type": "string"
           },
           "context_candidates": {
             "items": {
@@ -13156,6 +13262,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -13244,6 +13353,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -13259,6 +13371,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -13269,7 +13384,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.update.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13378,7 +13493,7 @@
         "novel_forge.chapter_authority.canon"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13400,6 +13515,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -13414,6 +13532,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -13502,6 +13623,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -13517,6 +13641,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -13527,7 +13654,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.evaluate.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13541,6 +13668,126 @@
             "output_key": "chapter.quality",
             "role": "primary",
             "selector": "quality_score_report"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.readability",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.golden_opening",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.chapter_economy",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.reader_promise",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.reward",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.toxic_point",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.protagonist_charm",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.antagonist_pressure",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.mobile_reading",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.style_drift",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.originality",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.source_leakage",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.anti_ai",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.platform_rules",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
+          },
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.quality.evidence.longform_stability",
+            "role": "quality_evidence",
+            "selector": "chapter_quality_evidence"
           }
         ],
         "required_audit_actions": [
@@ -13564,7 +13811,7 @@
         "novel_forge.chapter_authority.quality"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13586,6 +13833,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -13600,6 +13850,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -13688,6 +13941,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -13703,6 +13959,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -13713,7 +13972,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.prepare_release.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13750,7 +14009,7 @@
         "novel_forge.chapter_authority.publish_gate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13772,6 +14031,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -13786,6 +14048,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -13874,6 +14139,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -13889,6 +14157,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -13899,7 +14170,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.export.render.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13951,7 +14222,7 @@
         "novel_forge.chapter_authority.export"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13975,6 +14246,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -13989,6 +14263,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -14077,6 +14354,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -14092,6 +14372,9 @@
           "premise": {
             "type": "string"
           },
+          "preparation_report": {
+            "type": "object"
+          },
           "title": {
             "type": "string"
           }
@@ -14102,7 +14385,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.finalize_release.command.v1",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -14139,7 +14422,7 @@
         "novel_forge.chapter_authority.final_release_gate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.3",
+      "definition_version": "2.1.6",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -14161,6 +14444,9 @@
           "chapter": {
             "type": "integer"
           },
+          "chapter_idempotency_key": {
+            "type": "string"
+          },
           "context_candidates": {
             "items": {
               "type": "object"
@@ -14175,6 +14461,9 @@
           },
           "premise": {
             "type": "string"
+          },
+          "preparation_report": {
+            "type": "object"
           },
           "title": {
             "type": "string"
@@ -14250,6 +14539,11 @@
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "creative.brief.create",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -14282,7 +14576,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.brief.create.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14313,12 +14607,16 @@
         "version": "creative.brief.create.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:creative.brief.create",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:creative.brief.create",
+        "workflow-operation:creative.brief.create"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.creative.brief.create"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -14326,6 +14624,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -14384,7 +14683,7 @@
         "type": "object"
       },
       "permissions": [
-        "creative.brief.create"
+        "content.operation:creative.brief.create"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -14417,9 +14716,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "creative.brief.create",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "creative.candidates.evaluate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -14452,7 +14760,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.evaluate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14483,12 +14791,16 @@
         "version": "creative.candidates.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:creative.candidates.evaluate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:creative.candidates.evaluate",
+        "workflow-operation:creative.candidates.evaluate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.creative.candidates.evaluate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -14496,6 +14808,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -14554,7 +14867,7 @@
         "type": "object"
       },
       "permissions": [
-        "creative.candidates.evaluate"
+        "content.operation:creative.candidates.evaluate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -14587,9 +14900,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "creative.candidates.evaluate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "creative.candidates.cluster",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -14622,7 +14944,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.cluster.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14653,12 +14975,16 @@
         "version": "creative.candidates.cluster.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:creative.candidates.cluster",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:creative.candidates.cluster",
+        "workflow-operation:creative.candidates.cluster"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.creative.candidates.cluster"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -14666,6 +14992,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -14724,7 +15051,7 @@
         "type": "object"
       },
       "permissions": [
-        "creative.candidates.cluster"
+        "content.operation:creative.candidates.cluster"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -14757,9 +15084,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "creative.candidates.cluster",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "creative.project.approve",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "operator.project.approval.v1",
@@ -14792,7 +15128,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.project.approve.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14823,12 +15159,16 @@
         "version": "creative.project.approve.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:creative.project.approve",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:creative.project.approve",
+        "workflow-operation:creative.project.approve"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.creative.project.approve"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -14836,6 +15176,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -14894,7 +15235,7 @@
         "type": "object"
       },
       "permissions": [
-        "creative.project.approve"
+        "content.operation:creative.project.approve"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -14927,9 +15268,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "creative.project.approve",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "production.world.generate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -14962,7 +15312,7 @@
         "type": "object"
       },
       "command_schema_version": "production.world.generate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14993,12 +15343,16 @@
         "version": "production.world.generate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:production.world.generate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:production.world.generate",
+        "workflow-operation:production.world.generate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.production.world.generate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -15006,6 +15360,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -15064,7 +15419,7 @@
         "type": "object"
       },
       "permissions": [
-        "production.world.generate"
+        "content.operation:production.world.generate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -15097,9 +15452,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "production.world.generate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "world.validate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -15132,7 +15496,7 @@
         "type": "object"
       },
       "command_schema_version": "world.validate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15163,12 +15527,16 @@
         "version": "world.validate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:world.validate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:world.validate",
+        "workflow-operation:world.validate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.world.validate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -15176,6 +15544,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -15234,7 +15603,7 @@
         "type": "object"
       },
       "permissions": [
-        "world.validate"
+        "content.operation:world.validate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -15267,9 +15636,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "world.validate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "production.character.generate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -15302,7 +15680,7 @@
         "type": "object"
       },
       "command_schema_version": "production.character.generate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15333,12 +15711,16 @@
         "version": "production.character.generate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:production.character.generate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:production.character.generate",
+        "workflow-operation:production.character.generate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.production.character.generate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -15346,6 +15728,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -15404,7 +15787,7 @@
         "type": "object"
       },
       "permissions": [
-        "production.character.generate"
+        "content.operation:production.character.generate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -15437,9 +15820,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "production.character.generate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "character.relationships.generate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -15472,7 +15864,7 @@
         "type": "object"
       },
       "command_schema_version": "character.relationships.generate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15503,12 +15895,16 @@
         "version": "character.relationships.generate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:character.relationships.generate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:character.relationships.generate",
+        "workflow-operation:character.relationships.generate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.character.relationships.generate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -15516,6 +15912,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -15574,7 +15971,7 @@
         "type": "object"
       },
       "permissions": [
-        "character.relationships.generate"
+        "content.operation:character.relationships.generate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -15607,9 +16004,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "character.relationships.generate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "theme.question.create",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -15642,7 +16048,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.question.create.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15673,12 +16079,16 @@
         "version": "theme.question.create.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:theme.question.create",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:theme.question.create",
+        "workflow-operation:theme.question.create"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.theme.question.create"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -15686,6 +16096,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -15744,7 +16155,7 @@
         "type": "object"
       },
       "permissions": [
-        "theme.question.create"
+        "content.operation:theme.question.create"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -15777,9 +16188,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "theme.question.create",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "theme.arc.build",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -15812,7 +16232,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.arc.build.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15843,12 +16263,16 @@
         "version": "theme.arc.build.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:theme.arc.build",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:theme.arc.build",
+        "workflow-operation:theme.arc.build"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.theme.arc.build"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -15856,6 +16280,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -15914,7 +16339,7 @@
         "type": "object"
       },
       "permissions": [
-        "theme.arc.build"
+        "content.operation:theme.arc.build"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -15947,9 +16372,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "theme.arc.build",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "theme.anti_preaching.evaluate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -15982,7 +16416,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.anti_preaching.evaluate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16013,12 +16447,16 @@
         "version": "theme.anti_preaching.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:theme.anti_preaching.evaluate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:theme.anti_preaching.evaluate",
+        "workflow-operation:theme.anti_preaching.evaluate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.theme.anti_preaching.evaluate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -16026,6 +16464,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -16084,7 +16523,7 @@
         "type": "object"
       },
       "permissions": [
-        "theme.anti_preaching.evaluate"
+        "content.operation:theme.anti_preaching.evaluate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -16117,9 +16556,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "theme.anti_preaching.evaluate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "ending.closure.plan",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -16152,7 +16600,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.closure.plan.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16183,12 +16631,16 @@
         "version": "ending.closure.plan.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:ending.closure.plan",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:ending.closure.plan",
+        "workflow-operation:ending.closure.plan"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.ending.closure.plan"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -16196,6 +16648,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -16254,7 +16707,7 @@
         "type": "object"
       },
       "permissions": [
-        "ending.closure.plan"
+        "content.operation:ending.closure.plan"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -16287,9 +16740,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "ending.closure.plan",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "ending.payoff_matrix.build",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -16322,7 +16784,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.payoff_matrix.build.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16353,12 +16815,16 @@
         "version": "ending.payoff_matrix.build.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:ending.payoff_matrix.build",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:ending.payoff_matrix.build",
+        "workflow-operation:ending.payoff_matrix.build"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.ending.payoff_matrix.build"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -16366,6 +16832,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -16424,7 +16891,7 @@
         "type": "object"
       },
       "permissions": [
-        "ending.payoff_matrix.build"
+        "content.operation:ending.payoff_matrix.build"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -16457,9 +16924,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "ending.payoff_matrix.build",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "ending.quality.evaluate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -16492,7 +16968,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.quality.evaluate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16523,12 +16999,16 @@
         "version": "ending.quality.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:ending.quality.evaluate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:ending.quality.evaluate",
+        "workflow-operation:ending.quality.evaluate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.ending.quality.evaluate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -16536,6 +17016,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -16594,7 +17075,7 @@
         "type": "object"
       },
       "permissions": [
-        "ending.quality.evaluate"
+        "content.operation:ending.quality.evaluate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -16627,9 +17108,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "ending.quality.evaluate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "longform.motivation.evaluate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -16662,7 +17152,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.motivation.evaluate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16693,12 +17183,16 @@
         "version": "longform.motivation.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.motivation.evaluate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:longform.motivation.evaluate",
+        "workflow-operation:longform.motivation.evaluate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.longform.motivation.evaluate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -16706,6 +17200,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -16764,7 +17259,7 @@
         "type": "object"
       },
       "permissions": [
-        "longform.motivation.evaluate"
+        "content.operation:longform.motivation.evaluate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -16797,9 +17292,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "longform.motivation.evaluate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "longform.entity_merge.propose",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -16832,7 +17336,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.entity_merge.propose.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16863,12 +17367,16 @@
         "version": "longform.entity_merge.propose.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.entity_merge.propose",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:longform.entity_merge.propose",
+        "workflow-operation:longform.entity_merge.propose"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.longform.entity_merge.propose"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -16876,6 +17384,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -16934,7 +17443,7 @@
         "type": "object"
       },
       "permissions": [
-        "longform.entity_merge.propose"
+        "content.operation:longform.entity_merge.propose"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -16967,9 +17476,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "longform.entity_merge.propose",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "longform.foreshadow_payoff.evaluate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -17002,7 +17520,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.foreshadow_payoff.evaluate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -17033,12 +17551,16 @@
         "version": "longform.foreshadow_payoff.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.foreshadow_payoff.evaluate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:longform.foreshadow_payoff.evaluate",
+        "workflow-operation:longform.foreshadow_payoff.evaluate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.longform.foreshadow_payoff.evaluate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -17046,6 +17568,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -17104,7 +17627,7 @@
         "type": "object"
       },
       "permissions": [
-        "longform.foreshadow_payoff.evaluate"
+        "content.operation:longform.foreshadow_payoff.evaluate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -17137,9 +17660,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "longform.foreshadow_payoff.evaluate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "longform.world_rule.evaluate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -17172,7 +17704,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.world_rule.evaluate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -17203,12 +17735,16 @@
         "version": "longform.world_rule.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.world_rule.evaluate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:longform.world_rule.evaluate",
+        "workflow-operation:longform.world_rule.evaluate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.longform.world_rule.evaluate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -17216,6 +17752,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -17274,7 +17811,7 @@
         "type": "object"
       },
       "permissions": [
-        "longform.world_rule.evaluate"
+        "content.operation:longform.world_rule.evaluate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -17307,9 +17844,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "longform.world_rule.evaluate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "longform.power.evaluate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -17342,7 +17888,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.power.evaluate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -17373,12 +17919,16 @@
         "version": "longform.power.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.power.evaluate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:longform.power.evaluate",
+        "workflow-operation:longform.power.evaluate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.longform.power.evaluate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -17386,6 +17936,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -17444,7 +17995,7 @@
         "type": "object"
       },
       "permissions": [
-        "longform.power.evaluate"
+        "content.operation:longform.power.evaluate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -17477,9 +18028,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "longform.power.evaluate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "longform.pattern.evaluate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -17512,7 +18072,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.pattern.evaluate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -17543,12 +18103,16 @@
         "version": "longform.pattern.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.pattern.evaluate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:longform.pattern.evaluate",
+        "workflow-operation:longform.pattern.evaluate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.longform.pattern.evaluate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -17556,6 +18120,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -17614,7 +18179,7 @@
         "type": "object"
       },
       "permissions": [
-        "longform.pattern.evaluate"
+        "content.operation:longform.pattern.evaluate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -17647,9 +18212,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "longform.pattern.evaluate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "longform.narrative_debt.evaluate",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -17682,7 +18256,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.narrative_debt.evaluate.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -17713,12 +18287,16 @@
         "version": "longform.narrative_debt.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.narrative_debt.evaluate",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:longform.narrative_debt.evaluate",
+        "workflow-operation:longform.narrative_debt.evaluate"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.longform.narrative_debt.evaluate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -17726,6 +18304,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -17784,7 +18363,7 @@
         "type": "object"
       },
       "permissions": [
-        "longform.narrative_debt.evaluate"
+        "content.operation:longform.narrative_debt.evaluate"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -17817,9 +18396,18 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "longform.narrative_debt.evaluate",
+        "workflow_run_role": "operator_projection"
       }
     },
     {
+      "agent_capability": {
+        "agent_run_role": "dispatch_projection",
+        "capability_key": "longform.recap.enhance",
+        "execution_authority": "authority_operation"
+      },
       "application_build_id": "authority-catalog-generator",
       "approval_policy": {
         "policy_key": "none",
@@ -17852,7 +18440,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.recap.enhance.command.v2",
-      "commit_sha": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+      "commit_sha": "de738d61bbb012722976e57667df204cb35e2ba8",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -17883,12 +18471,16 @@
         "version": "longform.recap.enhance.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.recap.enhance",
-      "current_entrypoints": [],
+      "current_entrypoints": [
+        "POST /product/content-authority/commands",
+        "agent-capability:longform.recap.enhance",
+        "workflow-operation:longform.recap.enhance"
+      ],
       "current_handlers": [
         "novel_forge.content_authority.longform.recap.enhance"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.0.0",
+      "definition_version": "2.1.1",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -17896,6 +18488,7 @@
         "implemented": true,
         "integration_proven": true,
         "longform_proven": false,
+        "product_entrypoint_integrated": true,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
@@ -17954,7 +18547,7 @@
         "type": "object"
       },
       "permissions": [
-        "longform.recap.enhance"
+        "content.operation:longform.recap.enhance"
       ],
       "policy": {
         "frozen_inputs_required": true,
@@ -17987,11 +18580,15 @@
       },
       "timeout_policy": {
         "operation_timeout_seconds": 120
+      },
+      "workflow_binding": {
+        "operation_definition": "longform.recap.enhance",
+        "workflow_run_role": "operator_projection"
       }
     }
   ],
   "generator_version": "2.1.0",
-  "repository_head_at_generation": "ed30ab6ca16fb73017b3d058592edd5bec748947",
+  "repository_head_at_generation": "de738d61bbb012722976e57667df204cb35e2ba8",
   "schema_version": "2.0.0",
-  "source_tree_sha": "2e3ee5a59f693d3c4d3480a0c9c49431114a3cc4"
+  "source_tree_sha": "495c3312bf176b0cb02e61b919b4d19ea6215dbe"
 }

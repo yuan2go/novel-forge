@@ -96,6 +96,12 @@ The current branch has implemented the first V7 content intelligence foundation 
 
 ## Current Risks
 
+As of 2026-07-18, the PostgreSQL-only production surface includes server-side input
+preparation, 202 Saga admission, background chapter/content workers, Provider
+UNKNOWN/reconciliation and budget reservation, evidence-bearing Canon extraction,
+15-dimension Quality evidence, verified Blob export, and a post-Blob Final Release
+Gate. See `reports/authority-production-runtime-convergence.md`.
+
 1. Historical docs still contain v5 wording and can mislead implementation decisions.
 2. Several features have schemas, routes, and UI pages but are not complete product workflows.
 3. Agent runtime and provider policy have strong slices, but universal production hard-stop coverage must continue to be verified.
