@@ -14,6 +14,7 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     submit_attempt_result,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.worker_execution import AuthorityWorkerExecutionBoundary
 from novel_forge.modules.content_authority import CONTENT_CODECS
 from novel_forge.modules.content_authority.application import (
     ContentAuthorityApplication,
@@ -265,6 +266,44 @@ class ContentAuthoritySchedulerRecoveryPostgresTests(unittest.TestCase):
                 [result.attempt_id],
             )
             self.assertTrue(cursor.fetchone()[0])
+
+    def test_batch_failure_is_persisted_and_next_operation_succeeds(self) -> None:
+        first_request = self.request("batch-first")
+        second_request = self.request("batch-second")
+        first = self.app.admit(first_request)
+        second = self.app.admit(second_request)
+        scheduler = ContentAuthorityScheduler(
+            DATABASE_URL, registry=self.app.registry, worker_id="content-batch-worker",
+        )
+        original = execute_content_handler
+
+        def fail_first(*args, **kwargs):
+            command = kwargs["command"]
+            if command.causation_id == first.operation_id:
+                raise KernelError("INPUT_INVALID", "isolated PostgreSQL task failure")
+            return original(*args, **kwargs)
+
+        with patch(
+            "novel_forge.modules.content_authority.scheduler.execute_content_handler",
+            side_effect=fail_first,
+        ):
+            failures = AuthorityWorkerExecutionBoundary(worker_kind="content-integration").execute_batch(
+                ((first.operation_id, self.project_id), (second.operation_id, self.project_id)),
+                identity=lambda item: (item[1], item[0]),
+                execute=lambda item: scheduler.run_or_recover(operation_id=item[0], project_id=item[1]),
+            )
+        self.assertEqual(len(failures), 1)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT operation_id, status FROM authority_operation WHERE operation_id = ANY(%s) ORDER BY operation_id", [[first.operation_id, second.operation_id]])
+            statuses = dict(cursor.fetchall())
+            self.assertEqual(statuses[first.operation_id], "FAILED_FINAL")
+            self.assertEqual(statuses[second.operation_id], "SUCCEEDED")
+            cursor.execute("SELECT COUNT(*) FROM state_event WHERE aggregate_id = %s AND event_type = 'authority.operation.status_changed'", [first.operation_id])
+            self.assertGreaterEqual(cursor.fetchone()[0], 1)
+            cursor.execute("SELECT COUNT(*) FROM audit_log WHERE operation_id = %s", [first.operation_id])
+            self.assertGreaterEqual(cursor.fetchone()[0], 1)
+            cursor.execute("SELECT COUNT(*) FROM outbox_event WHERE payload->>'operation_id' = %s", [first.operation_id])
+            self.assertGreaterEqual(cursor.fetchone()[0], 1)
 
 
 if __name__ == "__main__":
