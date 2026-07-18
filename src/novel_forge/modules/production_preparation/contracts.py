@@ -66,4 +66,3 @@ class ChapterAuthorityCommand:
 class ProductionPreparationResult:
     report: ProductionPreparationReport
     command: ChapterAuthorityCommand | None
-

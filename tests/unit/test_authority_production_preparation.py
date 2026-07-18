@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 
 from novel_forge.modules.authority_security import (
     PrincipalType,
@@ -33,13 +34,23 @@ class _Resolver:
 
 
 def _asset(asset_type: str, *, project_id: str = "project-1") -> ResolvedProductionAsset:
+    content = {
+        "type": asset_type,
+        "chapter": 1,
+        "safe_summary": f"Safe {asset_type} summary.",
+        "structured_facts": [],
+    }
+    if asset_type == "operator_checklist":
+        content["structured_facts"] = [{"key": "completed", "value": True}]
+    if asset_type == "operator_approval":
+        content["structured_facts"] = [{"key": "approved", "value": True}]
     return ResolvedProductionAsset(
         project_id=project_id,
         asset_id=f"asset:{asset_type}",
         asset_version_id=f"version:{asset_type}",
         asset_type=asset_type,
         content_hash=f"sha256:{asset_type}",
-        content={"type": asset_type, "chapter": 1},
+        content=content,
         qualification="ELIGIBLE",
         selected_reason="latest eligible authority version",
     )
@@ -72,6 +83,40 @@ class ProductionPreparationTests(unittest.TestCase):
             "version:chapter_plan",
         )
         self.assertTrue(result.command.context_candidates)
+        style_candidate = next(
+            item for item in result.command.context_candidates
+            if item["asset_type"] == "style_policy"
+        )
+        self.assertEqual(style_candidate["project_id"], "project-1")
+        self.assertTrue(style_candidate["safe_summary"])
+        self.assertNotIn(
+            "chapter_plan",
+            {item["asset_type"] for item in result.command.context_candidates},
+        )
+
+    def test_wrong_chapter_plan_is_blocked(self) -> None:
+        assets = {
+            kind: _asset(kind)
+            for kind in (
+                "chapter_plan", "style_policy", "quality_rubric",
+                "operator_checklist", "operator_approval",
+            )
+        }
+        assets["chapter_plan"] = replace(
+            assets["chapter_plan"],
+            content={**assets["chapter_plan"].content, "chapter": 2},
+        )
+        result = ProductionPreparationService(_Resolver(assets)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1", workspace_id="workspace-1", chapter=1,
+                idempotency_key="wrong-plan",
+            )
+        )
+        self.assertEqual(result.report.decision, "BLOCKED")
+        self.assertIn(
+            {"asset_type": "chapter_plan", "code": "CHAPTER_PLAN_TARGET_MISMATCH"},
+            result.report.blocked_assets,
+        )
 
     def test_second_chapter_without_canon_baseline_is_blocked_with_repair(self) -> None:
         assets = {
@@ -120,6 +165,9 @@ class ProductionPreparationTests(unittest.TestCase):
         self.assertEqual(principal.principal_type, PrincipalType.LOCAL_OPERATOR)
         self.assertNotEqual(principal.principal_id, "attacker-supplied")
         self.assertTrue(principal.allows("chapter.authority.execute", "project-1"))
+        self.assertTrue(
+            principal.allows("content.operation:theme.question.create", "project-1")
+        )
 
     def test_production_requires_configured_trusted_principal(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "trusted local operator"):

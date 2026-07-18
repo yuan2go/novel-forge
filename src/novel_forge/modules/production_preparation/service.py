@@ -3,7 +3,10 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import asdict
+from datetime import datetime, timezone
 from typing import Protocol
+
+from novel_forge.modules.command_kernel.errors import KernelError
 
 from .contracts import (
     ChapterAuthorityCommand,
@@ -58,8 +61,8 @@ class ProductionPreparationService:
                 )
             except ValueError:
                 raise
-            except Exception as exc:
-                code = str(getattr(exc, "code", type(exc).__name__))
+            except KernelError as exc:
+                code = exc.code
                 blocked.append({"asset_type": asset_type, "code": code})
                 asset = None
             if asset is not None:
@@ -69,7 +72,15 @@ class ProductionPreparationService:
                     raise ValueError(
                         f"override asset type mismatch: expected {asset_type}, got {asset.asset_type}"
                     )
-                selected[asset_type] = asset
+                fit_issue = self._asset_fit_issue(
+                    asset_type=asset_type,
+                    asset=asset,
+                    requested_chapter=request.chapter,
+                )
+                if fit_issue:
+                    blocked.append({"asset_type": asset_type, "code": fit_issue})
+                else:
+                    selected[asset_type] = asset
         missing = tuple(kind for kind in required if kind not in selected)
         repair_actions = tuple(self._repair_action(kind) for kind in missing)
         digest = self._digest(selected)
@@ -120,9 +131,25 @@ class ProductionPreparationService:
                 "asset_version_id": item.asset_version_id,
                 "content_hash": item.content_hash,
                 "asset_type": item.asset_type,
+                "project_id": item.project_id,
                 "selection_reason": item.selected_reason,
+                "safe_summary": str(item.content.get("safe_summary") or ""),
+                "structured_facts": list(item.content.get("structured_facts") or []),
+                "narrative_function": str(
+                    item.content.get("narrative_function") or item.asset_type
+                ),
+                "estimated_tokens": int(
+                    item.content.get("estimated_tokens")
+                    or max(1, len(str(item.content.get("safe_summary") or "")) // 4)
+                ),
+                **(
+                    {"allowed_use": str(item.content["allowed_use"])}
+                    if item.content.get("allowed_use")
+                    else {}
+                ),
             }
             for item in selected.values()
+            if item.asset_type != "chapter_plan"
         )
         version_refs = {
             CONTEXT_VERSION_REF_KEYS.get(kind, f"{kind}_version"): item.asset_version_id
@@ -170,3 +197,46 @@ class ProductionPreparationService:
             return f"create an eligible {asset_type} Authority asset"
         return f"create or re-qualify the required {asset_type} Authority asset"
 
+    @staticmethod
+    def _asset_fit_issue(
+        *,
+        asset_type: str,
+        asset: ResolvedProductionAsset,
+        requested_chapter: int,
+    ) -> str:
+        content = asset.content
+        if asset_type == "chapter_plan":
+            try:
+                if int(content.get("chapter")) != requested_chapter:
+                    return "CHAPTER_PLAN_TARGET_MISMATCH"
+            except (TypeError, ValueError):
+                return "CHAPTER_PLAN_TARGET_MISSING"
+        if asset_type in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES:
+            try:
+                if int(content.get("chapter")) != requested_chapter - 1:
+                    return "HISTORICAL_SNAPSHOT_CHAPTER_MISMATCH"
+            except (TypeError, ValueError):
+                return "HISTORICAL_SNAPSHOT_CHAPTER_MISSING"
+        facts = {
+            str(item.get("key")): item.get("value")
+            for item in content.get("structured_facts", [])
+            if isinstance(item, dict)
+        }
+        if asset_type == "operator_checklist" and not (
+            content.get("completed") is True or facts.get("completed") is True
+        ):
+            return "OPERATOR_CHECKLIST_INCOMPLETE"
+        if asset_type == "operator_approval":
+            if not (content.get("approved") is True or facts.get("approved") is True):
+                return "OPERATOR_APPROVAL_MISSING"
+            expires_at = str(content.get("expires_at") or "").strip()
+            if expires_at:
+                try:
+                    parsed = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+                    if parsed.tzinfo is None:
+                        parsed = parsed.replace(tzinfo=timezone.utc)
+                    if parsed <= datetime.now(timezone.utc):
+                        return "OPERATOR_APPROVAL_EXPIRED"
+                except ValueError:
+                    return "OPERATOR_APPROVAL_EXPIRY_INVALID"
+        return ""

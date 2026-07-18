@@ -46,4 +46,3 @@ CONTEXT_VERSION_REF_KEYS = {
     "operator_checklist": "operator_checklist_version",
     "operator_approval": "operator_approval_version",
 }
-

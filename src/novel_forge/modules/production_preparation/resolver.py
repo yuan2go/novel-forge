@@ -95,4 +95,3 @@ class PostgresProductionAssetResolver:
             qualification=str(row[6]),
             selected_reason=reason,
         )
-

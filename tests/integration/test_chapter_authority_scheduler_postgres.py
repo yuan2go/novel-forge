@@ -15,6 +15,11 @@ from novel_forge.modules.chapter_authority.orchestrator import (
 )
 from novel_forge.modules.chapter_authority.scheduler import ChapterAuthorityScheduler
 from novel_forge.modules.command_kernel.external_effect_adapters import FakeDeterministicProvider
+from novel_forge.modules.production_preparation import (
+    PostgresProductionAssetResolver,
+    ProductionPreparationRequest,
+    ProductionPreparationService,
+)
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -78,6 +83,107 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         self.assertEqual(seen, [node.value for node in ChapterNode])
         self.assertEqual(terminal.saga_status, "SUCCEEDED")
         self.assertEqual(terminal.recovery_mode, "terminal_replay")
+
+    def test_preparation_command_runs_through_async_context_and_full_saga(self) -> None:
+        project_id = identifier("prepared-async-project")
+        self._preparation_assets(project_id)
+        prepared = ProductionPreparationService(
+            PostgresProductionAssetResolver(DATABASE_URL)
+        ).prepare(
+            ProductionPreparationRequest(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                chapter=1,
+                idempotency_key=f"{project_id}:chapter:1",
+            )
+        )
+        self.assertEqual(prepared.report.decision, "READY")
+        self.assertIsNotNone(prepared.command)
+        command = prepared.command
+        assert command is not None
+        self.assertTrue(all(item["project_id"] == project_id for item in command.context_candidates))
+        registry = build_chapter_handler_registry(DeterministicFixtureChapterProvider())
+        admission = admit_single_chapter_saga(
+            DATABASE_URL,
+            request=SingleChapterRequest(
+                project_id=command.project_id,
+                workspace_id=command.workspace_id,
+                actor_id="trusted-operator",
+                chapter=command.chapter,
+                title=command.title,
+                premise=command.premise,
+                trace_id=identifier("trace"),
+                correlation_id=identifier("correlation"),
+                application_build_id="prepared-async-test",
+                commit_sha="f" * 40,
+                idempotency_key=command.idempotency_key,
+                preparation_report=command.preparation_report,
+                context_candidates=command.context_candidates,
+                context_version_refs=command.context_version_refs,
+                context_token_budget=command.context_token_budget,
+            ),
+            registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="configured-prepared-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        for _ in ChapterNode:
+            scheduler.tick(project_id=project_id, root_operation_id=admission.root_operation_id)
+        terminal = scheduler.tick(
+            project_id=project_id, root_operation_id=admission.root_operation_id
+        )
+        self.assertEqual(terminal.saga_status, "SUCCEEDED")
+
+    @staticmethod
+    def _preparation_assets(project_id: str) -> None:
+        assets = {
+            "chapter_plan": {
+                "chapter": 1,
+                "title": "Prepared Chapter",
+                "premise": "A prepared promise creates a visible cost.",
+                "safe_summary": "Prepared chapter plan.",
+                "structured_facts": [{"key": "chapter", "value": 1}],
+            },
+            "style_policy": {
+                "safe_summary": "Project style policy.", "structured_facts": []
+            },
+            "quality_rubric": {
+                "safe_summary": "Project quality rubric.", "structured_facts": []
+            },
+            "operator_checklist": {
+                "safe_summary": "Checklist completed.",
+                "structured_facts": [{"key": "completed", "value": True}],
+            },
+            "operator_approval": {
+                "safe_summary": "Operator approval.",
+                "structured_facts": [{"key": "approved", "value": True}],
+            },
+        }
+        with transaction() as connection, connection.cursor() as cursor:
+            for asset_type, content in assets.items():
+                content_hash = "sha256:" + hashlib.sha256(
+                    json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest()
+                asset_id = identifier(f"{asset_type}-asset")
+                version_id = identifier(asset_type)
+                cursor.execute(
+                    "INSERT INTO authority_asset (asset_id, project_id, asset_type) VALUES (%s, %s, %s)",
+                    [asset_id, project_id, asset_type],
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO authority_asset_version (
+                        asset_version_id, asset_id, version_number, lifecycle,
+                        eligibility, governance, content, content_hash
+                    ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s)
+                    """,
+                    [version_id, asset_id, json.dumps(content), content_hash],
+                )
 
     @staticmethod
     def _release_evidence(project_id: str) -> list[dict[str, object]]:
