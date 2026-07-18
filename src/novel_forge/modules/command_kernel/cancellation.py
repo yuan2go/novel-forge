@@ -107,12 +107,81 @@ def request_cancellation(database_url: str, command: CancelCommand) -> dict[str,
                     "trace_id": command.trace_id,
                 },
             )
+        uow.cursor.execute(
+            "SELECT root_operation_id FROM authority_operation WHERE operation_id = %s AND project_id = %s",
+            [command.operation_id, command.project_id],
+        )
+        root_operation_id = str(uow.cursor.fetchone()[0])
+        if root_operation_id == command.operation_id:
+            _propagate_root_cancellation(uow, command)
         uow.commit()
     return {
         "cancel_command_id": row["cancel_command_id"],
         "replayed": False,
         **result,
     }
+
+
+def _propagate_root_cancellation(uow: AuthorityUnitOfWork, command: CancelCommand) -> None:
+    """Cancel unstarted children and signal active children in the root graph."""
+    uow.cursor.execute(
+        """
+        SELECT operation_id, status, version
+        FROM authority_operation
+        WHERE root_operation_id = %s AND project_id = %s AND operation_id <> %s
+          AND status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','DEAD_LETTER','COMPENSATED')
+        ORDER BY created_at
+        FOR UPDATE
+        """,
+        [command.operation_id, command.project_id, command.operation_id],
+    )
+    for operation_id, status, version in uow.cursor.fetchall():
+        if status != "CANCELLATION_REQUESTED":
+            result = _cas_operation(
+                uow,
+                operation_id=operation_id,
+                project_id=command.project_id,
+                expected_status=status,
+                expected_version=int(version),
+                target_status="CANCELLATION_REQUESTED",
+                actor_id=command.actor_id,
+                reason=f"root cancellation: {command.reason}",
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+                causation_id=command.operation_id,
+            )
+            version = int(result["version"])
+        active_attempt = uow.repositories.cancellations.active_attempt(operation_id)
+        if active_attempt is not None:
+            uow.repositories.cancellations.signal_worker_cancel(
+                str(uuid4()), operation_id, active_attempt[0], active_attempt[1],
+                {"actor_id": command.actor_id, "reason": command.reason, "trace_id": command.trace_id},
+            )
+            continue
+        uow.cursor.execute(
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM authority_external_effect
+                WHERE operation_id = %s AND project_id = %s
+                  AND status NOT IN ('CANCELLED','FAILED_FINAL','FAILED_RETRYABLE','SUCCEEDED')
+            )
+            """,
+            [operation_id, command.project_id],
+        )
+        if not bool(uow.cursor.fetchone()[0]):
+            _cas_operation(
+                uow,
+                operation_id=operation_id,
+                project_id=command.project_id,
+                expected_status="CANCELLATION_REQUESTED",
+                expected_version=int(version),
+                target_status="CANCELLED",
+                actor_id=command.actor_id,
+                reason="cancelled before execution by root command",
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+                causation_id=command.operation_id,
+            )
 
 
 def resolve_cancellation(

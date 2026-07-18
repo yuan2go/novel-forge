@@ -11,6 +11,7 @@ from novel_forge.api.authority_dependencies import (
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.command_kernel.worker_execution import AuthorityWorkerExecutionBoundary
+from novel_forge.modules.command_kernel.deadline_runtime import scan_expired_operation_deadlines
 
 
 @dataclass(slots=True)
@@ -35,6 +36,9 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> None:
     signal.signal(signal.SIGTERM, request_shutdown)
     signal.signal(signal.SIGINT, request_shutdown)
     while not shutdown.requested:
+        scan_expired_operation_deadlines(
+            settings.database_url, actor_id=worker.principal_id, limit=batch_size
+        )
         roots = scheduler.pending_roots(limit=batch_size)
         if not roots:
             time.sleep(poll_seconds)

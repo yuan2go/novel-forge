@@ -419,6 +419,11 @@ class ChapterAuthorityScheduler:
                     command=worker,
                     node=node,
                     registry=self.registry,
+                    execution_probe=lambda: probe_operation_execution(
+                        self.database_url,
+                        operation_id=operation_id,
+                        project_id=project_id,
+                    ),
                 )
                 if node is ChapterNode.EXPORT:
                     deliver_export(

@@ -11,6 +11,7 @@ from novel_forge.api.authority_dependencies import (
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.command_kernel.worker_execution import AuthorityWorkerExecutionBoundary
+from novel_forge.modules.command_kernel.deadline_runtime import scan_expired_operation_deadlines
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 
 
@@ -42,6 +43,9 @@ def main() -> int:
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
     while not stopping:
+        scan_expired_operation_deadlines(
+            settings.database_url, actor_id=principal.principal_id, limit=batch_size
+        )
         pending = scheduler.pending_operations(limit=batch_size)
         if not pending:
             time.sleep(poll_seconds)

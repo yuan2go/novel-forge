@@ -227,6 +227,33 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             edited_payload=None, idempotency_key="approve-once",
         )
         self.assertTrue(decision["gate_resumed"])
+        self.assertTrue(decision["decision_operation_id"])
+        replay = decide_canon_approval(
+            DATABASE_URL,
+            CanonApprovalContext(project_id, "local-operator", request.trace_id, request.correlation_id),
+            approval_request_id=approvals[0]["approval_request_id"],
+            expected_version=approvals[0]["version"], decision="APPROVE",
+            reason="fixture proves per-change gate recovery", evidence={"fixture": True},
+            edited_payload=None, idempotency_key="approve-once",
+        )
+        self.assertTrue(replay["replayed"])
+        self.assertEqual(replay["decision_operation_id"], decision["decision_operation_id"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.status, attempt.status, decision.decision_operation_id
+                FROM authority_operation operation
+                JOIN authority_attempt attempt ON attempt.operation_id = operation.operation_id
+                JOIN authority_canon_approval_decision decision
+                  ON decision.decision_operation_id = operation.operation_id
+                WHERE operation.operation_id = %s
+                """,
+                [decision["decision_operation_id"]],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("SUCCEEDED", "SUCCEEDED", decision["decision_operation_id"]),
+            )
         terminal = None
         for _ in range(30):
             terminal = scheduler.tick(project_id=project_id, root_operation_id=admission.root_operation_id)

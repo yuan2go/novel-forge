@@ -44,6 +44,13 @@ class ChapterAuthorityApplication:
         self.allow_synchronous_fixture = allow_synchronous_fixture
         self.query = ChapterAuthorityQuery(database_url)
 
+    @property
+    def external_effect_adapters(self) -> dict[str, ExternalEffectAdapter]:
+        return {
+            self.model_port.adapter.provider: self.model_port.adapter,
+            self.object_store_adapter.provider: self.object_store_adapter,
+        }
+
     def run(self, request: SingleChapterRequest) -> ChapterSliceResult:
         if not self.allow_synchronous_fixture:
             raise RuntimeError(

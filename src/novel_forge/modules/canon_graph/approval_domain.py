@@ -17,8 +17,9 @@ def build_canon_change_proposal(*, project_id: str, extraction: dict[str, Any], 
     if extraction.get("project_id") != project_id or not extraction_asset_version_id:
         raise KernelError("CANON_PROPOSAL_INPUT_INVALID", "project-scoped extraction is required")
     changes: list[dict[str, Any]] = []
+    fingerprints: dict[str, str] = {}
     for field in SEMANTIC_CHANGE_FIELDS:
-        for ordinal, raw in enumerate(extraction.get(field, [])):
+        for raw in extraction.get(field, []):
             item = dict(raw)
             if item.get("predicate") == "accepted_revision_digest":
                 continue
@@ -30,18 +31,49 @@ def build_canon_change_proposal(*, project_id: str, extraction: dict[str, Any], 
             approval_required = item.get("approval_requirement") == "REQUIRED" or impact in HIGH_IMPACT_CHANGE_TYPES
             if approval_required and not str(evidence.get("excerpt_digest") or ""):
                 raise KernelError("CANON_HIGH_IMPACT_EVIDENCE_REQUIRED", "high-impact Canon changes require an evidence digest")
-            identity = json.dumps({"field": field, "ordinal": ordinal, "item": item}, sort_keys=True, separators=(",", ":"))
+            span = dict(evidence.get("span") or {})
+            if approval_required and not _valid_span(span):
+                raise KernelError("CANON_HIGH_IMPACT_EVIDENCE_SPAN_INVALID", "high-impact Canon changes require a valid evidence span")
+            entity_id = str(
+                item.get("entity_id")
+                or item.get("character_id")
+                or item.get("relationship_id")
+                or item.get("world_rule_id")
+                or item.get("foreshadow_id")
+                or item.get("promise_id")
+                or item.get("subject")
+                or ""
+            )
+            if approval_required and not entity_id:
+                raise KernelError("CANON_HIGH_IMPACT_ENTITY_REQUIRED", "high-impact Canon changes require a resolved entity")
+            previous_project = str(evidence.get("previous_state_project_id") or project_id)
+            if previous_project != project_id:
+                raise KernelError("CROSS_PROJECT_REFERENCE", "previous Canon state belongs to another project")
+            semantic_identity = json.dumps(
+                {"field": field, "entity_id": entity_id, "impact": impact},
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            proposed_digest = hashlib.sha256(
+                json.dumps(item, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+            if semantic_identity in fingerprints:
+                if fingerprints[semantic_identity] != proposed_digest:
+                    raise KernelError("CANON_EXTRACTION_CONTRADICTION", "extractor proposed contradictory changes for one entity")
+                continue
+            fingerprints[semantic_identity] = proposed_digest
+            identity = json.dumps({"field": field, "entity": entity_id, "item": item}, sort_keys=True, separators=(",", ":"))
             change_id = "canon-change:" + hashlib.sha256(identity.encode()).hexdigest()
             changes.append({
                 "change_id": change_id,
                 "change_field": field,
                 "change_type": impact,
                 "state_kind": SEMANTIC_CHANGE_FIELDS[field],
-                "entity_id": str(item.get("entity_id") or item.get("subject") or ""),
+                "entity_id": entity_id,
                 "current_state_ref": str(evidence.get("previous_state_reference") or ""),
                 "proposed_state": item,
                 "source_revision_asset_version_id": extraction["revision_asset_version_id"],
-                "evidence_span": dict(evidence.get("span") or {}),
+                "evidence_span": span,
                 "evidence_digest": str(evidence.get("excerpt_digest") or ""),
                 "confidence": confidence,
                 "impact_level": "high" if approval_required else "normal",
@@ -58,6 +90,15 @@ def build_canon_change_proposal(*, project_id: str, extraction: dict[str, Any], 
         "risk_summary": [{"change_id": item["change_id"], "impact_level": item["impact_level"], "change_type": item["change_type"]} for item in changes],
         "contract_version": "canon-change-proposal-v1",
     }
+
+
+def _valid_span(span: dict[str, Any]) -> bool:
+    try:
+        start = int(span["start"])
+        end = int(span["end"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    return start >= 0 and end > start
 
 
 def resolve_canon_extraction(*, extraction: dict[str, Any], proposal: dict[str, Any], decisions: Iterable[dict[str, Any]]) -> dict[str, Any]:

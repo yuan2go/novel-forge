@@ -267,6 +267,47 @@ class ContentAuthoritySchedulerRecoveryPostgresTests(unittest.TestCase):
             )
             self.assertTrue(cursor.fetchone()[0])
 
+    def test_handler_result_after_business_deadline_is_not_materialized(self) -> None:
+        request = self.request("business-timeout")
+        admission = self.app.admit(request)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET business_deadline_at = NOW() + INTERVAL '100 milliseconds' WHERE operation_id = %s",
+                [admission.operation_id],
+            )
+        scheduler = ContentAuthorityScheduler(
+            DATABASE_URL, registry=self.app.registry,
+            worker_id="content-timeout-worker", lease_seconds=1,
+        )
+
+        original = execute_content_handler
+
+        def slow_handler(*args, **kwargs):
+            time.sleep(.2)
+            return original(*args, **kwargs)
+
+        with patch(
+            "novel_forge.modules.content_authority.scheduler.execute_content_handler",
+            side_effect=slow_handler,
+        ):
+            with self.assertRaises(KernelError) as timed_out:
+                scheduler.run_or_recover(
+                    operation_id=admission.operation_id,
+                    project_id=self.project_id,
+                )
+        self.assertEqual(timed_out.exception.code, "OPERATION_BUSINESS_TIMEOUT")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT status FROM authority_operation WHERE operation_id = %s",
+                [admission.operation_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], "FAILED_RETRYABLE")
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_operation_output_asset WHERE operation_id = %s",
+                [admission.operation_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+
     def test_batch_failure_is_persisted_and_next_operation_succeeds(self) -> None:
         first_request = self.request("batch-first")
         second_request = self.request("batch-second")

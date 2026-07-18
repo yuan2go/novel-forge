@@ -104,6 +104,48 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
                 )
                 self.assertEqual(result["status"], target)
 
+    def test_root_cancel_prevents_unstarted_children_and_signals_active_child(self) -> None:
+        project_id, root_id = self._operation("WAITING_CHILDREN")
+        ready_child = identifier("ready-child")
+        running_child = identifier("running-child")
+        running_attempt = identifier("running-child-attempt")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT definition_name FROM authority_operation WHERE operation_id = %s",
+                [root_id],
+            )
+            definition_name = cursor.fetchone()[0]
+            insert_operation(
+                cursor, operation_id=ready_child, definition_name=definition_name,
+                project_id=project_id, status="READY", root_operation_id=root_id,
+                parent_operation_id=root_id,
+            )
+            insert_operation(
+                cursor, operation_id=running_child, definition_name=definition_name,
+                project_id=project_id, status="EXECUTING", root_operation_id=root_id,
+                parent_operation_id=root_id,
+            )
+            insert_attempt(
+                cursor, attempt_id=running_attempt, operation_id=running_child,
+                attempt_number=1, status="RUNNING",
+            )
+        request_cancellation(
+            DATABASE_URL, self._cancel(root_id, project_id, expected_version=0)
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT operation_id, status FROM authority_operation WHERE operation_id = ANY(%s) ORDER BY operation_id",
+                [[ready_child, running_child]],
+            )
+            statuses = dict(cursor.fetchall())
+            self.assertEqual(statuses[ready_child], "CANCELLED")
+            self.assertEqual(statuses[running_child], "CANCELLATION_REQUESTED")
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_worker_cancel_signal WHERE operation_id = %s AND attempt_id = %s",
+                [running_child, running_attempt],
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+
     def test_compensation_child_success_and_failure_have_distinct_parent_terminals(self) -> None:
         for child_target, parent_target in (
             ("SUCCEEDED", "COMPENSATED"),

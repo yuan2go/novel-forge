@@ -237,6 +237,12 @@ def operation_catalog(
             commit_sha=commit_sha,
         )
     )
+    catalog.append(
+        _implemented_canon_approval_definition(
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+        )
+    )
     from novel_forge.modules.content_authority.definitions import content_operation_definitions
     bound = content_operation_definitions(application_build_id=application_build_id, commit_sha=commit_sha)
     bound_names = {item["name"] for item in bound}
@@ -381,6 +387,43 @@ def _implemented_chapter_authority_definitions(
         }
         for definition in runtime_definitions
     ]
+
+
+def _implemented_canon_approval_definition(
+    *, application_build_id: str, commit_sha: str
+) -> dict[str, Any]:
+    from novel_forge.modules.canon_graph.approval_authority import (
+        canon_approval_operation_definition,
+    )
+
+    definition = canon_approval_operation_definition(
+        application_build_id=application_build_id,
+        commit_sha=commit_sha,
+    )
+    return {
+        **definition,
+        "command_schema_version": "canon.change.approve.command.v1",
+        "result_schema_version": "canon.change.approve.result.v1",
+        "input_contract": definition["command_schema"],
+        "output_contract": definition["result_schema"],
+        "current_entrypoints": [
+            "novel_forge.api.routers.canon_authority.decide",
+        ],
+        "current_handlers": [definition["handler_key"]],
+        "migration_status": "implemented",
+        "definition_status": "integration_proven",
+        "evidence_status": {
+            **_catalog_evidence_status("integration_proven"),
+            "real_provider_proven": False,
+            "longform_proven": False,
+        },
+        "projection_consumers": ["canon_approval_console", "operation_timeline"],
+        "migration_owner": "canon-authority",
+        "legacy_entrypoints": [],
+        "integration_evidence": [
+            "tests/integration/test_chapter_authority_scheduler_postgres.py",
+        ],
+    }
 
 
 def write_legacy_actions(manifest: dict[str, Any], output: str | Path) -> dict[str, Any]:

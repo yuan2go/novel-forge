@@ -875,6 +875,47 @@ def cancel_external_effect(
     }
 
 
+def cancel_operation_external_effects(
+    database_url: str,
+    *,
+    root_operation_id: str,
+    project_id: str,
+    actor_id: str,
+    trace_id: str,
+    correlation_id: str,
+    adapters: dict[str, ExternalEffectAdapter],
+) -> tuple[dict[str, Any], ...]:
+    """Propagate a root cancel to every non-terminal effect using its real adapter."""
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """
+            SELECT effect.external_effect_id, effect.operation_id, effect.provider
+            FROM authority_external_effect effect
+            JOIN authority_operation operation ON operation.operation_id = effect.operation_id
+            WHERE operation.root_operation_id = %s AND effect.project_id = %s
+              AND effect.status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED')
+            ORDER BY effect.created_at
+            """,
+            [root_operation_id, project_id],
+        )
+        rows = tuple(uow.cursor.fetchall())
+    results: list[dict[str, Any]] = []
+    for effect_id, operation_id, provider in rows:
+        results.append(
+            cancel_external_effect(
+                database_url,
+                EffectCommandContext(
+                    operation_id=str(operation_id), project_id=project_id,
+                    actor_id=actor_id, trace_id=trace_id,
+                    correlation_id=correlation_id, causation_id=root_operation_id,
+                ),
+                effect_id=str(effect_id),
+                adapter=adapters.get(str(provider)),
+            )
+        )
+    return tuple(results)
+
+
 def compensate_external_effect(
     database_url: str,
     context: EffectCommandContext,

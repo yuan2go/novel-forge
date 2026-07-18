@@ -176,6 +176,17 @@ class OperationGraphRepository:
                 "UPDATE authority_operation SET saga_id = %s WHERE operation_id = %s",
                 [saga_id, root_operation_id],
             )
+            self.cursor.execute(
+                """
+                UPDATE authority_saga
+                SET root_deadline_at = (
+                    SELECT business_deadline_at FROM authority_operation
+                    WHERE operation_id = %s
+                )
+                WHERE saga_id = %s
+                """,
+                [root_operation_id, saga_id],
+            )
             return {"saga_id": saga_id, "replayed": False}
         self.cursor.execute(
             "SELECT saga_id FROM authority_saga WHERE root_operation_id = %s",

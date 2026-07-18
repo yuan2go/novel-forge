@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -68,4 +69,58 @@ def probe_external_effect_execution(
     return {"status": str(row[0]), "request_deadline_at": deadline}
 
 
-__all__ = ["probe_external_effect_execution", "probe_operation_execution"]
+def scan_expired_operation_deadlines(
+    database_url: str,
+    *,
+    actor_id: str,
+    limit: int = 100,
+) -> dict[str, object]:
+    """Issue idempotent cancellation commands for expired business deadlines.
+
+    A separate worker may call this while another worker is blocked. It never
+    extends the business deadline and does not forcibly terminate Python threads.
+    """
+    if not actor_id or limit <= 0:
+        raise ValueError("deadline scanner actor and positive limit are required")
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """
+            SELECT operation_id, project_id, version, trace_id, correlation_id
+            FROM authority_operation
+            WHERE business_deadline_at <= NOW()
+              AND status IN ('ADMITTED','READY','EXECUTING','WAITING_CHILDREN',
+                             'WAITING_EXTERNAL_RESULT','WAITING_GATE','FAILED_RETRYABLE')
+            ORDER BY business_deadline_at, operation_id
+            LIMIT %s
+            """,
+            [limit],
+        )
+        expired = tuple(uow.cursor.fetchall())
+    from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation
+
+    issued: list[str] = []
+    conflicts: list[str] = []
+    for operation_id, project_id, version, trace_id, correlation_id in expired:
+        try:
+            request_cancellation(
+                database_url,
+                CancelCommand(
+                    operation_id=str(operation_id), project_id=str(project_id),
+                    actor_id=actor_id, reason="frozen business deadline expired",
+                    expected_version=int(version),
+                    idempotency_key=f"deadline:{operation_id}:{version}",
+                    trace_id=str(trace_id or f"trace:{uuid4()}"),
+                    correlation_id=str(correlation_id or f"correlation:{uuid4()}"),
+                    causation_id="deadline-scanner",
+                ),
+            )
+            issued.append(str(operation_id))
+        except KernelError as exc:
+            if exc.code in {"OPERATION_VERSION_CONFLICT", "OPERATION_STATUS_CONFLICT", "IDEMPOTENCY_CONFLICT"}:
+                conflicts.append(str(operation_id))
+                continue
+            raise
+    return {"expired_count": len(expired), "cancellation_issued": issued, "concurrent_conflicts": conflicts}
+
+
+__all__ = ["probe_external_effect_execution", "probe_operation_execution", "scan_expired_operation_deadlines"]

@@ -16,6 +16,9 @@ from novel_forge.api.authority_dependencies import (
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.chapter_authority.orchestrator import SingleChapterRequest
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    cancel_operation_external_effects,
+)
 from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation
 from novel_forge.modules.production_preparation import ProductionPreparationRequest
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -208,7 +211,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     correlation_id=correlation_id,
                 ),
             )
-            return {**result, "status": "CANCELLATION_REQUESTED"}
+            effect_results = cancel_operation_external_effects(
+                _application(ctx).database_url,
+                root_operation_id=root_operation_id,
+                project_id=request.project_id,
+                actor_id=principal.principal_id,
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+                adapters=_application(ctx).external_effect_adapters,
+            )
+            return {
+                **result,
+                "status": "CANCELLATION_REQUESTED",
+                "external_effect_cancellations": list(effect_results),
+            }
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except KernelError as exc:

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
 
@@ -25,9 +26,14 @@ def execute_authority_handler(
     *,
     command: WorkerLeaseCommand,
     registration: AuthorityHandlerRegistration,
+    execution_probe: Callable[[], object] | None = None,
 ) -> AuthorityExecutionResult:
     request = _load_request(database_url, command, registration)
+    if execution_probe is not None:
+        execution_probe()
     output = registration.handler.execute(request)
+    if execution_probe is not None:
+        execution_probe()
     _validate_output(registration, output)
     outputs = (output, *output.auxiliary_outputs)
     primary_hash = _content_hash(output.content)
@@ -36,6 +42,8 @@ def execute_authority_handler(
 
     with AuthorityUnitOfWork(database_url) as uow:
         attempt = require_current_fence(uow, command)
+        if execution_probe is not None:
+            execution_probe()
         if attempt["operation_id"] != request.operation_id:
             raise KernelError(
                 "AUTHORITY_HANDLER_OPERATION_CONFLICT",

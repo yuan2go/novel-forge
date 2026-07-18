@@ -207,6 +207,11 @@ class ContentAuthorityScheduler:
                     definition_name=state["definition_name"],
                     definition_version=state["definition_version"],
                     registry=self.registry,
+                    execution_probe=lambda: probe_operation_execution(
+                        self.database_url,
+                        operation_id=operation_id,
+                        project_id=project_id,
+                    ),
                 )
             with AuthorityUnitOfWork(self.database_url) as uow:
                 operation = uow.repositories.attempt_runtime.operation_state(

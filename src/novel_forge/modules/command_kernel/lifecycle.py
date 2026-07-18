@@ -48,6 +48,7 @@ OPERATION_TRANSITIONS: dict[OperationStatus, frozenset[OperationStatus]] = {
         {
             OperationStatus.WAITING_APPROVAL,
             OperationStatus.READY,
+            OperationStatus.CANCELLATION_REQUESTED,
             OperationStatus.FAILED_FINAL,
         }
     ),

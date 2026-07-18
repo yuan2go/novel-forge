@@ -1,6 +1,7 @@
 """Chapter adapter over the shared fenced authority-handler runtime."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from novel_forge.modules.authority_handler_runtime import (
@@ -83,10 +84,12 @@ def execute_chapter_handler(
     command: WorkerLeaseCommand,
     node: ChapterNode,
     registry: ChapterHandlerRegistry,
+    execution_probe: Callable[[], object] | None = None,
 ) -> ChapterExecutionResult:
     return execute_authority_handler(
         database_url,
         command=command,
+        execution_probe=execution_probe,
         registration=AuthorityHandlerRegistration(
             definition_name=node.definition_name,
             definition_version=chapter_definition_version(
