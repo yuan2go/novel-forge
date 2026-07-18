@@ -36,6 +36,21 @@ from tests.integration.authority_postgres_support import (
 
 class _ModelAdapter:
     provider = "fixture_model_effect_provider"
+    reconciliation_mode = "unsupported"
+    capability_profile = {
+        "provider": provider,
+        "control_level": "FIXTURE_CONTROLLED",
+        "supports_request_timeout": True,
+        "supports_provider_idempotency": True,
+        "supports_query": False,
+        "supports_cancel": False,
+        "supports_callback": False,
+        "supports_usage_receipt": True,
+        "supports_cost_receipt": True,
+        "reconciliation_mode": "unsupported",
+        "real_provider_validation_eligible": False,
+        "contract_version": "provider-capability-v2",
+    }
 
     def __init__(self, *, fail_after_send: bool = False) -> None:
         self.fail_after_send = fail_after_send
@@ -285,7 +300,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             worker_id="model-worker",
         )
 
-        with self.assertRaisesRegex(KernelError, "EFFECT_ADAPTER_EXCEPTION_RECORDED"):
+        with self.assertRaisesRegex(KernelError, "EFFECT_EXTERNAL_STATE_UNKNOWN"):
             port.invoke(request, stage="draft", payload={"prompt": "write"})
         with self.assertRaises(KernelError):
             port.invoke(request, stage="draft", payload={"prompt": "write"})

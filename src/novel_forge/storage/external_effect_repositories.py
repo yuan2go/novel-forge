@@ -33,6 +33,12 @@ class ExternalEffectRepository:
             "request_timeout_seconds": None,
             "reconciliation_mode": "query",
             "manual_resolution_required": False,
+            "provider_capability_profile": {},
+            "provider_control_level": "LEGACY_UNCONTROLLED",
+            "provider_idempotency_mode": "unsupported",
+            "provider_query_mode": "unsupported",
+            "provider_cancel_mode": "unsupported",
+            "provider_callback_mode": "unsupported",
             **row,
         }
         self.cursor.execute(
@@ -43,6 +49,9 @@ class ExternalEffectRepository:
                 max_attempts, reversible, completion_policy, compensates_effect_id
                 , model_id, request_deadline_at, reconciliation_mode,
                 manual_resolution_required, request_timeout_seconds
+                , provider_capability_profile, provider_control_level,
+                provider_idempotency_mode, provider_query_mode,
+                provider_cancel_mode, provider_callback_mode
             )
             VALUES (
                 %(external_effect_id)s, %(operation_id)s, %(project_id)s, %(effect_type)s,
@@ -55,12 +64,21 @@ class ExternalEffectRepository:
                          secs => CAST(%(request_timeout_seconds)s AS INTEGER)
                      ) END,
                 %(reconciliation_mode)s, %(manual_resolution_required)s,
-                %(request_timeout_seconds)s
+                %(request_timeout_seconds)s, %(provider_capability_profile)s,
+                %(provider_control_level)s, %(provider_idempotency_mode)s,
+                %(provider_query_mode)s, %(provider_cancel_mode)s,
+                %(provider_callback_mode)s
             )
             ON CONFLICT (project_id, effect_type, stable_idempotency_key) DO NOTHING
             RETURNING external_effect_id
             """,
-            {**parameters, "request_payload": Jsonb(parameters["request_payload"])},
+            {
+                **parameters,
+                "request_payload": Jsonb(parameters["request_payload"]),
+                "provider_capability_profile": Jsonb(
+                    parameters["provider_capability_profile"]
+                ),
+            },
         )
         inserted = self.cursor.fetchone()
         if inserted:
@@ -93,6 +111,11 @@ class ExternalEffectRepository:
                    , effect.model_id, effect.request_deadline_at,
                    effect.reconciliation_mode, effect.manual_resolution_required,
                    effect.provider_request_id, effect.last_provider_heartbeat_at
+                   , effect.provider_capability_profile,
+                   effect.provider_control_level,
+                   effect.provider_idempotency_mode, effect.provider_query_mode,
+                   effect.provider_cancel_mode, effect.provider_callback_mode
+                   , effect.request_timeout_seconds
             FROM authority_external_effect AS effect
             WHERE effect.external_effect_id = %s
             FOR UPDATE OF effect
@@ -123,6 +146,13 @@ class ExternalEffectRepository:
             "manual_resolution_required",
             "provider_request_id",
             "last_provider_heartbeat_at",
+            "provider_capability_profile",
+            "provider_control_level",
+            "provider_idempotency_mode",
+            "provider_query_mode",
+            "provider_cancel_mode",
+            "provider_callback_mode",
+            "request_timeout_seconds",
         )
         return dict(zip(fields, row, strict=True))
 
@@ -311,6 +341,7 @@ class ExternalEffectRepository:
         outcome: str,
         evidence: dict[str, Any],
         provider_correlation_id: str,
+        provider_request_id: str,
     ) -> str:
         if outcome == "retryable_failure" and dispatch["generation"] >= dispatch["max_attempts"]:
             accepted_outcome = "final_failure"
@@ -359,8 +390,8 @@ class ExternalEffectRepository:
             [
                 effect_status,
                 Jsonb({} if accepted_outcome == "success" else evidence),
-                provider_correlation_id,
-                provider_correlation_id,
+                provider_request_id,
+                provider_request_id,
                 effect_status,
                 dispatch["external_effect_id"],
             ],

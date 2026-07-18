@@ -22,6 +22,11 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapter,
     ExternalEffectAdapterError,
 )
+from novel_forge.modules.provider_control.contracts import (
+    ProviderCapabilityProfile,
+    ProviderControlLevel,
+    capability_profile_from_dict,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -51,6 +56,7 @@ def plan_external_effect(
     model_id: str = "",
     request_timeout_seconds: int | None = None,
     reconciliation_mode: str = "query",
+    provider_capability_profile: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if max_attempts <= 0 or not all(
         (effect_type, provider, capability, stable_idempotency_key)
@@ -68,6 +74,19 @@ def plan_external_effect(
     if request_timeout_seconds is not None and request_timeout_seconds <= 0:
         raise KernelError("EFFECT_TIMEOUT_POLICY_INVALID", "effect timeout must be positive")
     request_hash = _hash(request_payload)
+    capability_profile = dict(provider_capability_profile or {})
+    if capability_profile:
+        profile = capability_profile_from_dict(capability_profile)
+        if profile.provider != provider:
+            raise KernelError(
+                "EFFECT_PROVIDER_CAPABILITY_CONFLICT",
+                "provider capability profile belongs to another provider",
+            )
+        if profile.reconciliation_mode != reconciliation_mode:
+            raise KernelError(
+                "EFFECT_PROVIDER_CAPABILITY_CONFLICT",
+                "provider reconciliation mode differs from the frozen capability profile",
+            )
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
         _require_context(repository, context)
@@ -90,6 +109,23 @@ def plan_external_effect(
                 "request_timeout_seconds": request_timeout_seconds,
                 "reconciliation_mode": reconciliation_mode,
                 "manual_resolution_required": reconciliation_mode == "unsupported",
+                "provider_capability_profile": capability_profile,
+                "provider_control_level": (
+                    str(capability_profile.get("control_level"))
+                    if capability_profile else ProviderControlLevel.LEGACY_UNCONTROLLED.value
+                ),
+                "provider_idempotency_mode": (
+                    "provider" if capability_profile.get("supports_provider_idempotency") else "unsupported"
+                ),
+                "provider_query_mode": (
+                    "query" if capability_profile.get("supports_query") else "unsupported"
+                ),
+                "provider_cancel_mode": (
+                    "cancel" if capability_profile.get("supports_cancel") else "unsupported"
+                ),
+                "provider_callback_mode": (
+                    "callback" if capability_profile.get("supports_callback") else "unsupported"
+                ),
             }
         )
         if not result["replayed"]:
@@ -183,6 +219,7 @@ def dispatch_external_effect(
             "EFFECT_PROVIDER_CONFLICT",
             "adapter provider differs from the frozen effect intent",
         )
+    _validate_frozen_adapter_capability(effect, adapter)
     dispatch = prepare_effect_dispatch(database_url, context, effect_id=effect_id)
     lease = acquire_effect_dispatch(
         database_url,
@@ -237,7 +274,15 @@ def dispatch_external_effect(
             provider_result = adapter.execute(
                 stable_idempotency_key=effect["stable_idempotency_key"],
                 capability=effect["capability"],
-                request_payload=effect["request_payload"],
+                request_payload={
+                    **effect["request_payload"],
+                    "external_effect_id": effect["external_effect_id"],
+                    "operation_id": effect["operation_id"],
+                    "request_hash": effect["request_hash"],
+                    "timeout_seconds": int(
+                        effect.get("request_timeout_seconds") or 30
+                    ),
+                },
             )
     except ExternalEffectAdapterError as exc:
         recorded = "unknown" if exc.request_sent else "retryable_failure"
@@ -290,6 +335,7 @@ def dispatch_external_effect(
         outcome=provider_result.outcome,
         evidence=provider_result.evidence,
         provider_correlation_id=provider_result.provider_correlation_id,
+        provider_request_id=provider_result.provider_request_id,
     )
     receipt: dict[str, Any] | None = None
     if outcome == "success" and effect["completion_policy"] == "synchronous_final":
@@ -314,6 +360,7 @@ def dispatch_external_effect(
         "outcome": outcome,
         "receipt": receipt,
         "provider_correlation_id": provider_result.provider_correlation_id,
+        "provider_request_id": provider_result.provider_request_id,
         "provider_evidence": provider_result.evidence,
     }
 
@@ -410,6 +457,7 @@ def submit_effect_dispatch_result(
     outcome: str,
     evidence: dict[str, Any],
     provider_correlation_id: str = "",
+    provider_request_id: str = "",
 ) -> str:
     if outcome not in {"success", "retryable_failure", "final_failure", "unknown"}:
         raise KernelError("EFFECT_OUTCOME_INVALID", "unknown provider outcome")
@@ -458,6 +506,7 @@ def submit_effect_dispatch_result(
                 outcome,
                 evidence,
                 provider_correlation_id,
+                provider_request_id,
             )
             if accepted == "unknown" and dispatch["effect_type"] == "blob.upload":
                 blob_id = str(dispatch["request_payload"].get("blob_id") or "")
@@ -494,6 +543,27 @@ def submit_effect_dispatch_result(
             "dispatch result carries a stale fencing token",
         )
     return accepted
+
+
+def _validate_frozen_adapter_capability(
+    effect: dict[str, Any], adapter: ExternalEffectAdapter
+) -> None:
+    frozen = dict(effect.get("provider_capability_profile") or {})
+    if not frozen:
+        return
+    declared = adapter.capability_profile
+    if isinstance(declared, ProviderCapabilityProfile):
+        declared = declared.to_dict()
+    if not isinstance(declared, dict):
+        raise KernelError(
+            "EFFECT_PROVIDER_CAPABILITY_MISSING",
+            "adapter has no explicit Provider Adapter v2 capability profile",
+        )
+    if declared != frozen:
+        raise KernelError(
+            "EFFECT_PROVIDER_CAPABILITY_MISMATCH",
+            "adapter runtime capabilities differ from the frozen ExternalEffect profile",
+        )
 
 
 def accept_external_effect_receipt(
@@ -673,11 +743,19 @@ def reconcile_external_effect(
             "EFFECT_RECONCILIATION_UNSUPPORTED",
             "provider cannot be queried; manual resolution is required",
         )
+    _validate_frozen_adapter_capability(effect, adapter)
 
     result = adapter.query(
         stable_idempotency_key=effect["stable_idempotency_key"],
         capability=effect["capability"],
-        request_payload=effect["request_payload"],
+        request_payload={
+            **effect["request_payload"],
+            "provider_request_id": str(effect.get("provider_request_id") or ""),
+            "external_effect_id": effect["external_effect_id"],
+            "operation_id": effect["operation_id"],
+            "trace_id": context.trace_id,
+            "correlation_id": context.correlation_id,
+        },
     )
 
     if result.outcome not in {"success", "not_found", "ambiguous", "failed_final", "cancelled"}:
@@ -817,10 +895,16 @@ def cancel_external_effect(
     if adapter is not None:
         if adapter.provider != effect_snapshot["provider"]:
             raise KernelError("EFFECT_PROVIDER_CONFLICT", "cancellation adapter is unexpected")
+        _validate_frozen_adapter_capability(effect_snapshot, adapter)
         provider_result = adapter.cancel(
             stable_idempotency_key=effect_snapshot["stable_idempotency_key"],
             capability=effect_snapshot["capability"],
-            request_payload=effect_snapshot["request_payload"],
+            request_payload={
+                **effect_snapshot["request_payload"],
+                "cancel_reason": "authority cancellation",
+                "trace_id": context.trace_id,
+                "correlation_id": context.correlation_id,
+            },
             provider_request_id=str(effect_snapshot.get("provider_request_id") or ""),
         )
         if provider_result.outcome not in {

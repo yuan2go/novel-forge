@@ -14,6 +14,7 @@ class ProviderResult:
     outcome: str
     provider_correlation_id: str
     evidence: dict[str, Any]
+    provider_request_id: str = ""
 
 
 class ExternalEffectAdapterError(RuntimeError):
@@ -27,6 +28,7 @@ class ExternalEffectAdapterError(RuntimeError):
 class ExternalEffectAdapter(Protocol):
     provider: str
     reconciliation_mode: str
+    capability_profile: Any
 
     def execute(
         self,
@@ -57,6 +59,14 @@ class ExternalEffectAdapter(Protocol):
 class FakeDeterministicProvider:
     provider = "fake_deterministic_provider"
     reconciliation_mode = "query"
+    capability_profile = {
+        "provider": provider, "control_level": "FIXTURE_CONTROLLED",
+        "supports_request_timeout": True, "supports_provider_idempotency": True,
+        "supports_query": True, "supports_cancel": True, "supports_callback": False,
+        "supports_usage_receipt": False, "supports_cost_receipt": False,
+        "reconciliation_mode": "query", "real_provider_validation_eligible": False,
+        "contract_version": "provider-capability-v2",
+    }
 
     def __init__(self, scenario: str) -> None:
         self.scenario = scenario
@@ -157,6 +167,14 @@ class FakeDeterministicProvider:
 class LocalFileObjectStoreAdapter:
     provider = "local_file_object_store"
     reconciliation_mode = "query"
+    capability_profile = {
+        "provider": provider, "control_level": "FIXTURE_CONTROLLED",
+        "supports_request_timeout": True, "supports_provider_idempotency": True,
+        "supports_query": True, "supports_cancel": True, "supports_callback": False,
+        "supports_usage_receipt": False, "supports_cost_receipt": False,
+        "reconciliation_mode": "query", "real_provider_validation_eligible": False,
+        "contract_version": "provider-capability-v2",
+    }
 
     def __init__(self, root: Path) -> None:
         self.root = root.resolve()

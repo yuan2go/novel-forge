@@ -12,6 +12,7 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
     FakeDeterministicProvider,
     LocalFileObjectStoreAdapter,
 )
+from novel_forge.modules.provider_control import ScriptedProviderAdapterV2
 
 
 class _SlowProvider(FakeDeterministicProvider):
@@ -65,6 +66,92 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
         )
         self.assertEqual(result["outcome"], "success")
         self._assert_effect(effect, "SUCCEEDED", "SUCCEEDED")
+
+    def test_provider_v2_profile_and_request_id_are_frozen_and_persisted(self) -> None:
+        context = self._context()
+        adapter = ScriptedProviderAdapterV2("success")
+        stable_key = identifier("provider-v2-effect")
+        effect = plan_external_effect(
+            DATABASE_URL,
+            context,
+            effect_type="model.invoke",
+            provider=adapter.provider,
+            capability="model.draft",
+            stable_idempotency_key=stable_key,
+            request_payload={
+                "stage": "draft",
+                "trace_id": context.trace_id,
+                "correlation_id": context.correlation_id,
+            },
+            max_attempts=2,
+            reversible=False,
+            request_timeout_seconds=30,
+            reconciliation_mode="query",
+            provider_capability_profile=adapter.capability_profile.to_dict(),
+        )["external_effect_id"]
+        result = dispatch_external_effect(
+            DATABASE_URL,
+            context,
+            effect_id=effect,
+            worker_id="provider-v2-worker",
+            lease_seconds=30,
+            adapter=adapter,
+        )
+        self.assertEqual(result["outcome"], "success")
+        self.assertTrue(result["provider_request_id"].startswith("scripted-request:"))
+        self.assertEqual(
+            adapter.last_request.stable_idempotency_key,
+            stable_key,
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT provider_request_id, provider_control_level,
+                       provider_idempotency_mode, provider_query_mode,
+                       provider_cancel_mode, provider_callback_mode,
+                       provider_capability_profile->>'contract_version'
+                FROM authority_external_effect
+                WHERE external_effect_id = %s
+                """,
+                [effect],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (
+                    result["provider_request_id"], "FIXTURE_CONTROLLED",
+                    "provider", "query", "cancel", "callback",
+                    "provider-capability-v2",
+                ),
+            )
+
+    def test_provider_v2_capability_drift_fails_before_dispatch(self) -> None:
+        context = self._context()
+        adapter = ScriptedProviderAdapterV2("success")
+        frozen = adapter.capability_profile.to_dict()
+        frozen["supports_cancel"] = False
+        effect = plan_external_effect(
+            DATABASE_URL,
+            context,
+            effect_type="model.invoke",
+            provider=adapter.provider,
+            capability="model.draft",
+            stable_idempotency_key=identifier("provider-v2-drift"),
+            request_payload={"stage": "draft"},
+            max_attempts=2,
+            reversible=False,
+            request_timeout_seconds=30,
+            reconciliation_mode="query",
+            provider_capability_profile=frozen,
+        )["external_effect_id"]
+        with self.assertRaisesRegex(KernelError, "runtime capabilities differ"):
+            dispatch_external_effect(
+                DATABASE_URL,
+                context,
+                effect_id=effect,
+                worker_id="provider-v2-worker",
+                lease_seconds=30,
+                adapter=adapter,
+            )
 
     def test_slow_provider_dispatch_renews_effect_lease(self) -> None:
         context = self._context()

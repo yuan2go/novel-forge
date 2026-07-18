@@ -26,6 +26,10 @@ from novel_forge.modules.command_kernel.budget_runtime import (
     settle_provider_budget,
 )
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery, AuthorityAssetWriter
+from novel_forge.modules.provider_control.contracts import (
+    ProviderCapabilityProfile,
+    ProviderControlLevel,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,6 +142,19 @@ class ChapterModelExternalEffectAdapter:
 
     provider = "novel_forge_model_gateway_v1"
     reconciliation_mode = "unsupported"
+    capability_profile = ProviderCapabilityProfile(
+        provider=provider,
+        control_level=ProviderControlLevel.LEGACY_UNCONTROLLED,
+        supports_request_timeout=False,
+        supports_provider_idempotency=False,
+        supports_query=False,
+        supports_cancel=False,
+        supports_callback=False,
+        supports_usage_receipt=True,
+        supports_cost_receipt=True,
+        reconciliation_mode="unsupported",
+        real_provider_validation_eligible=False,
+    )
 
     def __init__(self, routes: dict[str, ChapterModelRoute]) -> None:
         unsupported = set(routes) - {
@@ -446,7 +463,14 @@ class ExternalEffectChapterModelPort:
             ),
             request_timeout_seconds=self.lease_seconds * 5,
             reconciliation_mode=str(
-                getattr(self.adapter, "reconciliation_mode", "unsupported")
+                self.adapter.reconciliation_mode
+            ),
+            provider_capability_profile=(
+                self.adapter.capability_profile.to_dict()
+                if isinstance(
+                    self.adapter.capability_profile, ProviderCapabilityProfile
+                )
+                else dict(self.adapter.capability_profile)
             ),
         )
         reservation = reserve_provider_budget(
