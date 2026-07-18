@@ -65,6 +65,41 @@ class ChapterNode(Enum):
         "chapter.canon",
         "chapter.canon.materialized",
     )
+    QUALITY_STRUCTURAL = (
+        "quality_structural",
+        "chapter.quality.structural.evaluate",
+        "chapter_quality_group_report",
+        "chapter.quality.structural",
+        "chapter.quality.structural.materialized",
+    )
+    QUALITY_COMMERCIAL = (
+        "quality_commercial",
+        "chapter.quality.commercial.evaluate",
+        "chapter_quality_group_report",
+        "chapter.quality.commercial",
+        "chapter.quality.commercial.materialized",
+    )
+    QUALITY_SOURCE_ORIGINALITY = (
+        "quality_source_originality",
+        "chapter.quality.source_originality.evaluate",
+        "chapter_quality_group_report",
+        "chapter.quality.source_originality",
+        "chapter.quality.source_originality.materialized",
+    )
+    QUALITY_LONGFORM = (
+        "quality_longform",
+        "chapter.quality.longform.evaluate",
+        "chapter_quality_group_report",
+        "chapter.quality.longform",
+        "chapter.quality.longform.materialized",
+    )
+    QUALITY_PLATFORM = (
+        "quality_platform",
+        "chapter.quality.platform.evaluate",
+        "chapter_quality_group_report",
+        "chapter.quality.platform",
+        "chapter.quality.platform.materialized",
+    )
     QUALITY = (
         "quality",
         "chapter.quality.evaluate",
@@ -111,6 +146,15 @@ class ChapterNode(Enum):
     @property
     def handler_key(self) -> str:
         return f"novel_forge.chapter_authority.{self.value}"
+
+
+QUALITY_GROUP_NODES = (
+    ChapterNode.QUALITY_STRUCTURAL,
+    ChapterNode.QUALITY_COMMERCIAL,
+    ChapterNode.QUALITY_SOURCE_ORIGINALITY,
+    ChapterNode.QUALITY_LONGFORM,
+    ChapterNode.QUALITY_PLATFORM,
+)
 
 
 @dataclass(frozen=True, slots=True)

@@ -99,7 +99,8 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
         self.assertEqual(context["selected_asset_version_ids"], ["plan-version-1"])
         self.assertEqual(review["blocking_issue_count"], 1)
         self.assertEqual(canon["gate"], "PASSED")
-        self.assertEqual(quality["gate"], "PASSED_WITH_UNCALIBRATED")
+        self.assertEqual(quality["gate"], "FAILED")
+        self.assertIn("originality", quality["blocking_dimensions"])
         self.assertEqual(exported["release_status"], "READY_FOR_BLOB_VERIFICATION")
 
     def test_quality_and_export_fail_closed(self) -> None:

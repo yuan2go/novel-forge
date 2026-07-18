@@ -127,19 +127,19 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
             canon_asset_version_id="canon-v1", context_bundle_version_id="context-v1",
             context_bundle=context_bundle,
         )
-        gate = prepare_internal_release(
-            project_id="project-a", revision=revision,
-            revision_asset_version_id="revision-v1", quality=quality,
-            quality_asset_version_id="quality-v1", review=rereview,
-            review_asset_version_id="rereview-v1", canon=canon,
-            canon_asset_version_id="canon-v1",
-            context_bundle=context_bundle,
-            context_bundle_version_id="context-v1",
-        )
+        with self.assertRaisesRegex(KernelError, "PUBLISH_GATE_BLOCKED"):
+            prepare_internal_release(
+                project_id="project-a", revision=revision,
+                revision_asset_version_id="revision-v1", quality=quality,
+                quality_asset_version_id="quality-v1", review=rereview,
+                review_asset_version_id="rereview-v1", canon=canon,
+                canon_asset_version_id="canon-v1",
+                context_bundle=context_bundle,
+                context_bundle_version_id="context-v1",
+            )
         self.assertEqual(canon["facts"][0]["object"], "broken")
-        self.assertEqual(quality["gate"], "PASSED_WITH_UNCALIBRATED")
-        self.assertEqual(gate["gate"], "PASSED")
-        self.assertTrue(gate["rollback_metadata"]["release_not_externally_published"])
+        self.assertEqual(quality["gate"], "FAILED")
+        self.assertIn("anti_ai", quality["blocking_dimensions"])
 
     def test_canon_conflict_blocks_quality(self) -> None:
         review = self.review()

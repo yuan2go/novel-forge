@@ -61,12 +61,12 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             [definition["name"] for definition in definitions],
             [node.definition_name for node in ChapterNode],
         )
-        self.assertEqual(len(definitions), 12)
+        self.assertEqual(len(definitions), len(ChapterNode))
         self.assertEqual(
             {definition["definition_version"] for definition in definitions},
             {CHAPTER_SLICE_DEFINITION_VERSION},
         )
-        self.assertEqual(len({item["handler_key"] for item in definitions}), 12)
+        self.assertEqual(len({item["handler_key"] for item in definitions}), len(ChapterNode))
         self.assertEqual(definitions[-3]["name"], "chapter.publishing.prepare_release")
         self.assertEqual(definitions[-1]["name"], "chapter.publishing.finalize_release")
         for node, definition in zip(ChapterNode, definitions, strict=True):

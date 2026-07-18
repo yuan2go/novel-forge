@@ -4,7 +4,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRegistry, ChapterNode
+from novel_forge.modules.chapter_authority.contracts import (
+    ChapterHandlerRegistry,
+    ChapterNode,
+    QUALITY_GROUP_NODES,
+)
 from novel_forge.modules.chapter_authority.export_delivery import (
     ExportDeliveryRequest,
     deliver_export,
@@ -57,6 +61,17 @@ class ChapterSchedulerTick:
     recovery_mode: str
 
 
+def _admission_dependencies(node: ChapterNode) -> tuple[ChapterNode, ...]:
+    if node is ChapterNode.PLAN:
+        return ()
+    if node in QUALITY_GROUP_NODES:
+        return (ChapterNode.CANON,)
+    if node is ChapterNode.QUALITY:
+        return QUALITY_GROUP_NODES
+    nodes = list(ChapterNode)
+    return (nodes[nodes.index(node) - 1],)
+
+
 class ChapterAuthorityScheduler:
     """Advance at most one Chapter node using only PostgreSQL-rebuilt state."""
 
@@ -101,8 +116,24 @@ class ChapterAuthorityScheduler:
                 operation_status=str(root["status"]),
                 recovery_mode="terminal_replay",
             )
-        node, operation = self._current_or_next(children)
         request = self._request_from_root(root)
+        if children.get(ChapterNode.CANON, {}).get("status") == "SUCCEEDED":
+            admitted_fanout = False
+            for quality_node in QUALITY_GROUP_NODES:
+                if quality_node not in children:
+                    child = self._admit_node(
+                        request=request,
+                        root=root,
+                        saga_id=saga["saga_id"],
+                        children=children,
+                        node=quality_node,
+                    )
+                    children[quality_node] = child
+                    admitted_fanout = True
+            if admitted_fanout:
+                coordinate_saga(self.database_url, context, saga["saga_id"])
+                root, saga, children = self._graph_state(project_id, root_operation_id)
+        node, operation = self._current_or_next(children)
         if operation is None:
             operation = self._admit_node(
                 request=request,
@@ -163,8 +194,11 @@ class ChapterAuthorityScheduler:
         for node in ChapterNode:
             operation = children.get(node)
             if operation is None:
-                prior = list(ChapterNode)[: list(ChapterNode).index(node)]
-                if all(children.get(item, {}).get("status") == "SUCCEEDED" for item in prior):
+                dependencies = _admission_dependencies(node)
+                if all(
+                    children.get(item, {}).get("status") == "SUCCEEDED"
+                    for item in dependencies
+                ):
                     return node, None
                 raise KernelError(
                     "CHAPTER_SAGA_GAP",
@@ -219,8 +253,12 @@ class ChapterAuthorityScheduler:
         root_key = request.idempotency_key or (
             f"{request.project_id}:chapter:{request.chapter}:root"
         )
-        previous = list(ChapterNode)[list(ChapterNode).index(node) - 1] if node is not ChapterNode.PLAN else None
-        previous_id = str(children[previous]["operation_id"]) if previous is not None else root["operation_id"]
+        dependencies = _admission_dependencies(node)
+        dependency_ids = [
+            str(children[item]["operation_id"])
+            for item in dependencies
+        ]
+        previous_id = dependency_ids[-1] if dependency_ids else root["operation_id"]
         admitted = admit_command(
             self.database_url,
             _command(
@@ -251,12 +289,12 @@ class ChapterAuthorityScheduler:
             list(ChapterNode).index(node) + 1,
             "",
         )
-        if previous is not None:
+        for dependency_id in dependency_ids:
             add_operation_dependency(
                 self.database_url,
                 graph_context,
                 operation_id,
-                previous_id,
+                dependency_id,
                 "ON_SUCCESS",
             )
         return self._child(operation_id, root["project_id"])

@@ -8,6 +8,7 @@ from uuid import uuid4
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerRegistry,
     ChapterNode,
+    QUALITY_GROUP_NODES,
 )
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_SLICE_DEFINITION_VERSION,
@@ -606,6 +607,13 @@ def _operation_state(
 
 
 def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
+    if node in QUALITY_GROUP_NODES:
+        return (
+            ChapterNode.REVISION,
+            ChapterNode.REREVIEW,
+            ChapterNode.CANON,
+            ChapterNode.CONTEXT,
+        )
     return {
         ChapterNode.PLAN: (),
         ChapterNode.CONTEXT: (ChapterNode.PLAN,),
@@ -634,6 +642,7 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
             ChapterNode.REREVIEW,
             ChapterNode.CANON,
             ChapterNode.CONTEXT,
+            *QUALITY_GROUP_NODES,
         ),
         ChapterNode.PUBLISH_GATE: (
             ChapterNode.REVISION,

@@ -31,6 +31,7 @@ from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelPort,
     ModelProviderResult,
 )
+from novel_forge.modules.chapter_quality_authority import build_quality_group_evidence
 
 
 class DeterministicFixtureChapterProvider:
@@ -489,12 +490,57 @@ class _CanonExtractionHandler:
 
 
 @dataclass(frozen=True, slots=True)
+class _QualityGroupHandler:
+    group: str
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        revision = request.require_input("draft_version")
+        canon = request.require_input("canon_patch")
+        context = request.require_input("context_bundle")
+        fixture = not any(
+            bool(item.content.get("provider_evidence", {}).get("real_model_call"))
+            for item in request.inputs
+        )
+        content = build_quality_group_evidence(
+            group=self.group,
+            project_id=request.project_id,
+            revision=revision.content,
+            revision_asset_version_id=revision.asset_version_id,
+            context_bundle=context.content,
+            canon=canon.content,
+            fixture=fixture,
+        )
+        node = {
+            "structural": ChapterNode.QUALITY_STRUCTURAL,
+            "commercial": ChapterNode.QUALITY_COMMERCIAL,
+            "source_originality": ChapterNode.QUALITY_SOURCE_ORIGINALITY,
+            "longform": ChapterNode.QUALITY_LONGFORM,
+            "platform": ChapterNode.QUALITY_PLATFORM,
+        }[self.group]
+        return _output(node, content)
+
+
+@dataclass(frozen=True, slots=True)
 class _QualityHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
         review = request.require_input("re_review_report")
         canon = request.require_input("canon_patch")
         context = request.require_input("context_bundle")
+        groups = [
+            item for item in request.inputs
+            if item.asset_type == "chapter_quality_group_report"
+        ]
+        if {str(item.content.get("group")) for item in groups} != {
+            "structural", "commercial", "source_originality", "longform", "platform"
+        }:
+            from novel_forge.modules.command_kernel.errors import KernelError
+            raise KernelError("QUALITY_FANIN_INCOMPLETE", "all five quality groups are required")
+        group_reports = [
+            dimension
+            for group in groups
+            for dimension in group.content.get("dimensions", [])
+        ]
         content = build_quality_report(
             revision=revision.content,
             revision_asset_version_id=revision.asset_version_id,
@@ -505,6 +551,7 @@ class _QualityHandler:
             project_id=request.project_id,
             context_bundle_version_id=context.asset_version_id,
             context_bundle=context.content,
+            evidence_reports=group_reports,
         )
         primary = _output(
             ChapterNode.QUALITY,
@@ -625,6 +672,11 @@ def build_chapter_handler_registry(
     registry.register(ChapterNode.REREVIEW, _ReReviewHandler(provider))
     registry.register(ChapterNode.CANON_EXTRACTION, _CanonExtractionHandler(provider))
     registry.register(ChapterNode.CANON, _CanonHandler())
+    registry.register(ChapterNode.QUALITY_STRUCTURAL, _QualityGroupHandler("structural"))
+    registry.register(ChapterNode.QUALITY_COMMERCIAL, _QualityGroupHandler("commercial"))
+    registry.register(ChapterNode.QUALITY_SOURCE_ORIGINALITY, _QualityGroupHandler("source_originality"))
+    registry.register(ChapterNode.QUALITY_LONGFORM, _QualityGroupHandler("longform"))
+    registry.register(ChapterNode.QUALITY_PLATFORM, _QualityGroupHandler("platform"))
     registry.register(ChapterNode.QUALITY, _QualityHandler())
     registry.register(ChapterNode.PUBLISH_GATE, _PublishGateHandler())
     registry.register(ChapterNode.EXPORT, _ExportHandler())

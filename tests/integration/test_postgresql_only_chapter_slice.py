@@ -31,6 +31,25 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
 
     @staticmethod
     def release_evidence(project_id: str):
+        def report(asset_type: str, dimensions: tuple[str, ...]) -> dict[str, object]:
+            return {
+                "asset_version_id": f"{project_id}:{asset_type}-v1",
+                "asset_type": asset_type,
+                "project_id": project_id,
+                "estimated_tokens": 40,
+                "allowed_use": "evidence_only",
+                "source_use_mode": "generation",
+                "safe_summary": "Human-calibrated fixture quality evidence.",
+                "structured_facts": [{
+                    "key": "dimension_evidence",
+                    "value": [{
+                        "dimension": item, "gate_status": "PASSED",
+                        "calibration_status": "HUMAN_CALIBRATED",
+                        "human_verified": True,
+                    } for item in dimensions],
+                }],
+                "narrative_function": "quality_evidence",
+            }
         candidates = (
             {
                 "asset_version_id": f"{project_id}:checklist-v1", "asset_type": "operator_checklist",
@@ -46,6 +65,24 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 "structured_facts": [{"key": "approved", "value": True}],
                 "narrative_function": "release_evidence",
             },
+            report("commercial_quality_report", (
+                "golden_opening", "reader_promise", "reward", "protagonist_charm",
+                "antagonist_pressure", "toxic_point", "chapter_hook",
+                "suspense_progression", "emotional_curve", "serialization_function",
+            )),
+            report("source_originality_quality_report", (
+                "originality", "anti_ai", "style_drift",
+            )),
+            report("longform_quality_report", (
+                "character_motivation_drift", "relationship_continuity",
+                "timeline_consistency", "foreshadow_status", "promise_payoff_debt",
+                "world_rule_conflict", "power_state_conflict",
+                "narrative_pattern_repetition", "arc_progress",
+            )),
+            report("platform_quality_report", (
+                "chapter_length", "format", "sensitive_content", "ai_content_policy",
+                "opening_expectations", "platform_rhythm", "publish_metadata",
+            )),
         )
         with transaction() as connection, connection.cursor() as cursor:
             for candidate in candidates:
@@ -120,10 +157,10 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["root"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["forward_recovery_attempts"], 1)
-        self.assertEqual(len(manifest["operations"]), 13)
+        self.assertEqual(len(manifest["operations"]), 1 + len(ChapterNode))
         # Plan and Context now materialize the immutable preparation manifest and
         # its consistency report as completion evidence.
-        self.assertEqual(len(manifest["outputs"]), 38)
+        self.assertEqual(len(manifest["outputs"]), 69)
         self.assertEqual(
             len(
                 [
@@ -132,7 +169,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                     if item["asset_type"] == "chapter_quality_evidence"
                 ]
             ),
-            15,
+            41,
         )
         self.assertEqual(manifest["attempt_counts"][ChapterNode.DRAFT.value], 2)
         for node in ChapterNode:
@@ -165,7 +202,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 38)
+            self.assertEqual(cursor.fetchone()[0], 69)
             cursor.execute(
                 """
                 SELECT asset.asset_type, binding.role, version.content->>'state_kind'
@@ -199,7 +236,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id, result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 11)
+            self.assertEqual(cursor.fetchone()[0], 16)
 
     def test_standard_success_adapter_completes_without_unknown_probe(self) -> None:
         project_id = identifier("chapter-project-success")

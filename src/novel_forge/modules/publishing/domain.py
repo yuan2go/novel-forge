@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
 
 
 def prepare_internal_release(
@@ -21,16 +22,11 @@ def prepare_internal_release(
     context_bundle_version_id: str,
 ) -> dict[str, Any]:
     dimensions = quality.get("dimensions", [])
-    required_dimensions = {
-        "readability", "golden_opening", "chapter_economy", "reader_promise",
-        "reward", "toxic_point", "protagonist_charm", "antagonist_pressure",
-        "mobile_reading", "style_drift", "originality", "source_leakage",
-        "anti_ai", "platform_rules", "longform_stability",
-    }
+    required_dimensions = set(QUALITY_DIMENSIONS)
     by_dimension = {str(item.get("dimension")): item for item in dimensions}
     source_gate = [
         item for item in dimensions
-        if item.get("gate_type") == "source_originality_gate" and item.get("blocking")
+        if item.get("gate_type") == "source_originality_quality_gate" and item.get("blocking")
     ]
     evidence_types = {
         str(item.get("asset_type")): item
@@ -72,20 +68,22 @@ def prepare_internal_release(
         ),
         "anti_ai_clear_or_approved": (
             by_dimension.get("anti_ai", {}).get("gate_status") == "PASSED"
-            or approval_facts.get("approved") is True
         ),
         "platform_rules_clear_or_approved": (
-            by_dimension.get("platform_rules", {}).get("gate_status") == "PASSED"
-            or (
-                approval_required
-                and (
-                    approval_facts.get("approved") is True
-                    or approval_facts.get("decision") == "APPROVED"
+            all(
+                by_dimension.get(item, {}).get("gate_status") in {
+                    "PASSED", "PASSED_WITH_WARNINGS", "WAIVED_BY_APPROVAL"
+                }
+                for item in (
+                    "chapter_length", "format", "sensitive_content",
+                    "ai_content_policy", "publish_metadata",
                 )
             )
         ),
         "all_blocking_dimensions_passed": all(
-            item.get("gate_status") in {"PASSED", "PASSED_WITH_WARNINGS"}
+            item.get("gate_status") in {
+                "PASSED", "PASSED_WITH_WARNINGS", "WAIVED_BY_APPROVAL"
+            }
             for item in dimensions
             if item.get("blocking")
         ),
@@ -100,11 +98,17 @@ def prepare_internal_release(
         ),
     }
     if not project_id or not all(checks.values()):
-        raise KernelError("PUBLISH_GATE_BLOCKED", "release evidence is missing or blocked")
+        failed = sorted(key for key, passed in checks.items() if not passed)
+        raise KernelError(
+            "PUBLISH_GATE_BLOCKED",
+            "release evidence is missing or blocked: " + ", ".join(failed),
+        )
     return {
         "project_id": project_id,
         "chapter": revision["chapter"],
         "gate": "PASSED",
+        "release_readiness": "INTERNAL_REVIEW_RELEASE",
+        "external_publish_permitted": False,
         "checks": checks,
         "release_manifest": {
             "revision_asset_version_id": revision_asset_version_id,
@@ -222,6 +226,7 @@ def finalize_blob_verified_release(
         "chapter": export_package["chapter"],
         "gate": "PASSED",
         "release_status": "INTERNAL_RELEASE_FINALIZED",
+        "release_readiness": "INTERNAL_REVIEW_RELEASE",
         "external_publish_permitted": False,
         "checks": checks,
         "accepted_asset_version_ids": {

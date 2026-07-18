@@ -56,6 +56,9 @@ _BASE_ALLOWED = (
     "power_state_snapshot", "character_card", "genre_profile", "knowledge_pack",
     "material_asset", "reader_promise", "empty_state_declaration",
     "operator_checklist", "approval_decision",
+    "structural_quality_report", "commercial_quality_report",
+    "source_originality_quality_report", "longform_quality_report",
+    "platform_quality_report",
 )
 
 STAGE_PROFILES = {
@@ -68,7 +71,11 @@ STAGE_PROFILES = {
         forbidden_asset_types=("raw_source", "source_chunk", "eval_only", "quarantined_source"),
         maximum_raw_source_ratio=0.0,
         source_expression_policy="abstract_safe_content_only",
-        evidence_only_types=("quality_rubric", "operator_checklist"),
+        evidence_only_types=(
+            "quality_rubric", "operator_checklist", "structural_quality_report",
+            "commercial_quality_report", "source_originality_quality_report",
+            "longform_quality_report", "platform_quality_report",
+        ),
         review_only_types=("review_rule",),
         copyright_mode="fail_closed",
         compression_policy="safe_summary_then_structured_facts",

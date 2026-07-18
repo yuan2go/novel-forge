@@ -7,11 +7,11 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 QUALITY_GATE_TYPES = (
-    "structural_evidence_gate",
-    "semantic_quality_gate",
-    "commercial_readability_gate",
-    "source_originality_gate",
-    "longform_stability_gate",
+    "structural_quality_gate",
+    "commercial_quality_gate",
+    "source_originality_quality_gate",
+    "longform_quality_gate",
+    "platform_quality_gate",
 )
 
 
@@ -41,7 +41,7 @@ def evaluate_quality_evidence(
     dimensions: list[dict[str, Any]] = [
         _dimension(
             dimension="structural_evidence",
-            gate_type="structural_evidence_gate",
+            gate_type="structural_quality_gate",
             score=float(review.get("score", 0.0)),
             gate_status="PASSED",
             evidence_asset_version_id=review_asset_version_id,
@@ -52,7 +52,7 @@ def evaluate_quality_evidence(
         ),
         _dimension(
             dimension="canon_consistency",
-            gate_type="longform_stability_gate",
+            gate_type="longform_quality_gate",
             score=None,
             gate_status="PASSED",
             evidence_asset_version_id=canon_asset_version_id,
@@ -88,10 +88,10 @@ def evaluate_quality_evidence(
             )
     blocking = [
         item for item in dimensions
-        if item["blocking"] and item["gate_status"] not in {"PASSED", "PASSED_WITH_WARNINGS"}
+        if item["blocking"] and item["gate_status"] not in {
+            "PASSED", "PASSED_WITH_WARNINGS", "WAIVED_BY_APPROVAL"
+        }
     ]
-    if blocking:
-        raise KernelError("CHAPTER_QUALITY_GATE_FAILED", "blocking quality evidence failed")
     scored = [item for item in dimensions if isinstance(item["score"], (int, float)) and item["weight"] > 0]
     weight = sum(float(item["weight"]) for item in scored)
     aggregate_score = (
@@ -115,13 +115,16 @@ def evaluate_quality_evidence(
         ],
         "fixture": all(item["source"] in {"fixture", "none", "deterministic_extractor"} for item in dimensions),
         "production_verified": False,
-        "gate": "PASSED_WITH_UNCALIBRATED" if any(
+        "provider_verified": any(bool(item.get("provider_verified")) for item in dimensions),
+        "human_verified": any(bool(item.get("human_verified")) for item in dimensions),
+        "gate": "FAILED" if blocking else "PASSED_WITH_UNCALIBRATED" if any(
             item["calibration_status"] in {
                 "UNCALIBRATED", "FIXTURE_UNCALIBRATED", "PROVIDER_UNCALIBRATED"
             }
             for item in dimensions
         ) else "PASSED",
-        "quality_contract_version": "chapter-quality-aggregate-v1",
+        "blocking_dimensions": [item["dimension"] for item in blocking],
+        "quality_contract_version": "chapter-quality-aggregate-v2",
     }
 
 
@@ -155,6 +158,10 @@ def _normalize_evidence_dimension(
         blocking=bool(report.get("blocking", False)),
         calibration_status=calibration,
         source=source,
+        provider_verified=bool(report.get("provider_verified")),
+        human_verified=bool(report.get("human_verified")),
+        quality_profile_version_id=str(report.get("quality_profile_version_id") or ""),
+        platform_profile_version_id=str(report.get("platform_profile_version_id") or ""),
     )
 
 

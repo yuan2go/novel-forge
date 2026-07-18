@@ -302,13 +302,17 @@ def build_quality_report(
     fixture = not bool(
         effective_review.get("provider_evidence", {}).get("real_model_call")
     )
-    authority_reports = build_chapter_quality_evidence(
-        project_id=project_id,
-        revision=revision,
-        revision_asset_version_id=revision_asset_version_id,
-        context_bundle=context_bundle or {},
-        canon=canon,
-        fixture=fixture,
+    authority_reports = (
+        build_chapter_quality_evidence(
+            project_id=project_id,
+            revision=revision,
+            revision_asset_version_id=revision_asset_version_id,
+            context_bundle=context_bundle or {},
+            canon=canon,
+            fixture=fixture,
+        )
+        if evidence_reports is None
+        else list(evidence_reports)
     )
     aggregate = evaluate_quality_evidence(
         project_id=project_id,
@@ -319,7 +323,7 @@ def build_quality_report(
         canon=canon,
         canon_asset_version_id=canon_asset_version_id,
         context_bundle_version_id=context_bundle_version_id,
-        evidence_reports=[*authority_reports, *(evidence_reports or [])],
+        evidence_reports=authority_reports,
     )
     return {**aggregate, "evidence_reports": authority_reports}
 
