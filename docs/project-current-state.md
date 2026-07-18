@@ -1,7 +1,7 @@
 # Project Current State
 
 Updated: 2026-07-18
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `14b2f1c`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `2e506f1467321e688d82365ef2734c9f70b7caaa`
 
 Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
 
@@ -10,6 +10,20 @@ The current code/runtime baseline is Novel Forge v6. The repository/package/CLI 
 Current priority: v1 single-book production closure before broader multi-book, SaaS, or platform automation.
 
 ## 2026-07-18 Pre-Provider Production Closure
+
+Functional convergence now preserves the complete frozen ChapterPlan, represents
+explicit empty history with nine typed logical Snapshot declarations, and supplies
+five stage-specific Quality context views compiled from frozen profile content.
+Provider Adapter v2 adds explicit request identity, stable-key, timeout,
+query/cancel/callback capability contracts plus a scripted control-plane proof;
+legacy adapters remain validation-ineligible. Canon DEFER can reopen or expire, and
+REQUEST_REEXTRACTION now creates a superseding Extraction/Proposal generation before
+the same root Saga can resume. Worker supervision has explicit fatal exit/restart
+semantics, and CI separates architecture, unit, PostgreSQL, migration, and catalog
+binding jobs.
+
+Current phase state is `FUNCTIONALLY_READY_FOR_PROVIDER_VALIDATION`. This is not a
+claim of real Provider, long-form, or production proof.
 
 The PostgreSQL-only chapter Authority slice now contains an eighteen-node business
 chain plus root Saga. It adds a multi-asset `ProductionInputManifest`, governed

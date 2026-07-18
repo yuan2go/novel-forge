@@ -2,41 +2,55 @@
 
 Date: 2026-07-18.
 
-## Verdict
+## Layered verdict
 
-`READY_FOR_REAL_PROVIDER_SINGLE_CHAPTER`
+```text
+runtime_integration_ready=true
+functional_convergence_ready=true
+stage=FUNCTIONALLY_READY_FOR_PROVIDER_VALIDATION
+real_provider_validation_started=false
+real_provider_proven=false
+longform_proven=false
+production_verified=false
+```
 
-This verdict means the runtime can safely start a bounded, operator-observed single
-chapter proof. It does not mean the chapter will pass semantic Quality, does not
-permit external publishing, and does not establish production or long-form proof.
+This allows the next phase to configure one controlled Provider v2 route and execute
+one operator-observed chapter. It does not pre-approve any Provider SDK, generated
+content, quality result, budget behavior, or external publish action.
 
-## Entry checklist
+## Functional entry checklist
 
-- Configure trusted local operator and worker Principals with explicit project scope.
-- Configure full 40-character `NOVEL_FORGE_COMMIT_SHA` and build identity.
-- Configure explicit Draft/Review/Revision/Canon-extraction and grouped Quality
-  Provider/model routes.
-- Set Provider request timeout, query/cancel reconciliation capability, stable-key
-  behavior, and per-call/project/chapter/daily budget caps.
-- Prepare eligible ChapterPlan, StylePolicy, QualityProfile, PlatformProfile,
-  checklist, governed Context inputs, and chapter-appropriate prior Snapshots.
-- Keep external platform publishing disabled.
-- Run exactly one chapter through asynchronous API/worker, observe UNKNOWN/manual
-  reconciliation and Canon gates if raised, and capture cost/model logs.
-- Expect semantic Quality dimensions without calibrated current-Revision evidence to
-  block at `INTERNAL_REVIEW_RELEASE`; do not waive non-waivable gates.
+- Full ChapterPlan AssetVersion is frozen and transformed into a governed Draft view.
+- Nine historical state kinds distinguish typed empty state from missing state.
+- Provider Adapter v2 requires request identity, stable-key handling, timeout, and
+  declared query/cancel/callback capabilities; legacy adapters are ineligible.
+- Five Quality groups receive distinct frozen business context and compiled profile
+  content; weak evidence remains uncalibrated/fail-closed.
+- Canon DEFER/reopen, re-extraction generations, edited-payload validation, and Gate
+  recovery have PostgreSQL fixture proof.
+- Worker fatal exit/restart semantics and split CI architecture/migration checks exist.
+- PostgreSQL remains the production Authority and external publishing stays disabled.
 
-## Low-cost verification completed
+## Controlled proof checklist for the next phase
 
-- Unit: 916 passed.
-- PostgreSQL Authority suite: 96 passed; additional Content recovery/budget suite: 12 passed.
-- Architecture: 5 passed.
-- API/permission focused tests and `compileall`: passed.
-- Catalog: 124 Definitions (`65 candidate`, `17 mapped`, `42 integration_proven`,
-  `0 production_verified`).
+1. Select one real SDK adapter and prove its v2 capability declaration against SDK
+   behavior without fallback to `LEGACY_UNCONTROLLED`.
+2. Configure trusted operator/worker Principals, one project scope, a full 40-character
+   release SHA, strict timeout, and bounded operation/chapter/project/provider budgets.
+3. Freeze eligible ChapterPlan, profiles, governed Context, checklist, and applicable
+   previous Snapshot/typed-empty inputs.
+4. Execute exactly one chapter; capture Provider request IDs, receipts, cost/usage,
+   query/cancel behavior, Review/Re-review, Canon proposal/approval, Quality evidence,
+   Blob receipt, and Final Release Gate.
+5. Stop after the single chapter and review evidence before any multi-chapter run.
 
-## Deferred proof
+## Not run
 
-Real Provider, 3/10/30/100 chapters, multi-book concurrency, real network connectors,
-and external publishing were not run. Therefore `real_provider_proven=false`,
-`longform_proven=false`, and `production_verified=false`.
+No real or paid Provider, real chapter, 3/10/30/100 chapter proof, multi-book stress,
+real Git/RSS fetch, or external publish/withdraw action ran in this phase.
+
+## Low-cost evidence
+
+Unit discovery (942), the focused PostgreSQL Authority suite (35), architecture
+guards (7), clean/legacy migrations, compileall, local validation, and Catalog
+binding completed successfully. Hosted CI was not run because no push was made.

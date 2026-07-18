@@ -1,5 +1,23 @@
 # Current Engineering Progress And Feature Documentation
 
+## 2026-07-18 Pre-provider functional convergence update
+
+The current active branch is `feat/v7-content-intelligence-and-longform-proof`.
+Current source evidence is bound to commit
+`2e506f1467321e688d82365ef2734c9f70b7caaa`; older V6 progress below is retained as
+historical detail, not as the current Authority verdict.
+
+The PostgreSQL chapter slice now preserves full ChapterPlan fidelity, supports nine
+typed empty state declarations, uses Provider Adapter v2 control contracts and five
+stage-specific Quality views, and recovers Canon DEFER/reopen/re-extraction through
+versioned commands and generations. Deterministic calibration contracts, worker
+supervision, split CI, migration tests, and architecture boundaries are present.
+
+Maturity is `FUNCTIONALLY_READY_FOR_PROVIDER_VALIDATION`; real Provider validation
+has not started and `real_provider_proven`, `longform_proven`, and
+`production_verified` remain false. See the focused reports linked from
+`pre-provider-functional-convergence.md`.
+
 日期：2026-07-03
 
 ## 1. 当前工程进度结论
