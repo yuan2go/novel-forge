@@ -1,7 +1,7 @@
 # Project Current State
 
 Updated: 2026-07-18
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `1ef93fa`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `c698a36`
 
 Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
 
@@ -11,9 +11,9 @@ Current priority: v1 single-book production closure before broader multi-book, S
 
 ## 2026-07-18 Core Functional Convergence
 
-The PostgreSQL-only chapter Authority slice now contains a nine-node business chain plus root Saga, including governed Context, structured ReviewIssue/Revision/Canon/Quality, internal Publish Gate, and verified Export. Ten definitions are `integration_proven`; 22 new content-intelligence definitions are honestly `handler_bound` and disabled. Creative/World/Character, Theme/Ending, governed MKAOS/Source, controlled connector contracts, and long-form semantic reports have storage-free domain cores and focused tests.
+The PostgreSQL-only chapter Authority slice now contains an eleven-node business chain plus root Saga, including content-bearing governed Context, independent Re-review, independent Canon Extraction, stateful Canon Reduction, evidence-aggregated Quality, internal Publish Gate, and verified Export. Thirty-four definitions are `integration_proven`: chapter root plus eleven nodes and all 22 content-intelligence definitions. Content operations use explicit frozen-input codecs and the shared fenced runtime.
 
-This is not a complete autonomous Agent Center or long-novel proof. Legacy LocalStorage compatibility services remain, content-intelligence handlers still need generic PostgreSQL runtime integration, and real-provider/10/30/100-chapter runs were intentionally not performed. See `docs/reports/core-functional-convergence-progress.md` and `docs/reports/operation-definition-maturity-matrix.md`.
+This is not a complete autonomous Agent Center or long-novel proof. The LocalStorage Chapter Bus is production-disabled and has an Authority projection adapter, but its development implementation remains. Canon snapshot candidates are not yet separately materialized, quality dimensions remain uncalibrated without provider/human evidence, and real-provider/10/30/100-chapter runs were intentionally not performed. See `docs/reports/content-authority-runtime-convergence.md` and `docs/reports/operation-definition-maturity-matrix.md`.
 
 This document describes the current state as observed from code, tests, configuration, routes, and skills. It does not treat historical docs as truth unless code evidence exists.
 

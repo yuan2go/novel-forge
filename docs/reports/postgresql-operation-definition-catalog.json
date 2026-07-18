@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:016be8806d73d10e4a322f0878d9d726982814f3801a6acfe757fb092def93be",
+  "artifact_hash": "sha256:280290515f7340344850817d5dd11a0b9873d02e9ef0c2907383511fa687bbac",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+  "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
   "definitions": [
     {
       "approval_policy": {
@@ -6568,6 +6568,7 @@
         "novel_forge.modules.change_impact.service.create_change_impact_report",
         "novel_forge.modules.change_impact.service.mark_downstream_assets_stale",
         "novel_forge.modules.chapter_authority.handlers._DraftHandler.execute",
+        "novel_forge.modules.chapter_authority.handlers._ReReviewHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._ReviewHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._RevisionHandler.execute",
         "novel_forge.modules.chapter_authority.model_effects.ChapterModelExternalEffectAdapter._call",
@@ -6817,6 +6818,7 @@
         "novel_forge.modules.change_impact.service.create_change_impact_report",
         "novel_forge.modules.change_impact.service.mark_downstream_assets_stale",
         "novel_forge.modules.chapter_authority.handlers._DraftHandler.execute",
+        "novel_forge.modules.chapter_authority.handlers._ReReviewHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._ReviewHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._RevisionHandler.execute",
         "novel_forge.modules.chapter_authority.model_effects.ChapterModelExternalEffectAdapter._call",
@@ -11706,7 +11708,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.slice.run.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -11747,6 +11749,18 @@
             "allowed_states": [
               "SUCCEEDED"
             ],
+            "definition_name": "chapter.revision.review"
+          },
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "definition_name": "chapter.canon.extract"
+          },
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
             "definition_name": "chapter.canon.update"
           },
           {
@@ -11782,7 +11796,7 @@
         "novel_forge.chapter_authority.root"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.1",
+      "definition_version": "2.1.2",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -11795,7 +11809,7 @@
       "execution_mode": "saga",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "2.0.0",
+      "handler_contract_version": "2.0.2",
       "handler_key": "novel_forge.chapter_authority.root",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -11907,7 +11921,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.plan.materialize.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -11944,7 +11958,7 @@
         "novel_forge.chapter_authority.plan"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.1",
+      "definition_version": "2.1.2",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12093,7 +12107,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.context.build.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12130,7 +12144,7 @@
         "novel_forge.chapter_authority.context"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.1",
+      "definition_version": "2.1.2",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12279,7 +12293,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.draft.generate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12324,7 +12338,7 @@
         "novel_forge.chapter_authority.draft"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.1",
+      "definition_version": "2.1.2",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12475,7 +12489,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.review.evaluate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12520,7 +12534,7 @@
         "novel_forge.chapter_authority.review"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.1",
+      "definition_version": "2.1.2",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12671,7 +12685,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.apply.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12716,7 +12730,7 @@
         "novel_forge.chapter_authority.revision"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.1",
+      "definition_version": "2.1.2",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12866,8 +12880,390 @@
         ],
         "type": "object"
       },
+      "command_schema_version": "chapter.revision.review.command.v1",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.rereview",
+            "role": "primary",
+            "selector": "re_review_report"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.rereview.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_external_effects": [
+          {
+            "allowed_states": [
+              "SUCCEEDED"
+            ],
+            "capability": "model.review"
+          }
+        ],
+        "required_outbox_events": [
+          "chapter.rereview.materialized"
+        ],
+        "required_qualifications": [
+          "production_eligible"
+        ],
+        "version": "chapter.revision.review.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.chapter_authority.rereview"
+      ],
+      "definition_status": "integration_proven",
+      "definition_version": "2.1.2",
+      "enabled": true,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": true,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [
+        "model.review"
+      ],
+      "family": "chapter_authority",
+      "handler_contract_version": "2.1.0",
+      "handler_key": "novel_forge.chapter_authority.rereview",
+      "idempotency_scope": "project:chapter-slice",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "integration_evidence": [
+        "tests/integration/test_postgresql_only_chapter_slice.py",
+        "tests/integration/test_chapter_authority_runtime_postgres.py"
+      ],
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "chapter-authority",
+      "migration_status": "implemented",
+      "name": "chapter.revision.review",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "handler_output_policy": "chapter-authority-output-v1",
+        "local_storage_writes": "forbidden"
+      },
+      "projection_consumers": [
+        "chapter_production_run",
+        "operation_timeline",
+        "project_cockpit"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "chapter.revision.review.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 60
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "command_schema_version": "chapter.canon.extract.command.v1",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
+      "compensation_policy": {
+        "reason": "append_only_evidence",
+        "supported": false
+      },
+      "completion_contract": {
+        "required_asset_selectors": [
+          {
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR",
+            "lifecycle": "ACTIVE",
+            "output_key": "chapter.canon_extraction",
+            "role": "primary",
+            "selector": "canon_extraction"
+          }
+        ],
+        "required_audit_actions": [
+          "chapter.canon_extraction.materialized"
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "chapter.canon_extraction.materialized"
+        ],
+        "required_qualifications": [
+          "production_eligible"
+        ],
+        "version": "chapter.canon.extract.completion.v1"
+      },
+      "concurrency_key_template": "project:{project_id}:chapter-slice",
+      "current_entrypoints": [],
+      "current_handlers": [
+        "novel_forge.chapter_authority.canon_extraction"
+      ],
+      "definition_status": "integration_proven",
+      "definition_version": "2.1.2",
+      "enabled": true,
+      "evidence_status": {
+        "documented": true,
+        "handler_bound": true,
+        "implemented": true,
+        "integration_proven": true,
+        "longform_proven": false,
+        "real_provider_proven": false
+      },
+      "execution_mode": "worker",
+      "external_capabilities": [],
+      "family": "chapter_authority",
+      "handler_contract_version": "2.1.0",
+      "handler_key": "novel_forge.chapter_authority.canon_extraction",
+      "idempotency_scope": "project:chapter-slice",
+      "input_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
+      "integration_evidence": [
+        "tests/integration/test_postgresql_only_chapter_slice.py",
+        "tests/integration/test_chapter_authority_runtime_postgres.py"
+      ],
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "legacy_entrypoints": [],
+      "migration_owner": "chapter-authority",
+      "migration_status": "implemented",
+      "name": "chapter.canon.extract",
+      "output_contract": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "permissions": [
+        "chapter.authority.execute"
+      ],
+      "policy": {
+        "authority": "postgresql",
+        "handler_output_policy": "chapter-authority-output-v1",
+        "local_storage_writes": "forbidden"
+      },
+      "projection_consumers": [
+        "chapter_production_run",
+        "operation_timeline",
+        "project_cockpit"
+      ],
+      "result_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_version_id": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_version_id",
+          "content_hash"
+        ],
+        "type": "object"
+      },
+      "result_schema_version": "chapter.canon.extract.result.v1",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 60
+      }
+    },
+    {
+      "application_build_id": "authority-catalog-generator",
+      "approval_policy": {
+        "required": false
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "command_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "integer"
+          },
+          "context_candidates": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "context_token_budget": {
+            "type": "integer"
+          },
+          "context_version_refs": {
+            "type": "object"
+          },
+          "premise": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chapter"
+        ],
+        "type": "object"
+      },
       "command_schema_version": "chapter.canon.update.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -12904,7 +13300,7 @@
         "novel_forge.chapter_authority.canon"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.1",
+      "definition_version": "2.1.2",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13053,7 +13449,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.evaluate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13090,7 +13486,7 @@
         "novel_forge.chapter_authority.quality"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.1",
+      "definition_version": "2.1.2",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13239,7 +13635,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.prepare_release.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13276,7 +13672,7 @@
         "novel_forge.chapter_authority.publish_gate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.1",
+      "definition_version": "2.1.2",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13425,7 +13821,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.export.render.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_evidence",
         "supported": false
@@ -13477,7 +13873,7 @@
         "novel_forge.chapter_authority.export"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.1",
+      "definition_version": "2.1.2",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13621,8 +14017,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "creative.brief.create.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "creative.brief.create.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -13633,6 +14029,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "creative.brief",
             "role": "primary",
             "selector": "creative_brief"
           }
@@ -13641,28 +14038,36 @@
           "trace",
           "audit"
         ],
-        "version": "creative.brief.create.completion.v1"
+        "required_outbox_events": [
+          "content.creative.brief.create.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "creative.brief.create.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:creative.brief.create",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.creative.brief.create"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "creative",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.creative.brief.create",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -13693,10 +14098,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "creative.brief.create",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "creative_brief",
+        "output_key": "creative.brief",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -13709,11 +14116,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "creative.brief.create"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "creative_console"
       ],
@@ -13733,7 +14147,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "creative.brief.create.result.v1",
+      "result_schema_version": "creative.brief.create.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -13773,8 +14187,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "creative.candidates.evaluate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "creative.candidates.evaluate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -13785,6 +14199,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "creative.candidate_evaluation",
             "role": "primary",
             "selector": "candidate_evaluation"
           }
@@ -13793,28 +14208,36 @@
           "trace",
           "audit"
         ],
-        "version": "creative.candidates.evaluate.completion.v1"
+        "required_outbox_events": [
+          "content.creative.candidates.evaluate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "creative.candidates.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:creative.candidates.evaluate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.creative.candidates.evaluate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "creative",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.creative.candidates.evaluate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -13845,10 +14268,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "creative.candidates.evaluate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "candidate_evaluation",
+        "output_key": "creative.candidate_evaluation",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -13861,11 +14286,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "creative.candidates.evaluate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "creative_console"
       ],
@@ -13885,7 +14317,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "creative.candidates.evaluate.result.v1",
+      "result_schema_version": "creative.candidates.evaluate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -13925,8 +14357,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "creative.candidates.cluster.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "creative.candidates.cluster.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -13937,6 +14369,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "creative.candidate_cluster",
             "role": "primary",
             "selector": "candidate_cluster"
           }
@@ -13945,28 +14378,36 @@
           "trace",
           "audit"
         ],
-        "version": "creative.candidates.cluster.completion.v1"
+        "required_outbox_events": [
+          "content.creative.candidates.cluster.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "creative.candidates.cluster.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:creative.candidates.cluster",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.creative.candidates.cluster"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "creative",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.creative.candidates.cluster",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -13997,10 +14438,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "creative.candidates.cluster",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "candidate_cluster",
+        "output_key": "creative.candidate_cluster",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -14013,11 +14456,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "creative.candidates.cluster"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "creative_console"
       ],
@@ -14037,7 +14487,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "creative.candidates.cluster.result.v1",
+      "result_schema_version": "creative.candidates.cluster.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -14077,8 +14527,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "creative.project.approve.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "creative.project.approve.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14089,6 +14539,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "creative.project_proposal",
             "role": "primary",
             "selector": "project_proposal"
           }
@@ -14097,28 +14548,36 @@
           "trace",
           "audit"
         ],
-        "version": "creative.project.approve.completion.v1"
+        "required_outbox_events": [
+          "content.creative.project.approve.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "creative.project.approve.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:creative.project.approve",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.creative.project.approve"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "creative",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.creative.project.approve",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -14149,10 +14608,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "creative.project.approve",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "project_proposal",
+        "output_key": "creative.project_proposal",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -14165,11 +14626,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "creative.project.approve"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "creative_console"
       ],
@@ -14189,7 +14657,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "creative.project.approve.result.v1",
+      "result_schema_version": "creative.project.approve.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -14229,8 +14697,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "production.world.generate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "production.world.generate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14241,6 +14709,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "world.bible",
             "role": "primary",
             "selector": "world_bible"
           }
@@ -14249,28 +14718,36 @@
           "trace",
           "audit"
         ],
-        "version": "production.world.generate.completion.v1"
+        "required_outbox_events": [
+          "content.production.world.generate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "production.world.generate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:production.world.generate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.production.world.generate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "production",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.production.world.generate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -14301,10 +14778,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "production.world.generate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "world_bible",
+        "output_key": "world.bible",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -14317,11 +14796,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "production.world.generate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "production_console"
       ],
@@ -14341,7 +14827,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "production.world.generate.result.v1",
+      "result_schema_version": "production.world.generate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -14381,8 +14867,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "world.validate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "world.validate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14393,6 +14879,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "world.validation",
             "role": "primary",
             "selector": "world_rule_conflict_report"
           }
@@ -14401,28 +14888,36 @@
           "trace",
           "audit"
         ],
-        "version": "world.validate.completion.v1"
+        "required_outbox_events": [
+          "content.world.validate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "world.validate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:world.validate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.world.validate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "world",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.world.validate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -14453,10 +14948,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "world.validate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "world_rule_conflict_report",
+        "output_key": "world.validation",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -14469,11 +14966,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "world.validate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "world_console"
       ],
@@ -14493,7 +14997,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "world.validate.result.v1",
+      "result_schema_version": "world.validate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -14533,8 +15037,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "production.character.generate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "production.character.generate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14545,6 +15049,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "character.card",
             "role": "primary",
             "selector": "character_card"
           }
@@ -14553,28 +15058,36 @@
           "trace",
           "audit"
         ],
-        "version": "production.character.generate.completion.v1"
+        "required_outbox_events": [
+          "content.production.character.generate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "production.character.generate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:production.character.generate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.production.character.generate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "production",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.production.character.generate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -14605,10 +15118,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "production.character.generate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "character_card",
+        "output_key": "character.card",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -14621,11 +15136,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "production.character.generate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "production_console"
       ],
@@ -14645,7 +15167,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "production.character.generate.result.v1",
+      "result_schema_version": "production.character.generate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -14685,8 +15207,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "character.relationships.generate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "character.relationships.generate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14697,6 +15219,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "character.relationship",
             "role": "primary",
             "selector": "relationship_state"
           }
@@ -14705,28 +15228,36 @@
           "trace",
           "audit"
         ],
-        "version": "character.relationships.generate.completion.v1"
+        "required_outbox_events": [
+          "content.character.relationships.generate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "character.relationships.generate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:character.relationships.generate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.character.relationships.generate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "character",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.character.relationships.generate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -14757,10 +15288,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "character.relationships.generate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "relationship_state",
+        "output_key": "character.relationship",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -14773,11 +15306,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "character.relationships.generate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "character_console"
       ],
@@ -14797,7 +15337,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "character.relationships.generate.result.v1",
+      "result_schema_version": "character.relationships.generate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -14837,8 +15377,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "theme.question.create.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "theme.question.create.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -14849,6 +15389,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "theme.question",
             "role": "primary",
             "selector": "theme_question"
           }
@@ -14857,28 +15398,36 @@
           "trace",
           "audit"
         ],
-        "version": "theme.question.create.completion.v1"
+        "required_outbox_events": [
+          "content.theme.question.create.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "theme.question.create.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:theme.question.create",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.theme.question.create"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "theme",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.theme.question.create",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -14909,10 +15458,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "theme.question.create",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "theme_question",
+        "output_key": "theme.question",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -14925,11 +15476,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "theme.question.create"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "theme_console"
       ],
@@ -14949,7 +15507,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "theme.question.create.result.v1",
+      "result_schema_version": "theme.question.create.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -14989,8 +15547,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "theme.arc.build.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "theme.arc.build.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15001,6 +15559,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "theme.arc",
             "role": "primary",
             "selector": "theme_arc"
           }
@@ -15009,28 +15568,36 @@
           "trace",
           "audit"
         ],
-        "version": "theme.arc.build.completion.v1"
+        "required_outbox_events": [
+          "content.theme.arc.build.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "theme.arc.build.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:theme.arc.build",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.theme.arc.build"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "theme",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.theme.arc.build",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -15061,10 +15628,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "theme.arc.build",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "theme_arc",
+        "output_key": "theme.arc",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -15077,11 +15646,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "theme.arc.build"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "theme_console"
       ],
@@ -15101,7 +15677,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "theme.arc.build.result.v1",
+      "result_schema_version": "theme.arc.build.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -15141,8 +15717,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "theme.anti_preaching.evaluate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "theme.anti_preaching.evaluate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15153,6 +15729,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "theme.anti_preaching",
             "role": "primary",
             "selector": "anti_preaching_report"
           }
@@ -15161,28 +15738,36 @@
           "trace",
           "audit"
         ],
-        "version": "theme.anti_preaching.evaluate.completion.v1"
+        "required_outbox_events": [
+          "content.theme.anti_preaching.evaluate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "theme.anti_preaching.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:theme.anti_preaching.evaluate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.theme.anti_preaching.evaluate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "theme",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.theme.anti_preaching.evaluate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -15213,10 +15798,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "theme.anti_preaching.evaluate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "anti_preaching_report",
+        "output_key": "theme.anti_preaching",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -15229,11 +15816,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "theme.anti_preaching.evaluate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "theme_console"
       ],
@@ -15253,7 +15847,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "theme.anti_preaching.evaluate.result.v1",
+      "result_schema_version": "theme.anti_preaching.evaluate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -15293,8 +15887,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "ending.closure.plan.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "ending.closure.plan.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15305,6 +15899,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "ending.closure",
             "role": "primary",
             "selector": "closure_plan"
           }
@@ -15313,28 +15908,36 @@
           "trace",
           "audit"
         ],
-        "version": "ending.closure.plan.completion.v1"
+        "required_outbox_events": [
+          "content.ending.closure.plan.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "ending.closure.plan.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:ending.closure.plan",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.ending.closure.plan"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "ending",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.ending.closure.plan",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -15365,10 +15968,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "ending.closure.plan",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "closure_plan",
+        "output_key": "ending.closure",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -15381,11 +15986,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "ending.closure.plan"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "ending_console"
       ],
@@ -15405,7 +16017,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "ending.closure.plan.result.v1",
+      "result_schema_version": "ending.closure.plan.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -15445,8 +16057,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "ending.payoff_matrix.build.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "ending.payoff_matrix.build.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15457,6 +16069,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "ending.payoff_matrix",
             "role": "primary",
             "selector": "payoff_matrix"
           }
@@ -15465,28 +16078,36 @@
           "trace",
           "audit"
         ],
-        "version": "ending.payoff_matrix.build.completion.v1"
+        "required_outbox_events": [
+          "content.ending.payoff_matrix.build.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "ending.payoff_matrix.build.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:ending.payoff_matrix.build",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.ending.payoff_matrix.build"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "ending",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.ending.payoff_matrix.build",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -15517,10 +16138,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "ending.payoff_matrix.build",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "payoff_matrix",
+        "output_key": "ending.payoff_matrix",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -15533,11 +16156,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "ending.payoff_matrix.build"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "ending_console"
       ],
@@ -15557,7 +16187,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "ending.payoff_matrix.build.result.v1",
+      "result_schema_version": "ending.payoff_matrix.build.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -15597,8 +16227,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "ending.quality.evaluate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "ending.quality.evaluate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15609,6 +16239,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "ending.quality",
             "role": "primary",
             "selector": "ending_quality_report"
           }
@@ -15617,28 +16248,36 @@
           "trace",
           "audit"
         ],
-        "version": "ending.quality.evaluate.completion.v1"
+        "required_outbox_events": [
+          "content.ending.quality.evaluate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "ending.quality.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:ending.quality.evaluate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.ending.quality.evaluate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "ending",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.ending.quality.evaluate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -15669,10 +16308,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "ending.quality.evaluate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "ending_quality_report",
+        "output_key": "ending.quality",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -15685,11 +16326,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "ending.quality.evaluate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "ending_console"
       ],
@@ -15709,7 +16357,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "ending.quality.evaluate.result.v1",
+      "result_schema_version": "ending.quality.evaluate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -15749,8 +16397,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "longform.motivation.evaluate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "longform.motivation.evaluate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15761,6 +16409,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "longform.motivation",
             "role": "primary",
             "selector": "motivation_drift_report"
           }
@@ -15769,28 +16418,36 @@
           "trace",
           "audit"
         ],
-        "version": "longform.motivation.evaluate.completion.v1"
+        "required_outbox_events": [
+          "content.longform.motivation.evaluate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "longform.motivation.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.motivation.evaluate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.longform.motivation.evaluate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "longform",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.longform.motivation.evaluate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -15821,10 +16478,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "longform.motivation.evaluate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "motivation_drift_report",
+        "output_key": "longform.motivation",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -15837,11 +16496,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "longform.motivation.evaluate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "longform_console"
       ],
@@ -15861,7 +16527,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "longform.motivation.evaluate.result.v1",
+      "result_schema_version": "longform.motivation.evaluate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -15901,8 +16567,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "longform.entity_merge.propose.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "longform.entity_merge.propose.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -15913,6 +16579,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "longform.entity_merge",
             "role": "primary",
             "selector": "entity_merge_proposal"
           }
@@ -15921,28 +16588,36 @@
           "trace",
           "audit"
         ],
-        "version": "longform.entity_merge.propose.completion.v1"
+        "required_outbox_events": [
+          "content.longform.entity_merge.propose.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "longform.entity_merge.propose.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.entity_merge.propose",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.longform.entity_merge.propose"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "longform",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.longform.entity_merge.propose",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -15973,10 +16648,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "longform.entity_merge.propose",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "entity_merge_proposal",
+        "output_key": "longform.entity_merge",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -15989,11 +16666,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "longform.entity_merge.propose"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "longform_console"
       ],
@@ -16013,7 +16697,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "longform.entity_merge.propose.result.v1",
+      "result_schema_version": "longform.entity_merge.propose.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -16053,8 +16737,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "longform.foreshadow_payoff.evaluate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "longform.foreshadow_payoff.evaluate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16065,6 +16749,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "longform.foreshadow_payoff",
             "role": "primary",
             "selector": "foreshadow_payoff_report"
           }
@@ -16073,28 +16758,36 @@
           "trace",
           "audit"
         ],
-        "version": "longform.foreshadow_payoff.evaluate.completion.v1"
+        "required_outbox_events": [
+          "content.longform.foreshadow_payoff.evaluate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "longform.foreshadow_payoff.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.foreshadow_payoff.evaluate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.longform.foreshadow_payoff.evaluate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "longform",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.longform.foreshadow_payoff.evaluate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -16125,10 +16818,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "longform.foreshadow_payoff.evaluate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "foreshadow_payoff_report",
+        "output_key": "longform.foreshadow_payoff",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -16141,11 +16836,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "longform.foreshadow_payoff.evaluate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "longform_console"
       ],
@@ -16165,7 +16867,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "longform.foreshadow_payoff.evaluate.result.v1",
+      "result_schema_version": "longform.foreshadow_payoff.evaluate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -16205,8 +16907,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "longform.world_rule.evaluate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "longform.world_rule.evaluate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16217,6 +16919,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "longform.world_rule",
             "role": "primary",
             "selector": "world_rule_conflict_report"
           }
@@ -16225,28 +16928,36 @@
           "trace",
           "audit"
         ],
-        "version": "longform.world_rule.evaluate.completion.v1"
+        "required_outbox_events": [
+          "content.longform.world_rule.evaluate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "longform.world_rule.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.world_rule.evaluate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.longform.world_rule.evaluate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "longform",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.longform.world_rule.evaluate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -16277,10 +16988,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "longform.world_rule.evaluate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "world_rule_conflict_report",
+        "output_key": "longform.world_rule",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -16293,11 +17006,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "longform.world_rule.evaluate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "longform_console"
       ],
@@ -16317,7 +17037,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "longform.world_rule.evaluate.result.v1",
+      "result_schema_version": "longform.world_rule.evaluate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -16357,8 +17077,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "longform.power.evaluate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "longform.power.evaluate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16369,6 +17089,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "longform.power",
             "role": "primary",
             "selector": "power_conflict_report"
           }
@@ -16377,28 +17098,36 @@
           "trace",
           "audit"
         ],
-        "version": "longform.power.evaluate.completion.v1"
+        "required_outbox_events": [
+          "content.longform.power.evaluate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "longform.power.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.power.evaluate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.longform.power.evaluate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "longform",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.longform.power.evaluate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -16429,10 +17158,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "longform.power.evaluate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "power_conflict_report",
+        "output_key": "longform.power",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -16445,11 +17176,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "longform.power.evaluate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "longform_console"
       ],
@@ -16469,7 +17207,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "longform.power.evaluate.result.v1",
+      "result_schema_version": "longform.power.evaluate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -16509,8 +17247,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "longform.pattern.evaluate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "longform.pattern.evaluate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16521,6 +17259,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "longform.pattern",
             "role": "primary",
             "selector": "pattern_repetition_report"
           }
@@ -16529,28 +17268,36 @@
           "trace",
           "audit"
         ],
-        "version": "longform.pattern.evaluate.completion.v1"
+        "required_outbox_events": [
+          "content.longform.pattern.evaluate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "longform.pattern.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.pattern.evaluate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.longform.pattern.evaluate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "longform",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.longform.pattern.evaluate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -16581,10 +17328,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "longform.pattern.evaluate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "pattern_repetition_report",
+        "output_key": "longform.pattern",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -16597,11 +17346,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "longform.pattern.evaluate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "longform_console"
       ],
@@ -16621,7 +17377,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "longform.pattern.evaluate.result.v1",
+      "result_schema_version": "longform.pattern.evaluate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -16661,8 +17417,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "longform.narrative_debt.evaluate.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "longform.narrative_debt.evaluate.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16673,6 +17429,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "longform.narrative_debt",
             "role": "primary",
             "selector": "narrative_debt_report"
           }
@@ -16681,28 +17438,36 @@
           "trace",
           "audit"
         ],
-        "version": "longform.narrative_debt.evaluate.completion.v1"
+        "required_outbox_events": [
+          "content.longform.narrative_debt.evaluate.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "longform.narrative_debt.evaluate.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.narrative_debt.evaluate",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.longform.narrative_debt.evaluate"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "longform",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.longform.narrative_debt.evaluate",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -16733,10 +17498,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "longform.narrative_debt.evaluate",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "narrative_debt_report",
+        "output_key": "longform.narrative_debt",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -16749,11 +17516,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "longform.narrative_debt.evaluate"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "longform_console"
       ],
@@ -16773,7 +17547,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "longform.narrative_debt.evaluate.result.v1",
+      "result_schema_version": "longform.narrative_debt.evaluate.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -16813,8 +17587,8 @@
         ],
         "type": "object"
       },
-      "command_schema_version": "longform.recap.enhance.command.v1",
-      "commit_sha": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+      "command_schema_version": "longform.recap.enhance.command.v2",
+      "commit_sha": "c698a362d8e5381515ad271d3921f5020ef9ab14",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
         "supported": false
@@ -16825,6 +17599,7 @@
             "eligibility": "ELIGIBLE",
             "governance": "CLEAR",
             "lifecycle": "ACTIVE",
+            "output_key": "longform.recap",
             "role": "primary",
             "selector": "longform_recap_report"
           }
@@ -16833,28 +17608,36 @@
           "trace",
           "audit"
         ],
-        "version": "longform.recap.enhance.completion.v1"
+        "required_outbox_events": [
+          "content.longform.recap.enhance.materialized"
+        ],
+        "required_qualifications": [
+          {
+            "decision": "ELIGIBLE"
+          }
+        ],
+        "version": "longform.recap.enhance.completion.v2"
       },
       "concurrency_key_template": "project:{project_id}:longform.recap.enhance",
       "current_entrypoints": [],
       "current_handlers": [
         "novel_forge.content_authority.longform.recap.enhance"
       ],
-      "definition_status": "handler_bound",
-      "definition_version": "1.0.0",
-      "enabled": false,
+      "definition_status": "integration_proven",
+      "definition_version": "2.0.0",
+      "enabled": true,
       "evidence_status": {
         "documented": true,
         "handler_bound": true,
         "implemented": true,
-        "integration_proven": false,
+        "integration_proven": true,
         "longform_proven": false,
         "real_provider_proven": false
       },
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "longform",
-      "handler_contract_version": "1.0.0",
+      "handler_contract_version": "content-authority-handler-v2",
       "handler_key": "novel_forge.content_authority.longform.recap.enhance",
       "idempotency_scope": "project:content-domain",
       "input_contract": {
@@ -16885,10 +17668,12 @@
       },
       "legacy_entrypoints": [],
       "migration_owner": "content-intelligence-authority",
-      "migration_status": "handler_bound",
+      "migration_status": "integration_proven",
       "name": "longform.recap.enhance",
       "output_contract": {
         "additionalProperties": false,
+        "asset_type": "longform_recap_report",
+        "output_key": "longform.recap",
         "properties": {
           "asset_version_id": {
             "type": "string"
@@ -16901,11 +17686,18 @@
           "asset_version_id",
           "content_hash"
         ],
+        "role": "primary",
         "type": "object"
       },
       "permissions": [
         "longform.recap.enhance"
       ],
+      "policy": {
+        "frozen_inputs_required": true,
+        "non_eligible_inputs": "fail_closed",
+        "project_scope_required": true,
+        "side_effects": "external_effect_only"
+      },
       "projection_consumers": [
         "longform_console"
       ],
@@ -16925,7 +17717,7 @@
         ],
         "type": "object"
       },
-      "result_schema_version": "longform.recap.enhance.result.v1",
+      "result_schema_version": "longform.recap.enhance.result.v2",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -16935,7 +17727,7 @@
     }
   ],
   "generator_version": "2.1.0",
-  "repository_head_at_generation": "1ef93fa8a540826c542a80ad44a2a3f1bd9a8ce8",
+  "repository_head_at_generation": "c698a362d8e5381515ad271d3921f5020ef9ab14",
   "schema_version": "2.0.0",
-  "source_tree_sha": "c347ac8cd31e7d7f063ec01f807b9df97cb23c71"
+  "source_tree_sha": "8a49013befb50e5e7d0da4f28f9f9e574a98a1ae"
 }
