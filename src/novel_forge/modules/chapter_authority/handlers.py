@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from novel_forge.modules.chapter_authority.contracts import (
+    ChapterAuxiliaryOutput,
     ChapterHandlerOutput,
     ChapterHandlerRegistry,
     ChapterHandlerRequest,
@@ -16,6 +17,7 @@ from novel_forge.modules.chapter_authority.domain_handlers import (
     build_chapter_plan,
     build_context_bundle,
     build_export_package,
+    build_final_release_gate,
     build_publish_gate,
     build_quality_report,
     normalize_draft_result,
@@ -290,16 +292,49 @@ class _CanonHandler:
         revision = request.require_input("draft_version")
         extraction = request.require_input("canon_extraction")
         context = request.require_input("context_bundle")
-        return _output(
+        content = build_canon_patch(
+            revision=revision.content,
+            revision_asset_version_id=revision.asset_version_id,
+            project_id=request.project_id,
+            context_bundle_version_id=context.asset_version_id,
+            extraction=extraction.content,
+            context_bundle=context.content,
+        )
+        snapshot_outputs = tuple(
+            ChapterAuxiliaryOutput(
+                asset_type=str(snapshot["asset_type"]),
+                output_key=f"chapter.canon.snapshot.{snapshot['state_kind']}",
+                role="state_snapshot",
+                content=dict(snapshot),
+                reference_asset_version_ids=tuple(
+                    sorted(
+                        {
+                            revision.asset_version_id,
+                            extraction.asset_version_id,
+                            context.asset_version_id,
+                            *snapshot.get("previous_asset_version_ids", []),
+                        }
+                    )
+                ),
+                evidence={
+                    "authority_family": "chapter",
+                    "state_kind": snapshot["state_kind"],
+                    "append_only": True,
+                },
+            )
+            for snapshot in content["snapshot_candidates"]
+        )
+        primary = _output(
             ChapterNode.CANON,
-            build_canon_patch(
-                revision=revision.content,
-                revision_asset_version_id=revision.asset_version_id,
-                project_id=request.project_id,
-                context_bundle_version_id=context.asset_version_id,
-                extraction=extraction.content,
-                context_bundle=context.content,
-            ),
+            content,
+        )
+        return ChapterHandlerOutput(
+            asset_type=primary.asset_type,
+            output_key=primary.output_key,
+            role=primary.role,
+            content=primary.content,
+            qualification_policy=primary.qualification_policy,
+            auxiliary_outputs=snapshot_outputs,
         )
 
 
@@ -384,6 +419,35 @@ class _ExportHandler:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class _FinalReleaseGateHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        export = request.require_input("release_package")
+        publish_gate = request.require_input("publish_gate_report")
+        quality = request.require_input("quality_score_report")
+        review = request.require_input("re_review_report")
+        canon = request.require_input("canon_patch")
+        context = request.require_input("context_bundle")
+        return _output(
+            ChapterNode.FINAL_RELEASE_GATE,
+            build_final_release_gate(
+                project_id=request.project_id,
+                export_package=export.content,
+                export_asset_version_id=export.asset_version_id,
+                export_blobs=export.blobs,
+                publish_gate=publish_gate.content,
+                publish_gate_asset_version_id=publish_gate.asset_version_id,
+                quality=quality.content,
+                quality_asset_version_id=quality.asset_version_id,
+                review=review.content,
+                review_asset_version_id=review.asset_version_id,
+                canon=canon.content,
+                canon_asset_version_id=canon.asset_version_id,
+                context_bundle_version_id=context.asset_version_id,
+            ),
+        )
+
+
 def build_chapter_handler_registry(
     provider: ChapterModelPort,
 ) -> ChapterHandlerRegistry:
@@ -401,6 +465,7 @@ def build_chapter_handler_registry(
     registry.register(ChapterNode.QUALITY, _QualityHandler())
     registry.register(ChapterNode.PUBLISH_GATE, _PublishGateHandler())
     registry.register(ChapterNode.EXPORT, _ExportHandler())
+    registry.register(ChapterNode.FINAL_RELEASE_GATE, _FinalReleaseGateHandler())
     return registry
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from novel_forge.modules.authority_handler_runtime import (
+    AuthorityAuxiliaryOutput,
     AuthorityExecutionResult,
     AuthorityHandlerOutput,
     AuthorityHandlerRegistration,
@@ -42,6 +43,7 @@ class _ChapterHandlerAdapter:
                     asset_type=item.asset_type,
                     content_hash=item.content_hash,
                     content=item.content,
+                    blobs=item.blobs,
                 )
                 for item in request.inputs
             ),
@@ -57,6 +59,21 @@ class _ChapterHandlerAdapter:
                 item.asset_version_id for item in request.inputs
             ),
             evidence={"authority_family": "chapter"},
+            auxiliary_outputs=tuple(
+                AuthorityAuxiliaryOutput(
+                    asset_type=item.asset_type,
+                    output_key=item.output_key,
+                    role=item.role,
+                    content=item.content,
+                    qualification_policy=item.qualification_policy,
+                    reference_asset_version_ids=(
+                        item.reference_asset_version_ids
+                        or tuple(input_item.asset_version_id for input_item in request.inputs)
+                    ),
+                    evidence=item.evidence or {"authority_family": "chapter"},
+                )
+                for item in output.auxiliary_outputs
+            ),
         )
 
 

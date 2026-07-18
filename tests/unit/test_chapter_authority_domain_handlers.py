@@ -7,6 +7,7 @@ from novel_forge.modules.chapter_authority.domain_handlers import (
     build_chapter_plan,
     build_context_bundle,
     build_export_package,
+    build_final_release_gate,
     build_quality_report,
     normalize_draft_result,
     normalize_review_result,
@@ -108,6 +109,59 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
                 revision_asset_version_id="revision-version-1",
                 canon={"gate": "PASSED", "conflicts": []},
                 canon_asset_version_id="canon-version-1",
+            )
+
+    def test_post_blob_final_release_fails_closed_and_binds_receipt(self) -> None:
+        common = {
+            "project_id": "project-a",
+            "export_package": {
+                "chapter": 1,
+                "release_status": "READY_FOR_BLOB_VERIFICATION",
+            },
+            "export_asset_version_id": "export-v1",
+            "publish_gate": {
+                "gate": "PASSED",
+                "rollback_metadata": {
+                    "rollback_to_asset_version_id": "draft-v1",
+                    "release_not_externally_published": True,
+                },
+            },
+            "publish_gate_asset_version_id": "publish-v1",
+            "quality": {"gate": "PASSED_WITH_UNCALIBRATED"},
+            "quality_asset_version_id": "quality-v1",
+            "review": {
+                "report_type": "ReReviewReport",
+                "decision": "PASSED",
+                "blocking_issue_count": 0,
+            },
+            "review_asset_version_id": "review-v2",
+            "canon": {"gate": "PASSED", "conflicts": []},
+            "canon_asset_version_id": "canon-v1",
+            "context_bundle_version_id": "context-v1",
+        }
+        verified_blob = {
+            "blob_id": "blob-1", "role": "content", "provider": "fixture-store",
+            "receipt_provider": "fixture-store", "object_key": "chapter.txt",
+            "expected_hash": "sha256:text", "actual_hash": "sha256:text",
+            "content_hash": "sha256:text", "expected_size": 4, "actual_size": 4,
+            "media_type": "text/plain", "status": "AVAILABLE",
+            "external_effect_id": "effect-1", "capability": "object_store.put",
+            "effect_status": "SUCCEEDED", "dispatch_id": "dispatch-1",
+            "dispatch_status": "SUCCEEDED", "receipt_id": "receipt-1",
+            "receipt_status": "VERIFIED",
+        }
+        report = build_final_release_gate(
+            **common,
+            export_blobs=(verified_blob,),
+        )
+        self.assertEqual(report["gate"], "PASSED")
+        self.assertFalse(report["external_publish_permitted"])
+        self.assertEqual(report["blob_receipt"]["blob_id"], "blob-1")
+
+        with self.assertRaisesRegex(KernelError, "FINAL_RELEASE_GATE_BLOCKED"):
+            build_final_release_gate(
+                **common,
+                export_blobs=({**verified_blob, "actual_hash": "sha256:tampered"},),
             )
 
     def test_authority_context_consumes_governed_mkaos_and_source_decisions(self) -> None:

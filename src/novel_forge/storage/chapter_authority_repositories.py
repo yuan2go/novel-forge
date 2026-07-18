@@ -92,6 +92,60 @@ class AuthorityHandlerRepository:
                     "AUTHORITY_INPUT_QUALIFICATION_REVOKED",
                     f"frozen authority input qualification is {row[7]}: {asset_version_id}",
                 )
+            self.cursor.execute(
+                """
+                SELECT blob.blob_id, reference.role, reference.ordinal,
+                       reference.media_type, reference.content_hash,
+                       blob.provider, blob.object_key, blob.expected_hash,
+                       blob.expected_size, blob.actual_object_key, blob.actual_hash,
+                       blob.actual_size, blob.receipt_provider, blob.status,
+                       effect.external_effect_id, effect.capability, effect.status,
+                       dispatch.dispatch_id, dispatch.generation, dispatch.status,
+                       dispatch.evidence, receipt.receipt_id, receipt.status, receipt.payload
+                FROM authority_asset_version_blob_reference AS reference
+                JOIN authority_blob AS blob ON blob.blob_id = reference.blob_id
+                LEFT JOIN authority_external_effect AS effect
+                  ON effect.external_effect_id = blob.upload_effect_id
+                 AND effect.project_id = blob.project_id
+                LEFT JOIN LATERAL (
+                    SELECT dispatch_id, generation, status, evidence
+                    FROM authority_external_effect_dispatch
+                    WHERE external_effect_id = effect.external_effect_id
+                    ORDER BY generation DESC
+                    LIMIT 1
+                ) AS dispatch ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT receipt_id, status, payload
+                    FROM authority_external_receipt
+                    WHERE dispatch_id = dispatch.dispatch_id
+                    ORDER BY received_at DESC, external_receipt_id DESC
+                    LIMIT 1
+                ) AS receipt ON TRUE
+                WHERE reference.asset_version_id = %s
+                  AND blob.project_id = %s
+                ORDER BY reference.role, reference.ordinal
+                """,
+                [asset_version_id, project_id],
+            )
+            blobs = tuple(
+                {
+                    key: value
+                    for key, value in zip(
+                        (
+                            "blob_id", "role", "ordinal", "media_type", "content_hash",
+                            "provider", "object_key", "expected_hash", "expected_size",
+                            "actual_object_key", "actual_hash", "actual_size",
+                            "receipt_provider", "status", "external_effect_id", "capability",
+                            "effect_status", "dispatch_id", "dispatch_generation",
+                            "dispatch_status", "dispatch_evidence", "receipt_id",
+                            "receipt_status", "receipt_payload",
+                        ),
+                        blob_row,
+                        strict=True,
+                    )
+                }
+                for blob_row in self.cursor.fetchall()
+            )
             resolved.append(
                 {
                     "asset_version_id": row[0],
@@ -103,6 +157,7 @@ class AuthorityHandlerRepository:
                     "governance": row[6],
                     "qualification_decision": row[7] or "ELIGIBLE",
                     "qualification_policy_version": row[8] or "implicit-active-v1",
+                    "blobs": blobs,
                 }
             )
         return resolved

@@ -7,11 +7,13 @@ from typing import Any
 from uuid import uuid4
 
 from novel_forge.modules.authority_handler_runtime.contracts import (
+    AuthorityAuxiliaryOutput,
     AuthorityExecutionResult,
     AuthorityHandlerOutput,
     AuthorityHandlerRegistration,
     AuthorityHandlerRequest,
     AuthorityInputAsset,
+    AuthorityMaterializedOutput,
 )
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -27,8 +29,10 @@ def execute_authority_handler(
     request = _load_request(database_url, command, registration)
     output = registration.handler.execute(request)
     _validate_output(registration, output)
-    content_hash = _content_hash(output.content)
-    identity = _stable_identity(request.operation_id, output.output_key)
+    outputs = (output, *output.auxiliary_outputs)
+    primary_hash = _content_hash(output.content)
+    primary_identity = _stable_identity(request.operation_id, output.output_key)
+    materialized: list[AuthorityMaterializedOutput] = []
 
     with AuthorityUnitOfWork(database_url) as uow:
         attempt = require_current_fence(uow, command)
@@ -37,34 +41,54 @@ def execute_authority_handler(
                 "AUTHORITY_HANDLER_OPERATION_CONFLICT",
                 "Attempt operation changed during handler execution",
             )
-        created = uow.repositories.chapter_authority.materialize_output(
-            operation_id=request.operation_id,
-            project_id=request.project_id,
-            asset_id=identity[0],
-            asset_version_id=identity[1],
-            qualification_id=identity[2],
-            asset_type=output.asset_type,
-            output_key=output.output_key,
-            role=output.role,
-            content=output.content,
-            content_hash=content_hash,
-            qualification_policy=output.qualification_policy,
-            qualification_evidence={
-                "operation_id": request.operation_id,
-                "project_id": request.project_id,
-                "trace_id": request.trace_id,
-                "correlation_id": request.correlation_id,
-                "definition_name": request.definition_name,
-                "definition_version": request.definition_version,
-                "handler_key": registration.handler_key,
-                "handler_contract_version": registration.handler_contract_version,
-                "input_asset_version_ids": [item.asset_version_id for item in request.inputs],
-                "reference_asset_version_ids": list(output.reference_asset_version_ids),
-                "policy": output.qualification_policy,
-                "evidence": output.evidence,
-            },
-        )
-        if created:
+        created_any = False
+        for item in outputs:
+            content_hash = _content_hash(item.content)
+            identity = _stable_identity(request.operation_id, item.output_key)
+            created = uow.repositories.chapter_authority.materialize_output(
+                operation_id=request.operation_id,
+                project_id=request.project_id,
+                asset_id=identity[0],
+                asset_version_id=identity[1],
+                qualification_id=identity[2],
+                asset_type=item.asset_type,
+                output_key=item.output_key,
+                role=item.role,
+                content=item.content,
+                content_hash=content_hash,
+                qualification_policy=item.qualification_policy,
+                qualification_evidence={
+                    "operation_id": request.operation_id,
+                    "project_id": request.project_id,
+                    "trace_id": request.trace_id,
+                    "correlation_id": request.correlation_id,
+                    "definition_name": request.definition_name,
+                    "definition_version": request.definition_version,
+                    "handler_key": registration.handler_key,
+                    "handler_contract_version": registration.handler_contract_version,
+                    "input_asset_version_ids": [
+                        input_item.asset_version_id for input_item in request.inputs
+                    ],
+                    "reference_asset_version_ids": list(
+                        item.reference_asset_version_ids
+                    ),
+                    "policy": item.qualification_policy,
+                    "evidence": item.evidence,
+                },
+            )
+            created_any = created_any or created
+            materialized.append(
+                AuthorityMaterializedOutput(
+                    asset_id=identity[0],
+                    asset_version_id=identity[1],
+                    asset_type=item.asset_type,
+                    output_key=item.output_key,
+                    role=item.role,
+                    content_hash=content_hash,
+                    replayed=not created,
+                )
+            )
+        if created_any:
             uow.repositories.operation_graph.record_event(
                 {
                     "event_id": str(uuid4()),
@@ -79,11 +103,22 @@ def execute_authority_handler(
                     "causation_id": command.causation_id,
                     "payload": {
                         "operation_id": request.operation_id,
-                        "asset_id": identity[0],
-                        "asset_version_id": identity[1],
-                        "content_hash": content_hash,
+                        "asset_id": primary_identity[0],
+                        "asset_version_id": primary_identity[1],
+                        "content_hash": primary_hash,
                         "output_key": output.output_key,
                         "role": output.role,
+                        "materialized_outputs": [
+                            {
+                                "asset_id": item.asset_id,
+                                "asset_version_id": item.asset_version_id,
+                                "asset_type": item.asset_type,
+                                "output_key": item.output_key,
+                                "role": item.role,
+                                "content_hash": item.content_hash,
+                            }
+                            for item in materialized
+                        ],
                         "trace_id": request.trace_id,
                         "worker_id": command.worker_id,
                         "fencing_token": command.fencing_token,
@@ -96,11 +131,12 @@ def execute_authority_handler(
         uow.commit()
     return AuthorityExecutionResult(
         operation_id=request.operation_id,
-        asset_id=identity[0],
-        asset_version_id=identity[1],
-        content_hash=content_hash,
+        asset_id=primary_identity[0],
+        asset_version_id=primary_identity[1],
+        content_hash=primary_hash,
         output_key=output.output_key,
-        replayed=not created,
+        replayed=all(item.replayed for item in materialized),
+        materialized_outputs=tuple(materialized),
     )
 
 
@@ -186,6 +222,22 @@ def _validate_output(
             "AUTHORITY_HANDLER_OUTPUT_INVALID",
             f"{registration.definition_name} output violates its frozen contract",
         )
+    identities = {(output.output_key, output.role)}
+    for item in output.auxiliary_outputs:
+        identity = (item.output_key, item.role)
+        if (
+            not isinstance(item, AuthorityAuxiliaryOutput)
+            or not item.asset_type
+            or not item.output_key
+            or not item.role
+            or not isinstance(item.content, dict)
+            or identity in identities
+        ):
+            raise KernelError(
+                "AUTHORITY_HANDLER_OUTPUT_INVALID",
+                f"{registration.definition_name} auxiliary output violates its contract",
+            )
+        identities.add(identity)
 
 
 def _stable_identity(operation_id: str, output_key: str) -> tuple[str, str, str]:

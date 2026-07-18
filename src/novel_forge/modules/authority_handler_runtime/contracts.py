@@ -18,6 +18,7 @@ class AuthorityInputAsset:
     governance: str = "CLEAR"
     qualification_decision: str = "ELIGIBLE"
     qualification_policy_version: str = "implicit-active-v1"
+    blobs: tuple[dict[str, Any], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +48,17 @@ class AuthorityHandlerRequest:
 
 
 @dataclass(frozen=True, slots=True)
+class AuthorityAuxiliaryOutput:
+    asset_type: str
+    output_key: str
+    role: str
+    content: dict[str, Any]
+    qualification_policy: str
+    reference_asset_version_ids: tuple[str, ...] = ()
+    evidence: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
 class AuthorityHandlerOutput:
     asset_type: str
     output_key: str
@@ -55,6 +67,7 @@ class AuthorityHandlerOutput:
     qualification_policy: str
     reference_asset_version_ids: tuple[str, ...] = ()
     evidence: dict[str, Any] = field(default_factory=dict)
+    auxiliary_outputs: tuple[AuthorityAuxiliaryOutput, ...] = ()
 
 
 class AuthorityHandler(Protocol):
@@ -75,6 +88,17 @@ class AuthorityHandlerRegistration:
 
 
 @dataclass(frozen=True, slots=True)
+class AuthorityMaterializedOutput:
+    asset_id: str
+    asset_version_id: str
+    asset_type: str
+    output_key: str
+    role: str
+    content_hash: str
+    replayed: bool
+
+
+@dataclass(frozen=True, slots=True)
 class AuthorityExecutionResult:
     operation_id: str
     asset_id: str
@@ -82,4 +106,4 @@ class AuthorityExecutionResult:
     content_hash: str
     output_key: str
     replayed: bool
-
+    materialized_outputs: tuple[AuthorityMaterializedOutput, ...] = ()

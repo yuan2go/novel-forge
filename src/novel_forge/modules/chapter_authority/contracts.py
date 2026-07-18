@@ -86,6 +86,13 @@ class ChapterNode(Enum):
         "chapter.export",
         "chapter.export.materialized",
     )
+    FINAL_RELEASE_GATE = (
+        "final_release_gate",
+        "chapter.publishing.finalize_release",
+        "final_release_gate_report",
+        "chapter.final_release_gate",
+        "chapter.final_release_gate.materialized",
+    )
 
     def __init__(
         self,
@@ -112,6 +119,18 @@ class ChapterInputAsset:
     asset_type: str
     content_hash: str
     content: dict[str, Any]
+    blobs: tuple[dict[str, Any], ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ChapterAuxiliaryOutput:
+    asset_type: str
+    output_key: str
+    role: str
+    content: dict[str, Any]
+    qualification_policy: str = "chapter-authority-output-v1"
+    reference_asset_version_ids: tuple[str, ...] = ()
+    evidence: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,6 +160,7 @@ class ChapterHandlerOutput:
     role: str
     content: dict[str, Any]
     qualification_policy: str = "chapter-authority-output-v1"
+    auxiliary_outputs: tuple[ChapterAuxiliaryOutput, ...] = ()
 
 
 class ChapterNodeHandler(Protocol):

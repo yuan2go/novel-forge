@@ -61,13 +61,14 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             [definition["name"] for definition in definitions],
             [node.definition_name for node in ChapterNode],
         )
-        self.assertEqual(len(definitions), 11)
+        self.assertEqual(len(definitions), 12)
         self.assertEqual(
             {definition["definition_version"] for definition in definitions},
             {CHAPTER_SLICE_DEFINITION_VERSION},
         )
-        self.assertEqual(len({item["handler_key"] for item in definitions}), 11)
-        self.assertEqual(definitions[-2]["name"], "chapter.publishing.prepare_release")
+        self.assertEqual(len({item["handler_key"] for item in definitions}), 12)
+        self.assertEqual(definitions[-3]["name"], "chapter.publishing.prepare_release")
+        self.assertEqual(definitions[-1]["name"], "chapter.publishing.finalize_release")
         for node, definition in zip(ChapterNode, definitions, strict=True):
             with self.subTest(node=node.value):
                 schema = definition["command_schema"]
@@ -103,11 +104,16 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
                     [node.completion_topic],
                 )
         self.assertEqual(
-            definitions[-1]["completion_contract"]["required_blobs"],
+            definitions[list(ChapterNode).index(ChapterNode.EXPORT)]["completion_contract"]["required_blobs"],
             [{"status": "AVAILABLE", "role": "content", "min_count": 1}],
         )
+        canon_definition = definitions[list(ChapterNode).index(ChapterNode.CANON)]
         self.assertEqual(
-            definitions[-1]["completion_contract"]["required_external_effects"],
+            len(canon_definition["completion_contract"]["required_asset_selectors"]),
+            10,
+        )
+        self.assertEqual(
+            definitions[list(ChapterNode).index(ChapterNode.EXPORT)]["completion_contract"]["required_external_effects"],
             [{"capability": "object_store.put", "allowed_states": ["SUCCEEDED"]}],
         )
 

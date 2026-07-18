@@ -12,6 +12,18 @@ STATE_ASSET_TYPES = (
     "foreshadow_state", "reader_promise", "reward_ledger", "world_rule", "power_state",
 )
 
+SNAPSHOT_ASSET_TYPES = {
+    "canon_snapshot": "canon_snapshot",
+    "character_state": "character_state_snapshot",
+    "relationship_state": "relationship_state_snapshot",
+    "timeline_snapshot": "timeline_snapshot",
+    "foreshadow_state": "foreshadow_snapshot",
+    "reader_promise": "promise_ledger_snapshot",
+    "reward_ledger": "reward_ledger_snapshot",
+    "world_rule": "world_rule_snapshot",
+    "power_state": "power_state_snapshot",
+}
+
 
 def extract_canon_candidates(
     *,
@@ -106,7 +118,15 @@ def build_canon_update(
                 if item.get("asset_version_id")
             }
         ),
-        "snapshot_candidates": _snapshot_candidates(chapter, state, extraction, facts),
+        "snapshot_candidates": _snapshot_candidates(
+            project_id,
+            chapter,
+            state,
+            extraction,
+            facts,
+            revision_asset_version_id,
+            context_bundle_version_id,
+        ),
         "rebuildable": True,
         "rollback_aware": True,
         "canon_contract_version": "canon-update-domain-v3",
@@ -175,7 +195,15 @@ def _typed_state_conflicts(chapter: int, state: dict[str, list[dict[str, Any]]],
     return conflicts
 
 
-def _snapshot_candidates(chapter: int, state: dict[str, list[dict[str, Any]]], extraction: dict[str, Any], facts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _snapshot_candidates(
+    project_id: str,
+    chapter: int,
+    state: dict[str, list[dict[str, Any]]],
+    extraction: dict[str, Any],
+    facts: list[dict[str, Any]],
+    revision_asset_version_id: str,
+    context_bundle_version_id: str,
+) -> list[dict[str, Any]]:
     changes = {
         "canon_snapshot": facts,
         "character_state": extraction.get("character_state_changes", []),
@@ -189,14 +217,26 @@ def _snapshot_candidates(chapter: int, state: dict[str, list[dict[str, Any]]], e
     }
     return [
         {
-            "asset_type": asset_type,
+            "project_id": project_id,
+            "state_kind": asset_type,
+            "asset_type": SNAPSHOT_ASSET_TYPES[asset_type],
             "chapter": chapter,
             "previous_asset_version_ids": [str(item.get("asset_version_id")) for item in state.get(asset_type, []) if item.get("asset_version_id")],
             "changes": list(changes[asset_type]),
             "append_only": True,
+            "rebuildable": True,
+            "rollback_aware": True,
+            "source_revision_asset_version_id": revision_asset_version_id,
+            "context_bundle_version_id": context_bundle_version_id,
+            "snapshot_contract_version": "canon-state-snapshot-v1",
         }
         for asset_type in STATE_ASSET_TYPES
     ]
 
 
-__all__ = ["STATE_ASSET_TYPES", "build_canon_update", "extract_canon_candidates"]
+__all__ = [
+    "SNAPSHOT_ASSET_TYPES",
+    "STATE_ASSET_TYPES",
+    "build_canon_update",
+    "extract_canon_candidates",
+]

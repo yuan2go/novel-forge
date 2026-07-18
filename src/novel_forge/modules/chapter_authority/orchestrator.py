@@ -492,6 +492,14 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
             ChapterNode.CONTEXT,
         ),
         ChapterNode.EXPORT: (ChapterNode.REVISION, ChapterNode.PUBLISH_GATE),
+        ChapterNode.FINAL_RELEASE_GATE: (
+            ChapterNode.EXPORT,
+            ChapterNode.PUBLISH_GATE,
+            ChapterNode.QUALITY,
+            ChapterNode.REREVIEW,
+            ChapterNode.CANON,
+            ChapterNode.CONTEXT,
+        ),
     }[node]
 
 

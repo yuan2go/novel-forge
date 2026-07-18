@@ -6,9 +6,9 @@ from typing import Any
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
-CHAPTER_SLICE_DEFINITION_VERSION = "2.0.2"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.2"
-CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.2"
+CHAPTER_SLICE_DEFINITION_VERSION = "2.0.3"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.3"
+CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.3"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
 CHAPTER_PROJECTION_CONSUMERS = [
@@ -125,6 +125,20 @@ def _definition(
             {"capability": model_capability, "allowed_states": ["SUCCEEDED"]}
         ]
         external_capabilities = [model_capability]
+    if node is ChapterNode.CANON:
+        from novel_forge.modules.canon_graph.domain import SNAPSHOT_ASSET_TYPES
+
+        completion["required_asset_selectors"].extend(
+            {
+                "selector": asset_type,
+                "output_key": f"chapter.canon.snapshot.{state_kind}",
+                "role": "state_snapshot",
+                "lifecycle": "ACTIVE",
+                "eligibility": "ELIGIBLE",
+                "governance": "CLEAR",
+            }
+            for state_kind, asset_type in SNAPSHOT_ASSET_TYPES.items()
+        )
     if node is ChapterNode.EXPORT:
         completion.update(
             {

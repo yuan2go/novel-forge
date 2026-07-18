@@ -120,8 +120,8 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["root"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["forward_recovery_attempts"], 1)
-        self.assertEqual(len(manifest["operations"]), 12)
-        self.assertEqual(len(manifest["outputs"]), 11)
+        self.assertEqual(len(manifest["operations"]), 13)
+        self.assertEqual(len(manifest["outputs"]), 21)
         self.assertEqual(manifest["attempt_counts"][ChapterNode.DRAFT.value], 2)
         for node in ChapterNode:
             self.assertEqual(manifest["operation_statuses"][node.value], "SUCCEEDED")
@@ -131,6 +131,12 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["export"]["effect_status"], "SUCCEEDED")
         self.assertEqual(manifest["export"]["dispatch_status"], "SUCCEEDED")
         self.assertEqual(manifest["export"]["receipt_status"], "VERIFIED")
+        final_gate = next(
+            item
+            for item in manifest["outputs"]
+            if item["asset_type"] == "final_release_gate_report"
+        )
+        self.assertEqual(final_gate["node"], ChapterNode.FINAL_RELEASE_GATE.value)
         self.assertGreaterEqual(manifest["evidence_counts"]["state_event"], 1)
         self.assertGreaterEqual(manifest["evidence_counts"]["audit_log"], 1)
         self.assertGreaterEqual(manifest["evidence_counts"]["outbox_event"], 1)
@@ -147,7 +153,30 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 11)
+            self.assertEqual(cursor.fetchone()[0], 21)
+            cursor.execute(
+                """
+                SELECT asset.asset_type, binding.role, version.content->>'state_kind'
+                FROM authority_operation_output_asset AS binding
+                JOIN authority_operation AS operation
+                  ON operation.operation_id = binding.operation_id
+                JOIN authority_asset AS asset ON asset.asset_id = binding.asset_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id = binding.asset_version_id
+                WHERE operation.root_operation_id = %s
+                  AND operation.definition_name = %s
+                  AND binding.role = 'state_snapshot'
+                ORDER BY asset.asset_type
+                """,
+                [result.root_operation_id, ChapterNode.CANON.definition_name],
+            )
+            snapshots = cursor.fetchall()
+            self.assertEqual(len(snapshots), 9)
+            self.assertEqual({row[2] for row in snapshots}, {
+                "canon_snapshot", "character_state", "relationship_state",
+                "timeline_snapshot", "foreshadow_state", "reader_promise",
+                "reward_ledger", "world_rule", "power_state",
+            })
             cursor.execute(
                 """
                 SELECT COUNT(*)
@@ -158,7 +187,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id, result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 10)
+            self.assertEqual(cursor.fetchone()[0], 11)
 
     def test_standard_success_adapter_completes_without_unknown_probe(self) -> None:
         project_id = identifier("chapter-project-success")

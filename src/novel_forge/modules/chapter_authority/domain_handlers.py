@@ -14,6 +14,7 @@ from novel_forge.modules.canon_graph.domain import build_canon_update, extract_c
 from novel_forge.modules.content_quality_loop.domain import evaluate_quality_evidence
 from novel_forge.modules.publishing.domain import (
     build_export_blob_manifest,
+    finalize_blob_verified_release,
     prepare_internal_release,
 )
 
@@ -215,16 +216,31 @@ def build_canon_patch(
     context_bundle: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     historical_state: dict[str, list[dict[str, Any]]] = {}
+    state_aliases = {
+        "canon_snapshot": "canon_snapshot",
+        "character_state": "character_state",
+        "character_state_snapshot": "character_state",
+        "relationship_state": "relationship_state",
+        "relationship_state_snapshot": "relationship_state",
+        "timeline_snapshot": "timeline_snapshot",
+        "foreshadow_state": "foreshadow_state",
+        "foreshadow_snapshot": "foreshadow_state",
+        "reader_promise": "reader_promise",
+        "promise_ledger_snapshot": "reader_promise",
+        "reward_ledger": "reward_ledger",
+        "reward_ledger_snapshot": "reward_ledger",
+        "world_rule": "world_rule",
+        "world_rule_snapshot": "world_rule",
+        "power_state": "power_state",
+        "power_state_snapshot": "power_state",
+    }
     for segment in (context_bundle or {}).get("context_segments", []):
         asset_type = str(segment.get("asset_type") or "")
-        if asset_type not in {
-            "canon_snapshot", "character_state", "relationship_state",
-            "timeline_snapshot", "foreshadow_state", "reader_promise",
-            "reward_ledger", "world_rule", "power_state",
-        }:
+        state_kind = state_aliases.get(asset_type)
+        if state_kind is None:
             continue
         facts = list(segment.get("structured_facts", []))
-        historical_state.setdefault(asset_type, []).append(
+        historical_state.setdefault(state_kind, []).append(
             {
                 "asset_version_id": segment.get("asset_version_id", ""),
                 "facts": facts,
@@ -359,6 +375,39 @@ def build_export_package(
     )
 
 
+def build_final_release_gate(
+    *,
+    project_id: str,
+    export_package: dict[str, Any],
+    export_asset_version_id: str,
+    export_blobs: tuple[dict[str, Any], ...],
+    publish_gate: dict[str, Any],
+    publish_gate_asset_version_id: str,
+    quality: dict[str, Any],
+    quality_asset_version_id: str,
+    review: dict[str, Any],
+    review_asset_version_id: str,
+    canon: dict[str, Any],
+    canon_asset_version_id: str,
+    context_bundle_version_id: str,
+) -> dict[str, Any]:
+    return finalize_blob_verified_release(
+        project_id=project_id,
+        export_package=export_package,
+        export_asset_version_id=export_asset_version_id,
+        export_blobs=export_blobs,
+        publish_gate=publish_gate,
+        publish_gate_asset_version_id=publish_gate_asset_version_id,
+        quality=quality,
+        quality_asset_version_id=quality_asset_version_id,
+        review=review,
+        review_asset_version_id=review_asset_version_id,
+        canon=canon,
+        canon_asset_version_id=canon_asset_version_id,
+        context_bundle_version_id=context_bundle_version_id,
+    )
+
+
 def _require_keys(payload: dict[str, Any], *keys: str) -> None:
     missing = [key for key in keys if key not in payload]
     if missing:
@@ -371,6 +420,7 @@ __all__ = [
     "build_chapter_plan",
     "build_context_bundle",
     "build_export_package",
+    "build_final_release_gate",
     "build_publish_gate",
     "build_quality_report",
     "normalize_draft_result",
