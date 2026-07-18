@@ -18,6 +18,9 @@ PLAN_FIELDS = (
     "canon_expected_changes", "world_rule_usages", "power_state_changes",
     "theme_movement", "antagonist_pressure", "chapter_hook", "next_chapter_bridge",
     "prohibited_outcomes", "style_constraints", "target_word_count", "quality_targets",
+    "protagonist_charm_mechanism", "serialization_function",
+    "chapter_economy_function", "reader_dropoff_risks", "payoff_schedule",
+    "platform_rhythm", "conflict_escalation",
 )
 LIST_FIELDS = frozenset({
     "cast", "relationship_pairs", "scene_sequence", "scene_goals", "character_goals",
@@ -25,7 +28,72 @@ LIST_FIELDS = frozenset({
     "suspense_curve", "reward_setup", "reward_payoff", "reader_promise_actions",
     "foreshadow_actions", "canon_expected_changes", "world_rule_usages",
     "power_state_changes", "prohibited_outcomes", "style_constraints", "quality_targets",
+    "reader_dropoff_risks", "payoff_schedule", "platform_rhythm", "conflict_escalation",
 })
+
+
+@dataclass(frozen=True, slots=True)
+class ChapterPlanQualificationProfile:
+    profile_id: str
+    required_fields: tuple[str, ...]
+    warning_fields: tuple[str, ...]
+    genre: str = "any"
+    platform: str = "any"
+    book_phase: str = "ordinary"
+    chapter_function: str = "ordinary"
+    contract_version: str = "chapter-plan-qualification-profile-v1"
+
+
+BASE_REQUIRED_FIELDS = (
+    "title", "premise", "chapter_objective", "scene_sequence", "chapter_hook",
+)
+
+
+def qualification_profile_for_plan(content: dict[str, Any]) -> ChapterPlanQualificationProfile:
+    chapter = int(content.get("chapter") or 0)
+    function = str(content.get("chapter_function") or "ordinary").strip().lower()
+    phase = str(content.get("book_phase") or ("opening" if chapter == 1 else "ordinary")).lower()
+    if chapter == 1 or function in {"opening", "golden_opening"}:
+        required = BASE_REQUIRED_FIELDS + (
+            "conflict_chain", "reader_promise_actions", "protagonist_charm_mechanism",
+            "information_reveals", "next_chapter_bridge",
+        )
+        profile_id = "chapter-plan-v3:opening"
+    elif function in {"payoff", "reward_payoff", "pleasure_payoff"}:
+        required = BASE_REQUIRED_FIELDS + (
+            "reward_setup", "reward_payoff", "conflict_escalation",
+            "reader_promise_actions", "next_chapter_bridge",
+        )
+        profile_id = "chapter-plan-v3:payoff"
+    elif function in {"climax", "volume_climax", "ending"} or phase in {"climax", "ending"}:
+        required = BASE_REQUIRED_FIELDS + (
+            "reward_payoff", "antagonist_pressure", "canon_expected_changes",
+            "closing_state", "next_chapter_bridge",
+        )
+        profile_id = "chapter-plan-v3:climax"
+    else:
+        required = BASE_REQUIRED_FIELDS + (
+            "conflict_chain", "emotional_curve", "suspense_curve",
+            "reader_promise_actions", "antagonist_pressure", "next_chapter_bridge",
+        )
+        profile_id = "chapter-plan-v3:ordinary"
+    warnings = tuple(field for field in PLAN_FIELDS if field not in required)
+    return ChapterPlanQualificationProfile(
+        profile_id=profile_id,
+        required_fields=required,
+        warning_fields=warnings,
+        genre=str(content.get("genre") or "any"),
+        platform=str(content.get("platform") or "any"),
+        book_phase=phase,
+        chapter_function=function,
+    )
+
+
+LEGACY_COMPATIBILITY_PROFILE = ChapterPlanQualificationProfile(
+    profile_id="chapter-plan-v2:compatibility",
+    required_fields=BASE_REQUIRED_FIELDS,
+    warning_fields=PLAN_FIELDS,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,7 +105,9 @@ class ChapterPlanQualificationReport:
     input_asset_version_id: str
     input_content_hash: str
     normalized_digest: str
-    contract_version: str = "chapter-plan-qualification-v2"
+    qualification_profile_id: str = "chapter-plan-v2:compatibility"
+    source_schema_version: str = "legacy"
+    contract_version: str = "chapter-plan-qualification-v3"
 
 
 def normalize_authoritative_chapter_plan(
@@ -47,6 +117,7 @@ def normalize_authoritative_chapter_plan(
     content: dict[str, Any],
     asset_version_id: str,
     content_hash: str,
+    qualification_profile: ChapterPlanQualificationProfile | None = None,
 ) -> tuple[dict[str, Any], ChapterPlanQualificationReport]:
     declared_project = str(content.get("project_id") or project_id)
     if declared_project != project_id:
@@ -87,7 +158,7 @@ def normalize_authoritative_chapter_plan(
         "source_chapter_plan_asset_version_id": asset_version_id,
         "source_chapter_plan_content_hash": content_hash,
         "source_schema_version": str(content.get("schema_version") or content.get("contract_version") or "legacy"),
-        "contract_version": "authoritative-chapter-plan-v2",
+        "contract_version": "authoritative-chapter-plan-v3",
     }
     for field in PLAN_FIELDS:
         if field in {"chapter_objective", "scene_sequence", "chapter_hook"}:
@@ -100,17 +171,12 @@ def normalize_authoritative_chapter_plan(
     normalized["source_extensions"] = {
         key: value for key, value in content.items() if key not in known
     }
-    blocking = tuple(
-        field for field, value in (
-            ("title", normalized["title"]),
-            ("premise", normalized["premise"]),
-            ("chapter_objective", normalized["chapter_objective"]),
-            ("scene_sequence", normalized["scene_sequence"]),
-            ("chapter_hook", normalized["chapter_hook"]),
-        )
-        if not value
+    profile = qualification_profile or LEGACY_COMPATIBILITY_PROFILE
+    blocking = tuple(field for field in profile.required_fields if not normalized.get(field))
+    warnings = tuple(
+        field for field in profile.warning_fields
+        if not normalized.get(field) and field not in blocking
     )
-    warnings = tuple(field for field in PLAN_FIELDS if not normalized.get(field) and field not in blocking)
     digest = "sha256:" + hashlib.sha256(
         json.dumps(normalized, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     ).hexdigest()
@@ -122,6 +188,8 @@ def normalize_authoritative_chapter_plan(
         input_asset_version_id=asset_version_id,
         input_content_hash=content_hash,
         normalized_digest=digest,
+        qualification_profile_id=profile.profile_id,
+        source_schema_version=normalized["source_schema_version"],
     )
     if blocking:
         raise KernelError(
@@ -147,6 +215,9 @@ def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
             "theme_movement", "antagonist_pressure", "chapter_hook",
             "next_chapter_bridge", "prohibited_outcomes", "target_word_count",
             "quality_targets",
+            "protagonist_charm_mechanism", "serialization_function",
+            "chapter_economy_function", "reader_dropoff_risks", "payoff_schedule",
+            "platform_rhythm", "conflict_escalation",
         )},
         "source_chapter_plan_asset_version_id": plan["source_chapter_plan_asset_version_id"],
         "source_chapter_plan_content_hash": plan["source_chapter_plan_content_hash"],
@@ -188,7 +259,8 @@ def build_draft_style_view(context_bundle: dict[str, Any]) -> dict[str, Any]:
 
 
 __all__ = [
-    "ChapterPlanQualificationReport", "build_draft_context_view",
+    "ChapterPlanQualificationProfile", "ChapterPlanQualificationReport",
+    "LEGACY_COMPATIBILITY_PROFILE", "PLAN_FIELDS", "build_draft_context_view",
     "build_draft_plan_view", "build_draft_style_view",
-    "normalize_authoritative_chapter_plan",
+    "normalize_authoritative_chapter_plan", "qualification_profile_for_plan",
 ]

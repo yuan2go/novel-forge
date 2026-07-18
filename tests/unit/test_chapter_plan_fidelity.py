@@ -5,6 +5,7 @@ import unittest
 from novel_forge.modules.chapter_authority.chapter_plan_views import (
     build_draft_plan_view,
     normalize_authoritative_chapter_plan,
+    qualification_profile_for_plan,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -87,6 +88,59 @@ class ChapterPlanFidelityTests(unittest.TestCase):
         )
 
         self.assertNotEqual(first["normalized_digest"], second["normalized_digest"])
+
+    def test_contract_v3_registers_every_commercial_quality_field(self) -> None:
+        source = {
+            "project_id": "project-1", "chapter": 2, "title": "Payoff",
+            "premise": "The setup pays.", "chapter_function": "payoff",
+            "chapter_objective": "Deliver a costly victory.",
+            "scene_sequence": [{"scene_id": "s1"}], "chapter_hook": "A new debt.",
+            "reward_setup": [{"reward_id": "r1"}],
+            "reward_payoff": [{"reward_id": "r1", "visible": True}],
+            "conflict_escalation": [{"pressure": "public exposure"}],
+            "reader_promise_actions": [{"promise_id": "p1", "action": "pay"}],
+            "next_chapter_bridge": "The cost becomes the next conflict.",
+            "protagonist_charm_mechanism": "chooses another person's safety",
+            "serialization_function": "payoff_and_new_obligation",
+            "chapter_economy_function": "resolve_and_escalate",
+            "reader_dropoff_risks": ["payoff without consequence"],
+            "payoff_schedule": [{"beat": 3, "reward_id": "r1"}],
+            "platform_rhythm": ["short opening", "midpoint reversal"],
+        }
+        profile = qualification_profile_for_plan(source)
+        normalized, report = normalize_authoritative_chapter_plan(
+            project_id="project-1", expected_chapter=2, content=source,
+            asset_version_id="plan-v3", content_hash="sha256:v3",
+            qualification_profile=profile,
+        )
+        view = build_draft_plan_view(normalized)
+        self.assertEqual(report.qualification_profile_id, "chapter-plan-v3:payoff")
+        self.assertEqual(view["serialization_function"], "payoff_and_new_obligation")
+        self.assertEqual(view["protagonist_charm_mechanism"], source["protagonist_charm_mechanism"])
+
+    def test_profile_driven_opening_and_climax_require_different_semantics(self) -> None:
+        opening = {
+            "chapter": 1, "title": "Opening", "premise": "A threat.",
+            "chapter_function": "opening", "chapter_objective": "Choose.",
+            "scene_sequence": ["scene"], "chapter_hook": "Unknown caller.",
+        }
+        with self.assertRaisesRegex(KernelError, "reader_promise_actions"):
+            normalize_authoritative_chapter_plan(
+                project_id="project-1", expected_chapter=1, content=opening,
+                asset_version_id="opening-v3", content_hash="sha256:opening",
+                qualification_profile=qualification_profile_for_plan(opening),
+            )
+        climax = {
+            "chapter": 50, "title": "Climax", "premise": "Final duel.",
+            "chapter_function": "volume_climax", "chapter_objective": "Pay the cost.",
+            "scene_sequence": ["duel"], "chapter_hook": "Aftermath.",
+        }
+        with self.assertRaisesRegex(KernelError, "canon_expected_changes"):
+            normalize_authoritative_chapter_plan(
+                project_id="project-1", expected_chapter=50, content=climax,
+                asset_version_id="climax-v3", content_hash="sha256:climax",
+                qualification_profile=qualification_profile_for_plan(climax),
+            )
 
 
 if __name__ == "__main__":

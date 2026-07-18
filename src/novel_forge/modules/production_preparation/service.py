@@ -7,6 +7,10 @@ from datetime import datetime, timezone
 from typing import Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.chapter_authority.chapter_plan_views import (
+    normalize_authoritative_chapter_plan,
+    qualification_profile_for_plan,
+)
 
 from .contracts import (
     ChapterAuthorityCommand,
@@ -178,11 +182,41 @@ class ProductionPreparationService:
             idempotency_key=request.idempotency_key,
             production_input_manifest=asdict(manifest),
             risks=tuple(asdict(item) for item in risks),
+            chapter_plan_qualification_profile={},
         )
         if decision is not ProductionPreparationDecision.READY:
             return ProductionPreparationResult(report=report, command=None)
 
-        chapter_plan = selected_by_type["chapter_plan"][0].content
+        chapter_plan_asset = selected_by_type["chapter_plan"][0]
+        chapter_plan = chapter_plan_asset.content
+        plan_profile = qualification_profile_for_plan(chapter_plan)
+        try:
+            normalize_authoritative_chapter_plan(
+                project_id=request.project_id,
+                expected_chapter=request.chapter,
+                content=chapter_plan,
+                asset_version_id=chapter_plan_asset.asset_version_id,
+                content_hash=chapter_plan_asset.content_hash,
+                qualification_profile=plan_profile,
+            )
+        except KernelError as exc:
+            if exc.code != "CHAPTER_PLAN_SEMANTIC_FIELDS_MISSING":
+                raise
+            report = ProductionPreparationReport(
+                **{
+                    **asdict(report),
+                    "decision": ProductionPreparationDecision.BLOCKED.value,
+                    "repair_actions": (*report.repair_actions, exc.message),
+                    "chapter_plan_qualification_profile": asdict(plan_profile),
+                }
+            )
+            return ProductionPreparationResult(report=report, command=None)
+        report = ProductionPreparationReport(
+            **{
+                **asdict(report),
+                "chapter_plan_qualification_profile": asdict(plan_profile),
+            }
+        )
         title = request.title_override.strip() or str(chapter_plan.get("title") or "").strip()
         premise = request.premise_override.strip() or str(
             chapter_plan.get("premise") or chapter_plan.get("objective") or ""

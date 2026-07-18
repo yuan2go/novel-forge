@@ -71,6 +71,24 @@ def _asset(asset_type: str, *, project_id: str = "project-1") -> ResolvedProduct
         content["structured_facts"] = [{"key": "completed", "value": True}]
     if asset_type == "operator_approval":
         content["structured_facts"] = [{"key": "approved", "value": True}]
+    if asset_type == "chapter_plan":
+        content.update(
+            {
+                "title": "Qualified plan",
+                "premise": "A costly choice advances the promise.",
+                "chapter_objective": "Force a consequential choice.",
+                "scene_sequence": [{"scene_id": "scene-1", "goal": "choose"}],
+                "chapter_hook": "The cost creates a new obligation.",
+                "conflict_chain": [{"pressure": "public consequence"}],
+                "reader_promise_actions": [{"promise_id": "promise-1", "action": "progress"}],
+                "protagonist_charm_mechanism": "accepts a cost for another person",
+                "information_reveals": [{"fact": "the promise has a hidden price"}],
+                "next_chapter_bridge": "The obligation becomes the next conflict.",
+                "emotional_curve": ["resolve", "doubt", "cost"],
+                "suspense_curve": ["question", "pressure", "new question"],
+                "antagonist_pressure": {"mechanism": "tightens the deadline"},
+            }
+        )
     return ResolvedProductionAsset(
         project_id=project_id,
         asset_id=f"asset:{asset_type}",

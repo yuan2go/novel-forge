@@ -148,6 +148,7 @@ class ProductionPreparationReport:
     idempotency_key: str
     production_input_manifest: dict[str, Any] = field(default_factory=dict)
     risks: tuple[dict[str, Any], ...] = ()
+    chapter_plan_qualification_profile: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)

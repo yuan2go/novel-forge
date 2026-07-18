@@ -29,6 +29,7 @@ from novel_forge.modules.chapter_authority.domain_handlers import (
     normalize_revision_result,
 )
 from novel_forge.modules.chapter_authority.chapter_plan_views import (
+    ChapterPlanQualificationProfile,
     build_draft_context_view,
     build_draft_plan_view,
     build_draft_style_view,
@@ -150,6 +151,17 @@ class _PlanHandler:
             content=source_plan.content,
             asset_version_id=source_plan.asset_version_id,
             content_hash=source_plan.content_hash,
+            qualification_profile=(
+                ChapterPlanQualificationProfile(
+                    **request.command.get("preparation_report", {}).get(
+                        "chapter_plan_qualification_profile", {}
+                    )
+                )
+                if request.command.get("preparation_report", {}).get(
+                    "chapter_plan_qualification_profile"
+                )
+                else None
+            ),
         )
         manifest = dict(
             request.command.get("preparation_report", {}).get(
@@ -660,6 +672,7 @@ class _QualityGroupHandler:
         )
         content["quality_context_type"] = quality_context["type"]
         content["quality_context_digest"] = quality_context["context_digest"]
+        content["quality_context_coverage"] = dict(quality_context["coverage_report"])
         node = {
             "structural": ChapterNode.QUALITY_STRUCTURAL,
             "commercial": ChapterNode.QUALITY_COMMERCIAL,
@@ -667,7 +680,40 @@ class _QualityGroupHandler:
             "longform": ChapterNode.QUALITY_LONGFORM,
             "platform": ChapterNode.QUALITY_PLATFORM,
         }[self.group]
-        return _output(node, content)
+        primary = _output(node, content)
+        coverage = ChapterAuxiliaryOutput(
+            asset_type="quality_context_coverage_report",
+            output_key=f"chapter.quality.context_coverage.{self.group}",
+            role="quality_context_evidence",
+            content={
+                **dict(quality_context["coverage_report"]),
+                "project_id": request.project_id,
+                "group": self.group,
+                "target_revision_asset_version_id": revision.asset_version_id,
+                "context_bundle_asset_version_id": context.asset_version_id,
+                "context_digest": quality_context["context_digest"],
+            },
+            reference_asset_version_ids=(
+                revision.asset_version_id,
+                plan.asset_version_id,
+                canon.asset_version_id,
+                context.asset_version_id,
+            ),
+            evidence={
+                "group": self.group,
+                "critical_facts_preserved": quality_context["coverage_report"][
+                    "critical_facts_preserved"
+                ],
+            },
+        )
+        return ChapterHandlerOutput(
+            asset_type=primary.asset_type,
+            output_key=primary.output_key,
+            role=primary.role,
+            content=primary.content,
+            qualification_policy=primary.qualification_policy,
+            auxiliary_outputs=(coverage,),
+        )
 
 
 @dataclass(frozen=True, slots=True)
