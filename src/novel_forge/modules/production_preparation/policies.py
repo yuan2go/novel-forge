@@ -29,6 +29,7 @@ COLLECTION_ASSET_TYPES = frozenset(
         "material_asset",
         "context_segment",
         "character_card",
+        "typed_empty_state_snapshot",
     }
 )
 
@@ -56,6 +57,7 @@ _BASE_ALLOWED = (
     "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
     "power_state_snapshot", "character_card", "genre_profile", "knowledge_pack",
     "material_asset", "reader_promise", "empty_state_declaration",
+    "typed_empty_state_snapshot",
     "context_segment", "context_bundle", "production_input_manifest",
     "draft_version", "review_rule", "review_report", "re_review_report", "canon_patch",
     "operator_checklist", "approval_decision",

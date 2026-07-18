@@ -188,6 +188,93 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             command.chapter_plan_content_hash,
         )
 
+    def test_chapter_two_consumes_typed_empty_state_assets_as_logical_snapshots(self) -> None:
+        project_id = identifier("prepared-typed-empty-project")
+        self._preparation_assets(project_id, chapter=2, typed_empty=True)
+        prepared = ProductionPreparationService(
+            PostgresProductionAssetResolver(DATABASE_URL)
+        ).prepare(
+            ProductionPreparationRequest(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                chapter=2,
+                idempotency_key=f"{project_id}:chapter:2",
+            )
+        )
+        self.assertEqual(prepared.report.decision, "READY")
+        command = prepared.command
+        assert command is not None
+        typed_candidates = [
+            item for item in command.context_candidates
+            if item.get("physical_asset_type") == "typed_empty_state_snapshot"
+        ]
+        self.assertEqual(len(typed_candidates), 9)
+
+        registry = build_chapter_handler_registry(DeterministicFixtureChapterProvider())
+        admission = admit_single_chapter_saga(
+            DATABASE_URL,
+            request=SingleChapterRequest(
+                project_id=command.project_id,
+                workspace_id=command.workspace_id,
+                actor_id="chapter-scheduler-worker",
+                chapter=command.chapter,
+                chapter_plan_asset_version_id=command.chapter_plan_asset_version_id,
+                chapter_plan_content_hash=command.chapter_plan_content_hash,
+                title=command.title,
+                premise=command.premise,
+                trace_id=identifier("typed-empty-trace"),
+                correlation_id=identifier("typed-empty-correlation"),
+                application_build_id="typed-empty-async-test",
+                commit_sha="f" * 40,
+                context_candidates=command.context_candidates,
+                context_version_refs=command.context_version_refs,
+                context_token_budget=command.context_token_budget,
+                preparation_report=command.preparation_report,
+                idempotency_key=command.idempotency_key,
+            ),
+            registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="chapter-scheduler-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        terminal = None
+        for _ in range(30):
+            terminal = scheduler.tick(
+                project_id=project_id,
+                root_operation_id=admission.root_operation_id,
+            )
+            if terminal.saga_status == "SUCCEEDED":
+                break
+        self.assertIsNotNone(terminal)
+        self.assertEqual(terminal.saga_status, "SUCCEEDED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT version.content
+                FROM authority_operation_output_asset AS binding
+                JOIN authority_operation AS operation ON operation.operation_id = binding.operation_id
+                JOIN authority_asset_version AS version ON version.asset_version_id = binding.asset_version_id
+                WHERE operation.root_operation_id = %s
+                  AND operation.definition_name = 'chapter.context.build'
+                  AND binding.output_key = 'chapter.context'
+                """,
+                [admission.root_operation_id],
+            )
+            bundle = cursor.fetchone()[0]
+        typed_segments = [
+            item for item in bundle["context_segments"]
+            if item.get("physical_asset_type") == "typed_empty_state_snapshot"
+        ]
+        self.assertEqual(len(typed_segments), 9)
+        self.assertTrue(
+            all(item["structured_facts"][0]["declared_empty"] for item in typed_segments)
+        )
+
     def test_high_impact_canon_waits_for_approved_decision_asset(self) -> None:
         class HighImpactFixture(DeterministicFixtureChapterProvider):
             supports_semantic_extraction = True
@@ -292,7 +379,9 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         self.assertIn(decision["asset_version_id"], snapshot["canon_approval_decision_asset_version_ids"])
 
     @staticmethod
-    def _preparation_assets(project_id: str) -> None:
+    def _preparation_assets(
+        project_id: str, *, chapter: int = 1, typed_empty: bool = False
+    ) -> None:
         def calibrated(dimensions: tuple[str, ...]) -> dict[str, object]:
             return {
                 "safe_summary": "Human-calibrated fixture gate evidence.",
@@ -313,7 +402,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             }
         assets = {
             "chapter_plan": {
-                "chapter": 1,
+                "chapter": chapter,
                 "title": "Prepared Chapter",
                 "premise": "A prepared promise creates a visible cost.",
                 "chapter_objective": "Force a public choice with a visible cost.",
@@ -379,6 +468,45 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     """,
                     [version_id, asset_id, json.dumps(content), content_hash],
                 )
+            if typed_empty:
+                state_kinds = (
+                    "canon_snapshot", "character_state_snapshot",
+                    "relationship_state_snapshot", "timeline_snapshot",
+                    "foreshadow_snapshot", "promise_ledger_snapshot",
+                    "reward_ledger_snapshot", "world_rule_snapshot",
+                    "power_state_snapshot",
+                )
+                for state_kind in state_kinds:
+                    content = {
+                        "type": "TypedEmptyStateSnapshot",
+                        "project_id": project_id,
+                        "chapter": chapter - 1,
+                        "previous_chapter": chapter - 1,
+                        "state_kind": state_kind,
+                        "logical_asset_type": state_kind,
+                        "declared_empty": True,
+                        "entries": [],
+                        "reason": "explicit empty fixture baseline",
+                        "contract_version": "typed-empty-state-snapshot-v1",
+                    }
+                    content_hash = "sha256:" + hashlib.sha256(
+                        json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+                    ).hexdigest()
+                    asset_id = identifier(f"typed-empty-{state_kind}-asset")
+                    version_id = identifier(f"typed-empty-{state_kind}")
+                    cursor.execute(
+                        "INSERT INTO authority_asset (asset_id, project_id, asset_type) VALUES (%s, %s, %s)",
+                        [asset_id, project_id, "typed_empty_state_snapshot"],
+                    )
+                    cursor.execute(
+                        """
+                        INSERT INTO authority_asset_version (
+                            asset_version_id, asset_id, version_number, lifecycle,
+                            eligibility, governance, content, content_hash
+                        ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s)
+                        """,
+                        [version_id, asset_id, json.dumps(content), content_hash],
+                    )
 
     @staticmethod
     def _release_evidence(project_id: str) -> list[dict[str, object]]:

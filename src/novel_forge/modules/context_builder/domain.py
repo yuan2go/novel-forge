@@ -49,6 +49,7 @@ class ContextSegment:
     token_count: int
     compression_method: str
     source_expression_included: bool = False
+    physical_asset_type: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -228,6 +229,7 @@ def build_authority_context_bundle(
                 "token_count": item.token_count,
                 "compression_method": item.compression_method,
                 "source_expression_included": item.source_expression_included,
+                "physical_asset_type": item.physical_asset_type or item.asset_type,
             }
             for item in segments
         ],
@@ -331,6 +333,7 @@ def _context_segment(candidate: ContextCandidate, profile: ContextProfile) -> Co
             else candidate.compression_method
         ),
         source_expression_included=False,
+        physical_asset_type=candidate.physical_asset_type or candidate.asset_type,
     )
 
 

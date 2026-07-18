@@ -27,6 +27,11 @@ from .policies import (
     STAGE_PROFILES,
     requirements_for,
 )
+from .empty_state import (
+    TYPED_EMPTY_STATE_ASSET_TYPE,
+    project_typed_empty_state,
+    validate_typed_empty_state,
+)
 
 
 class AssetResolver(Protocol):
@@ -113,17 +118,19 @@ class ProductionPreparationService:
                 )
 
         missing: list[str] = []
-        declarations = selected_by_type.get("empty_state_declaration", [])
+        declarations = selected_by_type.get(TYPED_EMPTY_STATE_ASSET_TYPE, [])
         for requirement in requirements:
             if not requirement.required or selected_by_type.get(requirement.asset_type):
                 continue
-            declaration = self._empty_state_declaration(declarations, requirement.asset_type, request.chapter)
+            declaration = self._typed_empty_state(
+                declarations, requirement.asset_type, request
+            )
             if declaration is not None:
                 selected_by_type.setdefault(requirement.asset_type, []).append(declaration)
                 selections.append(
                     ProductionInputSelection(
                         declaration.asset_version_id,
-                        declaration.asset_type,
+                        requirement.asset_type,
                         "state",
                         f"explicit empty baseline for {requirement.asset_type}",
                     )
@@ -131,6 +138,9 @@ class ProductionPreparationService:
             else:
                 missing.append(requirement.asset_type)
 
+        # Physical typed-empty assets are projected into their concrete logical
+        # state buckets.  Do not include a second raw copy in the Manifest.
+        selected_by_type.pop(TYPED_EMPTY_STATE_ASSET_TYPE, None)
         selected = [item for values in selected_by_type.values() for item in values]
         risks = self._risks(request, selected)
         approvals = selected_by_type.get("approval_decision", [])
@@ -270,6 +280,9 @@ class ProductionPreparationService:
             "asset_version_id": item.asset_version_id,
             "content_hash": item.content_hash,
             "asset_type": item.asset_type,
+            "physical_asset_type": str(
+                item.content.get("physical_asset_type") or item.asset_type
+            ),
             "project_id": item.project_id,
             "selection_reason": item.selected_reason,
             "safe_summary": str(item.content.get("safe_summary") or ""),
@@ -290,11 +303,22 @@ class ProductionPreparationService:
         }
 
     @staticmethod
-    def _empty_state_declaration(declarations: list[ResolvedProductionAsset], state_kind: str, chapter: int) -> ResolvedProductionAsset | None:
+    def _typed_empty_state(
+        declarations: list[ResolvedProductionAsset],
+        state_kind: str,
+        request: ProductionPreparationRequest,
+    ) -> ResolvedProductionAsset | None:
         for declaration in declarations:
             content = declaration.content
-            if content.get("state_kind") == state_kind and int(content.get("chapter", 0)) == chapter - 1 and content.get("declared_empty") is True:
-                return declaration
+            if str(content.get("state_kind") or content.get("logical_asset_type") or "") != state_kind:
+                continue
+            snapshot = validate_typed_empty_state(
+                declaration,
+                project_id=request.project_id,
+                requested_chapter=request.chapter,
+                logical_asset_type=state_kind,
+            )
+            return project_typed_empty_state(declaration, snapshot=snapshot)
         return None
 
     @staticmethod
@@ -335,6 +359,9 @@ class ProductionPreparationService:
             {
                 "asset_version_id": item.asset_version_id,
                 "asset_type": item.asset_type,
+                "physical_asset_type": str(
+                    item.content.get("physical_asset_type") or item.asset_type
+                ),
                 "content_hash": item.content_hash,
                 "entity_id": str(item.content.get("entity_id") or ""),
                 "role": next((entry.role for entry in selections if entry.asset_version_id == item.asset_version_id), "context"),

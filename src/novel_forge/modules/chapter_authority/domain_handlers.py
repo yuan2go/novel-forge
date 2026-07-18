@@ -80,6 +80,9 @@ def build_context_bundle(
             structured_facts=tuple(item.get("structured_facts", [])),
             allowed_use=str(item.get("allowed_use", "generation")),
             compression_method=str(item.get("compression_method", "safe_summary")),
+            physical_asset_type=str(
+                item.get("physical_asset_type") or item.get("asset_type") or ""
+            ),
         )
         for item in (governed_candidates or [])
     ]

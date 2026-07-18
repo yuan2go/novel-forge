@@ -264,10 +264,19 @@ class _ContextHandler:
             )
         for item in frozen_candidates:
             metadata = candidate_metadata[item.asset_version_id]
+            physical_asset_type = str(
+                metadata.get("physical_asset_type") or metadata.get("asset_type") or ""
+            )
+            if physical_asset_type != item.asset_type:
+                raise KernelError(
+                    "CONTEXT_FROZEN_INPUT_TYPE_MISMATCH",
+                    "Context candidate physical type differs from frozen AssetVersion",
+                )
             governed_candidates.append(
                 {
                     **metadata,
-                    "asset_type": item.asset_type,
+                    "asset_type": str(metadata.get("asset_type") or item.asset_type),
+                    "physical_asset_type": item.asset_type,
                     "content_digest": item.content_hash,
                     "safe_summary": str(item.content.get("safe_summary") or metadata.get("safe_summary") or ""),
                     "structured_facts": list(item.content.get("structured_facts") or metadata.get("structured_facts") or []),

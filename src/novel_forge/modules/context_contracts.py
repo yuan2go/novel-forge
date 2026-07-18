@@ -25,6 +25,7 @@ class ContextCandidate:
     structured_facts: tuple[dict[str, Any], ...] = ()
     allowed_use: str = "generation"
     compression_method: str = "safe_summary"
+    physical_asset_type: str = ""
 
 
 __all__ = ["ContextCandidate"]
