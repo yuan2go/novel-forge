@@ -140,7 +140,11 @@ class ChapterModelExternalEffectAdapter:
     reconciliation_mode = "unsupported"
 
     def __init__(self, routes: dict[str, ChapterModelRoute]) -> None:
-        unsupported = set(routes) - {"draft", "review", "revision", "canon_extraction"}
+        unsupported = set(routes) - {
+            "draft", "review", "revision", "canon_extraction",
+            "quality_structural", "quality_commercial",
+            "quality_source_originality", "quality_longform", "quality_platform",
+        }
         if not routes or unsupported:
             raise ValueError("chapter model routes contain unsupported stages")
         self.routes = dict(routes)
@@ -164,6 +168,21 @@ class ChapterModelExternalEffectAdapter:
             ) from exc
         try:
             output = _normalize_model_output(stage, raw)
+            if stage.startswith("quality_"):
+                requested_dimensions = inputs.get("dimensions")
+                returned_dimensions = [
+                    str(item.get("dimension") or "")
+                    for item in output["dimensions"]
+                ]
+                if (
+                    not isinstance(requested_dimensions, list)
+                    or len(returned_dimensions) != len(set(returned_dimensions))
+                    or set(returned_dimensions) != {str(item) for item in requested_dimensions}
+                ):
+                    raise KernelError(
+                        "MODEL_RESPONSE_INVALID",
+                        "quality response dimensions must exactly match the frozen contract",
+                    )
             usage = raw.get("usage") if isinstance(raw.get("usage"), dict) else {}
             cost = raw.get("cost") if isinstance(raw.get("cost"), dict) else {}
             result = ModelProviderResult(
@@ -305,6 +324,34 @@ class ChapterModelExternalEffectAdapter:
                     "context": context,
                 },
             )
+        if stage.startswith("quality_"):
+            revision = _object(inputs, "revision")
+            group = stage.removeprefix("quality_")
+            dimensions = inputs.get("dimensions")
+            if not isinstance(dimensions, list) or not dimensions:
+                raise ExternalEffectAdapterError(
+                    "quality judge requires an explicit dimension contract",
+                    request_sent=False,
+                )
+            prompt = (
+                "Evaluate only the requested chapter quality dimensions. Return JSON "
+                "{dimensions:[{dimension,gate_status,score,evidence_locations,confidence,"
+                "issue_codes,revision_strategies}]}. Use PASSED only when the chapter "
+                "contains direct evidence; otherwise use INSUFFICIENT_EVIDENCE or FAILED.\n"
+                f"Group: {group}\nDimensions: {dimensions}\nRevision:\n"
+                + str(revision.get("text") or "")
+            )
+            return adapter.generate(
+                prompt,
+                {
+                    "contract_version": "chapter-quality-provider-evidence-v1",
+                    "group": group,
+                    "dimensions": dimensions,
+                    "chapter_plan": inputs.get("chapter_plan", {}),
+                    "canon": inputs.get("canon", {}),
+                    "context_policy": inputs.get("context_policy", {}),
+                },
+            )
         draft = _object(inputs, "draft")
         review = _object(inputs, "review")
         return adapter.revise(
@@ -350,7 +397,11 @@ class ExternalEffectChapterModelPort:
         stage: str,
         payload: dict[str, Any],
     ) -> ModelProviderResult:
-        if stage not in {"draft", "review", "revision", "canon_extraction"}:
+        if stage not in {
+            "draft", "review", "revision", "canon_extraction",
+            "quality_structural", "quality_commercial",
+            "quality_source_originality", "quality_longform", "quality_platform",
+        }:
             raise KernelError("MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}")
         logical_ref = _model_log_ref(request.operation_id, stage)
         existing = self._existing_result(request.project_id, logical_ref)
@@ -600,6 +651,35 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                 "Canon semantic extraction cannot be empty on the Provider path",
             )
         return normalized_extraction
+    if stage.startswith("quality_"):
+        dimensions = raw.get("dimensions")
+        if not isinstance(dimensions, list) or not dimensions:
+            raise KernelError("MODEL_RESPONSE_INVALID", "quality response has no dimension evidence")
+        normalized_dimensions: list[dict[str, Any]] = []
+        for item in dimensions:
+            if not isinstance(item, dict):
+                raise KernelError("MODEL_RESPONSE_INVALID", "quality dimension must be an object")
+            dimension = str(item.get("dimension") or "").strip()
+            status = str(item.get("gate_status") or "").strip().upper()
+            confidence = item.get("confidence")
+            locations = item.get("evidence_locations")
+            if not dimension or status not in {
+                "PASSED", "PASSED_WITH_WARNINGS", "FAILED",
+                "INSUFFICIENT_EVIDENCE", "REQUIRES_HUMAN_REVIEW",
+            }:
+                raise KernelError("MODEL_RESPONSE_INVALID", "quality dimension identity or status is invalid")
+            if not isinstance(confidence, (int, float)) or isinstance(confidence, bool) or not 0 <= float(confidence) <= 1:
+                raise KernelError("MODEL_RESPONSE_INVALID", "quality confidence must be between zero and one")
+            if not isinstance(locations, list) or (status in {"PASSED", "FAILED"} and not locations):
+                raise KernelError("MODEL_RESPONSE_INVALID", "quality decision requires evidence locations")
+            normalized_dimensions.append({
+                "dimension": dimension, "gate_status": status,
+                "score": item.get("score"), "confidence": float(confidence),
+                "evidence_locations": locations,
+                "issue_codes": list(item.get("issue_codes") or []),
+                "revision_strategies": list(item.get("revision_strategies") or []),
+            })
+        return {"dimensions": normalized_dimensions}
     text = str(raw.get("text") or raw.get("revised_text") or "").strip()
     resolved = [
         str(item).strip()

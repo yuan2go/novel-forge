@@ -33,6 +33,24 @@ class _Adapter:
                 "narrative_pattern_fingerprints": [], "theme_movements": [],
                 "antagonist_pressure_changes": [],
             }
+        if "Evaluate only the requested chapter quality dimensions" in prompt:
+            dimensions = list((context or {}).get("dimensions") or [])
+            return {
+                "dimensions": [
+                    {
+                        "dimension": dimension,
+                        "gate_status": "PASSED",
+                        "score": 82,
+                        "confidence": 0.84,
+                        "evidence_locations": [{"start": 0, "end": 12}],
+                        "issue_codes": [],
+                        "revision_strategies": [],
+                    }
+                    for dimension in dimensions
+                ],
+                "usage": {"input_tokens": 20, "output_tokens": 10},
+                "cost": {"amount": "0.02", "currency": "USD"},
+            }
         return {
             "text": "A public promise creates a visible debt.",
             "usage": {"input_tokens": 12, "output_tokens": 8},
@@ -70,7 +88,10 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
                     skill_version=f"skill-{stage}-v1",
                     real_model_call=True,
                 )
-                for stage in ("draft", "review", "revision", "canon_extraction")
+                for stage in (
+                    "draft", "review", "revision", "canon_extraction",
+                    "quality_structural",
+                )
             }
         )
 
@@ -126,6 +147,58 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
         self.assertEqual(
             extraction.evidence["result"]["canon_facts"][0]["predicate"], "paid"
         )
+
+        quality = self.adapter.execute(
+            stable_idempotency_key="quality-key",
+            capability="model.quality_structural",
+            request_payload={
+                "stage": "quality_structural",
+                "input": {
+                    "revision": {"text": "A visible cost changes the next choice."},
+                    "dimensions": ["readability", "scene_completeness"],
+                },
+            },
+        )
+        self.assertEqual(quality.outcome, "success")
+        self.assertEqual(
+            {item["dimension"] for item in quality.evidence["result"]["dimensions"]},
+            {"readability", "scene_completeness"},
+        )
+
+    def test_quality_response_must_cover_the_exact_frozen_dimension_contract(self) -> None:
+        class _Partial(_Adapter):
+            def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
+                return {
+                    "dimensions": [{
+                        "dimension": "readability",
+                        "gate_status": "PASSED",
+                        "score": 90,
+                        "confidence": .9,
+                        "evidence_locations": [{"start": 0, "end": 5}],
+                    }]
+                }
+
+        adapter = ChapterModelExternalEffectAdapter({
+            "quality_structural": ChapterModelRoute(
+                adapter=_Partial(), provider_id="provider", model_id="model",
+                prompt_version="quality-v1", skill_version="quality-skill-v1",
+                real_model_call=True,
+            )
+        })
+        result = adapter.execute(
+            stable_idempotency_key="quality-partial",
+            capability="model.quality_structural",
+            request_payload={
+                "stage": "quality_structural",
+                "input": {
+                    "revision": {"text": "A complete chapter."},
+                    "dimensions": ["readability", "scene_completeness"],
+                },
+            },
+        )
+
+        self.assertEqual(result.outcome, "final_failure")
+        self.assertEqual(result.evidence["error_code"], "MODEL_RESPONSE_INVALID")
 
     def test_invalid_model_response_is_final_failure_and_query_is_ambiguous(self) -> None:
         class _Invalid(_Adapter):

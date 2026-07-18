@@ -62,12 +62,19 @@ def build_chapter_authority_application(
             "NOVEL_FORGE_CANON_EXTRACTION_PROVIDER",
             "NOVEL_FORGE_CANON_EXTRACTION_MODEL",
         ),
+        ("quality_structural", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
+        ("quality_commercial", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
+        ("quality_source_originality", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
+        ("quality_longform", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
+        ("quality_platform", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
     ):
         provider = str(
             values.get(provider_key)
             or (
                 values.get("NOVEL_FORGE_REVISION_PROVIDER")
                 if stage == "canon_extraction"
+                else values.get("NOVEL_FORGE_REVIEW_PROVIDER")
+                if stage.startswith("quality_")
                 else ""
             )
             or values.get("NOVEL_FORGE_MODEL_PROVIDER")
@@ -84,6 +91,8 @@ def build_chapter_authority_application(
             or (
                 values.get("NOVEL_FORGE_REVISION_MODEL")
                 if stage == "canon_extraction"
+                else values.get("NOVEL_FORGE_REVIEW_MODEL")
+                if stage.startswith("quality_")
                 else ""
             )
             or ""

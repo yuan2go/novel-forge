@@ -31,7 +31,10 @@ from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelPort,
     ModelProviderResult,
 )
-from novel_forge.modules.chapter_quality_authority import build_quality_group_evidence
+from novel_forge.modules.chapter_quality_authority import (
+    QUALITY_GROUPS,
+    build_quality_group_evidence,
+)
 from novel_forge.modules.canon_graph.approval_domain import (
     build_canon_change_proposal,
     resolve_canon_extraction,
@@ -166,6 +169,13 @@ class _PlanHandler:
                 "risk_summary": [],
             }
         manifest["created_by_operation_id"] = request.operation_id
+        manifest["manifest_digest"] = "sha256:" + hashlib.sha256(
+            json.dumps(
+                {key: value for key, value in manifest.items() if key != "manifest_digest"},
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
         auxiliary = (
             ChapterAuxiliaryOutput(
                 asset_type="production_input_manifest",
@@ -525,6 +535,7 @@ class _CanonProposalHandler:
 @dataclass(frozen=True, slots=True)
 class _QualityGroupHandler:
     group: str
+    provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
@@ -534,12 +545,45 @@ class _QualityGroupHandler:
             bool(item.content.get("provider_evidence", {}).get("real_model_call"))
             for item in request.inputs
         )
+        context_content = dict(context.content)
+        if bool(getattr(self.provider, "external_effect_backed", False)):
+            generated = self.provider.invoke(
+                request,
+                stage=f"quality_{self.group}",
+                payload={
+                    "revision": revision.content,
+                    "canon": canon.content,
+                    "context_policy": {
+                        "quality_profile_version_id": context.content.get("production_input_manifest", {}).get("quality_profile_version_id", ""),
+                        "platform_profile_version_id": context.content.get("production_input_manifest", {}).get("platform_profile_version_id", ""),
+                    },
+                    "dimensions": list(QUALITY_GROUPS[self.group]),
+                },
+            )
+            provider_entries = []
+            for item in generated.output.get("dimensions", []):
+                provider_entries.append({
+                    **dict(item),
+                    "target_asset_version_id": revision.asset_version_id,
+                    "calibration_status": "PROVIDER_UNCALIBRATED",
+                    "provider_verified": True,
+                })
+            context_content["context_segments"] = [
+                *list(context.content.get("context_segments", [])),
+                {
+                    "asset_version_id": f"external-effect:{request.operation_id}",
+                    "narrative_function": "quality_evidence",
+                    "source_expression_included": False,
+                    "structured_facts": [{"key": "dimension_evidence", "value": provider_entries}],
+                },
+            ]
+            fixture = False
         content = build_quality_group_evidence(
             group=self.group,
             project_id=request.project_id,
             revision=revision.content,
             revision_asset_version_id=revision.asset_version_id,
-            context_bundle=context.content,
+            context_bundle=context_content,
             canon=canon.content,
             fixture=fixture,
         )
@@ -706,11 +750,11 @@ def build_chapter_handler_registry(
     registry.register(ChapterNode.CANON_EXTRACTION, _CanonExtractionHandler(provider))
     registry.register(ChapterNode.CANON_PROPOSAL, _CanonProposalHandler())
     registry.register(ChapterNode.CANON, _CanonHandler())
-    registry.register(ChapterNode.QUALITY_STRUCTURAL, _QualityGroupHandler("structural"))
-    registry.register(ChapterNode.QUALITY_COMMERCIAL, _QualityGroupHandler("commercial"))
-    registry.register(ChapterNode.QUALITY_SOURCE_ORIGINALITY, _QualityGroupHandler("source_originality"))
-    registry.register(ChapterNode.QUALITY_LONGFORM, _QualityGroupHandler("longform"))
-    registry.register(ChapterNode.QUALITY_PLATFORM, _QualityGroupHandler("platform"))
+    registry.register(ChapterNode.QUALITY_STRUCTURAL, _QualityGroupHandler("structural", provider))
+    registry.register(ChapterNode.QUALITY_COMMERCIAL, _QualityGroupHandler("commercial", provider))
+    registry.register(ChapterNode.QUALITY_SOURCE_ORIGINALITY, _QualityGroupHandler("source_originality", provider))
+    registry.register(ChapterNode.QUALITY_LONGFORM, _QualityGroupHandler("longform", provider))
+    registry.register(ChapterNode.QUALITY_PLATFORM, _QualityGroupHandler("platform", provider))
     registry.register(ChapterNode.QUALITY, _QualityHandler())
     registry.register(ChapterNode.PUBLISH_GATE, _PublishGateHandler())
     registry.register(ChapterNode.EXPORT, _ExportHandler())

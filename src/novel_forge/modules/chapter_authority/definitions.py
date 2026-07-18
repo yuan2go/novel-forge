@@ -7,7 +7,7 @@ from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.0.8"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.9"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.10"
 CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.8"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
@@ -121,6 +121,11 @@ def _definition(
         ChapterNode.REVISION: "model.revision",
         ChapterNode.REREVIEW: "model.review",
         ChapterNode.CANON_EXTRACTION: "model.canon_extraction",
+        ChapterNode.QUALITY_STRUCTURAL: "model.quality_structural",
+        ChapterNode.QUALITY_COMMERCIAL: "model.quality_commercial",
+        ChapterNode.QUALITY_SOURCE_ORIGINALITY: "model.quality_source_originality",
+        ChapterNode.QUALITY_LONGFORM: "model.quality_longform",
+        ChapterNode.QUALITY_PLATFORM: "model.quality_platform",
     }.get(node)
     if model_effects_required and model_capability:
         completion["required_external_effects"] = [
