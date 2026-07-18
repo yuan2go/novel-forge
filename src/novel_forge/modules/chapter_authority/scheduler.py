@@ -23,8 +23,10 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     queue_attempt,
     start_attempt,
     submit_attempt_result,
+    heartbeat_attempt,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
 from novel_forge.modules.command_kernel.external_effect_adapters import ExternalEffectAdapter
 from novel_forge.modules.command_kernel.operation_graph import (
     GraphCommandContext,
@@ -303,27 +305,32 @@ class ChapterAuthorityScheduler:
         )
         if attempt_status in {"QUEUED", "LEASED"}:
             start_attempt(self.database_url, worker)
-        output = execute_chapter_handler(
-            self.database_url,
-            command=worker,
-            node=node,
-            registry=self.registry,
-        )
-        if node is ChapterNode.EXPORT:
-            deliver_export(
+        with LeaseHeartbeatGuard(
+            lambda: heartbeat_attempt(self.database_url, worker, self.lease_seconds),
+            lease_seconds=self.lease_seconds,
+            label=f"attempt:{attempt_id}",
+        ):
+            output = execute_chapter_handler(
                 self.database_url,
-                request=ExportDeliveryRequest(
-                    operation_id=operation_id,
-                    asset_version_id=output.asset_version_id,
-                    project_id=project_id,
-                    actor_id=self.worker_id,
-                    chapter=request.chapter,
-                    trace_id=request.trace_id,
-                    correlation_id=request.correlation_id,
-                ),
-                adapter=self.object_store_adapter,
-                exercise_unknown_reconciliation=False,
+                command=worker,
+                node=node,
+                registry=self.registry,
             )
+            if node is ChapterNode.EXPORT:
+                deliver_export(
+                    self.database_url,
+                    request=ExportDeliveryRequest(
+                        operation_id=operation_id,
+                        asset_version_id=output.asset_version_id,
+                        project_id=project_id,
+                        actor_id=self.worker_id,
+                        chapter=request.chapter,
+                        trace_id=request.trace_id,
+                        correlation_id=request.correlation_id,
+                    ),
+                    adapter=self.object_store_adapter,
+                    exercise_unknown_reconciliation=False,
+                )
         with AuthorityUnitOfWork(self.database_url) as uow:
             state = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
         submit_attempt_result(

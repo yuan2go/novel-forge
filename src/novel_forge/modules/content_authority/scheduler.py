@@ -12,8 +12,10 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     queue_attempt,
     start_attempt,
     submit_attempt_result,
+    heartbeat_attempt,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
 from novel_forge.modules.content_authority.registry import ContentHandlerRegistry
 from novel_forge.modules.content_authority.runtime import execute_content_handler
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -180,13 +182,18 @@ class ContentAuthorityScheduler:
                 "CONTENT_RECOVERY_ATTEMPT_INVALID",
                 f"Content Attempt cannot resume from {attempt_status}",
             )
-        output = execute_content_handler(
-            self.database_url,
-            command=worker,
-            definition_name=state["definition_name"],
-            definition_version=state["definition_version"],
-            registry=self.registry,
-        )
+        with LeaseHeartbeatGuard(
+            lambda: heartbeat_attempt(self.database_url, worker, self.lease_seconds),
+            lease_seconds=self.lease_seconds,
+            label=f"attempt:{attempt_id}",
+        ):
+            output = execute_content_handler(
+                self.database_url,
+                command=worker,
+                definition_name=state["definition_name"],
+                definition_version=state["definition_version"],
+                registry=self.registry,
+            )
         with AuthorityUnitOfWork(self.database_url) as uow:
             operation = uow.repositories.attempt_runtime.operation_state(
                 operation_id, project_id

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tempfile
+import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -11,6 +12,12 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
     FakeDeterministicProvider,
     LocalFileObjectStoreAdapter,
 )
+
+
+class _SlowProvider(FakeDeterministicProvider):
+    def execute(self, **kwargs):
+        time.sleep(1.2)
+        return super().execute(**kwargs)
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
     acquire_effect_dispatch,
@@ -58,6 +65,25 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
         )
         self.assertEqual(result["outcome"], "success")
         self._assert_effect(effect, "SUCCEEDED", "SUCCEEDED")
+
+    def test_slow_provider_dispatch_renews_effect_lease(self) -> None:
+        context = self._context()
+        effect = self._plan(context, scenario="success")
+        result = dispatch_external_effect(
+            DATABASE_URL,
+            context,
+            effect_id=effect,
+            worker_id="dispatcher-slow",
+            lease_seconds=1,
+            adapter=_SlowProvider("success"),
+        )
+        self.assertEqual(result["outcome"], "success")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT heartbeat_at > acquired_at FROM authority_effect_dispatch_lease WHERE dispatch_id = %s",
+                [result["dispatch_id"]],
+            )
+            self.assertTrue(cursor.fetchone()[0])
 
     def test_two_dispatchers_compete_and_expired_lease_takeover_fences_old(self) -> None:
         context = self._context()

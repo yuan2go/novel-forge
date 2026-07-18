@@ -10,6 +10,7 @@ from uuid import uuid4
 import psycopg
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapter,
     ExternalEffectAdapterError,
@@ -184,11 +185,23 @@ def dispatch_external_effect(
         lease_seconds=lease_seconds,
     )
     try:
-        provider_result = adapter.execute(
-            stable_idempotency_key=effect["stable_idempotency_key"],
-            capability=effect["capability"],
-            request_payload=effect["request_payload"],
-        )
+        with LeaseHeartbeatGuard(
+            lambda: heartbeat_effect_dispatch(
+                database_url,
+                context,
+                dispatch_id=dispatch["dispatch_id"],
+                worker_id=worker_id,
+                fencing_token=lease["fencing_token"],
+                lease_seconds=lease_seconds,
+            ),
+            lease_seconds=lease_seconds,
+            label=f"effect:{dispatch['dispatch_id']}",
+        ):
+            provider_result = adapter.execute(
+                stable_idempotency_key=effect["stable_idempotency_key"],
+                capability=effect["capability"],
+                request_payload=effect["request_payload"],
+            )
     except ExternalEffectAdapterError as exc:
         recorded = "unknown" if exc.request_sent else "retryable_failure"
         submit_effect_dispatch_result(

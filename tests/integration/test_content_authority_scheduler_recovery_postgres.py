@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+import time
+from unittest.mock import patch
 
 from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
@@ -232,6 +234,37 @@ class ContentAuthoritySchedulerRecoveryPostgresTests(unittest.TestCase):
                 [stale_worker.attempt_id],
             )
             self.assertEqual(cursor.fetchone()[0], 2)
+
+    def test_slow_handler_renews_attempt_lease_until_completion(self) -> None:
+        request = self.request("slow-heartbeat")
+        admission = self.app.admit(request)
+        scheduler = ContentAuthorityScheduler(
+            DATABASE_URL,
+            registry=self.app.registry,
+            worker_id="content-slow-worker",
+            lease_seconds=1,
+        )
+
+        def slow_handler(*args, **kwargs):
+            time.sleep(1.2)
+            return execute_content_handler(*args, **kwargs)
+
+        with patch(
+            "novel_forge.modules.content_authority.scheduler.execute_content_handler",
+            side_effect=slow_handler,
+        ):
+            result = scheduler.run_or_recover(
+                operation_id=admission.operation_id,
+                project_id=self.project_id,
+            )
+
+        self.assertEqual(result.output.operation_id, admission.operation_id)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT heartbeat_at > acquired_at FROM authority_lease_acquisition WHERE attempt_id = %s",
+                [result.attempt_id],
+            )
+            self.assertTrue(cursor.fetchone()[0])
 
 
 if __name__ == "__main__":
