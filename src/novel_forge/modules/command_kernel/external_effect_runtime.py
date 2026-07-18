@@ -8,8 +8,15 @@ from typing import Any
 from uuid import uuid4
 
 import psycopg
+from psycopg.types.json import Jsonb
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.deadline_runtime import probe_external_effect_execution
+from novel_forge.modules.command_kernel.attempt_runtime import _cas_operation
+from novel_forge.modules.command_kernel.budget_runtime import (
+    resolve_provider_budget_failure,
+    settle_provider_budget,
+)
 from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapter,
@@ -185,6 +192,31 @@ def dispatch_external_effect(
         lease_seconds=lease_seconds,
     )
     try:
+        probe_external_effect_execution(
+            database_url,
+            external_effect_id=effect_id,
+            project_id=context.project_id,
+        )
+    except KernelError as exc:
+        submit_effect_dispatch_result(
+            database_url,
+            context,
+            dispatch_id=dispatch["dispatch_id"],
+            worker_id=worker_id,
+            fencing_token=lease["fencing_token"],
+            outcome="retryable_failure",
+            evidence={
+                "error_type": type(exc).__name__,
+                "message": str(exc),
+                "request_sent": False,
+                "timeout_phase": "before_send",
+            },
+        )
+        raise KernelError(
+            "EFFECT_REQUEST_TIMEOUT_BEFORE_SEND",
+            "Provider request deadline expired before dispatch",
+        ) from exc
+    try:
         with LeaseHeartbeatGuard(
             lambda: heartbeat_effect_dispatch(
                 database_url,
@@ -196,6 +228,11 @@ def dispatch_external_effect(
             ),
             lease_seconds=lease_seconds,
             label=f"effect:{dispatch['dispatch_id']}",
+            probe=lambda: probe_external_effect_execution(
+                database_url,
+                external_effect_id=effect_id,
+                project_id=context.project_id,
+            ),
         ):
             provider_result = adapter.execute(
                 stable_idempotency_key=effect["stable_idempotency_key"],
@@ -218,7 +255,11 @@ def dispatch_external_effect(
             },
         )
         raise KernelError(
-            "EFFECT_ADAPTER_EXCEPTION_RECORDED",
+            (
+                "EFFECT_EXTERNAL_STATE_UNKNOWN"
+                if exc.request_sent
+                else "EFFECT_RETRYABLE_FAILURE_RECORDED"
+            ),
             f"adapter exception was recorded as {recorded}",
         ) from exc
     except Exception as exc:
@@ -236,7 +277,7 @@ def dispatch_external_effect(
             },
         )
         raise KernelError(
-            "EFFECT_ADAPTER_EXCEPTION_RECORDED",
+            "EFFECT_EXTERNAL_STATE_UNKNOWN",
             "untyped adapter exception was conservatively recorded as UNKNOWN",
         ) from exc
 
@@ -609,11 +650,11 @@ def reconcile_external_effect(
         request_payload=effect["request_payload"],
     )
 
-    if result.outcome not in {"success", "not_found", "ambiguous", "failed_final"}:
+    if result.outcome not in {"success", "not_found", "ambiguous", "failed_final", "cancelled"}:
         raise KernelError("RECONCILIATION_OUTCOME_INVALID", "provider query is inconclusive")
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
-        _require_context(repository, context)
+        _validate_effect_context(context)
         current = repository.get_for_update(effect_id)
         _require_project(current, context.project_id)
         repository.record_reconciliation(
@@ -638,8 +679,64 @@ def reconcile_external_effect(
             "external_effect.reconciled",
             {"outcome": result.outcome},
         )
+        operation = uow.repositories.attempt_runtime.operation_state(
+            context.operation_id, context.project_id
+        )
+        current_status = str(operation["status"])
+        target_status = {
+            "success": "EXECUTING",
+            "not_found": "FAILED_RETRYABLE",
+            "failed_final": "FAILED_FINAL",
+            "cancelled": "CANCELLED",
+            "ambiguous": "RECONCILIATION_REQUIRED",
+        }[result.outcome]
+        if current_status == "EXECUTING" and result.outcome == "ambiguous":
+            target_status = "WAITING_EXTERNAL_RESULT"
+        if current_status == "CANCELLATION_REQUESTED":
+            target_status = {
+                "success": "COMPENSATION_REQUIRED",
+                "not_found": "CANCELLED",
+                "failed_final": "CANCELLED",
+                "cancelled": "CANCELLED",
+                "ambiguous": "RECONCILIATION_REQUIRED",
+            }[result.outcome]
+        if current_status != target_status:
+            if current_status not in {
+                "EXECUTING",
+                "WAITING_EXTERNAL_RESULT",
+                "RECONCILIATION_REQUIRED",
+                "CANCELLATION_REQUESTED",
+            }:
+                raise KernelError(
+                    "OPERATION_STATUS_CONFLICT",
+                    f"operation cannot resume reconciliation from {current_status}",
+                )
+            _cas_operation(
+                uow,
+                operation_id=context.operation_id,
+                project_id=context.project_id,
+                expected_status=current_status,
+                expected_version=int(operation["version"]),
+                target_status=target_status,
+                actor_id=context.actor_id,
+                reason=f"external effect reconciled as {result.outcome}",
+                trace_id=context.trace_id,
+                correlation_id=context.correlation_id,
+                causation_id=effect_id,
+            )
         uow.commit()
-    return {"external_effect_id": effect_id, "outcome": result.outcome}
+    _resolve_reconciled_budget(
+        database_url,
+        project_id=context.project_id,
+        effect_id=effect_id,
+        outcome=result.outcome,
+        evidence=result.evidence,
+    )
+    return {
+        "external_effect_id": effect_id,
+        "outcome": result.outcome,
+        "operation_status": target_status,
+    }
 
 
 def mark_external_effect_unknown(
@@ -683,22 +780,69 @@ def cancel_external_effect(
     context: EffectCommandContext,
     *,
     effect_id: str,
+    adapter: ExternalEffectAdapter | None = None,
 ) -> dict[str, Any]:
+    effect_snapshot = _read_effect(database_url, effect_id, context.project_id)
+    provider_result = None
+    if adapter is not None:
+        if adapter.provider != effect_snapshot["provider"]:
+            raise KernelError("EFFECT_PROVIDER_CONFLICT", "cancellation adapter is unexpected")
+        provider_result = adapter.cancel(
+            stable_idempotency_key=effect_snapshot["stable_idempotency_key"],
+            capability=effect_snapshot["capability"],
+            request_payload=effect_snapshot["request_payload"],
+            provider_request_id=str(effect_snapshot.get("provider_request_id") or ""),
+        )
+        if provider_result.outcome not in {
+            "cancelled", "already_completed", "unsupported", "ambiguous"
+        }:
+            raise KernelError("EFFECT_CANCEL_OUTCOME_INVALID", "provider cancel outcome is invalid")
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
         _require_context(repository, context)
         effect = repository.get_for_update(effect_id)
         _require_project(effect, context.project_id)
-        target = repository.cancel(effect)
+        if provider_result is not None and provider_result.outcome == "cancelled":
+            uow.cursor.execute(
+                "UPDATE authority_external_effect SET status='CANCELLED' WHERE external_effect_id=%s",
+                [effect_id],
+            )
+            uow.cursor.execute(
+                """
+                UPDATE authority_external_effect_dispatch
+                SET status='CANCELLED', finished_at=NOW(), updated_at=NOW(),
+                    evidence = evidence || %s
+                WHERE external_effect_id=%s
+                  AND status IN ('CREATED','DISPATCHING','ACKNOWLEDGED','UNKNOWN','CANCEL_REQUESTED')
+                """,
+                [Jsonb(provider_result.evidence), effect_id],
+            )
+            target = "CANCELLED"
+        else:
+            target = repository.cancel(effect)
         _record(
             repository,
             context,
             effect_id,
             "external_effect.cancelled" if target == "CANCELLED" else "external_effect.cancel_coordinated",
-            {"status": target},
+            {
+                "status": target,
+                "provider_cancel_outcome": (
+                    provider_result.outcome if provider_result is not None else "not_dispatched"
+                ),
+                "provider_cancel_evidence": (
+                    provider_result.evidence if provider_result is not None else {}
+                ),
+            },
         )
         uow.commit()
-    return {"external_effect_id": effect_id, "status": target}
+    return {
+        "external_effect_id": effect_id,
+        "status": target,
+        "provider_cancel_outcome": (
+            provider_result.outcome if provider_result is not None else "not_dispatched"
+        ),
+    }
 
 
 def compensate_external_effect(
@@ -740,6 +884,11 @@ def _read_effect(database_url: str, effect_id: str, project_id: str) -> dict[str
 
 
 def _require_context(repository: Any, context: EffectCommandContext) -> None:
+    _validate_effect_context(context)
+    repository.require_operation(context.operation_id, context.project_id)
+
+
+def _validate_effect_context(context: EffectCommandContext) -> None:
     if any(
         not value
         for value in (
@@ -751,7 +900,49 @@ def _require_context(repository: Any, context: EffectCommandContext) -> None:
         )
     ):
         raise KernelError("COMMAND_SCHEMA_INVALID", "effect command context is incomplete")
-    repository.require_operation(context.operation_id, context.project_id)
+
+
+def _resolve_reconciled_budget(
+    database_url: str,
+    *,
+    project_id: str,
+    effect_id: str,
+    outcome: str,
+    evidence: dict[str, Any],
+) -> None:
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """
+            SELECT reservation_id, reserved_amount, estimated_tokens
+            FROM authority_budget_reservation
+            WHERE external_effect_id=%s AND project_id=%s
+              AND status IN ('RESERVED','HELD_UNKNOWN')
+            ORDER BY created_at DESC LIMIT 1
+            """,
+            [effect_id, project_id],
+        )
+        row = uow.cursor.fetchone()
+    if row is None:
+        return
+    if outcome == "success":
+        settle_provider_budget(
+            database_url,
+            reservation_id=str(row[0]),
+            project_id=project_id,
+            actual_amount=str(evidence.get("actual_cost") or row[1]),
+            actual_tokens=int(evidence.get("actual_tokens") or row[2]),
+            evidence={
+                **evidence,
+                "reconciled": True,
+                "cost_fallback_to_reservation": "actual_cost" not in evidence,
+            },
+        )
+    elif outcome in {"not_found", "failed_final", "cancelled"}:
+        resolve_provider_budget_failure(
+            database_url,
+            reservation_id=str(row[0]),
+            project_id=project_id,
+        )
 
 
 def _require_project(row: dict[str, Any], project_id: str) -> None:

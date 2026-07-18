@@ -12,11 +12,14 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     queue_attempt,
     start_attempt,
     submit_attempt_failure,
+    checkpoint_attempt_for_external_reconciliation,
     submit_attempt_result,
     heartbeat_attempt,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
+from novel_forge.modules.command_kernel.deadline_runtime import probe_operation_execution
+from novel_forge.modules.command_kernel.cancellation import acknowledge_worker_cancellation
 from novel_forge.modules.command_kernel.worker_execution import (
     WorkerFailureClass,
     WorkerFailureClassifier,
@@ -192,6 +195,11 @@ class ContentAuthorityScheduler:
                 lambda: heartbeat_attempt(self.database_url, worker, self.lease_seconds),
                 lease_seconds=self.lease_seconds,
                 label=f"attempt:{attempt_id}",
+                probe=lambda: probe_operation_execution(
+                    self.database_url,
+                    operation_id=operation_id,
+                    project_id=project_id,
+                ),
             ):
                 output = execute_content_handler(
                     self.database_url,
@@ -220,11 +228,29 @@ class ContentAuthorityScheduler:
             )
         except BaseException as exc:
             classification = WorkerFailureClassifier.classify(exc)
-            if classification not in {
+            if classification is WorkerFailureClass.CANCELLATION:
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    current = uow.repositories.attempt_runtime.operation_state(
+                        operation_id, project_id
+                    )
+                acknowledge_worker_cancellation(
+                    self.database_url,
+                    worker,
+                    expected_operation_version=int(current["version"]),
+                )
+            elif classification is WorkerFailureClass.UNKNOWN_EXTERNAL_STATE:
+                checkpoint_attempt_for_external_reconciliation(
+                    self.database_url,
+                    worker,
+                    {
+                        "reason": "external_state_unknown",
+                        "error_code": exc.code if isinstance(exc, KernelError) else "UNKNOWN",
+                        "error_message": str(exc),
+                    },
+                )
+            elif classification not in {
                 WorkerFailureClass.LEASE_CONFLICT,
                 WorkerFailureClass.FENCING_CONFLICT,
-                WorkerFailureClass.CANCELLATION,
-                WorkerFailureClass.UNKNOWN_EXTERNAL_STATE,
             }:
                 submit_attempt_failure(
                     self.database_url,

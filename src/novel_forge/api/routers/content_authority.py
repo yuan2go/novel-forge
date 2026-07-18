@@ -14,6 +14,14 @@ from novel_forge.api.authority_dependencies import (
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.recovery import (
+    RecoverOperationCommand,
+    recover_operation as execute_recovery_command,
+)
+from novel_forge.modules.command_kernel.manual_effect_resolution import (
+    ExternalEffectManualResolutionCommand,
+    resolve_external_effect_manually,
+)
 from novel_forge.modules.content_authority import ContentOperationRequest
 from novel_forge.modules.production_preparation import PostgresProductionAssetResolver
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -23,6 +31,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     globals().update(ctx.models)
     ContentAuthorityCommandRequest = ctx.models["ContentAuthorityCommandRequest"]
     AuthorityOperationControlRequest = ctx.models["AuthorityOperationControlRequest"]
+    ExternalEffectManualResolutionRequest = ctx.models["ExternalEffectManualResolutionRequest"]
     router = APIRouter(prefix="/product/content-authority", tags=["product-content-authority"])
 
     @router.post("/commands", status_code=202)
@@ -127,17 +136,62 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             claimed_actor_id=request.actor_id
         )
         principal.require("content.authority.recover", request.project_id)
-        detail = _query(ctx).require_operation(
-            project_id=request.project_id, operation_id=operation_id
-        )
-        if detail["status"] not in {"READY", "FAILED_RETRYABLE", "EXECUTING", "SUCCEEDED"}:
-            raise HTTPException(status_code=409, detail="operation is not recoverable")
-        return {
-            "operation_id": operation_id,
-            "project_id": request.project_id,
-            "status": detail["status"],
-            "recovery": "WORKER_QUEUE_VISIBLE" if detail["status"] != "SUCCEEDED" else "ALREADY_COMPLETE",
-        }
+        if request.expected_version is None:
+            raise HTTPException(status_code=422, detail="expected_version is required")
+        try:
+            return execute_recovery_command(
+                _application(ctx).database_url,
+                RecoverOperationCommand(
+                    operation_id=operation_id,
+                    project_id=request.project_id,
+                    actor_id=principal.principal_id,
+                    expected_version=request.expected_version,
+                    idempotency_key=request.idempotency_key,
+                    reason=request.reason,
+                    trace_id=request.trace_id.strip() or f"trace:{uuid4()}",
+                    correlation_id=request.correlation_id.strip() or f"correlation:{uuid4()}",
+                    gate_evidence_id=request.gate_evidence_id,
+                ),
+            )
+        except KernelError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail={"code": exc.code, "message": exc.message},
+            ) from exc
+
+    @router.post("/external-effects/{external_effect_id}/resolve", status_code=202)
+    def resolve_external_effect(
+        external_effect_id: str,
+        request: ExternalEffectManualResolutionRequest,
+    ) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            principal.require("external_effect.resolve", request.project_id)
+            return resolve_external_effect_manually(
+                _application(ctx).database_url,
+                ExternalEffectManualResolutionCommand(
+                    external_effect_id=external_effect_id,
+                    operation_id=request.operation_id,
+                    project_id=request.project_id,
+                    actor_id=principal.principal_id,
+                    decision=request.decision,
+                    reason=request.reason,
+                    evidence=dict(request.evidence),
+                    idempotency_key=request.idempotency_key,
+                    expected_operation_version=request.expected_operation_version,
+                    trace_id=request.trace_id.strip() or f"trace:{uuid4()}",
+                    correlation_id=request.correlation_id.strip() or f"correlation:{uuid4()}",
+                ),
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except KernelError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail={"code": exc.code, "message": exc.message},
+            ) from exc
 
     return router
 

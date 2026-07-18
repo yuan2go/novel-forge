@@ -17,12 +17,14 @@ class LeaseHeartbeatGuard:
         *,
         lease_seconds: int,
         label: str,
+        probe: Callable[[], object] | None = None,
     ) -> None:
         if lease_seconds <= 0 or not label:
             raise ValueError("positive lease_seconds and label are required")
         self._renew = renew
         self._interval = max(0.05, min(float(lease_seconds) / 3.0, 10.0))
         self._label = label
+        self._probe = probe
         self._stop = threading.Event()
         self._failure: BaseException | None = None
         self._thread = threading.Thread(
@@ -44,6 +46,8 @@ class LeaseHeartbeatGuard:
         del exc_type, traceback
         self._stop.set()
         self._thread.join(timeout=self._interval + 1.0)
+        if exc is None and self._failure is None and self._probe is not None:
+            self._probe()
         if exc is None and self._failure is not None:
             raise KernelError(
                 "AUTHORITY_LEASE_HEARTBEAT_FAILED",
@@ -54,6 +58,8 @@ class LeaseHeartbeatGuard:
     def _run(self) -> None:
         while not self._stop.wait(self._interval):
             try:
+                if self._probe is not None:
+                    self._probe()
                 self._renew()
             except Exception as exc:  # recorded and re-raised on the owning thread
                 self._failure = exc

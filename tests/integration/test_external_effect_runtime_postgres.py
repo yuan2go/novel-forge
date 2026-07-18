@@ -368,7 +368,14 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
                         lease_seconds=30,
                         adapter=FakeDeterministicProvider(scenario),
                     )
-                self.assertEqual(caught.exception.code, "EFFECT_ADAPTER_EXCEPTION_RECORDED")
+                self.assertEqual(
+                    caught.exception.code,
+                    (
+                        "EFFECT_RETRYABLE_FAILURE_RECORDED"
+                        if scenario == "raise_before"
+                        else "EFFECT_EXTERNAL_STATE_UNKNOWN"
+                    ),
+                )
                 with transaction() as connection, connection.cursor() as cursor:
                     cursor.execute(
                         """

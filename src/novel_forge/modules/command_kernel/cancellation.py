@@ -197,15 +197,33 @@ def acknowledge_worker_cancellation(
                 command.worker_id,
                 command.fencing_token,
             )
+            uow.cursor.execute(
+                """
+                SELECT EXISTS (
+                    SELECT 1 FROM authority_external_effect
+                    WHERE operation_id = %s AND project_id = %s
+                      AND status NOT IN ('CANCELLED','FAILED_FINAL','FAILED_RETRYABLE')
+                )
+                """,
+                [attempt["operation_id"], command.project_id],
+            )
+            external_state_may_exist = bool(uow.cursor.fetchone()[0])
+            target_status = (
+                "RECONCILIATION_REQUIRED" if external_state_may_exist else "CANCELLED"
+            )
             result = _cas_operation(
                 uow,
                 operation_id=attempt["operation_id"],
                 project_id=command.project_id,
                 expected_status="CANCELLATION_REQUESTED",
                 expected_version=expected_operation_version,
-                target_status="CANCELLED",
+                target_status=target_status,
                 actor_id=command.worker_id,
-                reason="worker acknowledged cancellation before external effect",
+                reason=(
+                    "worker acknowledged cancellation; external state requires reconciliation"
+                    if external_state_may_exist
+                    else "worker acknowledged cancellation before external effect"
+                ),
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
             )

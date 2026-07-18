@@ -668,6 +668,8 @@ class AuthorityOperationControlRequest(BaseModel):
     actor_id: str = ""  # deprecated compatibility metadata; never trusted
     trace_id: str = ""
     correlation_id: str = ""
+    expected_version: int | None = Field(default=None, ge=0)
+    gate_evidence_id: str = ""
 
 
 class ContentAuthorityCommandRequest(BaseModel):
@@ -679,6 +681,19 @@ class ContentAuthorityCommandRequest(BaseModel):
     idempotency_key: str = Field(min_length=1)
     approval: dict[str, Any] | None = None
     actor_id: str = ""  # deprecated compatibility metadata; never trusted
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class ExternalEffectManualResolutionRequest(BaseModel):
+    operation_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    decision: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+    evidence: dict[str, Any]
+    idempotency_key: str = Field(min_length=1)
+    expected_operation_version: int = Field(ge=0)
+    actor_id: str = ""
     trace_id: str = ""
     correlation_id: str = ""
 
@@ -2027,6 +2042,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AuthorityChapterCommandRequest": AuthorityChapterCommandRequest,
         "AuthorityOperationControlRequest": AuthorityOperationControlRequest,
         "ContentAuthorityCommandRequest": ContentAuthorityCommandRequest,
+        "ExternalEffectManualResolutionRequest": ExternalEffectManualResolutionRequest,
         "ChapterProductionResumeRequest": ChapterProductionResumeRequest,
         "ChapterProductionControlRequest": ChapterProductionControlRequest,
         "ChapterProductionRecoverRequest": ChapterProductionRecoverRequest,

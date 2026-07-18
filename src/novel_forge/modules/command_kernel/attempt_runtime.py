@@ -220,6 +220,66 @@ def checkpoint_attempt(
     )
 
 
+def checkpoint_attempt_for_external_reconciliation(
+    database_url: str,
+    command: WorkerLeaseCommand,
+    checkpoint: dict[str, Any],
+) -> None:
+    """Atomically park a fenced Attempt and its Operation for reconciliation."""
+    stale_error: KernelError | None = None
+    with AuthorityUnitOfWork(database_url) as uow:
+        attempt = uow.repositories.attempt_runtime.get_for_update(
+            command.attempt_id, command.project_id
+        )
+        valid, current_token = uow.repositories.attempt_runtime.current_fence(
+            command.attempt_id, command.worker_id, command.fencing_token
+        )
+        if not valid:
+            _reject_stale(uow, command, attempt, current_token, "external_checkpoint", checkpoint)
+            stale_error = KernelError(
+                "ATTEMPT_FENCING_TOKEN_STALE",
+                "external checkpoint carries a stale fencing token",
+            )
+        else:
+            if attempt["status"] == "RUNNING":
+                _transition_attempt(
+                    uow,
+                    attempt,
+                    "CHECKPOINTED",
+                    worker_id=command.worker_id,
+                    fencing_token=command.fencing_token,
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                    checkpoint=checkpoint,
+                )
+            operation = uow.repositories.attempt_runtime.operation_state(
+                attempt["operation_id"], command.project_id
+            )
+            if operation["status"] == "EXECUTING":
+                _cas_operation(
+                    uow,
+                    operation_id=attempt["operation_id"],
+                    project_id=command.project_id,
+                    expected_status="EXECUTING",
+                    expected_version=int(operation["version"]),
+                    target_status="WAITING_EXTERNAL_RESULT",
+                    actor_id=command.worker_id,
+                    reason="external effect outcome requires reconciliation",
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                    causation_id=command.causation_id,
+                )
+            uow.repositories.attempt_runtime.release(
+                command.attempt_id,
+                command.worker_id,
+                command.fencing_token,
+                "waiting_external_reconciliation",
+            )
+        uow.commit()
+    if stale_error is not None:
+        raise stale_error
+
+
 def submit_attempt_result(
     database_url: str,
     command: WorkerResultCommand,
