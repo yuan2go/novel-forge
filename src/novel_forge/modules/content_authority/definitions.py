@@ -6,7 +6,7 @@ from typing import Any, Collection
 from novel_forge.modules.content_authority.codecs import CONTENT_CODECS
 
 
-CONTENT_DEFINITION_VERSION = "2.0.0"
+CONTENT_DEFINITION_VERSION = "2.1.0"
 CONTENT_INTEGRATION_PROVEN = frozenset(CONTENT_CODECS)
 
 
@@ -105,6 +105,7 @@ def content_operation_definitions(
                     "implemented": True,
                     "handler_bound": True,
                     "integration_proven": is_proven,
+                    "product_entrypoint_integrated": True,
                     "real_provider_proven": False,
                     "longform_proven": False,
                 },
@@ -124,7 +125,20 @@ def content_operation_definitions(
                     "required_evidence": ["trace", "audit"],
                     "required_outbox_events": [completion_topic],
                 },
-                "current_entrypoints": [],
+                "current_entrypoints": [
+                    "POST /product/content-authority/commands",
+                    f"agent-capability:{name}",
+                    f"workflow-operation:{name}",
+                ],
+                "agent_capability": {
+                    "capability_key": name,
+                    "execution_authority": "authority_operation",
+                    "agent_run_role": "dispatch_projection",
+                },
+                "workflow_binding": {
+                    "operation_definition": name,
+                    "workflow_run_role": "operator_projection",
+                },
                 "current_handlers": [f"novel_forge.content_authority.{name}"],
                 "migration_status": status,
             }

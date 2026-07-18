@@ -10,6 +10,7 @@ from typing import Any, Collection
 from uuid import uuid4
 
 from novel_forge.modules.authority_handler_runtime import AuthorityExecutionResult
+from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.content_authority.definitions import (
@@ -51,15 +52,22 @@ class ContentAuthorityApplication:
         commit_sha: str,
         integration_proven: Collection[str],
         registry: ContentHandlerRegistry | None = None,
+        trusted_only: bool = False,
     ) -> None:
         self.database_url = database_url
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.integration_proven = frozenset(integration_proven)
         self.registry = registry or ContentHandlerRegistry()
+        self.trusted_only = trusted_only
 
-    def execute(self, request: ContentOperationRequest) -> AuthorityExecutionResult:
-        admission = self.admit(request)
+    def execute(
+        self,
+        request: ContentOperationRequest,
+        *,
+        principal: Principal | None = None,
+    ) -> AuthorityExecutionResult:
+        admission = self.admit(request, principal=principal)
         return ContentAuthorityScheduler(
             self.database_url,
             registry=self.registry,
@@ -68,7 +76,12 @@ class ContentAuthorityApplication:
             project_id=admission.project_id,
         ).output
 
-    def admit(self, request: ContentOperationRequest) -> ContentOperationAdmission:
+    def admit(
+        self,
+        request: ContentOperationRequest,
+        *,
+        principal: Principal | None = None,
+    ) -> ContentOperationAdmission:
         definitions = content_operation_definitions(
             application_build_id=self.application_build_id,
             commit_sha=self.commit_sha,
@@ -78,9 +91,21 @@ class ContentAuthorityApplication:
             for definition in definitions:
                 uow.repositories.definitions.register(definition)
             uow.commit()
+        if self.trusted_only and principal is None:
+            raise PermissionError("trusted Principal is required for Content admission")
+        actor_id = request.actor_id
+        permissions = frozenset(self.registry.definition_names)
+        if principal is not None:
+            principal.require("content.authority.execute", request.project_id)
+            actor_id = principal.principal_id
+            permissions = (
+                frozenset(self.registry.definition_names)
+                if principal.allows("content.authority.execute", request.project_id)
+                else frozenset()
+            )
         admission = AdmissionContext(
-            actor_id=request.actor_id,
-            permissions=frozenset(self.registry.definition_names),
+            actor_id=actor_id,
+            permissions=permissions,
             available_handlers=self.registry.available_handler_keys,
             application_build_id=self.application_build_id,
             commit_sha=self.commit_sha,
@@ -92,7 +117,7 @@ class ContentAuthorityApplication:
                 "definition_version": CONTENT_DEFINITION_VERSION,
                 "project_id": request.project_id,
                 "workspace_id": request.workspace_id,
-                "actor_id": request.actor_id,
+                "actor_id": actor_id,
                 "idempotency_scope": "project:content-domain",
                 "idempotency_key": request.idempotency_key,
                 "trace_id": request.trace_id,
@@ -125,7 +150,7 @@ class ContentAuthorityApplication:
                     expected_version=state["version"],
                     expected_status="ADMITTED",
                     target_status="READY",
-                    actor_id=request.actor_id,
+                    actor_id=actor_id,
                     reason="content operation ready",
                     trace_id=request.trace_id,
                     correlation_id=request.correlation_id,

@@ -21,6 +21,11 @@ from novel_forge.modules.production_preparation import (
     PostgresProductionAssetResolver,
     ProductionPreparationService,
 )
+from novel_forge.modules.content_authority import (
+    CONTENT_INTEGRATION_PROVEN,
+    ContentAuthorityApplication,
+    ContentAuthorityQuery,
+)
 
 
 def authority_release_identity(
@@ -134,6 +139,29 @@ def build_trusted_principal_resolver(
     return TrustedPrincipalResolver.from_environment(env or os.environ)
 
 
+def build_content_authority_application(
+    settings: IndustrialSettings,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> ContentAuthorityApplication:
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL database is required for Content Authority")
+    build_id, commit_sha = authority_release_identity(env=env)
+    return ContentAuthorityApplication(
+        settings.database_url,
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+        integration_proven=CONTENT_INTEGRATION_PROVEN,
+        trusted_only=True,
+    )
+
+
+def build_content_authority_query(settings: IndustrialSettings) -> ContentAuthorityQuery:
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL database is required for Content Authority")
+    return ContentAuthorityQuery(settings.database_url)
+
+
 def build_chapter_authority_query(settings: IndustrialSettings) -> ChapterAuthorityQuery:
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for chapter authority")
@@ -146,4 +174,6 @@ __all__ = [
     "build_chapter_authority_query",
     "build_production_preparation_service",
     "build_trusted_principal_resolver",
+    "build_content_authority_application",
+    "build_content_authority_query",
 ]

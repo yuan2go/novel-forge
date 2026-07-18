@@ -12,6 +12,7 @@ from novel_forge.modules.content_authority.definitions import (
 from novel_forge.modules.content_authority.handlers import CONTENT_DOMAIN_HANDLERS
 from novel_forge.modules.content_authority.registry import ContentHandlerRegistry
 from novel_forge.modules.content_authority.runtime import execute_content_handler
+from novel_forge.modules.content_authority.queries import ContentAuthorityQuery
 from novel_forge.modules.content_authority.scheduler import (
     ContentAuthorityScheduler,
     ContentScheduledExecution,
@@ -25,6 +26,7 @@ __all__ = [
     "ContentHandlerRegistry",
     "ContentAuthorityApplication",
     "ContentAuthorityScheduler",
+    "ContentAuthorityQuery",
     "ContentOperationAdmission",
     "ContentOperationRequest",
     "ContentScheduledExecution",

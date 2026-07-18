@@ -670,6 +670,19 @@ class AuthorityOperationControlRequest(BaseModel):
     correlation_id: str = ""
 
 
+class ContentAuthorityCommandRequest(BaseModel):
+    definition_name: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    input_asset_version_ids: list[str] = Field(default_factory=list)
+    payload: dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: str = Field(min_length=1)
+    approval: dict[str, Any] | None = None
+    actor_id: str = ""  # deprecated compatibility metadata; never trusted
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
 class ChapterProductionResumeRequest(BaseModel):
     run_path: str
     from_step: str | None = None
@@ -2013,6 +2026,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AuthorityChapterRunRequest": AuthorityChapterRunRequest,
         "AuthorityChapterCommandRequest": AuthorityChapterCommandRequest,
         "AuthorityOperationControlRequest": AuthorityOperationControlRequest,
+        "ContentAuthorityCommandRequest": ContentAuthorityCommandRequest,
         "ChapterProductionResumeRequest": ChapterProductionResumeRequest,
         "ChapterProductionControlRequest": ChapterProductionControlRequest,
         "ChapterProductionRecoverRequest": ChapterProductionRecoverRequest,

@@ -45,6 +45,36 @@ class ContentAuthorityScheduler:
         self.worker_id = worker_id
         self.lease_seconds = lease_seconds
 
+    def pending_operations(self, *, limit: int = 50) -> tuple[tuple[str, str], ...]:
+        """Return recoverable work; lease arbitration remains authoritative."""
+        if limit <= 0:
+            raise ValueError("limit must be positive")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT operation.operation_id, operation.project_id
+                FROM authority_operation AS operation
+                LEFT JOIN LATERAL (
+                    SELECT lease.expires_at
+                    FROM authority_attempt AS attempt
+                    JOIN authority_lease_acquisition AS lease
+                      ON lease.attempt_id = attempt.attempt_id
+                    WHERE attempt.operation_id = operation.operation_id
+                      AND lease.status = 'HELD'
+                    ORDER BY attempt.attempt_number DESC, lease.fencing_token DESC
+                    LIMIT 1
+                ) AS active_lease ON TRUE
+                WHERE operation.definition_name = ANY(%s)
+                  AND operation.status IN ('READY', 'FAILED_RETRYABLE', 'EXECUTING')
+                  AND (active_lease.expires_at IS NULL OR active_lease.expires_at <= NOW())
+                ORDER BY operation.created_at, operation.operation_id
+                LIMIT %s
+                """,
+                [list(self.registry.definition_names), limit],
+            )
+            rows = uow.cursor.fetchall()
+        return tuple((str(row[0]), str(row[1])) for row in rows)
+
     def run_or_recover(
         self,
         *,
