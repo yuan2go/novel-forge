@@ -1,5 +1,17 @@
 # Autonomous Novel OS Blueprint Gap Audit
 
+## 2026-07-18 Authority architecture v2 delta
+
+Known pre-provider structural gaps in routing, callback durability, Plan fidelity,
+multi-entity Quality context, calibration promotion, Typed Empty producers, Canon
+generation governance and worker observability are closed with local/PostgreSQL
+evidence. Book-level runtime is an executable fixture skeleton.
+
+Remaining P0 before any production claim is controlled real-provider single-chapter
+evidence. Product gaps still include actual Topic/Outline/ChapterPlan/World/Character
+generators, real Book-to-Chapter Saga delegation with cost settlement, long-form
+semantic calibration and external publishing proof. They are not marked complete.
+
 Date: 2026-07-07
 
 Scope: first-round engineering audit for the Autonomous Novel OS blueprint on the current `novel-forge` codebase.

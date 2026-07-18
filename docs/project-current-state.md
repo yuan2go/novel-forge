@@ -1,13 +1,27 @@
 # Project Current State
 
 Updated: 2026-07-18
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `2e506f1467321e688d82365ef2734c9f70b7caaa`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `98a7e003cd2b7b4821737fe3b22d0c35fe415b8a`
 
 Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
 
 The current code/runtime baseline is Novel Forge v6. The repository/package/CLI name remains `novel-forge`; do not rename code paths without a dedicated migration.
 
 Current priority: v1 single-book production closure before broader multi-book, SaaS, or platform automation.
+
+## 2026-07-18 Pre-Provider Production Architecture v2
+
+The bounded architecture is now `PRE_PROVIDER_PRODUCTION_ARCHITECTURE_COMPLETE`.
+Provider v2 routes are registry-qualified, callbacks are durable PostgreSQL receipts,
+ChapterPlan v3 and multi-entity Quality Context are strict, Calibration and Typed
+Empty creation use Authority Operations, Canon re-extraction is policy-bounded and
+visible in the Root Saga timeline, and worker health persists as a projection. A Book
+Root Saga fixture proves orchestration/recap/plan-adjustment and pause/resume without
+generating prose. Catalog supersession no longer counts replaced Draft/Export names
+as missing implementations.
+
+This is architecture completion before validation. `real_provider_proven`,
+`longform_proven`, `multi_book_proven`, and `production_verified` remain false.
 
 ## 2026-07-18 Pre-Provider Production Closure
 
@@ -22,7 +36,7 @@ the same root Saga can resume. Worker supervision has explicit fatal exit/restar
 semantics, and CI separates architecture, unit, PostgreSQL, migration, and catalog
 binding jobs.
 
-Current phase state is `FUNCTIONALLY_READY_FOR_PROVIDER_VALIDATION`. This is not a
+The earlier phase state was `FUNCTIONALLY_READY_FOR_PROVIDER_VALIDATION`. This is not a
 claim of real Provider, long-form, or production proof.
 
 The PostgreSQL-only chapter Authority slice now contains an eighteen-node business

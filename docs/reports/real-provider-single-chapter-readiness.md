@@ -7,11 +7,18 @@ Date: 2026-07-18.
 ```text
 runtime_integration_ready=true
 functional_convergence_ready=true
-stage=FUNCTIONALLY_READY_FOR_PROVIDER_VALIDATION
+provider_v2_production_route_implemented=true
+provider_v2_mock_conformance_proven=true
+callback_authority_integration_proven=true
+calibration_authority_fixture_proven=true
+book_authority_fixture_proven=true
+pre_provider_production_architecture_complete=true
+stage=PRE_PROVIDER_PRODUCTION_ARCHITECTURE_COMPLETE
 real_provider_validation_started=false
 real_provider_proven=false
 longform_proven=false
 production_verified=false
+multi_book_proven=false
 ```
 
 This allows the next phase to configure one controlled Provider v2 route and execute
@@ -29,6 +36,9 @@ content, quality result, budget behavior, or external publish action.
 - Canon DEFER/reopen, re-extraction generations, edited-payload validation, and Gate
   recovery have PostgreSQL fixture proof.
 - Worker fatal exit/restart semantics and split CI architecture/migration checks exist.
+- Provider callbacks are durable PostgreSQL receipts with replay/conflict handling.
+- Calibration promotion cannot succeed from an empty or under-performing sample set.
+- Book Authority has an executable fixture Root Saga; this is not multi-chapter proof.
 - PostgreSQL remains the production Authority and external publishing stays disabled.
 
 ## Controlled proof checklist for the next phase

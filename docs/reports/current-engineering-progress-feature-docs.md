@@ -1,5 +1,17 @@
 # Current Engineering Progress And Feature Documentation
 
+## 2026-07-18 Pre-provider production architecture v2
+
+Source evidence is bound to `98a7e003cd2b7b4821737fe3b22d0c35fe415b8a`.
+Provider v2 production routing, durable callbacks, ChapterPlan v3, multi-entity and
+budgeted Quality Context, PostgreSQL Calibration operations, trusted Typed Empty
+creation, governed Canon re-extraction, Catalog supersession, a Book Root Saga
+fixture, Creative generator boundary, and persistent worker health are present.
+
+Maturity is `PRE_PROVIDER_PRODUCTION_ARCHITECTURE_COMPLETE`; all Provider and Book
+proofs remain mock/fixture protocol. Real Provider, long-form, multi-book and
+production verification remain false.
+
 ## 2026-07-18 Pre-provider functional convergence update
 
 The current active branch is `feat/v7-content-intelligence-and-longform-proof`.

@@ -1,18 +1,143 @@
-# OperationDefinition Maturity Matrix
+# PostgreSQL OperationDefinition Catalog
 
-Generated catalog source: `docs/reports/postgresql-operation-definition-catalog.json`, source commit `2e506f1`.
+Receiver-aware generated catalog. Candidate definitions remain disabled until their PostgreSQL acceptance gate passes; implemented definitions preserve their runtime contract.
 
-| Definition status | Count | Meaning |
-|---|---:|---|
-| candidate | 65 | documented target, no mapped legacy entrypoint or handler |
-| mapped | 17 | legacy entrypoint mapped, no concrete Authority handler |
-| handler_bound | 0 | no catalog record remains in this transient state |
-| enabled | 0 | enabled without committed integration proof |
-| integration_proven | 42 | chapter root plus eighteen nodes, 22 content definitions, and `canon.change.approve` pass PostgreSQL Authority tests; Canon re-extraction is a recovery generation of existing nodes |
-| production_verified | 0 | no real-provider production proof |
-
-Each record separates `documented`, `implemented`, `handler_bound`, `integration_proven`, `real_provider_proven`, and `longform_proven`. Provider v2 scripted proof, policy compilation, calibration fixtures, and Canon recovery do not increase the count or imply Provider/long-form proof.
-
-The 22 Content Definitions additionally report `product_entrypoint_integrated=true`
-and expose API, Agent capability, and Workflow binding metadata. This does not change
-their `integration_proven` maturity or imply Provider/long-form proof.
+| Name | Family | Mode | Entrypoints | Definition status | Migration |
+|---|---|---|---:|---|---|
+| `production.topic.generate` | `production` | `worker` | 0 | `candidate` | `candidate` |
+| `production.outline.generate` | `production` | `worker` | 0 | `candidate` | `candidate` |
+| `production.chapter_plan.generate` | `production` | `worker` | 0 | `candidate` | `candidate` |
+| `production.draft.generate` | `production` | `worker` | 0 | `superseded` | `complete` |
+| `production.chapter.export` | `production` | `worker` | 0 | `alias` | `alias` |
+| `workflow.start` | `workflow` | `saga` | 12 | `mapped` | `entrypoint_mapped` |
+| `workflow.resume` | `workflow` | `saga` | 0 | `candidate` | `candidate` |
+| `workflow.pause` | `workflow` | `saga` | 0 | `candidate` | `candidate` |
+| `workflow.cancel` | `workflow` | `saga` | 0 | `candidate` | `candidate` |
+| `workflow.recover` | `workflow` | `saga` | 0 | `candidate` | `candidate` |
+| `agent.dispatch` | `agent` | `saga` | 13 | `mapped` | `entrypoint_mapped` |
+| `agent.retry` | `agent` | `saga` | 0 | `candidate` | `candidate` |
+| `agent.recover` | `agent` | `saga` | 0 | `candidate` | `candidate` |
+| `agent.dead_letter.replay` | `agent` | `saga` | 0 | `candidate` | `candidate` |
+| `review.run` | `review` | `worker` | 24 | `mapped` | `entrypoint_mapped` |
+| `review.resolve_issue` | `review` | `worker` | 0 | `candidate` | `candidate` |
+| `revision.apply` | `revision` | `transactional` | 24 | `mapped` | `entrypoint_mapped` |
+| `publishing.prepare_release` | `publishing` | `transactional` | 0 | `candidate` | `candidate` |
+| `publishing.submit` | `publishing` | `external` | 14 | `mapped` | `entrypoint_mapped` |
+| `publishing.receipt.record` | `publishing` | `transactional` | 1 | `mapped` | `entrypoint_mapped` |
+| `publishing.retract` | `publishing` | `external` | 0 | `candidate` | `candidate` |
+| `canon.update` | `canon` | `transactional` | 8 | `mapped` | `entrypoint_mapped` |
+| `canon.character_state.update` | `canon` | `transactional` | 0 | `candidate` | `candidate` |
+| `canon.foreshadow_state.update` | `canon` | `transactional` | 0 | `candidate` | `candidate` |
+| `canon.recap.writeback` | `canon` | `transactional` | 0 | `candidate` | `candidate` |
+| `context.build` | `context` | `transactional` | 11 | `mapped` | `entrypoint_mapped` |
+| `context.compress` | `context` | `transactional` | 0 | `candidate` | `candidate` |
+| `context.approve` | `context` | `transactional` | 0 | `candidate` | `candidate` |
+| `context.invalidate` | `context` | `transactional` | 0 | `candidate` | `candidate` |
+| `quality.evaluate` | `quality` | `worker` | 8 | `mapped` | `entrypoint_mapped` |
+| `quality.run_completion_gate` | `quality` | `worker` | 7 | `mapped` | `entrypoint_mapped` |
+| `quality.gate.resolve` | `quality` | `worker` | 1 | `mapped` | `entrypoint_mapped` |
+| `source.import` | `source` | `external` | 27 | `mapped` | `entrypoint_mapped` |
+| `source.refresh` | `source` | `external` | 0 | `candidate` | `candidate` |
+| `source.quarantine` | `source` | `external` | 0 | `candidate` | `candidate` |
+| `source.release_quarantine` | `source` | `external` | 0 | `candidate` | `candidate` |
+| `knowledge.card.create` | `knowledge` | `transactional` | 88 | `mapped` | `entrypoint_mapped` |
+| `knowledge.rule.create` | `knowledge` | `transactional` | 0 | `candidate` | `candidate` |
+| `knowledge.template.create` | `knowledge` | `transactional` | 0 | `candidate` | `candidate` |
+| `knowledge.pack.build` | `knowledge` | `transactional` | 0 | `candidate` | `candidate` |
+| `knowledge.weight.apply` | `knowledge` | `transactional` | 7 | `mapped` | `entrypoint_mapped` |
+| `knowledge.rebuild` | `knowledge` | `transactional` | 0 | `candidate` | `candidate` |
+| `feedback.import` | `feedback` | `worker` | 6 | `mapped` | `entrypoint_mapped` |
+| `feedback.cluster` | `feedback` | `worker` | 0 | `candidate` | `candidate` |
+| `feedback.patch.approve` | `feedback` | `transactional` | 0 | `candidate` | `candidate` |
+| `feedback.patch.apply` | `feedback` | `worker` | 3 | `mapped` | `entrypoint_mapped` |
+| `project_lifecycle.create` | `project_lifecycle` | `transactional` | 186 | `mapped` | `entrypoint_mapped` |
+| `project_lifecycle.clone` | `project_lifecycle` | `transactional` | 0 | `candidate` | `candidate` |
+| `project_lifecycle.pause` | `project_lifecycle` | `transactional` | 0 | `candidate` | `candidate` |
+| `project_lifecycle.resume` | `project_lifecycle` | `transactional` | 0 | `candidate` | `candidate` |
+| `project_lifecycle.archive` | `project_lifecycle` | `transactional` | 0 | `candidate` | `candidate` |
+| `project_lifecycle.delete` | `project_lifecycle` | `transactional` | 0 | `candidate` | `candidate` |
+| `policy.bundle.apply` | `policy` | `transactional` | 0 | `candidate` | `candidate` |
+| `policy.provider.update` | `policy` | `transactional` | 0 | `candidate` | `candidate` |
+| `policy.budget.update` | `policy` | `transactional` | 0 | `candidate` | `candidate` |
+| `portfolio.priority.apply` | `portfolio` | `transactional` | 0 | `candidate` | `candidate` |
+| `portfolio.allocation.apply` | `portfolio` | `transactional` | 0 | `candidate` | `candidate` |
+| `ops.reindex` | `ops` | `transactional` | 0 | `candidate` | `candidate` |
+| `ops.reconcile` | `ops` | `transactional` | 0 | `candidate` | `candidate` |
+| `ops.migration.validate` | `ops` | `transactional` | 0 | `candidate` | `candidate` |
+| `ops.repair.apply` | `ops` | `transactional` | 0 | `candidate` | `candidate` |
+| `asset.create` | `asset` | `transactional` | 0 | `candidate` | `candidate` |
+| `asset.version.create` | `asset` | `transactional` | 0 | `candidate` | `candidate` |
+| `asset.version.activate` | `asset` | `transactional` | 0 | `candidate` | `candidate` |
+| `asset.version.qualify` | `asset` | `transactional` | 0 | `candidate` | `candidate` |
+| `blob.reserve` | `blob` | `transactional` | 0 | `candidate` | `candidate` |
+| `blob.upload.request` | `blob` | `external` | 0 | `candidate` | `candidate` |
+| `blob.upload.receipt` | `blob` | `transactional` | 0 | `candidate` | `candidate` |
+| `blob.verify` | `blob` | `transactional` | 0 | `candidate` | `candidate` |
+| `blob.fail` | `blob` | `transactional` | 0 | `candidate` | `candidate` |
+| `blob.bind_to_asset_version` | `blob` | `transactional` | 0 | `candidate` | `candidate` |
+| `blob.release` | `blob` | `external` | 0 | `candidate` | `candidate` |
+| `blob.legal_hold.apply` | `blob` | `transactional` | 0 | `candidate` | `candidate` |
+| `blob.legal_hold.release` | `blob` | `transactional` | 0 | `candidate` | `candidate` |
+| `external_effect.plan` | `external_effect` | `transactional` | 0 | `candidate` | `candidate` |
+| `external_effect.dispatch` | `external_effect` | `external` | 0 | `candidate` | `candidate` |
+| `external_effect.receipt.accept` | `external_effect` | `transactional` | 0 | `candidate` | `candidate` |
+| `external_effect.receipt.reject` | `external_effect` | `transactional` | 0 | `candidate` | `candidate` |
+| `external_effect.mark_unknown` | `external_effect` | `transactional` | 0 | `candidate` | `candidate` |
+| `external_effect.reconcile` | `external_effect` | `external` | 0 | `candidate` | `candidate` |
+| `external_effect.compensate` | `external_effect` | `external` | 0 | `candidate` | `candidate` |
+| `external_effect.cancel` | `external_effect` | `transactional` | 0 | `candidate` | `candidate` |
+| `chapter.slice.run` | `chapter_authority` | `saga` | 1 | `integration_proven` | `implemented` |
+| `chapter.plan.materialize` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.context.build` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.draft.generate` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.review.evaluate` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.revision.apply` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.revision.review` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.canon.extract` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.canon.propose_changes` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.canon.update` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.quality.structural.evaluate` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.quality.commercial.evaluate` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.quality.source_originality.evaluate` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.quality.longform.evaluate` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.quality.platform.evaluate` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.quality.evaluate` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.publishing.prepare_release` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.export.render` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `chapter.publishing.finalize_release` | `chapter_authority` | `worker` | 0 | `integration_proven` | `implemented` |
+| `canon.change.approve` | `canon` | `transactional` | 3 | `integration_proven` | `implemented` |
+| `creative.brief.create` | `creative` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `creative.candidates.evaluate` | `creative` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `creative.candidates.cluster` | `creative` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `creative.project.approve` | `creative` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `production.world.generate` | `production` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `world.validate` | `world` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `production.character.generate` | `production` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `character.relationships.generate` | `character` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `theme.question.create` | `theme` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `theme.arc.build` | `theme` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `theme.anti_preaching.evaluate` | `theme` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `ending.closure.plan` | `ending` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `ending.payoff_matrix.build` | `ending` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `ending.quality.evaluate` | `ending` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `longform.motivation.evaluate` | `longform` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `longform.entity_merge.propose` | `longform` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `longform.foreshadow_payoff.evaluate` | `longform` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `longform.world_rule.evaluate` | `longform` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `longform.power.evaluate` | `longform` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `longform.pattern.evaluate` | `longform` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `longform.narrative_debt.evaluate` | `longform` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `longform.recap.enhance` | `longform` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `quality.golden_sample.create` | `quality` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `quality.human_decision.record` | `quality` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `quality.calibration.run` | `quality` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `quality.calibration.profile.promote` | `quality` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `quality.calibration.profile.revoke` | `quality` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `chapter.state.initialize_empty` | `chapter` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `creative.candidates.generate` | `creative` | `worker` | 3 | `integration_proven` | `integration_proven` |
+| `book.production.run` | `book_authority` | `saga` | 0 | `integration_proven` | `integration_proven` |
+| `book.production.prepare` | `book_authority` | `worker` | 0 | `integration_proven` | `integration_proven` |
+| `book.chapter.dispatch` | `book_authority` | `worker` | 0 | `integration_proven` | `integration_proven` |
+| `book.recap.light` | `book_authority` | `worker` | 0 | `integration_proven` | `integration_proven` |
+| `book.recap.formal` | `book_authority` | `worker` | 0 | `integration_proven` | `integration_proven` |
+| `book.plan_adjustment.propose` | `book_authority` | `worker` | 0 | `integration_proven` | `integration_proven` |
