@@ -105,6 +105,71 @@ jobs:
       - run: python -m pip install -e ".[postgres]"
       - run: python -m unittest tests.integration.test_authority_migrations_postgres tests.integration.test_authority_schema_postgres
 
+  provider-v2-conformance:
+    name: provider v2 conformance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[test]"
+      - name: Mock-only provider control proofs
+        run: |
+          python -m unittest tests.unit.test_provider_adapter_v2
+          python -m unittest tests.unit.test_chapter_authority_dependencies
+          python -m unittest tests.unit.test_creative_generator_boundary
+
+  callback-authority:
+    name: callback authority
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: novel_forge_callback_test
+          POSTGRES_USER: novel_forge
+          POSTGRES_PASSWORD: novel_forge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U novel_forge -d novel_forge_callback_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      NOVEL_FORGE_DATABASE_URL: postgresql://novel_forge:novel_forge@localhost:5432/novel_forge_callback_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[test]"
+      - run: python -m unittest tests.integration.test_provider_callback_authority_postgres tests.integration.test_worker_health_postgres
+
+  book-authority:
+    name: book authority fixture protocol
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: novel_forge_book_test
+          POSTGRES_USER: novel_forge
+          POSTGRES_PASSWORD: novel_forge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U novel_forge -d novel_forge_book_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      NOVEL_FORGE_DATABASE_URL: postgresql://novel_forge:novel_forge@localhost:5432/novel_forge_book_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[test]"
+      - run: python -m unittest tests.integration.test_book_authority_postgres
+
   catalog-integrity:
     name: catalog and coverage binding
     runs-on: ubuntu-latest
