@@ -65,6 +65,11 @@ def build_chapter_authority_application(
     ):
         provider = str(
             values.get(provider_key)
+            or (
+                values.get("NOVEL_FORGE_REVISION_PROVIDER")
+                if stage == "canon_extraction"
+                else ""
+            )
             or values.get("NOVEL_FORGE_MODEL_PROVIDER")
             or ""
         ).strip()
@@ -74,7 +79,15 @@ def build_chapter_authority_application(
         real_model_call = normalized_provider not in {"mock", "local", "offline"}
         if environment == "production" and not real_model_call:
             raise RuntimeError("mock model routes are forbidden in production chapter authority")
-        model_name = str(values.get(model_key) or "").strip()
+        model_name = str(
+            values.get(model_key)
+            or (
+                values.get("NOVEL_FORGE_REVISION_MODEL")
+                if stage == "canon_extraction"
+                else ""
+            )
+            or ""
+        ).strip()
         adapter = model_for_explicit_route(provider, model_name)
         resolved_model = model_name or str(getattr(adapter, "name", "")) or f"{provider}-{stage}"
         routes[stage] = ChapterModelRoute(
