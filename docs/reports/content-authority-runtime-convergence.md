@@ -1,5 +1,9 @@
 # Content Authority Runtime Convergence
 
+> Historical convergence report. The current Chapter topology is eighteen nodes
+> plus root, with Canon Approval and five grouped Quality Operations. See
+> `pre-provider-runtime-hardening.md` for the current runtime boundary.
+
 Updated: 2026-07-18  
 Source commit: `ed30ab6`
 Scope: focused deterministic and PostgreSQL functional proof; no real-provider or long-form run

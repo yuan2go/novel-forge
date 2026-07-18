@@ -1,7 +1,7 @@
 # Project Current State
 
 Updated: 2026-07-18
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `ed30ab6`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `14b2f1c`
 
 Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
 
@@ -9,11 +9,26 @@ The current code/runtime baseline is Novel Forge v6. The repository/package/CLI 
 
 Current priority: v1 single-book production closure before broader multi-book, SaaS, or platform automation.
 
-## 2026-07-18 Core Functional Convergence
+## 2026-07-18 Pre-Provider Production Closure
 
-The PostgreSQL-only chapter Authority slice now contains a twelve-node business chain plus root Saga, including content-bearing governed Context, independent Re-review, independent Canon Extraction, stateful Canon Reduction with nine independent snapshot AssetVersions, evidence-aggregated Quality, internal Publish Gate, verified Export, and a Post-Blob Final Release Gate. Thirty-five definitions are `integration_proven`: chapter root plus twelve nodes and all 22 content-intelligence definitions. Content operations use explicit frozen-input codecs, the shared fenced runtime, and scheduler recovery through existing Attempt lease/fencing semantics.
+The PostgreSQL-only chapter Authority slice now contains an eighteen-node business
+chain plus root Saga. It adds a multi-asset `ProductionInputManifest`, governed
+Context consistency evidence, independent Re-review, semantic Canon extraction and
+per-change Approval gates, nine independent Snapshot AssetVersions, five parallel
+Quality groups with an Aggregate fan-in, internal Publish Gate, verified Export, and
+a post-Blob Final Release Gate. Forty-two Definitions are `integration_proven`:
+chapter root plus eighteen nodes, all 22 content-intelligence Definitions, and the
+per-decision `canon.change.approve` Authority Definition.
 
-This is not a complete autonomous Agent Center or long-novel proof. The LocalStorage Chapter Bus is production-disabled and has an Authority projection adapter, but its development implementation remains. Quality dimensions remain uncalibrated without provider/human evidence, and real-provider/10/30/100-chapter runs were intentionally not performed. The final release report is internal-only and does not publish to a platform. See `docs/reports/content-authority-runtime-convergence.md` and `docs/reports/operation-definition-maturity-matrix.md`.
+Workers isolate task failures, persist exceptional Attempt outcomes, enforce frozen
+business deadlines, propagate cancellation, resume reconciled ExternalEffects, and
+serialize scoped budget reservations. This is deterministic/fixture and local
+PostgreSQL proof. It is not real-Provider, production, or long-form proof. The
+LocalStorage Chapter Bus remains only on the production-disabled legacy/development
+surface. Quality dimensions without calibrated current-Revision evidence fail
+closed, and external publishing remains disabled. See
+`docs/reports/real-provider-single-chapter-readiness.md` and
+`docs/reports/operation-definition-maturity-matrix.md`.
 
 This document describes the current state as observed from code, tests, configuration, routes, and skills. It does not treat historical docs as truth unless code evidence exists.
 
@@ -96,16 +111,18 @@ The current branch has implemented the first V7 content intelligence foundation 
 
 ## Current Risks
 
-As of 2026-07-18, the PostgreSQL-only production surface includes server-side input
-preparation, 202 Saga admission, background chapter/content workers, Provider
-UNKNOWN/reconciliation and budget reservation, evidence-bearing Canon extraction,
-15-dimension Quality evidence, verified Blob export, and a post-Blob Final Release
-Gate. See `reports/authority-production-runtime-convergence.md`.
+As of 2026-07-18, the PostgreSQL-only production surface includes server-side
+multi-asset input preparation, 202 Saga admission, isolated background workers,
+Provider UNKNOWN/reconciliation and serialized budget reservation, evidence-bearing
+Canon proposals and Approval gates, 41-dimension grouped Quality evidence, verified
+Blob export, and a post-Blob Final Release Gate. See
+`reports/pre-provider-runtime-hardening.md` and
+`reports/quality-authority-real-gate.md`.
 
 1. Historical docs still contain v5 wording and can mislead implementation decisions.
 2. Several features have schemas, routes, and UI pages but are not complete product workflows.
 3. Agent runtime and provider policy have strong slices, but universal production hard-stop coverage must continue to be verified.
-4. Local JSON plus optional Postgres/Qdrant/MinIO/Celery creates two operational modes that need clear environment policy.
+4. Legacy local JSON remains available only for development/import/export/read compatibility; production Authority endpoints fail closed instead of falling back to it.
 5. MKAOS, Context Builder, Canon/KG, ReviewIssue, Eval, and publishing must stay unified; new features should not create parallel paths.
 6. The current implementation has broad V6/V7 runtime foundations, but the v1 single-book production loop is not yet proven as a 10-30 chapter closed workflow.
 

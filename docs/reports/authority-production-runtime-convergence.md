@@ -2,6 +2,13 @@
 
 Date: 2026-07-18. Scope: deterministic/fixture functional convergence only.
 
+> Current addendum: the pre-Provider closure extends this original twelve-node
+> baseline to eighteen nodes plus root, adds Canon Approval and five Quality child
+> Operations, adds a dedicated Canon decision Operation, and raises the Catalog to
+> 124 Definitions / 42 integration-proven.
+> See `pre-provider-runtime-hardening.md`, `quality-authority-real-gate.md`, and
+> `canon-approval-authority.md` for current evidence.
+
 ## Result
 
 The production surface now admits a chapter as a durable PostgreSQL Saga and returns
@@ -66,16 +73,16 @@ Operation/Attempt remain execution authority. The 22 Definitions remain
   deterministic one-chapter slice, five-effect model fixture, Content runtime/crash
   recovery, Attempt lease/fencing, cancellation, ExternalEffect lifecycle, and budget
   reservation tests passed.
-- Catalog: 117 Definitions: 65 candidate, 17 mapped, 35 integration_proven, 0
+- Catalog at the time of this report: 117 Definitions: 65 candidate, 17 mapped, 35 integration_proven, 0
   production_verified.
 
 ## Honest remaining limits
 
 - P1: Provider semantic Canon extraction is effect/budget/completion integrated with
   a typed fixture, but has no real-provider proof.
-- P1: the 15 quality dimensions are independently versioned evidence outputs of the
-  Quality Operation; conversion to parallel child Operations/fan-in Saga is not yet
-  integration-proven.
+- Closed by the current addendum: Quality uses five independent child Operations and
+  an Aggregate fan-in. Semantic evidence remains intentionally uncalibrated until a
+  Provider/human result targets the current Revision.
 - P1: legacy LocalStorage product services remain available only on the explicitly
   selected development/legacy surface; they are not deleted.
 - P2: minimal Cockpit UI for Content commands remains unimplemented; API plus

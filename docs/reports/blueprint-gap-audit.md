@@ -135,13 +135,15 @@ Current implementation proves many slices and fixtures, including a true one-cha
 
 ### 2026-07-18 authority runtime delta
 
-The former P0 gaps for server-side chapter input preparation, asynchronous admission,
-Content product entrypoints, Provider UNKNOWN/reconciliation, budget reservation,
-evidence-bearing Canon extraction, and 15-dimension Quality evidence are now
-integration-proven with deterministic/PostgreSQL fixtures. The remaining pre-real-
-Provider gaps are: parallel Quality child-operation fan-out/fan-in and real-adapter
-proof for the now effect-bound Canon semantic extractor and active lease heartbeat.
-See `authority-production-runtime-convergence.md`.
+The former P0 gaps for server-side multi-asset chapter preparation, asynchronous
+admission, Content product entrypoints, Provider UNKNOWN/reconciliation, serialized
+budget reservation, evidence-bearing Canon extraction/per-change approval, and the
+parallel grouped 41-dimension Quality fan-out/fan-in are now integration-proven with
+deterministic/PostgreSQL fixtures. Five grouped Quality Provider ports and the Canon
+semantic extractor are ExternalEffect-bound, but real-adapter semantic quality,
+timeout/cancel/query behavior, calibration, and chapter quality remain unproven.
+See `authority-production-runtime-convergence.md` and
+`real-provider-single-chapter-readiness.md`.
 
 Do not add another broad V7 surface first. The next production slice should be:
 
