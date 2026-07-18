@@ -203,9 +203,10 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
         project_id = identifier("currency-budget-project")
         first_context, first_effect = self._effect_for_project(project_id)
         second_context, second_effect = self._effect_for_project(project_id)
+        currency_prefix = project_id[-8:].upper()
         for context, effect, currency in (
-            (first_context, first_effect, "XUA"),
-            (second_context, second_effect, "XUB"),
+            (first_context, first_effect, f"X{currency_prefix}A"),
+            (second_context, second_effect, f"X{currency_prefix}B"),
         ):
             reserved = reserve_provider_budget(
                 DATABASE_URL,

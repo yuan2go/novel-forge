@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from novel_forge.tools.authority_coverage_manifest import build_manifest, operation_catalog
+from novel_forge.modules.chapter_authority.definitions import chapter_definition_version
 
 
 class AuthorityCoverageOperationMappingTests(unittest.TestCase):
@@ -17,7 +18,15 @@ class AuthorityCoverageOperationMappingTests(unittest.TestCase):
             "chapter.draft.generate",
             "chapter.review.evaluate",
             "chapter.revision.apply",
+            "chapter.revision.review",
+            "chapter.canon.extract",
+            "chapter.canon.propose_changes",
             "chapter.canon.update",
+            "chapter.quality.structural.evaluate",
+            "chapter.quality.commercial.evaluate",
+            "chapter.quality.source_originality.evaluate",
+            "chapter.quality.longform.evaluate",
+            "chapter.quality.platform.evaluate",
             "chapter.quality.evaluate",
             "chapter.export.render",
             "chapter.publishing.finalize_release",
@@ -32,7 +41,10 @@ class AuthorityCoverageOperationMappingTests(unittest.TestCase):
             self.assertTrue(definitions[name]["evidence_status"]["integration_proven"])
             self.assertFalse(definitions[name]["evidence_status"]["real_provider_proven"])
             self.assertFalse(definitions[name]["evidence_status"]["longform_proven"])
-            self.assertEqual(definitions[name]["definition_version"], "2.1.3")
+            self.assertEqual(
+                definitions[name]["definition_version"],
+                chapter_definition_version(True),
+            )
 
     def test_catalog_keeps_candidate_mapped_and_proven_states_distinct(self) -> None:
         finding = {
