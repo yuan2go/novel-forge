@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import hashlib
-from typing import Any, Iterable
+from typing import Any, Iterable, Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -24,6 +24,46 @@ SNAPSHOT_ASSET_TYPES = {
     "power_state": "power_state_snapshot",
 }
 
+SEMANTIC_CHANGE_FIELDS = {
+    "canon_assertion_candidates": "canon_facts",
+    "character_state_changes": "character_state_changes",
+    "relationship_changes": "relationship_changes",
+    "timeline_event_candidates": "timeline_events",
+    "foreshadow_changes": "foreshadow_changes",
+    "promise_changes": "promise_changes",
+    "reward_changes": "reward_changes",
+    "world_rule_usages": "world_rule_usages",
+    "power_state_changes": "power_state_changes",
+    "narrative_pattern_fingerprints": "narrative_pattern_fingerprints",
+    "theme_movements": "theme_movements",
+    "antagonist_pressure_changes": "antagonist_pressure_changes",
+}
+
+HIGH_IMPACT_CHANGE_TYPES = {
+    "character_death",
+    "entity_merge",
+    "world_rule_change",
+    "major_power_jump",
+    "main_goal_change",
+    "foreshadow_abandoned",
+    "promise_abandoned",
+}
+
+
+class CanonSemanticProviderPort(Protocol):
+    """Optional provider boundary; implementations must execute via ExternalEffect."""
+
+    external_effect_backed: bool
+
+    def extract(
+        self,
+        *,
+        project_id: str,
+        revision_asset_version_id: str,
+        text: str,
+        previous_state_refs: tuple[str, ...],
+    ) -> dict[str, Any]: ...
+
 
 def extract_canon_candidates(
     *,
@@ -31,6 +71,8 @@ def extract_canon_candidates(
     revision: dict[str, Any],
     revision_asset_version_id: str,
     context_bundle_version_id: str,
+    provider_extraction: dict[str, Any] | None = None,
+    operator_annotations: Iterable[dict[str, Any]] = (),
 ) -> dict[str, Any]:
     """Produce deterministic candidates independently of revision-provider metadata."""
     if not all((project_id, revision_asset_version_id, context_bundle_version_id)):
@@ -38,6 +80,7 @@ def extract_canon_candidates(
     text = str(revision.get("text") or "").strip()
     if not text:
         raise KernelError("CANON_EXTRACTION_INPUT_INVALID", "accepted revision text is required")
+    annotations = tuple(operator_annotations)
     assertions = list(revision.get("canon_assertions", []))
     # Every accepted chapter has a deterministic event assertion, so a real-provider
     # path never silently produces an empty Canon update when optional structured
@@ -54,11 +97,7 @@ def extract_canon_candidates(
     for item in assertions:
         if not all(str(item.get(key) or "").strip() for key in ("subject", "predicate", "object")):
             raise KernelError("CANON_ASSERTION_INVALID", "canon assertion requires subject/predicate/object")
-    return {
-        "project_id": project_id,
-        "chapter": int(revision["chapter"]),
-        "revision_asset_version_id": revision_asset_version_id,
-        "context_bundle_version_id": context_bundle_version_id,
+    changes: dict[str, list[dict[str, Any]]] = {
         "canon_assertion_candidates": assertions,
         "character_state_changes": list(revision.get("character_state_changes", [])),
         "relationship_changes": list(revision.get("relationship_changes", [])),
@@ -68,9 +107,67 @@ def extract_canon_candidates(
         "reward_changes": list(revision.get("reward_changes", [])),
         "world_rule_usages": list(revision.get("world_rule_usages", [])),
         "power_state_changes": list(revision.get("power_state_changes", [])),
-        "extraction_source": "deterministic_extractor",
+        "narrative_pattern_fingerprints": list(
+            revision.get("narrative_pattern_fingerprints", [])
+        ),
+        "theme_movements": list(revision.get("theme_movements", [])),
+        "antagonist_pressure_changes": list(
+            revision.get("antagonist_pressure_changes", [])
+        ),
+    }
+    _merge_semantic_changes(changes, provider_extraction or {}, source="provider_semantic_extractor")
+    _merge_operator_annotations(changes, annotations)
+    evidence_changes = {
+        key: [
+            _with_extraction_evidence(
+                item,
+                text=text,
+                revision_asset_version_id=revision_asset_version_id,
+                default_extractor=(
+                    "deterministic_revision_digest"
+                    if item.get("predicate") == "accepted_revision_digest"
+                    else "revision_structured_field"
+                ),
+            )
+            for item in values
+        ]
+        for key, values in changes.items()
+    }
+    approval_required = [
+        {"change_field": field, "change": item}
+        for field, values in evidence_changes.items()
+        for item in values
+        if item.get("approval_requirement") == "REQUIRED"
+    ]
+    semantic_count = sum(
+        len(values)
+        for key, values in evidence_changes.items()
+        if key != "canon_assertion_candidates"
+    ) + sum(
+        1
+        for item in evidence_changes["canon_assertion_candidates"]
+        if item.get("predicate") != "accepted_revision_digest"
+    )
+    return {
+        "project_id": project_id,
+        "chapter": int(revision["chapter"]),
+        "revision_asset_version_id": revision_asset_version_id,
+        "context_bundle_version_id": context_bundle_version_id,
+        **evidence_changes,
+        "extraction_source": (
+            "hybrid" if provider_extraction or annotations else "deterministic_extractor"
+        ),
+        "extractor_evidence": {
+            "deterministic": True,
+            "provider": bool(provider_extraction),
+            "operator_annotation": bool(annotations),
+        },
+        "approval_required_changes": approval_required,
+        "semantic_change_count": semantic_count,
+        "digest_identity_only": semantic_count == 0,
+        "semantic_coverage": "INSUFFICIENT" if semantic_count == 0 else "EXTRACTED",
         "provider_assertions_optional": True,
-        "canon_extraction_contract_version": "canon-extraction-v1",
+        "canon_extraction_contract_version": "canon-semantic-extraction-v2",
     }
 
 
@@ -103,6 +200,17 @@ def build_canon_update(
     facts = [_normalize_fact(item, chapter, revision_asset_version_id) for item in extraction.get("canon_assertion_candidates", [])]
     conflicts = _fact_conflicts(previous, facts)
     conflicts.extend(_typed_state_conflicts(chapter, state, extraction))
+    if extraction.get("approval_required_changes") and not extraction.get(
+        "high_impact_approval", {}
+    ).get("status") == "APPROVED":
+        conflicts.append(
+            _conflict(
+                "HIGH_IMPACT_SEMANTIC_CHANGE_REQUIRES_APPROVAL",
+                state,
+                extraction.get("approval_required_changes"),
+                "approve or reject each high-impact semantic change before reduction",
+            )
+        )
     return {
         "project_id": project_id,
         "chapter": chapter,
@@ -144,6 +252,81 @@ def _normalize_fact(item: dict[str, Any], chapter: int, source: str) -> dict[str
         "effective_chapter": int(item.get("effective_chapter") or chapter),
         "source_asset_version_id": source,
         "supersedes_version_id": str(item.get("supersedes_version_id") or ""),
+        "extraction_evidence": dict(item.get("extraction_evidence") or {}),
+        "confidence": float(item.get("confidence", 0.0)),
+    }
+
+
+def _merge_semantic_changes(
+    target: dict[str, list[dict[str, Any]]],
+    provider: dict[str, Any],
+    *,
+    source: str,
+) -> None:
+    for target_field, provider_field in SEMANTIC_CHANGE_FIELDS.items():
+        values = provider.get(provider_field, [])
+        if not isinstance(values, list):
+            raise KernelError(
+                "CANON_PROVIDER_OUTPUT_INVALID",
+                f"provider semantic field {provider_field} must be an array",
+            )
+        target[target_field].extend(
+            {**dict(item), "extractor_type": source}
+            for item in values
+            if isinstance(item, dict)
+        )
+
+
+def _merge_operator_annotations(
+    target: dict[str, list[dict[str, Any]]],
+    annotations: Iterable[dict[str, Any]],
+) -> None:
+    for annotation in annotations:
+        field = str(annotation.get("change_field") or "")
+        change = annotation.get("change")
+        if field not in target or not isinstance(change, dict):
+            raise KernelError("CANON_ANNOTATION_INVALID", "operator annotation is not typed")
+        target[field].append({**change, "extractor_type": "operator_annotation"})
+
+
+def _with_extraction_evidence(
+    item: dict[str, Any],
+    *,
+    text: str,
+    revision_asset_version_id: str,
+    default_extractor: str,
+) -> dict[str, Any]:
+    extractor = str(item.get("extractor_type") or default_extractor)
+    confidence = float(
+        item.get(
+            "confidence",
+            1.0 if extractor == "deterministic_revision_digest" else 0.8,
+        )
+    )
+    start = int(item.get("evidence_start", -1))
+    end = int(item.get("evidence_end", -1))
+    excerpt = text[start:end] if 0 <= start < end <= len(text) else ""
+    impact_type = str(item.get("impact_type") or "")
+    approval_required = impact_type in HIGH_IMPACT_CHANGE_TYPES or confidence < 0.65
+    return {
+        **item,
+        "confidence": confidence,
+        "extractor_type": extractor,
+        "source_revision_asset_version_id": revision_asset_version_id,
+        "extraction_evidence": {
+            "span": {"start": start, "end": end},
+            "excerpt_digest": (
+                "sha256:" + hashlib.sha256(excerpt.encode()).hexdigest() if excerpt else ""
+            ),
+            "source_revision_asset_version_id": revision_asset_version_id,
+            "provider_id": str(item.get("provider_id") or ""),
+            "model_id": str(item.get("model_id") or ""),
+            "prompt_version": str(item.get("prompt_version") or ""),
+            "previous_state_reference": str(
+                item.get("previous_state_reference") or ""
+            ),
+        },
+        "approval_requirement": "REQUIRED" if approval_required else "NONE",
     }
 
 
@@ -239,4 +422,5 @@ __all__ = [
     "STATE_ASSET_TYPES",
     "build_canon_update",
     "extract_canon_candidates",
+    "CanonSemanticProviderPort",
 ]
