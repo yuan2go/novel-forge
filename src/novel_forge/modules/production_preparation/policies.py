@@ -49,25 +49,83 @@ class ProductionStageProfile:
 
 _BASE_ALLOWED = (
     "chapter_plan", "outline", "outline_version", "volume_arc", "world_bible",
+    "creative_brief", "theme_question", "theme_arc", "closure_plan",
     "style_policy", "quality_profile", "quality_rubric", "platform_profile",
     "context_profile", "canon_snapshot", "character_state_snapshot",
     "relationship_state_snapshot", "timeline_snapshot", "foreshadow_snapshot",
     "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
     "power_state_snapshot", "character_card", "genre_profile", "knowledge_pack",
     "material_asset", "reader_promise", "empty_state_declaration",
+    "context_segment", "context_bundle", "production_input_manifest",
+    "draft_version", "review_rule", "review_report", "re_review_report", "canon_patch",
     "operator_checklist", "approval_decision",
     "structural_quality_report", "commercial_quality_report",
     "source_originality_quality_report", "longform_quality_report",
     "platform_quality_report",
 )
 
+_STATE_TYPES = frozenset(CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES)
+_QUALITY_REPORT_TYPES = frozenset({
+    "structural_quality_report", "commercial_quality_report",
+    "source_originality_quality_report", "longform_quality_report",
+    "platform_quality_report",
+})
+_STAGE_EXCLUDED = {
+    "creative": _STATE_TYPES | _QUALITY_REPORT_TYPES | {
+        "chapter_plan", "outline", "outline_version", "volume_arc", "world_bible",
+        "draft_version", "review_rule", "review_report", "re_review_report",
+        "canon_patch", "closure_plan",
+    },
+    "worldbuilding": _STATE_TYPES | _QUALITY_REPORT_TYPES | {
+        "chapter_plan", "draft_version", "review_rule", "review_report",
+        "re_review_report", "canon_patch", "closure_plan",
+    },
+    "character": _STATE_TYPES | _QUALITY_REPORT_TYPES | {
+        "chapter_plan", "draft_version", "review_rule", "review_report",
+        "re_review_report", "canon_patch", "closure_plan",
+    },
+    "outline": _QUALITY_REPORT_TYPES | {
+        "chapter_plan", "draft_version", "review_rule", "review_report",
+        "re_review_report", "canon_patch",
+    },
+    "chapter_plan": _QUALITY_REPORT_TYPES | {
+        "draft_version", "review_rule", "review_report", "re_review_report", "canon_patch",
+    },
+    # Quality reports are frozen as evidence-only inputs for the downstream
+    # quality fan-in.  DraftContextView still excludes their expression.
+    "draft": {
+        "draft_version", "review_rule", "review_report", "re_review_report", "canon_patch",
+    },
+    "review": _QUALITY_REPORT_TYPES | {"review_report", "re_review_report", "canon_patch"},
+    "revision": _QUALITY_REPORT_TYPES | {"re_review_report", "canon_patch"},
+    "canon_extraction": _QUALITY_REPORT_TYPES,
+    "quality": frozenset(),
+    "recap": frozenset(),
+    "ending": frozenset(),
+}
+_STAGE_REQUIRED = {
+    "creative": ("style_policy", "quality_rubric", "platform_profile"),
+    "worldbuilding": ("creative_brief", "style_policy"),
+    "character": ("creative_brief", "world_bible", "style_policy"),
+    "outline": ("creative_brief", "world_bible", "style_policy"),
+    "chapter_plan": ("outline", "world_bible", "style_policy"),
+    "draft": ("chapter_plan", "style_policy", "quality_rubric", "platform_profile"),
+    "review": ("chapter_plan", "draft_version", "quality_rubric", "platform_profile"),
+    "revision": ("chapter_plan", "draft_version", "review_report", "style_policy"),
+    "canon_extraction": ("draft_version",),
+    "quality": ("draft_version", "re_review_report", "quality_rubric", "platform_profile"),
+    "recap": ("canon_snapshot",),
+    "ending": ("closure_plan", "theme_arc", "canon_snapshot"),
+}
+
 STAGE_PROFILES = {
     stage: ProductionStageProfile(
         stage=stage,
-        required_asset_types=("chapter_plan", "style_policy", "quality_rubric", "platform_profile")
-        if stage in {"draft", "review", "revision", "canon_extraction", "quality"}
-        else (),
-        allowed_asset_types=_BASE_ALLOWED,
+        required_asset_types=_STAGE_REQUIRED[stage],
+        allowed_asset_types=tuple(
+            asset_type for asset_type in _BASE_ALLOWED
+            if asset_type not in _STAGE_EXCLUDED[stage]
+        ),
         forbidden_asset_types=("raw_source", "source_chunk", "eval_only", "quarantined_source"),
         maximum_raw_source_ratio=0.0,
         source_expression_policy="abstract_safe_content_only",
@@ -80,17 +138,17 @@ STAGE_PROFILES = {
         copyright_mode="fail_closed",
         compression_policy="safe_summary_then_structured_facts",
     )
-    for stage in (
-        "creative", "worldbuilding", "character", "outline", "chapter_plan",
-        "draft", "review", "revision", "canon_extraction", "quality", "recap", "ending",
-    )
+    for stage in _STAGE_REQUIRED
 }
 
 
 def requirements_for(stage: str, chapter: int) -> tuple[ProductionInputRequirement, ...]:
     profile = STAGE_PROFILES[stage]
     required = list(profile.required_asset_types)
-    if chapter > 1:
+    if chapter > 1 and stage in {
+        "chapter_plan", "draft", "review", "revision", "canon_extraction",
+        "quality", "recap", "ending",
+    }:
         required.extend(CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES)
     required_set = set(required)
     requirements = []

@@ -11,6 +11,8 @@ import hashlib
 import json
 from typing import Any, Iterable
 
+from novel_forge.modules.context_contracts import ContextCandidate
+
 
 ELIGIBLE_QUALIFICATIONS = {"ELIGIBLE"}
 BLOCKED_QUALIFICATIONS = {"REVOKED", "STALE", "QUARANTINED", "REQUIRES_APPROVAL"}
@@ -32,28 +34,6 @@ class ContextProfile:
     review_only_types: frozenset[str] = field(default_factory=frozenset)
     priority_rules: tuple[str, ...] = ()
     compression_policy: str = "rank_then_compress"
-
-
-@dataclass(frozen=True, slots=True)
-class ContextCandidate:
-    asset_version_id: str
-    asset_type: str
-    project_id: str
-    estimated_tokens: int
-    relevance_score: float = 0.0
-    qualification: str = "ELIGIBLE"
-    governance_status: str = "CLEAR"
-    source_use_mode: str = "generation"
-    source_risk: int = 0
-    raw_source: bool = False
-    content_digest: str = ""
-    policy_version: str = ""
-    invalidation_keys: tuple[str, ...] = ()
-    narrative_function: str = ""
-    safe_summary: str = ""
-    structured_facts: tuple[dict[str, Any], ...] = ()
-    allowed_use: str = "generation"
-    compression_method: str = "safe_summary"
 
 
 @dataclass(frozen=True, slots=True)

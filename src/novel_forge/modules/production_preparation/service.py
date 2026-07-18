@@ -71,6 +71,21 @@ class ProductionPreparationService:
                     if requirement.required:
                         blocked.append({"asset_type": requirement.asset_type, "code": issue})
                     continue
+                scope_issue = self._selection_scope_issue(
+                    request=request,
+                    asset=candidate,
+                    selected_by_type=selected_by_type,
+                )
+                if scope_issue:
+                    rejections.append(
+                        ProductionInputRejection(
+                            candidate.asset_version_id,
+                            candidate.asset_type,
+                            scope_issue,
+                            "candidate is outside the chapter, stage, entity, or relationship scope",
+                        )
+                    )
+                    continue
                 if not self._matches_requested_profile(request, requirement.asset_type, candidate):
                     rejections.append(
                         ProductionInputRejection(
@@ -175,7 +190,10 @@ class ProductionPreparationService:
         # Governance and approval assets are frozen with the command as evidence-only
         # Context segments.  This keeps Manifest == frozen inputs == Context lineage
         # without exposing their content to the model-facing rendered view.
-        candidates = tuple(self._context_candidate(item) for item in selected)
+        candidates = tuple(
+            self._context_candidate(item, evidence_only_types=profile.evidence_only_types)
+            for item in selected
+        )
         version_refs: dict[str, object] = {}
         for kind, values in selected_by_type.items():
             key = CONTEXT_VERSION_REF_KEYS.get(kind, f"{kind}_versions")
@@ -238,8 +256,14 @@ class ProductionPreparationService:
         return requested in {identity, asset.asset_version_id}
 
     @staticmethod
-    def _context_candidate(item: ResolvedProductionAsset) -> dict[str, object]:
-        evidence_only = item.asset_type in {"operator_checklist", "approval_decision"}
+    def _context_candidate(
+        item: ResolvedProductionAsset,
+        *,
+        evidence_only_types: tuple[str, ...],
+    ) -> dict[str, object]:
+        evidence_only = item.asset_type in {
+            "operator_checklist", "approval_decision", *evidence_only_types,
+        }
         return {
             "asset_version_id": item.asset_version_id,
             "content_hash": item.content_hash,
@@ -315,6 +339,25 @@ class ProductionPreparationService:
             }
             for item in selected
         )
+        source_rows = [
+            {
+                "asset_version_id": item.asset_version_id,
+                "governance_status": str(item.content.get("governance_status") or "CLEAR"),
+                "source_policy_version": str(item.content.get("source_policy_version") or ""),
+                "allowed_use": str(item.content.get("allowed_use") or "generation"),
+                "raw_source": item.content.get("raw_source") is True,
+                "source_risk": int(item.content.get("source_risk") or 0),
+            }
+            for item in selected
+            if any(key in item.content for key in ("source_policy_version", "source_risk", "raw_source", "allowed_use"))
+        ]
+        raw_count = sum(1 for item in source_rows if item["raw_source"])
+        source_governance = {
+            "status": "CLEAR" if all(item["governance_status"] == "CLEAR" and not item["raw_source"] for item in source_rows) else "BLOCKED",
+            "raw_source_ratio": (raw_count / len(source_rows)) if source_rows else 0.0,
+            "copyright_mode": STAGE_PROFILES[request.stage].copyright_mode,
+            "assets": source_rows,
+        }
         digest_payload = {
             "project_id": request.project_id,
             "chapter": request.chapter,
@@ -324,6 +367,10 @@ class ProductionPreparationService:
             "token_budget": request.context_token_budget,
             "quality_profile": request.requested_quality_profile,
             "platform_profile": request.requested_platform_profile,
+            "source_governance": source_governance,
+            "qualification_evidence": {item.asset_version_id: item.qualification for item in selected},
+            "approval_requirements": [asdict(item) for item in unmet_risks],
+            "risk_summary": [asdict(item) for item in risks],
         }
         digest = "sha256:" + hashlib.sha256(json.dumps(digest_payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         by_type = {item.asset_type: item for item in selected}
@@ -354,14 +401,14 @@ class ProductionPreparationService:
             entity_scopes=entity_scopes,
             selection_reasons={item.asset_version_id: item.selection_reason for item in selections},
             rejection_reasons={item.asset_version_id: item.code for item in rejections},
-            source_governance={"status": "CLEAR", "raw_source_ratio": 0.0, "copyright_mode": "fail_closed"},
+            source_governance=source_governance,
             qualification_evidence={item.asset_version_id: item.qualification for item in selected},
             token_budget=request.context_token_budget,
             provider_budget={"currency": "USD", "status": "ESTIMATE_UNCALIBRATED", "maximum_tokens": request.context_token_budget},
             approval_requirements=tuple(asdict(item) for item in unmet_risks),
             risk_summary=tuple(asdict(item) for item in risks),
             manifest_digest=digest,
-            created_by_operation_id="",
+            created_by_operation_id="pending:chapter-plan-operation",
         )
 
     @staticmethod
@@ -386,6 +433,52 @@ class ProductionPreparationService:
                     return "HISTORICAL_SNAPSHOT_CHAPTER_MISMATCH"
             except (TypeError, ValueError):
                 return "HISTORICAL_SNAPSHOT_CHAPTER_MISSING"
+        return ""
+
+    @staticmethod
+    def _selection_scope_issue(
+        *,
+        request: ProductionPreparationRequest,
+        asset: ResolvedProductionAsset,
+        selected_by_type: dict[str, list[ResolvedProductionAsset]],
+    ) -> str:
+        scope = dict(asset.content.get("scope") or {})
+        stages = {str(item) for item in scope.get("stages", [])}
+        if stages and request.stage not in stages:
+            return "STAGE_SCOPE_MISMATCH"
+        chapter_range = scope.get("chapter_range") or {}
+        if isinstance(chapter_range, (list, tuple)) and len(chapter_range) == 2:
+            start, end = chapter_range
+        elif isinstance(chapter_range, dict):
+            start = chapter_range.get("start", scope.get("chapter_start"))
+            end = chapter_range.get("end", scope.get("chapter_end"))
+        else:
+            start, end = scope.get("chapter_start"), scope.get("chapter_end")
+        if start is not None and request.chapter < int(start):
+            return "CHAPTER_SCOPE_MISMATCH"
+        if end is not None and request.chapter > int(end):
+            return "CHAPTER_SCOPE_MISMATCH"
+
+        plan_assets = selected_by_type.get("chapter_plan") or []
+        if not plan_assets:
+            return ""
+        plan = plan_assets[0].content
+        wanted_entities = {
+            str(item.get("entity_id") or item.get("character_id") or item.get("id") or item)
+            for item in (*plan.get("cast", []), *plan.get("character_ids", []))
+            if item
+        }
+        entity_id = str(asset.content.get("entity_id") or asset.content.get("character_id") or "")
+        if asset.asset_type in {"character_card", "character_state_snapshot"} and entity_id and wanted_entities and entity_id not in wanted_entities:
+            return "ENTITY_SCOPE_MISMATCH"
+        wanted_pairs = {
+            tuple(sorted(str(value) for value in item))
+            for item in plan.get("relationship_pairs", [])
+            if isinstance(item, (list, tuple)) and len(item) == 2
+        }
+        pair = asset.content.get("relationship_pair") or scope.get("relationship_pair")
+        if asset.asset_type == "relationship_state_snapshot" and wanted_pairs and isinstance(pair, (list, tuple)) and len(pair) == 2 and tuple(sorted(str(value) for value in pair)) not in wanted_pairs:
+            return "RELATIONSHIP_SCOPE_MISMATCH"
         return ""
 
     @staticmethod

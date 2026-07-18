@@ -12,6 +12,7 @@ from novel_forge.modules.production_preparation.contracts import (
     ResolvedProductionAsset,
 )
 from novel_forge.modules.production_preparation.service import ProductionPreparationService
+from novel_forge.modules.production_preparation.policies import STAGE_PROFILES
 
 
 class _Resolver:
@@ -271,6 +272,19 @@ class ProductionPreparationTests(unittest.TestCase):
             )
         )
         self.assertIn("relationship_state_snapshot", result.report.missing_required_asset_types)
+
+    def test_stage_profiles_have_distinct_allowed_and_required_contracts(self) -> None:
+        draft = STAGE_PROFILES["draft"]
+        review = STAGE_PROFILES["review"]
+        quality = STAGE_PROFILES["quality"]
+
+        self.assertNotIn("review_rule", draft.allowed_asset_types)
+        self.assertIn("review_rule", review.allowed_asset_types)
+        self.assertIn("structural_quality_report", draft.allowed_asset_types)
+        self.assertIn("structural_quality_report", draft.evidence_only_types)
+        self.assertIn("structural_quality_report", quality.allowed_asset_types)
+        self.assertIn("draft_version", review.required_asset_types)
+        self.assertIn("re_review_report", quality.required_asset_types)
 
 
 if __name__ == "__main__":

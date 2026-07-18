@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable
 
-from novel_forge.modules.context_builder.domain import ContextCandidate
+from novel_forge.modules.context_contracts import ContextCandidate
 
 
 @dataclass(frozen=True, slots=True)
