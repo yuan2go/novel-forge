@@ -67,7 +67,7 @@ def _bundle() -> dict:
     }
 
 
-def _view(group: str, bundle: dict | None = None) -> dict:
+def _view(group: str, bundle: dict | None = None, *, token_budget: int = 6000) -> dict:
     return build_quality_context_view(
         group=group,
         revision={"chapter": 2, "text": "A governed revision with an explicit cost."},
@@ -88,7 +88,7 @@ def _view(group: str, bundle: dict | None = None) -> dict:
         context_bundle_asset_version_id="context-v2",
         canon={"conflicts": [], "snapshot_candidates": []},
         canon_asset_version_id="canon-v2",
-        token_budget=1200,
+        token_budget=token_budget,
     )
 
 
@@ -126,12 +126,49 @@ class QualityContextAuthorityTests(unittest.TestCase):
     def test_longform_compression_preserves_snapshot_identity(self) -> None:
         bundle = _bundle()
         state = next(item for item in bundle["context_segments"] if item["asset_type"] == "canon_snapshot")
-        state["structured_facts"] = [{"index": item} for item in range(200)]
-        view = _view("longform", bundle)
-        row = view["previous_state_snapshots"]["canon_snapshot"][0]
+        state["structured_facts"] = [{"index": item} for item in range(1000)]
+        view = _view("longform", bundle, token_budget=6000)
+        row = view["previous_state_snapshots"]["canon_snapshot"]["canon_snapshot:project"][0]
         self.assertEqual(row["asset_version_id"], "canon_snapshot-v1")
         self.assertTrue(row["compressed"])
         self.assertGreater(row["omitted_fact_count"], 0)
+
+    def test_longform_preserves_multiple_entities_and_emits_coverage(self) -> None:
+        bundle = _bundle()
+        bundle["context_segments"].extend(
+            [
+                {
+                    "asset_version_id": "character-alice-v1",
+                    "asset_type": "character_state_snapshot",
+                    "entity_id": "alice",
+                    "chapter": 1,
+                    "content_digest": "sha256:alice",
+                    "qualification": "ELIGIBLE",
+                    "structured_facts": [{"entity_id": "alice", "goal": "protect"}],
+                },
+                {
+                    "asset_version_id": "character-bob-v1",
+                    "asset_type": "character_state_snapshot",
+                    "entity_id": "bob",
+                    "chapter": 1,
+                    "content_digest": "sha256:bob",
+                    "qualification": "ELIGIBLE",
+                    "structured_facts": [{"entity_id": "bob", "goal": "escape"}],
+                },
+            ]
+        )
+        view = _view("longform", bundle)
+        identities = view["previous_state_snapshots"]["character_state_snapshot"]
+        self.assertIn("entity_id:alice", identities)
+        self.assertIn("entity_id:bob", identities)
+        self.assertLessEqual(
+            view["coverage_report"]["token_estimate"],
+            view["coverage_report"]["token_budget"],
+        )
+
+    def test_critical_identity_overflow_fails_closed(self) -> None:
+        with self.assertRaisesRegex(KernelError, "CRITICAL_OVERFLOW"):
+            _view("longform", token_budget=50)
 
 
 if __name__ == "__main__":

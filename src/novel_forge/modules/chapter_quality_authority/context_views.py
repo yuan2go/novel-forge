@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import hashlib
 import json
-from typing import Any
+from typing import Any, Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -13,6 +13,19 @@ STATE_ASSET_TYPES = (
     "timeline_snapshot", "foreshadow_snapshot", "promise_ledger_snapshot",
     "reward_ledger_snapshot", "world_rule_snapshot", "power_state_snapshot",
 )
+
+
+class TokenEstimator(Protocol):
+    def estimate(self, value: str) -> int: ...
+
+
+class ConservativeTokenEstimator:
+    """Replaceable estimator that deliberately rounds multilingual JSON upward."""
+
+    def estimate(self, value: str) -> int:
+        if not value:
+            return 0
+        return max(1, (len(value.encode("utf-8")) + 2) // 3)
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,7 +125,11 @@ def build_quality_context_view(
     canon: dict[str, Any],
     canon_asset_version_id: str,
     token_budget: int = 6000,
+    token_estimator: TokenEstimator | None = None,
 ) -> dict[str, Any]:
+    if token_budget <= 0:
+        raise KernelError("QUALITY_CONTEXT_BUDGET_INVALID", "quality token budget must be positive")
+    estimator = token_estimator or ConservativeTokenEstimator()
     if group not in {
         "structural", "commercial", "source_originality", "longform", "platform"
     }:
@@ -198,17 +215,10 @@ def build_quality_context_view(
             "source_expression_excluded": True,
         }
     elif group == "longform":
-        previous_states = {
-            state_type: _compress_state_segments(
-                [item for item in segments if item.get("asset_type") == state_type],
-                token_budget=max(100, token_budget // 12),
-            )
-            for state_type in STATE_ASSET_TYPES
-        }
-        current_states = {
-            str(item.get("asset_type")): item
-            for item in canon.get("snapshot_candidates", [])
-        }
+        previous_states = _group_state_segments(segments)
+        current_states = _group_current_state_candidates(
+            list(canon.get("snapshot_candidates") or [])
+        )
         body = {
             "type": "LongformQualityContextView",
             **common,
@@ -233,8 +243,21 @@ def build_quality_context_view(
             "compiled_platform_policy": asdict(platform_policy),
         }
     body["token_budget"] = token_budget
+    coverage = _fit_quality_context(
+        body,
+        estimator=estimator,
+        token_budget=token_budget,
+    )
+    body["coverage_report"] = coverage
+    body["contract_version"] = "stage-quality-context-v2"
     body["context_digest"] = _digest(body)
-    body["contract_version"] = "stage-quality-context-v1"
+    final_tokens = _estimate_payload(body, estimator)
+    if final_tokens > token_budget:
+        raise KernelError(
+            "QUALITY_CONTEXT_CRITICAL_OVERFLOW",
+            "quality context identity and critical evidence exceed the frozen token budget",
+        )
+    body["coverage_report"]["token_estimate"] = final_tokens
     return body
 
 
@@ -275,27 +298,147 @@ def _segments_of_type(
     ]
 
 
-def _compress_state_segments(
-    segments: list[dict[str, Any]], *, token_budget: int
-) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    remaining = token_budget
+def _group_state_segments(
+    segments: list[dict[str, Any]],
+) -> dict[str, dict[str, list[dict[str, Any]]]]:
+    grouped: dict[str, dict[str, list[dict[str, Any]]]] = {
+        state_type: {} for state_type in STATE_ASSET_TYPES
+    }
     for item in segments:
+        state_type = str(item.get("asset_type") or "")
+        if state_type not in grouped:
+            continue
+        identity = _state_identity(item, state_type)
         facts = list(item.get("structured_facts") or [])
-        allowed = max(1, remaining // 12)
-        kept = facts[:allowed]
-        rows.append({
-            "asset_version_id": item.get("asset_version_id"),
-            "content_digest": item.get("content_digest"),
-            "structured_facts": kept,
-            "declared_empty": bool(
-                kept and isinstance(kept[0], dict) and kept[0].get("declared_empty")
+        declared_empty = bool(
+            item.get("declared_empty")
+            or any(isinstance(fact, dict) and fact.get("declared_empty") for fact in facts)
+        )
+        grouped[state_type].setdefault(identity, []).append(
+            {
+                "asset_version_id": item.get("asset_version_id"),
+                "entity_id": item.get("entity_id"),
+                "relationship_pair": item.get("relationship_pair"),
+                "content_digest": item.get("content_digest"),
+                "chapter": item.get("chapter"),
+                "qualification": item.get("qualification", "ELIGIBLE"),
+                "structured_facts": facts,
+                "declared_empty": declared_empty,
+                "compressed": False,
+                "omitted_fact_count": 0,
+            }
+        )
+    for state in grouped.values():
+        for rows in state.values():
+            rows.sort(key=lambda row: (int(row.get("chapter") or 0), str(row["asset_version_id"])))
+    return grouped
+
+
+def _group_current_state_candidates(
+    candidates: list[dict[str, Any]],
+) -> dict[str, dict[str, list[dict[str, Any]]]]:
+    grouped: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    for candidate in candidates:
+        state_type = str(candidate.get("asset_type") or "")
+        identity = _state_identity(candidate, state_type)
+        grouped.setdefault(state_type, {}).setdefault(identity, []).append(dict(candidate))
+    return grouped
+
+
+def _state_identity(item: dict[str, Any], state_type: str) -> str:
+    pair = item.get("relationship_pair")
+    if isinstance(pair, (list, tuple)) and pair:
+        return "relationship:" + "|".join(sorted(str(value) for value in pair))
+    for key in ("entity_id", "logical_ref", "foreshadow_id", "promise_id", "reward_id"):
+        if item.get(key):
+            return f"{key}:{item[key]}"
+    facts = list(item.get("structured_facts") or [])
+    for fact in facts:
+        if not isinstance(fact, dict):
+            continue
+        for key in ("entity_id", "logical_ref", "foreshadow_id", "promise_id", "reward_id"):
+            if fact.get(key):
+                return f"{key}:{fact[key]}"
+    return f"{state_type}:project"
+
+
+def _fit_quality_context(
+    body: dict[str, Any], *, estimator: TokenEstimator, token_budget: int
+) -> dict[str, Any]:
+    rows = list(_state_rows(body))
+    original_counts = {id(row): len(row.get("structured_facts") or []) for row in rows}
+    report_reserve = min(512, max(128, token_budget // 8))
+    content_budget = max(1, token_budget - report_reserve)
+    while _estimate_payload(body, estimator) > content_budget:
+        candidate = next(
+            (
+                row for row in reversed(rows)
+                if any(not _critical_fact(fact) for fact in row.get("structured_facts") or [])
             ),
-            "compressed": len(kept) < len(facts),
-            "omitted_fact_count": max(0, len(facts) - len(kept)),
-        })
-        remaining = max(0, remaining - max(1, len(json.dumps(kept)) // 4))
-    return rows
+            None,
+        )
+        if candidate is None:
+            raise KernelError(
+                "QUALITY_CONTEXT_CRITICAL_OVERFLOW",
+                "quality context identity and critical evidence exceed the frozen token budget",
+            )
+        facts = list(candidate.get("structured_facts") or [])
+        remove_index = max(
+            index for index, fact in enumerate(facts) if not _critical_fact(fact)
+        )
+        facts.pop(remove_index)
+        candidate["structured_facts"] = facts
+        candidate["compressed"] = True
+        candidate["omitted_fact_count"] = original_counts[id(candidate)] - len(facts)
+    selected_versions = sorted(
+        str(row.get("asset_version_id") or "") for row in rows if row.get("asset_version_id")
+    )
+    included_entities = sorted(
+        identity
+        for state in body.get("previous_state_snapshots", {}).values()
+        for identity in state
+    )
+    included_fact_count = sum(len(row.get("structured_facts") or []) for row in rows)
+    omitted_fact_count = sum(int(row.get("omitted_fact_count") or 0) for row in rows)
+    return {
+        "type": "QualityContextCoverageReport",
+        "selected_asset_versions": selected_versions,
+        "included_entities": included_entities,
+        "omitted_entities": [],
+        "included_fact_count": included_fact_count,
+        "omitted_fact_count": omitted_fact_count,
+        "token_estimate": _estimate_payload(body, estimator),
+        "token_budget": token_budget,
+        "critical_facts_preserved": True,
+        "coverage_status": "COMPRESSED" if omitted_fact_count else "COMPLETE",
+        "repair_actions": [],
+        "contract_version": "quality-context-coverage-v1",
+    }
+
+
+def _state_rows(body: dict[str, Any]):
+    for group_key in ("previous_state_snapshots", "current_state_candidates"):
+        for state in body.get(group_key, {}).values():
+            for rows in state.values():
+                yield from rows
+
+
+def _critical_fact(fact: Any) -> bool:
+    if not isinstance(fact, dict):
+        return False
+    return bool(
+        fact.get("declared_empty")
+        or fact.get("blocking")
+        or fact.get("unresolved")
+        or fact.get("high_risk")
+        or fact.get("conflict_codes")
+    )
+
+
+def _estimate_payload(payload: dict[str, Any], estimator: TokenEstimator) -> int:
+    return estimator.estimate(
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    )
 
 
 def _digest(payload: dict[str, Any]) -> str:
@@ -305,6 +448,7 @@ def _digest(payload: dict[str, Any]) -> str:
 
 
 __all__ = [
-    "CompiledPlatformPolicy", "CompiledQualityPolicy", "STATE_ASSET_TYPES",
+    "CompiledPlatformPolicy", "CompiledQualityPolicy", "ConservativeTokenEstimator",
+    "STATE_ASSET_TYPES", "TokenEstimator",
     "build_quality_context_view", "compile_platform_policy", "compile_quality_policy",
 ]
