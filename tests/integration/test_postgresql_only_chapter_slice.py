@@ -163,7 +163,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 21)
+            self.assertEqual(cursor.fetchone()[0], 36)
             cursor.execute(
                 """
                 SELECT asset.asset_type, binding.role, version.content->>'state_kind'

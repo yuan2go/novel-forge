@@ -58,6 +58,7 @@ class PostgreSQLAuthorityApiBoundaryTests(unittest.TestCase):
             root / "api" / "authority_app.py",
             root / "api" / "authority_dependencies.py",
             root / "api" / "routers" / "chapter_authority.py",
+            root / "api" / "routers" / "content_authority.py",
         ]
         forbidden = {
             "novel_forge.storage.local",
