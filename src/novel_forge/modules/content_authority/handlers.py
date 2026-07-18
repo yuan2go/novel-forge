@@ -10,6 +10,7 @@ from novel_forge.modules.chapter_quality_authority.calibration import (
     promote_calibration_profile,
 )
 from novel_forge.modules.production_preparation.empty_state import initialize_typed_empty_state
+from novel_forge.modules.creative.generator_boundary import build_candidate_pool
 
 CONTENT_DOMAIN_HANDLERS = {
     "creative.brief.create": validate_creative_brief,
@@ -40,4 +41,5 @@ CONTENT_DOMAIN_HANDLERS = {
     "quality.calibration.profile.promote": promote_calibration_profile,
     "quality.calibration.profile.revoke": promote_calibration_profile,
     "chapter.state.initialize_empty": initialize_typed_empty_state,
+    "creative.candidates.generate": build_candidate_pool,
 }

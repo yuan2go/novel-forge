@@ -34,6 +34,7 @@ from novel_forge.modules.creative.domain import (
     evaluate_candidate,
     validate_creative_brief,
 )
+from novel_forge.modules.creative.generator_boundary import build_candidate_pool
 from novel_forge.modules.ending.domain import (
     build_closure_plan,
     build_payoff_matrix,
@@ -301,6 +302,17 @@ def _golden_sample_create(request: AuthorityHandlerRequest) -> dict[str, Any]:
     return {"project_id": request.project_id, **asdict(sample)}
 
 
+def _creative_candidates_generate(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    brief = _one(request, "creative_brief")
+    receipt = _one(request, "creative_candidate_generation_receipt")
+    return build_candidate_pool(
+        project_id=request.project_id,
+        creative_brief_asset_version_id=brief.asset_version_id,
+        provider_receipt_asset_version_id=receipt.asset_version_id,
+        receipt=receipt.content,
+    )
+
+
 def _state_initialize_empty(request: AuthorityHandlerRequest) -> dict[str, Any]:
     evidence = _one(request, "state_absence_evidence")
     payload = _payload(request)
@@ -477,6 +489,7 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
         ("quality.calibration.profile.promote", "quality_calibration_profile", "quality.calibration.profile", _calibration_profile_promote),
         ("quality.calibration.profile.revoke", "quality_calibration_profile", "quality.calibration.profile_revocation", _calibration_profile_revoke),
         ("chapter.state.initialize_empty", "typed_empty_state_snapshot", "chapter.state.empty_snapshot", _state_initialize_empty),
+        ("creative.candidates.generate", "creative_candidate_pool", "creative.candidates.pool", _creative_candidates_generate),
     )
 }
 

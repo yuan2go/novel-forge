@@ -103,6 +103,26 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
             "pleasure_potential": .8, "suspense_potential": .8, "theme_potential": .8,
             "serialization_potential": .8, "similarity_risk": .1, "production_difficulty": .2,
         }
+        generation_receipt = self.seed(
+            "creative_candidate_generation_receipt",
+            {
+                "provider": "scripted_creative_fixture", "model": "fixture",
+                "fixture_protocol_only": True, "real_model_call": False,
+                "production_verified": False,
+                "candidates": [
+                    {
+                        "candidate_id": f"generated-{index}",
+                        "fingerprint": {
+                            **fingerprint,
+                            "conflict_loop": f"mechanism-conflict-{index}",
+                        },
+                    }
+                    for index in range(3)
+                ],
+            },
+            "creative-generation-receipt",
+        )
+        self.run_op("creative.candidates.generate", [brief, generation_receipt])
         candidate1 = self.seed("creative_candidate", {"project_id": self.project_id, "candidate_id": "c1", "fingerprint": fingerprint, "scores": scores, "known_risks": []}, "candidate-1")
         candidate2 = self.seed("creative_candidate", {"project_id": self.project_id, "candidate_id": "c2", "fingerprint": {**fingerprint, "conflict_loop": "witness versus archive"}, "scores": scores, "known_risks": []}, "candidate-2")
         evaluation1 = self.run_op("creative.candidates.evaluate", [brief, candidate1])
