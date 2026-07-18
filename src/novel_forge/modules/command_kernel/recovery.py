@@ -109,6 +109,35 @@ def recover_operation(
         elif status in {"WAITING_GATE", "WAITING_APPROVAL"}:
             if not command.gate_evidence_id:
                 raise KernelError("RECOVERY_GATE_EVIDENCE_REQUIRED", "gate recovery needs evidence")
+            uow.cursor.execute(
+                """
+                SELECT asset.asset_type, version.lifecycle, version.eligibility,
+                       operation.definition_name
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id = version.asset_id
+                JOIN authority_operation AS operation ON operation.operation_id = %s
+                WHERE version.asset_version_id = %s
+                  AND asset.project_id = %s AND operation.project_id = %s
+                """,
+                [
+                    command.operation_id, command.gate_evidence_id,
+                    command.project_id, command.project_id,
+                ],
+            )
+            gate = uow.cursor.fetchone()
+            if gate is None or gate[1:3] != ("ACTIVE", "ELIGIBLE"):
+                raise KernelError("RECOVERY_GATE_EVIDENCE_INVALID", "gate evidence is not current and eligible")
+            target_status = "EXECUTING"
+            if gate[3] == "chapter.slice.run":
+                uow.cursor.execute(
+                    "SELECT COUNT(*) FROM authority_canon_approval_request WHERE root_operation_id = %s AND status NOT IN ('APPROVED','REJECTED','EDITED_AND_APPROVED')",
+                    [command.operation_id],
+                )
+                if int(uow.cursor.fetchone()[0]):
+                    raise KernelError("CANON_APPROVAL_INCOMPLETE", "Canon gate cannot be bypassed by generic recovery")
+                if gate[0] != "canon_approval_decision":
+                    raise KernelError("RECOVERY_GATE_EVIDENCE_INVALID", "Canon recovery requires a decision AssetVersion")
+                target_status = "WAITING_CHILDREN"
             action = "GATE_RESUMED"
             _cas_operation(
                 uow,
@@ -116,7 +145,7 @@ def recover_operation(
                 project_id=command.project_id,
                 expected_status=status,
                 expected_version=command.expected_version,
-                target_status="EXECUTING",
+                target_status=target_status,
                 actor_id=command.actor_id,
                 reason=command.reason,
                 trace_id=command.trace_id,

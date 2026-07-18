@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 
 from novel_forge.modules.command_kernel.budget_runtime import (
     BudgetReservationRequest,
@@ -131,8 +132,98 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
         )
         self.assertEqual(held["status"], "HELD_UNKNOWN")
 
+    def test_invalid_dimension_chapter_scope_and_timezone_fail_closed(self) -> None:
+        for caps, timezone, code in (
+            ({"daily": "1"}, "UTC", "BUDGET_CAP_INVALID"),
+            ({"chapter_total": "1"}, "UTC", "BUDGET_CAP_INVALID"),
+            ({"project_daily": "1"}, "Not/A_Real_Zone", "BUDGET_TIMEZONE_INVALID"),
+        ):
+            with self.subTest(code=code, caps=caps):
+                context, effect_id = self._effect("success")
+                with self.assertRaises(KernelError) as error:
+                    reserve_provider_budget(
+                        DATABASE_URL,
+                        BudgetReservationRequest(
+                            operation_id=context.operation_id, external_effect_id=effect_id,
+                            project_id=context.project_id, stable_idempotency_key=identifier("invalid-budget"),
+                            provider="fake_deterministic_provider", currency="USD",
+                            estimated_amount="0.5", estimated_tokens=10, caps=caps,
+                            budget_timezone=timezone,
+                        ),
+                    )
+                self.assertEqual(error.exception.code, code)
+
+    def test_actual_cost_breach_is_held_for_manual_resolution(self) -> None:
+        context, effect_id = self._effect("success")
+        reservation = reserve_provider_budget(
+            DATABASE_URL,
+            BudgetReservationRequest(
+                operation_id=context.operation_id, external_effect_id=effect_id,
+                project_id=context.project_id, stable_idempotency_key=identifier("breach"),
+                provider="fake_deterministic_provider", currency="USD",
+                estimated_amount="0.5", estimated_tokens=10,
+            ),
+        )
+        with self.assertRaises(KernelError) as error:
+            settle_provider_budget(
+                DATABASE_URL, reservation_id=reservation["reservation_id"],
+                project_id=context.project_id, actual_amount="0.75", actual_tokens=11,
+                evidence={"fixture": True},
+            )
+        self.assertEqual(error.exception.code, "BUDGET_ACTUAL_EXCEEDS_RESERVATION")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT status, budget_breach FROM authority_budget_reservation WHERE reservation_id = %s", [reservation["reservation_id"]])
+            self.assertEqual(cursor.fetchone(), ("HELD_UNKNOWN", True))
+
+    def test_concurrent_project_cap_serializes_reservations(self) -> None:
+        project_id = identifier("concurrent-budget-project")
+        effects = [self._effect_for_project(project_id) for _ in range(2)]
+
+        def reserve(item):
+            context, effect_id = item
+            try:
+                return reserve_provider_budget(
+                    DATABASE_URL,
+                    BudgetReservationRequest(
+                        operation_id=context.operation_id, external_effect_id=effect_id,
+                        project_id=project_id, stable_idempotency_key=identifier("concurrent"),
+                        provider="fake_deterministic_provider", currency="USD",
+                        estimated_amount="0.75", estimated_tokens=10,
+                        caps={"project_total": "1.00"},
+                    ),
+                )["status"]
+            except KernelError as error:
+                return error.code
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            outcomes = list(pool.map(reserve, effects))
+        self.assertEqual(sorted(outcomes), ["BUDGET_CAP_EXCEEDED", "RESERVED"])
+
+    def test_currency_scopes_do_not_cross_contaminate_global_cap(self) -> None:
+        project_id = identifier("currency-budget-project")
+        first_context, first_effect = self._effect_for_project(project_id)
+        second_context, second_effect = self._effect_for_project(project_id)
+        for context, effect, currency in (
+            (first_context, first_effect, "XUA"),
+            (second_context, second_effect, "XUB"),
+        ):
+            reserved = reserve_provider_budget(
+                DATABASE_URL,
+                BudgetReservationRequest(
+                    operation_id=context.operation_id, external_effect_id=effect,
+                    project_id=project_id, stable_idempotency_key=identifier(currency),
+                    provider="fake_deterministic_provider", currency=currency,
+                    estimated_amount="0.75", estimated_tokens=10,
+                    caps={"global_daily": "1.00"},
+                ),
+            )
+            self.assertEqual(reserved["status"], "RESERVED")
+
     def _effect(self, scenario: str) -> tuple[EffectCommandContext, str]:
         project_id = identifier("budget-project")
+        return self._effect_for_project(project_id, scenario=scenario)
+
+    def _effect_for_project(self, project_id: str, *, scenario: str = "success") -> tuple[EffectCommandContext, str]:
         operation_id = identifier("budget-operation")
         definition = identifier("budget-definition")
         with transaction() as connection, connection.cursor() as cursor:
