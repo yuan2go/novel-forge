@@ -41,7 +41,63 @@ class _FakeApplication:
         )
 
 
+class _FakeContentApplication:
+    database_url = "postgresql://fixture"
+
+    def __init__(self) -> None:
+        self.requests: list[tuple[object, object]] = []
+
+    def admit(self, request: object, *, principal: object) -> object:
+        self.requests.append((request, principal))
+        return SimpleNamespace(
+            operation_id="content-operation-1",
+            project_id="project-1",
+            replayed=False,
+        )
+
+
 class ChapterAuthorityApiTests(unittest.TestCase):
+    def test_content_command_returns_202_and_uses_trusted_principal(self) -> None:
+        from fastapi.testclient import TestClient
+        from novel_forge.modules.authority_security import TrustedPrincipalResolver
+
+        fake = _FakeContentApplication()
+        with tempfile.TemporaryDirectory() as directory:
+            app = create_app(IndustrialSettings(root=Path(directory)))
+            with (
+                patch(
+                    "novel_forge.api.routers.content_authority.build_content_authority_application",
+                    return_value=fake,
+                ),
+                patch(
+                    "novel_forge.api.routers.content_authority.build_trusted_principal_resolver",
+                    return_value=TrustedPrincipalResolver(
+                        environment="test",
+                        configured_local_operator_id="trusted-operator",
+                    ),
+                ),
+                TestClient(app) as client,
+            ):
+                response = client.post(
+                    "/product/content-authority/commands",
+                    json={
+                        "definition_name": "theme.question.create",
+                        "project_id": "project-1",
+                        "workspace_id": "workspace-1",
+                        "payload": {
+                            "question": "When safety requires betrayal, is loyalty worth its cost?"
+                        },
+                        "idempotency_key": "content-command-1",
+                        "actor_id": "untrusted-caller",
+                    },
+                )
+
+        self.assertEqual(response.status_code, 202, response.text)
+        self.assertEqual(response.json()["operation_id"], "content-operation-1")
+        request, principal = fake.requests[0]
+        self.assertEqual(request.actor_id, "trusted-operator")
+        self.assertEqual(principal.principal_id, "trusted-operator")
+
     def test_async_command_returns_202_and_uses_trusted_principal(self) -> None:
         try:
             from fastapi.testclient import TestClient

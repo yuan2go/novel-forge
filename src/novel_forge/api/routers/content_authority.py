@@ -20,12 +20,13 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 def create_router(ctx: ProductRouterContext) -> APIRouter:
-    CommandRequest = ctx.models["ContentAuthorityCommandRequest"]
-    ControlRequest = ctx.models["AuthorityOperationControlRequest"]
+    globals().update(ctx.models)
+    ContentAuthorityCommandRequest = ctx.models["ContentAuthorityCommandRequest"]
+    AuthorityOperationControlRequest = ctx.models["AuthorityOperationControlRequest"]
     router = APIRouter(prefix="/product/content-authority", tags=["product-content-authority"])
 
     @router.post("/commands", status_code=202)
-    def admit_content_operation(request: CommandRequest) -> dict[str, Any]:
+    def admit_content_operation(request: ContentAuthorityCommandRequest) -> dict[str, Any]:
         try:
             principal = build_trusted_principal_resolver().resolve_api_principal(
                 claimed_actor_id=request.actor_id
@@ -94,7 +95,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         return _query(ctx).require_operation(project_id=project_id, operation_id=operation_id)
 
     @router.post("/operations/{operation_id}/cancel", status_code=202)
-    def cancel_operation(operation_id: str, request: ControlRequest) -> dict[str, Any]:
+    def cancel_operation(
+        operation_id: str, request: AuthorityOperationControlRequest
+    ) -> dict[str, Any]:
         principal = build_trusted_principal_resolver().resolve_api_principal(
             claimed_actor_id=request.actor_id
         )
@@ -117,7 +120,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         return {**result, "status": "CANCELLATION_REQUESTED"}
 
     @router.post("/operations/{operation_id}/recover", status_code=202)
-    def recover_operation(operation_id: str, request: ControlRequest) -> dict[str, Any]:
+    def recover_operation(
+        operation_id: str, request: AuthorityOperationControlRequest
+    ) -> dict[str, Any]:
         principal = build_trusted_principal_resolver().resolve_api_principal(
             claimed_actor_id=request.actor_id
         )
