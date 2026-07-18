@@ -153,6 +153,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 project_id=request.project_id,
                 root_operation_id=result.root_operation_id,
             )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
         except KernelError as exc:
             status_code = 404 if exc.code == "CHAPTER_RUN_NOT_FOUND" else 409
             raise HTTPException(
@@ -168,8 +170,12 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         limit: int = Query(default=100, ge=1, le=500),
     ) -> list[dict[str, Any]]:
         try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("chapter.authority.query", project_id)
             query = _query(ctx)
             return query.list_runs(project_id=project_id, limit=limit)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -219,11 +225,15 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         root_operation_id: str = Query(..., min_length=1),
     ) -> dict[str, Any]:
         try:
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("chapter.authority.query", project_id)
             query = _query(ctx)
             return query.require_run(
                 project_id=project_id,
                 root_operation_id=root_operation_id,
             )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
         except KernelError as exc:
             status_code = 404 if exc.code == "CHAPTER_RUN_NOT_FOUND" else 409
             raise HTTPException(

@@ -36,10 +36,10 @@ def authority_release_identity(
     commit_sha = str(values.get("NOVEL_FORGE_COMMIT_SHA") or "").strip().lower()
     if not build_id:
         raise RuntimeError("NOVEL_FORGE_APPLICATION_BUILD_ID is required")
-    if len(commit_sha) < 7 or len(commit_sha) > 64 or any(
+    if len(commit_sha) != 40 or any(
         character not in "0123456789abcdef" for character in commit_sha
     ):
-        raise RuntimeError("NOVEL_FORGE_COMMIT_SHA must be a 7-64 character hexadecimal commit id")
+        raise RuntimeError("NOVEL_FORGE_COMMIT_SHA must be a full 40-character hexadecimal commit id")
     return build_id, commit_sha
 
 
@@ -132,11 +132,11 @@ def build_chapter_authority_application(
         budget_caps={
             key: str(values[value])
             for key, value in (
-                ("project", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"),
-                ("operation", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
-                ("provider", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
-                ("daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),
-                ("chapter", "NOVEL_FORGE_CHAPTER_PROVIDER_CAP"),
+                ("project_daily", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"),
+                ("operation_total", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
+                ("provider_project_daily", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
+                ("global_daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),
+                ("chapter_total", "NOVEL_FORGE_CHAPTER_PROVIDER_CAP"),
             )
             if str(values.get(value) or "").strip()
         },

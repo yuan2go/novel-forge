@@ -252,6 +252,35 @@ class ChapterAuthorityApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertIn("PostgreSQL database is required", response.json()["detail"])
 
+    def test_chapter_query_denies_cross_project_scope(self) -> None:
+        from fastapi.testclient import TestClient
+        from novel_forge.modules.authority_security import TrustedPrincipalResolver
+
+        fake = _FakeApplication()
+        with tempfile.TemporaryDirectory() as directory:
+            app = create_app(IndustrialSettings(root=Path(directory)))
+            with (
+                patch(
+                    "novel_forge.api.routers.chapter_authority.build_chapter_authority_query",
+                    return_value=fake.query,
+                ),
+                patch(
+                    "novel_forge.api.routers.chapter_authority.build_trusted_principal_resolver",
+                    return_value=TrustedPrincipalResolver(
+                        environment="test",
+                        configured_local_operator_id="scoped-operator",
+                        configured_project_scope=frozenset({"project-allowed"}),
+                    ),
+                ),
+                TestClient(app) as client,
+            ):
+                response = client.get(
+                    "/product/production/chapter-authority/runs",
+                    params={"project_id": "project-denied"},
+                )
+
+        self.assertEqual(response.status_code, 403)
+
 
 if __name__ == "__main__":
     unittest.main()

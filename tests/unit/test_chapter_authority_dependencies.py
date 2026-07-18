@@ -40,6 +40,13 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                     "NOVEL_FORGE_COMMIT_SHA": "not-a-commit",
                 }
             )
+        with self.assertRaisesRegex(RuntimeError, "full 40-character"):
+            authority_release_identity(
+                env={
+                    "NOVEL_FORGE_APPLICATION_BUILD_ID": "build-42",
+                    "NOVEL_FORGE_COMMIT_SHA": "a" * 7,
+                }
+            )
 
     def test_requires_explicit_routes_and_object_store(self) -> None:
         settings = IndustrialSettings(
