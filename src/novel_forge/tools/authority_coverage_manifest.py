@@ -248,6 +248,13 @@ def operation_catalog(
     bound_names = {item["name"] for item in bound}
     catalog = [item for item in catalog if item["name"] not in bound_names]
     catalog.extend(bound)
+    from novel_forge.modules.book_authority.definitions import book_definitions
+    book = book_definitions(
+        application_build_id=application_build_id, commit_sha=commit_sha
+    )
+    book_names = {item["name"] for item in book}
+    catalog = [item for item in catalog if item["name"] not in book_names]
+    catalog.extend(book)
     return _apply_catalog_relationships(catalog)
 
 
@@ -277,11 +284,19 @@ def _apply_catalog_relationships(
 ) -> list[dict[str, Any]]:
     known = {item["name"] for item in catalog}
     for item in catalog:
+        item.setdefault("current_entrypoints", [])
+        item.setdefault("current_handlers", [])
+        item.setdefault("legacy_entrypoints", [])
+        item.setdefault("replacement_entrypoints", [])
+        item.setdefault("migration_status", str(item.get("definition_status") or "candidate"))
+        item.setdefault(
+            "evidence_status",
+            _catalog_evidence_status(str(item.get("definition_status") or "candidate")),
+        )
         item.setdefault("superseded_by", "")
         item.setdefault("alias_of", "")
         item.setdefault("merged_into", [])
         item.setdefault("supersession_reason", "")
-        item.setdefault("replacement_entrypoints", [])
         item.setdefault("compatibility_until", "")
         relationship = _DEFINITION_RELATIONSHIPS.get(item["name"])
         if relationship is None:

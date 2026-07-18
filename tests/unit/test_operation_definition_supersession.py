@@ -28,6 +28,11 @@ class OperationDefinitionSupersessionTests(unittest.TestCase):
             "candidate",
         )
 
+    def test_book_skeleton_definitions_are_catalogued_as_fixture_proven(self) -> None:
+        catalog = {item["name"]: item for item in operation_catalog()}
+        self.assertEqual(catalog["book.production.run"]["definition_status"], "integration_proven")
+        self.assertFalse(catalog["book.production.run"]["production_verified"])
+
 
 if __name__ == "__main__":
     unittest.main()
