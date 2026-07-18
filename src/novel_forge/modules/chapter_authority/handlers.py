@@ -1,10 +1,12 @@
 """Storage-free chapter handlers for PostgreSQL authority execution."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import hashlib
 import json
 from typing import Any
+
+from novel_forge.modules.command_kernel.errors import KernelError
 
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterAuxiliaryOutput,
@@ -16,7 +18,6 @@ from novel_forge.modules.chapter_authority.contracts import (
 from novel_forge.modules.chapter_authority.domain_handlers import (
     build_canon_extraction,
     build_canon_patch,
-    build_chapter_plan,
     build_context_bundle,
     build_export_package,
     build_final_release_gate,
@@ -26,6 +27,12 @@ from novel_forge.modules.chapter_authority.domain_handlers import (
     normalize_review_result,
     normalize_rereview_result,
     normalize_revision_result,
+)
+from novel_forge.modules.chapter_authority.chapter_plan_views import (
+    build_draft_context_view,
+    build_draft_plan_view,
+    build_draft_style_view,
+    normalize_authoritative_chapter_plan,
 )
 from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelPort,
@@ -126,14 +133,23 @@ class DeterministicFixtureChapterProvider:
 class _PlanHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         chapter = int(request.command["chapter"])
-        premise = str(request.command.get("premise") or "")
-        title = str(request.command.get("title") or f"Chapter {chapter}")
-        plan = build_chapter_plan(
-                chapter=chapter,
-                title=title,
-                premise=premise,
-                trace_id=request.trace_id,
+        source_plan = request.require_input("chapter_plan")
+        if (
+            request.command.get("chapter_plan_asset_version_id")
+            != source_plan.asset_version_id
+            or request.command.get("chapter_plan_content_hash") != source_plan.content_hash
+        ):
+            raise KernelError(
+                "CHAPTER_PLAN_FROZEN_IDENTITY_MISMATCH",
+                "ChapterPlan command identity does not match the frozen AssetVersion",
             )
+        plan, qualification = normalize_authoritative_chapter_plan(
+            project_id=request.project_id,
+            expected_chapter=chapter,
+            content=source_plan.content,
+            asset_version_id=source_plan.asset_version_id,
+            content_hash=source_plan.content_hash,
+        )
         manifest = dict(
             request.command.get("preparation_report", {}).get(
                 "production_input_manifest", {}
@@ -186,6 +202,18 @@ class _PlanHandler:
                     str(item["asset_version_id"])
                     for item in manifest.get("selected_asset_versions", [])
                 ),
+            ),
+            ChapterAuxiliaryOutput(
+                asset_type="chapter_plan_qualification_report",
+                output_key="chapter.plan.qualification",
+                role="completion_evidence",
+                content={
+                    **json.loads(json.dumps(asdict(qualification), sort_keys=True)),
+                    "project_id": request.project_id,
+                    "chapter": chapter,
+                    "source_chapter_plan_asset_version_id": source_plan.asset_version_id,
+                },
+                reference_asset_version_ids=(source_plan.asset_version_id,),
             ),
         )
         return ChapterHandlerOutput(
@@ -320,7 +348,11 @@ class _DraftHandler:
         generated = self.provider.invoke(
             request,
             stage="draft",
-            payload={"plan": plan.content, "context": context.content},
+            payload={
+                "plan": build_draft_plan_view(plan.content),
+                "context": build_draft_context_view(context.content),
+                "style": build_draft_style_view(context.content),
+            },
         )
         return _output(
             ChapterNode.DRAFT,

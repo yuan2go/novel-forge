@@ -87,6 +87,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     correlation_id=correlation_id,
                     application_build_id=build_id,
                     commit_sha=commit_sha,
+                    chapter_plan_asset_version_id=command.chapter_plan_asset_version_id,
+                    chapter_plan_content_hash=command.chapter_plan_content_hash,
                     context_candidates=command.context_candidates,
                     context_version_refs=command.context_version_refs,
                     context_token_budget=command.context_token_budget,

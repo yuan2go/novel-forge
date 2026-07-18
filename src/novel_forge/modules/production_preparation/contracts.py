@@ -155,6 +155,8 @@ class ChapterAuthorityCommand:
     project_id: str
     workspace_id: str
     chapter: int
+    chapter_plan_asset_version_id: str
+    chapter_plan_content_hash: str
     title: str
     premise: str
     context_candidates: tuple[dict[str, Any], ...]

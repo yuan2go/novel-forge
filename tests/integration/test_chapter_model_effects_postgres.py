@@ -178,6 +178,19 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
     def _release_evidence(self, project_id: str) -> tuple[dict[str, object], ...]:
         candidates: list[dict[str, object]] = [
             {
+                "asset_version_id": f"{project_id}:chapter-plan-v1",
+                "asset_type": "chapter_plan", "project_id": project_id,
+                "safe_summary": "Complete ChapterPlan.", "structured_facts": [],
+                "estimated_tokens": 120, "narrative_function": "chapter_plan",
+                "content": {
+                    "project_id": project_id, "chapter": 1, "title": "A Visible Cost",
+                    "premise": "A public promise becomes irreversible.",
+                    "chapter_objective": "Make the public promise costly.",
+                    "scene_sequence": [{"scene_id": "s1", "goal": "choose the cost"}],
+                    "chapter_hook": "A new obligation arrives.",
+                },
+            },
+            {
                 "asset_version_id": f"{project_id}:checklist-v1",
                 "asset_type": "operator_checklist",
                 "project_id": project_id,
@@ -198,10 +211,10 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         ]
         with transaction() as connection, connection.cursor() as cursor:
             for candidate in candidates:
-                content = {
+                content = dict(candidate.get("content") or {
                     "safe_summary": candidate["safe_summary"],
                     "structured_facts": candidate["structured_facts"],
-                }
+                })
                 content_hash = "sha256:" + hashlib.sha256(
                     json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
                 ).hexdigest()

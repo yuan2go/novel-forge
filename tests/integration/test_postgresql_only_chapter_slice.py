@@ -53,6 +53,19 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
             }
         candidates = (
             {
+                "asset_version_id": f"{project_id}:chapter-plan-v1", "asset_type": "chapter_plan",
+                "project_id": project_id, "estimated_tokens": 120,
+                "safe_summary": "A complete authoritative ChapterPlan.",
+                "structured_facts": [], "narrative_function": "chapter_plan",
+                "content": {
+                    "project_id": project_id, "chapter": 1, "title": "The Cost of a Promise",
+                    "premise": "The protagonist must pay a visible cost to keep a promise.",
+                    "chapter_objective": "Force a public choice with an irreversible loss.",
+                    "scene_sequence": [{"scene_id": "s1", "goal": "keep the promise"}],
+                    "chapter_hook": "The loss creates a second debt.",
+                },
+            },
+            {
                 "asset_version_id": f"{project_id}:checklist-v1", "asset_type": "operator_checklist",
                 "project_id": project_id, "estimated_tokens": 20,
                 "safe_summary": "Operator checklist completed.",
@@ -87,10 +100,10 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         )
         with transaction() as connection, connection.cursor() as cursor:
             for candidate in candidates:
-                content = {
+                content = dict(candidate.get("content") or {
                     "safe_summary": candidate["safe_summary"],
                     "structured_facts": candidate["structured_facts"],
-                }
+                })
                 content_hash = "sha256:" + hashlib.sha256(
                     json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
                 ).hexdigest()
@@ -161,7 +174,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(len(manifest["operations"]), 1 + len(ChapterNode))
         # Plan and Context now materialize the immutable preparation manifest and
         # its consistency report as completion evidence.
-        self.assertEqual(len(manifest["outputs"]), 70)
+        self.assertEqual(len(manifest["outputs"]), 71)
         self.assertEqual(
             len(
                 [
@@ -203,7 +216,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 70)
+            self.assertEqual(cursor.fetchone()[0], 71)
             cursor.execute(
                 """
                 SELECT asset.asset_type, binding.role, version.content->>'state_kind'
@@ -237,7 +250,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id, result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 17)
+            self.assertEqual(cursor.fetchone()[0], 18)
 
     def test_standard_success_adapter_completes_without_unknown_probe(self) -> None:
         project_id = identifier("chapter-project-success")

@@ -104,6 +104,7 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
                 "input": {
                     "plan": {"premise": "promise", "beats": ["choice"]},
                     "context": {"actual_context": {"canon": "fact"}},
+                    "style": {"contract_version": "draft-style-view-v1"},
                 },
             },
         )
@@ -253,7 +254,7 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
         result = adapter.execute(
             stable_idempotency_key="key",
             capability="model.draft",
-            request_payload={"stage": "draft", "input": {"plan": {}, "context": {}}},
+            request_payload={"stage": "draft", "input": {"plan": {}, "context": {}, "style": {}}},
         )
         query = adapter.query(
             stable_idempotency_key="key",

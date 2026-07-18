@@ -70,6 +70,8 @@ class SingleChapterRequest:
     correlation_id: str
     application_build_id: str
     commit_sha: str
+    chapter_plan_asset_version_id: str = ""
+    chapter_plan_content_hash: str = ""
     context_candidates: tuple[dict[str, Any], ...] = ()
     context_version_refs: dict[str, Any] | None = None
     context_token_budget: int = 6000
@@ -107,6 +109,7 @@ def admit_single_chapter_saga(
 ) -> ChapterSagaAdmission:
     """Persist a durable root Saga and first READY node without executing a handler."""
     _validate_request(request)
+    plan_input = _chapter_plan_input(request)
     definition_version = chapter_definition_version(registry.model_effects_required)
     definitions = chapter_operation_definitions(
         application_build_id=request.application_build_id,
@@ -171,14 +174,7 @@ def admit_single_chapter_saga(
             request,
             definition_name=plan.definition_name,
             idempotency_key=f"{stable_root_key}:{plan.value}",
-            input_assets=[
-                {
-                    "asset_version_id": str(item["asset_version_id"]),
-                    "content_hash": str(item["content_hash"]),
-                }
-                for item in request.context_candidates
-                if item.get("asset_type") == "chapter_plan"
-            ],
+            input_assets=[plan_input],
             root_operation_id=root,
             parent_operation_id=root,
             causation_operation_id=root,
@@ -272,6 +268,8 @@ def run_single_chapter_slice(
             }
             for source in _input_nodes(node)
         ]
+        if node is ChapterNode.PLAN:
+            input_assets.append(_chapter_plan_input(request))
         if node is ChapterNode.CONTEXT:
             input_assets.append(
                 _operation_output_by_key(
@@ -538,6 +536,8 @@ def _command(
             "chapter": request.chapter,
             "title": request.title,
             "premise": request.premise,
+            "chapter_plan_asset_version_id": _chapter_plan_input(request)["asset_version_id"],
+            "chapter_plan_content_hash": _chapter_plan_input(request)["content_hash"],
             "context_candidates": [dict(item) for item in request.context_candidates],
             "context_version_refs": dict(request.context_version_refs or {}),
             "context_token_budget": request.context_token_budget,
@@ -683,3 +683,29 @@ def _validate_request(request: SingleChapterRequest) -> None:
         or request.context_token_budget <= 0
     ):
         raise KernelError("CHAPTER_SLICE_REQUEST_INVALID", "single-chapter request is incomplete")
+    _chapter_plan_input(request)
+
+
+def _chapter_plan_input(request: SingleChapterRequest) -> dict[str, str]:
+    candidates = [
+        item for item in request.context_candidates if item.get("asset_type") == "chapter_plan"
+    ]
+    if len(candidates) != 1:
+        raise KernelError(
+            "CHAPTER_PLAN_AUTHORITY_INPUT_REQUIRED",
+            f"exactly one frozen ChapterPlan AssetVersion is required, found {len(candidates)}",
+        )
+    candidate = candidates[0]
+    asset_version_id = str(request.chapter_plan_asset_version_id or candidate.get("asset_version_id") or "")
+    content_hash = str(request.chapter_plan_content_hash or candidate.get("content_hash") or "")
+    if (
+        not asset_version_id
+        or not content_hash
+        or asset_version_id != str(candidate.get("asset_version_id") or "")
+        or content_hash != str(candidate.get("content_hash") or "")
+    ):
+        raise KernelError(
+            "CHAPTER_PLAN_AUTHORITY_IDENTITY_INVALID",
+            "ChapterPlan command identity must match its governed candidate",
+        )
+    return {"asset_version_id": asset_version_id, "content_hash": content_hash}

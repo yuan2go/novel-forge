@@ -33,6 +33,8 @@ class ChapterProductionAuthorityAdapter:
             correlation_id=str(payload["correlation_id"]),
             application_build_id=str(payload["application_build_id"]),
             commit_sha=str(payload["commit_sha"]),
+            chapter_plan_asset_version_id=str(payload.get("chapter_plan_asset_version_id") or ""),
+            chapter_plan_content_hash=str(payload.get("chapter_plan_content_hash") or ""),
             context_candidates=tuple(payload.get("context_candidates", ())),
             context_version_refs=dict(payload.get("context_version_refs", {})),
             context_token_budget=int(payload.get("context_token_budget", 6000)),

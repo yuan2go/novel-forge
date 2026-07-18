@@ -656,6 +656,8 @@ class ChapterAuthorityScheduler:
             correlation_id=str(root["correlation_id"]),
             application_build_id=str(snapshot["application_build_id"]),
             commit_sha=str(snapshot["commit_sha"]),
+            chapter_plan_asset_version_id=str(payload.get("chapter_plan_asset_version_id") or ""),
+            chapter_plan_content_hash=str(payload.get("chapter_plan_content_hash") or ""),
             context_candidates=tuple(payload.get("context_candidates") or ()),
             context_version_refs=dict(payload.get("context_version_refs") or {}),
             context_token_budget=int(payload.get("context_token_budget") or 6000),

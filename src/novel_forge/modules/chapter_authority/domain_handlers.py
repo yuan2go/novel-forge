@@ -52,7 +52,14 @@ def build_context_bundle(
     version_refs: dict[str, Any] | None = None,
     token_budget: int = 6000,
 ) -> dict[str, Any]:
-    _require_keys(plan, "chapter", "objective", "premise", "beats")
+    _require_keys(plan, "chapter", "premise")
+    objective = str(plan.get("chapter_objective") or plan.get("objective") or "").strip()
+    scene_sequence = list(plan.get("scene_sequence") or plan.get("beats") or [])
+    if not objective or not scene_sequence:
+        raise KernelError(
+            "CHAPTER_HANDLER_INPUT_INVALID",
+            "authoritative ChapterPlan objective and scene sequence are required",
+        )
     candidates = [
         ContextCandidate(
             asset_version_id=str(item["asset_version_id"]),
@@ -88,12 +95,12 @@ def build_context_bundle(
             invalidation_keys=(f"chapter-plan:{plan_asset_version_id}",),
             narrative_function="current_chapter_plan",
             safe_summary=(
-                f"Chapter {plan['chapter']} objective: {plan['objective']}. "
-                f"Premise: {plan['premise']}. Beats: {'; '.join(plan['beats'])}."
+                f"Chapter {plan['chapter']} objective: {objective}. "
+                f"Premise: {plan['premise']}. Scene sequence: {scene_sequence}."
             ),
             structured_facts=(
                 {"kind": "chapter", "value": plan["chapter"]},
-                {"kind": "objective", "value": plan["objective"]},
+                {"kind": "objective", "value": objective},
             ),
         ),
     )
@@ -110,10 +117,11 @@ def build_context_bundle(
     return {
         **governed,
         "chapter": plan["chapter"],
-        "goal": plan["objective"],
+        "goal": objective,
         "actual_context": {
             "premise": plan["premise"],
-            "beats": plan["beats"],
+            "scene_sequence": scene_sequence,
+            "beats": scene_sequence,
             "stage_context_view": governed["stage_context_view"],
             "copyright_boundary": "project-owned and abstract eligible context only",
         },

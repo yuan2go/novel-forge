@@ -6,9 +6,9 @@ from typing import Any
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
-CHAPTER_SLICE_DEFINITION_VERSION = "2.0.8"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.10"
-CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.8"
+CHAPTER_SLICE_DEFINITION_VERSION = "2.0.9"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.11"
+CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.9"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
 CHAPTER_PROJECTION_CONSUMERS = [
@@ -147,7 +147,7 @@ def _definition(
             for state_kind, asset_type in SNAPSHOT_ASSET_TYPES.items()
         )
     if node is ChapterNode.PLAN:
-        completion["required_asset_selectors"].append(
+        completion["required_asset_selectors"].extend((
             {
                 "selector": "production_input_manifest",
                 "output_key": "chapter.production_input_manifest",
@@ -155,8 +155,16 @@ def _definition(
                 "lifecycle": "ACTIVE",
                 "eligibility": "ELIGIBLE",
                 "governance": "CLEAR",
-            }
-        )
+            },
+            {
+                "selector": "chapter_plan_qualification_report",
+                "output_key": "chapter.plan.qualification",
+                "role": "completion_evidence",
+                "lifecycle": "ACTIVE",
+                "eligibility": "ELIGIBLE",
+                "governance": "CLEAR",
+            },
+        ))
     if node is ChapterNode.CONTEXT:
         completion["required_asset_selectors"].append(
             {
@@ -277,11 +285,13 @@ def chapter_definition_version(model_effects_required: bool) -> str:
 def _chapter_command_schema() -> dict[str, Any]:
     return {
         "type": "object",
-        "required": ["chapter"],
+        "required": ["chapter", "chapter_plan_asset_version_id", "chapter_plan_content_hash"],
         "properties": {
             "chapter": {"type": "integer"},
             "premise": {"type": "string"},
             "title": {"type": "string"},
+            "chapter_plan_asset_version_id": {"type": "string", "minLength": 1},
+            "chapter_plan_content_hash": {"type": "string", "minLength": 1},
             "context_candidates": {
                 "type": "array",
                 "items": {"type": "object"},

@@ -284,13 +284,22 @@ class ChapterModelExternalEffectAdapter:
         if stage == "draft":
             plan = _object(inputs, "plan")
             context = _object(inputs, "context")
+            style = _object(inputs, "style")
             prompt = (
                 f"Write chapter {plan.get('chapter', '')}: {plan.get('title', '')}\n"
                 f"Premise: {plan.get('premise', '')}\n"
-                f"Objective: {plan.get('objective', '')}\n"
-                f"Beats: {plan.get('beats', [])}"
+                f"Objective: {plan.get('chapter_objective', '')}\n"
+                f"Scenes: {plan.get('scene_sequence', [])}\n"
+                f"Conflict: {plan.get('conflict_chain', [])}\n"
+                f"Reveals: {plan.get('information_reveals', [])}\n"
+                f"Promise actions: {plan.get('reader_promise_actions', [])}\n"
+                f"Reward setup/payoff: {plan.get('reward_setup', [])} / {plan.get('reward_payoff', [])}\n"
+                f"Hook: {plan.get('chapter_hook', '')}"
             )
-            return adapter.generate(prompt, context)
+            return adapter.generate(
+                prompt,
+                {"draft_context_view": context, "draft_style_view": style},
+            )
         if stage == "review":
             draft = _object(inputs, "draft")
             return adapter.review(

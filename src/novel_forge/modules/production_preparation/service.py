@@ -208,6 +208,8 @@ class ProductionPreparationService:
                 project_id=request.project_id,
                 workspace_id=request.workspace_id,
                 chapter=request.chapter,
+                chapter_plan_asset_version_id=selected_by_type["chapter_plan"][0].asset_version_id,
+                chapter_plan_content_hash=selected_by_type["chapter_plan"][0].content_hash,
                 title=title,
                 premise=premise,
                 context_candidates=candidates,

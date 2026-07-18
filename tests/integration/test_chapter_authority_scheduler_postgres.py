@@ -163,6 +163,30 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             project_id=project_id, root_operation_id=admission.root_operation_id
         )
         self.assertEqual(terminal.saga_status, "SUCCEEDED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT version.content
+                FROM authority_operation AS operation
+                JOIN authority_operation_output_asset AS binding
+                  ON binding.operation_id = operation.operation_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id = binding.asset_version_id
+                WHERE operation.root_operation_id = %s
+                  AND operation.definition_name = 'chapter.plan.materialize'
+                  AND binding.output_key = 'chapter.plan'
+                """,
+                [admission.root_operation_id],
+            )
+            authoritative_plan = cursor.fetchone()[0]
+        self.assertEqual(
+            authoritative_plan["source_chapter_plan_asset_version_id"],
+            command.chapter_plan_asset_version_id,
+        )
+        self.assertEqual(
+            authoritative_plan["source_chapter_plan_content_hash"],
+            command.chapter_plan_content_hash,
+        )
 
     def test_high_impact_canon_waits_for_approved_decision_asset(self) -> None:
         class HighImpactFixture(DeterministicFixtureChapterProvider):
@@ -292,6 +316,9 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 "chapter": 1,
                 "title": "Prepared Chapter",
                 "premise": "A prepared promise creates a visible cost.",
+                "chapter_objective": "Force a public choice with a visible cost.",
+                "scene_sequence": [{"scene_id": "s1", "goal": "keep the promise"}],
+                "chapter_hook": "The cost creates a new obligation.",
                 "safe_summary": "Prepared chapter plan.",
                 "structured_facts": [{"key": "chapter", "value": 1}],
             },
@@ -375,6 +402,17 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             ),
         }
         evidence = [
+            (
+                "chapter_plan", "Complete authoritative ChapterPlan.", [],
+                {
+                    "project_id": project_id, "chapter": 1,
+                    "title": "A Durable Promise",
+                    "premise": "A promise creates a visible irreversible cost.",
+                    "chapter_objective": "Force a public choice with an irreversible loss.",
+                    "scene_sequence": [{"scene_id": "s1", "goal": "keep the promise"}],
+                    "chapter_hook": "The cost creates a new obligation.",
+                },
+            ),
             ("operator_checklist", "Operator checklist completed.", [{"key": "completed", "value": True}]),
             ("operator_approval", "Operator approved fixture release.", [{"key": "approved", "value": True}]),
         ]
@@ -390,12 +428,16 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     }
                     for dimension in dimensions
                 ]}],
+                None,
             )
             for asset_type, dimensions in quality.items()
         )
         with transaction() as connection, connection.cursor() as cursor:
-            for asset_type, summary, facts in evidence:
-                content = {
+            normalized_evidence = [
+                item if len(item) == 4 else (*item, None) for item in evidence
+            ]
+            for asset_type, summary, facts, explicit_content in normalized_evidence:
+                content = explicit_content or {
                     "safe_summary": summary,
                     "structured_facts": facts,
                 }
