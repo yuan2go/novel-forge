@@ -16,6 +16,11 @@ from novel_forge.modules.provider_control import (
     ProviderQueryRequest,
     ProviderReceipt,
     ScriptedProviderAdapterV2,
+    ChapterProviderV2Gateway,
+    ChapterProviderV2Route,
+    OpenAIProviderAdapterV2,
+    ProviderAdapterRegistry,
+    ProviderRouteDefinition,
 )
 
 
@@ -106,6 +111,108 @@ class ProviderAdapterV2Tests(unittest.TestCase):
                 reconciliation_mode="query",
                 real_provider_validation_eligible=True,
             )
+
+    def test_registry_qualifies_only_controlled_routes_for_validation(self) -> None:
+        registry = ProviderAdapterRegistry()
+        registry.register(ScriptedProviderAdapterV2())
+        report = registry.qualify(
+            "scripted_provider_v2", "fixture", environment="provider-validation"
+        )
+        self.assertFalse(report.qualified)
+        self.assertIn("V2_CONTROLLED", " ".join(report.reasons))
+
+    def test_openai_v2_transport_receives_timeout_key_and_returns_request_id(self) -> None:
+        class Transport:
+            request = None
+
+            def execute(self, request):
+                self.request = request
+                return {
+                    "outcome": "success",
+                    "request_sent": True,
+                    "provider_request_id": "response_123",
+                    "provider_correlation_id": "request_123",
+                    "evidence": {
+                        "result": {"text": "controlled draft"},
+                        "usage": {"input_tokens": 4, "output_tokens": 3},
+                        "cost": {"amount": "0.01", "currency": "USD"},
+                    },
+                }
+
+            def query(self, request):
+                return {
+                    "outcome": "success", "request_sent": True,
+                    "provider_request_id": request.provider_request_id,
+                    "evidence": {
+                        "result": {"text": "controlled draft"},
+                        "usage": {"input_tokens": 4, "output_tokens": 3},
+                        "cost": {"amount": "0.01", "currency": "USD"},
+                    },
+                }
+
+            def cancel(self, request):
+                return {
+                    "outcome": "cancelled", "request_sent": True,
+                    "provider_request_id": request.provider_request_id,
+                    "evidence": {"cancelled": True},
+                }
+
+            def verify_callback(self, body, headers, *, secret):
+                self.callback = (body, headers, secret)
+                return ProviderReceipt(
+                    "response_123", "receipt_1", "message_1", "success",
+                    "sha256:callback", {"signature_verified": True},
+                )
+
+        transport = Transport()
+        adapter = OpenAIProviderAdapterV2(
+            transport,
+            supports_query=True,
+            supports_cancel=True,
+            supports_callback=True,
+            supports_cost_receipt=True,
+            provider_idempotency_supported=True,
+        )
+        request = ProviderInvocationRequest(
+            provider="openai", model="gpt-test", capability="model.draft",
+            stage="draft", stable_idempotency_key="stable-openai",
+            request_payload={"stage": "draft"}, request_hash="sha256:req",
+            timeout_seconds=17, trace_id="trace", correlation_id="correlation",
+            operation_id="operation", external_effect_id="effect",
+        )
+        result = adapter.invoke(request)
+        self.assertEqual(transport.request.timeout_seconds, 17)
+        self.assertEqual(transport.request.stable_idempotency_key, "stable-openai")
+        self.assertEqual(result.handle.provider_request_id, "response_123")
+        receipt = adapter.verify_callback(b"{}", {"x": "y"}, secret="secret")
+        self.assertEqual(receipt.message_id, "message_1")
+
+    def test_gateway_fails_closed_on_capability_handle_mismatch(self) -> None:
+        adapter = ScriptedProviderAdapterV2()
+        route = ChapterProviderV2Route(
+            ProviderRouteDefinition(
+                stage="draft", provider_id=adapter.provider,
+                model_id="scripted", adapter_contract_version="provider-capability-v2",
+                prompt_version="prompt-v1", skill_version="skill-v1",
+                timeout_seconds=30, environment="test", idempotency_policy="provider",
+                query_policy="query", cancel_policy="cancel", callback_policy="callback",
+                usage_receipt_policy="required", cost_receipt_policy="required",
+            ),
+            adapter,
+        )
+        gateway = ChapterProviderV2Gateway({"draft": route})
+        result = gateway.execute(
+            stable_idempotency_key="gateway-key",
+            capability="model.draft",
+            request_payload={
+                "stage": "draft", "input": {}, "request_hash": "sha256:req",
+                "timeout_seconds": 20, "trace_id": "trace", "correlation_id": "correlation",
+                "operation_id": "operation", "external_effect_id": "effect",
+            },
+        )
+        self.assertEqual(result.outcome, "success")
+        self.assertEqual(result.provider_request_id, "scripted-request:gateway-key")
+        self.assertEqual(result.evidence["result"]["text"], "Scripted chapter fixture.")
 
     def test_legacy_adapter_is_not_a_production_route(self) -> None:
         adapter = LegacyProviderCompatibilityAdapter(

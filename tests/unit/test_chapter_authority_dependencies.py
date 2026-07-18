@@ -10,6 +10,11 @@ from novel_forge.api.authority_dependencies import (
     build_chapter_authority_query,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
+from novel_forge.modules.provider_control import (
+    OpenAIProviderAdapterV2,
+    ProviderAdapterRegistry,
+    ProviderReceipt,
+)
 
 
 class ChapterAuthorityDependenciesTests(unittest.TestCase):
@@ -73,11 +78,15 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 },
             )
 
-        self.assertEqual(application.model_port.adapter.provider, "novel_forge_model_gateway_v1")
+        self.assertEqual(application.model_port.adapter.provider, "novel_forge_provider_v2_gateway")
+        self.assertEqual(
+            application.model_port.adapter.capability_profile.control_level.value,
+            "FIXTURE_CONTROLLED",
+        )
 
     def test_production_rejects_mock_model_routes(self) -> None:
         settings = IndustrialSettings(root=Path("."), database_url="postgresql://authority")
-        with self.assertRaisesRegex(RuntimeError, "mock model routes are forbidden"):
+        with self.assertRaisesRegex(RuntimeError, "not registered"):
             build_chapter_authority_application(
                 settings,
                 env={
@@ -88,6 +97,44 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                     "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
                 },
             )
+
+    def test_validation_environment_accepts_injected_controlled_v2_registry(self) -> None:
+        class Transport:
+            def execute(self, request):
+                raise AssertionError("dependency construction must not invoke the provider")
+            def query(self, request):
+                raise AssertionError("dependency construction must not query the provider")
+            def cancel(self, request):
+                raise AssertionError("dependency construction must not cancel the provider")
+            def verify_callback(self, body, headers, *, secret):
+                return ProviderReceipt("r", "receipt", "message", "success", "hash", {})
+
+        registry = ProviderAdapterRegistry()
+        registry.register(OpenAIProviderAdapterV2(
+            Transport(), supports_query=True, supports_cancel=True,
+            supports_callback=True, supports_cost_receipt=True,
+            provider_idempotency_supported=True,
+        ))
+        application = build_chapter_authority_application(
+            IndustrialSettings(root=Path("."), database_url="postgresql://authority"),
+            provider_registry=registry,
+            env={
+                "NOVEL_FORGE_ENVIRONMENT": "provider-validation",
+                "NOVEL_FORGE_MODEL_PROVIDER": "openai",
+                "NOVEL_FORGE_DRAFT_MODEL": "gpt-test",
+                "NOVEL_FORGE_REVIEW_MODEL": "gpt-test",
+                "NOVEL_FORGE_REVISION_MODEL": "gpt-test",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
+                "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
+            },
+        )
+        self.assertEqual(
+            application.model_port.adapter.capability_profile.control_level.value,
+            "V2_CONTROLLED",
+        )
+        self.assertTrue(
+            application.model_port.adapter.capability_profile.real_provider_validation_eligible
+        )
 
 
 if __name__ == "__main__":

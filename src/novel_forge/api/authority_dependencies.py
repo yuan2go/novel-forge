@@ -6,12 +6,7 @@ from pathlib import Path
 from typing import Mapping
 
 from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.model_adapters.selection import model_for_explicit_route
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
-from novel_forge.modules.chapter_authority.model_effects import (
-    ChapterModelExternalEffectAdapter,
-    ChapterModelRoute,
-)
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.authority_security import TrustedPrincipalResolver
 from novel_forge.modules.command_kernel.external_effect_adapters import (
@@ -25,6 +20,13 @@ from novel_forge.modules.content_authority import (
     CONTENT_INTEGRATION_PROVEN,
     ContentAuthorityApplication,
     ContentAuthorityQuery,
+)
+from novel_forge.modules.provider_control import (
+    ChapterProviderV2Gateway,
+    ChapterProviderV2Route,
+    ProviderAdapterRegistry,
+    ProviderRouteDefinition,
+    ScriptedProviderAdapterV2,
 )
 
 
@@ -47,12 +49,16 @@ def build_chapter_authority_application(
     settings: IndustrialSettings,
     *,
     env: Mapping[str, str] | None = None,
+    provider_registry: ProviderAdapterRegistry | None = None,
 ) -> ChapterAuthorityApplication:
     values = env or os.environ
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for chapter authority")
     environment = str(values.get("NOVEL_FORGE_ENVIRONMENT") or "development").strip().lower()
-    routes: dict[str, ChapterModelRoute] = {}
+    registry = provider_registry or ProviderAdapterRegistry()
+    if provider_registry is None and environment in {"test", "development"}:
+        registry.register(ScriptedProviderAdapterV2("success"))
+    routes: dict[str, ChapterProviderV2Route] = {}
     for stage, provider_key, model_key in (
         ("draft", "NOVEL_FORGE_DRAFT_PROVIDER", "NOVEL_FORGE_DRAFT_MODEL"),
         ("review", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
@@ -83,9 +89,8 @@ def build_chapter_authority_application(
         if not provider:
             raise RuntimeError(f"explicit chapter model provider is required for {stage}")
         normalized_provider = provider.lower()
-        real_model_call = normalized_provider not in {"mock", "local", "offline"}
-        if environment == "production" and not real_model_call:
-            raise RuntimeError("mock model routes are forbidden in production chapter authority")
+        if normalized_provider in {"mock", "local", "offline"}:
+            normalized_provider = "scripted_provider_v2"
         model_name = str(
             values.get(model_key)
             or (
@@ -97,12 +102,25 @@ def build_chapter_authority_application(
             )
             or ""
         ).strip()
-        adapter = model_for_explicit_route(provider, model_name)
-        resolved_model = model_name or str(getattr(adapter, "name", "")) or f"{provider}-{stage}"
-        routes[stage] = ChapterModelRoute(
-            adapter=adapter,
-            provider_id=normalized_provider,
+        try:
+            adapter = registry.resolve(normalized_provider)
+        except ValueError as exc:
+            raise RuntimeError(str(exc)) from exc
+        resolved_model = model_name or f"{normalized_provider}-{stage}"
+        qualification = registry.qualify(
+            normalized_provider,
+            resolved_model,
+            environment=environment,
+        )
+        if not qualification.qualified:
+            raise RuntimeError(
+                "provider v2 route qualification failed: " + "; ".join(qualification.reasons)
+            )
+        definition = ProviderRouteDefinition(
+            stage=stage,
+            provider_id=adapter.provider,
             model_id=resolved_model,
+            adapter_contract_version=adapter.capability_profile.contract_version,
             prompt_version=str(
                 values.get(f"NOVEL_FORGE_{stage.upper()}_PROMPT_VERSION")
                 or f"chapter-{stage}-prompt-v1"
@@ -111,8 +129,21 @@ def build_chapter_authority_application(
                 values.get(f"NOVEL_FORGE_{stage.upper()}_SKILL_VERSION")
                 or f"chapter-{stage}-skill-v1"
             ),
-            real_model_call=real_model_call,
+            timeout_seconds=int(
+                values.get(f"NOVEL_FORGE_{stage.upper()}_TIMEOUT_SECONDS") or 300
+            ),
+            environment=environment,
+            idempotency_policy=(
+                "provider" if adapter.capability_profile.supports_provider_idempotency
+                else "unsupported"
+            ),
+            query_policy=("query" if adapter.capability_profile.supports_query else "unsupported"),
+            cancel_policy=("cancel" if adapter.capability_profile.supports_cancel else "unsupported"),
+            callback_policy=("callback" if adapter.capability_profile.supports_callback else "unsupported"),
+            usage_receipt_policy=("required" if adapter.capability_profile.supports_usage_receipt else "unsupported"),
+            cost_receipt_policy=("required" if adapter.capability_profile.supports_cost_receipt else "unsupported"),
         )
+        routes[stage] = ChapterProviderV2Route(definition=definition, adapter=adapter)
     object_root_value = str(
         values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT") or ""
     ).strip()
@@ -121,7 +152,7 @@ def build_chapter_authority_application(
     max_cost_per_call = str(
         values.get("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL") or ""
     ).strip()
-    if environment == "production" and any(route.real_model_call for route in routes.values()):
+    if environment in {"validation", "provider-validation", "production"}:
         if not max_cost_per_call:
             raise RuntimeError(
                 "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL is required for production providers"
@@ -131,7 +162,7 @@ def build_chapter_authority_application(
         object_root = settings.root / object_root
     return ChapterAuthorityApplication(
         settings.database_url,
-        model_adapter=ChapterModelExternalEffectAdapter(routes),
+        model_adapter=ChapterProviderV2Gateway(routes),
         object_store_adapter=LocalFileObjectStoreAdapter(object_root),
         worker_id=str(values.get("NOVEL_FORGE_AUTHORITY_WORKER_ID") or "chapter-authority-api"),
         allow_synchronous_fixture=environment in {"test", "development"}

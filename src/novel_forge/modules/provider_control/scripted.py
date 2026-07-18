@@ -85,10 +85,46 @@ class ScriptedProviderAdapterV2:
                 "request_hash": request.request_hash,
                 "usage": {"input_tokens": 10, "output_tokens": 5},
                 "cost": {"amount": "999" if self.scenario == "provider_cost_overrun" else "0", "currency": "USD"},
+                "result": self._result_for(request),
             }
             result = ProviderInvocationResult(outcome, handle, evidence, True)
             self.requests[request.stable_idempotency_key] = result
             return result
+
+    @staticmethod
+    def _result_for(request: ProviderInvocationRequest) -> dict[str, Any]:
+        if request.stage == "draft":
+            return {"text": "Scripted chapter fixture."}
+        if request.stage == "review":
+            return {"score": 90, "issues": []}
+        if request.stage == "canon_extraction":
+            return {
+                "canon_facts": [{"fact": "scripted fixture", "evidence_start": 0, "evidence_end": 8, "confidence": 1.0}],
+                "character_state_changes": [], "relationship_changes": [],
+                "timeline_events": [], "foreshadow_changes": [],
+                "promise_changes": [], "reward_changes": [],
+                "world_rule_usages": [], "power_state_changes": [],
+                "narrative_pattern_fingerprints": [], "theme_movements": [],
+                "antagonist_pressure_changes": [],
+            }
+        if request.stage.startswith("quality_"):
+            inputs = request.request_payload.get("input")
+            dimensions = inputs.get("dimensions", []) if isinstance(inputs, dict) else []
+            return {
+                "dimensions": [
+                    {
+                        "dimension": str(dimension),
+                        "gate_status": "INSUFFICIENT_EVIDENCE",
+                        "score": None,
+                        "confidence": 0.0,
+                        "evidence_locations": [],
+                        "issue_codes": ["FIXTURE_PROTOCOL_ONLY"],
+                        "revision_strategies": [],
+                    }
+                    for dimension in dimensions
+                ]
+            }
+        return {"text": "Scripted revision fixture.", "resolved_issue_codes": []}
 
     def query_v2(self, request: ProviderQueryRequest) -> ProviderInvocationResult:
         with self._lock:

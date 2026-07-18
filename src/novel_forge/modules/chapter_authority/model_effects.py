@@ -452,6 +452,7 @@ class ExternalEffectChapterModelPort:
                 "stage": stage,
                 "input": payload,
                 "trace_id": request.trace_id,
+                "correlation_id": request.correlation_id,
                 "workspace_id": request.workspace_id,
             },
             max_attempts=2,
@@ -734,6 +735,12 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
     return {"text": text, "resolved_issue_codes": resolved}
 
 
+def normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
+    """Public typed validation seam shared by legacy and provider-v2 gateways."""
+
+    return _normalize_model_output(stage, raw)
+
+
 def _review_severity(value: str) -> str:
     normalized = value.strip().lower()
     if normalized in {"critical", "blocker", "blocking", "high"}:
@@ -749,4 +756,5 @@ __all__ = [
     "ChapterModelRoute",
     "ExternalEffectChapterModelPort",
     "ModelProviderResult",
+    "normalize_model_output",
 ]
