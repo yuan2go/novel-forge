@@ -200,6 +200,39 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
         self.assertEqual(result.outcome, "final_failure")
         self.assertEqual(result.evidence["error_code"], "MODEL_RESPONSE_INVALID")
 
+    def test_quality_response_rejects_unstructured_evidence_locations(self) -> None:
+        class _InvalidEvidence(_Adapter):
+            def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
+                return {
+                    "dimensions": [{
+                        "dimension": "readability", "gate_status": "PASSED",
+                        "score": 101, "confidence": .9,
+                        "evidence_locations": ["chapter looks readable"],
+                    }]
+                }
+
+        adapter = ChapterModelExternalEffectAdapter({
+            "quality_structural": ChapterModelRoute(
+                adapter=_InvalidEvidence(), provider_id="provider", model_id="model",
+                prompt_version="quality-v1", skill_version="quality-skill-v1",
+                real_model_call=True,
+            )
+        })
+        result = adapter.execute(
+            stable_idempotency_key="quality-invalid-evidence",
+            capability="model.quality_structural",
+            request_payload={
+                "stage": "quality_structural",
+                "input": {
+                    "revision": {"text": "A complete chapter."},
+                    "dimensions": ["readability"],
+                },
+            },
+        )
+
+        self.assertEqual(result.outcome, "final_failure")
+        self.assertEqual(result.evidence["error_code"], "MODEL_RESPONSE_INVALID")
+
     def test_invalid_model_response_is_final_failure_and_query_is_ambiguous(self) -> None:
         class _Invalid(_Adapter):
             def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]

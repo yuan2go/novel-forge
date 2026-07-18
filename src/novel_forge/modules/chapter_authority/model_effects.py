@@ -663,6 +663,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             status = str(item.get("gate_status") or "").strip().upper()
             confidence = item.get("confidence")
             locations = item.get("evidence_locations")
+            score = item.get("score")
             if not dimension or status not in {
                 "PASSED", "PASSED_WITH_WARNINGS", "FAILED",
                 "INSUFFICIENT_EVIDENCE", "REQUIRES_HUMAN_REVIEW",
@@ -670,11 +671,21 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                 raise KernelError("MODEL_RESPONSE_INVALID", "quality dimension identity or status is invalid")
             if not isinstance(confidence, (int, float)) or isinstance(confidence, bool) or not 0 <= float(confidence) <= 1:
                 raise KernelError("MODEL_RESPONSE_INVALID", "quality confidence must be between zero and one")
-            if not isinstance(locations, list) or (status in {"PASSED", "FAILED"} and not locations):
+            if (
+                not isinstance(locations, list)
+                or any(not isinstance(location, dict) or not location for location in locations)
+                or (status in {"PASSED", "FAILED"} and not locations)
+            ):
                 raise KernelError("MODEL_RESPONSE_INVALID", "quality decision requires evidence locations")
+            if score is not None and (
+                not isinstance(score, (int, float))
+                or isinstance(score, bool)
+                or not 0 <= float(score) <= 100
+            ):
+                raise KernelError("MODEL_RESPONSE_INVALID", "quality score must be between zero and one hundred")
             normalized_dimensions.append({
                 "dimension": dimension, "gate_status": status,
-                "score": item.get("score"), "confidence": float(confidence),
+                "score": score, "confidence": float(confidence),
                 "evidence_locations": locations,
                 "issue_codes": list(item.get("issue_codes") or []),
                 "revision_strategies": list(item.get("revision_strategies") or []),
