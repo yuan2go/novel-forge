@@ -58,6 +58,13 @@ class ChapterNode(Enum):
         "chapter.canon_extraction",
         "chapter.canon_extraction.materialized",
     )
+    CANON_PROPOSAL = (
+        "canon_proposal",
+        "chapter.canon.propose_changes",
+        "canon_change_proposal",
+        "chapter.canon_proposal",
+        "chapter.canon_proposal.materialized",
+    )
     CANON = (
         "canon",
         "chapter.canon.update",

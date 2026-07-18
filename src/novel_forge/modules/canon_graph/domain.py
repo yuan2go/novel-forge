@@ -411,6 +411,12 @@ def _snapshot_candidates(
             "rollback_aware": True,
             "source_revision_asset_version_id": revision_asset_version_id,
             "context_bundle_version_id": context_bundle_version_id,
+            "canon_change_proposal_asset_version_id": str(
+                extraction.get("canon_change_proposal_asset_version_id") or ""
+            ),
+            "canon_approval_decision_asset_version_ids": list(
+                extraction.get("canon_approval_decision_asset_version_ids") or []
+            ),
             "snapshot_contract_version": "canon-state-snapshot-v1",
         }
         for asset_type in STATE_ASSET_TYPES

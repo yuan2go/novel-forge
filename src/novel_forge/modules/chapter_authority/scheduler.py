@@ -39,6 +39,11 @@ from novel_forge.modules.command_kernel.worker_execution import (
 )
 from novel_forge.modules.command_kernel.external_effect_adapters import ExternalEffectAdapter
 from novel_forge.modules.command_kernel.cancellation import acknowledge_worker_cancellation
+from novel_forge.modules.canon_graph.approval_authority import (
+    CanonApprovalContext,
+    decision_asset_versions,
+    ensure_canon_approval_requests,
+)
 from novel_forge.modules.command_kernel.deadline_runtime import probe_operation_execution
 from novel_forge.modules.command_kernel.operation_graph import (
     GraphCommandContext,
@@ -134,6 +139,37 @@ class ChapterAuthorityScheduler:
                 coordinate_saga(self.database_url, context, saga["saga_id"])
                 root, saga, children = self._graph_state(project_id, root_operation_id)
         node, operation = self._current_or_next(children)
+        if node is ChapterNode.CANON and operation is None:
+            proposal_operation = children[ChapterNode.CANON_PROPOSAL]
+            proposal_ref = self._primary_output(
+                str(proposal_operation["operation_id"]), project_id
+            )
+            proposal = self._asset_content(
+                proposal_ref["asset_version_id"], project_id
+            )
+            gate = ensure_canon_approval_requests(
+                self.database_url,
+                CanonApprovalContext(
+                    project_id=project_id,
+                    principal_id=self.worker_id,
+                    trace_id=str(root["trace_id"]),
+                    correlation_id=str(root["correlation_id"]),
+                ),
+                root_operation_id=root_operation_id,
+                saga_id=str(saga["saga_id"]),
+                proposal_asset_version_id=proposal_ref["asset_version_id"],
+                proposal=proposal,
+            )
+            if gate["waiting"]:
+                return ChapterSchedulerTick(
+                    root_operation_id=root_operation_id,
+                    saga_id=str(saga["saga_id"]),
+                    saga_status="WAITING_GATE",
+                    operation_id=root_operation_id,
+                    node=ChapterNode.CANON.value,
+                    operation_status="WAITING_GATE",
+                    recovery_mode="canon_approval_gate",
+                )
         if operation is None:
             operation = self._admit_node(
                 request=request,
@@ -175,7 +211,7 @@ class ChapterAuthorityScheduler:
                 WHERE operation.definition_name = 'chapter.slice.run'
                   AND operation.status IN (
                     'EXECUTING', 'WAITING_CHILDREN', 'FAILED_RETRYABLE',
-                    'CANCELLATION_REQUESTED'
+                    'CANCELLATION_REQUESTED', 'WAITING_GATE'
                   )
                   AND saga.status NOT IN (
                     'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED', 'CANCELLED'
@@ -242,6 +278,14 @@ class ChapterAuthorityScheduler:
                     "content_hash": str(item["content_hash"]),
                 }
                 for item in request.context_candidates
+            )
+        if node is ChapterNode.CANON:
+            inputs.extend(
+                decision_asset_versions(
+                    self.database_url,
+                    project_id=root["project_id"],
+                    root_operation_id=str(root["operation_id"]),
+                )
             )
         admission = AdmissionContext(
             actor_id=root["actor_id"],
@@ -559,6 +603,22 @@ class ChapterAuthorityScheduler:
                 f"completed predecessor has no {output_key} output",
             )
         return {"asset_version_id": str(row[0]), "content_hash": str(row[1])}
+
+    def _asset_content(self, asset_version_id: str, project_id: str) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT version.content
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id = version.asset_id
+                WHERE version.asset_version_id = %s AND asset.project_id = %s
+                """,
+                [asset_version_id, project_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError("ASSET_VERSION_NOT_FOUND", "Canon proposal AssetVersion is missing")
+        return dict(row[0])
 
     def _active_attempt(self, operation_id: str, project_id: str) -> dict[str, str] | None:
         with AuthorityUnitOfWork(self.database_url) as uow:

@@ -64,6 +64,7 @@ def create_authority_app(settings: IndustrialSettings):
     from novel_forge.api.models import product_model_map
     from novel_forge.api.routers.chapter_authority import create_router as create_chapter_router
     from novel_forge.api.routers.content_authority import create_router as create_content_router
+    from novel_forge.api.routers.canon_authority import create_router as create_canon_router
     from novel_forge.api.routers.context import ProductRouterContext
 
     app.include_router(
@@ -77,6 +78,15 @@ def create_authority_app(settings: IndustrialSettings):
     )
     app.include_router(
         create_content_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_canon_router(
             ProductRouterContext(
                 app_settings=settings,
                 models=product_model_map(),

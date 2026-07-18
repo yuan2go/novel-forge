@@ -197,6 +197,19 @@ def coordinate_saga(
             lease_id=str(uuid4()),
             lease_seconds=30,
         )
+        uow.cursor.execute(
+            "SELECT status FROM authority_operation WHERE operation_id = %s",
+            [saga["root_operation_id"]],
+        )
+        root_status = str(uow.cursor.fetchone()[0])
+        if root_status == "WAITING_GATE":
+            repository.release_coordinator(
+                saga_id,
+                context.actor_id,
+                lease["fencing_token"],
+            )
+            uow.commit()
+            return _saga_result("WAITING_GATE", steps)
 
         failed_compensations = [
             step["operation_id"]

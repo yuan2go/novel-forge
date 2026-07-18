@@ -86,6 +86,8 @@ class TrustedPrincipalResolver:
                     "content.authority.cancel",
                     "content.authority.recover",
                     "external_effect.resolve",
+                    "canon.authority.query",
+                    "canon.authority.approve",
                     "content.operation:*",
                 }
             ),

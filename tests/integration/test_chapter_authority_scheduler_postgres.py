@@ -9,6 +9,12 @@ from novel_forge.modules.chapter_authority.handlers import (
     DeterministicFixtureChapterProvider,
     build_chapter_handler_registry,
 )
+from novel_forge.modules.chapter_authority.model_effects import ModelProviderResult
+from novel_forge.modules.canon_graph.approval_authority import (
+    CanonApprovalContext,
+    decide_canon_approval,
+    list_canon_approvals,
+)
 from novel_forge.modules.chapter_authority.orchestrator import (
     SingleChapterRequest,
     admit_single_chapter_saga,
@@ -157,6 +163,82 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             project_id=project_id, root_operation_id=admission.root_operation_id
         )
         self.assertEqual(terminal.saga_status, "SUCCEEDED")
+
+    def test_high_impact_canon_waits_for_approved_decision_asset(self) -> None:
+        class HighImpactFixture(DeterministicFixtureChapterProvider):
+            supports_semantic_extraction = True
+
+            def invoke(self, request, *, stage, payload):
+                if stage != "canon_extraction":
+                    return super().invoke(request, stage=stage, payload=payload)
+                return ModelProviderResult(
+                    output={"character_state_changes": [{
+                        "character_id": "protagonist", "status": "dead",
+                        "impact_type": "character_death", "confidence": .9,
+                        "evidence_start": 0, "evidence_end": 12,
+                    }]},
+                    provider_id="deterministic_semantic_fixture", model_id="fixture",
+                    prompt_version="fixture-v1", skill_version="fixture-v1",
+                    input_tokens=0, output_tokens=0, cost_amount="0", currency="USD",
+                    real_model_call=False,
+                )
+
+        project_id = identifier("canon-gate-project")
+        candidates = self._release_evidence(project_id)
+        registry = build_chapter_handler_registry(HighImpactFixture())
+        request = SingleChapterRequest(
+            project_id=project_id, workspace_id=f"workspace:{project_id}",
+            actor_id="trusted-operator", chapter=1, title="A Canon Gate",
+            premise="A costly choice changes an identity permanently.",
+            trace_id=identifier("trace"), correlation_id=identifier("correlation"),
+            application_build_id="canon-gate-test", commit_sha="d" * 40,
+            idempotency_key=f"{project_id}:chapter:1",
+            preparation_report={"decision": "READY", "fixture": True},
+            context_candidates=tuple(candidates),
+        )
+        admission = admit_single_chapter_saga(
+            DATABASE_URL, request=request, registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL, registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="configured-chapter-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        waiting = None
+        for _ in range(12):
+            tick = scheduler.tick(project_id=project_id, root_operation_id=admission.root_operation_id)
+            if tick.saga_status == "WAITING_GATE":
+                waiting = tick
+                break
+        self.assertIsNotNone(waiting)
+        approvals = list_canon_approvals(DATABASE_URL, project_id=project_id)
+        self.assertEqual(len(approvals), 1)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM authority_operation WHERE root_operation_id = %s AND definition_name = %s", [admission.root_operation_id, ChapterNode.CANON.definition_name])
+            self.assertEqual(cursor.fetchone()[0], 0)
+        decision = decide_canon_approval(
+            DATABASE_URL,
+            CanonApprovalContext(project_id, "local-operator", request.trace_id, request.correlation_id),
+            approval_request_id=approvals[0]["approval_request_id"],
+            expected_version=approvals[0]["version"], decision="APPROVE",
+            reason="fixture proves per-change gate recovery", evidence={"fixture": True},
+            edited_payload=None, idempotency_key="approve-once",
+        )
+        self.assertTrue(decision["gate_resumed"])
+        terminal = None
+        for _ in range(30):
+            terminal = scheduler.tick(project_id=project_id, root_operation_id=admission.root_operation_id)
+            if terminal.saga_status == "SUCCEEDED":
+                break
+        self.assertIsNotNone(terminal)
+        self.assertEqual(terminal.saga_status, "SUCCEEDED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT version.content FROM authority_operation_output_asset binding JOIN authority_asset_version version ON version.asset_version_id = binding.asset_version_id JOIN authority_asset asset ON asset.asset_id = version.asset_id WHERE binding.operation_id IN (SELECT operation_id FROM authority_operation WHERE root_operation_id = %s AND definition_name = %s) AND asset.asset_type = 'character_state_snapshot'", [admission.root_operation_id, ChapterNode.CANON.definition_name])
+            snapshot = cursor.fetchone()[0]
+        self.assertEqual(snapshot["changes"][0]["status"], "dead")
+        self.assertIn(decision["asset_version_id"], snapshot["canon_approval_decision_asset_version_ids"])
 
     @staticmethod
     def _preparation_assets(project_id: str) -> None:

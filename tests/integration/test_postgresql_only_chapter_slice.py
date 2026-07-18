@@ -160,7 +160,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(len(manifest["operations"]), 1 + len(ChapterNode))
         # Plan and Context now materialize the immutable preparation manifest and
         # its consistency report as completion evidence.
-        self.assertEqual(len(manifest["outputs"]), 69)
+        self.assertEqual(len(manifest["outputs"]), 70)
         self.assertEqual(
             len(
                 [
@@ -202,7 +202,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 69)
+            self.assertEqual(cursor.fetchone()[0], 70)
             cursor.execute(
                 """
                 SELECT asset.asset_type, binding.role, version.content->>'state_kind'
@@ -236,7 +236,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id, result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 16)
+            self.assertEqual(cursor.fetchone()[0], 17)
 
     def test_standard_success_adapter_completes_without_unknown_probe(self) -> None:
         project_id = identifier("chapter-project-success")

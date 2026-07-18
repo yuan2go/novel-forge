@@ -32,6 +32,10 @@ from novel_forge.modules.chapter_authority.model_effects import (
     ModelProviderResult,
 )
 from novel_forge.modules.chapter_quality_authority import build_quality_group_evidence
+from novel_forge.modules.canon_graph.approval_domain import (
+    build_canon_change_proposal,
+    resolve_canon_extraction,
+)
 
 
 class DeterministicFixtureChapterProvider:
@@ -415,13 +419,24 @@ class _CanonHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
         extraction = request.require_input("canon_extraction")
+        proposal = request.require_input("canon_change_proposal")
+        decisions = [
+            {**item.content, "asset_version_id": item.asset_version_id}
+            for item in request.inputs
+            if item.asset_type == "canon_approval_decision"
+        ]
+        resolved_extraction = resolve_canon_extraction(
+            extraction=extraction.content,
+            proposal={**proposal.content, "asset_version_id": proposal.asset_version_id},
+            decisions=decisions,
+        )
         context = request.require_input("context_bundle")
         content = build_canon_patch(
             revision=revision.content,
             revision_asset_version_id=revision.asset_version_id,
             project_id=request.project_id,
             context_bundle_version_id=context.asset_version_id,
-            extraction=extraction.content,
+            extraction=resolved_extraction,
             context_bundle=context.content,
         )
         snapshot_outputs = tuple(
@@ -435,6 +450,8 @@ class _CanonHandler:
                         {
                             revision.asset_version_id,
                             extraction.asset_version_id,
+                            proposal.asset_version_id,
+                            *(item.asset_version_id for item in request.inputs if item.asset_type == "canon_approval_decision"),
                             context.asset_version_id,
                             *snapshot.get("previous_asset_version_ids", []),
                         }
@@ -470,7 +487,9 @@ class _CanonExtractionHandler:
         revision = request.require_input("draft_version")
         context = request.require_input("context_bundle")
         provider_extraction = None
-        if bool(getattr(self.provider, "external_effect_backed", False)):
+        if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
+            getattr(self.provider, "supports_semantic_extraction", False)
+        ):
             generated = self.provider.invoke(
                 request,
                 stage="canon_extraction",
@@ -485,6 +504,20 @@ class _CanonExtractionHandler:
                 project_id=request.project_id,
                 context_bundle_version_id=context.asset_version_id,
                 provider_extraction=provider_extraction,
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _CanonProposalHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        extraction = request.require_input("canon_extraction")
+        return _output(
+            ChapterNode.CANON_PROPOSAL,
+            build_canon_change_proposal(
+                project_id=request.project_id,
+                extraction=extraction.content,
+                extraction_asset_version_id=extraction.asset_version_id,
             ),
         )
 
@@ -671,6 +704,7 @@ def build_chapter_handler_registry(
     registry.register(ChapterNode.REVISION, _RevisionHandler(provider))
     registry.register(ChapterNode.REREVIEW, _ReReviewHandler(provider))
     registry.register(ChapterNode.CANON_EXTRACTION, _CanonExtractionHandler(provider))
+    registry.register(ChapterNode.CANON_PROPOSAL, _CanonProposalHandler())
     registry.register(ChapterNode.CANON, _CanonHandler())
     registry.register(ChapterNode.QUALITY_STRUCTURAL, _QualityGroupHandler("structural"))
     registry.register(ChapterNode.QUALITY_COMMERCIAL, _QualityGroupHandler("commercial"))
