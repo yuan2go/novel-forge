@@ -32,8 +32,12 @@ def book_definitions(*, application_build_id: str, commit_sha: str) -> tuple[dic
     }
     root = {
         **common, "name": BOOK_ROOT_DEFINITION, "execution_mode": "saga",
+        "command_schema_version": "book.production.run.command.v1",
+        "result_schema_version": "book.production.run.result.v1",
         "handler_key": BOOK_ROOT_HANDLER, "handler_contract_version": "book-root-v1",
         "result_schema": {"type": "object"}, "output_contract": {"type": "object"},
+        "projection_consumers": ["book_production_timeline", "operation_timeline"],
+        "migration_owner": "book-authority",
         "completion_contract": {
             "version": "book.production.run.completion.v1",
             "required_evidence": ["trace", "audit"],
@@ -49,10 +53,14 @@ def book_definitions(*, application_build_id: str, commit_sha: str) -> tuple[dic
         topic = f"content.{name}.materialized"
         children.append({
             **common, "name": name, "execution_mode": "worker",
+            "command_schema_version": f"{name}.command.v1",
+            "result_schema_version": f"{name}.result.v1",
             "handler_key": f"novel_forge.content_authority.{name}",
             "handler_contract_version": "content-authority-handler-v2",
             "result_schema": {"type": "object"},
             "output_contract": {"asset_type": codec.output_asset_type, "output_key": codec.output_key},
+            "projection_consumers": ["book_production_timeline", "operation_timeline"],
+            "migration_owner": "book-authority",
             "completion_contract": {
                 "version": f"{name}.completion.v1",
                 "required_asset_selectors": [{"selector": codec.output_asset_type, "output_key": codec.output_key, "role": "primary", "lifecycle": "ACTIVE", "eligibility": "ELIGIBLE", "governance": "CLEAR"}],

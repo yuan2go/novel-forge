@@ -115,6 +115,8 @@ class ChapterAuthorityApiTests(unittest.TestCase):
             project_id="project-1",
             workspace_id="workspace-1",
             chapter=1,
+            chapter_plan_asset_version_id="chapter-plan-version-1",
+            chapter_plan_content_hash="sha256:" + "a" * 64,
             title="Prepared title",
             premise="Prepared premise",
             context_candidates=(),

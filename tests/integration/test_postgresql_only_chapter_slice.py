@@ -4,7 +4,7 @@ import unittest
 import hashlib
 import json
 
-from novel_forge.modules.chapter_authority.contracts import ChapterNode
+from novel_forge.modules.chapter_authority.contracts import ChapterNode, QUALITY_GROUP_NODES
 from novel_forge.modules.chapter_authority.handlers import (
     DeterministicFixtureChapterProvider,
     build_chapter_handler_registry,
@@ -192,9 +192,13 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["saga"]["status"], "SUCCEEDED")
         self.assertEqual(manifest["saga"]["forward_recovery_attempts"], 1)
         self.assertEqual(len(manifest["operations"]), 1 + len(ChapterNode))
-        # Plan and Context now materialize the immutable preparation manifest and
-        # its consistency report as completion evidence.
-        self.assertEqual(len(manifest["outputs"]), 71)
+        # The 18 primary node outputs are accompanied by 41 dimension evidence
+        # assets, nine state snapshots, one preparation manifest, Plan/Context
+        # completion evidence, and one frozen-context coverage report per Quality
+        # group. Keep the count tied to those protocol families so additions cannot
+        # silently masquerade as duplicate materialization.
+        expected_output_count = len(ChapterNode) + 41 + 9 + 3 + len(QUALITY_GROUP_NODES)
+        self.assertEqual(len(manifest["outputs"]), expected_output_count)
         self.assertEqual(
             len(
                 [
@@ -204,6 +208,16 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 ]
             ),
             41,
+        )
+        self.assertEqual(
+            len(
+                [
+                    item
+                    for item in manifest["outputs"]
+                    if item["asset_type"] == "quality_context_coverage_report"
+                ]
+            ),
+            len(QUALITY_GROUP_NODES),
         )
         self.assertEqual(manifest["attempt_counts"][ChapterNode.DRAFT.value], 2)
         for node in ChapterNode:
@@ -236,7 +250,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 71)
+            self.assertEqual(cursor.fetchone()[0], expected_output_count)
             cursor.execute(
                 """
                 SELECT asset.asset_type, binding.role, version.content->>'state_kind'

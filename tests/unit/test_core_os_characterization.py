@@ -11,9 +11,9 @@ class CoreOsCharacterizationTests(unittest.TestCase):
         workflow = (ROOT / ".github/workflows/core-os-ci.yml").read_text(encoding="utf-8")
         self.assertIn("git rev-parse HEAD", workflow)
         self.assertIn("${GITHUB_SHA}", workflow)
-        self.assertIn("postgres:16", workflow)
+        self.assertIn("pgvector/pgvector:pg16", workflow)
         self.assertIn("novel_forge_core_os_test", workflow)
-        self.assertIn("test_*postgres*.py", workflow)
+        self.assertIn("scripts/run_authority_postgres_tests.py", workflow)
 
     def test_production_kernel_has_one_registered_dispatch_boundary(self):
         source = (ROOT / "src/novel_forge/modules/production_kernel/service.py").read_text(encoding="utf-8")
