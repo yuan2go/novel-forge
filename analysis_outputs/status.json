@@ -1,22 +1,22 @@
 {
   "schema_version": "analysis-status.v1",
   "as_of": "2026-07-22",
-  "source_commit": "60c685a",
-  "work_package": "WP-01",
+  "source_commit": "ac80c31",
+  "work_package": "WP-02",
   "status": "verified",
   "baseline_stage": "PRE_PROVIDER_PRODUCTION_ARCHITECTURE_COMPLETE",
   "report": "docs/reports/next-authority-implementation-baseline.md",
   "verification": {
-    "architecture_tests": "11 passed",
-    "contract_tests": "22 passed",
-    "focused_tests": "51 passed",
-    "unit_tests": "980 passed",
+    "architecture_tests": "14 passed",
+    "contract_tests": "15 process supervisor and boundary tests passed",
+    "focused_tests": "53 passed",
+    "unit_tests": "992 passed",
     "postgresql_authority_tests": "101 passed",
-    "postgresql_book_and_migration_tests": "3 passed",
+    "postgresql_book_and_migration_tests": "covered by 101-test Authority suite",
     "python_compile": "passed",
     "skill_drift_check": "passed",
     "workspace_validation": "passed",
-    "postgresql_integration": "not_applicable_docs_only"
+    "postgresql_integration": "101 passed"
   },
   "facts": {
     "real_provider_proven": false,

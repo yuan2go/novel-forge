@@ -2,6 +2,7 @@
 
 Updated: 2026-07-22
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `12f3ff7`
+Latest execution-plane source commit: `ac80c31`
 
 Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
 
@@ -50,6 +51,28 @@ can support Book, World, Character, Arc, ChapterGroup, and Chapter execution.
 `execution_plane_contract_proven=true` means contract/unit/integration boundaries are
 verified; `production_execution_gateway_proven`, `codex_cli_backend_proven`,
 `remote_provider_backend_proven`, and all real-provider/production flags remain false.
+
+## 2026-07-22 Persistent Codex Process Supervisor
+
+WP-02 replaces the local Codex/Claude-Code worker's ephemeral process launcher with a
+persistent execution directory and process-group supervisor. Every launch now has
+durable metadata, stdout/stderr, result, and `ProcessReceipt`; successful production
+bindings carry the existing Authority `operation_id`, `attempt_id`, and fencing token.
+Concurrent duplicate submissions launch once, startup failures are durable, timeout
+and local cancellation use SIGTERM/SIGKILL process-group evidence, and worker restart
+recovery distinguishes recoverable output, corrupt output, PID reuse, and
+unverifiable identity.
+
+Child processes receive only the documented environment allowlist. Local CLI evidence
+uses `LOCAL_CLI_REMOTE_INFERENCE`, a real `local_execution_receipt_id`, and null
+Provider request/response identifiers; killing the local CLI does not claim upstream
+Provider cancellation. Legacy unbound calls are explicitly non-production.
+
+This changes the local Codex execution seam but does not yet establish the
+PostgreSQL-backed `ProductionExecutionGateway` or a qualified Codex backend. No real
+Provider call ran. `persistent_process_supervisor_proven=true`, while
+`production_execution_gateway_proven`, `codex_cli_backend_proven`,
+`real_provider_proven`, and `production_verified` remain false.
 
 ## 2026-07-18 Pre-Provider Production Architecture v2
 

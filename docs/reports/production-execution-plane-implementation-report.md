@@ -85,7 +85,7 @@ Gate-00 can be rerun only after all of the following are true:
 | WP-00 | complete | `451ff38` | no | 7 architecture tests, compile, Skill drift, workspace validation |
 | Gate-00 | not run: prerequisites unmet | this report commit | no | configuration-presence and read-only database reachability checks |
 | WP-01 | complete: contract layer | `60c685a` | no | contract/architecture tests, PostgreSQL Authority regression, clean/upgrade migration |
-| WP-02 | pending | — | — | — |
+| WP-02 | complete: persistent local process supervision | `cea7a25`, `ac80c31` | yes, local Codex CLI only | 15 supervisor/boundary tests, 53 focused tests, 992 unit tests, 101 PostgreSQL Authority tests |
 | WP-03 | pending | — | — | — |
 | WP-04 | pending | — | — | — |
 | Gate-01 | pending | — | — | — |
@@ -188,14 +188,123 @@ fixed and re-reviewed. The specification re-review reported no remaining WP-01
 blocker; the final cancellation re-review issue was then closed by requiring terminal
 local/upstream evidence and a Provider cancellation receipt.
 
+### WP-01 close blockers
+
+The persistent process directory, ProcessReceipt, process-group control, timeout,
+recovery, PID-reuse guard, and environment allowlist items were resolved by WP-02
+below. Gateway/backend execution, Chapter migration, and real-provider evidence remain
+open.
+
+## WP-02 — Persistent Process Supervisor
+
+### Delivered
+
+`modules/production_execution/process_supervisor.py` now provides:
+
+- `PersistentExecutionDirectory` with stable hashed execution paths, atomic JSON
+  writes, request-digest binding, path-containment checks, and cross-process file
+  locking;
+- `CodexProcessSupervisor`, `ProcessReceipt`, `ProcessGroup`, `ProcessTimeout`, and
+  explicit `STARTING`, `START_FAILED`, `RUNNING`, success, failure, cancellation,
+  timeout, orphan, and corrupt-result states;
+- stdout, stderr, schema, result, metadata, and receipt files that survive worker
+  restart instead of disappearing with a temporary directory;
+- POSIX process groups (`start_new_session=True`) with bounded SIGTERM grace followed
+  by SIGKILL escalation;
+- duplicate-launch suppression and reconciliation against the original receipt;
+- worker/supervisor liveness evidence, PID/start-token comparison, fail-closed
+  `PROCESS_IDENTITY_UNVERIFIABLE`, and `PID_REUSE_DETECTED` recovery outcomes;
+- JSON-object result integrity checks and recoverable-result reporting after a worker
+  crash;
+- the exact default environment allowlist required by the design:
+  `PATH`, `HOME`, `CODEX_HOME`, `LANG`, `LC_ALL`, `TMPDIR`, `SSL_CERT_FILE`,
+  `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY`.
+
+`LocalCodexCliWorkerMixin` now launches exclusively through the supervisor. It no
+longer uses `TemporaryDirectory`, no longer passes the full parent environment, and
+no longer synthesizes a Provider response identifier. A local result now records:
+
+```text
+transport = LOCAL_CLI_REMOTE_INFERENCE
+local_execution_receipt_id = process-receipt:<digest>
+provider_request_id = null
+provider_response_id = null
+```
+
+Local termination is explicitly local-only. It does not claim that remote inference
+was cancelled. When an Authority binding is supplied, the receipt records the real
+`operation_id`, `attempt_id`, and fencing token. Legacy calls remain possible during
+migration, but their receipts carry `authority_bound=false` and are not eligible as
+production Authority proof.
+
+### Failure and recovery behavior
+
+| Injection / race | Verified result |
+|---|---|
+| worker restart after result write | result remains on disk; recovery reports `ORPHANED` plus `result_recoverable=true` rather than accepting it silently |
+| duplicate or concurrent submit | one process starts; duplicate waits/reconciles the same receipt |
+| timeout with SIGTERM ignored | process group escalates to SIGKILL and records `TIMED_OUT` |
+| local cancellation | process group terminates; Provider request/cancel evidence remains null |
+| process launch failure | durable `START_FAILED` receipt with no fabricated PID/PGID |
+| valid exit with missing/corrupt result | `CORRUPT_RESULT`, never success |
+| reused PID | `PID_REUSE_DETECTED`; unrelated process is not signalled |
+| unverifiable OS process identity | fail closed with `PROCESS_IDENTITY_UNVERIFIABLE` and `safe_to_signal=false` |
+| request drift under same execution ID | rejected before a second process is launched |
+| unlisted secret environment key | absent from child environment; unlisted override is rejected |
+
+### Runtime, migration, and catalog impact
+
+```text
+production_behavior_changed = local Codex CLI execution only
+real_provider_call_executed = false
+database_schema_changed = false
+new_attempt_authority_created = false
+new_operation_definition_added = false
+persistent_process_supervisor_proven = true
+production_execution_gateway_proven = false
+codex_cli_backend_proven = false
+```
+
+No database migration was added: WP-02 persists local crash-recovery files under the
+configured runtime workspace, while PostgreSQL Authority persistence remains the
+responsibility of the WP-03 Gateway/ExternalEffect integration. The existing clean
+install and upgrade migrations passed unchanged. The OperationDefinition Catalog and
+Authority coverage artifacts were regenerated and bind to source commit
+`ac80c31fcf6682cd705936d6f68bf5c3576c9f61`.
+
+### Verification
+
+```text
+supervisor unit tests: 12 passed
+process boundary tests: 3 passed
+focused execution/provider tests: 53 passed
+concurrent duplicate stress: 8 consecutive passes
+full unit discovery: 992 passed
+full architecture discovery: 14 passed
+Authority coverage/catalog tests: 16 passed
+PostgreSQL Command Kernel/Authority suite: 101 passed
+clean install + upgrade migrations: passed inside PostgreSQL suite
+compileall: passed
+real/paid Provider calls: 0
+```
+
+No failed test was skipped. The first full architecture pass correctly failed on the
+checked-in source-tree hash after source changes; the generated baseline/catalog were
+then regenerated against the committed source and the 14-test architecture suite
+passed.
+
 ### Remaining blockers
 
-- contracts are not persisted or executed yet;
-- there is no persistent process directory, ProcessReceipt, process group, timeout,
-  orphan recovery, PID reuse detection, or environment allowlist implementation;
-- no ProductionExecutionGateway, Backend Registry, Admission Controller, Capability
-  Probe runner, or backend adapter exists;
-- Chapter Authority still uses its current Provider v2/legacy model ports;
-- Gate-00 remains not run and all real-provider/production flags remain false.
+- `ProcessReceipt` files are not yet materialized through the PostgreSQL
+  ExternalEffect/Receipt authority; unbound legacy receipts remain non-production;
+- `ProductionExecutionGateway`, Backend Registry, Admission Controller, Capability
+  Probe, result normalizer/validator, and execution reconciler are not implemented;
+- Provider v2 is not yet adapted as `RemoteProviderExecutionBackend`;
+- Model Router and Legacy Adapter still own old execution entry paths outside the
+  migrated local process seam;
+- Chapter Authority still uses its current Provider v2/model ports;
+- old external-provider proof code still expects a Provider response ID, so local CLI
+  evidence correctly remains ineligible until WP-03 introduces transport-aware proof;
+- Gate-00 remains not run and every real-provider/production flag remains false.
 
-The next authorized step is WP-02 Persistent Process Supervisor.
+The next authorized step is WP-03 ProductionExecutionGateway and backend convergence.

@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:49f4c3603f7d3c64ace1bc4d371e22b24213844f2b8de49c960caf26c0bed74b",
+  "artifact_hash": "sha256:5d26bb1c14a1f6ca13042fb4712e341ec2125d7f71d9941f13688f395e822d72",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+  "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
   "definitions": [
     {
       "alias_of": "",
@@ -6837,11 +6837,11 @@
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.analyze",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.batch",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.generate",
+        "novel_forge.model_adapters.providers.LocalCodexCliWorkerMixin._run_local_codex_operation",
         "novel_forge.model_adapters.providers.LocalCodexCliWorkerMixin.batch",
         "novel_forge.model_adapters.providers.OpenAICompatibleChatAdapter._run_json_operation",
         "novel_forge.model_adapters.providers.OpenAICompatibleChatAdapter.batch",
         "novel_forge.model_adapters.providers._codex_exec_option_supported",
-        "novel_forge.model_adapters.providers._run_process_with_runtime_guard",
         "novel_forge.model_adapters.selection._policy_route",
         "novel_forge.modules.analysis.service._semantic_depth_assessment",
         "novel_forge.modules.analysis.service.convert_analysis_report",
@@ -6938,6 +6938,8 @@
         "novel_forge.modules.platform_strategy.service._write",
         "novel_forge.modules.portfolio_os.service._write_asset",
         "novel_forge.modules.production_chain.service._write_version_asset",
+        "novel_forge.modules.production_execution.process_supervisor.CodexProcessSupervisor.run",
+        "novel_forge.modules.production_execution.process_supervisor.PosixProcessIdentityProbe.process_start_token",
         "novel_forge.modules.production_governance.service.build_production_governance_evidence_drift_report",
         "novel_forge.modules.production_governance.service.build_production_governance_report",
         "novel_forge.modules.production_governance.service.record_fallback_decision",
@@ -7015,6 +7017,7 @@
         "novel_forge.model_adapters.base.ModelAdapter.batch",
         "novel_forge.model_adapters.base.ModelAdapter.generate",
         "novel_forge.modules.loop_kernel.run_loop",
+        "novel_forge.modules.production_execution.CodexProcessSupervisor.run",
         "novel_forge.modules.production_governance.record_fallback_decision",
         "novel_forge.modules.production_governance.record_fallback_decision.get",
         "novel_forge.modules.provider_fallback.approve_provider_fallback",
@@ -7103,11 +7106,11 @@
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.analyze",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.batch",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.generate",
+        "novel_forge.model_adapters.providers.LocalCodexCliWorkerMixin._run_local_codex_operation",
         "novel_forge.model_adapters.providers.LocalCodexCliWorkerMixin.batch",
         "novel_forge.model_adapters.providers.OpenAICompatibleChatAdapter._run_json_operation",
         "novel_forge.model_adapters.providers.OpenAICompatibleChatAdapter.batch",
         "novel_forge.model_adapters.providers._codex_exec_option_supported",
-        "novel_forge.model_adapters.providers._run_process_with_runtime_guard",
         "novel_forge.model_adapters.selection._policy_route",
         "novel_forge.modules.analysis.service._semantic_depth_assessment",
         "novel_forge.modules.analysis.service.convert_analysis_report",
@@ -7204,6 +7207,8 @@
         "novel_forge.modules.platform_strategy.service._write",
         "novel_forge.modules.portfolio_os.service._write_asset",
         "novel_forge.modules.production_chain.service._write_version_asset",
+        "novel_forge.modules.production_execution.process_supervisor.CodexProcessSupervisor.run",
+        "novel_forge.modules.production_execution.process_supervisor.PosixProcessIdentityProbe.process_start_token",
         "novel_forge.modules.production_governance.service.build_production_governance_evidence_drift_report",
         "novel_forge.modules.production_governance.service.build_production_governance_report",
         "novel_forge.modules.production_governance.service.record_fallback_decision",
@@ -12257,7 +12262,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.slice.run.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -12565,7 +12570,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.plan.materialize.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -12819,7 +12824,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.context.build.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13065,7 +13070,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.draft.generate.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13313,7 +13318,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.review.evaluate.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13561,7 +13566,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.apply.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13809,7 +13814,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.review.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14057,7 +14062,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.extract.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14305,7 +14310,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.propose_changes.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14543,7 +14548,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.update.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14853,7 +14858,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.structural.evaluate.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15101,7 +15106,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.commercial.evaluate.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15349,7 +15354,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.source_originality.evaluate.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15597,7 +15602,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.longform.evaluate.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15845,7 +15850,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.platform.evaluate.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -16093,7 +16098,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.evaluate.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -16659,7 +16664,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.prepare_release.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -16897,7 +16902,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.export.render.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -17152,7 +17157,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.finalize_release.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -17369,7 +17374,7 @@
         "type": "object"
       },
       "command_schema_version": "canon.change.approve.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_decision",
@@ -17530,7 +17535,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.brief.create.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -17720,7 +17725,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.evaluate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -17910,7 +17915,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.cluster.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18100,7 +18105,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.project.approve.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18290,7 +18295,7 @@
         "type": "object"
       },
       "command_schema_version": "production.world.generate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18480,7 +18485,7 @@
         "type": "object"
       },
       "command_schema_version": "world.validate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18670,7 +18675,7 @@
         "type": "object"
       },
       "command_schema_version": "production.character.generate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18860,7 +18865,7 @@
         "type": "object"
       },
       "command_schema_version": "character.relationships.generate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19050,7 +19055,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.question.create.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19240,7 +19245,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.arc.build.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19430,7 +19435,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.anti_preaching.evaluate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19620,7 +19625,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.closure.plan.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19810,7 +19815,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.payoff_matrix.build.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20000,7 +20005,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.quality.evaluate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20190,7 +20195,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.motivation.evaluate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20380,7 +20385,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.entity_merge.propose.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20570,7 +20575,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.foreshadow_payoff.evaluate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20760,7 +20765,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.world_rule.evaluate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20950,7 +20955,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.power.evaluate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21140,7 +21145,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.pattern.evaluate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21330,7 +21335,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.narrative_debt.evaluate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21520,7 +21525,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.recap.enhance.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21710,7 +21715,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.golden_sample.create.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21900,7 +21905,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.human_decision.record.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22090,7 +22095,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.calibration.run.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22280,7 +22285,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.calibration.profile.promote.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22470,7 +22475,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.calibration.profile.revoke.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22660,7 +22665,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.state.initialize_empty.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22850,7 +22855,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.generate.command.v2",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -23031,7 +23036,7 @@
         "type": "object"
       },
       "command_schema_version": "book.production.run.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23183,7 +23188,7 @@
         "type": "object"
       },
       "command_schema_version": "book.production.prepare.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23323,7 +23328,7 @@
         "type": "object"
       },
       "command_schema_version": "book.chapter.dispatch.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23463,7 +23468,7 @@
         "type": "object"
       },
       "command_schema_version": "book.recap.light.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23603,7 +23608,7 @@
         "type": "object"
       },
       "command_schema_version": "book.recap.formal.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23743,7 +23748,7 @@
         "type": "object"
       },
       "command_schema_version": "book.plan_adjustment.propose.command.v1",
-      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
+      "commit_sha": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23855,7 +23860,7 @@
     }
   ],
   "generator_version": "2.1.0",
-  "repository_head_at_generation": "60c685aca73af3079f205c6a643c06e14d783872",
+  "repository_head_at_generation": "ac80c31fcf6682cd705936d6f68bf5c3576c9f61",
   "schema_version": "2.0.0",
-  "source_tree_sha": "832ffcbcbe1f56745c1c9835dc7f40fde663ccee"
+  "source_tree_sha": "f401cfec1d968097ac87d0772ac84e07975e2cbb"
 }
