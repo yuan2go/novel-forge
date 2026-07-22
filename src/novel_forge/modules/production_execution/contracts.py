@@ -579,6 +579,10 @@ class ExecutionRequest(_Contract):
     stable_idempotency_key: str
     origin_chain: tuple[str, ...] = ()
     agent_hop_count: int = 0
+    trace_id: str = ""
+    correlation_id: str = ""
+    external_effect_id: str = ""
+    budget_reservation_id: str = ""
 
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)

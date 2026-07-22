@@ -46,6 +46,7 @@ class ProviderAdapter:
     """
 
     config: ModelAdapterConfig
+    legacy_independent_execution = True
 
     def __init__(self, config: ModelAdapterConfig | None = None) -> None:
         if config is not None:
@@ -89,6 +90,21 @@ class ProviderAdapter:
             "this adapter does not implement in-process model calls"
         )
 
+    def _require_gateway_for_controlled_environment(
+        self, context: dict[str, Any] | None
+    ) -> None:
+        values = context or {}
+        environment = str(
+            values.get("environment")
+            or values.get("runtime_environment")
+            or "development"
+        ).strip().lower()
+        if environment in {"production", "validation", "provider-validation"}:
+            raise AdapterNotConfiguredError(
+                f"{self.config.provider} legacy adapter is disabled in {environment}; "
+                "use ProductionExecutionGateway"
+            )
+
 
 class LocalCodexCliWorkerMixin:
     """Local Codex CLI worker.
@@ -118,6 +134,7 @@ class LocalCodexCliWorkerMixin:
         return [self.generate(prompt, context) for prompt in prompts]
 
     def _run_local_codex_operation(self, operation: str, payload: str, context: dict[str, Any] | None) -> dict[str, Any]:
+        self._require_gateway_for_controlled_environment(context)
         if not self._local_cli_enabled():
             raise self._not_configured(operation)
         command_base = self._codex_command_base()
@@ -420,6 +437,7 @@ class OpenAICompatibleChatAdapter(ProviderAdapter):
         }
 
     def _run_json_operation(self, operation: str, payload: str, context: dict[str, Any] | None) -> dict[str, Any]:
+        self._require_gateway_for_controlled_environment(context)
         api_key = self._api_key()
         if not api_key:
             raise self._not_configured(operation)

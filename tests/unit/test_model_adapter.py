@@ -83,6 +83,15 @@ class MockModelTests(unittest.TestCase):
         self.assertIn("DEEPSEEK_API_KEY", deepseek_health["required_env_vars"])
         self.assertTrue(deepseek_health["implemented"])
 
+    def test_legacy_provider_adapter_fails_before_network_in_production(self):
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "unit-key"}, clear=False):
+            with self.assertRaisesRegex(
+                AdapterNotConfiguredError, "use ProductionExecutionGateway"
+            ):
+                ChatGPTAdapter().generate(
+                    "must not call network", {"environment": "production"}
+                )
+
     def test_openai_compatible_adapter_can_use_sdk_streaming_guard(self):
         fake_openai = _fake_openai_sdk_module(
             [

@@ -400,20 +400,28 @@ def call_model_via_router(
     resolution = route.get("resolution", {}) if isinstance(route.get("resolution", {}), dict) else route.get("asset", {}).get("content", {})
     provider = str(resolution.get("provider", "mock"))
     model = str(resolution.get("model_name", "mock-model"))
-    context_payload = {**(context or {}), "model_route": _compact_route_for_context(route), "runtime_operation": operation}
+    context_payload = {
+        **(context or {}),
+        "model_route": _compact_route_for_context(route),
+        "runtime_operation": operation,
+        "runtime_environment": (
+            environment
+            or str(
+                (context or {}).get("environment")
+                or (context or {}).get("runtime_environment")
+                or "development"
+            )
+        ),
+    }
     started = utc_now()
     try:
-        if operation == "generate":
-            result = adapter.generate(str(payload), context_payload)
-        elif operation == "analyze":
-            result = adapter.analyze(str(payload), context_payload)
-        elif operation in {"review", "handoff_review"}:
-            result = adapter.review(str(payload), context_payload)
-        elif operation == "revise":
-            review_payload = context_payload.get("review", {}) if isinstance(context_payload.get("review", {}), dict) else {}
-            result = adapter.revise(str(payload), review_payload, context_payload)
-        else:
-            raise ValueError(f"unsupported routed model operation: {operation}")
+        from novel_forge.modules.production_execution.legacy import (
+            execute_legacy_model_operation,
+        )
+
+        result = execute_legacy_model_operation(
+            adapter, operation, payload, context_payload
+        )
     except Exception:
         execute_model_gateway_call(
             storage,
