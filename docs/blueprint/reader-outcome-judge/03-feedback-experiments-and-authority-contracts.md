@@ -1,12 +1,14 @@
 # Reader Outcome Judge：读者反馈、实验与权威契约
 
-> 返回：[Reader Outcome Judge 总览](README.md)
+> 返回：[Reader Outcome Judge 总览](README.md)  
+> 更新日期：2026-07-22  
+> 文档状态：`ACTIVE TARGET DESIGN`
 
-# 18. 真实读者行为模型
+## 1. 真实读者行为模型
 
-## 18.1 Exposure 是因果分析起点
+### 1.1 Exposure 是结果分析起点
 
-任何 Outcome 必须绑定 Exposure：
+任何 Outcome 必须绑定明确 Exposure：
 
 ```yaml
 reader_exposure:
@@ -15,15 +17,21 @@ reader_exposure:
   book_id: B-...
   chapter_id: C-...
   chapter_version_id: CHV-...
-  reader_segment_id: SEG-...
+  reader_segment_version_id: SEG-...
   experiment_id: EXP-... | null
   traffic_source: recommendation
   placement: feed_slot_3
+  title_version_id: TITLE-V2
+  cover_version_id: COVER-V3
+  synopsis_version_id: SYNOPSIS-V1
   price_context: free
+  platform_policy_version: PPF-...
   assigned_at: timestamp
 ```
 
-## 18.2 Outcome Event
+没有 Exposure，就不能区分正文质量和流量、位置、标题、封面或价格影响。
+
+### 1.2 Outcome Event
 
 ```text
 chapter_impression
@@ -44,85 +52,188 @@ refund
 complaint
 ```
 
-## 18.3 幂等与去重
+### 1.3 幂等、延迟和修正
 
 每个事件必须包含：
 
-- stable event id；
-- source；
-- occurred_at；
-- received_at；
-- deduplication key；
-- schema version；
-- correction reference，若为修正事件。
-
-## 18.4 行为窗口
-
 ```text
-W0: 当前章
-W1: 下一章
-W3: 后续 3 章
-W10: 后续 10 章
-W30: 后续 30 章
-WP: 付费后窗口
-WV: 卷级窗口
+stable_event_id
+source
+occurred_at
+received_at
+deduplication_key
+schema_version
+correction_reference | null
 ```
 
-未到观察窗口结束前，Outcome 状态应为 `CENSORED` 或 `PENDING`，不能当作失败。
+约束：
 
-## 18.5 混杂因素
+- `(source, deduplication_key)` 唯一；
+- 迟到事件允许进入新 Aggregate Version；
+- 修正事件引用原事件；
+- 不原地覆盖历史事件。
+
+### 1.4 Outcome Window
+
+```text
+W0  当前章
+W1  下一章
+W3  后续 3 章
+W10 后续 10 章
+W30 后续 30 章
+WP  付费后窗口
+WV  卷级窗口
+```
+
+观察窗口未结束时使用：
+
+```text
+PENDING
+CENSORED
+```
+
+不能把未观察到结果直接当作失败。
+
+### 1.5 混杂因素
 
 必须记录：
 
 - 流量来源；
 - 推荐位置；
-- 是否广告；
-- 免费活动；
+- 广告和免费活动；
 - 标题、封面、简介版本；
-- 阅读设备；
-- 阅读时间；
+- 阅读设备和时间；
 - 章节价格；
 - 新老读者；
-- 平台推荐策略版本。
+- 推荐策略版本；
+- 书籍生命周期阶段。
 
-否则无法区分内容效果与曝光效果。
+## 2. Feedback Authority
 
----
+Feedback Authority 负责：
 
-# 19. Experiment Center
+```text
+Raw Signal
+→ Normalize
+→ Aggregate
+→ Attribution
+→ Confidence
+→ PlanAdjustmentProposal
+```
 
-## 19.1 实验类型
+不负责：
+
+- 直接修改 Canon；
+- 覆盖 Frozen ChapterPlan；
+- 改变 EndingIntent；
+- 删除主要人物；
+- 直接发布；
+- 根据单次评论修改主线。
+
+### 2.1 信号层级
+
+```text
+L0 Raw Signal
+L1 Normalized Metric
+L2 Attribution
+L3 Adjustment Proposal
+```
+
+### 2.2 Confidence Gate
+
+高影响提案至少判断：
+
+- Sample Size；
+- Signal Stability；
+- Cross-channel Consistency；
+- Text Evidence Consistency；
+- Platform Anomaly；
+- Attribution Confidence；
+- Affected Scope；
+- 与 BookPlan / EndingContract 冲突；
+- 是否属于 Exposure Bias。
+
+## 3. Experiment Center 边界
+
+不是所有小说平台都支持正文版本的读者级随机分流。
+
+Platform Adapter 必须声明：
+
+```text
+supports_reader_level_assignment
+supports_variant_delivery
+supports_exposure_receipt
+supports_outcome_event
+supports_price_context
+supports_title_cover_version_binding
+```
+
+只有以下全部满足，才允许称为随机因果实验：
+
+- Reader-level 或合法随机化单元；
+- 变体稳定且不可中途修改；
+- Exposure 可绑定具体版本；
+- Outcome Window 可观测；
+- Assignment 不可重写；
+- SRM 和污染检查可运行；
+- Primary / Secondary / Guardrail 预先声明。
+
+平台不支持时，只能称为：
+
+```text
+observational analysis
+private reader panel
+offline controlled reading test
+quasi-experiment
+```
+
+不得声称 `CAUSAL_VALIDATED`。
+
+## 4. 实验类型
+
+允许：
 
 - 开篇 A/B/n；
-- 钩子；
+- Hook；
 - 冲突进入位置；
 - 人物选择；
 - 说明量；
 - 章节长度；
 - 付费点；
-- 修订版本；
-- 标题与正文联合实验。
+- Revision Version；
+- 标题、封面、简介和正文联合实验。
 
-## 19.2 默认实验方法
+不允许实验违反：
+
+- Canon；
+- Originality；
+- Safety；
+- Platform Policy；
+- Reader Trust Hard Guardrail。
+
+## 5. 默认实验方法
 
 第一版推荐：
 
-- Reader-level 随机分配；
-- Intent-to-Treat 分析；
-- 二元指标使用 Beta-Binomial 后验；
-- 连续指标使用 bootstrap 区间；
-- 同时监控 Sample Ratio Mismatch；
-- 设最小实际效果，而非只看统计显著；
-- 预先声明 primary、secondary、guardrail metrics。
+- Reader-level 随机分配，若平台支持；
+- Intent-to-Treat；
+- 二元指标使用 Beta-Binomial 或预先声明的频率方法；
+- 连续指标使用 Bootstrap Interval；
+- 监控 Sample Ratio Mismatch；
+- 使用 Minimum Practical Effect；
+- 预先声明 Primary、Secondary 和 Guardrail；
+- 不允许看到中期结果后修改 Primary Metric。
 
-## 19.3 实验定义
+实验定义：
 
 ```yaml
 experiment:
   experiment_id: EXP-...
   hypothesis: 冲突提前能提高十章留存且不伤害付费后留存
-  target_segment_ids: [SEG-...]
+  randomization_unit: anonymous_reader_id
+  target_segment_version_ids: [SEG-...]
   variants: [CHV-A, CHV-B]
+  allocation_version: 1
   allocation: [0.5, 0.5]
   primary_metric: ten_chapter_retention
   secondary_metrics:
@@ -133,12 +244,12 @@ experiment:
     - post_payment_retention
     - complaint_rate
     - reader_trust_damage
-  minimum_effect: 0.02
+  minimum_practical_effect: 0.02
   observation_window: W10
   status: DRAFT
 ```
 
-## 19.4 状态机
+## 6. 实验状态与污染防护
 
 ```text
 DRAFT
@@ -150,20 +261,32 @@ DRAFT
 → PROMOTED | ARCHIVED
 ```
 
-## 19.5 污染防护
+污染防护：
 
-- 同一读者不能在同一实验中看到多个正文版本；
-- 版本不得中途修改；
+- 同一读者在同一实验中保持一致分组；
+- Variant 不得中途修改；
 - 推荐位置差异必须记录；
-- 实验前不得读取结果修改 primary metric；
-- 实验赢家不得直接覆盖历史版本；
-- Promote 必须创建新的 Active Version 指针。
+- Experiment Winner 不覆盖历史版本；
+- Promote 创建新的 Active Version Pointer；
+- Assignment 保存随机化单元和 Hash Bucket；
+- Allocation 变化创建新版本。
 
----
+## 7. Decision Policy Engine
 
-# 20. Decision Policy Engine
+决策优先级：
 
-## 20.1 决策枚举
+```text
+Hard Gate
+→ Quality Blocker
+→ Calibration Validity
+→ OOD / Disagreement
+→ Long-term Outcome
+→ Short-term Outcome
+→ Experiment Value
+→ Cost / Deadline
+```
+
+决策枚举：
 
 ```text
 ACCEPT
@@ -171,96 +294,109 @@ REVISE
 EXPERIMENT
 HUMAN_REVIEW
 REJECT
-PAUSE_BOOK
+PAUSE_BOOK_PROPOSAL
 INSUFFICIENT_EVIDENCE
 ```
 
-## 20.2 决策优先级
+第一阶段只输出：
 
 ```text
-Hard Gate
-→ Quality Blocker
-→ Calibration Validity
-→ OOD / Uncertainty
-→ Long-term Outcome
-→ Short-term Outcome
-→ Experiment Value
-→ Cost / Deadline
+ACCEPT_ADVISORY
+REVISE_ADVISORY
+HUMAN_REVIEW
+INSUFFICIENT_EVIDENCE
 ```
 
-## 20.3 示例策略
+所有阈值和 Policy 必须版本化。
 
-```yaml
-decision_policy:
-  hard_fail:
-    - canon_consistency == FAIL
-    - originality_risk == HIGH
-    - safety_verdict == FAIL
-
-  accept:
-    - blocker_count == 0
-    - calibration_state in [HUMAN_ANCHORED, BEHAVIOR_CALIBRATED, CAUSAL_VALIDATED]
-    - next_chapter_open_probability >= 0.68
-    - ten_chapter_retention_probability >= 0.34
-    - confidence >= 0.80
-    - out_of_distribution == false
-
-  experiment:
-    - blocker_count == 0
-    - confidence >= 0.55
-    - confidence < 0.80
-    - expected_value_of_information >= threshold
-
-  human_review:
-    - chapter_type in [opening, paywall, climax, volume_ending, book_ending]
-    - judge_disagreement == HIGH
-```
-
-所有阈值必须版本化，不能硬编码在 Handler。
-
-## 20.4 Expected Value of Information
+### 7.1 Expected Value of Information
 
 是否实验应考虑：
 
 ```text
-预期决策改善价值
-- 实验成本
-- 延迟成本
-- 流量机会成本
-- 内容风险
+Expected Decision Improvement
+- Experiment Cost
+- Delay Cost
+- Traffic Opportunity Cost
+- Content and Trust Risk
 ```
 
-低流量、低风险章节不一定值得实验；高价值开篇或付费点更值得实验。
+高价值开篇、付费点和关键 Revision 更值得实验；低流量普通章不一定值得。
 
----
+## 8. Anti-Goodhart 和 Reader Trust
 
-# 21. Command Kernel 操作目录
+只优化下一章点击会诱导：
 
-## 21.1 Judge 操作
+- 假 Hook；
+- 强行断章；
+- 拖延答案；
+- 过度反转；
+- 重复刺激；
+- 付费前压缩兑现；
+- 付费后快速崩塌。
+
+Guardrail：
 
 ```text
-judge.feature.extract
-judge.quality.evaluate
-judge.outcome.predict
-judge.pairwise.compare
-judge.adversarial.review
-judge.arbitration.resolve
-judge.decision.evaluate
+false_hook_rate
+promise_default_rate
+post_payment_fast_drop_rate
+excessive_cliffhanger_rate
+repeated_stimulation_rate
+title_content_mismatch_rate
+reader_complaint_rate
 ```
 
-## 21.2 校准操作
+规则：
 
-```text
-judge.calibration.dataset.freeze
-judge.calibration.run
-judge.calibration.evaluate
-judge.calibration.promote
-judge.calibration.revoke
-judge.drift.detect
-judge.drift.report
-```
+- 下一章点击提升但十章留存下降：不得 Promote；
+- 付费提升但付费后留存下降：默认失败；
+- 投诉显著上升：Guardrail Fail；
+- 破坏人物、Canon 或 Originality：Hard Fail。
 
-## 21.3 Reader 数据操作
+## 9. Calibration Authority Contract
+
+### 9.1 Dataset Freeze
+
+Calibration Dataset 必须：
+
+- 绑定具体 Feature Schema、Judge Profile 和 Outcome Target；
+- 保存训练、验证和测试分割；
+- 防止当前测试标签进入 Prompt；
+- 记录 Censoring 和 Missingness；
+- 记录 Segment Coverage 和 Exposure Context。
+
+### 9.2 Promote
+
+`judge.calibration.promote` 必须要求：
+
+- Frozen Dataset Snapshot；
+- Candidate Profile；
+- Active Baseline；
+- Evaluation Report；
+- No Test Leakage Assertion；
+- Worst-group 不退化；
+- Approval，若策略要求；
+- Rollback Target。
+
+失败不得覆盖 Active Profile。
+
+## 10. Experiment Authority Contract
+
+`experiment.promote_variant` 必须要求：
+
+- Experiment 状态为 `WON`；
+- SRM 和污染检查通过；
+- Primary Metric 达到 Minimum Practical Effect；
+- Guardrail 未失败；
+- Analysis Report 冻结；
+- Promoted Version 不可变；
+- Book / Chapter Authority 接受新的 Active Version Pointer；
+- 影响分析和 Frozen Horizon 规则满足。
+
+## 11. Command Catalog
+
+Reader Data：
 
 ```text
 reader.segment.create
@@ -272,7 +408,19 @@ reader.outcome.aggregate
 reader.outcome.window.close
 ```
 
-## 21.4 实验操作
+Calibration：
+
+```text
+judge.calibration.dataset.freeze
+judge.calibration.run
+judge.calibration.evaluate
+judge.calibration.promote
+judge.calibration.revoke
+judge.drift.detect
+judge.drift.report
+```
+
+Experiment：
 
 ```text
 experiment.create
@@ -286,7 +434,7 @@ experiment.promote_variant
 experiment.archive
 ```
 
-## 21.5 人工操作
+Human：
 
 ```text
 human.preference.batch.create
@@ -296,113 +444,27 @@ human.preference.batch.close
 human.decision.override
 ```
 
-## 21.6 Chapter / Book 集成操作
+## 12. Saga
 
-```text
-chapter.reader_outcome.predict
-chapter.quality.decision.evaluate
-book.reader_outcome.recap.light
-book.reader_outcome.recap.formal
-book.reader_outcome.recap.volume
-book.reader_outcome.plan_adjustment
-```
-
----
-
-# 22. Operation Definition 与 Completion Contract
-
-## 22.1 `chapter.reader_outcome.predict`
-
-```yaml
-input_schema:
-  required:
-    - project_id
-    - chapter_version_id
-    - reader_segment_version_ids
-    - judge_profile_version_id
-
-frozen_inputs:
-  - draft_version
-  - chapter_plan
-  - quality_score_report
-  - canon_patch
-  - reader_segment_profile
-  - platform_profile
-  - judge_profile
-  - calibration_profile
-
-completion_contract:
-  required_outputs:
-    - reader_outcome_prediction_bundle
-  auxiliary_outputs:
-    - narrative_feature_snapshot
-    - judge_disagreement_report
-    - out_of_distribution_report
-  invariants:
-    - every prediction references exact chapter_version_id
-    - every segment has explicit calibration status
-    - provider evidence is persisted
-```
-
-## 22.2 `judge.calibration.promote`
-
-必须要求：
-
-- frozen dataset snapshot；
-- candidate profile；
-- baseline profile；
-- evaluation report；
-- approval decision，若策略要求；
-- rollback target；
-- no test leakage assertion。
-
-## 22.3 `experiment.promote_variant`
-
-必须要求：
-
-- experiment status 为 `WON`；
-- guardrail 未失败；
-- analysis report 冻结；
-- promoted version 不可变；
-- Book / Chapter Authority 接受新 Active Version 指针。
-
----
-
-# 23. Saga 设计
-
-## 23.1 单章 Outcome Saga
-
-```text
-reader_outcome.root
-├─ feature.extract
-├─ segment.resolve
-├─ judge.outcome.predict [fan-out per segment]
-├─ judge.adversarial.review [conditional]
-├─ judge.arbitration.resolve [conditional]
-├─ prediction.aggregate
-└─ decision.evaluate
-```
-
-## 23.2 Calibration Saga
+Calibration：
 
 ```text
 calibration.root
 ├─ dataset.freeze
 ├─ leakage.check
-├─ candidate.train_or_fit
+├─ candidate.fit
 ├─ offline.evaluate
-├─ segment.worst_group.evaluate
+├─ worst_group.evaluate
 ├─ regression.evaluate
 ├─ approval.gate
 └─ profile.promote
 ```
 
-失败时不得覆盖 Active Profile。
-
-## 23.3 Experiment Saga
+Experiment：
 
 ```text
 experiment.root
+├─ capability.validate
 ├─ design.validate
 ├─ approval.gate
 ├─ assignment.activate
@@ -415,11 +477,11 @@ experiment.root
 └─ variant.promote | archive
 ```
 
-## 23.4 人工覆盖 Saga
+Human Override：
 
 ```text
 automatic_decision
-→ human_override_request
+→ override_request
 → approval / rejection
 → override_receipt
 → downstream resume
@@ -427,153 +489,50 @@ automatic_decision
 
 原自动决策必须保留。
 
----
+## 13. 数据模型阶段化
 
-# 24. PostgreSQL 数据模型
-
-## 24.1 核心表
+M2 前：
 
 ```text
-quality_rule
-quality_rule_version
-judge_profile
-judge_run
-judge_evidence
-judge_disagreement
-reader_segment
-reader_segment_version
-outcome_prediction
-outcome_calibration_profile
-calibration_dataset_snapshot
-chapter_variant
-pairwise_evaluation
 human_preference_batch
 human_preference_assignment
 human_preference_vote
+human_decision_override
+```
+
+M3 有真实行为后：
+
+```text
 reader_exposure
 reader_outcome_event
 reader_outcome_aggregate
+calibration_dataset_snapshot
+outcome_calibration_profile
+```
+
+M4 平台能力满足后：
+
+```text
 experiment
 experiment_variant
 experiment_assignment
 experiment_metric_snapshot
-quality_decision
-human_decision_override
-judge_drift_report
 ```
 
-## 24.2 关键约束
+第一阶段数据量不足时不提前分区；Schema 应预留未来分区和延迟事件能力。
 
-### outcome_prediction
+## 14. API
 
-- 唯一键：`prediction_id`；
-- 外键：chapter version、segment version、judge profile、calibration profile；
-- 不允许 UPDATE 预测 payload；
-- 支持 `supersedes_prediction_id`，但历史保留。
-
-### reader_exposure
-
-- 唯一 `exposure_id`；
-- `(experiment_id, anonymous_reader_id)` 在实验策略内保持一致分组；
-- 必须引用具体 `chapter_version_id`。
-
-### reader_outcome_event
-
-- `(source, deduplication_key)` 唯一；
-- event payload 带 schema version；
-- correction event 引用原 event。
-
-### experiment_assignment
-
-- 分配后不可修改；
-- 变体权重变更生成新的 allocation version；
-- 保存随机化单元和 hash bucket。
-
-### quality_decision
-
-- 引用具体 prediction、quality report、policy version；
-- 人工覆盖通过额外表记录；
-- 不覆盖自动决策。
-
-## 24.3 索引建议
-
-```text
-outcome_prediction(chapter_version_id, reader_segment_version_id)
-reader_exposure(chapter_version_id, assigned_at)
-reader_outcome_event(exposure_id, occurred_at)
-reader_outcome_aggregate(reader_segment_id, outcome_window, calculated_at)
-experiment_assignment(experiment_id, anonymous_reader_id)
-judge_run(judge_profile_id, created_at)
-```
-
-## 24.4 分区建议
-
-高频事件表可按月或项目分区：
-
-- reader_exposure；
-- reader_outcome_event；
-- judge_run；
-- experiment_metric_snapshot。
-
-第一阶段数据量不足时不提前复杂化，但 schema 应避免阻塞未来分区。
-
----
-
-# 25. API Contract
-
-## 25.1 预测 API
-
-```http
-POST /api/v1/projects/{project_id}/chapters/{chapter_id}/outcome-predictions
-```
-
-请求：
-
-```json
-{
-  "chapter_version_id": "CHV-0012-R2",
-  "reader_segment_version_ids": ["SEG-V1"],
-  "prediction_scope": ["completion", "next_chapter", "ten_chapter_retention"],
-  "mode": "shadow",
-  "idempotency_key": "..."
-}
-```
-
-响应只返回 operation receipt，不同步执行长任务：
-
-```json
-{
-  "operation_id": "OP-...",
-  "status": "ACCEPTED",
-  "trace_id": "TRACE-..."
-}
-```
-
-## 25.2 结果查询
-
-```http
-GET /api/v1/operations/{operation_id}
-GET /api/v1/chapters/{chapter_id}/outcome-predictions
-GET /api/v1/predictions/{prediction_id}
-```
-
-## 25.3 曝光与事件接入
+Exposure / Outcome：
 
 ```http
 POST /api/v1/reader-exposures
 POST /api/v1/reader-outcome-events:batch
 ```
 
-必须支持：
+要求：幂等、批量、部分失败 Receipt、Schema Version、Source Adapter、Late Event。
 
-- 幂等；
-- 批量；
-- 部分失败回执；
-- schema version；
-- source adapter；
-- 延迟事件。
-
-## 25.4 人工偏好
+Human Preference：
 
 ```http
 POST /api/v1/human-preference-batches
@@ -581,7 +540,7 @@ GET  /api/v1/human-preference-assignments/next
 POST /api/v1/human-preference-assignments/{id}/votes
 ```
 
-## 25.5 实验 API
+Experiment：
 
 ```http
 POST /api/v1/experiments
@@ -591,3 +550,24 @@ POST /api/v1/experiments/{id}:stop
 POST /api/v1/experiments/{id}:analyze
 POST /api/v1/experiments/{id}:promote
 ```
+
+## 15. 验收边界
+
+M3 行为校准必须证明：
+
+- Exposure 绑定 ChapterVersion 100%；
+- Event 幂等去重；
+- Outcome Window 正确处理 Pending / Censored；
+- Calibration 优于简单 Baseline；
+- OOD 自动决策率为 0；
+- Promote 可回滚；
+- 预测和真实结果残差可查询。
+
+M4 因果验证必须证明：
+
+- Platform Adapter 支持随机分流；
+- Assignment 稳定；
+- SRM 通过；
+- Primary 和 Guardrail 预先声明；
+- Promote 不覆盖历史；
+- 不使用观察性相关冒充因果结果。
