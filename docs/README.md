@@ -1,11 +1,11 @@
 # Autonomous Novel OS Documentation
 
 Updated: 2026-07-22
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `c638927`
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
 
 This directory is the current documentation entrypoint for Autonomous Novel OS on the `novel-forge` codebase. The repository/package/CLI remain Novel Forge v6 until an explicit rename migration is approved.
 
-Current engineering priority: v1 single-book production closure.
+Current engineering priority: v1 single-book production closure, with semantic Generator Authority, hierarchical planning, real ChapterPlan generation, and real Book-to-Chapter delegation as the next core convergence work.
 
 Use code and tests as the source of truth. Older design files and phase reports remain useful as history, but they are not authoritative unless a current document links them as active evidence.
 
@@ -17,6 +17,8 @@ The active product target is defined by the blueprint files and the current cont
 - [blueprint/novel-os-project-blueprint.md](blueprint/novel-os-project-blueprint.md) - project blueprint and phase plan.
 - [architecture/production-execution-plane.md](architecture/production-execution-plane.md) - Claude Code orchestration, Codex CLI execution, model profiles, routing, workspace transactions, recovery, evaluation, and multi-book expansion target architecture.
 - [design/hierarchical-story-planning-and-production-authority.md](design/hierarchical-story-planning-and-production-authority.md) - Book Authority、Volume/Arc/Chapter Group Authority、真实 Chapter Saga 委托、滚动规划与分层重规划目标设计。
+- [design/book-design-authority-and-longform-closed-loop.md](design/book-design-authority-and-longform-closed-loop.md) - active integrated product and architecture specification covering semantic generators, Book Design Authority, hierarchical planning, asset impact, long-form state adaptation, reader feedback, and completion governance.
+- [plans/book-design-authority-implementation-plan.md](plans/book-design-authority-implementation-plan.md) - active Epic and Work Package plan for implementing the integrated Book Design Authority and long-form closed loop.
 - [reports/novel-os-final-blueprint-gap-analysis.md](reports/novel-os-final-blueprint-gap-analysis.md) - evidence-first final-blueprint requirement traceability and maturity audit.
 - [plans/novel-os-final-blueprint-completion-plan.md](plans/novel-os-final-blueprint-completion-plan.md) - target architecture, migration, phased delivery, and acceptance plan.
 - [reports/blueprint-gap-audit.md](reports/blueprint-gap-audit.md) - current gap audit against the blueprint.
@@ -24,6 +26,18 @@ The active product target is defined by the blueprint files and the current cont
 - [reports/data-model-gap-matrix.md](reports/data-model-gap-matrix.md) - data model gap matrix.
 - [reports/v1-v7-roadmap.md](reports/v1-v7-roadmap.md) - engineering roadmap aligned to v1-v7 phases.
 - [reports/next-production-slices.md](reports/next-production-slices.md) - ordered implementation slices, starting with v1.
+
+## Active Book Design Authority Documents
+
+The next production-convergence stage is defined by three complementary active design documents:
+
+1. [architecture/production-execution-plane.md](architecture/production-execution-plane.md) owns the unified execution plane, Claude Code/Codex collaboration, model profiles, runtime routing, workspace transactions, recovery, and evaluation architecture.
+2. [design/hierarchical-story-planning-and-production-authority.md](design/hierarchical-story-planning-and-production-authority.md) owns the detailed Book/Volume/Arc/ChapterGroup/Chapter Authority topology, dynamic Saga delegation, rolling planning, and layered plan acceptance.
+3. [design/book-design-authority-and-longform-closed-loop.md](design/book-design-authority-and-longform-closed-loop.md) owns the broader product and domain design that connects semantic generators, Theme/Ending, World/Character, hierarchical planning, Asset Dependency and Impact, ChapterOutcome reducers, long-form adaptation, reader feedback, and completion governance.
+
+The corresponding ordered engineering plan is [plans/book-design-authority-implementation-plan.md](plans/book-design-authority-implementation-plan.md).
+
+These files describe target design and implementation order. They do not by themselves prove implementation, real-provider execution, long-form quality, or production readiness.
 
 ## V7 Content Intelligence Update
 
@@ -48,10 +62,12 @@ Risk closure addendum: [reports/v7-content-intelligence-risk-closure-report.md](
 4. [architecture/production-execution-plane.md](architecture/production-execution-plane.md) - current target production execution architecture and migration plan.
 5. [architecture/module-map.md](architecture/module-map.md) - module boundaries and evidence paths.
 6. [design/hierarchical-story-planning-and-production-authority.md](design/hierarchical-story-planning-and-production-authority.md) - current single-book hierarchical planning and production target.
-7. [product/capability-map.md](product/capability-map.md) - Novel OS capability map and status.
-8. [engineering/extension-guide.md](engineering/extension-guide.md) - how to add a capability without bypassing core contracts.
-9. [quality/regression-tests.md](quality/regression-tests.md) - current test and validation map.
-10. [roadmap/current-roadmap.md](roadmap/current-roadmap.md) - current P0/P1/P2/P3 roadmap.
+7. [design/book-design-authority-and-longform-closed-loop.md](design/book-design-authority-and-longform-closed-loop.md) - integrated semantic Generator, Book Design, state adaptation, impact, feedback, and completion design.
+8. [plans/book-design-authority-implementation-plan.md](plans/book-design-authority-implementation-plan.md) - ordered Epics, Work Packages, migrations, tests, and proof gates.
+9. [product/capability-map.md](product/capability-map.md) - Novel OS capability map and status.
+10. [engineering/extension-guide.md](engineering/extension-guide.md) - how to add a capability without bypassing core contracts.
+11. [quality/regression-tests.md](quality/regression-tests.md) - current test and validation map.
+12. [roadmap/current-roadmap.md](roadmap/current-roadmap.md) - current P0/P1/P2/P3 roadmap.
 
 ## Current Docs
 
@@ -61,6 +77,8 @@ Risk closure addendum: [reports/v7-content-intelligence-risk-closure-report.md](
 | Architecture | [architecture/overview.md](architecture/overview.md) | Layering, runtime flow, Agent/workflow relationship |
 | Production execution | [architecture/production-execution-plane.md](architecture/production-execution-plane.md) | Claude Code orchestration, Codex CLI backend, high/xhigh model profiles, routing, recovery, workspace, evaluation, and phased migration |
 | Hierarchical story production | [design/hierarchical-story-planning-and-production-authority.md](design/hierarchical-story-planning-and-production-authority.md) | Book/Volume/Arc/ChapterGroup/Chapter Authority、真实子 Saga 委托、滚动规划、计划影响传播和分阶段验收设计 |
+| Book Design and long-form loop | [design/book-design-authority-and-longform-closed-loop.md](design/book-design-authority-and-longform-closed-loop.md) | Semantic Generator lifecycle, Theme/Ending, World/Character, hierarchical planning, Asset Impact, ChapterOutcome, feedback, completion, APIs, persistence, UI, migration, and acceptance design |
+| Book Design implementation | [plans/book-design-authority-implementation-plan.md](plans/book-design-authority-implementation-plan.md) | Ordered Epics, Work Packages, code locations, OperationDefinitions, migrations, tests, and 3/10/30/100/300-chapter proof gates |
 | Modules | [architecture/module-map.md](architecture/module-map.md) | Module/API/UI/test evidence map |
 | Product | [product/capability-map.md](product/capability-map.md) | Novel Operating System capability coverage |
 | Engineering | [engineering/extension-guide.md](engineering/extension-guide.md) | Extension checklist for schema/service/API/UI/tests/docs |
@@ -83,7 +101,7 @@ Risk closure addendum: [reports/v7-content-intelligence-risk-closure-report.md](
 The following directories are valuable but should be treated as historical or design material unless refreshed by the current docs above:
 
 - `docs/00-product/` through `docs/09-skills/`: earlier product, architecture, workflow, schema, module, operations, audit, roadmap, and skill docs. Some remain useful, but several contain v5 wording.
-- `docs/design/`: design proposals and requirements. These describe intent, not necessarily complete implementation.
+- `docs/design/`: design proposals and requirements. These describe intent, not necessarily complete implementation. The active design files explicitly linked above are current target specifications, but still do not constitute implementation proof.
 - `docs/new/`: v6/v7 design and implementation planning material. Treat as historical planning unless code evidence confirms it.
 - `docs/reports/`: execution reports, proof reports, audits, and prior state summaries. Multiple files use words like "current" or "final"; prefer the current docs index first.
 - `docs/08-roadmap/v5-*`: v5 roadmap and test history. Keep for lineage, not current roadmap.
@@ -98,7 +116,8 @@ When Claude Code enters the project:
 1. Read `CLAUDE.md`.
 2. Read this file.
 3. Read `docs/project-current-state.md`.
-4. Inspect relevant code and tests before making claims.
-5. Update this docs index when adding or replacing durable docs.
+4. Read the relevant active design and implementation plan before changing semantic generators, hierarchical planning, Book Authority, production execution, long-form state, feedback adaptation, or completion governance.
+5. Inspect relevant code and tests before making claims.
+6. Update this docs index when adding or replacing durable docs.
 
 If current code contradicts an older report, code wins. Document the conflict in `docs/reports/docs-audit-current-state.md` or a relevant report instead of silently copying old claims.
