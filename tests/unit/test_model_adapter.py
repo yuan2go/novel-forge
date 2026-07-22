@@ -163,19 +163,37 @@ class MockModelTests(unittest.TestCase):
                     "NOVEL_FORGE_CODEX_CLI_ENABLED": "1",
                     "NOVEL_FORGE_CODEX_COMMAND": f"{sys.executable} {script}",
                     "NOVEL_FORGE_CODEX_WORKDIR": tmp,
+                    "NOVEL_FORGE_CODEX_EXECUTION_ROOT": str(Path(tmp) / "executions"),
                     "NOVEL_FORGE_CODEX_TIMEOUT_SECONDS": "5",
                 },
                 clear=False,
             ):
                 adapter = CodexAdapter()
                 health = adapter.health_check()
-                result = adapter.generate("write a bounded test response")
+                result = adapter.generate(
+                    "write a bounded test response",
+                    {
+                        "execution_id": "execution:test-codex",
+                        "operation_id": "operation:test-codex",
+                        "attempt_id": "attempt:test-codex:1",
+                        "fencing_token": 3,
+                    },
+                )
 
             self.assertEqual(health["implemented"], "local_cli_worker")
             self.assertTrue(health["configured"])
             self.assertEqual(result["provider"], "codex")
             self.assertEqual(result["text"], "usable generated prose from local codex")
             self.assertEqual(result["usage"]["total_tokens"], 11)
+            self.assertTrue(result["process_receipt"]["authority_bound"])
+            self.assertEqual(result["process_receipt"]["attempt_id"], "attempt:test-codex:1")
+            self.assertTrue(Path(result["process_receipt"]["receipt_path"]).exists())
+            self.assertIsNone(result["external_provider_evidence"]["provider_request_id"])
+            self.assertIsNone(result["external_provider_evidence"]["provider_response_id"])
+            self.assertEqual(
+                result["external_provider_evidence"]["local_execution_receipt_id"],
+                result["process_receipt"]["receipt_id"],
+            )
 
     def test_claude_code_cli_worker_uses_codex_home_profile(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -187,6 +205,7 @@ class MockModelTests(unittest.TestCase):
                     "NOVEL_FORGE_CLAUDE_CODE_CLI_ENABLED": "",
                     "NOVEL_FORGE_CLAUDE_CODE_COMMAND": f"{sys.executable} {script}",
                     "NOVEL_FORGE_CLAUDE_CODE_WORKDIR": tmp,
+                    "NOVEL_FORGE_CLAUDE_CODE_EXECUTION_ROOT": str(Path(tmp) / "executions"),
                     "NOVEL_FORGE_CLAUDE_CODE_TIMEOUT_SECONDS": "5",
                 },
                 clear=False,

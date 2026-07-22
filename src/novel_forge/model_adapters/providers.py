@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import importlib.util
 import os
 import shlex
 import shutil
 import subprocess
-import tempfile
 import time
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +23,15 @@ from novel_forge.model_adapters.runtime import (
     normalize_provider_usage,
     provider_runtime_controller,
     provider_runtime_guard_from_context,
+)
+from novel_forge.modules.production_execution import (
+    CodexProcessSupervisor,
+    EnvironmentAllowlist,
+    PersistentExecutionDirectory,
+    ProcessLaunchRequest,
+    ProcessReceipt,
+    ProcessReceiptStatus,
+    ProcessTimeout,
 )
 
 
@@ -123,70 +131,96 @@ class LocalCodexCliWorkerMixin:
         guard = provider_runtime_guard_from_context(context_payload)
         controller = provider_runtime_controller(operation=canonical, provider=self.config.provider, guard=guard)
         controller.start()
-        with tempfile.TemporaryDirectory(prefix="novel-forge-codex-") as tmp:
-            tmpdir = Path(tmp)
-            schema_path = tmpdir / "output.schema.json"
-            output_path = tmpdir / "last-message.json"
-            schema_path.write_text(json.dumps(_codex_output_schema(canonical), ensure_ascii=False, indent=2), encoding="utf-8")
-            prompt = _codex_prompt(canonical, payload, context_payload)
-            _enforce_codex_input_limit(prompt)
-            command = self._codex_command(schema_path=schema_path, output_path=output_path, context=context_payload)
-            env = self._codex_env()
-            timeout = max(1, int(guard.timeout_ms / 1000)) if guard.timeout_ms > 0 else self._codex_timeout_seconds()
-            started = time.monotonic()
-            try:
-                completed = _run_process_with_runtime_guard(
-                    command,
-                    input_text=prompt,
-                    timeout_seconds=timeout,
-                    cwd=str(self._codex_workdir(context_payload)),
-                    env=env,
-                    controller=controller,
-                    provider=self.config.provider,
-                )
-            except ProviderRuntimeGuardViolation as exc:
-                controller.fail(str(exc))
-                raise RuntimeError(str(exc)) from exc
-            elapsed_ms = int((time.monotonic() - started) * 1000)
-            if completed.returncode != 0:
-                detail = (completed.stderr or completed.stdout or "").strip()
-                controller.fail(f"{self.config.provider} local Codex CLI failed with exit {completed.returncode}: {detail[:1000]}")
-                raise RuntimeError(f"{self.config.provider} local Codex CLI failed with exit {completed.returncode}: {detail[:1000]}")
-            raw = output_path.read_text(encoding="utf-8") if output_path.exists() else _extract_last_json_text(completed.stdout)
-            parsed = parse_json_object(raw)
-            parsed.setdefault("model", self._codex_model() or self.config.default_model)
-            parsed.setdefault("provider", self.config.provider)
-            usage = _codex_usage_from_stdout(completed.stdout, elapsed_ms=elapsed_ms)
-            if usage.get("total_tokens", 0) <= 0:
-                usage = estimate_usage_from_text(prompt, json.dumps(parsed, ensure_ascii=False), elapsed_ms=elapsed_ms, usage_source="codex_stdout_estimated")
-            parsed["usage"] = usage
-            if guard.cost_profile and "cost" not in parsed:
-                parsed["cost"] = estimate_provider_cost(usage, guard.cost_profile)
-            controller.finish(usage, elapsed_ms=elapsed_ms)
-            validated = validate_model_output(canonical, parsed)
-            validated["usage"] = usage
-            validated["runtime_events"] = controller.to_dict()["events"]
-            validated["external_provider_evidence"] = self._local_codex_provider_evidence(
-                raw_output=raw,
-                elapsed_ms=elapsed_ms,
-                usage=usage,
+        execution_id = self._codex_execution_id(canonical, context_payload)
+        execution_store = PersistentExecutionDirectory(self._codex_execution_root(context_payload))
+        layout = execution_store.prepare(execution_id)
+        schema_path = layout.result_path("output.schema.json")
+        output_path = layout.result_path("last-message.json")
+        prompt = _codex_prompt(canonical, payload, context_payload)
+        _enforce_codex_input_limit(prompt)
+        command = self._codex_command(schema_path=schema_path, output_path=output_path, context=context_payload)
+        timeout = max(1, int(guard.timeout_ms / 1000)) if guard.timeout_ms > 0 else self._codex_timeout_seconds()
+        authority_binding = self._codex_authority_binding(context_payload)
+        environment_overrides = {"CODEX_HOME": self._codex_home()} if self._codex_home() else None
+        launch_request = ProcessLaunchRequest(
+            execution_id=execution_id,
+            command=tuple(command),
+            cwd=str(self._codex_workdir(context_payload)),
+            input_text=prompt,
+            timeout=ProcessTimeout(
+                timeout_seconds=timeout,
+                termination_grace_seconds=self._codex_termination_grace_seconds(),
+            ),
+            result_filename="last-message.json",
+            result_format="json",
+            environment_overrides=environment_overrides,
+            **authority_binding,
+        )
+        execution_store.bind_request(layout, launch_request.request_digest)
+        schema_payload = json.dumps(_codex_output_schema(canonical), ensure_ascii=False, indent=2)
+        if schema_path.exists() and schema_path.read_text(encoding="utf-8") != schema_payload:
+            raise RuntimeError(f"persistent Codex output schema drift for execution {execution_id}")
+        if not schema_path.exists():
+            schema_path.write_text(schema_payload, encoding="utf-8")
+        supervised = CodexProcessSupervisor(execution_store).run(
+            launch_request,
+            controller=controller,
+        )
+        receipt = supervised.receipt
+        elapsed_ms = receipt.elapsed_ms
+        if receipt.status is not ProcessReceiptStatus.SUCCEEDED:
+            detail = (
+                receipt.failure_reason
+                or receipt.termination_reason
+                or supervised.stderr
+                or supervised.stdout
+                or receipt.status.value
+            ).strip()
+            controller.fail(
+                f"{self.config.provider} local Codex CLI {receipt.status.value.lower()}: {detail[:1000]}"
             )
-            if "cost" in parsed:
-                validated["cost"] = parsed["cost"]
-            return validated
+            raise RuntimeError(
+                f"{self.config.provider} local Codex CLI {receipt.status.value.lower()}: {detail[:1000]} "
+                f"(receipt={receipt.receipt_id})"
+            )
+        raw = output_path.read_text(encoding="utf-8")
+        parsed = parse_json_object(raw)
+        parsed.setdefault("model", self._codex_model() or self.config.default_model)
+        parsed.setdefault("provider", self.config.provider)
+        usage = _codex_usage_from_stdout(supervised.stdout, elapsed_ms=elapsed_ms)
+        if usage.get("total_tokens", 0) <= 0:
+            usage = estimate_usage_from_text(prompt, json.dumps(parsed, ensure_ascii=False), elapsed_ms=elapsed_ms, usage_source="codex_stdout_estimated")
+        parsed["usage"] = usage
+        if guard.cost_profile and "cost" not in parsed:
+            parsed["cost"] = estimate_provider_cost(usage, guard.cost_profile)
+        controller.finish(usage, elapsed_ms=elapsed_ms)
+        validated = validate_model_output(canonical, parsed)
+        validated["usage"] = usage
+        validated["runtime_events"] = controller.to_dict()["events"]
+        validated["process_receipt"] = receipt.to_dict()
+        validated["external_provider_evidence"] = self._local_codex_provider_evidence(
+            receipt=receipt,
+            elapsed_ms=elapsed_ms,
+            usage=usage,
+        )
+        if "cost" in parsed:
+            validated["cost"] = parsed["cost"]
+        return validated
 
-    def _local_codex_provider_evidence(self, *, raw_output: str, elapsed_ms: int, usage: dict[str, Any]) -> dict[str, Any]:
-        response_hash = hashlib.sha256(
-            f"{self.config.provider}:{self._codex_model() or self.config.default_model}:{raw_output}:{elapsed_ms}".encode("utf-8")
-        ).hexdigest()[:24]
+    def _local_codex_provider_evidence(self, *, receipt: ProcessReceipt, elapsed_ms: int, usage: dict[str, Any]) -> dict[str, Any]:
         return {
             "external_call": True,
             "fixture": False,
             "mock": False,
             "simulated": False,
             "provider_runtime": "local_codex_cli_worker",
+            "transport": "LOCAL_CLI_REMOTE_INFERENCE",
             "external_api": False,
-            "provider_response_id": f"{self.config.provider}-cli-{response_hash}",
+            "remote_inference": True,
+            "local_execution_receipt_id": receipt.receipt_id,
+            "process_receipt_path": receipt.receipt_path,
+            "provider_request_id": None,
+            "provider_response_id": None,
             "endpoint_host": "local-codex-cli",
             "rate_limit_policy": "operator-approved-local-cli-budget-and-timeout",
             "credential_ref": "CODEX_HOME",
@@ -194,6 +228,7 @@ class LocalCodexCliWorkerMixin:
             "automation_isolation": self._codex_automation_isolation(),
             "elapsed_ms": elapsed_ms,
             "usage_source": str(usage.get("usage_source") or ""),
+            "authority_attempt_bound": receipt.authority_bound,
         }
 
     def _local_cli_health(self, base: dict[str, Any]) -> dict[str, Any]:
@@ -211,6 +246,7 @@ class LocalCodexCliWorkerMixin:
             "codex_home": self._codex_home_display(),
             "launch_command": self._launch_command_display(),
             "automation_isolation": self._codex_automation_isolation(),
+            "execution_root": str(self._codex_execution_root({})),
             "runtime_capabilities": _local_process_runtime_capabilities(
                 provider=self.config.provider,
                 configured=configured,
@@ -260,13 +296,6 @@ class LocalCodexCliWorkerMixin:
         raw = os.environ.get(f"{self.cli_env_prefix}_COMMAND", "codex").strip() or "codex"
         return shlex.split(raw)
 
-    def _codex_env(self) -> dict[str, str]:
-        env = dict(os.environ)
-        codex_home = self._codex_home()
-        if codex_home:
-            env["CODEX_HOME"] = codex_home
-        return env
-
     def _codex_home(self) -> str:
         value = os.environ.get(f"{self.cli_env_prefix}_CODEX_HOME", self.default_codex_home).strip()
         return str(Path(value).expanduser()) if value else ""
@@ -282,6 +311,47 @@ class LocalCodexCliWorkerMixin:
             return max(1, int(os.environ.get(f"{self.cli_env_prefix}_TIMEOUT_SECONDS", "300")))
         except Exception:
             return 300
+
+    def _codex_termination_grace_seconds(self) -> float:
+        try:
+            return max(0.0, float(os.environ.get(f"{self.cli_env_prefix}_TERMINATION_GRACE_SECONDS", "2")))
+        except Exception:
+            return 2.0
+
+    def _codex_execution_root(self, context: dict[str, Any]) -> Path:
+        explicit = str(
+            context.get("execution_directory_root")
+            or context.get("execution_root")
+            or os.environ.get(f"{self.cli_env_prefix}_EXECUTION_ROOT", "")
+            or os.environ.get("NOVEL_FORGE_EXECUTION_ROOT", "")
+            or ""
+        ).strip()
+        if explicit:
+            return Path(explicit).expanduser().resolve()
+        workspace_root = str(os.environ.get("NOVEL_FORGE_ROOT", "") or "").strip()
+        base = Path(workspace_root).expanduser() if workspace_root else Path(".local/workspace")
+        return (base / "executions" / self.config.provider).resolve()
+
+    def _codex_execution_id(self, operation: str, context: dict[str, Any]) -> str:
+        execution_request = context.get("execution_request", {}) if isinstance(context.get("execution_request", {}), dict) else {}
+        supplied = str(context.get("execution_id") or execution_request.get("execution_id") or "").strip()
+        return supplied or f"legacy:{self.config.provider}:{operation}:{uuid.uuid4()}"
+
+    def _codex_authority_binding(self, context: dict[str, Any]) -> dict[str, Any]:
+        authority = context.get("authority_attempt", {}) if isinstance(context.get("authority_attempt", {}), dict) else {}
+        execution_request = context.get("execution_request", {}) if isinstance(context.get("execution_request", {}), dict) else {}
+        operation_id = str(context.get("operation_id") or authority.get("operation_id") or execution_request.get("operation_id") or "").strip()
+        attempt_id = str(context.get("attempt_id") or authority.get("attempt_id") or execution_request.get("attempt_id") or "").strip()
+        raw_fence = context.get("fencing_token", authority.get("fencing_token", execution_request.get("fencing_token")))
+        if not operation_id and not attempt_id and raw_fence in {None, ""}:
+            return {}
+        if not operation_id or not attempt_id or raw_fence in {None, ""}:
+            raise ValueError("local Codex production execution requires a complete Authority Attempt binding")
+        try:
+            fencing_token = int(raw_fence)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("local Codex Authority fencing token must be an integer") from exc
+        return {"operation_id": operation_id, "attempt_id": attempt_id, "fencing_token": fencing_token}
 
     def _codex_workdir(self, context: dict[str, Any]) -> Path:
         raw = str(context.get("codex_workdir") or context.get("workspace_path") or os.environ.get(f"{self.cli_env_prefix}_WORKDIR", ".") or ".").strip()
@@ -686,55 +756,6 @@ def _codex_usage_from_stdout(stdout: str, *, elapsed_ms: int = 0) -> dict[str, A
     return normalize_provider_usage(usage, elapsed_ms=elapsed_ms, usage_source="codex_stdout")
 
 
-def _run_process_with_runtime_guard(
-    command: list[str],
-    *,
-    input_text: str,
-    timeout_seconds: int,
-    cwd: str,
-    env: dict[str, str],
-    controller: Any,
-    provider: str,
-) -> subprocess.CompletedProcess[str]:
-    """Run a local worker process while polling cancel/timeout guards.
-
-    `subprocess.run()` can only interrupt on its own timeout. This wrapper lets
-    the same provider runtime controller observe elapsed time and cancel flags
-    while the local Codex/Claude Code worker is still running.
-    """
-
-    started = time.monotonic()
-    process = subprocess.Popen(
-        command,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        cwd=cwd,
-        env=env,
-    )
-    input_sent = False
-    while True:
-        elapsed_ms = int((time.monotonic() - started) * 1000)
-        try:
-            controller.cancel_if_requested()
-            if timeout_seconds > 0 and elapsed_ms > timeout_seconds * 1000:
-                raise ProviderRuntimeGuardViolation(f"{provider} local worker timed out after {timeout_seconds}s")
-            stdout, stderr = process.communicate(input=input_text if not input_sent else None, timeout=0.25)
-            return subprocess.CompletedProcess(command, process.returncode or 0, stdout, stderr)
-        except subprocess.TimeoutExpired:
-            input_sent = True
-            controller.observe_usage_delta({"elapsed_ms": elapsed_ms, "usage_source": "process_poll"}, elapsed_ms=elapsed_ms)
-            continue
-        except ProviderRuntimeGuardViolation:
-            process.kill()
-            try:
-                stdout, stderr = process.communicate(timeout=1)
-            except Exception:
-                stdout, stderr = "", ""
-            raise
-
-
 def _streaming_enabled(context: dict[str, Any], *, guard: Any | None = None) -> bool:
     value, explicit = _streaming_config_value(context)
     if explicit:
@@ -784,7 +805,11 @@ def _local_process_runtime_capabilities(*, provider: str, configured: bool, enab
     return {
         "provider": provider,
         "live_streaming": {"supported": False, "enabled": False, "transport": "process_poll"},
-        "live_cancel": {"supported": bool(enabled), "enabled": bool(configured), "mechanism": "process_kill_on_guard_violation"},
+        "live_cancel": {"supported": bool(enabled), "enabled": bool(configured), "mechanism": "local_process_group_sigterm_sigkill"},
+        "upstream_cancel": {"supported": False, "mechanism": "not_claimed_by_local_process_supervisor"},
+        "persistent_execution_directory": True,
+        "orphan_recovery": True,
+        "pid_reuse_detection": True,
         "usage_reporting": {"live": False, "final": True, "estimated": True, "source": "codex_stdout_or_estimated"},
         "cost_reporting": {"precise_provider_cost": False, "estimated": True},
         "guard_phases": ["start", "process_poll", "postflight"],
@@ -1003,7 +1028,7 @@ def _codex_exec_option_supported(command_base: list[str], option: str) -> bool:
                 stderr=subprocess.PIPE,
                 text=True,
                 timeout=5,
-                env=dict(os.environ),
+                env=EnvironmentAllowlist.codex_default().build(),
             )
             _CODEX_EXEC_HELP_CACHE[key] = f"{completed.stdout}\n{completed.stderr}"
         except Exception:

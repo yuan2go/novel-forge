@@ -26,6 +26,22 @@ from .contracts import (
     ValidationCheck,
     ValidationManifest,
 )
+from .process_supervisor import (
+    CODEX_ENVIRONMENT_ALLOWLIST,
+    CodexProcessSupervisor,
+    EnvironmentAllowlist,
+    ExecutionDirectoryLayout,
+    PersistentExecutionDirectory,
+    PosixProcessIdentityProbe,
+    ProcessGroup,
+    ProcessLaunchRequest,
+    ProcessReceipt,
+    ProcessReceiptStatus,
+    ProcessRecoveryResult,
+    ProcessTimeout,
+    ResultIntegrity,
+    SupervisedProcessResult,
+)
 
 __all__ = [
     "ArtifactPointer",
@@ -52,4 +68,18 @@ __all__ = [
     "UpstreamCancellationOutcome",
     "ValidationCheck",
     "ValidationManifest",
+    "CODEX_ENVIRONMENT_ALLOWLIST",
+    "CodexProcessSupervisor",
+    "EnvironmentAllowlist",
+    "ExecutionDirectoryLayout",
+    "PersistentExecutionDirectory",
+    "PosixProcessIdentityProbe",
+    "ProcessGroup",
+    "ProcessLaunchRequest",
+    "ProcessReceipt",
+    "ProcessReceiptStatus",
+    "ProcessRecoveryResult",
+    "ProcessTimeout",
+    "ResultIntegrity",
+    "SupervisedProcessResult",
 ]
