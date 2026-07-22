@@ -1,7 +1,7 @@
 # Autonomous Novel OS Documentation
 
-Updated: 2026-07-11
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `f66ebb7`
+Updated: 2026-07-22
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, commit `c638927`
 
 This directory is the current documentation entrypoint for Autonomous Novel OS on the `novel-forge` codebase. The repository/package/CLI remain Novel Forge v6 until an explicit rename migration is approved.
 
@@ -15,6 +15,7 @@ The active product target is defined by the blueprint files and the current cont
 
 - [blueprint/autonomous-novel-os-full-blueprint.md](blueprint/autonomous-novel-os-full-blueprint.md) - full functional blueprint.
 - [blueprint/novel-os-project-blueprint.md](blueprint/novel-os-project-blueprint.md) - project blueprint and phase plan.
+- [design/hierarchical-story-planning-and-production-authority.md](design/hierarchical-story-planning-and-production-authority.md) - Book Authority、Volume/Arc/Chapter Group Authority、真实 Chapter Saga 委托、滚动规划与分层重规划目标设计。
 - [reports/novel-os-final-blueprint-gap-analysis.md](reports/novel-os-final-blueprint-gap-analysis.md) - evidence-first final-blueprint requirement traceability and maturity audit.
 - [plans/novel-os-final-blueprint-completion-plan.md](plans/novel-os-final-blueprint-completion-plan.md) - target architecture, migration, phased delivery, and acceptance plan.
 - [reports/blueprint-gap-audit.md](reports/blueprint-gap-audit.md) - current gap audit against the blueprint.
@@ -44,10 +45,11 @@ Risk closure addendum: [reports/v7-content-intelligence-risk-closure-report.md](
 2. [project-current-state.md](project-current-state.md) - current engineering and product state.
 3. [architecture/overview.md](architecture/overview.md) - system architecture and data flow.
 4. [architecture/module-map.md](architecture/module-map.md) - module boundaries and evidence paths.
-5. [product/capability-map.md](product/capability-map.md) - Novel OS capability map and status.
-6. [engineering/extension-guide.md](engineering/extension-guide.md) - how to add a capability without bypassing core contracts.
-7. [quality/regression-tests.md](quality/regression-tests.md) - current test and validation map.
-8. [roadmap/current-roadmap.md](roadmap/current-roadmap.md) - current P0/P1/P2/P3 roadmap.
+5. [design/hierarchical-story-planning-and-production-authority.md](design/hierarchical-story-planning-and-production-authority.md) - current single-book hierarchical planning and production target.
+6. [product/capability-map.md](product/capability-map.md) - Novel OS capability map and status.
+7. [engineering/extension-guide.md](engineering/extension-guide.md) - how to add a capability without bypassing core contracts.
+8. [quality/regression-tests.md](quality/regression-tests.md) - current test and validation map.
+9. [roadmap/current-roadmap.md](roadmap/current-roadmap.md) - current P0/P1/P2/P3 roadmap.
 
 ## Current Docs
 
@@ -55,6 +57,7 @@ Risk closure addendum: [reports/v7-content-intelligence-risk-closure-report.md](
 |---|---|---|
 | Current state | [project-current-state.md](project-current-state.md) | Fact table for implemented, partial, missing, and risky capabilities |
 | Architecture | [architecture/overview.md](architecture/overview.md) | Layering, runtime flow, Agent/workflow relationship |
+| Hierarchical story production | [design/hierarchical-story-planning-and-production-authority.md](design/hierarchical-story-planning-and-production-authority.md) | Book/Volume/Arc/ChapterGroup/Chapter Authority、真实子 Saga 委托、滚动规划、计划影响传播和分阶段验收设计 |
 | Modules | [architecture/module-map.md](architecture/module-map.md) | Module/API/UI/test evidence map |
 | Product | [product/capability-map.md](product/capability-map.md) | Novel Operating System capability coverage |
 | Engineering | [engineering/extension-guide.md](engineering/extension-guide.md) | Extension checklist for schema/service/API/UI/tests/docs |
