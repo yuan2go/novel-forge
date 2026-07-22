@@ -31,6 +31,26 @@ store, reachable PostgreSQL, and verifiable frozen production inputs were not al
 present. This is a recorded precondition result, not a failed Provider run, and it
 does not block local WP-01 implementation.
 
+## 2026-07-22 Production Execution Plane Contracts
+
+WP-01 adds pure, serializable Production Execution Plane contracts under
+`modules/production_execution/`. Execution request/handle/result/cancellation,
+RouteSnapshot, and all five Manifests bind to the existing Authority Attempt and
+fencing token; no `execution_attempt` table, repository, scheduler, Provider call, or
+production behavior was added. ModelProfile uses stable aliases and requires exact
+Capability Probe evidence. Route qualification binds backend/model/version/probe and
+rejects any reasoning-effort change, including `xhigh` to `high`.
+
+Cancellation evidence now distinguishes local process termination from upstream
+Provider cancellation, and a successful upstream cancel requires a real Provider
+request ID and cancellation receipt. Validation acceptance freezes its policy and
+required checks. InputManifest uses a typed generic target scope so the same contract
+can support Book, World, Character, Arc, ChapterGroup, and Chapter execution.
+
+`execution_plane_contract_proven=true` means contract/unit/integration boundaries are
+verified; `production_execution_gateway_proven`, `codex_cli_backend_proven`,
+`remote_provider_backend_proven`, and all real-provider/production flags remain false.
+
 ## 2026-07-18 Pre-Provider Production Architecture v2
 
 The bounded architecture is now `PRE_PROVIDER_PRODUCTION_ARCHITECTURE_COMPLETE`.

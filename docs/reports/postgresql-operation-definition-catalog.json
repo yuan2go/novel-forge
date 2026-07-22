@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:fe2f8f96e6b186b850a5720348c49fe7162992f61af318de5d810c4b08705e13",
+  "artifact_hash": "sha256:49f4c3603f7d3c64ace1bc4d371e22b24213844f2b8de49c960caf26c0bed74b",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+  "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
   "definitions": [
     {
       "alias_of": "",
@@ -12257,7 +12257,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.slice.run.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -12565,7 +12565,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.plan.materialize.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -12819,7 +12819,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.context.build.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13065,7 +13065,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.draft.generate.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13313,7 +13313,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.review.evaluate.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13561,7 +13561,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.apply.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13809,7 +13809,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.review.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14057,7 +14057,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.extract.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14305,7 +14305,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.propose_changes.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14543,7 +14543,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.update.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14853,7 +14853,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.structural.evaluate.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15101,7 +15101,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.commercial.evaluate.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15349,7 +15349,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.source_originality.evaluate.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15597,7 +15597,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.longform.evaluate.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15845,7 +15845,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.platform.evaluate.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -16093,7 +16093,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.evaluate.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -16659,7 +16659,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.prepare_release.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -16897,7 +16897,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.export.render.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -17152,7 +17152,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.finalize_release.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -17369,7 +17369,7 @@
         "type": "object"
       },
       "command_schema_version": "canon.change.approve.command.v1",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_decision",
@@ -17530,7 +17530,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.brief.create.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -17720,7 +17720,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.evaluate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -17910,7 +17910,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.cluster.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18100,7 +18100,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.project.approve.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18290,7 +18290,7 @@
         "type": "object"
       },
       "command_schema_version": "production.world.generate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18480,7 +18480,7 @@
         "type": "object"
       },
       "command_schema_version": "world.validate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18670,7 +18670,7 @@
         "type": "object"
       },
       "command_schema_version": "production.character.generate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18860,7 +18860,7 @@
         "type": "object"
       },
       "command_schema_version": "character.relationships.generate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19050,7 +19050,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.question.create.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19240,7 +19240,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.arc.build.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19430,7 +19430,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.anti_preaching.evaluate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19620,7 +19620,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.closure.plan.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19810,7 +19810,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.payoff_matrix.build.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20000,7 +20000,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.quality.evaluate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20190,7 +20190,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.motivation.evaluate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20380,7 +20380,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.entity_merge.propose.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20570,7 +20570,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.foreshadow_payoff.evaluate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20760,7 +20760,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.world_rule.evaluate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20950,7 +20950,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.power.evaluate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21140,7 +21140,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.pattern.evaluate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21330,7 +21330,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.narrative_debt.evaluate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21520,7 +21520,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.recap.enhance.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21710,7 +21710,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.golden_sample.create.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21900,7 +21900,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.human_decision.record.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22090,7 +22090,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.calibration.run.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22280,7 +22280,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.calibration.profile.promote.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22470,7 +22470,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.calibration.profile.revoke.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22660,7 +22660,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.state.initialize_empty.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22850,7 +22850,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.generate.command.v2",
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -23030,7 +23030,8 @@
         ],
         "type": "object"
       },
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "command_schema_version": "book.production.run.command.v1",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23120,6 +23121,7 @@
       },
       "legacy_entrypoints": [],
       "merged_into": [],
+      "migration_owner": "book-authority",
       "migration_status": "integration_proven",
       "name": "book.production.run",
       "output_contract": {
@@ -23133,10 +23135,15 @@
         "real_provider_proven": false
       },
       "production_verified": false,
+      "projection_consumers": [
+        "book_production_timeline",
+        "operation_timeline"
+      ],
       "replacement_entrypoints": [],
       "result_schema": {
         "type": "object"
       },
+      "result_schema_version": "book.production.run.result.v1",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -23175,7 +23182,8 @@
         ],
         "type": "object"
       },
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "command_schema_version": "book.production.prepare.command.v1",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23252,6 +23260,7 @@
       },
       "legacy_entrypoints": [],
       "merged_into": [],
+      "migration_owner": "book-authority",
       "migration_status": "integration_proven",
       "name": "book.production.prepare",
       "output_contract": {
@@ -23266,10 +23275,15 @@
         "real_model_call": false
       },
       "production_verified": false,
+      "projection_consumers": [
+        "book_production_timeline",
+        "operation_timeline"
+      ],
       "replacement_entrypoints": [],
       "result_schema": {
         "type": "object"
       },
+      "result_schema_version": "book.production.prepare.result.v1",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -23308,7 +23322,8 @@
         ],
         "type": "object"
       },
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "command_schema_version": "book.chapter.dispatch.command.v1",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23385,6 +23400,7 @@
       },
       "legacy_entrypoints": [],
       "merged_into": [],
+      "migration_owner": "book-authority",
       "migration_status": "integration_proven",
       "name": "book.chapter.dispatch",
       "output_contract": {
@@ -23399,10 +23415,15 @@
         "real_model_call": false
       },
       "production_verified": false,
+      "projection_consumers": [
+        "book_production_timeline",
+        "operation_timeline"
+      ],
       "replacement_entrypoints": [],
       "result_schema": {
         "type": "object"
       },
+      "result_schema_version": "book.chapter.dispatch.result.v1",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -23441,7 +23462,8 @@
         ],
         "type": "object"
       },
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "command_schema_version": "book.recap.light.command.v1",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23518,6 +23540,7 @@
       },
       "legacy_entrypoints": [],
       "merged_into": [],
+      "migration_owner": "book-authority",
       "migration_status": "integration_proven",
       "name": "book.recap.light",
       "output_contract": {
@@ -23532,10 +23555,15 @@
         "real_model_call": false
       },
       "production_verified": false,
+      "projection_consumers": [
+        "book_production_timeline",
+        "operation_timeline"
+      ],
       "replacement_entrypoints": [],
       "result_schema": {
         "type": "object"
       },
+      "result_schema_version": "book.recap.light.result.v1",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -23574,7 +23602,8 @@
         ],
         "type": "object"
       },
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "command_schema_version": "book.recap.formal.command.v1",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23651,6 +23680,7 @@
       },
       "legacy_entrypoints": [],
       "merged_into": [],
+      "migration_owner": "book-authority",
       "migration_status": "integration_proven",
       "name": "book.recap.formal",
       "output_contract": {
@@ -23665,10 +23695,15 @@
         "real_model_call": false
       },
       "production_verified": false,
+      "projection_consumers": [
+        "book_production_timeline",
+        "operation_timeline"
+      ],
       "replacement_entrypoints": [],
       "result_schema": {
         "type": "object"
       },
+      "result_schema_version": "book.recap.formal.result.v1",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -23707,7 +23742,8 @@
         ],
         "type": "object"
       },
-      "commit_sha": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+      "command_schema_version": "book.plan_adjustment.propose.command.v1",
+      "commit_sha": "60c685aca73af3079f205c6a643c06e14d783872",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23784,6 +23820,7 @@
       },
       "legacy_entrypoints": [],
       "merged_into": [],
+      "migration_owner": "book-authority",
       "migration_status": "integration_proven",
       "name": "book.plan_adjustment.propose",
       "output_contract": {
@@ -23798,10 +23835,15 @@
         "real_model_call": false
       },
       "production_verified": false,
+      "projection_consumers": [
+        "book_production_timeline",
+        "operation_timeline"
+      ],
       "replacement_entrypoints": [],
       "result_schema": {
         "type": "object"
       },
+      "result_schema_version": "book.plan_adjustment.propose.result.v1",
       "retry_policy": {
         "max_attempts": 2
       },
@@ -23813,7 +23855,7 @@
     }
   ],
   "generator_version": "2.1.0",
-  "repository_head_at_generation": "98a7e003cd2b7b4821737fe3b22d0c35fe415b8a",
+  "repository_head_at_generation": "60c685aca73af3079f205c6a643c06e14d783872",
   "schema_version": "2.0.0",
-  "source_tree_sha": "f77a8b6e0cbe8a221aecc6d27e0cb847c8b73a49"
+  "source_tree_sha": "832ffcbcbe1f56745c1c9835dc7f40fde663ccee"
 }
