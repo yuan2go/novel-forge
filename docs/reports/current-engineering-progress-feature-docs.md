@@ -1,5 +1,20 @@
 # Current Engineering Progress And Feature Documentation
 
+## 2026-07-22 Production execution gateway update
+
+WP-03 implements the Attempt/fence-bound ProductionExecutionGateway, explicit
+Backend Registry and admission/probe layer, Codex CLI/Remote Provider v2/scripted
+backends, result normalization/structural validation/reconciliation, stable
+ModelProfile and RoutePolicy resolution, and PostgreSQL read adapters over the
+existing Authority Attempt/Lease and AssetVersion schema. Model Router has no direct
+legacy adapter calls; repository-owned legacy Provider implementations fail closed in
+controlled environments.
+
+Evidence is fixture/protocol plus PostgreSQL admission integration only. Chapter
+Authority has not yet migrated, no paid/real Provider request ran, and real Provider,
+Book delegation, long-form, behavioral calibration, causal validation, and
+production verification flags remain false.
+
 ## 2026-07-18 Pre-provider production architecture v2
 
 Source evidence is bound to `98a7e003cd2b7b4821737fe3b22d0c35fe415b8a`.

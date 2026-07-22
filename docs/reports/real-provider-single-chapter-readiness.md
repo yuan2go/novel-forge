@@ -2,6 +2,25 @@
 
 Updated: 2026-07-22.
 
+## 2026-07-22 WP-03 Update
+
+The unified ProductionExecutionGateway and Codex CLI/Remote Provider v2/scripted
+backend contracts now have fixture and PostgreSQL admission proof. Stable
+ModelProfile/RoutePolicy resolution freezes actual backend/model/prompt/skill/context
+and full release SHA, preserves Provider versus local process identities, and rejects
+stale fences and reasoning downgrade. Known independent legacy Provider adapters are
+disabled in controlled environments.
+
+Chapter Authority nodes are not yet connected to this gateway, so this update does
+not make a real chapter runnable and does not change the Gate-00 verdict:
+
+```text
+production_execution_gateway_proven=true
+chapter_authority_execution_migrated=false
+single_chapter_real_provider_proven=false
+production_verified=false
+```
+
 ## 2026-07-22 Gate-00 Result
 
 Gate-00 was evaluated and not run because its prerequisites are incomplete. No paid

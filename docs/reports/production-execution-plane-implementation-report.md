@@ -86,7 +86,7 @@ Gate-00 can be rerun only after all of the following are true:
 | Gate-00 | not run: prerequisites unmet | this report commit | no | configuration-presence and read-only database reachability checks |
 | WP-01 | complete: contract layer | `60c685a` | no | contract/architecture tests, PostgreSQL Authority regression, clean/upgrade migration |
 | WP-02 | complete: persistent local process supervision | `cea7a25`, `ac80c31` | yes, local Codex CLI only | 15 supervisor/boundary tests, 53 focused tests, 992 unit tests, 101 PostgreSQL Authority tests |
-| WP-03 | pending | — | — | — |
+| WP-03 | complete: gateway/backend convergence core | `4aecfa1` | yes, controlled production routes fail closed on independent legacy adapters | 13 gateway unit tests, 18 architecture tests, 1,006 unit tests, 102 PostgreSQL Authority tests |
 | WP-04 | pending | — | — | — |
 | Gate-01 | pending | — | — | — |
 
@@ -296,15 +296,126 @@ passed.
 ### Remaining blockers
 
 - `ProcessReceipt` files are not yet materialized through the PostgreSQL
-  ExternalEffect/Receipt authority; unbound legacy receipts remain non-production;
-- `ProductionExecutionGateway`, Backend Registry, Admission Controller, Capability
-  Probe, result normalizer/validator, and execution reconciler are not implemented;
-- Provider v2 is not yet adapted as `RemoteProviderExecutionBackend`;
-- Model Router and Legacy Adapter still own old execution entry paths outside the
-  migrated local process seam;
+  ExternalEffect/Receipt authority; WP-03 can read the existing Authority contracts
+  and fence, while WP-04 must wire Chapter ExternalEffects to the gateway;
+- the gateway/backend registry, admission, probe, normalizer/validator, reconciler,
+  Provider-v2 Remote backend, Codex CLI backend, and scripted backend are implemented
+  below;
+- Model Router no longer directly invokes old adapters. Repository-owned legacy
+  Provider adapters fail before network/process launch in controlled environments;
+  non-production/test compatibility remains quarantined until later generator paths
+  migrate;
 - Chapter Authority still uses its current Provider v2/model ports;
-- old external-provider proof code still expects a Provider response ID, so local CLI
-  evidence correctly remains ineligible until WP-03 introduces transport-aware proof;
+- legacy external-provider proof code still expects a Provider response ID. WP-03
+  separates local process and Provider identities, but Chapter proof remains
+  ineligible until the Chapter path migrates in WP-04;
 - Gate-00 remains not run and every real-provider/production flag remains false.
 
-The next authorized step is WP-03 ProductionExecutionGateway and backend convergence.
+The next authorized step is WP-04 Chapter Authority execution migration.
+
+## WP-03 — ProductionExecutionGateway And Backend Convergence
+
+### Delivered
+
+`modules/production_execution/` now contains the first execution gateway slice:
+
+- `ProductionExecutionGateway`, `ExecutionBackendRegistry`, `AdmissionController`,
+  and `CapabilityProbe`;
+- `CodexCliExecutionBackend`, `RemoteProviderExecutionBackend`, and
+  `ScriptedFixtureExecutionBackend`;
+- `ResultNormalizer`, structural `ResultValidator`, and `ExecutionReconciler`;
+- `ModelProfileRegistry`, `RoutePolicyRegistry`, `RouteResolver`, and the advisory
+  `RouteRecommendationReadModel`;
+- `LegacyRequestMapper`, `LegacyResultMapper`, and
+  `LegacyGatewayModelAdapter`;
+- `PostgresAttemptFenceVerifier` and `PostgresExecutionContractSource`, which query
+  the existing `authority_attempt`, lease, and Authority AssetVersion tables.
+
+Admission verifies the existing live Attempt/fencing token, immutable
+RouteSnapshot, ACTIVE stable-alias ModelProfile, ACTIVE RoutePolicy allowlist,
+InputManifest identity/read scope, timeout policy, Backend capability probe, trace,
+and ExternalEffect binding before submission. It creates no Attempt, Task, budget,
+approval, or receipt authority.
+
+Provider v2 is now the transport protocol inside
+`RemoteProviderExecutionBackend`. The backend requires a `V2_CONTROLLED` adapter,
+preserves real Provider request IDs, and maps query, cancel, and Callback evidence
+without inventing IDs. The scripted backend is a distinct runtime class, always
+records fixture/non-production markers, and is never real-provider eligible. The
+Codex backend executes only through the WP-02 persistent supervisor and records a
+local receipt with a null Provider request ID.
+
+### Failure, replay, and cancellation evidence
+
+| Case | Verified behavior |
+|---|---|
+| duplicate ExecutionRequest | same immutable request returns the existing handle; Provider execute is called once |
+| duplicate ID with changed request | rejected before a second backend submission |
+| stale Authority fence | PostgreSQL/static verifier rejects before submission/reconcile/cancel |
+| Provider `UNKNOWN` | Provider-v2 query reconciles to governed result or remains `UNKNOWN` |
+| duplicate Callback | identical message/hash is idempotent and returns the same result |
+| conflicting Callback | rejected as conflicting receipt |
+| confirmed cancel then late Callback | cancellation remains terminal; late output is evidence only and cannot become success |
+| local CLI result | persistent ProcessReceipt, structured result, no Provider ID |
+| empty/corrupt structured result | no success OutputManifest/ValidationManifest is created |
+| `xhigh` route request | exact capability/profile match is required; `xhigh` to `high` fails closed |
+
+`ResultValidator` currently proves only a non-empty structured object, fence, and
+RouteSnapshot binding. It deliberately does not claim domain-schema or semantic
+quality acceptance. Materialization, domain validators, AssetVersion commit, and
+CommitManifest authority remain caller responsibilities.
+
+### Runtime, migration, and catalog impact
+
+```text
+database_schema_changed = false
+new_attempt_authority_created = false
+new_operation_definition_added = false
+provider_call_executed = false
+paid_call_executed = false
+production_execution_gateway_proven = true
+codex_cli_backend_fixture_proven = true
+remote_provider_backend_protocol_proven = true
+chapter_authority_migrated = false
+real_provider_proven = false
+production_verified = false
+```
+
+No migration or new OperationDefinition was necessary. PostgreSQL integration uses
+the existing Attempt/Lease and Authority AssetVersion schema. The checked-in
+Authority coverage and OperationDefinition catalog are regenerated because source
+entrypoints changed, not because a parallel operation family was added.
+
+`InMemoryExecutionRecordStore` and `Static*` sources are explicitly test/bootstrap
+fixtures. They are not production state stores. WP-04 must adapt the Chapter
+ExternalEffect runtime so requests, handles, Provider/process receipts, and recovery
+indexes are persisted through existing PostgreSQL authority records.
+
+### Verification
+
+```text
+gateway/backend/routing/legacy unit tests: 13 passed
+full architecture guards: 18 passed
+focused execution/model/provider regression: passed
+PostgreSQL gateway admission integration: 1 passed
+full unit suite: 1,006 passed
+full PostgreSQL Authority suite: 102 passed
+clean-install and upgrade migrations: passed
+ruff, compileall, Skill drift, workspace validation: passed
+real/paid Provider calls: 0
+```
+
+No fixture output sets a real-provider or production-verification flag.
+
+### Remaining blockers
+
+- Chapter Draft/Review/Revision/Re-review/Canon extraction/Quality nodes still use
+  their existing ExternalEffect adapters; WP-04 must migrate them without rewriting
+  the eighteen-node Saga;
+- backend recovery state is still supplied by the test record store in this WP;
+  production restart/reconcile must be reconstructed from PostgreSQL ExternalEffect
+  evidence in WP-04;
+- the legacy Chapter model adapter and other pre-authority generation paths remain
+  non-production compatibility surfaces;
+- no real Provider route, paid request, usage/cost receipt, or Chapter proof ran;
+  Gate-01 remains pending.

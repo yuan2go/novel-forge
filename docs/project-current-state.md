@@ -2,7 +2,7 @@
 
 Updated: 2026-07-22
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `12f3ff7`
-Latest execution-plane source commit: `ac80c31`
+Latest execution-plane source commit: `4aecfa1`
 
 Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
 
@@ -25,6 +25,31 @@ does not change production behavior or maturity. `real_provider_proven`,
 `book_to_chapter_delegation_proven`, `longform_proven`,
 `reader_outcome_behavior_calibrated`, `causal_experiment_validated`, and
 `production_verified` remain false.
+
+## 2026-07-22 Production Execution Gateway And Backends
+
+WP-03 adds the Attempt-bound `ProductionExecutionGateway`, explicit Backend Registry,
+Admission Controller, Capability Probe, stable ModelProfile/RoutePolicy registries,
+immutable Route resolver, Result Normalizer/structural Validator/Reconciler, and
+Codex CLI, Remote Provider v2, and scripted fixture backends. The production
+PostgreSQL adapter reuses current Attempt/Lease fencing and Authority AssetVersions;
+there is no second execution Attempt table or mutable route authority.
+
+The Model Router no longer directly invokes old adapters. Repository-owned legacy
+ChatGPT/DeepSeek/Codex/Claude-Code implementations reject controlled production or
+validation calls before network/process launch and direct callers to the gateway.
+Injected test doubles remain available for policy tests and cannot establish real
+Provider proof. Duplicate request, stale fence, Provider UNKNOWN, Callback
+deduplication/conflict, cancel/late-result race, local receipt identity, and corrupt
+structured output have fixture/integration evidence.
+
+This is gateway and protocol proof, not Chapter migration or production proof.
+`production_execution_gateway_proven=true`,
+`remote_provider_backend_protocol_proven=true`, and
+`codex_cli_backend_fixture_proven=true`; `chapter_authority_migrated`,
+`single_chapter_real_provider_proven`, and `production_verified` remain false. WP-04
+must connect the existing Chapter ExternalEffect runtime and persist recovery evidence
+in PostgreSQL.
 
 Gate-00 was evaluated after the baseline and was not run: paid-call authorization and
 the real Provider route, trusted identity/scope, budgets, release identity, object
