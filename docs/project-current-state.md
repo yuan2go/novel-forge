@@ -1,13 +1,29 @@
 # Project Current State
 
-Updated: 2026-07-18
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `98a7e003cd2b7b4821737fe3b22d0c35fe415b8a`
+Updated: 2026-07-22
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `12f3ff7`
 
 Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
 
 The current code/runtime baseline is Novel Forge v6. The repository/package/CLI name remains `novel-forge`; do not rename code paths without a dedicated migration.
 
 Current priority: v1 single-book production closure before broader multi-book, SaaS, or platform automation.
+
+## 2026-07-22 Next Authority Implementation Baseline
+
+WP-00 has audited the execution, Chapter, Book, Context, Evaluation, and storage
+boundaries for the next production closure. The code facts show three direct model
+execution owners, an ephemeral/full-environment local Codex launcher, mutable
+LocalStorage compatibility writes, and a fixture-only Book chapter dispatch. The
+PostgreSQL Chapter Authority and its ExternalEffect seam remain the migration anchor;
+they are not being rewritten.
+
+The detailed current-path/target-path/removal-gate matrix is in
+`docs/reports/next-authority-implementation-baseline.md`. This documentation baseline
+does not change production behavior or maturity. `real_provider_proven`,
+`book_to_chapter_delegation_proven`, `longform_proven`,
+`reader_outcome_behavior_calibrated`, `causal_experiment_validated`, and
+`production_verified` remain false.
 
 ## 2026-07-18 Pre-Provider Production Architecture v2
 
