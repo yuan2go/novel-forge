@@ -25,6 +25,12 @@ does not change production behavior or maturity. `real_provider_proven`,
 `reader_outcome_behavior_calibrated`, `causal_experiment_validated`, and
 `production_verified` remain false.
 
+Gate-00 was evaluated after the baseline and was not run: paid-call authorization and
+the real Provider route, trusted identity/scope, budgets, release identity, object
+store, reachable PostgreSQL, and verifiable frozen production inputs were not all
+present. This is a recorded precondition result, not a failed Provider run, and it
+does not block local WP-01 implementation.
+
 ## 2026-07-18 Pre-Provider Production Architecture v2
 
 The bounded architecture is now `PRE_PROVIDER_PRODUCTION_ARCHITECTURE_COMPLETE`.
