@@ -210,6 +210,26 @@ class ProcessSupervisorTests(unittest.TestCase):
             self.assertEqual(result.receipt.result_integrity, ResultIntegrity.CORRUPT)
             self.assertIn("JSON", result.receipt.failure_reason)
 
+    def test_process_start_failure_is_persisted_without_fabricated_process_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = PersistentExecutionDirectory(Path(tmp))
+            result = CodexProcessSupervisor(store).run(
+                ProcessLaunchRequest(
+                    execution_id="execution:start-failure",
+                    command=(str(Path(tmp) / "missing-codex-executable"),),
+                    cwd=tmp,
+                    input_text="",
+                    timeout=ProcessTimeout(timeout_seconds=3),
+                )
+            )
+
+            self.assertEqual(result.receipt.status, ProcessReceiptStatus.START_FAILED)
+            self.assertIsNone(result.receipt.process_group)
+            self.assertIsNone(result.receipt.provider_request_id)
+            self.assertIn("FileNotFoundError", result.receipt.failure_reason)
+            persisted = store.read_receipt("execution:start-failure")
+            self.assertEqual(persisted.receipt_id, result.receipt.receipt_id)
+
     def test_local_cancellation_terminates_process_without_claiming_upstream_cancel(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             store = PersistentExecutionDirectory(Path(tmp))
@@ -301,6 +321,7 @@ class ProcessSupervisorTests(unittest.TestCase):
             self.assertEqual(
                 {result.receipt.status for result in results},
                 {ProcessReceiptStatus.SUCCEEDED},
+                [result.receipt.to_dict() for result in results],
             )
 
     def test_recovery_detects_pid_reuse_without_signaling_unrelated_process(self) -> None:

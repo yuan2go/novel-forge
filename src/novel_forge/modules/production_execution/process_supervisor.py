@@ -52,6 +52,11 @@ def _sha256_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
+_SUPERVISOR_PROCESS_TOKEN = _sha256_text(
+    f"supervisor:{os.getpid()}:{time.time_ns()}"
+)
+
+
 def _canonical_hash(payload: Mapping[str, Any]) -> str:
     encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return _sha256_text(encoded)
@@ -68,6 +73,8 @@ def _age_seconds(timestamp: str | None) -> float | None:
 
 
 class ProcessReceiptStatus(StrEnum):
+    STARTING = "STARTING"
+    START_FAILED = "START_FAILED"
     RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
@@ -140,6 +147,8 @@ class ProcessGroup:
     def __post_init__(self) -> None:
         if self.pid <= 0 or self.pgid <= 0:
             raise ValueError("process group requires positive PID and PGID")
+        if not self.process_start_token:
+            raise ValueError("process group requires a launch/start identity token")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -166,7 +175,7 @@ class ProcessReceipt:
     fencing_token: int | None
     transport: ExecutionRuntimeClass
     status: ProcessReceiptStatus
-    process_group: ProcessGroup
+    process_group: ProcessGroup | None
     execution_directory: str
     receipt_path: str
     stdout_path: str
@@ -204,6 +213,11 @@ class ProcessReceipt:
             raise ValueError("process receipt fencing token must be positive")
         if not self.receipt_id or not self.execution_id or not self.process_started_at:
             raise ValueError("process receipt identity is incomplete")
+        if self.status in {ProcessReceiptStatus.STARTING, ProcessReceiptStatus.START_FAILED}:
+            if self.process_group is not None:
+                raise ValueError("pre-launch process receipt cannot claim a process group")
+        elif self.process_group is None:
+            raise ValueError("launched process receipt requires process-group identity")
         if not _HEX_64.fullmatch(self.request_digest):
             raise ValueError("process receipt request digest must be SHA-256")
         if self.transport is not ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE:
@@ -226,7 +240,7 @@ class ProcessReceipt:
             "authority_bound": self.authority_bound,
             "transport": self.transport.value,
             "status": self.status.value,
-            "process_group": self.process_group.to_dict(),
+            "process_group": self.process_group.to_dict() if self.process_group else None,
             "execution_directory": self.execution_directory,
             "receipt_path": self.receipt_path,
             "stdout_path": self.stdout_path,
@@ -265,7 +279,11 @@ class ProcessReceipt:
             fencing_token=int(payload["fencing_token"]) if payload.get("fencing_token") is not None else None,
             transport=ExecutionRuntimeClass(str(payload.get("transport") or "")),
             status=ProcessReceiptStatus(str(payload.get("status") or "")),
-            process_group=ProcessGroup.from_dict(payload.get("process_group", {})),
+            process_group=(
+                ProcessGroup.from_dict(payload["process_group"])
+                if isinstance(payload.get("process_group"), Mapping)
+                else None
+            ),
             execution_directory=str(payload.get("execution_directory") or ""),
             receipt_path=str(payload.get("receipt_path") or ""),
             stdout_path=str(payload.get("stdout_path") or ""),
@@ -639,30 +657,6 @@ class CodexProcessSupervisor:
                 environment = self.environment_allowlist.build(overrides=request.environment_overrides)
                 started_at = _utc_now()
                 started_monotonic = time.monotonic()
-                stdout_handle = layout.stdout_path.open("w", encoding="utf-8")
-                stderr_handle = layout.stderr_path.open("w", encoding="utf-8")
-                try:
-                    process = subprocess.Popen(
-                        list(request.command),
-                        stdin=subprocess.PIPE,
-                        stdout=stdout_handle,
-                        stderr=stderr_handle,
-                        text=True,
-                        cwd=str(Path(request.cwd).expanduser().resolve()),
-                        env=environment,
-                        start_new_session=True,
-                    )
-                except Exception:
-                    stdout_handle.close()
-                    stderr_handle.close()
-                    raise
-
-                pgid = os.getpgid(process.pid) if hasattr(os, "getpgid") else process.pid
-                process_group = ProcessGroup(
-                    pid=process.pid,
-                    pgid=pgid,
-                    process_start_token=self.identity_probe.process_start_token(process.pid) or "",
-                )
                 result_path = str(layout.result_path(request.result_filename)) if request.result_filename else None
                 receipt = ProcessReceipt(
                     receipt_id=f"process-receipt:{request.request_digest[:24]}",
@@ -671,8 +665,8 @@ class CodexProcessSupervisor:
                     attempt_id=request.attempt_id,
                     fencing_token=request.fencing_token,
                     transport=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
-                    status=ProcessReceiptStatus.RUNNING,
-                    process_group=process_group,
+                    status=ProcessReceiptStatus.STARTING,
+                    process_group=None,
                     execution_directory=str(layout.path),
                     receipt_path=str(layout.receipt_path),
                     stdout_path=str(layout.stdout_path),
@@ -687,17 +681,67 @@ class CodexProcessSupervisor:
                     environment_keys=tuple(sorted(environment)),
                     process_started_at=started_at,
                     supervisor_pid=os.getpid(),
-                    supervisor_process_start_token=(
-                        self.identity_probe.process_start_token(os.getpid())
-                    ),
+                    supervisor_process_start_token=_SUPERVISOR_PROCESS_TOKEN,
                     last_supervisor_heartbeat_at=started_at,
                 )
                 self.execution_directory._write_receipt_unlocked(layout, receipt)
+                try:
+                    stdout_handle = layout.stdout_path.open("w", encoding="utf-8")
+                    stderr_handle = layout.stderr_path.open("w", encoding="utf-8")
+                    process = subprocess.Popen(
+                        list(request.command),
+                        stdin=subprocess.PIPE,
+                        stdout=stdout_handle,
+                        stderr=stderr_handle,
+                        text=True,
+                        cwd=str(Path(request.cwd).expanduser().resolve()),
+                        env=environment,
+                        start_new_session=True,
+                    )
+                except Exception as exc:
+                    if stdout_handle is not None:
+                        stdout_handle.close()
+                    if stderr_handle is not None:
+                        stderr_handle.close()
+                    receipt = replace(
+                        receipt,
+                        status=ProcessReceiptStatus.START_FAILED,
+                        completed_at=_utc_now(),
+                        elapsed_ms=int((time.monotonic() - started_monotonic) * 1000),
+                        failure_reason=f"local process failed to start: {type(exc).__name__}: {exc}",
+                    )
+                    self.execution_directory._write_receipt_unlocked(layout, receipt)
+
+                if process is not None:
+                    pgid = os.getpgid(process.pid) if hasattr(os, "getpgid") else process.pid
+                    process_group = ProcessGroup(
+                        pid=process.pid,
+                        pgid=pgid,
+                        process_start_token=(
+                            self.identity_probe.process_start_token(process.pid)
+                            or f"unverified:{process.pid}:{started_at}"
+                        ),
+                    )
+                    receipt = replace(
+                        receipt,
+                        status=ProcessReceiptStatus.RUNNING,
+                        process_group=process_group,
+                    )
+                    self.execution_directory._write_receipt_unlocked(layout, receipt)
         if existing is not None:
             return self._await_existing(request)
+        if receipt is not None and receipt.status is ProcessReceiptStatus.START_FAILED:
+            return SupervisedProcessResult(
+                receipt=receipt,
+                returncode=None,
+                stdout=self._read_text(layout.stdout_path),
+                stderr=self._read_text(layout.stderr_path),
+            )
         if process is None or receipt is None or stdout_handle is None or stderr_handle is None:
             raise RuntimeError("process launch reservation did not produce a running receipt")
         process_group = receipt.process_group
+        if process_group is None:
+            raise RuntimeError("running process receipt is missing process-group identity")
 
         control_failure: Exception | None = None
         termination_status: ProcessReceiptStatus | None = None
@@ -789,6 +833,19 @@ class CodexProcessSupervisor:
         integrity, integrity_failure = self._inspect_result(
             layout, receipt.result_filename, receipt.result_format
         )
+        if receipt.status is ProcessReceiptStatus.STARTING:
+            recovered = replace(
+                receipt,
+                status=ProcessReceiptStatus.ORPHANED,
+                recovery_reason="START_INTERRUPTED_PROCESS_ID_UNKNOWN",
+                completed_at=_utc_now(),
+            )
+            self.execution_directory.write_receipt(recovered)
+            return ProcessRecoveryResult(
+                receipt=recovered,
+                result_recoverable=integrity is ResultIntegrity.VALID,
+                safe_to_signal=False,
+            )
         if receipt.status is not ProcessReceiptStatus.RUNNING:
             if receipt.status is ProcessReceiptStatus.SUCCEEDED and integrity in {
                 ResultIntegrity.MISSING,
@@ -809,16 +866,29 @@ class CodexProcessSupervisor:
                 safe_to_signal=False,
             )
 
+        if receipt.process_group is None:
+            raise ValueError("running process receipt is missing process-group identity")
         pid = receipt.process_group.pid
         alive = self.identity_probe.is_alive(pid)
         current_start = self.identity_probe.process_start_token(pid) if alive else None
         recorded_start = receipt.process_group.process_start_token
-        if alive and (not recorded_start or not current_start or current_start != recorded_start):
+        supervisor_alive = self._supervisor_still_alive(receipt)
+        identity_mismatch = bool(
+            alive
+            and current_start
+            and not recorded_start.startswith("unverified:")
+            and current_start != recorded_start
+        )
+        identity_unverifiable = bool(
+            alive
+            and (not current_start or recorded_start.startswith("unverified:"))
+        )
+        if identity_mismatch or (identity_unverifiable and not supervisor_alive):
             recovered = replace(
                 receipt,
                 status=ProcessReceiptStatus.ORPHANED,
                 result_integrity=integrity,
-                recovery_reason="PID_REUSE_DETECTED" if recorded_start and current_start else "PROCESS_IDENTITY_UNVERIFIABLE",
+                recovery_reason="PID_REUSE_DETECTED" if identity_mismatch else "PROCESS_IDENTITY_UNVERIFIABLE",
                 completed_at=_utc_now(),
             )
             self.execution_directory.write_receipt(recovered)
@@ -831,19 +901,9 @@ class CodexProcessSupervisor:
             return ProcessRecoveryResult(
                 receipt=replace(receipt, result_integrity=integrity),
                 result_recoverable=integrity is ResultIntegrity.VALID,
-                safe_to_signal=True,
+                safe_to_signal=not identity_unverifiable,
             )
 
-        supervisor_alive = False
-        if receipt.supervisor_pid is not None and receipt.supervisor_process_start_token:
-            heartbeat_age = _age_seconds(receipt.last_supervisor_heartbeat_at)
-            supervisor_alive = (
-                heartbeat_age is not None
-                and heartbeat_age <= 30.0
-                and self.identity_probe.is_alive(receipt.supervisor_pid)
-                and self.identity_probe.process_start_token(receipt.supervisor_pid)
-                == receipt.supervisor_process_start_token
-            )
         if supervisor_alive:
             return ProcessRecoveryResult(
                 receipt=replace(receipt, result_integrity=integrity),
@@ -875,6 +935,23 @@ class CodexProcessSupervisor:
             result_recoverable=integrity is ResultIntegrity.VALID,
             safe_to_signal=False,
         )
+
+    def _supervisor_still_alive(self, receipt: ProcessReceipt) -> bool:
+        if receipt.supervisor_pid is None or not receipt.supervisor_process_start_token:
+            return False
+        heartbeat_age = _age_seconds(receipt.last_supervisor_heartbeat_at)
+        if heartbeat_age is None or heartbeat_age > 30.0:
+            return False
+        if receipt.supervisor_pid == os.getpid():
+            return receipt.supervisor_process_start_token == _SUPERVISOR_PROCESS_TOKEN
+        if not self.identity_probe.is_alive(receipt.supervisor_pid):
+            return False
+        current_start = self.identity_probe.process_start_token(receipt.supervisor_pid)
+        if current_start:
+            return current_start == receipt.supervisor_process_start_token
+        # The PID is only used as a short-lived liveness hint here; it is never
+        # signaled without a verifiable child-process identity.
+        return True
 
     def _await_existing(self, request: ProcessLaunchRequest) -> SupervisedProcessResult:
         deadline = time.monotonic() + request.timeout.timeout_seconds
