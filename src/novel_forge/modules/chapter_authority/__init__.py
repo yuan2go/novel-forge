@@ -32,6 +32,14 @@ from novel_forge.modules.chapter_authority.model_effects import (
 from novel_forge.modules.chapter_authority.export_delivery import (
     ExportDeliveryEvidence,
 )
+from novel_forge.modules.chapter_authority.execution_gateway import (
+    ChapterExecutionBinding,
+    ChapterExecutionGatewaySession,
+    ChapterExecutionRoute,
+    PostgresChapterExecutionContractBinder,
+    PostgresChapterExecutionPayloadResolver,
+    ProductionExecutionGatewayExternalEffectAdapter,
+)
 from novel_forge.modules.chapter_authority.orchestrator import (
     ChapterSliceResult,
     SingleChapterRequest,
@@ -50,6 +58,9 @@ __all__ = [
     "ChapterModelPort",
     "ChapterModelExternalEffectAdapter",
     "ChapterModelRoute",
+    "ChapterExecutionBinding",
+    "ChapterExecutionGatewaySession",
+    "ChapterExecutionRoute",
     "ChapterSliceResult",
     "ChapterAuthorityQuery",
     "ChapterAuthorityApplication",
@@ -57,6 +68,9 @@ __all__ = [
     "ExportDeliveryEvidence",
     "ExternalEffectChapterModelPort",
     "ModelProviderResult",
+    "PostgresChapterExecutionContractBinder",
+    "PostgresChapterExecutionPayloadResolver",
+    "ProductionExecutionGatewayExternalEffectAdapter",
     "SingleChapterRequest",
     "build_chapter_handler_registry",
     "build_chapter_slice_evidence_manifest",

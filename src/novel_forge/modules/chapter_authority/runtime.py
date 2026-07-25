@@ -29,6 +29,9 @@ ChapterExecutionResult = AuthorityExecutionResult
 class _ChapterHandlerAdapter:
     node: ChapterNode
     registry: ChapterHandlerRegistry
+    attempt_id: str
+    fencing_token: int
+    worker_id: str
 
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         chapter_request = ChapterHandlerRequest(
@@ -48,6 +51,9 @@ class _ChapterHandlerAdapter:
                 )
                 for item in request.inputs
             ),
+            attempt_id=self.attempt_id,
+            fencing_token=self.fencing_token,
+            worker_id=self.worker_id,
         )
         output = self.registry.require(self.node).execute(chapter_request)
         return AuthorityHandlerOutput(
@@ -101,7 +107,13 @@ def execute_chapter_handler(
             output_key=node.output_key,
             role="primary",
             completion_topic=node.completion_topic,
-            handler=_ChapterHandlerAdapter(node, registry),
+            handler=_ChapterHandlerAdapter(
+                node,
+                registry,
+                command.attempt_id,
+                command.fencing_token,
+                command.worker_id,
+            ),
         ),
     )
 

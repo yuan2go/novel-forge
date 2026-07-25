@@ -48,6 +48,7 @@ from novel_forge.modules.canon_graph.approval_domain import (
     build_canon_change_proposal,
     resolve_canon_extraction,
 )
+from novel_forge.modules.production_execution import CommitManifest
 
 
 class DeterministicFixtureChapterProvider:
@@ -390,7 +391,7 @@ class _DraftHandler:
                 "style": build_draft_style_view(context.content),
             },
         )
-        return _output(
+        return _model_output(
             ChapterNode.DRAFT,
             normalize_draft_result(
                 plan=plan.content,
@@ -398,6 +399,8 @@ class _DraftHandler:
                 result=generated.output,
                 provider_evidence=_provider_evidence(generated),
             ),
+            request=request,
+            generated=generated,
         )
 
 
@@ -413,7 +416,7 @@ class _ReviewHandler:
             stage="review",
             payload={"draft": draft.content, "context": context.content},
         )
-        return _output(
+        return _model_output(
             ChapterNode.REVIEW,
             normalize_review_result(
                 draft=draft.content,
@@ -423,6 +426,8 @@ class _ReviewHandler:
                 project_id=request.project_id,
                 context_bundle_version_id=context.asset_version_id,
             ),
+            request=request,
+            generated=reviewed,
         )
 
 
@@ -439,7 +444,7 @@ class _RevisionHandler:
             stage="revision",
             payload={"draft": draft.content, "review": review.content, "context": context.content},
         )
-        return _output(
+        return _model_output(
             ChapterNode.REVISION,
             normalize_revision_result(
                 draft=draft.content,
@@ -451,6 +456,8 @@ class _RevisionHandler:
                 project_id=request.project_id,
                 context_bundle_version_id=context.asset_version_id,
             ),
+            request=request,
+            generated=revised,
         )
 
 
@@ -465,11 +472,7 @@ class _ReReviewHandler:
         context = request.require_input("context_bundle")
         reviewed = self.provider.invoke(
             request,
-            stage=(
-                "review"
-                if getattr(self.provider, "external_effect_backed", False)
-                else "rereview"
-            ),
+            stage="rereview",
             payload={
                 "draft": revision.content,
                 "original_draft": draft.content,
@@ -478,7 +481,7 @@ class _ReReviewHandler:
                 "context": context.content,
             },
         )
-        return _output(
+        return _model_output(
             ChapterNode.REREVIEW,
             normalize_rereview_result(
                 draft_asset_version_id=draft.asset_version_id,
@@ -491,6 +494,8 @@ class _ReReviewHandler:
                 provider_evidence=_provider_evidence(reviewed),
                 project_id=request.project_id,
             ),
+            request=request,
+            generated=reviewed,
         )
 @dataclass(frozen=True, slots=True)
 class _CanonHandler:
@@ -565,6 +570,7 @@ class _CanonExtractionHandler:
         revision = request.require_input("draft_version")
         context = request.require_input("context_bundle")
         provider_extraction = None
+        generated: ModelProviderResult | None = None
         if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
             getattr(self.provider, "supports_semantic_extraction", False)
         ):
@@ -574,15 +580,20 @@ class _CanonExtractionHandler:
                 payload={"revision": revision.content, "context": context.content},
             )
             provider_extraction = _canon_provider_extraction(generated)
-        return _output(
+        content = build_canon_extraction(
+            revision=revision.content,
+            revision_asset_version_id=revision.asset_version_id,
+            project_id=request.project_id,
+            context_bundle_version_id=context.asset_version_id,
+            provider_extraction=provider_extraction,
+        )
+        if generated is None:
+            return _output(ChapterNode.CANON_EXTRACTION, content)
+        return _model_output(
             ChapterNode.CANON_EXTRACTION,
-            build_canon_extraction(
-                revision=revision.content,
-                revision_asset_version_id=revision.asset_version_id,
-                project_id=request.project_id,
-                context_bundle_version_id=context.asset_version_id,
-                provider_extraction=provider_extraction,
-            ),
+            content,
+            request=request,
+            generated=generated,
         )
 
 
@@ -621,6 +632,7 @@ class _QualityGroupHandler:
             for item in request.inputs
         )
         context_content = dict(context.content)
+        generated: ModelProviderResult | None = None
         quality_context = build_quality_context_view(
             group=self.group,
             revision=revision.content,
@@ -706,13 +718,18 @@ class _QualityGroupHandler:
                 ],
             },
         )
+        auxiliaries: tuple[ChapterAuxiliaryOutput, ...] = (coverage,)
+        if generated is not None:
+            commit = _execution_commit_auxiliary(node, request, generated)
+            if commit is not None:
+                auxiliaries = (*auxiliaries, commit)
         return ChapterHandlerOutput(
             asset_type=primary.asset_type,
             output_key=primary.output_key,
             role=primary.role,
             content=primary.content,
             qualification_policy=primary.qualification_policy,
-            auxiliary_outputs=(coverage,),
+            auxiliary_outputs=auxiliaries,
         )
 
 
@@ -887,6 +904,75 @@ def _output(node: ChapterNode, content: dict[str, Any]) -> ChapterHandlerOutput:
         output_key=node.output_key,
         role="primary",
         content=content,
+    )
+
+
+def _model_output(
+    node: ChapterNode,
+    content: dict[str, Any],
+    *,
+    request: ChapterHandlerRequest,
+    generated: ModelProviderResult,
+) -> ChapterHandlerOutput:
+    primary = _output(node, content)
+    commit = _execution_commit_auxiliary(node, request, generated)
+    if commit is None:
+        return primary
+    return ChapterHandlerOutput(
+        asset_type=primary.asset_type,
+        output_key=primary.output_key,
+        role=primary.role,
+        content=primary.content,
+        qualification_policy=primary.qualification_policy,
+        auxiliary_outputs=(commit,),
+    )
+
+
+def _execution_commit_auxiliary(
+    node: ChapterNode,
+    request: ChapterHandlerRequest,
+    generated: ModelProviderResult,
+) -> ChapterAuxiliaryOutput | None:
+    execution = generated.execution_evidence
+    if not execution:
+        return None
+    validation_ref = str(execution.get("validation_manifest_ref") or "")
+    if not validation_ref:
+        raise KernelError(
+            "EXECUTION_COMMIT_MANIFEST_INVALID",
+            "gateway output has no durable ValidationManifest evidence reference",
+        )
+    committed_ref = f"authority-output:{request.operation_id}:{node.output_key}:v1"
+    manifest = CommitManifest(
+        manifest_id=f"commit-manifest:{request.operation_id}:{node.value}",
+        operation_id=request.operation_id,
+        attempt_id=request.attempt_id,
+        fencing_token=request.fencing_token,
+        validation_manifest_ref=validation_ref,
+        committed_asset_version_refs=(committed_ref,),
+        authority_commit_ref=(
+            f"authority-operation:{request.operation_id}:output:{node.output_key}"
+        ),
+        projection_materialization_refs=(),
+        rejected_output_refs=(),
+        rollback_ref=f"append-only:supersede:{committed_ref}",
+        decision="COMMITTED",
+    )
+    route = execution.get("route_snapshot")
+    return ChapterAuxiliaryOutput(
+        asset_type="execution_commit_manifest",
+        output_key=f"{node.output_key}.execution_commit_manifest",
+        role="execution_commit_evidence",
+        content=manifest.to_dict(),
+        qualification_policy="production-execution-commit-v1",
+        evidence={
+            "route_snapshot_id": (
+                str(route.get("route_snapshot_id") or "")
+                if isinstance(route, dict)
+                else ""
+            ),
+            "external_effect_bound": True,
+        },
     )
 
 

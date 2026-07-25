@@ -6,6 +6,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from novel_forge.api.authority_dependencies import build_chapter_authority_application
+from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
 from novel_forge.modules.chapter_authority.model_effects import (
@@ -19,7 +21,6 @@ from novel_forge.modules.chapter_authority.orchestrator import (
 )
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapterError,
-    FakeDeterministicProvider,
     LocalFileObjectStoreAdapter,
     ProviderResult,
 )
@@ -442,7 +443,8 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     ("model.quality_platform", "SUCCEEDED", 1),
                     ("model.quality_source_originality", "SUCCEEDED", 1),
                     ("model.quality_structural", "SUCCEEDED", 1),
-                    ("model.review", "SUCCEEDED", 2),
+                    ("model.rereview", "SUCCEEDED", 1),
+                    ("model.review", "SUCCEEDED", 1),
                     ("model.revision", "SUCCEEDED", 1),
                 ],
             )
@@ -460,6 +462,85 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 [result.root_operation_id],
             )
             self.assertEqual(dict(cursor.fetchall()), {"cost_ledger": 10, "model_call_log": 10})
+
+    def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(self) -> None:
+        project_id = identifier("gateway-model-slice-project")
+        with tempfile.TemporaryDirectory() as directory:
+            application = build_chapter_authority_application(
+                IndustrialSettings(root=Path(directory), database_url=DATABASE_URL),
+                env={
+                    "NOVEL_FORGE_ENVIRONMENT": "test",
+                    "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
+                    "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
+                    "NOVEL_FORGE_REVISION_PROVIDER": "mock",
+                    "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
+                        Path(directory) / "objects"
+                    ),
+                    "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
+                    "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+                },
+            )
+            result = application.run(
+                SingleChapterRequest(
+                    project_id=project_id,
+                    workspace_id=f"workspace:{project_id}",
+                    actor_id="chapter-gateway-worker",
+                    chapter=1,
+                    title="A Visible Gateway Cost",
+                    premise="A gateway-bound public promise becomes irreversible.",
+                    trace_id=identifier("trace"),
+                    correlation_id=identifier("correlation"),
+                    application_build_id="chapter-gateway-test",
+                    commit_sha="e" * 40,
+                    context_candidates=self._release_evidence(project_id),
+                )
+            )
+
+            self.assertEqual(result.root_status, "SUCCEEDED")
+            self.assertEqual(result.saga_status, "SUCCEEDED")
+            self.assertTrue(
+                application.model_port.adapter.production_execution_gateway_backed
+            )
+            exported = (
+                Path(directory)
+                / "objects"
+                / f"chapters/{project_id}/1/chapter.txt"
+            )
+            self.assertIn("only safe route home", exported.read_text())
+
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT capability, status, COUNT(*)
+                FROM authority_external_effect
+                WHERE project_id = %s AND provider = 'production_execution_gateway'
+                GROUP BY capability, status
+                ORDER BY capability
+                """,
+                [project_id],
+            )
+            rows = cursor.fetchall()
+            self.assertEqual(sum(int(row[2]) for row in rows), 10)
+            self.assertTrue(all(row[1] == "SUCCEEDED" for row in rows))
+            self.assertIn(("model.rereview", "SUCCEEDED", 1), rows)
+            cursor.execute(
+                """
+                SELECT asset.asset_type, COUNT(DISTINCT version.asset_version_id)
+                FROM authority_asset AS asset
+                JOIN authority_asset_version AS version ON version.asset_id = asset.asset_id
+                WHERE asset.project_id = %s
+                  AND asset.asset_type IN (
+                    'route_snapshot', 'input_manifest', 'execution_commit_manifest'
+                  )
+                  AND version.lifecycle = 'ACTIVE'
+                GROUP BY asset.asset_type
+                """,
+                [project_id],
+            )
+            counts = dict(cursor.fetchall())
+            self.assertEqual(counts["route_snapshot"], 10)
+            self.assertEqual(counts["input_manifest"], 10)
+            self.assertEqual(counts["execution_commit_manifest"], 10)
 
 
 if __name__ == "__main__":

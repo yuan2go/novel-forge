@@ -78,7 +78,13 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 },
             )
 
-        self.assertEqual(application.model_port.adapter.provider, "scripted_provider_v2")
+        self.assertEqual(
+            application.model_port.adapter.provider,
+            "production_execution_gateway",
+        )
+        self.assertTrue(
+            application.model_port.adapter.production_execution_gateway_backed
+        )
         self.assertEqual(
             application.model_port.adapter.capability_profile.control_level.value,
             "FIXTURE_CONTROLLED",
@@ -126,6 +132,10 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 "NOVEL_FORGE_REVISION_MODEL": "gpt-test",
                 "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
                 "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
+                "NOVEL_FORGE_APPLICATION_BUILD_ID": "chapter-gateway-test",
+                "NOVEL_FORGE_COMMIT_SHA": "a" * 40,
+                "NOVEL_FORGE_RUNTIME_HOST_ID": "host:test",
+                "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "auth:test",
             },
         )
         self.assertEqual(

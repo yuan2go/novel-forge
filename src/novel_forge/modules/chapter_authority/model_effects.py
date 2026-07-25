@@ -44,6 +44,7 @@ class ModelProviderResult:
     cost_amount: str
     currency: str
     real_model_call: bool
+    execution_evidence: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.output, dict) or not self.output:
@@ -64,7 +65,7 @@ class ModelProviderResult:
         return self.input_tokens + self.output_tokens
 
     def to_evidence(self) -> dict[str, Any]:
-        return {
+        evidence = {
             "result": self.output,
             "provider_id": self.provider_id,
             "model_id": self.model_id,
@@ -78,6 +79,9 @@ class ModelProviderResult:
             "cost": {"amount": self.cost_amount, "currency": self.currency},
             "real_model_call": self.real_model_call,
         }
+        if self.execution_evidence:
+            evidence["production_execution"] = dict(self.execution_evidence)
+        return evidence
 
     @classmethod
     def from_evidence(cls, evidence: dict[str, Any]) -> "ModelProviderResult":
@@ -98,6 +102,11 @@ class ModelProviderResult:
                 cost_amount=str(cost.get("amount") or "0"),
                 currency=str(cost.get("currency") or ""),
                 real_model_call=bool(evidence.get("real_model_call")),
+                execution_evidence=(
+                    dict(evidence["production_execution"])
+                    if isinstance(evidence.get("production_execution"), dict)
+                    else None
+                ),
             )
         except (TypeError, ValueError) as exc:
             raise KernelError(
@@ -158,7 +167,7 @@ class ChapterModelExternalEffectAdapter:
 
     def __init__(self, routes: dict[str, ChapterModelRoute]) -> None:
         unsupported = set(routes) - {
-            "draft", "review", "revision", "canon_extraction",
+            "draft", "review", "revision", "rereview", "canon_extraction",
             "quality_structural", "quality_commercial",
             "quality_source_originality", "quality_longform", "quality_platform",
         }
@@ -279,7 +288,10 @@ class ChapterModelExternalEffectAdapter:
         request_payload: dict[str, Any],
     ) -> tuple[str, ChapterModelRoute, dict[str, Any]]:
         stage = str(request_payload.get("stage") or "")
-        if capability != f"model.{stage}" or stage not in self.routes:
+        route = self.routes.get(stage)
+        if stage == "rereview" and route is None:
+            route = self.routes.get("review")
+        if capability != f"model.{stage}" or route is None:
             raise ExternalEffectAdapterError(
                 "chapter model capability or route is unsupported",
                 request_sent=False,
@@ -290,10 +302,12 @@ class ChapterModelExternalEffectAdapter:
                 "chapter model input must be an object",
                 request_sent=False,
             )
-        return stage, self.routes[stage], inputs
+        return stage, route, inputs
 
     def model_id_for_stage(self, stage: str) -> str:
         route = self.routes.get(stage)
+        if stage == "rereview" and route is None:
+            route = self.routes.get("review")
         return "" if route is None else route.model_id
 
     @staticmethod
@@ -317,14 +331,14 @@ class ChapterModelExternalEffectAdapter:
                 prompt,
                 {"draft_context_view": context, "draft_style_view": style},
             )
-        if stage == "review":
+        if stage in {"review", "rereview"}:
             draft = _object(inputs, "draft")
             return adapter.review(
                 str(draft.get("text") or ""),
                 {
                     "rubric": (
                         "chapter-authority-rereview-v1"
-                        if "revision" in inputs
+                        if stage == "rereview" or "revision" in inputs
                         else "chapter-authority-review-v1"
                     ),
                     "initial_review": inputs.get("review", {}),
@@ -423,7 +437,7 @@ class ExternalEffectChapterModelPort:
         payload: dict[str, Any],
     ) -> ModelProviderResult:
         if stage not in {
-            "draft", "review", "revision", "canon_extraction",
+            "draft", "review", "revision", "rereview", "canon_extraction",
             "quality_structural", "quality_commercial",
             "quality_source_originality", "quality_longform", "quality_platform",
         }:
@@ -454,6 +468,41 @@ class ExternalEffectChapterModelPort:
                 "trace_id": request.trace_id,
                 "correlation_id": request.correlation_id,
                 "workspace_id": request.workspace_id,
+                "_production_execution": {
+                    "operation_id": request.operation_id,
+                    "attempt_id": request.attempt_id,
+                    "fencing_token": request.fencing_token,
+                    "project_id": request.project_id,
+                    "workspace_id": request.workspace_id,
+                    "worker_id": request.worker_id,
+                    "chapter": int(request.command.get("chapter") or 0),
+                    "book_id": str(
+                        request.command.get("book_id")
+                        or f"book:{request.project_id}"
+                    ),
+                    "route_provider": str(
+                        getattr(
+                            self.adapter,
+                            "provider_id_for_stage",
+                            lambda _stage: self.adapter.provider,
+                        )(stage)
+                    ),
+                    "input_artifacts": [
+                        {
+                            "artifact_ref": f"asset-version:{item.asset_version_id}",
+                            "asset_version_id": item.asset_version_id,
+                            "artifact_type": item.asset_type,
+                            "content_hash": item.content_hash,
+                            "schema_version": str(
+                                item.content.get("schema_version")
+                                or item.content.get("contract_version")
+                                or f"{item.asset_type}.v1"
+                            ),
+                            "source_eligibility": "PRODUCTION_ELIGIBLE",
+                        }
+                        for item in request.inputs
+                    ],
+                },
             },
             max_attempts=2,
             reversible=False,
@@ -473,6 +522,13 @@ class ExternalEffectChapterModelPort:
                 else dict(self.adapter.capability_profile)
             ),
         )
+        completed = self._completed_effect_result(
+            str(effect["external_effect_id"]), request.project_id
+        )
+        if completed is not None:
+            self._record_model_call(request, stage, completed, logical_ref)
+            self._ensure_cost_evidence(request, stage, completed)
+            return completed
         reservation = reserve_provider_budget(
             self.database_url,
             BudgetReservationRequest(
@@ -528,6 +584,41 @@ class ExternalEffectChapterModelPort:
         self._record_model_call(request, stage, result, logical_ref)
         self._ensure_cost_evidence(request, stage, result)
         return result
+
+    def _completed_effect_result(
+        self, external_effect_id: str, project_id: str
+    ) -> ModelProviderResult | None:
+        import psycopg
+
+        with psycopg.connect(self.database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT effect.status,
+                           COALESCE(receipt.payload->'evidence', effect.reconciliation)
+                    FROM authority_external_effect AS effect
+                    LEFT JOIN LATERAL (
+                        SELECT receipt.payload
+                        FROM authority_external_receipt AS receipt
+                        JOIN authority_external_effect_dispatch AS dispatch
+                          ON dispatch.dispatch_id = receipt.dispatch_id
+                        WHERE dispatch.external_effect_id = effect.external_effect_id
+                        ORDER BY receipt.received_at DESC LIMIT 1
+                    ) AS receipt ON TRUE
+                    WHERE effect.external_effect_id = %s AND effect.project_id = %s
+                    """,
+                    [external_effect_id, project_id],
+                )
+                row = cursor.fetchone()
+        if row is None or str(row[0]) != "SUCCEEDED":
+            return None
+        evidence = row[1]
+        if not isinstance(evidence, dict) or not evidence:
+            raise KernelError(
+                "MODEL_EFFECT_EVIDENCE_INVALID",
+                "successful model ExternalEffect has no durable result evidence",
+            )
+        return ModelProviderResult.from_evidence(dict(evidence))
 
     def _existing_result(self, project_id: str, logical_ref: str) -> ModelProviderResult | None:
         try:
@@ -641,7 +732,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
         if not text:
             raise KernelError("MODEL_RESPONSE_INVALID", "draft response has no text")
         return {"text": text}
-    if stage == "review":
+    if stage in {"review", "rereview"}:
         score_value = raw.get("score")
         if not isinstance(score_value, (int, float)) or isinstance(score_value, bool):
             raise KernelError("MODEL_RESPONSE_INVALID", "review response has no numeric score")

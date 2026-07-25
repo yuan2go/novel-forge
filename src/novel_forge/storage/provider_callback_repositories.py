@@ -26,10 +26,19 @@ class ProviderCallbackRepository:
                 WHERE external_effect_id = effect.external_effect_id
                 ORDER BY generation DESC LIMIT 1
             ) AS dispatch ON TRUE
-            WHERE effect.provider = %s AND effect.provider_request_id = %s
+            WHERE effect.provider_request_id = %s
+              AND (
+                    effect.provider = %s
+                    OR (
+                        effect.provider = 'production_execution_gateway'
+                        AND effect.request_payload
+                            -> '_production_execution'
+                            ->> 'route_provider' = %s
+                    )
+                  )
             FOR UPDATE OF effect
             """,
-            [provider, provider_request_id],
+            [provider_request_id, provider, provider],
         )
         row = self.cursor.fetchone()
         if row is None:

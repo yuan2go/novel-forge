@@ -4,6 +4,7 @@ import hashlib
 import unittest
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_adapters import ProviderResult
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
     dispatch_external_effect,
@@ -14,6 +15,8 @@ from novel_forge.modules.provider_callback_authority import (
     ProviderCallbackAuthorityService,
 )
 from novel_forge.modules.provider_control import (
+    ProviderCapabilityProfile,
+    ProviderControlLevel,
     ProviderAdapterRegistry,
     ProviderReceipt,
     ScriptedProviderAdapterV2,
@@ -48,6 +51,41 @@ class _CallbackScriptedAdapter(ScriptedProviderAdapterV2):
                 "production_verified": False,
             },
         )
+
+
+class _GatewayCallbackEnvelopeAdapter:
+    provider = "production_execution_gateway"
+    reconciliation_mode = "query"
+    capability_profile = ProviderCapabilityProfile(
+        provider=provider,
+        control_level=ProviderControlLevel.FIXTURE_CONTROLLED,
+        supports_request_timeout=True,
+        supports_provider_idempotency=True,
+        supports_query=True,
+        supports_cancel=True,
+        supports_callback=False,
+        supports_usage_receipt=True,
+        supports_cost_receipt=True,
+        reconciliation_mode="query",
+        real_provider_validation_eligible=False,
+    )
+
+    def __init__(self, provider_request_id: str) -> None:
+        self.provider_request_id = provider_request_id
+
+    def execute(self, **_kwargs):  # type: ignore[no-untyped-def]
+        return ProviderResult(
+            "unknown",
+            "gateway-correlation",
+            {"production_execution_gateway": True},
+            self.provider_request_id,
+        )
+
+    def query(self, **_kwargs):  # type: ignore[no-untyped-def]
+        return ProviderResult("ambiguous", "gateway-query", {})
+
+    def cancel(self, **_kwargs):  # type: ignore[no-untyped-def]
+        return ProviderResult("ambiguous", "gateway-cancel", {})
 
 
 class ProviderCallbackAuthorityPostgresTests(unittest.TestCase):
@@ -153,6 +191,74 @@ class ProviderCallbackAuthorityPostgresTests(unittest.TestCase):
                 [effect_id],
             )
             self.assertEqual(cursor.fetchone()[0], "UNKNOWN")
+
+    def test_provider_callback_binds_through_execution_gateway_envelope(self) -> None:
+        context = self._context()
+        provider = _CallbackScriptedAdapter("unknown_after_send")
+        request_id = identifier("gateway-provider-request")
+        gateway = _GatewayCallbackEnvelopeAdapter(request_id)
+        effect_id = str(
+            plan_external_effect(
+                DATABASE_URL,
+                context,
+                effect_type="model.invoke",
+                provider=gateway.provider,
+                capability="model.draft",
+                stable_idempotency_key=identifier("gateway-callback-effect"),
+                request_payload={
+                    "stage": "draft",
+                    "_production_execution": {
+                        "route_provider": provider.provider,
+                    },
+                },
+                max_attempts=2,
+                reversible=False,
+                completion_policy="callback_receipt",
+                request_timeout_seconds=30,
+                reconciliation_mode="query",
+                provider_capability_profile=gateway.capability_profile.to_dict(),
+            )["external_effect_id"]
+        )
+        dispatched = dispatch_external_effect(
+            DATABASE_URL,
+            context,
+            effect_id=effect_id,
+            worker_id="gateway-callback-dispatch",
+            lease_seconds=30,
+            adapter=gateway,
+        )
+        self.assertEqual(dispatched["outcome"], "unknown")
+        registry = ProviderAdapterRegistry()
+        registry.register(provider)
+        message_id = identifier("gateway-provider-message")
+        body = b'{"type":"completed"}'
+        accepted = ProviderCallbackAuthorityService(DATABASE_URL, registry).accept(
+            ProviderCallbackAcceptCommand(
+                provider=provider.provider,
+                provider_message_id=message_id,
+                body=body,
+                headers={
+                    "x-test-signature": "secret",
+                    "x-provider-request-id": request_id,
+                    "x-message-id": message_id,
+                },
+                signature_secret="secret",
+                actor_id="provider-callback-service",
+                worker_id="callback-worker",
+                trace_id=context.trace_id,
+                correlation_id=context.correlation_id,
+            )
+        )
+        self.assertEqual(accepted["processing_status"], "PROCESSED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT provider, status FROM authority_external_effect WHERE external_effect_id=%s",
+                [effect_id],
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("production_execution_gateway", "SUCCEEDED"),
+            )
 
     @staticmethod
     def _context() -> EffectCommandContext:

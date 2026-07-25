@@ -7,7 +7,7 @@ from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.0.10"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.1.12"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.2.0"
 CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.9"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
@@ -119,7 +119,7 @@ def _definition(
         ChapterNode.DRAFT: "model.draft",
         ChapterNode.REVIEW: "model.review",
         ChapterNode.REVISION: "model.revision",
-        ChapterNode.REREVIEW: "model.review",
+        ChapterNode.REREVIEW: "model.rereview",
         ChapterNode.CANON_EXTRACTION: "model.canon_extraction",
         ChapterNode.QUALITY_STRUCTURAL: "model.quality_structural",
         ChapterNode.QUALITY_COMMERCIAL: "model.quality_commercial",
@@ -225,7 +225,7 @@ def _definition(
         "output_contract": result_schema,
         "handler_key": node.handler_key,
         "handler_contract_version": (
-            "2.1.0" if model_effects_required else CHAPTER_SLICE_HANDLER_CONTRACT_VERSION
+            "2.2.0" if model_effects_required else CHAPTER_SLICE_HANDLER_CONTRACT_VERSION
         ),
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,

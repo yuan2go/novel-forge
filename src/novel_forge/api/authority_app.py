@@ -47,10 +47,10 @@ def create_authority_app(settings: IndustrialSettings):
     application = build_chapter_authority_application(settings)
     provider_registry = ProviderAdapterRegistry()
     registered: set[str] = set()
-    for route in application.model_port.adapter.routes.values():
-        if route.adapter.provider not in registered:
-            provider_registry.register(route.adapter)
-            registered.add(route.adapter.provider)
+    for adapter in application.model_port.adapter.provider_adapters.values():
+        if adapter.provider not in registered:
+            provider_registry.register(adapter)
+            registered.add(adapter.provider)
     services = AuthorityApiServices(
         chapter_application=application,
         chapter_query=build_chapter_authority_query(settings),

@@ -11,6 +11,10 @@ from novel_forge.modules.production_execution import ExecutionBackend
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACTS = ROOT / "src/novel_forge/modules/production_execution/contracts.py"
 MIGRATIONS = ROOT / "src/novel_forge/storage/migrations/versions"
+CHAPTER_EXECUTION = (
+    ROOT / "src/novel_forge/modules/chapter_authority/execution_gateway.py"
+)
+AUTHORITY_DEPENDENCIES = ROOT / "src/novel_forge/api/authority_dependencies.py"
 
 
 class ProductionExecutionPlaneBoundaryTests(unittest.TestCase):
@@ -98,6 +102,24 @@ class ProductionExecutionPlaneBoundaryTests(unittest.TestCase):
         self.assertEqual(
             tuple(inspect.signature(ExecutionBackend.cancel).parameters),
             ("self", "handle", "reason"),
+        )
+
+    def test_chapter_authority_composes_only_the_unified_execution_gateway(self) -> None:
+        dependencies = AUTHORITY_DEPENDENCIES.read_text(encoding="utf-8")
+        self.assertIn("ProductionExecutionGatewayExternalEffectAdapter", dependencies)
+        self.assertNotIn("ChapterProviderV2Gateway", dependencies)
+        self.assertNotIn("ChapterModelExternalEffectAdapter", dependencies)
+
+    def test_chapter_execution_bridge_does_not_write_business_tables_directly(self) -> None:
+        tree = ast.parse(CHAPTER_EXECUTION.read_text(encoding="utf-8"))
+        sql_literals = [
+            node.value.lower()
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        ]
+        forbidden = ("insert into ", "update ", "delete from ")
+        self.assertFalse(
+            [value for value in sql_literals if any(token in value for token in forbidden)]
         )
 
 
