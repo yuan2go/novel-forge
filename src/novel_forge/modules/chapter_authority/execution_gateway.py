@@ -1,0 +1,893 @@
+"""Chapter ExternalEffect bridge to the unified ProductionExecutionGateway.
+
+The bridge owns no Attempt, retry, budget, or receipt state.  It freezes execution
+contracts as ordinary Authority AssetVersions and reconstructs gateway submissions
+from the PostgreSQL ExternalEffect after a worker restart.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+import hashlib
+import json
+from pathlib import Path
+from threading import Lock
+from typing import Any, Callable, Mapping, Protocol
+
+import psycopg
+
+from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapterError,
+    ProviderResult,
+)
+from novel_forge.modules.production_execution import (
+    ArtifactPointer,
+    CancellationOutcome,
+    ExecutionHandle,
+    ExecutionOutcome,
+    ExecutionRequest,
+    InputManifest,
+    ModelProfile,
+    ProductionExecutionGateway,
+    ResolvedExecutionPayload,
+    RoutePolicy,
+    RouteSnapshot,
+)
+from novel_forge.modules.production_execution.backends import ExecutionRecordStore
+from novel_forge.modules.production_execution.backends import ExecutionRecord
+from novel_forge.modules.provider_control.contracts import (
+    ProviderCapabilityProfile,
+    ProviderControlLevel,
+)
+from novel_forge.storage.authority_asset_store import AuthorityAssetQuery, AuthorityAssetWriter
+
+
+_STAGES = frozenset(
+    {
+        "draft",
+        "review",
+        "revision",
+        "rereview",
+        "canon_extraction",
+        "quality_structural",
+        "quality_commercial",
+        "quality_source_originality",
+        "quality_longform",
+        "quality_platform",
+    }
+)
+
+
+def _canonical(payload: Mapping[str, Any]) -> str:
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def _identity_token(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:20]
+
+
+@dataclass(frozen=True, slots=True)
+class ChapterExecutionRoute:
+    stage: str
+    model_profile: ModelProfile
+    route_policy: RoutePolicy
+    backend_version: str
+    runtime_host_id: str
+    auth_profile_ref: str
+    prompt_bundle_ref: str
+    skill_bundle_ref: str
+    output_schema_ref: str
+    release_sha: str
+    real_provider_validation_eligible: bool
+
+    def __post_init__(self) -> None:
+        if self.stage not in _STAGES:
+            raise ValueError(f"unsupported Chapter execution stage: {self.stage}")
+        if self.model_profile.profile_id not in self.route_policy.allowed_model_profile_ids:
+            raise ValueError("Chapter route policy does not allow its ModelProfile")
+        if not all(
+            (
+                self.backend_version,
+                self.runtime_host_id,
+                self.auth_profile_ref,
+                self.prompt_bundle_ref,
+                self.skill_bundle_ref,
+                self.output_schema_ref,
+            )
+        ):
+            raise ValueError("Chapter execution route is incomplete")
+        if len(self.release_sha) != 40:
+            raise ValueError("Chapter execution route requires a full release SHA")
+
+
+@dataclass(frozen=True, slots=True)
+class ChapterExecutionBinding:
+    request: ExecutionRequest
+    route_snapshot: RouteSnapshot
+    input_manifest: InputManifest
+
+
+class PostgresChapterExecutionContractBinder:
+    """Materialize immutable per-Attempt contracts through Authority AssetVersion."""
+
+    def __init__(self, database_url: str, routes: Mapping[str, ChapterExecutionRoute]) -> None:
+        if not database_url or set(routes) != _STAGES:
+            raise ValueError("PostgreSQL and all ten Chapter execution routes are required")
+        self.database_url = database_url
+        self.routes = dict(routes)
+        self.query = AuthorityAssetQuery(database_url)
+        self.writer = AuthorityAssetWriter(database_url)
+
+    def bind(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: Mapping[str, Any],
+        external_effect_id: str,
+    ) -> ChapterExecutionBinding:
+        stage = str(request_payload.get("stage") or "")
+        if capability != f"model.{stage}" or stage not in self.routes:
+            raise ExternalEffectAdapterError(
+                "Chapter gateway capability or stage is unsupported", request_sent=False
+            )
+        metadata = request_payload.get("_production_execution")
+        if not isinstance(metadata, Mapping):
+            raise ExternalEffectAdapterError(
+                "Chapter gateway execution metadata is missing", request_sent=False
+            )
+        operation_id = str(metadata.get("operation_id") or request_payload.get("operation_id") or "")
+        attempt_id = str(metadata.get("attempt_id") or "")
+        project_id = str(metadata.get("project_id") or "")
+        workspace_id = str(metadata.get("workspace_id") or "")
+        book_id = str(metadata.get("book_id") or "")
+        try:
+            fencing_token = int(metadata.get("fencing_token") or 0)
+            chapter = int(metadata.get("chapter") or 0)
+        except (TypeError, ValueError) as exc:
+            raise ExternalEffectAdapterError(
+                "Chapter gateway Attempt metadata is invalid", request_sent=False
+            ) from exc
+        if not all((operation_id, attempt_id, project_id, workspace_id, book_id)):
+            raise ExternalEffectAdapterError(
+                "Chapter gateway Attempt metadata is incomplete", request_sent=False
+            )
+        graph = self._operation_graph(operation_id, project_id)
+        route = self.routes[stage]
+        target_scope = {"scope_kind": "chapter", "chapter": chapter, "stage": stage}
+        artifacts = self._artifacts(metadata)
+        context_ref = next(
+            (
+                item.artifact_ref
+                for item in artifacts
+                if item.artifact_type == "context_bundle"
+            ),
+            f"context:none:{operation_id}",
+        )
+        token = _identity_token(f"{project_id}:{operation_id}:{attempt_id}:{stage}")
+        route_ref = f"production_execution/routes/{token}"
+        input_ref = f"production_execution/inputs/{token}"
+        manifest = InputManifest(
+            manifest_id=input_ref,
+            operation_id=operation_id,
+            attempt_id=attempt_id,
+            fencing_token=fencing_token,
+            project_id=project_id,
+            book_id=book_id,
+            target_scope=target_scope,
+            context_bundle_ref=context_ref,
+            prompt_bundle_ref=route.prompt_bundle_ref,
+            skill_bundle_ref=route.skill_bundle_ref,
+            canon_version_refs=tuple(
+                item.artifact_ref for item in artifacts if "canon" in item.artifact_type
+            ),
+            arc_version_refs=tuple(
+                item.artifact_ref for item in artifacts if "arc" in item.artifact_type
+            ),
+            input_artifacts=artifacts,
+            read_set=tuple(item.artifact_ref for item in artifacts),
+        )
+        snapshot = RouteSnapshot(
+            route_snapshot_id=route_ref,
+            route_decision_id=f"route-decision:{token}",
+            operation_id=operation_id,
+            attempt_id=attempt_id,
+            policy_id=route.route_policy.policy_id,
+            policy_version=route.route_policy.policy_version,
+            backend_id=route.model_profile.backend_id,
+            backend_version=route.backend_version,
+            runtime_host_id=route.runtime_host_id,
+            auth_profile_ref=route.auth_profile_ref,
+            model_profile_id=route.model_profile.profile_id,
+            model_profile_version=route.model_profile.profile_version,
+            model_provider=route.model_profile.model_provider,
+            model_id=route.model_profile.model_id,
+            requested_reasoning_effort=route.model_profile.reasoning_effort,
+            reasoning_effort=route.model_profile.reasoning_effort,
+            prompt_bundle_ref=route.prompt_bundle_ref,
+            skill_bundle_ref=route.skill_bundle_ref,
+            context_bundle_ref=context_ref,
+            output_schema_ref=route.output_schema_ref,
+            release_sha=route.release_sha,
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=(
+                f"production_execution/model_profiles/"
+                f"{route.model_profile.profile_id}/v{route.model_profile.profile_version}"
+            ),
+            asset_type="model_profile",
+            contract=route.model_profile.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=(
+                f"production_execution/route_policies/"
+                f"{route.route_policy.policy_id}/v{route.route_policy.policy_version}"
+            ),
+            asset_type="route_policy",
+            contract=route.route_policy.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=input_ref,
+            asset_type="input_manifest",
+            contract=manifest.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=route_ref,
+            asset_type="route_snapshot",
+            contract=snapshot.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        budget_reservation_id = self._budget_reservation(external_effect_id, project_id)
+        request = ExecutionRequest(
+            execution_id=f"chapter-execution:{external_effect_id}",
+            operation_id=operation_id,
+            saga_id=graph["saga_id"],
+            attempt_id=attempt_id,
+            fencing_token=fencing_token,
+            project_id=project_id,
+            book_id=book_id,
+            target_scope=target_scope,
+            task_kind=graph["definition_name"],
+            stage=stage,
+            importance_class="HIGH",
+            risk_class=("HIGH" if stage == "canon_extraction" else "NORMAL"),
+            route_snapshot_id=route_ref,
+            workspace_snapshot_id=workspace_id,
+            input_manifest_ref=input_ref,
+            resource_claims=(f"chapter:{chapter}", f"stage:{stage}"),
+            timeout_policy_ref=route.model_profile.timeout_policy_ref,
+            budget_policy_ref="chapter-model-budget-v1",
+            permission_policy_ref="chapter.authority.execute",
+            stable_idempotency_key=stable_idempotency_key,
+            origin_chain=("chapter.slice.run", graph["definition_name"]),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+            external_effect_id=external_effect_id,
+            budget_reservation_id=budget_reservation_id,
+        )
+        return ChapterExecutionBinding(request, snapshot, manifest)
+
+    @staticmethod
+    def _artifacts(metadata: Mapping[str, Any]) -> tuple[ArtifactPointer, ...]:
+        values = metadata.get("input_artifacts")
+        if not isinstance(values, list) or not values:
+            raise ExternalEffectAdapterError(
+                "Chapter gateway requires frozen input artifacts", request_sent=False
+            )
+        try:
+            return tuple(ArtifactPointer.from_dict(dict(item)) for item in values)
+        except (TypeError, ValueError) as exc:
+            raise ExternalEffectAdapterError(
+                "Chapter gateway input artifact identity is invalid", request_sent=False
+            ) from exc
+
+    def _operation_graph(self, operation_id: str, project_id: str) -> dict[str, str]:
+        with psycopg.connect(self.database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT operation.definition_name, operation.root_operation_id,
+                           saga.saga_id
+                    FROM authority_operation AS operation
+                    LEFT JOIN authority_saga AS saga
+                      ON saga.root_operation_id = operation.root_operation_id
+                     AND saga.project_id = operation.project_id
+                    WHERE operation.operation_id = %s AND operation.project_id = %s
+                    """,
+                    [operation_id, project_id],
+                )
+                row = cursor.fetchone()
+        if row is None or not row[2]:
+            raise ExternalEffectAdapterError(
+                "Chapter gateway operation has no Authority Saga", request_sent=False
+            )
+        return {
+            "definition_name": str(row[0]),
+            "root_operation_id": str(row[1]),
+            "saga_id": str(row[2]),
+        }
+
+    def _budget_reservation(self, external_effect_id: str, project_id: str) -> str:
+        with psycopg.connect(self.database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT reservation_id
+                    FROM authority_budget_reservation
+                    WHERE external_effect_id = %s AND project_id = %s
+                      AND status IN ('RESERVED', 'HELD_UNKNOWN')
+                    ORDER BY created_at DESC LIMIT 1
+                    """,
+                    [external_effect_id, project_id],
+                )
+                row = cursor.fetchone()
+        if row is None:
+            raise ExternalEffectAdapterError(
+                "Chapter gateway requires an approved budget reservation",
+                request_sent=False,
+            )
+        return str(row[0])
+
+    def _ensure_contract(
+        self,
+        *,
+        operation_id: str,
+        project_id: str,
+        logical_ref: str,
+        asset_type: str,
+        contract: dict[str, Any],
+        trace_id: str,
+        correlation_id: str,
+    ) -> None:
+        try:
+            existing = self.query.require(project_id=project_id, logical_ref=logical_ref)
+        except KernelError as exc:
+            if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
+            existing = None
+        if existing is not None:
+            frozen = existing.content.get("contract", existing.content)
+            if frozen != contract or existing.asset_type != asset_type:
+                raise KernelError(
+                    "EXECUTION_CONTRACT_FROZEN_CONFLICT",
+                    "an immutable execution contract changed inside one identity",
+                )
+            return
+        token = _identity_token(f"{project_id}:{logical_ref}")
+        self.writer.materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=operation_id,
+                project_id=project_id,
+                asset_id=f"production-execution-contract:{token}",
+                asset_type=asset_type,
+                logical_ref=logical_ref,
+                category="production_execution_contracts",
+                output_key=f"production_execution.contract.{asset_type}.{token}",
+                role="execution_contract",
+                content={"contract": contract},
+                qualification_policy="production-execution-contract-v1",
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+            )
+        )
+
+
+class ChapterFixtureResponseFactory(Protocol):
+    def __call__(self, stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]: ...
+
+
+class ExternalEffectExecutionSessionStore:
+    """Transient gateway cache; PostgreSQL ExternalEffect remains recovery authority.
+
+    Every referenced manifest is copied into the ExternalEffect receipt before the
+    adapter returns.  A new worker deliberately starts with an empty cache and
+    reconstructs the same request from PostgreSQL using the Provider idempotency key
+    or persistent local execution directory.
+    """
+
+    def __init__(self) -> None:
+        self._records: dict[str, ExecutionRecord] = {}
+        self._evidence: dict[str, dict[str, Any]] = {}
+        self._lock = Lock()
+
+    def put_record(self, record: ExecutionRecord) -> None:
+        with self._lock:
+            existing = self._records.get(record.request.execution_id)
+            if existing is not None:
+                if existing.request.contract_hash != record.request.contract_hash:
+                    raise ValueError("duplicate execution ID has a different request")
+                return
+            self._records[record.request.execution_id] = record
+
+    def get_record(self, execution_id: str) -> ExecutionRecord:
+        try:
+            return self._records[execution_id]
+        except KeyError as exc:
+            raise ValueError(f"execution session is not available: {execution_id}") from exc
+
+    def find_record(self, execution_id: str) -> ExecutionRecord | None:
+        return self._records.get(execution_id)
+
+    def put_evidence(
+        self, kind: str, execution_id: str, payload: Mapping[str, Any]
+    ) -> str:
+        frozen = json.loads(_canonical(payload))
+        digest = hashlib.sha256(_canonical(frozen).encode("utf-8")).hexdigest()
+        ref = f"external-effect-session:{kind}:{execution_id}:{digest}"
+        with self._lock:
+            prior = self._evidence.get(ref)
+            if prior is not None and prior != frozen:
+                raise ValueError("execution session evidence hash collision")
+            self._evidence[ref] = frozen
+        return ref
+
+    def read_evidence(self, ref: str) -> dict[str, Any]:
+        try:
+            return dict(self._evidence[ref])
+        except KeyError as exc:
+            raise ValueError(f"execution session evidence is not available: {ref}") from exc
+
+
+def default_chapter_fixture_response(
+    stage: str, inputs: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Deterministic chapter fixture used only by SCRIPTED_FIXTURE routes."""
+
+    if stage == "draft":
+        plan = inputs.get("plan") if isinstance(inputs.get("plan"), Mapping) else {}
+        return {
+            "text": (
+                f"{plan.get('premise') or 'The chapter objective advances.'} "
+                "The choice is public, and the irreversible cost is witnessed."
+            )
+        }
+    if stage == "review":
+        return {
+            "score": 72,
+            "issues": [
+                {
+                    "code": "COST_NOT_CONCRETE",
+                    "severity": "blocking",
+                    "message": "Make the irreversible cost concrete in the scene.",
+                }
+            ],
+        }
+    if stage == "revision":
+        draft = inputs.get("draft") if isinstance(inputs.get("draft"), Mapping) else {}
+        return {
+            "text": (
+                f"{draft.get('text') or 'The choice is made.'} "
+                "The protagonist gives up the only safe route home before the witnesses leave."
+            ),
+            "resolved_issue_codes": ["COST_NOT_CONCRETE"],
+        }
+    if stage == "rereview":
+        return {"score": 90, "issues": []}
+    if stage == "canon_extraction":
+        revision = inputs.get("revision") if isinstance(inputs.get("revision"), Mapping) else {}
+        text = str(revision.get("text") or "The protagonist gives up the safe route home.")
+        evidence_end = max(1, min(len(text), 40))
+        empty_fields = {
+            "character_state_changes": [],
+            "relationship_changes": [],
+            "timeline_events": [],
+            "foreshadow_changes": [],
+            "promise_changes": [],
+            "reward_changes": [],
+            "world_rule_usages": [],
+            "power_state_changes": [],
+            "narrative_pattern_fingerprints": [],
+            "theme_movements": [],
+            "antagonist_pressure_changes": [],
+        }
+        return {
+            "canon_facts": [
+                {
+                    "subject": "protagonist",
+                    "predicate": "gave_up",
+                    "object": "safe_route_home",
+                    "evidence_start": 0,
+                    "evidence_end": evidence_end,
+                    "confidence": 0.99,
+                }
+            ],
+            **empty_fields,
+        }
+    if stage.startswith("quality_"):
+        dimensions = inputs.get("dimensions")
+        if not isinstance(dimensions, list) or not dimensions:
+            raise ValueError("fixture quality route requires dimensions")
+        return {
+            "dimensions": [
+                {
+                    "dimension": str(dimension),
+                    "gate_status": "PASSED",
+                    "score": 90,
+                    "evidence_locations": [{"start": 0, "end": 24}],
+                    "confidence": 0.9,
+                    "issue_codes": [],
+                    "revision_strategies": [],
+                }
+                for dimension in dimensions
+            ]
+        }
+    raise ValueError(f"unsupported fixture stage: {stage}")
+
+
+class PostgresChapterExecutionPayloadResolver:
+    """Resolve the frozen ExternalEffect payload; optionally materialize a fixture reply."""
+
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        fixture_response_factory: ChapterFixtureResponseFactory | None = None,
+        working_directory: str | Path = ".",
+        command: tuple[str, ...] = (),
+    ) -> None:
+        self.database_url = database_url
+        self.fixture_response_factory = fixture_response_factory
+        self.working_directory = str(working_directory)
+        self.command = tuple(command)
+
+    def resolve(self, request: ExecutionRequest, admission: Any) -> ResolvedExecutionPayload:
+        with psycopg.connect(self.database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT request_payload, request_timeout_seconds, request_hash
+                    FROM authority_external_effect
+                    WHERE external_effect_id = %s AND operation_id = %s AND project_id = %s
+                    """,
+                    [request.external_effect_id, request.operation_id, request.project_id],
+                )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("ExecutionRequest has no frozen PostgreSQL ExternalEffect")
+        payload = dict(row[0] or {})
+        stage = str(payload.get("stage") or "")
+        inputs = payload.get("input")
+        if stage != request.stage or not isinstance(inputs, Mapping):
+            raise ValueError("frozen Chapter ExternalEffect payload changed")
+        if self.fixture_response_factory is None:
+            resolved_payload: dict[str, Any] = {
+                "stage": stage,
+                "input": dict(inputs),
+                "prompt_bundle_ref": admission.route_snapshot.prompt_bundle_ref,
+                "skill_bundle_ref": admission.route_snapshot.skill_bundle_ref,
+                "output_schema_ref": admission.route_snapshot.output_schema_ref,
+            }
+        else:
+            resolved_payload = {
+                "result": self.fixture_response_factory(stage, inputs),
+                "usage": {"input_tokens": 0, "output_tokens": 0},
+                "cost": {"amount": "0", "currency": "USD"},
+                "fixture_protocol_only": True,
+                "real_model_call": False,
+                "production_verified": False,
+            }
+        return ResolvedExecutionPayload(
+            request_payload=resolved_payload,
+            input_text=_canonical({"stage": stage, "input": inputs}),
+            working_directory=self.working_directory,
+            timeout_seconds=int(row[1] or 30),
+            output_schema_version=admission.route_snapshot.output_schema_ref,
+            command=self.command,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class ChapterExecutionGatewaySession:
+    gateway: ProductionExecutionGateway
+    evidence_store: ExecutionRecordStore
+
+
+class ProductionExecutionGatewayExternalEffectAdapter:
+    """Map the existing ExternalEffect protocol to one Attempt-bound gateway call."""
+
+    provider = "production_execution_gateway"
+    reconciliation_mode = "query"
+    production_execution_gateway_backed = True
+
+    def __init__(
+        self,
+        *,
+        database_url: str,
+        routes: Mapping[str, ChapterExecutionRoute],
+        session_factory: Callable[[str], ChapterExecutionGatewaySession],
+        provider_adapters: Mapping[str, Any] | None = None,
+    ) -> None:
+        if set(routes) != _STAGES:
+            raise ValueError("all ten Chapter execution stages must use the gateway")
+        self.database_url = database_url
+        self.routes = dict(routes)
+        self.binder = PostgresChapterExecutionContractBinder(database_url, routes)
+        self.session_factory = session_factory
+        self.provider_adapters = dict(provider_adapters or {})
+        self._sessions: dict[str, ChapterExecutionGatewaySession] = {}
+        self._lock = Lock()
+        all_real = all(item.real_provider_validation_eligible for item in routes.values())
+        all_idempotent = all(
+            item.model_profile.runtime_class.value != "LOCAL_CLI_REMOTE_INFERENCE"
+            for item in routes.values()
+        )
+        self.capability_profile = ProviderCapabilityProfile(
+            provider=self.provider,
+            control_level=(
+                ProviderControlLevel.V2_CONTROLLED
+                if all_real
+                else ProviderControlLevel.FIXTURE_CONTROLLED
+            ),
+            supports_request_timeout=True,
+            supports_provider_idempotency=all_idempotent,
+            supports_query=True,
+            supports_cancel=True,
+            supports_callback=False,
+            supports_usage_receipt=True,
+            supports_cost_receipt=True,
+            reconciliation_mode=self.reconciliation_mode,
+            real_provider_validation_eligible=all_real,
+        )
+
+    def execute(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+    ) -> ProviderResult:
+        return self._invoke(
+            stable_idempotency_key=stable_idempotency_key,
+            capability=capability,
+            request_payload=request_payload,
+            reconciliation=False,
+        )
+
+    def query(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+    ) -> ProviderResult:
+        return self._invoke(
+            stable_idempotency_key=stable_idempotency_key,
+            capability=capability,
+            request_payload=request_payload,
+            reconciliation=True,
+        )
+
+    def cancel(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+        provider_request_id: str,
+    ) -> ProviderResult:
+        binding, session = self._binding_and_session(
+            stable_idempotency_key, capability, request_payload
+        )
+        try:
+            handle = session.gateway.submit(binding.request)
+            if provider_request_id and handle.provider_request_id != provider_request_id:
+                raise ValueError("Provider request identity changed during cancellation")
+            result = session.gateway.cancel(handle, "authority cancellation")
+        except ExternalEffectAdapterError:
+            raise
+        except Exception as exc:
+            raise ExternalEffectAdapterError(
+                f"gateway cancellation failed: {type(exc).__name__}: {exc}",
+                request_sent=bool(provider_request_id),
+            ) from exc
+        outcome = {
+            CancellationOutcome.CANCELLED: "cancelled",
+            CancellationOutcome.ALREADY_COMPLETED: "already_completed",
+            CancellationOutcome.UNSUPPORTED: "unsupported",
+        }.get(result.outcome, "ambiguous")
+        return ProviderResult(
+            outcome,
+            handle.backend_execution_id,
+            {
+                "production_execution_cancellation": result.to_dict(),
+                "route_snapshot_id": binding.route_snapshot.route_snapshot_id,
+                "transport": handle.transport.value,
+            },
+            handle.provider_request_id or "",
+        )
+
+    def model_id_for_stage(self, stage: str) -> str:
+        route = self.routes.get(stage)
+        return "" if route is None else route.model_profile.model_id
+
+    def provider_id_for_stage(self, stage: str) -> str:
+        route = self.routes.get(stage)
+        return "" if route is None else route.model_profile.model_provider
+
+    def _invoke(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+        reconciliation: bool,
+    ) -> ProviderResult:
+        binding, session = self._binding_and_session(
+            stable_idempotency_key, capability, request_payload
+        )
+        request_sent = False
+        try:
+            handle = session.gateway.submit(binding.request)
+            request_sent = True
+            result = session.gateway.reconcile(handle)
+        except ExternalEffectAdapterError:
+            raise
+        except Exception as exc:
+            raise ExternalEffectAdapterError(
+                f"gateway execution failed: {type(exc).__name__}: {exc}",
+                request_sent=request_sent,
+            ) from exc
+        outcome = self._external_outcome(result.outcome, reconciliation=reconciliation)
+        evidence = self._evidence(
+            binding=binding,
+            session=session,
+            handle=handle,
+            result=result,
+        )
+        return ProviderResult(
+            outcome,
+            handle.backend_execution_id,
+            evidence,
+            handle.provider_request_id or "",
+        )
+
+    def _binding_and_session(
+        self,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+    ) -> tuple[ChapterExecutionBinding, ChapterExecutionGatewaySession]:
+        metadata = request_payload.get("_production_execution")
+        project_id = str(metadata.get("project_id") or "") if isinstance(metadata, Mapping) else ""
+        operation_id = str(metadata.get("operation_id") or "") if isinstance(metadata, Mapping) else ""
+        external_effect_id = str(request_payload.get("external_effect_id") or "")
+        if not external_effect_id and project_id and operation_id:
+            external_effect_id = self._effect_id(
+                project_id, operation_id, stable_idempotency_key
+            )
+        if not project_id or not external_effect_id:
+            raise ExternalEffectAdapterError(
+                "gateway ExternalEffect identity is incomplete", request_sent=False
+            )
+        binding = self.binder.bind(
+            stable_idempotency_key=stable_idempotency_key,
+            capability=capability,
+            request_payload=request_payload,
+            external_effect_id=external_effect_id,
+        )
+        return binding, self._session(project_id)
+
+    def _session(self, project_id: str) -> ChapterExecutionGatewaySession:
+        with self._lock:
+            session = self._sessions.get(project_id)
+            if session is None:
+                session = self.session_factory(project_id)
+                self._sessions[project_id] = session
+            return session
+
+    def _effect_id(self, project_id: str, operation_id: str, stable_key: str) -> str:
+        with psycopg.connect(self.database_url, autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT external_effect_id FROM authority_external_effect
+                    WHERE project_id = %s AND operation_id = %s
+                      AND stable_idempotency_key = %s
+                    """,
+                    [project_id, operation_id, stable_key],
+                )
+                row = cursor.fetchone()
+        if row is None:
+            raise ExternalEffectAdapterError(
+                "gateway ExternalEffect does not exist", request_sent=False
+            )
+        return str(row[0])
+
+    def _evidence(
+        self,
+        *,
+        binding: ChapterExecutionBinding,
+        session: ChapterExecutionGatewaySession,
+        handle: ExecutionHandle,
+        result: Any,
+    ) -> dict[str, Any]:
+        route = self.routes[binding.request.stage]
+        evidence: dict[str, Any] = {
+            "provider_id": route.model_profile.model_provider,
+            "model_id": route.model_profile.model_id,
+            "prompt_version": route.prompt_bundle_ref,
+            "skill_version": route.skill_bundle_ref,
+            "real_model_call": (
+                route.real_provider_validation_eligible
+                and handle.transport.value != "SCRIPTED_FIXTURE"
+            ),
+            "fixture_protocol_only": handle.transport.value == "SCRIPTED_FIXTURE",
+            "production_verified": False,
+            "production_execution": {
+                "execution_request": binding.request.to_dict(),
+                "execution_handle": handle.to_dict(),
+                "execution_result": result.to_dict(),
+                "route_snapshot": binding.route_snapshot.to_dict(),
+                "input_manifest": binding.input_manifest.to_dict(),
+                "validation_manifest_ref": (
+                    f"authority-external-effect:{binding.request.external_effect_id}:"
+                    "validation-manifest"
+                ),
+                "commit_manifest_required": True,
+            },
+        }
+        if result.normalized_output_ref:
+            raw = session.evidence_store.read_evidence(result.normalized_output_ref)
+            evidence["result"] = normalize_model_output(binding.request.stage, raw)
+        if result.output_manifest_ref:
+            evidence["production_execution"]["output_manifest"] = (
+                session.evidence_store.read_evidence(result.output_manifest_ref)
+            )
+        if result.validation_report_ref:
+            evidence["production_execution"]["validation_manifest"] = (
+                session.evidence_store.read_evidence(result.validation_report_ref)
+            )
+        if result.usage_receipt_ref:
+            evidence["usage"] = session.evidence_store.read_evidence(
+                result.usage_receipt_ref
+            )
+        else:
+            evidence["usage"] = {"input_tokens": 0, "output_tokens": 0}
+        if result.cost_receipt_ref:
+            evidence["cost"] = session.evidence_store.read_evidence(result.cost_receipt_ref)
+        else:
+            evidence["cost"] = {"amount": "0", "currency": "USD"}
+        return evidence
+
+    @staticmethod
+    def _external_outcome(outcome: ExecutionOutcome, *, reconciliation: bool) -> str:
+        if outcome is ExecutionOutcome.SUCCEEDED:
+            return "success"
+        if outcome is ExecutionOutcome.RETRYABLE_FAILURE:
+            return "not_found" if reconciliation else "retryable_failure"
+        if outcome is ExecutionOutcome.FINAL_FAILURE:
+            return "failed_final" if reconciliation else "final_failure"
+        if outcome is ExecutionOutcome.CANCELLED:
+            return "cancelled"
+        if outcome in {ExecutionOutcome.ACCEPTED, ExecutionOutcome.RUNNING, ExecutionOutcome.UNKNOWN}:
+            return "ambiguous" if reconciliation else "unknown"
+        return "failed_final" if reconciliation else "final_failure"
+
+
+__all__ = [
+    "ChapterExecutionBinding",
+    "ChapterExecutionGatewaySession",
+    "ChapterExecutionRoute",
+    "ExternalEffectExecutionSessionStore",
+    "PostgresChapterExecutionContractBinder",
+    "PostgresChapterExecutionPayloadResolver",
+    "ProductionExecutionGatewayExternalEffectAdapter",
+    "default_chapter_fixture_response",
+]
