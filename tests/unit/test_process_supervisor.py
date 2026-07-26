@@ -6,6 +6,7 @@ from pathlib import Path
 import signal
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
@@ -252,6 +253,98 @@ class ProcessSupervisorTests(unittest.TestCase):
             self.assertTrue(result.receipt.local_termination_only)
             self.assertIsNone(result.receipt.provider_request_id)
             self.assertIn(result.receipt.termination_signal, {"SIGTERM", "SIGKILL"})
+
+    @unittest.skipUnless(hasattr(os, "killpg"), "process-group signaling requires POSIX")
+    def test_external_cancel_signals_verified_running_process_and_persists_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = PersistentExecutionDirectory(Path(tmp))
+            supervisor = CodexProcessSupervisor(store)
+            request = ProcessLaunchRequest(
+                execution_id="execution:external-cancel",
+                operation_id="operation:external-cancel",
+                attempt_id="attempt:external-cancel",
+                fencing_token=11,
+                command=(sys.executable, "-c", "import time; time.sleep(30)"),
+                cwd=tmp,
+                input_text="",
+                timeout=ProcessTimeout(
+                    timeout_seconds=10,
+                    termination_grace_seconds=0.1,
+                    poll_interval_seconds=0.01,
+                ),
+            )
+
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                running = pool.submit(supervisor.run, request)
+                deadline = time.monotonic() + 3
+                while time.monotonic() < deadline:
+                    receipt = store.read_receipt(request.execution_id)
+                    if (
+                        receipt is not None
+                        and receipt.status is ProcessReceiptStatus.RUNNING
+                    ):
+                        break
+                    time.sleep(0.01)
+                else:
+                    self.fail("process never reached RUNNING")
+
+                cancellation = supervisor.cancel(
+                    request.execution_id,
+                    reason="operator requested cancellation",
+                    timeout=ProcessTimeout(
+                        timeout_seconds=2,
+                        termination_grace_seconds=0.1,
+                        poll_interval_seconds=0.01,
+                    ),
+                )
+                completed = running.result(timeout=3)
+
+            self.assertEqual(
+                cancellation.receipt.status, ProcessReceiptStatus.CANCELLED
+            )
+            self.assertEqual(completed.receipt.status, ProcessReceiptStatus.CANCELLED)
+            self.assertTrue(cancellation.receipt.local_termination_only)
+            self.assertEqual(
+                cancellation.receipt.termination_reason,
+                "operator requested cancellation",
+            )
+            self.assertIn(
+                cancellation.receipt.termination_signal, {"SIGTERM", "SIGKILL"}
+            )
+            self.assertIsNone(cancellation.receipt.provider_request_id)
+            self.assertFalse(cancellation.safe_to_signal)
+            persisted = store.read_receipt(request.execution_id)
+            self.assertEqual(persisted.status, ProcessReceiptStatus.CANCELLED)
+
+    def test_external_cancel_refuses_pid_reuse_without_signaling(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = PersistentExecutionDirectory(Path(tmp))
+            store.record_running_process(
+                execution_id="execution:cancel-pid-reuse",
+                pid=4242,
+                pgid=4242,
+                process_start_token="old-process-start-token",
+                result_filename="result.json",
+            )
+            supervisor = CodexProcessSupervisor(
+                store,
+                identity_probe=_IdentityProbe(
+                    alive=True, start_token="new-process-start-token"
+                ),
+            )
+
+            cancellation = supervisor.cancel(
+                "execution:cancel-pid-reuse",
+                reason="must not signal unrelated process",
+            )
+
+            self.assertEqual(
+                cancellation.receipt.status, ProcessReceiptStatus.ORPHANED
+            )
+            self.assertEqual(
+                cancellation.receipt.recovery_reason, "PID_REUSE_DETECTED"
+            )
+            self.assertFalse(cancellation.safe_to_signal)
 
     def test_duplicate_submission_reuses_receipt_without_relaunching_process(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

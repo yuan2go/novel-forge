@@ -806,6 +806,7 @@ class ExecutionHandle(_Contract):
     query_capability: CapabilityAvailability
     cancel_capability: CapabilityAvailability
     callback_capability: CapabilityAvailability
+    external_request_id: str | None = None
 
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
@@ -829,8 +830,10 @@ class ExecutionHandle(_Contract):
             item is not None and item != "" for item in process_fields
         ):
             raise ValueError("local process identity requires PID, PGID, and start time")
-        if self.transport is ExecutionRuntimeClass.SCRIPTED_FIXTURE and self.provider_request_id:
-            raise ValueError("scripted fixture cannot claim a provider request ID")
+        if self.transport is ExecutionRuntimeClass.SCRIPTED_FIXTURE and (
+            self.provider_request_id or self.external_request_id
+        ):
+            raise ValueError("scripted fixture cannot claim a remote request ID")
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> ExecutionHandle:
@@ -860,6 +863,7 @@ class ExecutionResult(_Contract):
     validation_report_ref: str | None
     started_at: str
     completed_at: str | None
+    external_receipt_ref: str | None = None
 
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
@@ -907,6 +911,9 @@ class ExecutionCancellationResult(_Contract):
     reason: str
     requested_at: str
     completed_at: str | None
+    external_request_id: str | None = None
+    external_cancellation_receipt_ref: str | None = None
+    backend_completion_receipt_ref: str | None = None
 
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
@@ -927,13 +934,20 @@ class ExecutionCancellationResult(_Contract):
             if not self.local_execution_receipt_id:
                 raise ValueError("local termination requires a local execution receipt")
         if self.upstream_cancellation_outcome is not UpstreamCancellationOutcome.NOT_APPLICABLE:
-            if not self.provider_request_id:
-                raise ValueError("upstream cancellation requires a real provider request ID")
+            if not (self.provider_request_id or self.external_request_id):
+                raise ValueError(
+                    "upstream cancellation requires a real Provider or external request ID"
+                )
         if (
             self.upstream_cancellation_outcome is UpstreamCancellationOutcome.CANCELLED
-            and not self.provider_cancellation_receipt_ref
+            and not (
+                self.provider_cancellation_receipt_ref
+                or self.external_cancellation_receipt_ref
+            )
         ):
-            raise ValueError("upstream cancellation requires a provider cancellation receipt")
+            raise ValueError(
+                "upstream cancellation requires a Provider or external cancellation receipt"
+            )
         if self.outcome is CancellationOutcome.CANCELLED:
             if self.upstream_cancellation_outcome is UpstreamCancellationOutcome.ALREADY_COMPLETED:
                 raise ValueError("upstream ALREADY_COMPLETED cannot be reported as CANCELLED")
@@ -945,6 +959,7 @@ class ExecutionCancellationResult(_Contract):
             already_complete = (
                 self.local_termination_outcome is LocalTerminationOutcome.ALREADY_EXITED
                 or self.upstream_cancellation_outcome is UpstreamCancellationOutcome.ALREADY_COMPLETED
+                or bool(self.backend_completion_receipt_ref)
             )
             if not already_complete:
                 raise ValueError("ALREADY_COMPLETED requires matching local or upstream evidence")

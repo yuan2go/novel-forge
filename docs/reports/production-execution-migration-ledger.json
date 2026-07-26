@@ -1,5 +1,5 @@
 {
-  "artifact_hash": "sha256:4e1fa03c6e9049640d5fa1a98df7d1e825725d15e009a1c54c0e796f011e07a6",
+  "artifact_hash": "sha256:cf2e8327fe3b6c856eb5ce168cb1e43d0daa4dc8d3cea8805ab11abcc9aceb2e",
   "blocking_owner_ids": [],
   "entries": [
     {
@@ -4032,6 +4032,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4065,6 +4066,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4098,6 +4100,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4131,6 +4134,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4166,6 +4170,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4201,6 +4206,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4234,6 +4240,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4267,6 +4274,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4302,6 +4310,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4335,6 +4344,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4368,6 +4378,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4403,6 +4414,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4438,6 +4450,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4473,6 +4486,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -4508,6 +4522,7 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/integration/test_provider_callback_authority_postgres.py",
         "tests/unit/test_chapter_authority_dependencies.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -8441,6 +8456,7 @@
         "tests/integration/test_command_kernel_cancellation_postgres.py",
         "tests/integration/test_command_kernel_definition_postgres.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_process_supervisor.py",
         "tests/unit/test_production_execution_contracts.py",
         "tests/unit/test_production_execution_gateway.py",
@@ -8474,6 +8490,7 @@
         "tests/integration/test_command_kernel_cancellation_postgres.py",
         "tests/integration/test_command_kernel_definition_postgres.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_process_supervisor.py",
         "tests/unit/test_production_execution_contracts.py",
         "tests/unit/test_production_execution_gateway.py",
@@ -8507,6 +8524,7 @@
         "tests/integration/test_command_kernel_cancellation_postgres.py",
         "tests/integration/test_command_kernel_definition_postgres.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_process_supervisor.py",
         "tests/unit/test_production_execution_contracts.py",
         "tests/unit/test_production_execution_gateway.py",
@@ -8542,6 +8560,7 @@
         "tests/integration/test_command_kernel_cancellation_postgres.py",
         "tests/integration/test_command_kernel_definition_postgres.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_process_supervisor.py",
         "tests/unit/test_production_execution_contracts.py",
         "tests/unit/test_production_execution_gateway.py",
@@ -8575,6 +8594,7 @@
         "tests/integration/test_command_kernel_cancellation_postgres.py",
         "tests/integration/test_command_kernel_definition_postgres.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_process_supervisor.py",
         "tests/unit/test_production_execution_contracts.py",
         "tests/unit/test_production_execution_gateway.py",
@@ -11851,6 +11871,33 @@
       ]
     },
     {
+      "authority_attempt_bound": false,
+      "authority_operation_bound": true,
+      "budget_bound": false,
+      "callback_supported": false,
+      "cancel_supported": false,
+      "current_adapter": "novel_forge.modules.production_execution.agent_workspace_backend.ScriptedAgentWorkspaceRunner.execute",
+      "current_entrypoint": "ScriptedAgentWorkspaceRunner.execute",
+      "current_route": "SCRIPTED_FIXTURE",
+      "current_state_store": "FIXTURE_MEMORY",
+      "domain": "production_execution",
+      "execution_owner_id": "execution-owner:1996550788d31fc0c4c9",
+      "external_effect_bound": false,
+      "known_risks": [],
+      "legacy_removal_gate": "non-production path remains isolated and cannot produce production proof",
+      "migration_status": "FIXTURE_PROVEN",
+      "production_reachable": false,
+      "query_supported": false,
+      "side_effect_type": "SCRIPTED_FIXTURE",
+      "source_file": "src/novel_forge/modules/production_execution/agent_workspace_backend.py",
+      "source_symbol": "ScriptedAgentWorkspaceRunner.execute",
+      "target_backend": "scripted-fixture",
+      "target_capability": "agent.workspace.execute",
+      "tests": [
+        "tests/unit/test_execution_backend_conformance.py"
+      ]
+    },
+    {
       "authority_attempt_bound": true,
       "authority_operation_bound": true,
       "budget_bound": true,
@@ -11909,6 +11956,81 @@
         "tests/integration/test_production_execution_recovery_postgres.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
+    },
+    {
+      "authority_attempt_bound": false,
+      "authority_operation_bound": false,
+      "budget_bound": false,
+      "callback_supported": false,
+      "cancel_supported": false,
+      "current_adapter": "novel_forge.modules.production_execution.external_action_backend.ScriptedExternalActionAdapter._results.get",
+      "current_entrypoint": "self._results.get",
+      "current_route": "SCRIPTED_FIXTURE",
+      "current_state_store": "FIXTURE_MEMORY",
+      "domain": "production_execution",
+      "execution_owner_id": "execution-owner:e0add1287301d69109a9",
+      "external_effect_bound": false,
+      "known_risks": [],
+      "legacy_removal_gate": "non-production path remains isolated and cannot produce production proof",
+      "migration_status": "FIXTURE_PROVEN",
+      "production_reachable": false,
+      "query_supported": false,
+      "side_effect_type": "SCRIPTED_FIXTURE",
+      "source_file": "src/novel_forge/modules/production_execution/external_action_backend.py",
+      "source_symbol": "ScriptedExternalActionAdapter.query",
+      "target_backend": "scripted-fixture",
+      "target_capability": "",
+      "tests": []
+    },
+    {
+      "authority_attempt_bound": false,
+      "authority_operation_bound": false,
+      "budget_bound": false,
+      "callback_supported": false,
+      "cancel_supported": false,
+      "current_adapter": "novel_forge.modules.production_execution.external_action_backend.ScriptedExternalActionAdapter.submit",
+      "current_entrypoint": "ScriptedExternalActionAdapter.submit",
+      "current_route": "SCRIPTED_FIXTURE",
+      "current_state_store": "FIXTURE_MEMORY",
+      "domain": "production_execution",
+      "execution_owner_id": "execution-owner:d0198345f8a5422a635d",
+      "external_effect_bound": false,
+      "known_risks": [],
+      "legacy_removal_gate": "non-production path remains isolated and cannot produce production proof",
+      "migration_status": "FIXTURE_PROVEN",
+      "production_reachable": false,
+      "query_supported": false,
+      "side_effect_type": "SCRIPTED_FIXTURE",
+      "source_file": "src/novel_forge/modules/production_execution/external_action_backend.py",
+      "source_symbol": "ScriptedExternalActionAdapter.submit",
+      "target_backend": "scripted-fixture",
+      "target_capability": "",
+      "tests": []
+    },
+    {
+      "authority_attempt_bound": false,
+      "authority_operation_bound": false,
+      "budget_bound": false,
+      "callback_supported": false,
+      "cancel_supported": false,
+      "current_adapter": "novel_forge.modules.production_execution.external_action_backend.ScriptedExternalActionAdapter._results.get",
+      "current_entrypoint": "self._results.get",
+      "current_route": "SCRIPTED_FIXTURE",
+      "current_state_store": "FIXTURE_MEMORY",
+      "domain": "production_execution",
+      "execution_owner_id": "execution-owner:c85a6fe21a7c0165f8e0",
+      "external_effect_bound": false,
+      "known_risks": [],
+      "legacy_removal_gate": "non-production path remains isolated and cannot produce production proof",
+      "migration_status": "FIXTURE_PROVEN",
+      "production_reachable": false,
+      "query_supported": false,
+      "side_effect_type": "SCRIPTED_FIXTURE",
+      "source_file": "src/novel_forge/modules/production_execution/external_action_backend.py",
+      "source_symbol": "ScriptedExternalActionAdapter.submit",
+      "target_backend": "scripted-fixture",
+      "target_capability": "",
+      "tests": []
     },
     {
       "authority_attempt_bound": false,
@@ -12243,6 +12365,7 @@
         "tests/unit/test_canon_authority_api.py",
         "tests/unit/test_chapter_authority_api.py",
         "tests/unit/test_context_and_production_chain.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_workflow_executor.py"
       ]
@@ -12275,6 +12398,7 @@
         "tests/unit/test_canon_authority_api.py",
         "tests/unit/test_chapter_authority_api.py",
         "tests/unit/test_context_and_production_chain.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_workflow_executor.py"
       ]
@@ -12307,6 +12431,7 @@
         "tests/unit/test_canon_authority_api.py",
         "tests/unit/test_chapter_authority_api.py",
         "tests/unit/test_context_and_production_chain.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_workflow_executor.py"
       ]
@@ -12815,6 +12940,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -12849,6 +12975,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -12883,6 +13010,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -12917,6 +13045,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -12951,6 +13080,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -12985,6 +13115,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -13019,6 +13150,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -13053,6 +13185,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -13087,6 +13220,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -13121,6 +13255,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -13157,6 +13292,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -13191,6 +13327,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -13225,6 +13362,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -13259,6 +13397,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -13293,6 +13432,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -13327,6 +13467,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
@@ -18257,6 +18398,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18293,6 +18435,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18329,6 +18472,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18367,6 +18511,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18405,6 +18550,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18443,6 +18589,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18479,6 +18626,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18517,6 +18665,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18555,6 +18704,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18593,6 +18743,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18631,6 +18782,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18669,6 +18821,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18707,6 +18860,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -18743,6 +18897,7 @@
       "tests": [
         "tests/unit/test_agent_registry_scheduler_integration.py",
         "tests/unit/test_agent_scheduler.py",
+        "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_long_chain_runner.py",
         "tests/unit/test_mkaos_model_extraction_schema.py",
         "tests/unit/test_mkaos_os_envelope.py",
@@ -22594,7 +22749,7 @@
       ]
     }
   ],
-  "entry_count": 676,
+  "entry_count": 680,
   "evidence_flags": {
     "production_verified": false,
     "real_provider_proven": false,
@@ -22604,13 +22759,13 @@
   "migration_summary": {
     "CLASSIFIED": 417,
     "DISCOVERED": 235,
-    "FIXTURE_PROVEN": 23,
+    "FIXTURE_PROVEN": 27,
     "GATEWAY_BOUND": 1
   },
   "parse_errors": [],
-  "scanned_file_count": 562,
+  "scanned_file_count": 565,
   "schema_version": "production-execution-migration-ledger.v1",
-  "source_tree_hash": "sha256:64dcb34844a8b40822522642e7a59a517f8443d8453bde0f892ae06a62c0f3e5",
+  "source_tree_hash": "sha256:c05e1311b16b087058d8837a42be1611e5209baac4c5e841c56fba40445fa315",
   "summary": {
     "AGENT_WORKSPACE_TRANSACTION": 0,
     "DATABASE_AUTHORITY": 417,
@@ -22620,6 +22775,6 @@
     "MODEL_INFERENCE": 163,
     "REMOTE_EXTERNAL_ACTION": 14,
     "REMOTE_RETRIEVAL": 18,
-    "SCRIPTED_FIXTURE": 23
+    "SCRIPTED_FIXTURE": 27
   }
 }

@@ -4,9 +4,9 @@ AST-derived inventory of uncertain execution, external effects, database Authori
 
 ## Summary
 
-- Source tree: `sha256:64dcb34844a8b40822522642e7a59a517f8443d8453bde0f892ae06a62c0f3e5`
-- Scanned Python files: 562
-- Execution entries: 676
+- Source tree: `sha256:c05e1311b16b087058d8837a42be1611e5209baac4c5e841c56fba40445fa315`
+- Scanned Python files: 565
+- Execution entries: 680
 - Production `LEGACY_UNKNOWN` blockers: 0
 - `real_provider_proven=false`
 - `production_verified=false`
@@ -20,7 +20,7 @@ AST-derived inventory of uncertain execution, external effects, database Authori
 | `AGENT_WORKSPACE_TRANSACTION` | 0 |
 | `REMOTE_EXTERNAL_ACTION` | 14 |
 | `REMOTE_RETRIEVAL` | 18 |
-| `SCRIPTED_FIXTURE` | 23 |
+| `SCRIPTED_FIXTURE` | 27 |
 | `LEGACY_UNKNOWN` | 29 |
 
 ## Blocking Entries
@@ -367,8 +367,12 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:a1eceaa77da8c5d927b5` | `pgvector_store` | `src/novel_forge/modules/pgvector_store/service.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
 | `execution-owner:dfddcb16219754b45582` | `pgvector_store` | `src/novel_forge/modules/pgvector_store/service.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
 | `execution-owner:72523829f277bd62351a` | `pgvector_store` | `src/novel_forge/modules/pgvector_store/service.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
+| `execution-owner:1996550788d31fc0c4c9` | `production_execution` | `src/novel_forge/modules/production_execution/agent_workspace_backend.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `agent.workspace.execute` | `scripted-fixture` | True/False/False | `FIXTURE_PROVEN` |
 | `execution-owner:148c72021e0655b0c743` | `production_execution` | `src/novel_forge/modules/production_execution/backends.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `capability-registry:execution-request` | `remote-provider` | True/True/True | `GATEWAY_BOUND` |
 | `execution-owner:14c9dc5348f59c85c1cd` | `production_execution` | `src/novel_forge/modules/production_execution/backends.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `` | `scripted-fixture` | True/True/False | `FIXTURE_PROVEN` |
+| `execution-owner:e0add1287301d69109a9` | `production_execution` | `src/novel_forge/modules/production_execution/external_action_backend.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `` | `scripted-fixture` | False/False/False | `FIXTURE_PROVEN` |
+| `execution-owner:d0198345f8a5422a635d` | `production_execution` | `src/novel_forge/modules/production_execution/external_action_backend.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `` | `scripted-fixture` | False/False/False | `FIXTURE_PROVEN` |
+| `execution-owner:c85a6fe21a7c0165f8e0` | `production_execution` | `src/novel_forge/modules/production_execution/external_action_backend.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `` | `scripted-fixture` | False/False/False | `FIXTURE_PROVEN` |
 | `execution-owner:fbc407b78d4d389e8249` | `production_execution` | `src/novel_forge/modules/production_execution/legacy.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `capability-registry:execution-request` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:38aa928f234a2a9263bb` | `production_execution` | `src/novel_forge/modules/production_execution/legacy.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `capability-registry:execution-request` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:9232f39e7346eec2470f` | `production_execution` | `src/novel_forge/modules/production_execution/legacy.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |

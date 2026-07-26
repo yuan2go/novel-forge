@@ -33,6 +33,7 @@ from .contracts import (
     ExecutionRequest,
     ExecutionResult,
 )
+from .external_action_backend import ExternalActionInvocationResult
 from .process_supervisor import ProcessReceipt
 
 
@@ -99,6 +100,38 @@ def _provider_result_from_dict(
     )
 
 
+def _external_result_to_dict(
+    result: ExternalActionInvocationResult | None,
+) -> dict[str, Any] | None:
+    if result is None:
+        return None
+    return {
+        "outcome": result.outcome,
+        "external_request_id": result.external_request_id,
+        "completion_mode": result.completion_mode,
+        "evidence": dict(result.evidence),
+        "request_sent": result.request_sent,
+    }
+
+
+def _external_result_from_dict(
+    payload: Mapping[str, Any] | None,
+) -> ExternalActionInvocationResult | None:
+    if payload is None:
+        return None
+    return ExternalActionInvocationResult(
+        outcome=str(payload.get("outcome") or ""),
+        external_request_id=(
+            str(payload["external_request_id"])
+            if payload.get("external_request_id")
+            else None
+        ),
+        completion_mode=str(payload.get("completion_mode") or "poll"),
+        evidence=dict(payload.get("evidence") or {}),
+        request_sent=bool(payload.get("request_sent")),
+    )
+
+
 def _record_to_dict(record: ExecutionRecord) -> dict[str, Any]:
     return {
         "request": record.request.to_dict(),
@@ -106,6 +139,7 @@ def _record_to_dict(record: ExecutionRecord) -> dict[str, Any]:
         "started_at": record.started_at,
         "raw_evidence": dict(record.raw_evidence),
         "provider_result": _provider_result_to_dict(record.provider_result),
+        "external_result": _external_result_to_dict(record.external_result),
         "process_receipt": (
             record.process_receipt.to_dict()
             if record.process_receipt is not None
@@ -149,6 +183,11 @@ def _record_from_dict(payload: Mapping[str, Any]) -> ExecutionRecord:
         provider_result=_provider_result_from_dict(
             payload.get("provider_result")
             if isinstance(payload.get("provider_result"), Mapping)
+            else None
+        ),
+        external_result=_external_result_from_dict(
+            payload.get("external_result")
+            if isinstance(payload.get("external_result"), Mapping)
             else None
         ),
         process_receipt=(

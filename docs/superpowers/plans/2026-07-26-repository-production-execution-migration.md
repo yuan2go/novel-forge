@@ -132,13 +132,13 @@
 - All backends implement the unchanged `ExecutionBackend` protocol.
 - Produces reusable `BackendConformanceSuite` scenarios for duplicate submit, contract conflict, fence, query, cancel, callback, unknown, timeout, malformed output, receipts, and recovery.
 
-- [ ] Write conformance cases and failure injectors before backend changes.
-- [ ] Complete Provider query/cancel/callback verification and usage/cost availability semantics.
-- [ ] Add supervisor cancellation by execution identity; Codex cancel records SIGTERM/SIGKILL evidence, PID token checks, and late-result quarantine.
-- [ ] Add non-model external-action and Agent workspace contracts plus fixture backends.
-- [ ] Enforce fixture proof flags and `UNAVAILABLE` usage/cost rather than numeric zero.
-- [ ] Run all conformance/process tests.
-- [ ] Commit `feat: complete qualified backend conformance and lifecycle contracts`.
+- [x] Write conformance cases and failure injectors before backend changes.
+- [x] Complete Provider query/cancel/callback verification and usage/cost availability semantics.
+- [x] Add supervisor cancellation by execution identity; Codex cancel records SIGTERM/SIGKILL evidence, PID token checks, and late-result quarantine.
+- [x] Add non-model external-action and Agent workspace contracts plus fixture backends.
+- [x] Enforce fixture proof flags and `UNAVAILABLE` usage/cost rather than numeric zero.
+- [x] Run all conformance/process tests.
+- [x] Commit `feat: complete qualified backend conformance and lifecycle contracts`.
 
 ### Task 6: Governed route resolution
 

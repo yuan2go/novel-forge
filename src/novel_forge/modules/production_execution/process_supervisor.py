@@ -18,6 +18,7 @@ from pathlib import Path
 import re
 import signal
 import subprocess
+from threading import Lock
 import time
 from typing import Any, Mapping, Protocol
 
@@ -639,6 +640,10 @@ class CodexProcessSupervisor:
         self.execution_directory = execution_directory
         self.environment_allowlist = environment_allowlist or EnvironmentAllowlist.codex_default()
         self.identity_probe = identity_probe or PosixProcessIdentityProbe()
+        self._active_processes: dict[
+            str, tuple[subprocess.Popen[str], ProcessGroup]
+        ] = {}
+        self._active_processes_lock = Lock()
 
     def run(self, request: ProcessLaunchRequest, *, controller: Any | None = None) -> SupervisedProcessResult:
         layout = self.execution_directory.prepare(request.execution_id)
@@ -727,6 +732,11 @@ class CodexProcessSupervisor:
                         status=ProcessReceiptStatus.RUNNING,
                         process_group=process_group,
                     )
+                    with self._active_processes_lock:
+                        self._active_processes[request.execution_id] = (
+                            process,
+                            process_group,
+                        )
                     self.execution_directory._write_receipt_unlocked(layout, receipt)
         if existing is not None:
             return self._await_existing(request)
@@ -787,6 +797,18 @@ class CodexProcessSupervisor:
             stderr_handle.close()
 
         elapsed_ms = int((time.monotonic() - started_monotonic) * 1000)
+        persisted = self.execution_directory.read_receipt(request.execution_id)
+        externally_cancelled = bool(
+            persisted is not None
+            and persisted.status is ProcessReceiptStatus.CANCELLED
+            and persisted.request_digest == request.request_digest
+        )
+        if externally_cancelled:
+            receipt = persisted
+            termination_status = ProcessReceiptStatus.CANCELLED
+            termination_reason = persisted.termination_reason
+            termination_signal = persisted.termination_signal
+            control_failure = None
         if termination_status is not None and termination_signal is None:
             termination_reason = f"{termination_reason or 'termination requested'}; process had already exited"
             termination_status = None
@@ -811,13 +833,21 @@ class CodexProcessSupervisor:
             termination_signal=termination_signal,
             termination_reason=termination_reason,
             failure_reason=failure_reason,
-            local_termination_only=termination_status in {
-                ProcessReceiptStatus.CANCELLED,
-                ProcessReceiptStatus.TIMED_OUT,
-                ProcessReceiptStatus.FAILED,
-            } and termination_signal is not None,
+            local_termination_only=(
+                receipt.local_termination_only
+                or (
+                    termination_status in {
+                        ProcessReceiptStatus.CANCELLED,
+                        ProcessReceiptStatus.TIMED_OUT,
+                        ProcessReceiptStatus.FAILED,
+                    }
+                    and termination_signal is not None
+                )
+            ),
         )
         self.execution_directory.write_receipt(completed)
+        with self._active_processes_lock:
+            self._active_processes.pop(request.execution_id, None)
         return SupervisedProcessResult(
             receipt=completed,
             returncode=returncode,
@@ -970,6 +1000,70 @@ class CodexProcessSupervisor:
             duplicate_submission=True,
         )
 
+    def cancel(
+        self,
+        execution_id: str,
+        *,
+        reason: str,
+        timeout: ProcessTimeout | None = None,
+    ) -> ProcessRecoveryResult:
+        """Terminate only the verified local process group for an execution.
+
+        This is local-process cancellation evidence.  It deliberately makes no
+        claim that an upstream inference request was cancelled.
+        """
+
+        recovery = self.recover(execution_id)
+        receipt = recovery.receipt
+        if receipt.status is not ProcessReceiptStatus.RUNNING:
+            return recovery
+        if receipt.process_group is None:
+            return recovery
+        with self._active_processes_lock:
+            active = self._active_processes.get(execution_id)
+        trusted_active_process = bool(
+            active is not None
+            and active[0].poll() is None
+            and active[1] == receipt.process_group
+        )
+        if not recovery.safe_to_signal and not trusted_active_process:
+            return recovery
+        cancellation_timeout = timeout or ProcessTimeout(
+            timeout_seconds=5,
+            termination_grace_seconds=2,
+            poll_interval_seconds=0.05,
+        )
+        cancelled: ProcessReceipt | None = None
+
+        def persist_cancellation(signal_name: str) -> None:
+            nonlocal cancelled
+            cancelled = replace(
+                receipt,
+                status=ProcessReceiptStatus.CANCELLED,
+                completed_at=_utc_now(),
+                termination_signal=signal_name,
+                termination_reason=(
+                    str(reason).strip() or "local process cancellation requested"
+                ),
+                local_termination_only=True,
+                recovery_reason="VERIFIED_PROCESS_GROUP_CANCELLED",
+            )
+            self.execution_directory.write_receipt(cancelled)
+
+        termination_signal = self._signal_verified_process_group(
+            receipt.process_group,
+            cancellation_timeout,
+            signal_observer=persist_cancellation,
+            trusted_identity=trusted_active_process,
+        )
+        if termination_signal is None or cancelled is None:
+            return self.recover(execution_id)
+        return ProcessRecoveryResult(
+            receipt=cancelled,
+            result_recoverable=False,
+            safe_to_signal=False,
+        )
+
     def _terminate_process_group(
         self,
         process: subprocess.Popen[str],
@@ -1008,6 +1102,57 @@ class CodexProcessSupervisor:
             else:  # pragma: no cover - exercised only on non-POSIX runtimes
                 process.kill()
                 last_signal = signal.Signals(signal.SIGKILL).name
+        return last_signal
+
+    def _signal_verified_process_group(
+        self,
+        process_group: ProcessGroup,
+        timeout: ProcessTimeout,
+        *,
+        signal_observer: Any | None = None,
+        trusted_identity: bool = False,
+    ) -> str | None:
+        current_start = self.identity_probe.process_start_token(process_group.pid)
+        if not trusted_identity and (
+            not current_start
+            or process_group.process_start_token.startswith("unverified:")
+            or current_start != process_group.process_start_token
+        ):
+            return None
+        last_signal: str | None = None
+        if hasattr(os, "killpg"):
+            try:
+                os.killpg(process_group.pgid, signal.SIGTERM)
+                last_signal = signal.Signals(signal.SIGTERM).name
+            except ProcessLookupError:
+                return None
+        else:  # pragma: no cover - exercised only on non-POSIX runtimes
+            try:
+                os.kill(process_group.pid, signal.SIGTERM)
+                last_signal = signal.Signals(signal.SIGTERM).name
+            except ProcessLookupError:
+                return None
+        if callable(signal_observer):
+            signal_observer(last_signal)
+        deadline = time.monotonic() + timeout.termination_grace_seconds
+        while self.identity_probe.is_alive(process_group.pid) and time.monotonic() < deadline:
+            time.sleep(
+                min(
+                    timeout.poll_interval_seconds,
+                    max(0.001, deadline - time.monotonic()),
+                )
+            )
+        if self.identity_probe.is_alive(process_group.pid):
+            try:
+                if hasattr(os, "killpg"):
+                    os.killpg(process_group.pgid, signal.SIGKILL)
+                else:  # pragma: no cover - exercised only on non-POSIX runtimes
+                    os.kill(process_group.pid, signal.SIGKILL)
+                last_signal = signal.Signals(signal.SIGKILL).name
+                if callable(signal_observer):
+                    signal_observer(last_signal)
+            except ProcessLookupError:
+                pass
         return last_signal
 
     @staticmethod

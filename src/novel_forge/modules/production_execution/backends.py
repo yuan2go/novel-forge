@@ -84,6 +84,36 @@ class ResolvedExecutionPayload:
             raise ValueError("resolved execution payload requires an output schema version")
 
 
+@dataclass(frozen=True, slots=True)
+class LocalProcessExecutionPolicy:
+    fixed_working_directory: str
+    allowed_command_prefixes: tuple[tuple[str, ...], ...]
+
+    def __post_init__(self) -> None:
+        fixed = str(Path(self.fixed_working_directory).expanduser().resolve())
+        prefixes = tuple(
+            tuple(str(token) for token in prefix)
+            for prefix in self.allowed_command_prefixes
+        )
+        if not fixed or not prefixes or any(not prefix for prefix in prefixes):
+            raise ValueError("local process execution policy is incomplete")
+        object.__setattr__(self, "fixed_working_directory", fixed)
+        object.__setattr__(self, "allowed_command_prefixes", prefixes)
+
+    def assert_payload(self, payload: ResolvedExecutionPayload) -> None:
+        working_directory = str(
+            Path(payload.working_directory).expanduser().resolve()
+        )
+        if working_directory != self.fixed_working_directory:
+            raise ValueError("local process working directory is not fixed by policy")
+        command = tuple(payload.command)
+        if not any(
+            command[: len(prefix)] == prefix
+            for prefix in self.allowed_command_prefixes
+        ):
+            raise ValueError("local process command is not allowlisted")
+
+
 class ExecutionPayloadResolver(Protocol):
     def resolve(
         self, request: ExecutionRequest, admission: ExecutionAdmission
@@ -115,6 +145,7 @@ class ExecutionRecord:
     started_at: str
     raw_evidence: dict[str, Any]
     provider_result: ProviderInvocationResult | None = None
+    external_result: Any | None = None
     process_receipt: ProcessReceipt | None = None
     result: ExecutionResult | None = None
     callback_receipts: dict[str, tuple[str, str]] = field(default_factory=dict)
@@ -212,6 +243,7 @@ class ResultValidator:
         *,
         provider_receipt_ref: str | None = None,
         process_receipt_ref: str | None = None,
+        external_receipt_ref: str | None = None,
     ) -> ExecutionResult:
         request = record.request
         normalized = ResultNormalizer.normalize(record.raw_evidence)
@@ -265,13 +297,19 @@ class ResultValidator:
             "validation-manifest", request.execution_id, validation.to_dict()
         )
         usage = record.raw_evidence.get("usage")
-        usage_ref = (
-            self.store.put_evidence("usage-receipt", request.execution_id, usage)
+        usage_receipt = (
+            dict(usage)
             if isinstance(usage, Mapping)
-            else None
+            else {
+                "availability": "UNAVAILABLE",
+                "reason": "backend_did_not_report_usage",
+                "backend_id": record.handle.backend_id,
+            }
+        )
+        usage_ref = self.store.put_evidence(
+            "usage-receipt", request.execution_id, usage_receipt
         )
         cost = record.raw_evidence.get("cost")
-        cost_ref = None
         if isinstance(cost, Mapping):
             try:
                 amount = Decimal(str(cost.get("amount") or "0"))
@@ -279,9 +317,16 @@ class ResultValidator:
                 raise ValueError("execution cost receipt amount is invalid") from exc
             if amount < 0 or not str(cost.get("currency") or ""):
                 raise ValueError("execution cost receipt is invalid")
-            cost_ref = self.store.put_evidence(
-                "cost-receipt", request.execution_id, cost
-            )
+            cost_receipt = dict(cost)
+        else:
+            cost_receipt = {
+                "availability": "UNAVAILABLE",
+                "reason": "backend_did_not_report_cost",
+                "backend_id": record.handle.backend_id,
+            }
+        cost_ref = self.store.put_evidence(
+            "cost-receipt", request.execution_id, cost_receipt
+        )
         return ExecutionResult(
             execution_id=request.execution_id,
             operation_id=request.operation_id,
@@ -298,6 +343,7 @@ class ResultValidator:
             validation_report_ref=validation_ref,
             started_at=record.started_at,
             completed_at=_utc_now(),
+            external_receipt_ref=external_receipt_ref,
         )
 
 
@@ -329,6 +375,7 @@ class ExecutionReconciler:
         *,
         process_receipt_ref: str | None = None,
         provider_receipt_ref: str | None = None,
+        external_receipt_ref: str | None = None,
     ) -> ExecutionResult:
         completed = outcome not in {
             ExecutionOutcome.ACCEPTED,
@@ -352,6 +399,7 @@ class ExecutionReconciler:
             validation_report_ref=None,
             started_at=record.started_at,
             completed_at=_utc_now() if completed else None,
+            external_receipt_ref=external_receipt_ref,
         )
 
 
@@ -396,9 +444,9 @@ class ScriptedFixtureExecutionBackend:
             return existing.handle
         payload = self.payload_resolver.resolve(request, admission)
         evidence = dict(payload.request_payload)
-        evidence.setdefault("fixture_protocol_only", True)
-        evidence.setdefault("real_model_call", False)
-        evidence.setdefault("production_verified", False)
+        evidence["fixture_protocol_only"] = True
+        evidence["real_model_call"] = False
+        evidence["production_verified"] = False
         evidence.setdefault("output_schema_version", payload.output_schema_version)
         handle = ExecutionHandle(
             execution_id=request.execution_id,
@@ -433,14 +481,25 @@ class ScriptedFixtureExecutionBackend:
     def cancel(
         self, handle: ExecutionHandle, reason: str
     ) -> ExecutionCancellationResult:
-        return ExecutionCancellationResult(
+        record = self.record_store.get_record(handle.execution_id)
+        completion_ref = self.record_store.put_evidence(
+            "fixture-completion-receipt",
+            handle.execution_id,
+            {
+                "backend_execution_id": handle.backend_execution_id,
+                "fixture_protocol_only": True,
+                "real_model_call": False,
+                "production_verified": False,
+            },
+        )
+        cancellation = ExecutionCancellationResult(
             execution_id=handle.execution_id,
             operation_id=handle.operation_id,
             attempt_id=handle.attempt_id,
             fencing_token=handle.fencing_token,
             backend_id=self.backend_id,
             transport=handle.transport,
-            outcome=CancellationOutcome.UNSUPPORTED,
+            outcome=CancellationOutcome.ALREADY_COMPLETED,
             local_termination_outcome=LocalTerminationOutcome.NOT_APPLICABLE,
             upstream_cancellation_outcome=UpstreamCancellationOutcome.NOT_APPLICABLE,
             local_execution_receipt_id=None,
@@ -448,8 +507,12 @@ class ScriptedFixtureExecutionBackend:
             provider_cancellation_receipt_ref=None,
             reason=reason,
             requested_at=_utc_now(),
-            completed_at=None,
+            completed_at=_utc_now(),
+            backend_completion_receipt_ref=completion_ref,
         )
+        record.cancellation = cancellation
+        self.record_store.save_record(record)
+        return cancellation
 
 
 class RemoteProviderExecutionBackend:
@@ -808,6 +871,7 @@ class CodexCliExecutionBackend:
         payload_resolver: ExecutionPayloadResolver,
         record_store: ExecutionRecordStore,
         supervisor: CodexProcessSupervisor,
+        execution_policy: LocalProcessExecutionPolicy,
         backend_version: str = "1.0.0",
         qualification_ref: str = "capability-probe:codex-cli:1",
     ) -> None:
@@ -815,6 +879,7 @@ class CodexCliExecutionBackend:
         self.payload_resolver = payload_resolver
         self.record_store = record_store
         self.supervisor = supervisor
+        self.execution_policy = execution_policy
         self.capability_profile = ExecutionCapabilityProfile(
             backend_id=self.backend_id,
             backend_version=backend_version,
@@ -844,21 +909,56 @@ class CodexCliExecutionBackend:
         payload = self.payload_resolver.resolve(request, admission)
         if not payload.command:
             raise ValueError("Codex CLI execution requires a frozen command")
-        supervised = self.supervisor.run(
-            ProcessLaunchRequest(
-                execution_id=request.execution_id,
-                command=payload.command,
-                cwd=payload.working_directory,
-                input_text=payload.input_text,
-                timeout=ProcessTimeout(payload.timeout_seconds),
-                result_filename=payload.result_filename,
-                result_format="json",
-                environment_overrides=payload.environment_overrides,
-                operation_id=request.operation_id,
-                attempt_id=request.attempt_id,
-                fencing_token=request.fencing_token,
-            )
+        self.execution_policy.assert_payload(payload)
+        launch_request = ProcessLaunchRequest(
+            execution_id=request.execution_id,
+            command=payload.command,
+            cwd=payload.working_directory,
+            input_text=payload.input_text,
+            timeout=ProcessTimeout(payload.timeout_seconds),
+            result_filename=payload.result_filename,
+            result_format="json",
+            environment_overrides=payload.environment_overrides,
+            operation_id=request.operation_id,
+            attempt_id=request.attempt_id,
+            fencing_token=request.fencing_token,
         )
+        provisional_handle = ExecutionHandle(
+            execution_id=request.execution_id,
+            operation_id=request.operation_id,
+            attempt_id=request.attempt_id,
+            fencing_token=request.fencing_token,
+            backend_execution_id=f"process-invoking:{request.execution_id}",
+            backend_id=self.backend_id,
+            transport=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+            local_execution_receipt_id=None,
+            local_process_id=None,
+            local_process_group_id=None,
+            local_process_start_time=None,
+            provider_request_id=None,
+            completion_mode=CompletionMode.PROCESS_EXIT,
+            query_capability=CapabilityAvailability.SUPPORTED,
+            cancel_capability=CapabilityAvailability.SUPPORTED,
+            callback_capability=CapabilityAvailability.UNSUPPORTED,
+        )
+        record = ExecutionRecord(
+            request=request,
+            handle=provisional_handle,
+            started_at=_utc_now(),
+            raw_evidence={
+                "submission_phase": "PROCESS_STARTING",
+                "output_schema_version": payload.output_schema_version,
+                "transport": ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE.value,
+                "provider_request_id": None,
+            },
+        )
+        self.record_store.put_record(record)
+        try:
+            supervised = self.supervisor.run(launch_request)
+        except Exception:
+            record.raw_evidence["submission_phase"] = "PROCESS_OUTCOME_UNKNOWN"
+            self.record_store.save_record(record)
+            raise
         receipt = supervised.receipt
         group = receipt.process_group
         handle = ExecutionHandle(
@@ -880,19 +980,29 @@ class CodexCliExecutionBackend:
             callback_capability=CapabilityAvailability.UNSUPPORTED,
         )
         evidence: dict[str, Any] = {
+            "submission_phase": "PROCESS_RESULT_RECORDED",
             "output_schema_version": payload.output_schema_version,
             "transport": ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE.value,
             "local_execution_receipt_id": receipt.receipt_id,
             "provider_request_id": None,
         }
-        if receipt.result_path and receipt.result_integrity is ResultIntegrity.VALID:
+        if (
+            receipt.status is ProcessReceiptStatus.SUCCEEDED
+            and receipt.result_path
+            and receipt.result_integrity is ResultIntegrity.VALID
+        ):
             parsed = json.loads(Path(receipt.result_path).read_text(encoding="utf-8"))
             evidence["result"] = parsed
-        record = ExecutionRecord(
-            request, handle, receipt.process_started_at, evidence,
-            process_receipt=receipt,
-        )
-        self.record_store.put_record(record)
+        elif (
+            receipt.status is ProcessReceiptStatus.CANCELLED
+            and receipt.result_integrity is ResultIntegrity.VALID
+        ):
+            evidence["late_result_quarantined"] = True
+        record.handle = handle
+        record.started_at = receipt.process_started_at
+        record.raw_evidence = evidence
+        record.process_receipt = receipt
+        self.record_store.save_record(record)
         return handle
 
     def reconcile(self, handle: ExecutionHandle) -> ExecutionResult:
@@ -923,34 +1033,72 @@ class CodexCliExecutionBackend:
     def cancel(
         self, handle: ExecutionHandle, reason: str
     ) -> ExecutionCancellationResult:
-        receipt = self.supervisor.recover(handle.execution_id).receipt
-        terminal = receipt.status not in {
-            ProcessReceiptStatus.STARTING,
-            ProcessReceiptStatus.RUNNING,
-        }
-        return ExecutionCancellationResult(
+        requested_at = _utc_now()
+        try:
+            recovery = self.supervisor.cancel(
+                handle.execution_id,
+                reason=reason,
+            )
+        except FileNotFoundError:
+            recovery = None
+        receipt = recovery.receipt if recovery is not None else None
+        if receipt is None:
+            outcome = CancellationOutcome.NOT_FOUND
+            local_outcome = LocalTerminationOutcome.NOT_FOUND
+        elif receipt.status is ProcessReceiptStatus.CANCELLED:
+            outcome = CancellationOutcome.CANCELLED
+            local_outcome = LocalTerminationOutcome.TERMINATED
+        elif receipt.status in {
+            ProcessReceiptStatus.SUCCEEDED,
+            ProcessReceiptStatus.FAILED,
+            ProcessReceiptStatus.START_FAILED,
+            ProcessReceiptStatus.TIMED_OUT,
+            ProcessReceiptStatus.CORRUPT_RESULT,
+        }:
+            outcome = CancellationOutcome.ALREADY_COMPLETED
+            local_outcome = LocalTerminationOutcome.ALREADY_EXITED
+        else:
+            outcome = CancellationOutcome.UNKNOWN
+            local_outcome = LocalTerminationOutcome.UNKNOWN
+        cancellation = ExecutionCancellationResult(
             execution_id=handle.execution_id,
             operation_id=handle.operation_id,
             attempt_id=handle.attempt_id,
             fencing_token=handle.fencing_token,
             backend_id=self.backend_id,
             transport=handle.transport,
-            outcome=(
-                CancellationOutcome.ALREADY_COMPLETED
-                if terminal else CancellationOutcome.UNKNOWN
-            ),
-            local_termination_outcome=(
-                LocalTerminationOutcome.ALREADY_EXITED
-                if terminal else LocalTerminationOutcome.UNKNOWN
-            ),
+            outcome=outcome,
+            local_termination_outcome=local_outcome,
             upstream_cancellation_outcome=UpstreamCancellationOutcome.NOT_APPLICABLE,
-            local_execution_receipt_id=handle.local_execution_receipt_id,
+            local_execution_receipt_id=(
+                receipt.receipt_id if receipt is not None else handle.local_execution_receipt_id
+            ),
             provider_request_id=None,
             provider_cancellation_receipt_ref=None,
             reason=reason,
-            requested_at=_utc_now(),
-            completed_at=_utc_now() if terminal else None,
+            requested_at=requested_at,
+            completed_at=(
+                _utc_now()
+                if outcome
+                in {
+                    CancellationOutcome.CANCELLED,
+                    CancellationOutcome.ALREADY_COMPLETED,
+                }
+                else None
+            ),
         )
+        record = self.record_store.find_record(handle.execution_id)
+        if record is not None:
+            record.cancellation = cancellation
+            if receipt is not None:
+                record.process_receipt = receipt
+                self.record_store.put_evidence(
+                    "process-cancellation-receipt",
+                    handle.execution_id,
+                    receipt.to_dict(),
+                )
+            self.record_store.save_record(record)
+        return cancellation
 
 
 __all__ = [
@@ -960,6 +1108,7 @@ __all__ = [
     "ExecutionRecord",
     "ExecutionRecordStore",
     "InMemoryExecutionRecordStore",
+    "LocalProcessExecutionPolicy",
     "RemoteProviderExecutionBackend",
     "ResolvedExecutionPayload",
     "ResultNormalizer",

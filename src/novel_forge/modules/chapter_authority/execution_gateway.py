@@ -1147,11 +1147,17 @@ class ProductionExecutionGatewayExternalEffectAdapter:
                 result.usage_receipt_ref
             )
         else:
-            evidence["usage"] = {"input_tokens": 0, "output_tokens": 0}
+            evidence["usage"] = {
+                "availability": "UNAVAILABLE",
+                "reason": "execution_result_has_no_usage_receipt",
+            }
         if result.cost_receipt_ref:
             evidence["cost"] = session.evidence_store.read_evidence(result.cost_receipt_ref)
         else:
-            evidence["cost"] = {"amount": "0", "currency": "USD"}
+            evidence["cost"] = {
+                "availability": "UNAVAILABLE",
+                "reason": "execution_result_has_no_cost_receipt",
+            }
         return evidence
 
     @staticmethod

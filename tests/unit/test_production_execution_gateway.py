@@ -3,7 +3,9 @@ from __future__ import annotations
 import hashlib
 import sys
 import tempfile
+import time
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 
@@ -46,6 +48,7 @@ from novel_forge.modules.production_execution.legacy import (
 from novel_forge.modules.production_execution.backends import (
     CodexCliExecutionBackend,
     InMemoryExecutionRecordStore,
+    LocalProcessExecutionPolicy,
     RemoteProviderExecutionBackend,
     ResolvedExecutionPayload,
     ScriptedFixtureExecutionBackend,
@@ -54,6 +57,7 @@ from novel_forge.modules.production_execution.backends import (
 from novel_forge.modules.production_execution.process_supervisor import (
     CodexProcessSupervisor,
     PersistentExecutionDirectory,
+    ProcessReceiptStatus,
 )
 from novel_forge.modules.provider_control.contracts import ProviderReceipt
 from novel_forge.modules.provider_control.openai_v2 import OpenAIProviderAdapterV2
@@ -598,6 +602,7 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as tmp:
             directory = PersistentExecutionDirectory(Path(tmp) / "executions")
+            record_store = InMemoryExecutionRecordStore()
             result_path = directory.prepare(request.execution_id).result_path("result.json")
             command = (
                 sys.executable,
@@ -617,8 +622,12 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
                         command=command,
                     )
                 }),
-                record_store=InMemoryExecutionRecordStore(),
+                record_store=record_store,
                 supervisor=CodexProcessSupervisor(directory),
+                execution_policy=LocalProcessExecutionPolicy(
+                    fixed_working_directory=tmp,
+                    allowed_command_prefixes=((sys.executable,),),
+                ),
             )
             registry = ExecutionBackendRegistry()
             registry.register(backend)
@@ -631,9 +640,113 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             self.assertIsNone(handle.provider_request_id)
             self.assertEqual(handle.transport, ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
             self.assertEqual(result.outcome, ExecutionOutcome.SUCCEEDED)
+            self.assertEqual(
+                record_store.read_evidence(result.usage_receipt_ref)["availability"],
+                "UNAVAILABLE",
+            )
+            self.assertEqual(
+                record_store.read_evidence(result.cost_receipt_ref)["availability"],
+                "UNAVAILABLE",
+            )
             receipt = directory.read_receipt(request.execution_id)
             self.assertTrue(receipt.authority_bound)
             self.assertIsNone(receipt.provider_request_id)
+
+    def test_codex_cli_backend_cancels_running_verified_process_only(self) -> None:
+        contract_set = contracts(
+            backend_id="codex-cli",
+            runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+        )
+        capability, profile, policy, route, manifest, request = contract_set
+        source = StaticExecutionContractSource(
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
+        )
+        admission = AdmissionController(
+            source,
+            StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = PersistentExecutionDirectory(Path(tmp) / "executions")
+            record_store = InMemoryExecutionRecordStore()
+            result_path = directory.prepare(request.execution_id).result_path(
+                "result.json"
+            )
+            ready_path = Path(tmp) / "codex-cancel-ready"
+            backend = CodexCliExecutionBackend(
+                admission=admission,
+                payload_resolver=StaticExecutionPayloadResolver(
+                    {
+                        request.execution_id: ResolvedExecutionPayload(
+                            request_payload={"input": {"chapter": 1}},
+                            input_text="bounded prompt",
+                            working_directory=tmp,
+                            timeout_seconds=10,
+                            output_schema_version="chapter-draft.v1",
+                            command=(
+                                sys.executable,
+                                "-c",
+                                (
+                                    "import json,pathlib,signal,sys,time; "
+                                    "result_path=sys.argv[1]; ready=pathlib.Path(sys.argv[2]); "
+                                    "signal.signal(signal.SIGTERM, lambda *_: "
+                                    "(json.dump({'late': True}, open(result_path, 'w')), "
+                                    "sys.exit(0))); "
+                                    "ready.write_text('ready'); time.sleep(30)"
+                                ),
+                                str(result_path),
+                                str(ready_path),
+                            ),
+                        )
+                    }
+                ),
+                record_store=record_store,
+                supervisor=CodexProcessSupervisor(directory),
+                execution_policy=LocalProcessExecutionPolicy(
+                    fixed_working_directory=tmp,
+                    allowed_command_prefixes=((sys.executable,),),
+                ),
+            )
+
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                submitted = pool.submit(backend.submit, request)
+                deadline = time.monotonic() + 3
+                while time.monotonic() < deadline:
+                    receipt = directory.read_receipt(request.execution_id)
+                    if (
+                        receipt is not None
+                        and receipt.status is ProcessReceiptStatus.RUNNING
+                        and ready_path.exists()
+                    ):
+                        break
+                    time.sleep(0.01)
+                else:
+                    self.fail("Codex process never reached RUNNING")
+                provisional = record_store.get_record(request.execution_id).handle
+                cancellation = backend.cancel(
+                    provisional, "bounded operation cancelled"
+                )
+                handle = submitted.result(timeout=3)
+
+            self.assertEqual(cancellation.outcome, CancellationOutcome.CANCELLED)
+            self.assertEqual(
+                cancellation.local_termination_outcome, "TERMINATED"
+            )
+            self.assertEqual(
+                cancellation.upstream_cancellation_outcome, "NOT_APPLICABLE"
+            )
+            self.assertIsNone(cancellation.provider_request_id)
+            self.assertIsNotNone(cancellation.local_execution_receipt_id)
+            persisted_record = record_store.get_record(request.execution_id)
+            self.assertTrue(
+                persisted_record.raw_evidence["late_result_quarantined"]
+            )
+            self.assertNotIn("result", persisted_record.raw_evidence)
+            self.assertEqual(
+                backend.reconcile(handle).outcome, ExecutionOutcome.CANCELLED
+            )
 
     def test_remote_unknown_is_reconciled_by_provider_query(self) -> None:
         contract_set = contracts(

@@ -36,8 +36,9 @@ class ProductionExecutionGatewayBoundaryTests(unittest.TestCase):
         scripted = source.split("class ScriptedFixtureExecutionBackend", 1)[1].split(
             "class RemoteProviderExecutionBackend", 1
         )[0]
-        self.assertIn('"fixture_protocol_only", True', scripted)
-        self.assertIn('"real_model_call", False', scripted)
+        self.assertIn('evidence["fixture_protocol_only"] = True', scripted)
+        self.assertIn('evidence["real_model_call"] = False', scripted)
+        self.assertIn('evidence["production_verified"] = False', scripted)
         self.assertIn("real_provider_validation_eligible=False", scripted)
 
     def test_remote_provider_backend_uses_only_provider_v2_protocol(self) -> None:
