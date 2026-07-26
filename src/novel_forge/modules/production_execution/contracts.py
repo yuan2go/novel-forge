@@ -87,6 +87,12 @@ class ModelProfileStatus(StrEnum):
     RETIRED = "RETIRED"
 
 
+class FallbackMode(StrEnum):
+    FAIL_CLOSED = "FAIL_CLOSED"
+    APPROVAL_REQUIRED = "APPROVAL_REQUIRED"
+    ALLOW_LISTED_ROUTE = "ALLOW_LISTED_ROUTE"
+
+
 class _Contract:
     def to_dict(self) -> dict[str, Any]:
         return {item.name: _thaw(getattr(self, item.name)) for item in fields(self)}
@@ -526,6 +532,105 @@ class ModelProfile(_Contract):
 
 
 @dataclass(frozen=True, slots=True)
+class FallbackPolicy(_Contract):
+    policy_id: str
+    policy_version: int
+    mode: FallbackMode
+    allowed_route_ids: tuple[str, ...]
+    triggers: tuple[str, ...]
+    maximum_route_changes: int
+    approval_required: bool
+    quality_revalidation_required: bool
+    status: str
+
+    def __post_init__(self) -> None:
+        mode = (
+            self.mode
+            if isinstance(self.mode, FallbackMode)
+            else FallbackMode(str(self.mode))
+        )
+        routes = _string_tuple(self.allowed_route_ids)
+        triggers = _string_tuple(self.triggers)
+        object.__setattr__(self, "mode", mode)
+        object.__setattr__(self, "allowed_route_ids", routes)
+        object.__setattr__(self, "triggers", triggers)
+        _required("FallbackPolicy", self.policy_id, self.status)
+        if not _STABLE_ALIAS.fullmatch(self.policy_id):
+            raise ValueError("FallbackPolicy ID must be stable")
+        if self.policy_version <= 0:
+            raise ValueError("FallbackPolicy version must be positive")
+        if self.maximum_route_changes < 0:
+            raise ValueError("FallbackPolicy route changes cannot be negative")
+        if self.status not in {"CANDIDATE", "ACTIVE", "RETIRED"}:
+            raise ValueError("FallbackPolicy status is invalid")
+        if any(not _STABLE_ALIAS.fullmatch(item) for item in routes):
+            raise ValueError("FallbackPolicy route allowlist is invalid")
+        if any(not _STABLE_ALIAS.fullmatch(item) for item in triggers):
+            raise ValueError("FallbackPolicy triggers are invalid")
+        if mode is FallbackMode.FAIL_CLOSED:
+            if routes or triggers or self.maximum_route_changes != 0:
+                raise ValueError(
+                    "FAIL_CLOSED FallbackPolicy cannot allow route changes"
+                )
+        else:
+            if not routes:
+                raise ValueError("FallbackPolicy route allowlist cannot be empty")
+            if not triggers or self.maximum_route_changes <= 0:
+                raise ValueError(
+                    "FallbackPolicy requires triggers and positive route changes"
+                )
+            if not self.quality_revalidation_required:
+                raise ValueError(
+                    "fallback route changes require quality revalidation"
+                )
+        if (
+            mode is FallbackMode.APPROVAL_REQUIRED
+            and not self.approval_required
+        ):
+            raise ValueError("APPROVAL_REQUIRED fallback requires approval")
+
+    @classmethod
+    def fail_closed(
+        cls, policy_id: str, policy_version: int
+    ) -> FallbackPolicy:
+        return cls(
+            policy_id=policy_id,
+            policy_version=policy_version,
+            mode=FallbackMode.FAIL_CLOSED,
+            allowed_route_ids=(),
+            triggers=(),
+            maximum_route_changes=0,
+            approval_required=True,
+            quality_revalidation_required=True,
+            status="ACTIVE",
+        )
+
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, Any]) -> FallbackPolicy:
+        return cls(
+            policy_id=str(payload.get("policy_id") or ""),
+            policy_version=_strict_int(
+                payload.get("policy_version"), "policy_version"
+            ),
+            mode=FallbackMode(str(payload.get("mode") or "")),
+            allowed_route_ids=_string_tuple(payload.get("allowed_route_ids")),
+            triggers=_string_tuple(payload.get("triggers")),
+            maximum_route_changes=_strict_int(
+                payload.get("maximum_route_changes"),
+                "maximum_route_changes",
+            ),
+            approval_required=_strict_bool(
+                payload.get("approval_required"), "approval_required"
+            ),
+            quality_revalidation_required=_strict_bool(
+                payload.get("quality_revalidation_required"),
+                "quality_revalidation_required",
+            ),
+            status=str(payload.get("status") or ""),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class RoutePolicy(_Contract):
     policy_id: str
     policy_version: int
@@ -533,6 +638,8 @@ class RoutePolicy(_Contract):
     allowed_model_profile_ids: tuple[str, ...]
     rule_set_ref: str
     fallback_policy: str
+    fallback_policy_ref: str
+    fallback_policy_version: int
     reasoning_downgrade_policy: str
     status: str
 
@@ -545,10 +652,11 @@ class RoutePolicy(_Contract):
             self.default_model_profile_id,
             self.rule_set_ref,
             self.fallback_policy,
+            self.fallback_policy_ref,
             self.reasoning_downgrade_policy,
             self.status,
         )
-        if self.policy_version <= 0:
+        if self.policy_version <= 0 or self.fallback_policy_version <= 0:
             raise ValueError("RoutePolicy version must be positive")
         if not _STABLE_ALIAS.fullmatch(self.policy_id):
             raise ValueError("RoutePolicy ID must be stable")
@@ -556,8 +664,8 @@ class RoutePolicy(_Contract):
             raise ValueError("RoutePolicy default profile must be explicitly allowed")
         if any(not _STABLE_ALIAS.fullmatch(item) for item in aliases):
             raise ValueError("RoutePolicy profile IDs must be stable logical aliases")
-        if self.fallback_policy not in {"FAIL_CLOSED", "EXPLICIT_ONLY"}:
-            raise ValueError("RoutePolicy fallback must be fail-closed or explicit")
+        if self.fallback_policy not in {item.value for item in FallbackMode}:
+            raise ValueError("RoutePolicy fallback mode is not governed")
         if self.reasoning_downgrade_policy != "PROHIBITED":
             raise ValueError("silent reasoning downgrade is prohibited")
         if self.status not in {"CANDIDATE", "ACTIVE", "RETIRED"}:
@@ -572,6 +680,11 @@ class RoutePolicy(_Contract):
             allowed_model_profile_ids=_string_tuple(payload.get("allowed_model_profile_ids")),
             rule_set_ref=str(payload.get("rule_set_ref") or ""),
             fallback_policy=str(payload.get("fallback_policy") or ""),
+            fallback_policy_ref=str(payload.get("fallback_policy_ref") or ""),
+            fallback_policy_version=_strict_int(
+                payload.get("fallback_policy_version"),
+                "fallback_policy_version",
+            ),
             reasoning_downgrade_policy=str(payload.get("reasoning_downgrade_policy") or ""),
             status=str(payload.get("status") or ""),
         )
@@ -600,6 +713,14 @@ class RouteSnapshot(_HashedContract):
     context_bundle_ref: str
     output_schema_ref: str
     release_sha: str
+    route_generation: int = 1
+    parent_route_snapshot_id: str = ""
+    fallback_policy_ref: str = ""
+    fallback_policy_version: int = 0
+    fallback_trigger: str = ""
+    route_change_index: int = 0
+    approval_ref: str = ""
+    quality_revalidation_ref: str = ""
 
     def __post_init__(self) -> None:
         requested = self.requested_reasoning_effort.strip().lower()
@@ -625,9 +746,32 @@ class RouteSnapshot(_HashedContract):
             self.context_bundle_ref,
             self.output_schema_ref,
             self.release_sha,
+            self.fallback_policy_ref,
         )
-        if self.policy_version <= 0 or self.model_profile_version <= 0:
+        if (
+            self.policy_version <= 0
+            or self.model_profile_version <= 0
+            or self.fallback_policy_version <= 0
+        ):
             raise ValueError("RouteSnapshot versions must be positive")
+        if self.route_generation <= 0 or self.route_change_index < 0:
+            raise ValueError("RouteSnapshot generation is invalid")
+        if self.route_generation == 1:
+            if (
+                self.parent_route_snapshot_id
+                or self.fallback_trigger
+                or self.route_change_index != 0
+            ):
+                raise ValueError("initial RouteSnapshot cannot claim a reroute")
+        else:
+            _required(
+                "rerouted RouteSnapshot",
+                self.parent_route_snapshot_id,
+                self.fallback_trigger,
+                self.quality_revalidation_ref,
+            )
+            if self.route_change_index != self.route_generation - 1:
+                raise ValueError("RouteSnapshot route change index is invalid")
         if requested not in _VALID_REASONING_EFFORTS or actual not in _VALID_REASONING_EFFORTS:
             raise ValueError("RouteSnapshot reasoning effort is invalid")
         if requested != actual:
@@ -672,13 +816,21 @@ class RouteSnapshot(_HashedContract):
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> RouteSnapshot:
+        integer_fields = {
+            "policy_version",
+            "model_profile_version",
+            "route_generation",
+            "fallback_policy_version",
+            "route_change_index",
+        }
         values = {
             item.name: str(payload.get(item.name) or "")
             for item in fields(cls)
-            if item.name not in {"policy_version", "model_profile_version"}
+            if item.name not in integer_fields
         }
-        for key in ("policy_version", "model_profile_version"):
-            values[key] = _strict_int(payload.get(key), key)
+        for key in integer_fields:
+            default = 1 if key == "route_generation" else 0
+            values[key] = _strict_int(payload.get(key, default), key)
         return cls(**{item.name: values.get(item.name) for item in fields(cls)})
 
 

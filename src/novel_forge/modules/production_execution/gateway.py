@@ -240,6 +240,14 @@ class AdmissionController:
             raise ValueError("ModelProfile is not allowed by RoutePolicy")
         if route.policy_id != policy.policy_id:
             raise ValueError("RouteSnapshot policy binding is invalid")
+        if (
+            route.fallback_policy_ref != policy.fallback_policy_ref
+            or route.fallback_policy_version
+            != policy.fallback_policy_version
+        ):
+            raise ValueError(
+                "RouteSnapshot fallback policy binding is invalid"
+            )
         CapabilityProbe.verify(route, profile, capability)
         expected_identity = (
             request.operation_id,

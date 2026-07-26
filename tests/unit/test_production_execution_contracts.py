@@ -96,6 +96,8 @@ def route_snapshot(*, snapshot_id: str = "route-snapshot:1", effort: str = "xhig
         context_bundle_ref="context:chapter-1:v3",
         output_schema_ref="schema:draft-candidate:v1",
         release_sha=FULL_SHA,
+        fallback_policy_ref="chapter-production.fail-closed",
+        fallback_policy_version=1,
     )
 
 
@@ -291,6 +293,8 @@ class ProductionExecutionContractTests(unittest.TestCase):
             allowed_model_profile_ids=("codex.sol.xhigh", "remote.openai.xhigh"),
             rule_set_ref="route-rules:chapter:v1",
             fallback_policy="FAIL_CLOSED",
+            fallback_policy_ref="chapter-draft.fail-closed",
+            fallback_policy_version=1,
             reasoning_downgrade_policy="PROHIBITED",
             status="ACTIVE",
         )

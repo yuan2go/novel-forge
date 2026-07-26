@@ -121,6 +121,8 @@ def _contracts(
         allowed_model_profile_ids=(model_profile.profile_id,),
         rule_set_ref=f"route-rules:{definition.domain.value}:1",
         fallback_policy="FAIL_CLOSED",
+        fallback_policy_ref=f"{definition.domain.value}.fail-closed",
+        fallback_policy_version=1,
         reasoning_downgrade_policy="PROHIBITED",
         status="ACTIVE",
     )
@@ -146,6 +148,8 @@ def _contracts(
         context_bundle_ref=f"context:{definition.capability_id.value}:1",
         output_schema_ref=definition.output_schema_ref,
         release_sha=SHA,
+        fallback_policy_ref=policy.fallback_policy_ref,
+        fallback_policy_version=policy.fallback_policy_version,
     )
     artifact = ArtifactPointer(
         artifact_ref="asset-version:conformance-input:1",

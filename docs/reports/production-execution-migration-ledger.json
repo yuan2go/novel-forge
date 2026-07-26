@@ -1,5 +1,5 @@
 {
-  "artifact_hash": "sha256:cf2e8327fe3b6c856eb5ce168cb1e43d0daa4dc8d3cea8805ab11abcc9aceb2e",
+  "artifact_hash": "sha256:f53a09efe57a7b523ab89b90395001b781bd14fac30619e80a95c2dbf59f13b1",
   "blocking_owner_ids": [],
   "entries": [
     {
@@ -1533,8 +1533,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -1573,8 +1573,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -1613,8 +1613,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -1656,8 +1656,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -1699,8 +1699,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -1742,8 +1742,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -1785,8 +1785,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -1828,8 +1828,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -1871,8 +1871,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -1914,8 +1914,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -1954,8 +1954,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -1997,8 +1997,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -2039,8 +2039,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -2081,8 +2081,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -2124,8 +2124,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -3990,6 +3990,7 @@
       "tests": [
         "tests/acceptance/test_mkaos_professional_book_import.py",
         "tests/architecture/test_process_supervisor_boundaries.py",
+        "tests/architecture/test_production_execution_gateway_boundaries.py",
         "tests/integration/test_asset_blob_protocol_postgres.py",
         "tests/integration/test_authority_effect_inbox_schema_postgres.py",
         "tests/integration/test_chapter_authority_scheduler_postgres.py",
@@ -3998,8 +3999,7 @@
         "tests/integration/test_command_kernel_admission_rollback_postgres.py",
         "tests/integration/test_command_kernel_attempt_runtime_postgres.py",
         "tests/integration/test_command_kernel_cancellation_postgres.py",
-        "tests/integration/test_completion_contract_postgres.py",
-        "tests/integration/test_content_authority_runtime_postgres.py"
+        "tests/integration/test_completion_contract_postgres.py"
       ]
     },
     {
@@ -12069,8 +12069,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -12110,8 +12110,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -12151,8 +12151,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -12192,8 +12192,8 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_mkaos_api_envelope.py",
-        "tests/unit/test_mkaos_creative_knowledge_card.py"
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_mkaos_api_envelope.py"
       ]
     },
     {
@@ -12367,6 +12367,7 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py",
+        "tests/unit/test_production_execution_routing.py",
         "tests/unit/test_workflow_executor.py"
       ]
     },
@@ -12400,6 +12401,7 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py",
+        "tests/unit/test_production_execution_routing.py",
         "tests/unit/test_workflow_executor.py"
       ]
     },
@@ -12433,6 +12435,7 @@
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_execution_backend_conformance.py",
         "tests/unit/test_production_execution_gateway.py",
+        "tests/unit/test_production_execution_routing.py",
         "tests/unit/test_workflow_executor.py"
       ]
     },
@@ -22765,7 +22768,7 @@
   "parse_errors": [],
   "scanned_file_count": 565,
   "schema_version": "production-execution-migration-ledger.v1",
-  "source_tree_hash": "sha256:c05e1311b16b087058d8837a42be1611e5209baac4c5e841c56fba40445fa315",
+  "source_tree_hash": "sha256:90a01bd561c7d04e059354e6c1569f704594fb41ecc51aab9c906aef7d93dd71",
   "summary": {
     "AGENT_WORKSPACE_TRANSACTION": 0,
     "DATABASE_AUTHORITY": 417,

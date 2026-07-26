@@ -47,7 +47,7 @@ class ExternalV7ProviderAdapter:
 
 
 class V7ProviderProofTests(unittest.TestCase):
-    def test_v7_provider_proof_runs_opening_single_chapter_and_50_chain(self):
+    def test_v7_provider_proof_blocks_legacy_external_adapter_in_production(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
             storage.ensure_layout()
@@ -55,34 +55,21 @@ class V7ProviderProofTests(unittest.TestCase):
             genre = build_genre_strategy_pack(storage, genre="mystery", subgenre="police_procedural", project_id="p1")
             style = _style_profile(storage)
 
-            result = run_v7_provider_proof(
-                storage,
-                provider_adapter=ExternalV7ProviderAdapter(),
-                project_id="p1",
-                genre_strategy_pack_path=genre["genre_strategy_pack_path"],
-                style_profile_path=style,
-                provider_runtime_guard={"max_total_tokens": 3000},
-                require_external_provider_proof=True,
-                environment="production",
-                envelope=_envelope("trace-v7-provider-proof"),
-                target_chapter_count=50,
-            )
-
-            self.assertEqual(result["status"], "passed")
-            self.assertEqual(result["asset"]["type"], "project_metric_snapshot")
-            content = result["asset"]["content"]
-            self.assertEqual(content["snapshot_kind"], "v7_provider_proof")
-            self.assertTrue(all(check["passed"] for check in content["checks"]))
-            self.assertTrue(content["opening_3"]["external_provider_proof"]["path"])
-            self.assertEqual(content["long_chain_50"]["status"], "ready")
-            manifest = content["provider_proof_manifest"]
-            self.assertEqual(manifest["contract"], "provider-proof-harness-v1")
-            self.assertEqual(manifest["status"], "passed")
-            self.assertFalse(manifest["blocking"])
-            self.assertEqual(manifest["segments"]["opening_3_provider_judge"]["classification"], "external_provider")
-            self.assertEqual(manifest["segments"]["single_chapter_generation"]["classification"], "external_provider")
-            self.assertEqual(manifest["segments"]["single_chapter_quality_judge"]["classification"], "external_provider")
-            self.assertEqual(manifest["segments"]["long_chain_50_generation"]["classification"], "external_provider")
+            with self.assertRaisesRegex(
+                RuntimeError, "legacy direct model adapters"
+            ):
+                run_v7_provider_proof(
+                    storage,
+                    provider_adapter=ExternalV7ProviderAdapter(),
+                    project_id="p1",
+                    genre_strategy_pack_path=genre["genre_strategy_pack_path"],
+                    style_profile_path=style,
+                    provider_runtime_guard={"max_total_tokens": 3000},
+                    require_external_provider_proof=True,
+                    environment="production",
+                    envelope=_envelope("trace-v7-provider-proof"),
+                    target_chapter_count=50,
+                )
 
     def test_v7_provider_proof_blocks_fixture_when_external_proof_required(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -92,7 +79,9 @@ class V7ProviderProofTests(unittest.TestCase):
             genre = build_genre_strategy_pack(storage, genre="mystery", subgenre="police_procedural", project_id="p1")
             style = _style_profile(storage)
 
-            with self.assertRaisesRegex(ValueError, "external provider proof blocked"):
+            with self.assertRaisesRegex(
+                RuntimeError, "legacy direct model adapters"
+            ):
                 run_v7_provider_proof(
                     storage,
                     provider_adapter=FixtureV7ProviderAdapter(),

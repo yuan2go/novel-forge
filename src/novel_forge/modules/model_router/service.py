@@ -378,11 +378,13 @@ def call_model_via_router(
     allow_mock_fixture: bool = False,
     provider_runtime_guard: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Resolve ModelRouter before executing an adapter operation.
+    """Compatibility facade: resolve a route, then delegate execution.
 
-    This is for legacy API/CLI/service paths that do not have an AgentRun and
-    therefore cannot use GuardedModelAdapter. Agent paths should keep using
-    GuardedModelAdapter, which now resolves ModelRouter internally.
+    In controlled environments the delegate must be a
+    ``LegacyGatewayModelAdapter`` backed by ProductionExecutionGateway. Direct
+    adapters remain development-only and are rejected before network/process
+    launch. New production callers must bind Authority Attempt/ExternalEffect
+    contracts directly instead of entering through this facade.
     """
 
     routed_task = task_type or _task_type_for_operation(operation)

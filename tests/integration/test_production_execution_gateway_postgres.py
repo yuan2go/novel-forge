@@ -96,6 +96,8 @@ class ProductionExecutionGatewayPostgresTests(unittest.TestCase):
             allowed_model_profile_ids=(profile_id,),
             rule_set_ref="route-rules:chapter:1",
             fallback_policy="FAIL_CLOSED",
+            fallback_policy_ref=f"{policy_id}.fail-closed",
+            fallback_policy_version=1,
             reasoning_downgrade_policy="PROHIBITED",
             status="ACTIVE",
         )
@@ -121,6 +123,8 @@ class ProductionExecutionGatewayPostgresTests(unittest.TestCase):
             context_bundle_ref="context:chapter:1",
             output_schema_ref="schema:chapter:1",
             release_sha="a" * 40,
+            fallback_policy_ref=policy.fallback_policy_ref,
+            fallback_policy_version=policy.fallback_policy_version,
         )
         artifact = ArtifactPointer(
             artifact_ref="asset-version:plan:1",

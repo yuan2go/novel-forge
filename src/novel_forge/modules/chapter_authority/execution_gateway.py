@@ -31,6 +31,7 @@ from novel_forge.modules.production_execution import (
     ExecutionHandle,
     ExecutionOutcome,
     ExecutionRequest,
+    FallbackPolicy,
     InputManifest,
     ModelProfile,
     PromptBundle,
@@ -101,6 +102,7 @@ class ChapterExecutionRoute:
     stage: str
     model_profile: ModelProfile
     route_policy: RoutePolicy
+    fallback_policy: FallbackPolicy
     backend_version: str
     runtime_host_id: str
     auth_profile_ref: str
@@ -119,6 +121,17 @@ class ChapterExecutionRoute:
             raise ValueError(f"unsupported Chapter execution stage: {self.stage}")
         if self.model_profile.profile_id not in self.route_policy.allowed_model_profile_ids:
             raise ValueError("Chapter route policy does not allow its ModelProfile")
+        if (
+            self.route_policy.fallback_policy_ref
+            != self.fallback_policy.policy_id
+            or self.route_policy.fallback_policy_version
+            != self.fallback_policy.policy_version
+            or self.route_policy.fallback_policy
+            != self.fallback_policy.mode.value
+        ):
+            raise ValueError(
+                "Chapter route policy does not bind its FallbackPolicy"
+            )
         if not all(
             (
                 self.backend_version,
@@ -419,6 +432,10 @@ class PostgresChapterExecutionContractBinder:
             context_bundle_ref=context_ref,
             output_schema_ref=route.output_schema_ref,
             release_sha=route.release_sha,
+            fallback_policy_ref=route.route_policy.fallback_policy_ref,
+            fallback_policy_version=(
+                route.route_policy.fallback_policy_version
+            ),
         )
         self._ensure_contract(
             operation_id=operation_id,
@@ -483,6 +500,19 @@ class PostgresChapterExecutionContractBinder:
             ),
             asset_type="model_profile",
             contract=route.model_profile.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=(
+                f"production_execution/fallback_policies/"
+                f"{route.fallback_policy.policy_id}/"
+                f"v{route.fallback_policy.policy_version}"
+            ),
+            asset_type="fallback_policy",
+            contract=route.fallback_policy.to_dict(),
             trace_id=str(request_payload.get("trace_id") or ""),
             correlation_id=str(request_payload.get("correlation_id") or ""),
         )

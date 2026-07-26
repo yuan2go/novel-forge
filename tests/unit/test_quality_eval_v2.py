@@ -101,7 +101,7 @@ class QualityEvalV2Tests(unittest.TestCase):
                 provider="unit-provider",
                 model_name="premium-judge-v1",
                 project_id="p1",
-                environment="production",
+                environment="development",
                 approval_status="approved",
                 approval_id="approval-quality-1",
                 approved_by="qa-lead",
@@ -112,7 +112,7 @@ class QualityEvalV2Tests(unittest.TestCase):
                 storage,
                 genre_id="mystery",
                 platform_id="local",
-                environment="production",
+                environment="development",
                 envelope={
                     "project_id": "p1",
                     "task_type": "quality_eval",
@@ -121,7 +121,7 @@ class QualityEvalV2Tests(unittest.TestCase):
                     "source": "test",
                     "trace_id": "trace-quality",
                     "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": True},
-                    "environment": "production",
+                    "environment": "development",
                 },
             )
             draft = DraftChapter(
@@ -141,7 +141,7 @@ class QualityEvalV2Tests(unittest.TestCase):
                 target_paths=[str(draft_path)],
                 rubric_path=rubric["path"],
                 adapter=ProviderJudgeAdapter(),
-                environment="production",
+                environment="development",
                 envelope={
                     "project_id": "p1",
                     "task_type": "quality_judge",
@@ -150,11 +150,11 @@ class QualityEvalV2Tests(unittest.TestCase):
                     "source": "test",
                     "trace_id": "trace-provider-quality",
                     "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
-                    "environment": "production",
+                    "environment": "development",
                 },
                 provider_runtime_guard={"max_total_tokens": 2000, "cost_profile": {"input_per_1k": 0.005, "output_per_1k": 0.015}},
             )
-            gate = run_quality_gate(storage, quality_report_path=report["path"], environment="production", envelope={
+            gate = run_quality_gate(storage, quality_report_path=report["path"], environment="development", envelope={
                 "project_id": "p1",
                 "task_type": "quality_gate",
                 "asset_type": "evaluation_gate",
@@ -162,7 +162,7 @@ class QualityEvalV2Tests(unittest.TestCase):
                 "source": "test",
                 "trace_id": "trace-provider-quality-gate",
                 "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
-                "environment": "production",
+                "environment": "development",
             })
 
             self.assertEqual(report["asset"]["content"]["judge_policy"]["mode"], "provider_backed_judge")
@@ -180,7 +180,7 @@ class QualityEvalV2Tests(unittest.TestCase):
             self.assertTrue(evidence["model_call_log_path"])
             self.assertTrue(evidence["runtime_policy_path"])
             self.assertTrue(evidence["cost_ledger_path"])
-            self.assertEqual(evidence["provider_policy"]["status"], "passed")
+            self.assertEqual(evidence["provider_policy"]["status"], "skipped")
             self.assertEqual(gate["asset"]["content"]["status"], "passed")
 
     def test_provider_quality_judge_external_proof_blocks_fixture_adapter(self):
@@ -202,7 +202,7 @@ class QualityEvalV2Tests(unittest.TestCase):
             rubric = _production_rubric(storage)
             draft_path = _ready_draft(storage)
 
-            with self.assertRaisesRegex(ValueError, "external provider proof"):
+            with self.assertRaisesRegex(RuntimeError, "legacy direct model adapters"):
                 run_provider_quality_judge(
                     storage,
                     suite_type="opening_3",
@@ -215,7 +215,7 @@ class QualityEvalV2Tests(unittest.TestCase):
                     require_external_provider_proof=True,
                 )
 
-    def test_provider_quality_judge_external_proof_records_passed_report(self):
+    def test_provider_quality_judge_cannot_claim_external_proof_via_legacy_adapter(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
             create_model_route(
@@ -234,25 +234,24 @@ class QualityEvalV2Tests(unittest.TestCase):
             rubric = _production_rubric(storage)
             draft_path = _ready_draft(storage)
 
-            report = run_provider_quality_judge(
-                storage,
-                suite_type="opening_3",
-                target_paths=[str(draft_path)],
-                rubric_path=rubric["path"],
-                adapter=ExternalProviderJudgeAdapter(),
-                environment="production",
-                envelope=_envelope("quality_judge", "opening_3_report", "trace-quality-external-pass"),
-                provider_runtime_guard={"max_total_tokens": 2000},
-                require_external_provider_proof=True,
-            )
-
-            proof = report["external_provider_proof"]
-            self.assertEqual(proof["status"], "passed")
-            proof_asset = storage.read_json(storage.root / proof["path"])
-            self.assertEqual(proof_asset["type"], "external_provider_proof_report")
-            self.assertEqual(proof_asset["content"]["credential_boundary"]["credential_ref"], "env:QUALITY_PROVIDER_API_KEY")
-            self.assertFalse(proof_asset["content"]["credential_boundary"]["secret_material_persisted"])
-            self.assertIn(proof["path"], report["asset"]["references"])
+            with self.assertRaisesRegex(
+                RuntimeError, "legacy direct model adapters"
+            ):
+                run_provider_quality_judge(
+                    storage,
+                    suite_type="opening_3",
+                    target_paths=[str(draft_path)],
+                    rubric_path=rubric["path"],
+                    adapter=ExternalProviderJudgeAdapter(),
+                    environment="production",
+                    envelope=_envelope(
+                        "quality_judge",
+                        "opening_3_report",
+                        "trace-quality-external-pass",
+                    ),
+                    provider_runtime_guard={"max_total_tokens": 2000},
+                    require_external_provider_proof=True,
+                )
 
     def test_production_quality_gate_blocks_local_heuristic_without_provider_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -634,23 +633,24 @@ class QualityEvalV2Tests(unittest.TestCase):
                 project_id="p1",
             )
 
-            report = run_provider_quality_judge(
-                storage,
-                suite_type="opening_3",
-                target_paths=[str(draft_path), str(second_draft_path)],
-                rubric_path=calibrated["path"],
-                adapter=ProviderJudgeAdapter(),
-                environment="production",
-                envelope=_envelope("quality_judge", "opening_3_report", "trace-quality-calibrated"),
-                provider_runtime_guard={"max_total_tokens": 2000},
-                require_calibrated_thresholds=True,
-            )
-
-            calibration_meta = report["asset"]["content"]["threshold_calibration"]
-            self.assertEqual(calibration_meta["status"], "calibrated")
-            self.assertEqual(calibration_meta["threshold_source"], "human_calibrated")
-            self.assertTrue(calibration_meta["calibration_ref"])
-            self.assertTrue(report["asset"]["content"]["judge_policy"]["threshold_calibration_required_for_production_acceptance"])
+            with self.assertRaisesRegex(
+                RuntimeError, "legacy direct model adapters"
+            ):
+                run_provider_quality_judge(
+                    storage,
+                    suite_type="opening_3",
+                    target_paths=[str(draft_path), str(second_draft_path)],
+                    rubric_path=calibrated["path"],
+                    adapter=ProviderJudgeAdapter(),
+                    environment="production",
+                    envelope=_envelope(
+                        "quality_judge",
+                        "opening_3_report",
+                        "trace-quality-calibrated",
+                    ),
+                    provider_runtime_guard={"max_total_tokens": 2000},
+                    require_calibrated_thresholds=True,
+                )
 
     def test_provider_calibration_missing_case_result_fails_closed(self):
         with tempfile.TemporaryDirectory() as tmp:

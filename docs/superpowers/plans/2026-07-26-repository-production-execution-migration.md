@@ -152,11 +152,11 @@
 - Produces `FallbackPolicy(mode, allowed_route_ids, triggers, maximum_route_changes, approval_required, quality_revalidation_required)`.
 - `RouteResolver.freeze(...) -> RouteSnapshot`; Model Router exposes resolution only and cannot invoke an adapter.
 
-- [ ] Test stable aliases, no provider/model/reasoning/prompt/skill/schema drift, explicit fallback approval, retry snapshot reuse, and re-route generation.
-- [ ] Implement versioned fallback policies and route qualification.
-- [ ] Remove production execution responsibility from Model Router while keeping a development compatibility facade that delegates to PEP.
-- [ ] Run route, model-router, gateway, and architecture tests.
-- [ ] Commit `refactor: reduce model router to governed route resolution`.
+- [x] Test stable aliases, no provider/model/reasoning/prompt/skill/schema drift, explicit fallback approval, retry snapshot reuse, and re-route generation.
+- [x] Implement versioned fallback policies and route qualification.
+- [x] Remove production execution responsibility from Model Router while keeping a development compatibility facade that delegates to PEP.
+- [x] Run route, model-router, gateway, and architecture tests.
+- [x] Commit `refactor: reduce model router to governed route resolution`.
 
 ### Task 7: Chapter Authority lifecycle closure
 

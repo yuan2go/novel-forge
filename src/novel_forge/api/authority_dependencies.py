@@ -43,6 +43,7 @@ from novel_forge.modules.production_execution import (
     ExecutionBackendRegistry,
     ExecutionCapabilityProfile,
     ExecutionRuntimeClass,
+    FallbackPolicy,
     ModelProfile,
     ModelProfileStatus,
     PostgresAttemptFenceVerifier,
@@ -266,8 +267,14 @@ def build_chapter_authority_application(
             allowed_model_profile_ids=(profile_id,),
             rule_set_ref=f"route-rules:chapter:{stage}:v1",
             fallback_policy="FAIL_CLOSED",
+            fallback_policy_ref=f"chapter.{stage}.fail-closed",
+            fallback_policy_version=1,
             reasoning_downgrade_policy="PROHIBITED",
             status="ACTIVE",
+        )
+        fallback_policy = FallbackPolicy.fail_closed(
+            policy.fallback_policy_ref,
+            policy.fallback_policy_version,
         )
         prompt_version = str(
             values.get(f"NOVEL_FORGE_{stage.upper()}_PROMPT_VERSION")
@@ -281,6 +288,7 @@ def build_chapter_authority_application(
             stage=stage,
             model_profile=profile,
             route_policy=policy,
+            fallback_policy=fallback_policy,
             backend_version=backend_version,
             runtime_host_id=runtime_host_id,
             auth_profile_ref=auth_profile_ref,

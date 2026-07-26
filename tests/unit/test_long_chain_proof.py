@@ -63,7 +63,7 @@ class LongChainProofTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 run_long_chain_proof(storage, project_id="p1", mode="provider_30_slow")
 
-    def test_provider_50_proof_records_chapter_generation_evidence(self):
+    def test_provider_50_proof_blocks_legacy_generation_adapter(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
             create_model_route(
@@ -80,42 +80,41 @@ class LongChainProofTests(unittest.TestCase):
                 max_cost_per_run=2.0,
             )
 
-            result = run_long_chain_proof(
-                storage,
-                project_id="p1",
-                mode="provider_50_proof",
-                target_chapter_count=50,
-                opt_in_slow_provider=True,
-                provider_adapter=ChapterProviderAdapter(),
-                provider_runtime_guard={"max_total_tokens": 2000},
-                environment="production",
-                envelope={
-                    "project_id": "p1",
-                    "task_type": "long_chain_proof",
-                    "asset_type": "long_chain_run",
-                    "actor_type": "service",
-                    "source": "test",
-                    "trace_id": "trace-long-chain-provider",
-                    "source_policy": {"raw_source_text_allowed": False, "generation_rag_allowed": False},
-                    "environment": "production",
-                },
-            )
-
-            acceptance = result["asset"]
-            provider_evidence = acceptance["content"]["provider_generation_evidence"]
-            self.assertEqual(acceptance["content"]["status"], "ready")
-            self.assertEqual(provider_evidence["mode"], "provider_backed_chapter_generation")
-            self.assertEqual(provider_evidence["generated_chapter_count"], 50)
-            self.assertEqual(len(provider_evidence["model_call_log_paths"]), 50)
-            self.assertEqual(len(provider_evidence["cost_ledger_paths"]), 50)
-            self.assertTrue(any(check["check"] == "provider_generation_coverage" and check["passed"] for check in acceptance["content"]["checks"]))
+            with self.assertRaisesRegex(
+                RuntimeError, "legacy direct model adapters"
+            ):
+                run_long_chain_proof(
+                    storage,
+                    project_id="p1",
+                    mode="provider_50_proof",
+                    target_chapter_count=50,
+                    opt_in_slow_provider=True,
+                    provider_adapter=ChapterProviderAdapter(),
+                    provider_runtime_guard={"max_total_tokens": 2000},
+                    environment="production",
+                    envelope={
+                        "project_id": "p1",
+                        "task_type": "long_chain_proof",
+                        "asset_type": "long_chain_run",
+                        "actor_type": "service",
+                        "source": "test",
+                        "trace_id": "trace-long-chain-provider",
+                        "source_policy": {
+                            "raw_source_text_allowed": False,
+                            "generation_rag_allowed": False,
+                        },
+                        "environment": "production",
+                    },
+                )
 
     def test_provider_50_external_proof_blocks_fixture_adapter(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
             _external_route(storage, provider="unit-provider", approval_id="approval-long-chain-block")
 
-            with self.assertRaisesRegex(ValueError, "external provider proof"):
+            with self.assertRaisesRegex(
+                RuntimeError, "legacy direct model adapters"
+            ):
                 run_long_chain_proof(
                     storage,
                     project_id="p1",
@@ -129,30 +128,26 @@ class LongChainProofTests(unittest.TestCase):
                     require_external_provider_proof=True,
                 )
 
-    def test_provider_50_external_proof_records_per_chapter_proofs(self):
+    def test_provider_50_cannot_claim_external_proof_via_legacy_adapter(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
             _external_route(storage, provider="external-provider", approval_id="approval-long-chain-external-pass")
 
-            result = run_long_chain_proof(
-                storage,
-                project_id="p1",
-                mode="provider_50_proof",
-                target_chapter_count=50,
-                opt_in_slow_provider=True,
-                provider_adapter=ExternalChapterProviderAdapter(),
-                provider_runtime_guard={"max_total_tokens": 2000},
-                environment="production",
-                envelope=_envelope("trace-long-chain-external-pass"),
-                require_external_provider_proof=True,
-            )
-
-            provider_evidence = result["asset"]["content"]["provider_generation_evidence"]
-            self.assertEqual(len(provider_evidence["external_provider_proof_paths"]), 50)
-            self.assertTrue(any(check["check"] == "external_provider_proof_coverage" and check["passed"] for check in result["asset"]["content"]["checks"]))
-            proof = storage.read_json(storage.root / provider_evidence["external_provider_proof_paths"][0])
-            self.assertEqual(proof["type"], "external_provider_proof_report")
-            self.assertEqual(proof["content"]["status"], "passed")
+            with self.assertRaisesRegex(
+                RuntimeError, "legacy direct model adapters"
+            ):
+                run_long_chain_proof(
+                    storage,
+                    project_id="p1",
+                    mode="provider_50_proof",
+                    target_chapter_count=50,
+                    opt_in_slow_provider=True,
+                    provider_adapter=ExternalChapterProviderAdapter(),
+                    provider_runtime_guard={"max_total_tokens": 2000},
+                    environment="production",
+                    envelope=_envelope("trace-long-chain-external-pass"),
+                    require_external_provider_proof=True,
+                )
 
 
 def _external_route(storage: LocalStorage, *, provider: str, approval_id: str) -> None:

@@ -18,6 +18,7 @@ from novel_forge.modules.production_execution import (
     ExecutionOutcome,
     ExecutionRequest,
     ExecutionRuntimeClass,
+    FallbackPolicy,
     InputManifest,
     ModelProfile,
     ModelProfileStatus,
@@ -33,6 +34,7 @@ from novel_forge.modules.production_execution.gateway import (
     StaticExecutionContractSource,
 )
 from novel_forge.modules.production_execution.routing import (
+    FallbackPolicyRegistry,
     ModelProfileRegistry,
     RoutePolicyRegistry,
     RouteRecommendation,
@@ -194,6 +196,8 @@ def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
         allowed_model_profile_ids=(profile.profile_id,),
         rule_set_ref="route-rules:chapter:1",
         fallback_policy="FAIL_CLOSED",
+        fallback_policy_ref="chapter.production.fail-closed",
+        fallback_policy_version=1,
         reasoning_downgrade_policy="PROHIBITED",
         status="ACTIVE",
     )
@@ -219,6 +223,8 @@ def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
         context_bundle_ref="context:chapter:1",
         output_schema_ref="schema:chapter:1",
         release_sha=SHA,
+        fallback_policy_ref=policy.fallback_policy_ref,
+        fallback_policy_version=policy.fallback_policy_version,
     )
     artifact = ArtifactPointer(
         artifact_ref="asset-version:plan:1",
@@ -914,7 +920,17 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         )
         resolver = RouteResolver(
             ModelProfileRegistry((profile,)),
-            RoutePolicyRegistry((policy,)),
+            RoutePolicyRegistry(
+                (policy,),
+                fallback_policies=FallbackPolicyRegistry(
+                    (
+                        FallbackPolicy.fail_closed(
+                            policy.fallback_policy_ref,
+                            policy.fallback_policy_version,
+                        ),
+                    )
+                ),
+            ),
             {capability.backend_id: capability},
             RouteRecommendationReadModel((
                 RouteRecommendation(
@@ -955,7 +971,17 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         )
         resolver = RouteResolver(
             ModelProfileRegistry((profile,)),
-            RoutePolicyRegistry((policy,)),
+            RoutePolicyRegistry(
+                (policy,),
+                fallback_policies=FallbackPolicyRegistry(
+                    (
+                        FallbackPolicy.fail_closed(
+                            policy.fallback_policy_ref,
+                            policy.fallback_policy_version,
+                        ),
+                    )
+                ),
+            ),
             {capability.backend_id: capability},
         )
         with self.assertRaisesRegex(ValueError, "silently downgraded"):

@@ -98,6 +98,8 @@ class LegacyResultMapper:
 class LegacyGatewayModelAdapter:
     """ModelAdapter-compatible facade with no provider execution implementation."""
 
+    production_execution_gateway_backed = True
+
     def __init__(
         self,
         *,
@@ -190,6 +192,18 @@ def execute_legacy_model_operation(
     and cannot be mistaken for production execution evidence.
     """
 
+    environment = str(
+        context.get("environment") or context.get("runtime_environment") or "development"
+    ).strip().lower()
+    if (
+        environment in {"production", "validation", "provider-validation"}
+        and not bool(
+            getattr(adapter, "production_execution_gateway_backed", False)
+        )
+    ):
+        raise RuntimeError(
+            "legacy direct model adapters are disabled; use LegacyGatewayModelAdapter"
+        )
     review = context.get("review") if isinstance(context.get("review"), Mapping) else {}
     execute = getattr(adapter, "execute_operation", None)
     if callable(execute):
@@ -198,16 +212,6 @@ def execute_legacy_model_operation(
             str(payload),
             context,
             review=review if operation == "revise" else None,
-        )
-    environment = str(
-        context.get("environment") or context.get("runtime_environment") or "development"
-    ).strip().lower()
-    if (
-        environment in {"production", "validation", "provider-validation"}
-        and bool(getattr(adapter, "legacy_independent_execution", False))
-    ):
-        raise RuntimeError(
-            "legacy direct model adapters are disabled; use LegacyGatewayModelAdapter"
         )
     if operation == "generate":
         return adapter.generate(str(payload), context)

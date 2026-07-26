@@ -24,6 +24,8 @@ from .contracts import (
     ExecutionRequest,
     ExecutionResult,
     ExecutionRuntimeClass,
+    FallbackMode,
+    FallbackPolicy,
     InputManifest,
     LocalTerminationOutcome,
     ModelProfile,
@@ -100,11 +102,13 @@ from .process_supervisor import (
 )
 from .postgres import PostgresAttemptFenceVerifier, PostgresExecutionContractSource
 from .routing import (
+    FallbackPolicyRegistry,
     ModelProfileRegistry,
     RoutePolicyRegistry,
     RouteRecommendation,
     RouteRecommendationReadModel,
     RouteResolver,
+    RouteSnapshotRegistry,
 )
 from .legacy import LegacyGatewayModelAdapter, LegacyRequestMapper, LegacyResultMapper
 
@@ -141,6 +145,9 @@ __all__ = [
     "ExecutionReconciler",
     "ExecutionResult",
     "ExecutionRuntimeClass",
+    "FallbackMode",
+    "FallbackPolicy",
+    "FallbackPolicyRegistry",
     "ExternalActionAdapter",
     "ExternalActionAdapterProfile",
     "ExternalActionCallbackReceipt",
@@ -174,6 +181,7 @@ __all__ = [
     "RouteRecommendationReadModel",
     "RouteResolver",
     "RouteSnapshot",
+    "RouteSnapshotRegistry",
     "TargetScope",
     "RiskClass",
     "UpstreamCancellationOutcome",
