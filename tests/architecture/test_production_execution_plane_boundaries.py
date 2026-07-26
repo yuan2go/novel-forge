@@ -43,6 +43,7 @@ class ProductionExecutionPlaneBoundaryTests(unittest.TestCase):
                     "hashlib",
                     "json",
                     "re",
+                    "security",
                     "types",
                     "typing",
                 }

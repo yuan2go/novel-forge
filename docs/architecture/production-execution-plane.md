@@ -605,6 +605,26 @@ NO_PROXY
 
 其余变量默认拒绝，按 Backend 显式增加。
 
+所有可序列化执行合同、恢复记录和 External Receipt 在写入前递归执行
+Secret Guard。明文 `api_key`、`authorization`、access/refresh token、client
+secret、private key、password，以及高置信度 Secret 值均 fail closed。持久化
+合同只能保存：
+
+```text
+auth_profile_ref
+credential_scope
+secret_version_ref
+```
+
+`RouteSnapshot` 和 `ExecutionManifest` 冻结这三个引用；Backend 在执行时由
+受控凭据解析器取得真实值，真实值不得回写到 Request、Manifest、Receipt、
+日志或测试快照。
+
+本地 Process Policy 同时冻结工作目录、命令前缀和最大结果字节数。
+Agent Workspace Policy 冻结 Snapshot、Read/Write Set、工具/命令、网络、
+Git Base、输出目录、最大文件数、单文件大小、成本及审批策略。Runner
+返回的每一个修改路径、文件大小和输出路径都必须落在冻结边界内。
+
 禁止：
 
 - 向 Codex 注入数据库密码；

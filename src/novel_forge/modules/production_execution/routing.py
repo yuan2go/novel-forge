@@ -241,6 +241,8 @@ class RouteResolver:
         context_bundle_ref: str,
         output_schema_ref: str,
         release_sha: str,
+        credential_scope: str = "",
+        secret_version_ref: str = "",
     ) -> RouteSnapshot:
         policy = self.policies.resolve(policy_id)
         if policy.status != "ACTIVE":
@@ -285,6 +287,8 @@ class RouteResolver:
             context_bundle_ref=context_bundle_ref,
             output_schema_ref=output_schema_ref,
             release_sha=release_sha,
+            credential_scope=credential_scope,
+            secret_version_ref=secret_version_ref,
             fallback_policy_ref=fallback.policy_id,
             fallback_policy_version=fallback.policy_version,
         )
@@ -304,6 +308,8 @@ class RouteResolver:
         quality_revalidation_ref: str,
         runtime_host_id: str,
         auth_profile_ref: str,
+        credential_scope: str | None = None,
+        secret_version_ref: str | None = None,
     ) -> RouteSnapshot:
         policy = self.policies.resolve(
             previous.policy_id, previous.policy_version
@@ -366,6 +372,16 @@ class RouteResolver:
             context_bundle_ref=previous.context_bundle_ref,
             output_schema_ref=previous.output_schema_ref,
             release_sha=previous.release_sha,
+            credential_scope=(
+                previous.credential_scope
+                if credential_scope is None
+                else credential_scope
+            ),
+            secret_version_ref=(
+                previous.secret_version_ref
+                if secret_version_ref is None
+                else secret_version_ref
+            ),
             route_generation=previous.route_generation + 1,
             parent_route_snapshot_id=previous.route_snapshot_id,
             fallback_policy_ref=fallback.policy_id,

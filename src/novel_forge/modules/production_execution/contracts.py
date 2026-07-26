@@ -15,6 +15,8 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Iterator, Mapping, Protocol, runtime_checkable
 
+from .security import assert_no_inline_secrets
+
 
 _STABLE_ALIAS = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 _HEX_64 = re.compile(r"^[0-9a-f]{64}$")
@@ -95,7 +97,11 @@ class FallbackMode(StrEnum):
 
 class _Contract:
     def to_dict(self) -> dict[str, Any]:
-        return {item.name: _thaw(getattr(self, item.name)) for item in fields(self)}
+        payload = {
+            item.name: _thaw(getattr(self, item.name)) for item in fields(self)
+        }
+        assert_no_inline_secrets(payload, label=type(self).__name__)
+        return payload
 
     @property
     def contract_hash(self) -> str:
@@ -713,6 +719,8 @@ class RouteSnapshot(_HashedContract):
     context_bundle_ref: str
     output_schema_ref: str
     release_sha: str
+    credential_scope: str = ""
+    secret_version_ref: str = ""
     route_generation: int = 1
     parent_route_snapshot_id: str = ""
     fallback_policy_ref: str = ""
@@ -1268,6 +1276,8 @@ class ExecutionManifest(_HashedContract):
     environment_allowlist_name: str
     timeout_seconds: int
     release_sha: str
+    credential_scope: str = ""
+    secret_version_ref: str = ""
 
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
@@ -1294,6 +1304,8 @@ class ExecutionManifest(_HashedContract):
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> ExecutionManifest:
         values = dict(payload)
+        values.setdefault("credential_scope", "")
+        values.setdefault("secret_version_ref", "")
         values["fencing_token"] = int(values.get("fencing_token") or 0)
         values["timeout_seconds"] = int(values.get("timeout_seconds") or 0)
         values["command_summary"] = _string_tuple(values.get("command_summary"))

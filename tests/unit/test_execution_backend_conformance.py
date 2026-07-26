@@ -246,6 +246,7 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
             policy = LocalProcessExecutionPolicy(
                 fixed_working_directory=tmp,
                 allowed_command_prefixes=(("codex", "exec"),),
+                maximum_result_bytes=1_000_000,
             )
             policy.assert_payload(
                 ResolvedExecutionPayload(
@@ -419,8 +420,10 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
             network_policy="DENY",
             git_base_sha=SHA,
             expected_output_contract="workspace-manifest.v1",
+            output_directory="src/.agent-output",
             maximum_agent_hops=1,
             maximum_files_changed=4,
+            maximum_file_size_bytes=1_000_000,
             maximum_cost="0",
             approval_policy="AUTHORITY_REVIEW_REQUIRED",
         )
@@ -578,8 +581,10 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
                 network_policy="DENY",
                 git_base_sha=SHA,
                 expected_output_contract="workspace-manifest.v1",
+                output_directory="src/.agent-output",
                 maximum_agent_hops=1,
                 maximum_files_changed=1,
+                maximum_file_size_bytes=1_000_000,
                 maximum_cost="0",
                 approval_policy="AUTHORITY_REVIEW_REQUIRED",
             )
@@ -593,8 +598,10 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
                 network_policy="DENY",
                 git_base_sha=SHA,
                 expected_output_contract="workspace-manifest.v1",
+                output_directory="src/.agent-output",
                 maximum_agent_hops=1,
                 maximum_files_changed=1,
+                maximum_file_size_bytes=1_000_000,
                 maximum_cost="0",
                 approval_policy="AUTHORITY_REVIEW_REQUIRED",
             )
@@ -728,6 +735,7 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
                 execution_policy=LocalProcessExecutionPolicy(
                     fixed_working_directory=tmp,
                     allowed_command_prefixes=((sys.executable,),),
+                    maximum_result_bytes=1_000_000,
                 ),
             )
 

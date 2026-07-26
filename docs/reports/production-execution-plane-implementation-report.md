@@ -176,6 +176,35 @@ reader_outcome_behavior_calibrated=false
 production_verified=false
 ```
 
+## 2026-07-26 WP-14 — Credential, Environment, And Workspace Security
+
+Every serializable PEP contract, in-memory execution record/evidence payload, and
+Authority-backed recovery record/evidence payload now passes a recursive Secret
+Guard before hashing or persistence. Direct credential keys and high-confidence
+Bearer/API/private-key values fail closed. Contracts persist only governed
+`auth_profile_ref`, `credential_scope`, and `secret_version_ref` identities; no
+credential resolver or real credential was used in this work package.
+
+The local Codex process path retains an explicit environment allowlist and rejects
+unlisted overrides before launch. Its policy now freezes a maximum result size and
+checks it before JSON parsing. Agent Workspace contracts now freeze the output
+directory and per-file size in addition to snapshot, read/write, tool, command,
+network, Git, file-count, cost, output-contract, and approval boundaries. Candidate
+manifests must provide a size for every changed file, and every changed/output path
+must remain inside the frozen boundaries.
+
+Verification: 93 focused Security, Contract, Routing, Gateway, Backend Conformance,
+Workspace, Bundle, Inventory, and architecture tests passed. No real Provider,
+credential resolution, paid call, external action, or Agent workspace process ran.
+
+```text
+production_execution_secret_guard_complete=true
+production_execution_environment_allowlist_complete=true
+agent_workspace_security_contract_complete=true
+real_provider_proven=false
+production_verified=false
+```
+
 ## Gate-00 — Pre-Migration Real Provider Chapter Baseline
 
 ### Verdict

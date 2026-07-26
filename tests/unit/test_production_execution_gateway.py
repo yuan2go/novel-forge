@@ -633,6 +633,7 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
                 execution_policy=LocalProcessExecutionPolicy(
                     fixed_working_directory=tmp,
                     allowed_command_prefixes=((sys.executable,),),
+                    maximum_result_bytes=1_000_000,
                 ),
             )
             registry = ExecutionBackendRegistry()
@@ -713,6 +714,7 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
                 execution_policy=LocalProcessExecutionPolicy(
                     fixed_working_directory=tmp,
                     allowed_command_prefixes=((sys.executable,),),
+                    maximum_result_bytes=1_000_000,
                 ),
             )
 

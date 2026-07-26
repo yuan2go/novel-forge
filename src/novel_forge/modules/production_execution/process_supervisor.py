@@ -28,6 +28,7 @@ except ImportError:  # pragma: no cover - non-POSIX fallback
     fcntl = None  # type: ignore[assignment]
 
 from .contracts import ExecutionRuntimeClass
+from .security import assert_no_inline_secrets
 
 
 CODEX_ENVIRONMENT_ALLOWLIST = (
@@ -557,6 +558,14 @@ class ProcessLaunchRequest:
                 raise ValueError("result filename must be a single relative file name")
         elif self.result_format:
             raise ValueError("result format requires a result filename")
+        assert_no_inline_secrets(
+            {
+                "command": self.command,
+                "input_text": self.input_text,
+                "environment_overrides": self.environment_overrides or {},
+            },
+            label="ProcessLaunchRequest",
+        )
 
     @property
     def request_digest(self) -> str:

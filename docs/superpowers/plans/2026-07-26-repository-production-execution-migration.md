@@ -278,11 +278,11 @@
 - Persist only `auth_profile_ref`, `credential_scope`, and `secret_version_ref`.
 - Workspace policies bind cwd/snapshot/read/write/commands/tools/network/output/file-count/file-size/result contract.
 
-- [ ] Test secret-name/value rejection in every persisted contract and evidence payload.
-- [ ] Test explicit environment allowlists and workspace path containment.
-- [ ] Enforce the policies before backend launch.
-- [ ] Run security/process/gateway tests.
-- [ ] Commit `security: enforce execution credentials environment and workspace boundaries`.
+- [x] Test secret-name/value rejection in every persisted contract and evidence payload.
+- [x] Test explicit environment allowlists and workspace path containment.
+- [x] Enforce the policies before backend launch.
+- [x] Run security/process/gateway tests.
+- [x] Commit `security: enforce execution credentials environment and workspace boundaries`.
 
 ### Task 15: Repository architecture guards
 

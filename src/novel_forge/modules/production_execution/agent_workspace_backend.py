@@ -64,6 +64,13 @@ def _relative_path(value: str, label: str) -> str:
     return normalized
 
 
+def _path_is_within(path: str, roots: tuple[str, ...]) -> bool:
+    return any(
+        path == root or path.startswith(f"{root.rstrip('/')}/")
+        for root in roots
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class AgentWorkspaceExecutionContract:
     workspace_snapshot_ref: str
@@ -74,8 +81,10 @@ class AgentWorkspaceExecutionContract:
     network_policy: str
     git_base_sha: str
     expected_output_contract: str
+    output_directory: str
     maximum_agent_hops: int
     maximum_files_changed: int
+    maximum_file_size_bytes: int
     maximum_cost: str
     approval_policy: str
 
@@ -98,8 +107,12 @@ class AgentWorkspaceExecutionContract:
             expected_output_contract=str(
                 payload.get("expected_output_contract") or ""
             ),
+            output_directory=str(payload.get("output_directory") or ""),
             maximum_agent_hops=int(payload.get("maximum_agent_hops") or 0),
             maximum_files_changed=int(payload.get("maximum_files_changed") or 0),
+            maximum_file_size_bytes=int(
+                payload.get("maximum_file_size_bytes") or 0
+            ),
             maximum_cost=str(payload.get("maximum_cost") or ""),
             approval_policy=str(payload.get("approval_policy") or ""),
         )
@@ -110,13 +123,18 @@ class AgentWorkspaceExecutionContract:
                 self.workspace_snapshot_ref,
                 self.git_base_sha,
                 self.expected_output_contract,
+                self.output_directory,
                 self.approval_policy,
             )
         ):
             raise ValueError("agent workspace contract is incomplete")
         if self.network_policy not in _NETWORK_POLICIES:
             raise ValueError("agent workspace network policy is not governed")
-        if self.maximum_agent_hops < 0 or self.maximum_files_changed < 0:
+        if (
+            self.maximum_agent_hops < 0
+            or self.maximum_files_changed < 0
+            or self.maximum_file_size_bytes <= 0
+        ):
             raise ValueError("agent workspace limits cannot be negative")
         if len(self.git_base_sha) != 40 or any(
             char not in "0123456789abcdef" for char in self.git_base_sha.lower()
@@ -138,6 +156,12 @@ class AgentWorkspaceExecutionContract:
             "write_set",
             tuple(_relative_path(item, "write_set") for item in self.write_set),
         )
+        output_directory = _relative_path(
+            self.output_directory, "output_directory"
+        )
+        if not _path_is_within(output_directory, self.write_set):
+            raise ValueError("agent workspace output directory escaped write_set")
+        object.__setattr__(self, "output_directory", output_directory)
         object.__setattr__(
             self,
             "allowed_tools",
@@ -163,8 +187,10 @@ class AgentWorkspaceExecutionContract:
             "network_policy": self.network_policy,
             "git_base_sha": self.git_base_sha,
             "expected_output_contract": self.expected_output_contract,
+            "output_directory": self.output_directory,
             "maximum_agent_hops": self.maximum_agent_hops,
             "maximum_files_changed": self.maximum_files_changed,
+            "maximum_file_size_bytes": self.maximum_file_size_bytes,
             "maximum_cost": self.maximum_cost,
             "approval_policy": self.approval_policy,
         }
@@ -258,6 +284,8 @@ class ScriptedAgentWorkspaceRunner:
                     "workspace_snapshot_ref": contract.workspace_snapshot_ref,
                     "git_base_sha": contract.git_base_sha,
                     "files_changed": [],
+                    "file_sizes": {},
+                    "output_paths": [],
                     "proposed_only": True,
                     "operation_id": request.operation_id,
                 },
@@ -431,14 +459,36 @@ class AgentWorkspaceExecutionBackend:
                 raise ValueError("agent workspace files_changed must be a list")
             if len(files) > contract.maximum_files_changed:
                 raise ValueError("agent workspace changed too many files")
+            if len(set(str(path) for path in files)) != len(files):
+                raise ValueError("agent workspace files_changed contains duplicates")
+            raw_sizes = manifest.get("file_sizes") or {}
+            if not isinstance(raw_sizes, Mapping):
+                raise ValueError("agent workspace file_sizes must be an object")
             for path in files:
                 normalized = _relative_path(str(path), "files_changed")
-                if not any(
-                    normalized == allowed
-                    or normalized.startswith(f"{allowed.rstrip('/')}/")
-                    for allowed in contract.write_set
-                ):
+                if not _path_is_within(normalized, contract.write_set):
                     raise ValueError("agent workspace result escaped write_set")
+                size = raw_sizes.get(str(path))
+                if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+                    raise ValueError(
+                        "agent workspace manifest requires an integer size "
+                        "for every changed file"
+                    )
+                if size > contract.maximum_file_size_bytes:
+                    raise ValueError(
+                        "agent workspace result exceeded maximum file size"
+                    )
+            output_paths = manifest.get("output_paths") or []
+            if not isinstance(output_paths, (list, tuple)):
+                raise ValueError("agent workspace output_paths must be a list")
+            for path in output_paths:
+                normalized = _relative_path(str(path), "output_paths")
+                if not _path_is_within(
+                    normalized, (contract.output_directory,)
+                ):
+                    raise ValueError(
+                        "agent workspace result escaped output directory"
+                    )
 
     @staticmethod
     def _validate_runner_evidence(

@@ -81,14 +81,16 @@ class AgentWorkspaceExecutionMigrationTests(unittest.TestCase):
             workspace_contract={
                 "workspace_snapshot_ref": "workspace-snapshot-1",
                 "read_set": ["src"],
-                "write_set": ["src/example.py"],
+                "write_set": ["src"],
                 "allowed_tools": ["rg", "apply_patch"],
                 "allowed_commands": [["git", "diff", "--check"]],
                 "network_policy": "DENY",
                 "git_base_sha": "a" * 40,
                 "expected_output_contract": "workspace-manifest.v1",
+                "output_directory": "src/.agent-output",
                 "maximum_agent_hops": 1,
                 "maximum_files_changed": 2,
+                "maximum_file_size_bytes": 1_000_000,
                 "maximum_cost": "1.00",
                 "approval_policy": "AUTHORITY_REVIEW_REQUIRED",
             },
@@ -135,8 +137,10 @@ class AgentWorkspaceExecutionMigrationTests(unittest.TestCase):
             network_policy="DENY",
             git_base_sha="a" * 40,
             expected_output_contract="workspace-manifest.v1",
+            output_directory="src/.agent-output",
             maximum_agent_hops=1,
             maximum_files_changed=2,
+            maximum_file_size_bytes=1_000_000,
             maximum_cost="1.00",
             approval_policy="AUTHORITY_REVIEW_REQUIRED",
         )
@@ -152,6 +156,51 @@ class AgentWorkspaceExecutionMigrationTests(unittest.TestCase):
                         evidence,
                         contract,
                     )
+
+    def test_backend_enforces_workspace_output_and_file_size_boundaries(
+        self,
+    ) -> None:
+        contract = AgentWorkspaceExecutionContract(
+            workspace_snapshot_ref="workspace-snapshot-1",
+            read_set=("src",),
+            write_set=("src",),
+            allowed_tools=("rg", "apply_patch"),
+            allowed_commands=(("rg", "--files"),),
+            network_policy="DENY",
+            git_base_sha="a" * 40,
+            expected_output_contract="workspace-manifest.v1",
+            output_directory="src/.agent-output",
+            maximum_agent_hops=1,
+            maximum_files_changed=2,
+            maximum_file_size_bytes=10,
+            maximum_cost="1.00",
+            approval_policy="AUTHORITY_REVIEW_REQUIRED",
+        )
+        with self.assertRaisesRegex(ValueError, "maximum file size"):
+            AgentWorkspaceExecutionBackend._validate_candidate(
+                {
+                    "result_kind": "workspace_manifest",
+                    "workspace_manifest": {
+                        "proposed_only": True,
+                        "files_changed": ["src/example.py"],
+                        "file_sizes": {"src/example.py": 11},
+                    },
+                },
+                contract,
+            )
+        with self.assertRaisesRegex(ValueError, "output directory"):
+            AgentWorkspaceExecutionBackend._validate_candidate(
+                {
+                    "result_kind": "workspace_manifest",
+                    "workspace_manifest": {
+                        "proposed_only": True,
+                        "files_changed": [],
+                        "file_sizes": {},
+                        "output_paths": ["src/result.json"],
+                    },
+                },
+                contract,
+            )
 
 
 if __name__ == "__main__":

@@ -81,6 +81,17 @@ activation decisions. Direct API/Agent/Workflow platform execution is fail-close
 until an Authority-bound execution port is composed. Only no-network fixtures were
 run.
 
+Production Execution contracts and Authority-backed recovery evidence now reject
+inline credential keys and high-confidence Secret values recursively. Route and
+execution manifests store only `auth_profile_ref`, `credential_scope`, and
+`secret_version_ref`; the Codex process supervisor propagates only its explicit
+environment allowlist. Local process results are size-bounded before parsing.
+Agent workspace contracts additionally freeze an output directory and per-file
+size limit, and candidate manifests are rejected when changed/output paths escape
+the frozen write boundaries. These are local fixture and architecture proofs; no
+credential was resolved and no real process/provider/external action was invoked
+for WP-14.
+
 ## 2026-07-22 Next Authority Implementation Baseline
 
 WP-00 has audited the execution, Chapter, Book, Context, Evaluation, and storage

@@ -50,6 +50,7 @@ from .process_supervisor import (
     ProcessTimeout,
     ResultIntegrity,
 )
+from .security import assert_no_inline_secrets
 
 
 def _utc_now() -> str:
@@ -82,12 +83,22 @@ class ResolvedExecutionPayload:
             raise ValueError("resolved execution payload requires workspace and timeout")
         if not self.output_schema_version:
             raise ValueError("resolved execution payload requires an output schema version")
+        assert_no_inline_secrets(
+            {
+                "request_payload": self.request_payload,
+                "input_text": self.input_text,
+                "command": self.command,
+                "environment_overrides": self.environment_overrides or {},
+            },
+            label="ResolvedExecutionPayload",
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class LocalProcessExecutionPolicy:
     fixed_working_directory: str
     allowed_command_prefixes: tuple[tuple[str, ...], ...]
+    maximum_result_bytes: int
 
     def __post_init__(self) -> None:
         fixed = str(Path(self.fixed_working_directory).expanduser().resolve())
@@ -95,7 +106,12 @@ class LocalProcessExecutionPolicy:
             tuple(str(token) for token in prefix)
             for prefix in self.allowed_command_prefixes
         )
-        if not fixed or not prefixes or any(not prefix for prefix in prefixes):
+        if (
+            not fixed
+            or not prefixes
+            or any(not prefix for prefix in prefixes)
+            or self.maximum_result_bytes <= 0
+        ):
             raise ValueError("local process execution policy is incomplete")
         object.__setattr__(self, "fixed_working_directory", fixed)
         object.__setattr__(self, "allowed_command_prefixes", prefixes)
@@ -112,6 +128,11 @@ class LocalProcessExecutionPolicy:
             for prefix in self.allowed_command_prefixes
         ):
             raise ValueError("local process command is not allowlisted")
+
+    def assert_result(self, result_path: str) -> None:
+        candidate = Path(result_path)
+        if candidate.stat().st_size > self.maximum_result_bytes:
+            raise ValueError("local process result exceeds policy size limit")
 
 
 class ExecutionPayloadResolver(Protocol):
@@ -177,6 +198,7 @@ class InMemoryExecutionRecordStore:
         self._lock = Lock()
 
     def put_record(self, record: ExecutionRecord) -> None:
+        self._assert_record_safe(record)
         with self._lock:
             existing = self._records.get(record.request.execution_id)
             if existing is not None:
@@ -186,6 +208,7 @@ class InMemoryExecutionRecordStore:
             self._records[record.request.execution_id] = record
 
     def save_record(self, record: ExecutionRecord) -> None:
+        self._assert_record_safe(record)
         with self._lock:
             existing = self._records.get(record.request.execution_id)
             if (
@@ -207,6 +230,7 @@ class InMemoryExecutionRecordStore:
     def put_evidence(
         self, kind: str, execution_id: str, payload: Mapping[str, Any]
     ) -> str:
+        assert_no_inline_secrets(payload, label=f"execution evidence {kind}")
         frozen = json.loads(_canonical_json(payload))
         digest = hashlib.sha256(_canonical_json(frozen).encode("utf-8")).hexdigest()
         ref = f"fixture-execution-evidence:{kind}:{execution_id}:{digest}"
@@ -222,6 +246,16 @@ class InMemoryExecutionRecordStore:
             return dict(self._evidence[ref])
         except KeyError as exc:
             raise ValueError(f"execution evidence is not available: {ref}") from exc
+
+    @staticmethod
+    def _assert_record_safe(record: ExecutionRecord) -> None:
+        assert_no_inline_secrets(
+            {
+                "request": record.request.to_dict(),
+                "raw_evidence": record.raw_evidence,
+            },
+            label="execution recovery record",
+        )
 
 
 class ResultNormalizer:
@@ -991,6 +1025,7 @@ class CodexCliExecutionBackend:
             and receipt.result_path
             and receipt.result_integrity is ResultIntegrity.VALID
         ):
+            self.execution_policy.assert_result(receipt.result_path)
             parsed = json.loads(Path(receipt.result_path).read_text(encoding="utf-8"))
             evidence["result"] = parsed
         elif (
@@ -1016,6 +1051,7 @@ class CodexCliExecutionBackend:
             return record.result
         if recovery.receipt.status is ProcessReceiptStatus.SUCCEEDED:
             if recovery.receipt.result_path and recovery.receipt.result_integrity is ResultIntegrity.VALID:
+                self.execution_policy.assert_result(recovery.receipt.result_path)
                 record.raw_evidence["result"] = json.loads(
                     Path(recovery.receipt.result_path).read_text(encoding="utf-8")
                 )

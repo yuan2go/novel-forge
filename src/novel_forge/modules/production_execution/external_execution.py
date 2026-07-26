@@ -22,6 +22,7 @@ from novel_forge.modules.production_execution.contracts import (
     ExecutionRuntimeClass,
 )
 from novel_forge.modules.production_execution.gateway import ProductionExecutionGateway
+from novel_forge.modules.production_execution.security import assert_no_inline_secrets
 
 
 class ExternalActionKind(StrEnum):
@@ -62,9 +63,10 @@ class ExternalActionCommand:
             )
         ):
             raise ValueError("external action governance contract is incomplete")
+        assert_no_inline_secrets(self.to_dict(), label="ExternalActionCommand")
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "capability": self.capability,
             "request_payload": dict(self.request_payload),
             "stable_idempotency_key": self.stable_idempotency_key,
@@ -73,6 +75,8 @@ class ExternalActionCommand:
             "rate_limit_policy_ref": self.rate_limit_policy_ref,
             "quota_policy_ref": self.quota_policy_ref,
         }
+        assert_no_inline_secrets(payload, label="ExternalActionCommand")
+        return payload
 
     @property
     def contract_hash(self) -> str:

@@ -33,6 +33,7 @@ from .contracts import (
     ExecutionRequest,
     ExecutionResult,
 )
+from .security import assert_no_inline_secrets
 from .external_action_backend import ExternalActionInvocationResult
 from .process_supervisor import ProcessReceipt
 
@@ -337,6 +338,10 @@ class AuthorityExecutionRecoveryStore:
             if stored_request_hash != request.contract_hash:
                 raise ValueError("duplicate execution ID has a different request")
         record_payload = _record_to_dict(record)
+        assert_no_inline_secrets(
+            record_payload,
+            label="Authority execution recovery record",
+        )
         content = {
             "contract_version": "authority-execution-recovery.v1",
             "execution_id": request.execution_id,
@@ -384,6 +389,10 @@ class AuthorityExecutionRecoveryStore:
     ) -> str:
         if not _EVIDENCE_KIND.fullmatch(kind):
             raise ValueError("execution evidence kind is invalid")
+        assert_no_inline_secrets(
+            payload,
+            label=f"Authority execution evidence {kind}",
+        )
         frozen = json.loads(_canonical(payload))
         payload_hash = hashlib.sha256(
             _canonical(frozen).encode("utf-8")

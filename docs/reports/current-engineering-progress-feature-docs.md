@@ -106,6 +106,13 @@ has not started and `real_provider_proven`, `longform_proven`, and
 - Backend Conformance 10 项、External/Publishing 定向 22 项、Publishing/Source/Feedback 回归 42 项通过；未发送任何真实外部请求。
 - Web Admin 新增 `/mkaos/model-extraction/*`、`/mkaos/production-gate/*`、`/mkaos/knowledge-graph`、`/mkaos/lineage`、`/mkaos/impact`、`/mkaos/feedback-attribution` first-slice 页面。
 
+2026-07-26 Production Execution WP-14 更新：
+
+- 执行合同、内存/Authority 恢复记录和外部动作命令在持久化前递归拒绝明文 Secret；仅允许 `auth_profile_ref`、`credential_scope`、`secret_version_ref`。
+- Codex Process 保持显式环境白名单，并在解析前执行结果文件大小上限；明文凭据无法经 Payload、环境覆盖或 Process 输入进入执行路径。
+- Agent Workspace 新增冻结输出目录和单文件大小上限；修改文件、文件大小、输出路径均由 Backend 在 Runner 返回后校验。
+- 93 项 PEP Security/Contract/Routing/Backend/Workspace 聚焦测试通过；未解析真实凭据，未调用真实 Provider 或外部平台。
+
 最终验证：
 
 | 测试命令 | 当前结果 |
@@ -116,6 +123,7 @@ has not started and `real_provider_proven`, `longform_proven`, and
 | `python3 -m unittest tests.unit.test_longform_recap_agent tests.unit.test_loop_kernel tests.unit.test_publish_feedback_loop tests.unit.test_provider_hard_stop_proof tests.integration.test_novel_os_12_chapter_industrial_pressure` | 13 tests OK |
 | `NOVEL_FORGE_MODEL_PROVIDER=mock python3 -m unittest tests.unit.test_agent_scheduler tests.unit.test_loop_kernel tests.unit.test_permission_center tests.unit.test_agent_runtime_profiles` | 51 tests OK |
 | `python3 -m unittest tests.unit.test_agent_workspace_execution_migration tests.unit.test_execution_backend_conformance`（Agent workspace 定向用例） | 7 tests OK |
+| `.venv/bin/python -m unittest tests.architecture.test_production_execution_security_boundaries tests.architecture.test_production_execution_gateway_boundaries tests.architecture.test_production_execution_plane_boundaries tests.unit.test_external_action_execution_migration tests.unit.test_production_execution_gateway tests.unit.test_production_execution_routing tests.unit.test_production_execution_contracts tests.unit.test_production_execution_capabilities tests.unit.test_production_execution_inventory tests.unit.test_execution_backend_conformance tests.unit.test_agent_workspace_execution_migration tests.unit.test_production_execution_bundles` | 93 tests OK |
 | `npm --prefix web/admin test` | 10 pass, 1 Playwright smoke skipped |
 | `npm --prefix web/admin run build` | OK, 67 routes generated |
 | `PYTHONPATH=src python3 -m unittest tests.unit.test_agent_registry tests.unit.test_agent_registry_scheduler_integration tests.unit.test_audit_log tests.unit.test_pgvector_source_isolation tests.unit.test_clickhouse_analytics tests.unit.test_evaluation_center_general tests.integration.test_novel_os_governance_loop tests.unit.test_schemas tests.unit.test_product_api_routes` | 32 tests OK |

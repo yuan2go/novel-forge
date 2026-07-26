@@ -8,15 +8,11 @@ import json
 import re
 from typing import Any, Mapping
 
+from .security import assert_no_inline_secrets
+
 
 _SHA256 = re.compile(r"^(?:sha256:)?[0-9a-f]{64}$", re.IGNORECASE)
 _STABLE_ID = re.compile(r"^[a-z0-9][a-z0-9._:/-]*$", re.IGNORECASE)
-_SECRET_VALUE = re.compile(
-    r"(?:^|\s)(?:bearer\s+\S+|sk-[a-z0-9_-]{8,}|-----begin [a-z ]*private key-----)",
-    re.IGNORECASE,
-)
-
-
 def _canonical(payload: Mapping[str, Any]) -> bytes:
     return json.dumps(
         payload,
@@ -26,22 +22,13 @@ def _canonical(payload: Mapping[str, Any]) -> bytes:
     ).encode("utf-8")
 
 
-def _assert_no_secret(values: Mapping[str, Any]) -> None:
-    for value in values.values():
-        if isinstance(value, str) and _SECRET_VALUE.search(value):
-            raise ValueError("execution bundle cannot contain secret material")
-        if isinstance(value, Mapping):
-            _assert_no_secret(value)
-        if isinstance(value, (tuple, list)):
-            _assert_no_secret({str(index): item for index, item in enumerate(value)})
-
-
 class _VersionedBundle:
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {}
         for item in fields(self):
             value = getattr(self, item.name)
             payload[item.name] = list(value) if isinstance(value, tuple) else value
+        assert_no_inline_secrets(payload, label=type(self).__name__)
         return payload
 
     @property
@@ -80,7 +67,7 @@ class PromptBundle(_VersionedBundle):
             raise ValueError("PromptBundle system instruction requires a SHA-256 hash")
         if not _SHA256.fullmatch(self.template_hash):
             raise ValueError("PromptBundle template requires a SHA-256 hash")
-        _assert_no_secret(values)
+        assert_no_inline_secrets(values, label="PromptBundle")
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "PromptBundle":
@@ -124,7 +111,7 @@ class SkillBundle(_VersionedBundle):
             raise ValueError("SkillBundle cannot contain duplicate skill versions")
         if any(not _SHA256.fullmatch(value) for value in self.skill_content_hashes):
             raise ValueError("SkillBundle content hashes must be SHA-256")
-        _assert_no_secret(self.to_dict())
+        assert_no_inline_secrets(self.to_dict(), label="SkillBundle")
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "SkillBundle":
