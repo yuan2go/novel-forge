@@ -257,6 +257,10 @@ class AdmissionController:
         )
         if manifest_identity != expected_identity:
             raise ValueError("InputManifest does not bind the requested Authority Attempt")
+        if manifest.source_policy_ref != definition.source_policy_ref:
+            raise ValueError(
+                "InputManifest source policy differs from governed capability"
+            )
         if dict(manifest.target_scope) != dict(request.target_scope):
             raise ValueError("InputManifest target scope changed after admission")
         route_refs = (

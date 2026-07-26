@@ -1,5 +1,5 @@
 {
-  "artifact_hash": "sha256:e23cb375da5e4faaee0ddd510706a836b3affe7974b862d6527c009101d20d3f",
+  "artifact_hash": "sha256:8d5bad8150a0f4a60914a82abd6f6be924e2ca714830ffdf5a546b347ca90f7b",
   "blocking_owner_ids": [],
   "entries": [
     {
@@ -22606,9 +22606,9 @@
     "GATEWAY_BOUND": 1
   },
   "parse_errors": [],
-  "scanned_file_count": 559,
+  "scanned_file_count": 561,
   "schema_version": "production-execution-migration-ledger.v1",
-  "source_tree_hash": "sha256:9a90d3c72110fe5e97bfb93356d9e56ee2752c382edfb5484906a51c38478839",
+  "source_tree_hash": "sha256:06b63b2d36623da2573d1906d201379ff9b1a5bb043a381d6712e22b99a459e3",
   "summary": {
     "AGENT_WORKSPACE_TRANSACTION": 0,
     "DATABASE_AUTHORITY": 417,

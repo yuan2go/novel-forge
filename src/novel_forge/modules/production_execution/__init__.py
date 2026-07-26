@@ -7,6 +7,8 @@ from .capabilities import (
     RiskClass,
 )
 from .capability_registry import CapabilityRegistry, default_capability_registry
+from .bundles import PromptBundle, SkillBundle
+from .policies import CommitPolicy, ContextPolicy, SourcePolicy, ValidationPolicy
 from .contracts import (
     ArtifactPointer,
     CapabilityAvailability,
@@ -90,7 +92,9 @@ __all__ = [
     "CancellationOutcome",
     "CodexCliExecutionBackend",
     "CommitManifest",
+    "CommitPolicy",
     "CompletionMode",
+    "ContextPolicy",
     "ExecutionBackend",
     "ExecutionBackendRegistry",
     "ExecutionCancellationResult",
@@ -113,6 +117,7 @@ __all__ = [
     "ModelProfileStatus",
     "ModelProfileRegistry",
     "OutputManifest",
+    "PromptBundle",
     "ProductionExecutionGateway",
     "RemoteProviderExecutionBackend",
     "ResolvedExecutionPayload",
@@ -146,8 +151,11 @@ __all__ = [
     "ResultIntegrity",
     "SupervisedProcessResult",
     "ScriptedFixtureExecutionBackend",
+    "SkillBundle",
+    "SourcePolicy",
     "StaticAttemptFenceVerifier",
     "StaticExecutionContractSource",
     "StaticExecutionPayloadResolver",
+    "ValidationPolicy",
     "default_capability_registry",
 ]

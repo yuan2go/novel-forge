@@ -4,8 +4,8 @@ AST-derived inventory of uncertain execution, external effects, database Authori
 
 ## Summary
 
-- Source tree: `sha256:9a90d3c72110fe5e97bfb93356d9e56ee2752c382edfb5484906a51c38478839`
-- Scanned Python files: 559
+- Source tree: `sha256:06b63b2d36623da2573d1906d201379ff9b1a5bb043a381d6712e22b99a459e3`
+- Scanned Python files: 561
 - Execution entries: 676
 - Production `LEGACY_UNKNOWN` blockers: 0
 - `real_provider_proven=false`

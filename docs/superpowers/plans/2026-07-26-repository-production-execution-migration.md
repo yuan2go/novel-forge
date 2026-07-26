@@ -93,11 +93,11 @@
 - Produces: `PromptBundle`, `SkillBundle`, `ContextPolicy`, `SourcePolicy`, `ValidationPolicy`, `CommitPolicy`.
 - Extends `InputManifest` with frozen context/prompt/skill/canon/story/planning/quality versions, asset hashes, source eligibility, read set, and target scope.
 
-- [ ] Test stable hashes, version changes, missing content hashes, secret rejection, source eligibility, and path-only input rejection.
-- [ ] Implement immutable contracts and manifest consistency validation.
-- [ ] Materialize Chapter prompt/skill/input bundle assets through existing Authority AssetVersion storage.
-- [ ] Run bundle/contract/Chapter PostgreSQL tests.
-- [ ] Commit `feat: add versioned prompt skill and input execution manifests`.
+- [x] Test stable hashes, version changes, missing content hashes, secret rejection, source eligibility, and path-only input rejection.
+- [x] Implement immutable contracts and manifest consistency validation.
+- [x] Materialize Chapter prompt/skill/input bundle assets through existing Authority AssetVersion storage.
+- [x] Run bundle/contract/Chapter PostgreSQL tests.
+- [x] Commit `feat: add versioned prompt skill and input execution manifests`.
 
 ### Task 4: Authority-backed execution recovery
 

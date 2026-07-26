@@ -26,15 +26,21 @@ from novel_forge.modules.production_execution import (
     ArtifactPointer,
     CapabilityId,
     CancellationOutcome,
+    CommitPolicy,
+    ContextPolicy,
     ExecutionHandle,
     ExecutionOutcome,
     ExecutionRequest,
     InputManifest,
     ModelProfile,
+    PromptBundle,
     ProductionExecutionGateway,
     ResolvedExecutionPayload,
     RoutePolicy,
     RouteSnapshot,
+    SkillBundle,
+    SourcePolicy,
+    ValidationPolicy,
     default_capability_registry,
 )
 from novel_forge.modules.production_execution.backends import ExecutionRecordStore
@@ -98,8 +104,12 @@ class ChapterExecutionRoute:
     backend_version: str
     runtime_host_id: str
     auth_profile_ref: str
-    prompt_bundle_ref: str
-    skill_bundle_ref: str
+    prompt_version: str
+    skill_version: str
+    system_instruction_hash: str
+    template_hash: str
+    skill_content_hash: str
+    prompt_compiler_version: str
     output_schema_ref: str
     release_sha: str
     real_provider_validation_eligible: bool
@@ -114,8 +124,12 @@ class ChapterExecutionRoute:
                 self.backend_version,
                 self.runtime_host_id,
                 self.auth_profile_ref,
-                self.prompt_bundle_ref,
-                self.skill_bundle_ref,
+                self.prompt_version,
+                self.skill_version,
+                self.system_instruction_hash,
+                self.template_hash,
+                self.skill_content_hash,
+                self.prompt_compiler_version,
                 self.output_schema_ref,
             )
         ):
@@ -129,6 +143,17 @@ class ChapterExecutionRoute:
             raise ValueError(
                 "Chapter ModelProfile timeout differs from its governed capability"
             )
+        for label, value in (
+            ("system instruction", self.system_instruction_hash),
+            ("template", self.template_hash),
+            ("skill content", self.skill_content_hash),
+        ):
+            normalized = value.removeprefix("sha256:")
+            if len(normalized) != 64 or any(
+                character not in "0123456789abcdefABCDEF"
+                for character in normalized
+            ):
+                raise ValueError(f"Chapter route {label} hash must be SHA-256")
 
 
 @dataclass(frozen=True, slots=True)
@@ -207,6 +232,100 @@ class PostgresChapterExecutionContractBinder:
         token = _identity_token(f"{project_id}:{operation_id}:{attempt_id}:{stage}")
         route_ref = f"production_execution/routes/{token}"
         input_ref = f"production_execution/inputs/{token}"
+        prompt_ref = f"production_execution/prompt_bundles/{token}"
+        skill_ref = f"production_execution/skill_bundles/{token}"
+        context_policy_ref = (
+            "context-policy:"
+            + definition.capability_id.value.replace(".", "-")
+            + ":v1"
+        )
+        context_policy = ContextPolicy(
+            policy_id=context_policy_ref,
+            policy_version="v1",
+            maximum_tokens=16000,
+            allowed_asset_types=(
+                "book_plan",
+                "volume_plan",
+                "arc_plan",
+                "chapter_group_plan",
+                "chapter_plan",
+                "context_bundle",
+                "canon_snapshot",
+                "story_state_snapshot",
+                "quality_profile",
+                "draft_chapter",
+                "review_report",
+                "revision_patch",
+            ),
+            compression_policy_ref="compression:chapter-authority:v1",
+            source_policy_ref=definition.source_policy_ref,
+        )
+        source_policy = SourcePolicy(
+            policy_id=definition.source_policy_ref,
+            policy_version="v1",
+            allowed_eligibility=(
+                "PRODUCTION_ELIGIBLE",
+                "NOT_SOURCE_DERIVED",
+            ),
+            allow_raw_reference_sources=False,
+            requires_lineage=True,
+            isolation_mode="ABSTRACT_ASSETS_ONLY",
+        )
+        validation_policy = ValidationPolicy(
+            policy_id=definition.validation_policy_ref,
+            policy_version="v1",
+            structural_schema_ref=definition.output_schema_ref,
+            semantic_validator_refs=(
+                "validator:"
+                + definition.capability_id.value.replace(".", "-")
+                + ":v1",
+            ),
+            maximum_repair_attempts=2,
+            requires_domain_validation=True,
+        )
+        commit_policy = CommitPolicy(
+            policy_id=definition.commit_policy_ref,
+            policy_version="v1",
+            candidate_asset_type=(
+                "generation_candidate"
+                if stage == "draft"
+                else "revision_candidate"
+                if stage == "revision"
+                else "canon_candidate"
+                if stage == "canon_extraction"
+                else "quality_judge_candidate"
+                if stage.startswith("quality_")
+                else "review_candidate"
+            ),
+            requires_validation_manifest=True,
+            requires_approval=True,
+            activation_mode="DOMAIN_AUTHORITY_ONLY",
+        )
+        skill_bundle = SkillBundle(
+            skill_bundle_id=skill_ref,
+            skill_version=route.skill_version,
+            domain=definition.domain.value,
+            capability=definition.capability_id.value,
+            skill_refs=(route.skill_version,),
+            skill_content_hashes=(route.skill_content_hash,),
+            tool_policy_ref=f"tools:chapter:{stage}:v1",
+            created_by_operation_id=operation_id,
+        )
+        prompt_bundle = PromptBundle(
+            prompt_bundle_id=prompt_ref,
+            prompt_version=route.prompt_version,
+            domain=definition.domain.value,
+            capability=definition.capability_id.value,
+            system_instruction_hash=route.system_instruction_hash,
+            template_hash=route.template_hash,
+            input_schema_ref=definition.input_schema_ref,
+            output_schema_ref=definition.output_schema_ref,
+            skill_bundle_ref=skill_ref,
+            context_policy_ref=context_policy_ref,
+            source_policy_ref=definition.source_policy_ref,
+            compiler_version=route.prompt_compiler_version,
+            created_by_operation_id=operation_id,
+        )
         manifest = InputManifest(
             manifest_id=input_ref,
             operation_id=operation_id,
@@ -216,8 +335,59 @@ class PostgresChapterExecutionContractBinder:
             book_id=book_id,
             target_scope=target_scope,
             context_bundle_ref=context_ref,
-            prompt_bundle_ref=route.prompt_bundle_ref,
-            skill_bundle_ref=route.skill_bundle_ref,
+            prompt_bundle_ref=prompt_ref,
+            skill_bundle_ref=skill_ref,
+            context_bundle_version=next(
+                (
+                    item.asset_version_id
+                    for item in artifacts
+                    if item.artifact_type == "context_bundle"
+                ),
+                f"context:none:{operation_id}",
+            ),
+            prompt_bundle_version=route.prompt_version,
+            skill_bundle_version=route.skill_version,
+            canon_snapshot_version=next(
+                (
+                    item.asset_version_id
+                    for item in artifacts
+                    if "canon" in item.artifact_type
+                ),
+                f"canon:none:{operation_id}",
+            ),
+            story_state_version=next(
+                (
+                    item.asset_version_id
+                    for item in artifacts
+                    if "story_state" in item.artifact_type
+                ),
+                f"story-state:none:{operation_id}",
+            ),
+            planning_version=next(
+                (
+                    item.asset_version_id
+                    for item in artifacts
+                    if item.artifact_type
+                    in {
+                        "chapter_plan",
+                        "chapter_group_plan",
+                        "arc_plan",
+                        "volume_plan",
+                        "book_plan",
+                    }
+                ),
+                f"planning:none:{operation_id}",
+            ),
+            quality_profile_version=next(
+                (
+                    item.asset_version_id
+                    for item in artifacts
+                    if "quality_profile" in item.artifact_type
+                ),
+                f"quality-profile:none:{operation_id}",
+            ),
+            source_policy_ref=definition.source_policy_ref,
+            source_eligibility="PRODUCTION_ELIGIBLE",
             canon_version_refs=tuple(
                 item.artifact_ref for item in artifacts if "canon" in item.artifact_type
             ),
@@ -244,11 +414,65 @@ class PostgresChapterExecutionContractBinder:
             model_id=route.model_profile.model_id,
             requested_reasoning_effort=route.model_profile.reasoning_effort,
             reasoning_effort=route.model_profile.reasoning_effort,
-            prompt_bundle_ref=route.prompt_bundle_ref,
-            skill_bundle_ref=route.skill_bundle_ref,
+            prompt_bundle_ref=prompt_ref,
+            skill_bundle_ref=skill_ref,
             context_bundle_ref=context_ref,
             output_schema_ref=route.output_schema_ref,
             release_sha=route.release_sha,
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=context_policy.policy_id,
+            asset_type="execution_context_policy",
+            contract=context_policy.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=source_policy.policy_id,
+            asset_type="execution_source_policy",
+            contract=source_policy.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=validation_policy.policy_id,
+            asset_type="execution_validation_policy",
+            contract=validation_policy.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=commit_policy.policy_id,
+            asset_type="execution_commit_policy",
+            contract=commit_policy.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=skill_ref,
+            asset_type="skill_bundle",
+            contract=skill_bundle.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=prompt_ref,
+            asset_type="prompt_bundle",
+            contract=prompt_bundle.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
         )
         self._ensure_contract(
             operation_id=operation_id,
@@ -866,8 +1090,8 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         evidence: dict[str, Any] = {
             "provider_id": route.model_profile.model_provider,
             "model_id": route.model_profile.model_id,
-            "prompt_version": route.prompt_bundle_ref,
-            "skill_version": route.skill_bundle_ref,
+            "prompt_version": route.prompt_version,
+            "skill_version": route.skill_version,
             "real_model_call": (
                 route.real_provider_validation_eligible
                 and handle.transport.value != "SCRIPTED_FIXTURE"

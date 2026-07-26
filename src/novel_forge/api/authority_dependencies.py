@@ -1,6 +1,7 @@
 """Fail-closed dependency construction for PostgreSQL authority entrypoints."""
 from __future__ import annotations
 
+import hashlib
 import os
 from dataclasses import replace
 from pathlib import Path
@@ -52,6 +53,34 @@ from novel_forge.modules.production_execution import (
     ScriptedFixtureExecutionBackend,
     default_capability_registry,
 )
+
+
+def _execution_content_hash(
+    values: Mapping[str, str],
+    *,
+    stage: str,
+    specific_key: str,
+    common_key: str,
+    controlled: bool,
+    fixture_identity: str,
+) -> str:
+    configured = str(
+        values.get(specific_key) or values.get(common_key) or ""
+    ).strip()
+    if not configured:
+        if controlled:
+            raise RuntimeError(
+                f"{specific_key} or {common_key} is required in a controlled environment"
+            )
+        configured = "sha256:" + hashlib.sha256(
+            f"fixture-protocol:{stage}:{fixture_identity}".encode("utf-8")
+        ).hexdigest()
+    normalized = configured.removeprefix("sha256:")
+    if len(normalized) != 64 or any(
+        character not in "0123456789abcdefABCDEF" for character in normalized
+    ):
+        raise RuntimeError(f"{specific_key} must be a SHA-256 content hash")
+    return "sha256:" + normalized.lower()
 
 
 def authority_release_identity(
@@ -240,6 +269,14 @@ def build_chapter_authority_application(
             reasoning_downgrade_policy="PROHIBITED",
             status="ACTIVE",
         )
+        prompt_version = str(
+            values.get(f"NOVEL_FORGE_{stage.upper()}_PROMPT_VERSION")
+            or f"chapter-{stage}-prompt-v1"
+        )
+        skill_version = str(
+            values.get(f"NOVEL_FORGE_{stage.upper()}_SKILL_VERSION")
+            or f"chapter-{stage}-skill-v1"
+        )
         routes[stage] = ChapterExecutionRoute(
             stage=stage,
             model_profile=profile,
@@ -247,15 +284,39 @@ def build_chapter_authority_application(
             backend_version=backend_version,
             runtime_host_id=runtime_host_id,
             auth_profile_ref=auth_profile_ref,
-            prompt_bundle_ref=str(
-                values.get(f"NOVEL_FORGE_{stage.upper()}_PROMPT_VERSION")
-                or f"chapter-{stage}-prompt-v1"
+            prompt_version=prompt_version,
+            skill_version=skill_version,
+            system_instruction_hash=_execution_content_hash(
+                values,
+                stage=stage,
+                specific_key=(
+                    f"NOVEL_FORGE_{stage.upper()}_SYSTEM_INSTRUCTION_HASH"
+                ),
+                common_key="NOVEL_FORGE_PROMPT_SYSTEM_INSTRUCTION_HASH",
+                controlled=controlled,
+                fixture_identity=prompt_version + ":system",
             ),
-            skill_bundle_ref=str(
-                values.get(f"NOVEL_FORGE_{stage.upper()}_SKILL_VERSION")
-                or f"chapter-{stage}-skill-v1"
+            template_hash=_execution_content_hash(
+                values,
+                stage=stage,
+                specific_key=f"NOVEL_FORGE_{stage.upper()}_PROMPT_TEMPLATE_HASH",
+                common_key="NOVEL_FORGE_PROMPT_TEMPLATE_HASH",
+                controlled=controlled,
+                fixture_identity=prompt_version + ":template",
             ),
-            output_schema_ref=f"chapter-{stage}.v1",
+            skill_content_hash=_execution_content_hash(
+                values,
+                stage=stage,
+                specific_key=f"NOVEL_FORGE_{stage.upper()}_SKILL_BUNDLE_HASH",
+                common_key="NOVEL_FORGE_SKILL_BUNDLE_HASH",
+                controlled=controlled,
+                fixture_identity=skill_version,
+            ),
+            prompt_compiler_version=str(
+                values.get("NOVEL_FORGE_PROMPT_COMPILER_VERSION")
+                or "chapter-prompt-compiler:v1"
+            ),
+            output_schema_ref=capability_definition.output_schema_ref,
             release_sha=release_sha,
             real_provider_validation_eligible=(
                 provider_profile.real_provider_validation_eligible

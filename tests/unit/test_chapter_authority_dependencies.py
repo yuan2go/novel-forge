@@ -121,22 +121,41 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             supports_callback=True, supports_cost_receipt=True,
             provider_idempotency_supported=True,
         ))
+        controlled_environment = {
+            "NOVEL_FORGE_ENVIRONMENT": "provider-validation",
+            "NOVEL_FORGE_MODEL_PROVIDER": "openai",
+            "NOVEL_FORGE_DRAFT_MODEL": "gpt-test",
+            "NOVEL_FORGE_REVIEW_MODEL": "gpt-test",
+            "NOVEL_FORGE_REVISION_MODEL": "gpt-test",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
+            "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "chapter-gateway-test",
+            "NOVEL_FORGE_COMMIT_SHA": "a" * 40,
+            "NOVEL_FORGE_RUNTIME_HOST_ID": "host:test",
+            "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "auth:test",
+        }
+        with self.assertRaisesRegex(RuntimeError, "SYSTEM_INSTRUCTION_HASH"):
+            build_chapter_authority_application(
+                IndustrialSettings(
+                    root=Path("."),
+                    database_url="postgresql://authority",
+                ),
+                provider_registry=registry,
+                env=controlled_environment,
+            )
+        controlled_environment.update(
+            {
+                "NOVEL_FORGE_PROMPT_SYSTEM_INSTRUCTION_HASH": (
+                    "sha256:" + "1" * 64
+                ),
+                "NOVEL_FORGE_PROMPT_TEMPLATE_HASH": "sha256:" + "2" * 64,
+                "NOVEL_FORGE_SKILL_BUNDLE_HASH": "sha256:" + "3" * 64,
+            }
+        )
         application = build_chapter_authority_application(
             IndustrialSettings(root=Path("."), database_url="postgresql://authority"),
             provider_registry=registry,
-            env={
-                "NOVEL_FORGE_ENVIRONMENT": "provider-validation",
-                "NOVEL_FORGE_MODEL_PROVIDER": "openai",
-                "NOVEL_FORGE_DRAFT_MODEL": "gpt-test",
-                "NOVEL_FORGE_REVIEW_MODEL": "gpt-test",
-                "NOVEL_FORGE_REVISION_MODEL": "gpt-test",
-                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
-                "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
-                "NOVEL_FORGE_APPLICATION_BUILD_ID": "chapter-gateway-test",
-                "NOVEL_FORGE_COMMIT_SHA": "a" * 40,
-                "NOVEL_FORGE_RUNTIME_HOST_ID": "host:test",
-                "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "auth:test",
-            },
+            env=controlled_environment,
         )
         self.assertEqual(
             application.model_port.adapter.capability_profile.control_level.value,

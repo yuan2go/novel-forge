@@ -232,6 +232,15 @@ def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
         context_bundle_ref=route.context_bundle_ref,
         prompt_bundle_ref=route.prompt_bundle_ref,
         skill_bundle_ref=route.skill_bundle_ref,
+        context_bundle_version=route.context_bundle_ref,
+        prompt_bundle_version=route.prompt_bundle_ref,
+        skill_bundle_version=route.skill_bundle_ref,
+        canon_snapshot_version="canon:1",
+        story_state_version="story-state:none",
+        planning_version=artifact.asset_version_id,
+        quality_profile_version="quality:1",
+        source_policy_ref=definition.source_policy_ref,
+        source_eligibility="PRODUCTION_ELIGIBLE",
         canon_version_refs=("canon:1",),
         arc_version_refs=("arc:1",),
         input_artifacts=(artifact,),
@@ -479,6 +488,21 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
                 replace(request, risk_class="CRITICAL"),
                 capability,
             )
+        drifted_manifest = replace(
+            manifest,
+            source_policy_ref="source:unqualified:v9",
+        )
+        drifted_source = StaticExecutionContractSource(
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(drifted_manifest,),
+        )
+        with self.assertRaisesRegex(ValueError, "source policy"):
+            AdmissionController(
+                drifted_source,
+                StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+            ).admit(request, capability)
 
     def test_registry_rejects_duplicate_backend_identity(self) -> None:
         contract_set = contracts(

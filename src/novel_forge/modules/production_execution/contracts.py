@@ -306,11 +306,26 @@ class ArtifactPointer(_Contract):
     content_hash: str
     schema_version: str
     source_eligibility: str
+    asset_version_id: str = ""
 
     def __post_init__(self) -> None:
+        version_id = self.asset_version_id.strip()
+        if not version_id and self.artifact_ref.startswith("asset-version:"):
+            version_id = self.artifact_ref.removeprefix("asset-version:")
+        object.__setattr__(self, "asset_version_id", version_id)
+        if (
+            not version_id
+            or self.artifact_ref.startswith(("/", "./", "../", "file:"))
+            or "/" in version_id
+            or "\\" in version_id
+        ):
+            raise ValueError(
+                "artifact pointer requires an Authority AssetVersion identity, not a path"
+            )
         _required(
             "artifact pointer",
             self.artifact_ref,
+            self.asset_version_id,
             self.artifact_type,
             self.content_hash,
             self.schema_version,
@@ -318,10 +333,17 @@ class ArtifactPointer(_Contract):
         )
         if not _is_sha256(self.content_hash):
             raise ValueError("artifact pointer requires a SHA-256 content hash")
+        if self.source_eligibility not in {
+            "PRODUCTION_ELIGIBLE",
+            "NOT_SOURCE_DERIVED",
+            "FIXTURE_ELIGIBLE",
+        }:
+            raise ValueError("artifact pointer source eligibility is not execution-safe")
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "artifact_ref": self.artifact_ref,
+            "asset_version_id": self.asset_version_id,
             "artifact_type": self.artifact_type,
             "content_hash": self.content_hash,
             "schema_version": self.schema_version,
@@ -331,7 +353,8 @@ class ArtifactPointer(_Contract):
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> ArtifactPointer:
         return cls(**{key: str(payload.get(key) or "") for key in (
-            "artifact_ref", "artifact_type", "content_hash", "schema_version", "source_eligibility"
+            "artifact_ref", "artifact_type", "content_hash", "schema_version",
+            "source_eligibility", "asset_version_id",
         )})
 
 
@@ -963,6 +986,15 @@ class InputManifest(_HashedContract):
     context_bundle_ref: str
     prompt_bundle_ref: str
     skill_bundle_ref: str
+    context_bundle_version: str
+    prompt_bundle_version: str
+    skill_bundle_version: str
+    canon_snapshot_version: str
+    story_state_version: str
+    planning_version: str
+    quality_profile_version: str
+    source_policy_ref: str
+    source_eligibility: str
     canon_version_refs: tuple[str, ...]
     arc_version_refs: tuple[str, ...]
     input_artifacts: tuple[ArtifactPointer, ...]
@@ -992,9 +1024,34 @@ class InputManifest(_HashedContract):
             self.context_bundle_ref,
             self.prompt_bundle_ref,
             self.skill_bundle_ref,
+            self.context_bundle_version,
+            self.prompt_bundle_version,
+            self.skill_bundle_version,
+            self.canon_snapshot_version,
+            self.story_state_version,
+            self.planning_version,
+            self.quality_profile_version,
+            self.source_policy_ref,
+            self.source_eligibility,
         )
         if not self.input_artifacts or not self.read_set:
             raise ValueError("InputManifest requires artifacts and an explicit read set")
+        if self.source_eligibility not in {
+            "PRODUCTION_ELIGIBLE",
+            "NOT_SOURCE_DERIVED",
+            "FIXTURE_ELIGIBLE",
+        }:
+            raise ValueError("InputManifest source eligibility is not execution-safe")
+        if any(
+            item.source_eligibility not in {
+                self.source_eligibility,
+                "NOT_SOURCE_DERIVED",
+            }
+            for item in self.input_artifacts
+        ):
+            raise ValueError(
+                "InputManifest source eligibility conflicts with an input AssetVersion"
+            )
         if scope.project_id and scope.project_id != self.project_id:
             raise ValueError("InputManifest target scope belongs to another project")
         if scope.book_id and scope.book_id != self.book_id:

@@ -530,7 +530,10 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 JOIN authority_asset_version AS version ON version.asset_id = asset.asset_id
                 WHERE asset.project_id = %s
                   AND asset.asset_type IN (
-                    'route_snapshot', 'input_manifest', 'execution_commit_manifest'
+                    'route_snapshot', 'input_manifest', 'execution_commit_manifest',
+                    'prompt_bundle', 'skill_bundle',
+                    'execution_context_policy', 'execution_source_policy',
+                    'execution_validation_policy', 'execution_commit_policy'
                   )
                   AND version.lifecycle = 'ACTIVE'
                 GROUP BY asset.asset_type
@@ -541,6 +544,12 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(counts["route_snapshot"], 10)
             self.assertEqual(counts["input_manifest"], 10)
             self.assertEqual(counts["execution_commit_manifest"], 10)
+            self.assertEqual(counts["prompt_bundle"], 10)
+            self.assertEqual(counts["skill_bundle"], 10)
+            self.assertEqual(counts["execution_context_policy"], 7)
+            self.assertEqual(counts["execution_source_policy"], 7)
+            self.assertEqual(counts["execution_validation_policy"], 7)
+            self.assertEqual(counts["execution_commit_policy"], 7)
 
 
 if __name__ == "__main__":
